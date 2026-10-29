@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>রিসোর্স - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">রিসোর্স</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>সার্ভার ও নেটওয়ার্ক ফোল্ডারের যে তালিকা ভিউয়ার খুলতে পারে: SFTP সার্ভার, Windows নেটওয়ার্ক ফোল্ডার (SMB) এবং যে ফোল্ডারগুলো Share Manager এই কম্পিউটার থেকে শেয়ার করে। এটি ফোল্ডার মেনুর রিসোর্স পরিচালনা.. কমান্ড থেকে খোলে; একই তালিকা সেটিংস উইন্ডোর সার্ভার ও রিসোর্স পাতাতেও আছে।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="রিসোর্স">
+    <img class="shot dark" src="resource-manager-dark.png" alt="রিসোর্স">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>যোগ করুন.. বোতাম চেপে সার্ভারের তথ্য পূরণ করুন, অথবা আরও বোতাম দিয়ে একটি সেটিংস ফাইল আনুন।</li><li>নতুন সারিটি বেছে নিয়ে যাচাই করুন চাপুন।</li><li>খুলুন চাপুন, অথবা সারিতে ডাবল-ক্লিক করুন: ভিউয়ার সংযুক্ত হয়ে সার্ভারের ফোল্ডার দেখায়।</li><li>ঠিকানা বা পাসওয়ার্ড বদলাতে সম্পাদনা করুন.. এবং কোনো রিসোর্স ভুলে যেতে মুছুন ব্যবহার করুন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>তালিকা</summary><p>কলাম: নাম, ধরন, ঠিকানা, অ্যাক্সেস এবং সর্বশেষ খোলা। ধরন হলো SFTP সার্ভার, নেটওয়ার্ক ফোল্ডার (SMB) বা শেয়ার করা ফোল্ডার (Share Manager); অ্যাক্সেসে লেখা থাকে শুধু পড়া বা পড়া ও লেখা। তালিকার নিচের একটি লাইন রিসোর্স গোনে, আর কোনো রিসোর্স না থাকলে উইন্ডো একটি ইঙ্গিত এবং একটি যোগ করুন.. বোতাম দেখায়। সম্পাদনা করুন.., মুছুন ও যাচাই করুন বোতামের (এবং রিসোর্স উইন্ডোর নিচের সারিতে খুলুন বোতামের) জন্য একটি নির্বাচিত সারি দরকার; তার আগে তাদের টুলটিপে লেখা থাকে: তালিকা থেকে প্রথমে একটি রিসোর্স নির্বাচন করুন</p></details>
+<details id="add-edit"><summary>যোগ করুন.. ও সম্পাদনা করুন..</summary><p>যোগ করুন.. নতুন রিসোর্সের ফর্ম খোলে এবং সম্পাদনা করুন.. নির্বাচিত রিসোর্সের ফর্ম। সেখানে লেখা পাসওয়ার্ড আপনার Windows অ্যাকাউন্টের জন্য এনক্রিপ্ট করে রাখা হয়, তালিকায় কখনোই নয়।</p></details>
+<details id="remove"><summary>মুছুন</summary><p>মুছুন আগে জিজ্ঞেস করে, আর ডিফল্ট উত্তর না। প্রশ্নে রিসোর্সের নাম থাকে এবং বলা হয় যে তার জন্য সংরক্ষিত পাসওয়ার্ডও চলে যাবে, আর সার্ভারের ফাইল প্রভাবিত হয় না।</p></details>
+<details id="check"><summary>যাচাই করুন</summary><p>যাচাই করুন নির্বাচিত সারিটি না খুলেই পরীক্ষা করে। SFTP সার্ভারের জন্য এটি রিসোর্সের প্রতিটি জানা ঠিকানা চেষ্টা করে এবং প্রতিটির রিপোর্ট দেয় host:port আকারে, একটি রায়সহ: একটিও সজীব SSH উত্তর যাচাইকে সফল করে, খোলা পোর্ট যা SSH নয় সেটি সতর্কতা, আর নীরবতা ব্যর্থতা। কোনো পাসওয়ার্ড পাঠানো হয় না। নেটওয়ার্ক ফোল্ডারের জন্য এটি সংরক্ষিত পাসওয়ার্ড দিয়ে শেয়ারটি খোলে এবং তার উপরের ফোল্ডার পড়ে; পাসওয়ার্ড সংরক্ষিত না থাকলে এটি সম্পাদনা করুন.. দিয়ে একটি দিতে বলে। Share Manager সারির জন্য এটি শুধু দেখে ফোল্ডারটি এই কম্পিউটারে আছে কি না।</p></details>
+<details id="open"><summary>খুলুন</summary><p>খুলুন, অথবা সারিতে ডাবল-ক্লিক, রিসোর্সটি ভিউয়ারের হাতে দেয়, যা সংযুক্ত হয়ে তার ফোল্ডার দেখায়। পাসওয়ার্ড সংরক্ষিত না থাকলে, বা সংরক্ষিতটি প্রত্যাখ্যাত হলে, আগে একটি ছোট উইন্ডো সেটি চায়।</p></details>
+<details id="more-menu"><summary>আরও বোতাম</summary><p>বিন্দুওয়ালা বোতামে আছে: এক্সপোর্ট.. (নির্বাচিত রিসোর্স দরকার); ফাইল থেকে আমদানি.. (.fmscfg, .json বা .txt ফাইল, অথবা QR কোডের ছবি; ফাইল তালিকার ওপর ফেলেও দেওয়া যায়); ক্লিপবোর্ড থেকে আমদানি; ক্যামেরা দিয়ে স্ক্যান করুন.. (শুধু যখন Share Manager ইনস্টল করা ও ক্যামেরা পাওয়া যায়); ফোনের জন্য কোড দেখান..; এবং নির্বাচিত সারির জন্য Why doesn&#39;t it connect?.., যা সংযোগ নির্ণয় খোলে।</p></details>
+<details id="share-manager-rows"><summary>Share Manager সারি ও আমার ডিভাইস</summary><p>যে ফোল্ডার Share Manager এই কম্পিউটার থেকে শেয়ার করে, সেটি সেখানেই পরিচালিত হয়: তার টুলটিপে লেখা: এই শেয়ার করা ফোল্ডারটি Share Manager-এ পরিচালিত হয়; তার সারিতে সম্পাদনা করুন.. ও মুছুন এখানে কিছু বদলানোর বদলে Share Manager খোলে, আর এক্সপোর্ট.. নিষ্ক্রিয় থাকে। এক্সচেঞ্জ ক্লায়েন্ট পাওয়া গেলে তালিকার নিচে আমার ডিভাইস অংশটি একটি এক্সচেঞ্জ সার্ভারে আপনার অন্য ডিভাইসগুলোর ফোল্ডার দেখায়।</p></details>
+    <p><a href="settings.html">সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

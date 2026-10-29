@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>Edit image - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">Edit image</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>A small editor for one still picture: draw shapes, crop, rotate and flip, then save over the original or as a new file. It opens, with the picture&#39;s file name in the title, from the Edit button of the toolbar or the first item of the picture menu, and only for a still image (not for an animation). The editor reads the file again and works on its own copy.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="Edit image">
+    <img class="shot dark" src="image-editor-dark.png" alt="Edit image">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Press Edit in the viewer.</li><li>Pick a tool, a colour and a thickness.</li><li>Draw on the picture, or crop, rotate or flip it; Undo takes a step back.</li><li>Press Save to write over the original, or Save as.. for a new file.</li><li>Close the window; if there are unsaved changes, answer the question.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>Tools</summary><p>In the strip: Crop, Brush, Rectangle, Filled rectangle, Ellipse and Filled ellipse. The keys are C, B, R and O (the filled ones have none). Hold Shift while drawing a rectangle or an ellipse to get a square or a circle. Hovering a tool shows its name and key.</p></details>
+<details id="colour-thickness"><summary>Colour and thickness</summary><p>The colour button opens the colour dialog, and eight quick swatches sit next to it (black, white, red, yellow, lime, blue, magenta, grey). Thickness runs from 1 to 64 image pixels (default 4); the keys [ and ] change it by one. Colour and thickness are shared by all tools.</p></details>
+<details id="crop"><summary>Crop</summary><p>With the Crop tool, drag a frame on the picture. The Apply crop button appears only while a frame exists. Enter does the same; Esc removes the frame without cropping. The picture is cut only when you apply it.</p></details>
+<details id="rotate-flip"><summary>Rotate and flip</summary><p>Rotate left (Ctrl+[) and Rotate right (Ctrl+]) turn the pixels. The keys H and V flip the picture horizontally and vertically. This changes the picture itself, unlike R in the viewer, which turns only the display.</p></details>
+<details id="undo-redo"><summary>Undo and Redo</summary><p>Undo (Ctrl+Z) and Redo (Ctrl+Y or Ctrl+Shift+Z) walk the history of up to 20 steps within a memory limit. The status line shows the size and, after a change, modified with Step N of M; when the limit drops the oldest steps it says Old steps were dropped: memory limit.</p></details>
+<details id="save"><summary>Save</summary><p>Save (Ctrl+S) writes over the original and is enabled only after a change; before that its tooltip says Nothing to save: the image has not been changed. For a JPEG you are asked once per session: The JPEG will be re-compressed - that cannot be undone. The capture date and the rest of the EXIF data are kept. The file is written under a temporary name and swapped in; if saving fails the window stays open with the reason.</p></details>
+<details id="save-as"><summary>Save as..</summary><p>Opens a file dialog with the name (edited) added. The formats are PNG, JPEG, BMP, TIFF and WebP; a picture in any other format is offered as PNG. A temporary folder of an archive is refused. After saving over the original the viewer reloads it; a new file in the same folder is opened; one elsewhere is named in the status line.</p></details>
+<details id="save-refused"><summary>When Save is off</summary><p>The status line says Cannot write over the original with the reason: this format is not written, the file is read-only, there is no write permission, another program is holding the file, the file has several pages or frames (only the first is edited), it is inside an archive, or it is missing. Save as.. stays available.</p></details>
+<details id="close"><summary>Closing</summary><p>Close or Esc closes the window; Esc first cancels a stroke in progress, then removes the crop frame. With unsaved edits the question reads: The edits are not saved - Close the editor and lose the unsaved edits? Save saves first, Don&#39;t save discards, Cancel (the default, also Esc) stays. This question is asked even when confirmations are switched off.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

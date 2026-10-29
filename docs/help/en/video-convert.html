@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Convert to Video - Fast Media Sorter</title>
+  <title>Convert to video - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Convert to Video</h1>
+  <h1 id="title">Convert to video</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Convert to Video.</p>
+    <p>The progress window of Convert to video: it turns an animated GIF, WebP or APNG into an MP4 and then deletes the original. It opens after you confirm the conversion, stays on top of the viewer until the work ends, and has one button, Cancel.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="video-convert-light.png" alt="Convert to Video">
-    <img class="shot dark" src="video-convert-dark.png" alt="Convert to Video">
+    <img class="shot light" src="video-convert-light.png" alt="Convert to video">
+    <img class="shot dark" src="video-convert-dark.png" alt="Convert to video">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Show an animated picture.</li><li>Choose Convert to video.. in the picture menu, or press the Convert to video button of the toolbar; both exist only while an animation is on screen, and there is no keyboard shortcut.</li><li>Read the confirmation and press Convert.</li><li>If asked to download FFmpeg, answer Yes.</li><li>Watch the bar, or press Cancel.</li><li>The viewer opens the new MP4.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="start"><summary>Starting the conversion</summary><p>The command is offered for animations only, never for a still picture or a video, and the viewer refuses it for a protected container or a place where nothing can be written beside the file. Playback stops when the work starts.</p></details>
+<details id="confirm"><summary>The confirmation</summary><p>It reads: the original will be converted into the new MP4, and the original is deleted permanently, bypassing the Recycle Bin. When the animation has transparency it adds: Transparency will be filled with black. Cancel is the default answer. The check box Don&#39;t ask again until the program closes only lasts until the viewer is closed; it is never saved.</p></details>
+<details id="ffmpeg"><summary>FFmpeg</summary><p>The conversion uses FFmpeg, which is not part of the program. If it is missing you are asked once about the download (the question shows the size; the file comes from the project site, is saved locally and is free software under the GPL). Answering No stops here and nothing is created or deleted.</p></details>
+<details id="progress"><summary>The progress window</summary><p>The caption reads Creating the video.. with a percentage, and the bar follows it. When the length of the animation is not known the bar just moves back and forth, with no number. Cancel, the Esc key and the close box all mean the same thing: the window stays a moment until the encoder has really stopped, then it closes and the viewer reports The conversion was cancelled. The viewer cannot be used meanwhile.</p></details>
+<details id="result"><summary>What you get</summary><p>An MP4 in the same folder with the same name (a number in brackets is added if the name is taken), at the frame rate of the animation, between 1 and 50 frames per second. It is written under a temporary name and renamed when ready. The original is deleted only after the MP4 exists under its final name and has been checked to hold the whole animation. The status line says Done and the viewer shows the video.</p></details>
+<details id="safety"><summary>When something goes wrong</summary><p>The original stays and the status line says why: The video could not be created with the reason, the video was created but the original could not be deleted, or the video could not be checked for completeness and the original was kept. A failed run leaves the original untouched, removes the temporary file and writes details to the log.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

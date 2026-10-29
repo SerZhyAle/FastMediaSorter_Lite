@@ -12,4 +12,14 @@
       <HintPath>../../../src/Modern/bin/Debug/net10.0-windows/FastMediaSorter_LITE.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <!-- The viewer's About line shows Application.ProductVersion, which is this host's version: take the captured
+       viewer build's own, so a help picture never shows a version the product does not have. -->
+  <Target Name="TakeViewerVersion" BeforeTargets="GetAssemblyVersion">
+    <GetAssemblyIdentity AssemblyFiles="../../../src/Modern/bin/Debug/net10.0-windows/FastMediaSorter_LITE.dll">
+      <Output TaskParameter="Assemblies" ItemName="ViewerIdentity" />
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <InformationalVersion>%(ViewerIdentity.Version)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
 </Project>

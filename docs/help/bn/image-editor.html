@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>ছবি সম্পাদনা - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">ছবি সম্পাদনা</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>একটি স্থির ছবির জন্য ছোট সম্পাদক: আকার আঁকুন, ছাঁটুন, ঘোরান ও উল্টান, তারপর মূল ফাইলের ওপর বা নতুন ফাইল হিসেবে সংরক্ষণ করুন। এটি খোলে, শিরোনামে ছবির ফাইলের নামসহ, টুলবারের সম্পাদনা বোতাম বা ছবির মেনুর প্রথম আইটেম থেকে, এবং শুধু স্থির ছবির জন্য (অ্যানিমেশনের জন্য নয়)। সম্পাদক ফাইলটি আবার পড়ে এবং নিজের কপিতে কাজ করে।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="ছবি সম্পাদনা">
+    <img class="shot dark" src="image-editor-dark.png" alt="ছবি সম্পাদনা">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>ভিউয়ারে সম্পাদনা চাপুন।</li><li>একটি টুল, রং ও পুরুত্ব বেছে নিন।</li><li>ছবিতে আঁকুন, বা ছাঁটুন, ঘোরান বা উল্টান; পূর্বাবস্থা এক ধাপ পিছনে নেয়।</li><li>মূল ফাইলের ওপর লিখতে সংরক্ষণ চাপুন, বা নতুন ফাইলের জন্য এভাবে সংরক্ষণ করুন.. চাপুন।</li><li>উইন্ডো বন্ধ করুন; অসংরক্ষিত পরিবর্তন থাকলে প্রশ্নের উত্তর দিন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>টুল</summary><p>স্ট্রিপে: ছাঁটাই, ব্রাশ, আয়ত, ভরাট আয়ত, উপবৃত্ত ও ভরাট উপবৃত্ত। কী হলো C, B, R ও O (ভরাটগুলোর কোনো কী নেই)। আয়ত বা উপবৃত্ত আঁকার সময় Shift চেপে ধরলে বর্গ বা বৃত্ত পাওয়া যায়। কোনো টুলের ওপর মাউস রাখলে তার নাম ও কী দেখা যায়।</p></details>
+<details id="colour-thickness"><summary>রং ও পুরুত্ব</summary><p>রঙের বোতাম রঙের ডায়ালগ খোলে, এবং তার পাশে আটটি দ্রুত নমুনা আছে (কালো, সাদা, লাল, হলুদ, লাইম, নীল, ম্যাজেন্টা, ধূসর)। পুরুত্ব ছবির 1 থেকে 64 পিক্সেল পর্যন্ত (ডিফল্ট 4); [ ও ] কী এক এক করে বদলায়। রং ও পুরুত্ব সব টুলে একই।</p></details>
+<details id="crop"><summary>ছাঁটাই</summary><p>ছাঁটাই টুল দিয়ে ছবির ওপর একটি ফ্রেম টানুন। ছাঁটাই প্রয়োগ করুন বোতাম শুধু ফ্রেম থাকলেই দেখা যায়। Enter একই কাজ করে; Esc না ছেঁটে ফ্রেম সরিয়ে দেয়। প্রয়োগ করলেই কেবল ছবি কাটা হয়।</p></details>
+<details id="rotate-flip"><summary>ঘোরানো ও উল্টানো</summary><p>বাঁয়ে ঘোরান (Ctrl+[) ও ডানে ঘোরান (Ctrl+]) পিক্সেল ঘোরায়। H ও V কী ছবিকে আনুভূমিক ও উল্লম্বভাবে উল্টায়। এতে ছবিটি নিজেই বদলায়, ভিউয়ারের R-এর মতো নয়, যা শুধু প্রদর্শন ঘোরায়।</p></details>
+<details id="undo-redo"><summary>পূর্বাবস্থা ও আবার করুন</summary><p>পূর্বাবস্থা (Ctrl+Z) ও আবার করুন (Ctrl+Y বা Ctrl+Shift+Z) মেমরির সীমার মধ্যে সর্বোচ্চ 20 ধাপের ইতিহাসে চলে। স্ট্যাটাস বার আকার দেখায় এবং পরিবর্তনের পরে পরিবর্তিত লেখার সঙ্গে ধাপ N / M; সীমার কারণে সবচেয়ে পুরোনো ধাপ বাদ গেলে লেখে পুরোনো ধাপ বাদ দেওয়া হয়েছে: মেমরির সীমা।</p></details>
+<details id="save"><summary>সংরক্ষণ</summary><p>সংরক্ষণ (Ctrl+S) মূল ফাইলের ওপর লেখে এবং শুধু পরিবর্তনের পরেই সক্রিয় হয়; তার আগে এর টুলটিপ বলে সংরক্ষণের কিছু নেই: ছবিটি পরিবর্তন করা হয়নি। JPEG-এর জন্য প্রতি সেশনে একবার জিজ্ঞাসা করা হয়: JPEG আবার সংকুচিত হবে - এটি ফেরানো যায় না। ছবি তোলার তারিখ ও বাকি EXIF তথ্য থেকে যায়। ফাইলটি একটি অস্থায়ী নামে লেখা হয় এবং বদলে বসানো হয়; সংরক্ষণ ব্যর্থ হলে কারণসহ উইন্ডো খোলা থাকে।</p></details>
+<details id="save-as"><summary>এভাবে সংরক্ষণ করুন..</summary><p>নামের সঙ্গে (সম্পাদিত) যোগ করে একটি ফাইল ডায়ালগ খোলে। ফরম্যাট হলো PNG, JPEG, BMP, TIFF ও WebP; অন্য যেকোনো ফরম্যাটের ছবি PNG হিসেবে প্রস্তাব করা হয়। আর্কাইভের অস্থায়ী ফোল্ডার প্রত্যাখ্যান করা হয়। মূল ফাইলের ওপর সংরক্ষণের পরে ভিউয়ার সেটি আবার লোড করে; একই ফোল্ডারের নতুন ফাইল খোলা হয়; অন্য কোথাও হলে তার নাম স্ট্যাটাস বারে বলা হয়।</p></details>
+<details id="save-refused"><summary>যখন সংরক্ষণ বন্ধ</summary><p>স্ট্যাটাস বার কারণসহ মূল ফাইলের উপরে লেখা যাবে না বলে: এই ফরম্যাট লেখা হয় না, ফাইলটি কেবল পড়ার জন্য, লেখার অনুমতি নেই, অন্য কোনো প্রোগ্রাম ফাইলটি ধরে রেখেছে, ফাইলে একাধিক পৃষ্ঠা বা ফ্রেম আছে (শুধু প্রথমটি সম্পাদিত হয়), সেটি আর্কাইভের ভেতরে, বা নেই। এভাবে সংরক্ষণ করুন.. তখনো পাওয়া যায়।</p></details>
+<details id="close"><summary>বন্ধ করা</summary><p>বন্ধ করুন বা Esc উইন্ডো বন্ধ করে; Esc আগে চলমান স্ট্রোক বাতিল করে, তারপর ছাঁটাইয়ের ফ্রেম সরায়। অসংরক্ষিত সম্পাদনা থাকলে প্রশ্নটি হলো: পরিবর্তনগুলি সংরক্ষিত হয়নি - সম্পাদক বন্ধ করে অসংরক্ষিত পরিবর্তন হারাবেন? সংরক্ষণ আগে সংরক্ষণ করে, সংরক্ষণ করবেন না ফেলে দেয়, বাতিল (ডিফল্ট, Esc-ও) সম্পাদকেই রাখে। নিশ্চিতকরণ বন্ধ থাকলেও এই প্রশ্ন করা হয়।</p></details>
+    <p><a href="settings.html">সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

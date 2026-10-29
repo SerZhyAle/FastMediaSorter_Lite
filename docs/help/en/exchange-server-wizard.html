@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>My server on this PC - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">My server on this PC</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Sets up a personal Media Exchange Server on this PC in one pass: it creates the first account, starts the server and connects this same PC to it. It opens from the &#39;Use this PC as my server..&#39; button on the Media Exchange Server page of the Share Manager settings, which is drawn only while no server is set up on this PC.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="My server on this PC">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="My server on this PC">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Check the suggested login, taken from your Windows user name, or type your own.</li><li>Read the statement of what the operator can see.</li><li>Press &#39;Start&#39; and wait for the four steps.</li><li>Copy the password at once, then the fingerprint or the connection string for your other devices.</li><li>Press &#39;Close&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Login</summary><p>&#39;Login of your account:&#39; takes 3 to 64 characters: lower-case Latin letters, digits, dot, underscore and hyphen; capitals are folded to lower case. The hint under the field turns to the warning colour while the text cannot be a login, and &#39;Start&#39; does nothing until it can.</p></details>
+<details id="statement"><summary>What the operator can see</summary><p>The read-only box under &#39;Before you create the first account, read what the operator of the server can see:&#39; lists what a server operator can see about accounts, devices, folders, broadcasts and the clipboard, what the server cannot read, and how many days logs are kept. On your own server you are the operator.</p></details>
+<details id="steps"><summary>Steps and failures</summary><p>&#39;Start&#39; runs four steps and names the current one: &#39;Creating the account..&#39;, &#39;Starting the server..&#39;, &#39;Checking the certificate..&#39; and &#39;Connecting this PC..&#39;. The login is locked and the window cannot be closed meanwhile. If no account was made, a sentence says why, for example &#39;That account already exists - choose another login.&#39;; fix the login and press &#39;Start&#39; again.</p></details>
+<details id="result"><summary>Result and addresses</summary><p>On success the window says &#39;Done: the server is running, the account is created and this PC is connected to it.&#39; and lists &#39;Address for this PC:&#39;, &#39;Address for other devices:&#39; (it reads &#39;not set - enter it in the exchange server&#39;s settings&#39; until that address is set), &#39;Login:&#39;, &#39;Password (shown once):&#39; and &#39;Certificate fingerprint:&#39;. Once the address for other devices is set, &#39;Connection string:&#39; is added. If the server did not start, the account still exists and its password is shown once below.</p></details>
+<details id="password-and-copying"><summary>Password and copying</summary><p>The password is masked. &#39;Show password&#39; reveals it; &#39;Copy password&#39; puts it on the clipboard by the protected route that keeps it out of the Windows clipboard history and the cloud clipboard. The window shows it only this once, unless &#39;Keep account passwords on this PC&#39; is on. &#39;Copy fingerprint&#39; and &#39;Copy the string&#39; are plain copies: neither holds a password. Other devices need the address, login, password and fingerprint, which they compare on first connection.</p></details>
+<details id="close-warning"><summary>Closing</summary><p>If the password was neither copied, nor shown, nor kept on this PC, &#39;Close&#39; asks &#39;Close without copying the password?&#39; with No as the default, because the password cannot be shown again, only reset.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

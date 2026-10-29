@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account - Fast Media Sorter</title>
+  <title>Conta de troca - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account</h1>
+  <h1 id="title">Conta de troca</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account.</p>
+    <p>Inicia sess&#227;o deste PC como dispositivo de uma conta num Media Exchange Server. A janela abre-se a partir do bot&#227;o &#171;Iniciar sess&#227;o..&#187; da p&#225;gina Conta de troca das defini&#231;&#245;es do Share Manager e a partir de &#171;Publicar atrav&#233;s de um servidor de troca..&#187;, que a abre com a op&#231;&#227;o de publica&#231;&#227;o j&#225; marcada.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-light.png" alt="Exchange Account">
-    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange Account">
+    <img class="shot light" src="exchange-account-light.png" alt="Conta de troca">
+    <img class="shot dark" src="exchange-account-dark.png" alt="Conta de troca">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Se quiser, cole, abra ou escaneie uma cadeia de liga&#231;&#227;o; ela preenche o servidor e o utilizador.</li><li>Clique em &#171;Verificar o certificado&#187; e, a menos que o sistema confie nele ou a cadeia o trouxesse, compare a impress&#227;o digital com a do operador e clique em &#171;Confiar neste certificado&#187;.</li><li>Introduza o utilizador e a palavra-passe ou o c&#243;digo de emparelhamento.</li><li>Defina o nome do dispositivo e as op&#231;&#245;es.</li><li>Clique em &#171;Iniciar sess&#227;o&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Cadeia de liga&#231;&#227;o</summary><p>&#171;Cadeia de liga&#231;&#227;o (opcional):&#187; aceita uma cadeia que cola com &#171;Colar&#187;, carrega de um ficheiro .fmsexch ou de uma imagem QR com &#171;Abrir ficheiro..&#187; ou l&#234; com &#171;Escanear com c&#226;mera..&#187;. S&#243; preenche o servidor e o utilizador; nada se liga at&#233; clicar em &#171;Iniciar sess&#227;o&#187;. Uma cadeia com impress&#227;o digital fixa esse certificado, pelo que n&#227;o h&#225; nada para comparar &#224; m&#227;o. Uma cadeia com convite muda a janela para o registo. Uma cadeia inutiliz&#225;vel recebe uma recusa de uma linha.</p></details>
+<details id="certificate"><summary>Servidor e certificado</summary><p>&#171;Verificar o certificado&#187; liga-se a &#171;Servidor (anfitri&#227;o:porta):&#187; e mostra &#171;Impress&#227;o digital do certificado do servidor:&#187;. Se o sistema confia no certificado, n&#227;o &#233; preciso fixar nada. Caso contr&#225;rio, compare a impress&#227;o digital com a que o operador do servidor lhe deu e clique em &#171;Confiar neste certificado&#187;; s&#243; esse bot&#227;o aceita um certificado que o sistema n&#227;o conhece. Alterar o texto do servidor faz esquecer a verifica&#231;&#227;o. Enter n&#227;o faz nada enquanto nenhum certificado for de confian&#231;a, para que nenhuma palavra-passe v&#225; para um servidor que ningu&#233;m garantiu.</p></details>
+<details id="login-and-secret"><summary>Utilizador, palavra-passe e c&#243;digo de emparelhamento</summary><p>Introduza &#171;Utilizador:&#187; e escolha &#171;Iniciar sess&#227;o com palavra-passe&#187; (&#171;Palavra-passe:&#187;, com &#171;Mostrar a palavra-passe&#187;) ou &#171;Iniciar sess&#227;o com um c&#243;digo de outro dispositivo&#187; (&#171;C&#243;digo de emparelhamento:&#187;, emitido por outro dispositivo da mesma conta). O campo &#233; limpo no instante em que o seu valor &#233; enviado, seja qual for o resultado; o dispositivo guarda apenas um token, nunca a palavra-passe.</p></details>
+<details id="registration"><summary>Registo por convite</summary><p>Quando a cadeia traz um convite, as duas op&#231;&#245;es de in&#237;cio de sess&#227;o d&#227;o lugar ao registo: &#171;A palavra-passe da conta:&#187; e &#171;Palavra-passe mais uma vez:&#187; definem a nova palavra-passe, que tem de cumprir a regra apresentada (pelo menos 10 caracteres com uma letra latina mai&#250;scula, uma min&#250;scula e um algarismo), e o bot&#227;o passa a dizer &#171;Criar a conta&#187;.</p></details>
+<details id="device-options"><summary>Nome do dispositivo e op&#231;&#245;es</summary><p>&#171;Nome deste dispositivo:&#187; (at&#233; 64 caracteres) come&#231;a com o nome do computador. &#171;Publicar j&#225; as minhas pastas partilhadas neste servidor&#187; est&#225; desativada, a menos que tenha chegado por &#171;Publicar atrav&#233;s de um servidor de troca..&#187;; depois de ativada, todos os dispositivos da sua conta podem abrir todas as suas pastas partilhadas, porque a partilha tem um s&#243; utilizador. A &#250;ltima op&#231;&#227;o inicia o Share Manager quando inicia sess&#227;o no Windows (desativada por predefini&#231;&#227;o), para que outros dispositivos possam transmitir para este PC.</p></details>
+<details id="one-server"><summary>Um servidor de cada vez</summary><p>Um dispositivo pertence a um s&#243; servidor. Iniciar sess&#227;o noutro pergunta se deve deixar o atual, e a publica&#231;&#227;o no servidor antigo termina. Ap&#243;s um contacto falhado, o bot&#227;o &#171;Por que n&#227;o conecta?..&#187; abre o teste de liga&#231;&#227;o.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

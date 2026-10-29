@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>StreamsPlayer عمليات البث لـ - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">StreamsPlayer عمليات البث لـ</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>تدير عمليات بث HTTP لملفات الوسائط والمجلدات التي يعرضها هذا الكمبيوتر لتطبيق StreamsPlayer. تُفتح من الزر أو من عنصر قائمة الإضافة ..عمليات البث في النافذة الرئيسية لـ Share Manager، ولا يظهران إلا عندما تُبلغ خدمة المشاركة عن دعم البث. وعند التشغيل بمسار تُفتح النافذة وتنتقل مباشرة إلى مربع حوار إنشاء بث لذلك المسار.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="StreamsPlayer عمليات البث لـ">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="StreamsPlayer عمليات البث لـ">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>حدّد الخيار HTTP تفعيل بوابة بث، أو أنشئ بثًا فقط فتُشغَّل البوابة.</li><li>اضغط ..إنشاء بث، واختر ملف الوسائط، وحدّد العنوان ومدة الصلاحية وخيار الإنترنت، ثم اضغط بث.</li><li>يُنسخ الرابط إلى الحافظة.</li><li>حدّد صفًا واستخدم نسخ الرابط أو ..spres. حفظ أو QR عرض لتسليم البث إلى جهاز.</li><li>اضغط إلغاء على بث لم تعد تحتاج إليه.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>مفتاح البوابة</summary><p>يشغّل مربع الاختيار بوابة HTTP أو يوقفها. يعرض السطر الذي تحته بوابة البث معطلة أو بوابة البث قيد التشغيل (المنفذ N). وطالما كانت البوابة تعمل يستجيب هذا الكمبيوتر لطلبات HTTP الخاصة بملفات البث. وإن تعذّر بدء تشغيل البوابة (المنفذ أو جدار الحماية) يعود مربع الاختيار إلى حالته الحقيقية ويظهر السبب في سطر أحمر واحد تحته؛ ولا يفتح الرفض أي مربع حوار.</p></details>
+<details id="broadcast-list"><summary>قائمة عمليات البث</summary><p>الأعمدة: الاسم، والنوع (ملف، أو المجلد مع عدد عناصره)، وتاريخ الإنشاء، وتاريخ الانتهاء (تاريخ، أو حتى الإلغاء، أو انتهت الصلاحية)، والطلبات، والرمز الذي لا يظهر منه سوى أول ستة أحرف. تعيد القائمة قراءة نفسها كل 5 ثوانٍ. والنقر المزدوج على صف ينسخ رابطه.</p></details>
+<details id="create"><summary>..إنشاء بث</summary><p>تطلب ملف وسائط وتفتح مربع حوار إنشاء بث. بعد قبوله تُشغَّل البوابة إذا لزم الأمر، ويُنشأ البث، ويُنسخ رابطه إلى الحافظة مع علامات الخصوصية؛ وتؤكد رسالة عملية النسخ.</p></details>
+<details id="share-link"><summary>نسخ الرابط، ..spres. حفظ، وQR عرض</summary><p>تعمل هذه الأزرار الثلاثة على الصف المحدد وتتطلب بوابة قيد التشغيل لها منفذ. تبني الرابط من العناوين الحالية لهذا الكمبيوتر؛ ويُتذكَّر اختيار الإنترنت الذي تم عند الإنشاء لكل بث. يكتب الزر ..spres. حفظ ملف موارد لـ StreamsPlayer، ويفتح الزر QR عرض رمزًا لمسحه.</p></details>
+<details id="refresh-revoke"><summary>تحديث وإلغاء</summary><p>يتوفر الزر تحديث لبث مجلد فقط، ويطلب من الخدمة تحديثه؛ وتؤكد رسالة ذلك. أما الزر إلغاء فيعمل على أي صف ويسأل أولًا: هل تريد إلغاء البث X؟ سيتوقف الرابط عن العمل فورًا. لا يمكن استعادة بث أُلغي؛ أنشئ بثًا جديدًا.</p></details>
+<details id="problems"><summary>عند تعطل الصفحة</summary><p>إذا لم تستجب خدمة المشاركة أو لم تدعم البث، تتعطل الصفحة في مكانها ويذكر السطر الأحمر السبب، مثل أن إصدار خدمة البث هذا قديم، أو أن الإجراء لم يكتمل مع وجود التفاصيل في السجل.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

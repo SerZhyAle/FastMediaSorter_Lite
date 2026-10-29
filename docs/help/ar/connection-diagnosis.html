@@ -14,7 +14,7 @@
   <h1 id="title">Connection Diagnosis</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>يشرح لماذا يتعذّر الوصول إلى خادم أو جهاز، ويقترح ما يمكن تجربته، خطوة بعد خطوة. لا يغيّر أي إعداد في الكمبيوتر أو في Windows. يُفتح من الأمر Why doesn&#39;t it connect?.. في قائمة المزيد في قائمة الموارد (لصف محدد)، ومن إدخال خادم في أجهزتي يعيد تسجيل الدخول أو يعرض شهادة تغيّرت أو يتعذّر عليه الاتصال، ومن تلقاء نفسه عندما يفشل فتح مورد.</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
@@ -22,13 +22,16 @@
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اقرأ What happened.</li><li>جرّب ما تقوله What to try.</li><li>إذا لم يكن هذا هو السبب فاضغط Next step.</li><li>اضغط Details إذا طلب أحدهم الرموز، وCopy لتسليمها.</li><li>أغلق النافذة.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>What happened</summary><p>جملة واحدة عن الفشل، مثل Cannot reach the server. أو The login or the password is wrong. أو This server does not look like the one you connected to before. وهي تتبع نوع الفشل الذي فتح النافذة.</p></details>
+<details id="what-to-try"><summary>What to try</summary><p>تبدأ النافذة من أول خطوة فشلت في الفحص، أو من الخطوة الأولى إذا لم تفشل أي خطوة. الخطوات المعتادة: إيقاظ الجهاز الذي يشغّل الخادم؛ التأكد من أن الجهازين على الشبكة نفسها؛ مغادرة شبكة Wi-Fi الخاصة بالضيوف؛ إيقاف VPN لحظة؛ ضبط شبكة Windows على خاصة؛ فحص الخادم من شبكة أخرى؛ ضبط التاريخ والوقت الصحيحين؛ تأكيد بصمة جديدة؛ إعادة كتابة اسم المستخدم وكلمة المرور. وتقول الخطوة الأخيرة إن مشغّل الخادم وحده يستطيع الإصلاح.</p></details>
+<details id="next-step"><summary>Next step and Windows Settings</summary><p>يتنقل Next step بين الخطوات ويختفي عند الأخيرة. وللخطوتين اللتين تستطيع إعدادات Windows إصلاحهما، ملف تعريف الشبكة والساعة، يفتح الزر Open Windows Settings صفحة Windows المناسبة؛ والبرنامج نفسه لا يغيّر شيئًا.</p></details>
+<details id="details-copy"><summary>Details and Copy</summary><p>يعرض Details أو يخفي مربعًا للقراءة فقط فيه رموز التشخيص: نوع الفشل والهدف والمسار والخطوة الفاشلة والخطوات التي قُطعت. لا يحتوي أبدًا على عنوان أو اسم مستخدم أو كلمة مرور أو بصمة. يضع Copy ذلك السطر في الحافظة وتقول النافذة: Diagnosis codes copied to clipboard.</p></details>
+<details id="how-it-checks"><summary>كيف يعمل الفحص</summary><p>يُجرى الفحص للاتصال الذي جرّبته فقط، ويقرأ فقط: يحاول الوصول إلى المضيف والمنفذ، وينظر في حالة الشبكة ومهايئات VPN وملف تعريف شبكة Windows ونوع العنوان والساعة والشهادة. يتوقف عند أول خطوة فاشلة، ولا يُحتسب فحص تعذّر إجراؤه ناجحًا ولا فاشلًا.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

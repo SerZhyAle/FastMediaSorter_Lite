@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>Num&#233;risation du code QR avec la cam&#233;ra - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">Num&#233;risation du code QR avec la cam&#233;ra</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>Lit le code QR affich&#233; par l&#39;application du t&#233;l&#233;phone &#224; l&#39;aide d&#39;une cam&#233;ra de ce PC. Elle s&#39;ouvre depuis &#171;Scanner avec la cam&#233;ra..&#187; dans la fen&#234;tre du code du t&#233;l&#233;phone et depuis la zone de la cha&#238;ne de connexion de la fen&#234;tre du compte d&#39;&#233;change ; la cam&#233;ra d&#233;marre &#224; l&#39;affichage de la fen&#234;tre.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>Cette fen&#234;tre n&#39;a pas de capture : &#224; l&#39;ouverture, elle d&#233;marre un appareil, une &#233;coute r&#233;seau ou toute la visionneuse, elle n&#39;est donc pas captur&#233;e.</figcaption></figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Tenez le code QR du t&#233;l&#233;phone devant la cam&#233;ra.</li><li>La fen&#234;tre scanne l&#39;image d&#39;elle-m&#234;me ; quand un code valide est trouv&#233;, l&#39;&#233;tat indique &#171;Code re&#231;u&#187; et la fen&#234;tre se ferme.</li><li>Cliquez sur &#171;Annuler&#187; (&#201;chap) pour fermer sans scanner.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>Aper&#231;u et &#233;tat</summary><p>La zone noire affiche l&#39;image en direct. La ligne dessous indique &#171;Pointez la cam&#233;ra vers le code QR du t&#233;l&#233;phone&#187; tant qu&#39;aucun code n&#39;est lu.</p></details>
+<details id="camera"><summary>Quelle cam&#233;ra</summary><p>Seule la premi&#232;re cam&#233;ra trouv&#233;e est utilis&#233;e. S&#39;il n&#39;y en a aucune ou si elle ne peut pas d&#233;marrer, la ligne indique &#171;La cam&#233;ra n&#39;est pas disponible&#187;, suivie de la raison quand il y en a une.</p></details>
+<details id="result"><summary>Apr&#232;s la num&#233;risation</summary><p>Le texte du premier code QR valide est renvoy&#233; &#224; la fen&#234;tre qui a ouvert le scanner et y est trait&#233; comme s&#39;il avait &#233;t&#233; coll&#233; ; dans la fen&#234;tre du code du t&#233;l&#233;phone, il remplit la zone du code et est transmis, et Fast Media Sorter pose toujours ses questions habituelles. Les images restent uniquement en m&#233;moire : cette fen&#234;tre n&#39;enregistre ni n&#39;envoie rien.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

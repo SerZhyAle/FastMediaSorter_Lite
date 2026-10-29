@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>StreamsPlayer 广播 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">StreamsPlayer 广播</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>管理此电脑向 StreamsPlayer 应用提供的媒体文件和文件夹的 HTTP 广播。它从 Share Manager 主窗口的「广播..」按钮或「添加」菜单项打开，仅当共享服务报告支持广播时才会出现。带路径启动时会打开它，并直接进入该路径的「创建广播」对话框。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="StreamsPlayer 广播">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="StreamsPlayer 广播">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>勾选「启用 HTTP 广播网关」，或者直接创建广播，这会自动开启网关。</li><li>点击「创建广播..」，选择媒体文件，设置标题、有效期和互联网选项，然后点击「广播」。</li><li>链接会复制到剪贴板。</li><li>选中一行，使用「复制链接」、「保存 .spres..」或「显示二维码」把广播交给设备。</li><li>不再需要时「撤销」广播。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>网关开关</summary><p>该复选框开启或关闭 HTTP 网关。其下方的一行显示「广播网关已关闭」或「广播网关已启用 (端口 N)」。网关运行时，此电脑会响应对广播文件的 HTTP 请求。如果网关无法启动（端口、防火墙），复选框会恢复到真实状态，原因显示在其下方的一行红字中；拒绝从不会弹出对话框。</p></details>
+<details id="broadcast-list"><summary>广播列表</summary><p>列：名称、类型（文件，或带条目数量的文件夹）、创建时间、有效期（日期、「直至撤销」或「已过期」）、请求数和令牌（只显示前六个字符）。列表每 5 秒重新读取一次。双击某一行会复制其链接。</p></details>
+<details id="create"><summary>创建广播..</summary><p>请求选择一个媒体文件并打开「创建广播」对话框。你确认后，如有需要会开启网关，创建广播，并将其链接连同隐私标记复制到剪贴板；一条消息确认复制完成。</p></details>
+<details id="share-link"><summary>复制链接、保存 .spres.. 和显示二维码</summary><p>这三项作用于选中的行，并且需要网关已运行且带有端口。它们根据此电脑当前的地址生成链接；创建时选择的互联网选项会为每个广播记住。「保存 .spres..」写入一个 StreamsPlayer 资源文件，「显示二维码」打开一个供扫描的代码。</p></details>
+<details id="refresh-revoke"><summary>刷新和撤销</summary><p>「刷新」仅适用于文件夹广播，并请求服务刷新它；一条消息确认。「撤销」适用于任何一行，并会先询问：撤销广播 X？链接将立即失效。已撤销的广播无法恢复；请创建一个新的。</p></details>
+<details id="problems"><summary>页面关闭时</summary><p>如果共享服务没有响应或不支持广播，页面会就地关闭，红色的一行说明原因，例如广播服务的此版本已过时，或操作未能完成且详情在日志中。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

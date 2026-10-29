@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>&#192; propos du fichier - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">&#192; propos du fichier</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>Un instantan&#233; en lecture seule de ce que le programme sait du fichier affich&#233; : le fichier lui-m&#234;me, une image avec les donn&#233;es de son appareil photo, un document, et les pistes audio et vid&#233;o. Il s&#39;ouvre depuis l&#39;&#233;l&#233;ment i du premier panneau, ou depuis &#192; propos du fichier dans le bloc fichier des menus de la visionneuse, et d&#233;crit le fichier tel qu&#39;il &#233;tait au moment du clic.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="&#192; propos du fichier">
+    <img class="shot dark" src="file-details-dark.png" alt="&#192; propos du fichier">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Affichez un fichier dans la visionneuse.</li><li>Cliquez sur l&#39;&#233;l&#233;ment i du premier panneau, ou choisissez &#192; propos du fichier dans le menu.</li><li>Patientez un instant : la ligne d&#39;&#233;tat indique Lecture des m&#233;tadonn&#233;es du fichier.. et les lignes se remplissent.</li><li>Lisez les blocs, s&#233;lectionnez ce dont vous avez besoin et appuyez sur Copier pour placer tout le texte dans le presse-papiers.</li><li>Appuyez sur Fermer ou sur Esc.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>Fichier</summary><p>Tout fichier poss&#232;de ce bloc : Nom, Dossier, Type, Taille, Octets, Cr&#233;&#233;, Modifi&#233;, Dernier acc&#232;s et Attributs. Une ligne sans rien &#224; afficher est omise. Si aucun fichier n&#39;est ouvert, la ligne d&#39;&#233;tat indique Aucun fichier s&#233;lectionn&#233; ; une copie temporaire issue d&#39;une archive, une adresse distante ou un fichier disparu donne Le fichier n&#39;est pas disponible, et aucune fen&#234;tre ne s&#39;ouvre.</p></details>
+<details id="image-block"><summary>Image</summary><p>Pour une image : R&#233;solution telle qu&#39;affich&#233;e (une photo de t&#233;l&#233;phone enregistr&#233;e couch&#233;e se lit dans sa taille redress&#233;e), Profondeur de couleur et Densit&#233; de pixels, lorsque le fichier les enregistre.</p></details>
+<details id="camera-block"><summary>Appareil photo</summary><p>Lu dans les donn&#233;es EXIF de la photo : Appareil photo, Logiciel, Date de prise de vue, Exposition, Ouverture, ISO, Longueur focale et Auteur. Les coordonn&#233;es n&#39;apparaissent que si la photo contient des donn&#233;es GPS, et Copier les inclut : v&#233;rifiez donc le texte avant de le partager.</p></details>
+<details id="document-block"><summary>Document</summary><p>Pour un fichier texte : Lignes, Mots, Caract&#232;res et Encodage, plus Le fichier n&#39;a &#233;t&#233; lu que partiellement lorsqu&#39;il est trop gros pour &#234;tre lu en entier. Pour un livre &#233;lectronique : Nom et Auteur. Pour un PDF : Pages.</p></details>
+<details id="media-block"><summary>M&#233;dias, Vid&#233;o et Audio</summary><p>Pour les fichiers audio et vid&#233;o, les balises (Nom, Artiste, Album, Ann&#233;e, Piste, Genre, R&#233;alisateur, S&#233;rie, Saison, &#201;pisode, Dur&#233;e) et la premi&#232;re piste de chaque type (Vid&#233;o : R&#233;solution, Images par seconde, Codec, D&#233;bit binaire ; Audio : Codec, Canaux, Fr&#233;quence d&#39;&#233;chantillonnage, D&#233;bit binaire) sont ajout&#233;es un instant apr&#232;s le reste, lorsque le moteur multim&#233;dia a fini de lire. La fen&#234;tre ne l&#39;attend jamais. Les flux r&#233;seau n&#39;ont pas de lignes de pistes.</p></details>
+<details id="related-files"><summary>Fichiers associ&#233;s</summary><p>Les fichiers rang&#233;s &#224; c&#244;t&#233; de celui-ci et qui lui appartiennent sont list&#233;s par nom : Sous-titres, Paroles, Pochette et M&#233;tadonn&#233;es. Le bloc est absent lorsqu&#39;il n&#39;y en a aucun.</p></details>
+<details id="copy-close"><summary>Copier et Fermer</summary><p>Copier place tout le texte dans le presse-papiers et la ligne d&#39;&#233;tat indique Copi&#233; dans le presse-papiers ; si un autre programme occupe le presse-papiers, elle le dit et vous pouvez appuyer de nouveau sur Copier. Une s&#233;lection copi&#233;e avec Ctrl+C fonctionne aussi. Si rien n&#39;a pu &#234;tre lu, la zone indique Impossible de lire les informations du fichier. &#192; c&#244;t&#233; des boutons, la ligne d&#39;&#233;tat affiche le nom du fichier. Passer &#224; un autre fichier ne change pas cette fen&#234;tre : cliquez de nouveau sur i pour le nouveau fichier.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

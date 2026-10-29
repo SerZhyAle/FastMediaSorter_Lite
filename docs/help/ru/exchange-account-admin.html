@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>Новая учётная запись - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">Новая учётная запись</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>Одно окно в двух режимах. &#171;Новая учётная запись&#187; добавляет учётную запись на Media Exchange Server, которым вы управляете; &#171;Сброс пароля: &lt;логин&gt;&#187; задаёт существующей учётной записи новый пароль. Режимы открываются кнопками &#171;Добавить учётную запись..&#187; и &#171;Сбросить пароль..&#187; под списком учётных записей на странице Media Exchange Server в настройках Share Manager; для сброса нужно выбрать учётную запись.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="Новая учётная запись">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Новая учётная запись">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>В режиме добавления введите логин.</li><li>Выберите, как создаётся пароль.</li><li>В режиме сброса решите, выводить ли из системы все устройства учётной записи.</li><li>Нажмите &#171;Создать&#187; или &#171;Сбросить&#187;.</li><li>Скопируйте созданный пароль в следующем окне или введите свой.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>Заявление для первой записи</summary><p>При самой первой учётной записи окно начинается со строки &#171;Прежде чем создать первую учётную запись, прочтите, что видит оператор сервера:&#187; и нередактируемого поля с этим заявлением. Для следующих записей и для сброса его нет.</p></details>
+<details id="login"><summary>Логин</summary><p>Только в режиме добавления. От 3 до 64 символов: строчные латинские буквы, цифры, точка, подчёркивание и дефис; заглавные приводятся к строчным. Подсказка окрашивается цветом предупреждения, когда текст не может быть логином, и &#171;Создать&#187; не продолжает работу, если он не подходит.</p></details>
+<details id="password-choice"><summary>Как создаётся пароль</summary><p>&#171;Создать пароль (его покажут один раз)&#187; выбрано по умолчанию: программа делает случайный пароль, подходящий под правила, и следующее окно показывает его один раз. &#171;Ввести пароль самому&#187; открывает окно &#171;Пароль учётной записи&#187;, где строка под полем сразу называет, чего не хватает: не короче 10 символов, с заглавной и строчной латинской буквой и цифрой.</p></details>
+<details id="sign-out"><summary>Выход всех устройств</summary><p>Только в режиме сброса. Флажок &#171;Сразу вывести из системы все устройства этой учётной записи&#187; стоит по умолчанию. Тогда строка итога сообщает, что пароль изменён и все устройства учётной записи выведены из системы; без флажка - только что пароль изменён.</p></details>
+<details id="after"><summary>После ответа сервера</summary><p>Строка итога сообщает о создании учётной записи. Созданный пароль один раз показывается в отдельном окне с кнопками &#171;Скопировать пароль&#187; и &#171;Задать свой пароль..&#187;, которая возвращает к сбросу с вводом пароля вручную. Если включено &#171;Хранить пароли учётных записей на этом ПК&#187;, пароль дополнительно сохраняется на этом ПК, и у учётной записи появляется &#171;Показать пароль..&#187;. Если эта сборка предлагает клиентские возможности обмена, а у этого ПК нет своей учётной записи, ПК входит с этим паролем как первое устройство учётной записи.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

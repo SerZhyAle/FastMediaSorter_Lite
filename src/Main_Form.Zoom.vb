@@ -60,7 +60,8 @@ Partial Public Class Main_Form
     ''' <summary>Scale the image would have at Fit, for the panel it is shown in.</summary>
     Private Function FitFactorFor(img As Image) As Double
         If img Is Nothing OrElse panel_Media Is Nothing Then Return 1.0
-        Return ZoomMath.FitFactor(img.Width, img.Height, panel_Media.ClientSize.Width, panel_Media.ClientSize.Height)
+        Dim viewport = PdfReaderViewport()
+        Return ZoomMath.FitFactor(img.Width, img.Height, viewport.Width, viewport.Height)
     End Function
 
     ''' <summary>Scale the user is actually looking at right now.</summary>
@@ -96,7 +97,10 @@ Partial Public Class Main_Form
     Private Function DisplayedImageRectangleOnPanel(img As Image) As Rectangle
         If img Is Nothing OrElse panel_Media Is Nothing Then Return Rectangle.Empty
         If zoom_Mode_Free Then Return current_ImageBounds
-        Return ZoomMath.FitBounds(img.Width, img.Height, panel_Media.ClientSize)
+        Dim viewport = PdfReaderViewport()
+        Dim rect = ZoomMath.FitBounds(img.Width, img.Height, viewport.Size)
+        rect.Offset(viewport.Location)
+        Return rect
     End Function
 
     ''' <summary>

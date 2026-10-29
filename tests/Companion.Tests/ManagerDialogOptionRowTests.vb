@@ -811,9 +811,10 @@ Public Class ManagerDialogOptionRowTests
 
     <Fact>
     Public Sub Every_window_of_the_Manager_outside_the_welcome_windows_makes_one_row_per_check_box()
-        ' The settings pages were converted by T-11c-b2b. The welcome windows and the server wizard wait for the owner's answer
-        ' to Q-6 (ticket 243); everything else the Manager compiles must hold the rule, so a new native check box cannot slip
-        ' into a dialog or a settings page unnoticed.
+        ' The settings pages were converted by T-11c-b2b. The welcome windows and the server wizard are a recorded permanent
+        ' variant (ticket 243 Q-6, owner decision 2026-10-27: their hand-built layout with 44 px targets stays); everything
+        ' else the Manager compiles must hold the rule, so a new native check box cannot slip into a dialog or a settings
+        ' page unnoticed.
         Dim pending As String() = {"Manager_Welcome_Form", "Server_Welcome_Form", "Exchange_Server_Wizard_Form"}
         Dim problems As New List(Of String)()
         Dim checked As Integer = 0

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Fast Media Sorter &amp; Sharing Viewer - Fast Media Sorter</title>
+  <title>查看器窗口 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Fast Media Sorter &amp; Sharing Viewer</h1>
+  <h1 id="title">查看器窗口</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Fast Media Sorter &amp; Sharing Viewer.</p>
+    <p>查看器窗口是媒体与文件管理器的主窗口。它每次显示文件夹中的一张图片或一个视频，并用一个按键把文件分拣到各个文件夹。在 64 位版本中，若在设置的「文件」页勾选了「整理文档」或「整理其他文件」，文档和其他文件会以预览的形式加入同一列表；按 F3 打开图片面板，它也可以作为文件管理器，管理本地文件夹、服务器和已连接的设备。启动程序或用本程序打开媒体文件时，会打开该窗口。</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="main-viewer-light.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-    <img class="shot dark" src="main-viewer-dark.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>此窗口没有截图：它一打开就会启动设备、网络监听或整个查看器，因此不截取。</figcaption></figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>按 F4，或在「文件夹：」框中输入路径后按 Enter。</li><li>用方向键、Space 和 P 浏览文件。</li><li>按数字键把文件移到对应的文件夹，或按 Shift 加上排数字键进行复制。</li><li>按 Del 删除文件。</li><li>按 F2 打开设置。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="open-folder"><summary>打开文件夹</summary><p>F4 会打开文件选择窗口；所选文件会显示出来，它所在的整个文件夹则成为浏览列表。「文件夹：」框接受文件夹路径，输入后按 Enter。未打开任何内容时，帮助卡片会列出主要按键，F1 可显示或隐藏它。空白画面上还有「初始设置」按钮，用于启动欢迎步骤。</p></details>
+<details id="floating-chrome"><summary>悬浮面板与状态栏</summary><p>两排工具栏按钮和一条状态栏悬浮在图片上方，鼠标静止时会逐渐淡出。面板角上的图钉可把面板固定在原位；设置「常规」页中的「保持悬浮面板可见」会让所有面板始终可见。状态栏显示消息，例如文件操作的结果。</p></details>
+<details id="navigation"><summary>浏览文件</summary><p>Space 和 PgDn 显示下一个文件，P 和 PgUp 显示上一个；上、下方向键一次跳过十个文件，Home 和 End 分别转到第一个和最后一个文件。除非滚轮被设为缩放，否则滚轮也可以逐个浏览文件。</p></details>
+<details id="sorting"><summary>移动、复制和删除</summary><p>数字键 1..9 或 0 会把当前文件移到绑定在该键上的文件夹；Shift 加上排数字键（不是 NumPad）则复制该文件。文件夹在设置的「目标」页中绑定。U 键把最近移动的文件移回来。Del 会把文件送入回收站（「文件」页中的「删除到回收站」选项），Shift+Del 则永久删除；网络驱动器和U盘没有回收站，程序会事先提示。F3 打开「图片面板」。</p></details>
+<details id="slideshow"><summary>幻灯片与显示</summary><p>S 启动幻灯片，I 或 F5 启动随机幻灯片，Y 跳到随机文件；间隔和顺序在设置的「图片」页中设置。R 旋转图片，F7 切换全屏。</p></details>
+<details id="zoom"><summary>缩放与图片菜单</summary><p>在 64 位版本中，NumPad 的灰色按键区用于缩放：+ 和 - 在鼠标光标处放大和缩小，/ 使图片适应窗口，* 以 100 % 显示。「图片」页中的「用滚轮缩放」选项可让滚轮用于缩放。</p></details>
+<details id="video"><summary>视频</summary><p>单击可暂停或继续播放视频，右键打开视频菜单。在 64 位版本中，A 切换音轨，V 切换字幕；仅当文件提供可选项时，工具栏上才会出现「轨道」按钮。</p></details>
+<details id="settings-keys"><summary>设置与按键列表</summary><p>F2 或工具栏上的「设置」按钮可打开设置。完整的按键列表在：「文件」页，「按键与关联」组，「键盘快捷键」按钮。</p></details>
+    <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Enable Sharing - Fast Media Sorter</title>
+  <title>启用文件夹共享 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Enable Sharing</h1>
+  <h1 id="title">启用文件夹共享</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Enable Sharing.</p>
+    <p>请求安装共享的服务器部分：一个在后台运行的小型 SFTP 服务器和一条 Windows 防火墙例外。它从主窗口的「启用服务器功能..」按钮和各个向导中打开，需要一次管理员权限。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-enable-light.png" alt="Enable Sharing">
-    <img class="shot dark" src="share-enable-dark.png" alt="Enable Sharing">
+    <img class="shot light" src="share-enable-light.png" alt="启用文件夹共享">
+    <img class="shot dark" src="share-enable-dark.png" alt="启用文件夹共享">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>阅读说明。</li><li>点击「安装服务器功能..」。</li><li>确认 Windows 的管理员权限提示。</li><li>等待结果行；成功时窗口会提示文件夹共享已启用。</li><li>点击「取消」可不作更改地退出。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-it-does"><summary>它做什么</summary><p>与 Android 手机共享文件夹，需要一个在后台运行的小型 SFTP 服务器和一项 Windows 防火墙许可。共享开启期间，所选文件夹可以通过网络读取，开放写入的文件夹也可以被写入。除非勾选了仅限本地网络的选项，程序还会请求路由器开放一个端口（UPnP/NAT-PMP），并通过外部服务检查地址。</p></details>
+<details id="install-button"><summary>安装服务器功能..</summary><p>开始设置并弹出 Windows 管理员权限提示。状态行先显示「正在设置..请确认管理员提示。」，随后显示结果。只有当服务器组件位于应用旁边时该按钮才可用；否则窗口会要求重新安装应用。</p></details>
+<details id="outcomes"><summary>结果</summary><p>「完成。文件夹共享已启用。」；提示被拒绝时显示「共享未启用 - 未授予管理员权限。」（不会有任何改变，可以重试）；或者出现防火墙失败，此时会要求重试，并从托盘图标菜单发送日志。</p></details>
+<details id="admin-rights"><summary>管理员权限及如何收回</summary><p>该链接说明这些权限的用途。要撤销，请在管理器设置中使用「关闭服务器功能..」：共享停止，已连接的手机被断开，防火墙许可被移除。文件夹列表和密码会保留，所有功能都可以重新开启。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

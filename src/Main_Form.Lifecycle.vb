@@ -1158,6 +1158,9 @@ Partial Public Class Main_Form
 
         SweepAnimationVideoStoreIfNeeded()
 
+        ' Spec 275 section 12: page-viewer profiles the last run left behind (file system only).
+        HtmlRuntimeService.BeginLaunchSweep()
+
         ' Spec 184: the welcome wizard, after the window and its first picture are on screen (never on top of them).
         BeginInvoke(New Action(AddressOf ShowWelcomeIfDue))
 #End If
@@ -1276,10 +1279,10 @@ Partial Public Class Main_Form
         ' be - so ask instead of deciding for the user. (What it cannot corrupt any more is the
         ' destination file: FileManager.MoveFile now stages the copy under a temporary name.)
         '
-        ' This question stays the SYSTEM box on purpose (ticket 243 T-12a): here "No" is the destructive answer
-        ' (it closes the program and drops the unfinished operations), and the product-owned question window answers
-        ' its cancel answer - No - for Escape and the close box, so one stray Escape would close the program. The
-        ' system box ignores both for a Yes/No set. Moving it needs a per-question Escape answer first.
+        ' The question is the product-owned window with NAMED answers (ticket 243 Q-8, owner decision 2026-10-27: a
+        ' system box can open behind a viewer pinned "on top"). "Close anyway" is the destructive answer (it closes the
+        ' program and drops the unfinished operations); "Wait longer" is the default and the answer of Escape and the
+        ' close box (AskSpecs.CloseWithUnfinishedFileOperations), so one stray Escape never closes the program.
         Dim flow As New FileOpCloseFlow(Of FileOp)(
             close_Drain_Coordinator,
             Function() file_Op_Queue,
@@ -1290,13 +1293,8 @@ Partial Public Class Main_Form
                 file_Op_Queue = Nothing
                 EnsureFileOpQueue()
             End Sub,
-            Function(outstanding As Integer) ViewerBox.ShowSystem(
-                Me,
-                Localization.TF("Файловые операции ещё выполняются: {0}." & vbCrLf &
-                                "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
-                                outstanding),
-                Localization.T("Закрытие программы"),
-                MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1) = DialogResult.Yes,
+            Function(outstanding As Integer) AskDialogs.Choose(
+                Me, AskSpecs.CloseWithUnfinishedFileOperations(outstanding)) = AskSpecs.CloseKeepWaiting,
             Function() Not Me.IsDisposed,
             Function()
                 Me.Close()
@@ -1409,6 +1407,8 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         DisposeAnimationVideoStore()
         ReleasePdfDocument()
+        ReleaseEpubReader()
+        ReleaseHtmlView()
         ReleaseTextDocument()
         ClearEpubPlaceholderData()
 #End If

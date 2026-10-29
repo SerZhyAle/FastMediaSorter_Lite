@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>أول تشغيل للخادم - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">أول تشغيل للخادم</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>دليل التشغيل الأول لمجموعة خادم التبادل في Share Manager. يشرح ما الذي سيصبحه هذا الكمبيوتر، ويعرض بيان المشغّل، ويضبط المنافذ وعنوان العملاء والحساب الأول، وينتهي عند حالة الخادم. لا يظهر إلا عند وجود خادم التبادل وتفعيله.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="أول تشغيل للخادم">
+    <img class="shot dark" src="server-welcome-dark.png" alt="أول تشغيل للخادم">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اقرأ بيان المشغّل في الصفحة الأولى.</li><li>راجع المنافذ وقاعدة جدار الحماية.</li><li>في إصدار الخادم الذي لا توجد فيه خدمة، قرّر بشأن خدمة Windows.</li><li>املأ العنوان الذي يستخدمه العملاء.</li><li>أنشئ الحساب الأول.</li><li>تحقّق من بصمة الشهادة ثم اضغط إنهاء.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>الصفحات والأزرار</summary><p>يعرض التذييل الخطوة N من M؛ وتعمل الأزرار رجوع والتالي ولاحقاً كما في أي معالج، ويفتح الزر إنهاء في الصفحة الأخيرة مجموعة خادم التبادل في المدير. يمكن تخطي أي صفحة دون تغييرات: عندئذٍ يبقى الخادم متوقفاً أو على حاله.</p></details>
+<details id="operator-statement"><summary>بيان المشغّل</summary><p>البيان الكامل لمن يرى ماذا على الخادم. لا يمكن تخطيه. يربط الخادم أجهزة حساب واحد ويُبلغ أيّها متصل.</p></details>
+<details id="ports"><summary>المنافذ وجدار الحماية</summary><p>منفذ لقاء للأجهزة ونطاق منافذ للعملاء الخارجيين. يجب أن تعرف الأجهزة منفذ الخادم، لذلك لا تسري التغييرات إلا على الرموز الجديدة. قاعدة جدار الحماية تخص البرنامج نفسه، فلا يحتاج تغيير المنفذ إلى قاعدة جديدة. توجد هذه القيم في مجموعة خادم التبادل.</p></details>
+<details id="service"><summary>خدمة Windows</summary><p>تظهر فقط في إصدار الخادم الذي لا توجد فيه الخدمة بعد. تُبقي الخدمة الخادم متاحاً حين لا يكون أحد مسجّلاً الدخول. خانة الاختيار تحفظ موافقتك فقط: تُسجَّل الخدمة بعد إنشاء الحساب الأول، مع طلب رفع صلاحيات واحد، ولا يُثبَّت شيء قبل ذلك. الأمر تسجيل كخدمة.. في مجموعة التبادل يفعل الشيء نفسه لاحقاً.</p></details>
+<details id="client-address"><summary>العنوان الذي يستخدمه العملاء</summary><p>العنوان الذي يستخدمه العملاء (المضيف:المنفذ): هو ما تستخدمه الأجهزة الأخرى للوصول إلى هذا الكمبيوتر. الزر اقتراح عنوان محلي يملأ الحقل فقط عند الضغط عليه. العنوان الفارغ يُبقي التشغيل الأول المحلي البحت صالحاً، لكنه يُخفي البث والاتصالات بالمجلدات عن الأجهزة الأخرى.</p></details>
+<details id="first-account"><summary>الحساب الأول</summary><p>الحساب الذي يسجّل به الجهاز الأول الدخول. اختر إنشاء كلمة مرور أو أدخل كلمة مرورك؛ والخيار ربط هذا الكمبيوتر بالحساب يضمّ هذا الكمبيوتر إليه. الزر التالي ينشئ الحساب ويشغّل الخادم ويفحص الشهادة. تُعرض كلمة المرور مرة واحدة في النافذة المعتادة ولا تُخزَّن على هذا الكمبيوتر. وإذا حدث إخفاق بعد إنشاء الحساب فلا يُحذف الحساب.</p></details>
+<details id="server-ready"><summary>الخادم جاهز</summary><p>تذكر الصفحة الأخيرة أين سُجّل العنوان واسم المستخدم وبصمة الشهادة، وتعرض الزرين نسخ البصمة وسلسلة الاتصال ورمز QR.. ويثق الجهاز بالخادم بعد أن يتحقق من البصمة عند أول اتصال. الرابطان ربط هاتف (مساعدة) ونشر المجلد الأول (مساعدة) يفتحان صفحتي المساعدة المناسبتين.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

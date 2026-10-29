@@ -32,6 +32,9 @@ Partial Public NotInheritable Class Localization
         AddThemeStrings()       ' spec 060: the system / light / dark theme setting
         AddPanelStrings()       ' 005: the mainline F3 panel - toolbar, help, details list, report window
         AddSortableContentStrings() ' 003/008: sortable documents, other files and doc previews
+        AddDocumentReaderStrings()
+        AddHtmlViewerStrings()      ' 275: the HTML viewer, its settings and its refusals
+        AddHtmlSettingsStrings()    ' 275: the Documents page HTML groups and rows
         AddActivationStrings()  ' 105/108: the Share Manager hand-off - unreachable, too old to ask first
         AddSettingsImportStrings()  ' 103/105: the import preview names merge as well as replace; unsaved import
         AddStreamStrings()          ' 022: the stream catalog producer and validator

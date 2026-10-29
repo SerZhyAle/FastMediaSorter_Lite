@@ -1,4 +1,4 @@
-﻿{
+{
   "schemaVersion": 1,
   "product": "FastMediaSorter",
   "helpRoot": "docs/help",
@@ -85,6 +85,11 @@
           "id": "settings.about",
           "name": "About",
           "anchor": "about"
+        },
+        {
+          "id": "settings.documents",
+          "name": "Documents",
+          "anchor": "documents"
         }
       ]
     },

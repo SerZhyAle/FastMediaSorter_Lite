@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>Primer inicio del servidor - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">Primer inicio del servidor</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Una gu&#237;a de primer inicio para el grupo del servidor de intercambio de Share Manager. Explica en qu&#233; se convierte el equipo, muestra la declaraci&#243;n del operador, fija los puertos, la direcci&#243;n para los clientes y la primera cuenta, y termina con el estado del servidor. Se abre solo cuando el servidor de intercambio est&#225; presente y activado.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="Primer inicio del servidor">
+    <img class="shot dark" src="server-welcome-dark.png" alt="Primer inicio del servidor">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lee la declaraci&#243;n del operador en la primera p&#225;gina.</li><li>Revisa los puertos y la regla del firewall.</li><li>En una edici&#243;n de servidor sin servicio, decide sobre el servicio de Windows.</li><li>Rellena la direcci&#243;n para los clientes.</li><li>Crea la primera cuenta.</li><li>Comprueba la huella del certificado y pulsa &#171;Finalizar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>P&#225;ginas y botones</summary><p>El pie muestra &#171;Paso N de M&#187;; &#171;Atr&#225;s&#187;, &#171;Siguiente&#187; y &#171;M&#225;s tarde&#187; funcionan como en cualquier asistente, y &#171;Finalizar&#187; en la &#250;ltima p&#225;gina abre el grupo del servidor de intercambio del gestor. Se puede omitir una p&#225;gina sin cambios: el servidor queda entonces apagado o como estaba.</p></details>
+<details id="operator-statement"><summary>Declaraci&#243;n del operador</summary><p>La declaraci&#243;n completa de qui&#233;n ve qu&#233; en el servidor. No se puede omitir. El servidor conecta los dispositivos de una cuenta e informa de cu&#225;les est&#225;n en l&#237;nea.</p></details>
+<details id="ports"><summary>Puertos y firewall</summary><p>Un puerto de encuentro para los dispositivos y un intervalo de puertos para clientes de terceros. Los dispositivos deben conocer el puerto del servidor, as&#237; que los cambios solo se aplican a los c&#243;digos nuevos. La regla del firewall pertenece al programa, por lo que un cambio de puerto no necesita una regla nueva. Estos valores est&#225;n en el grupo del servidor de intercambio.</p></details>
+<details id="service"><summary>Servicio de Windows</summary><p>Solo se muestra en una edici&#243;n de servidor en la que el servicio a&#250;n no existe. Un servicio mantiene el servidor disponible cuando nadie ha iniciado sesi&#243;n. La casilla solo recuerda tu consentimiento: el servicio se registra despu&#233;s de crear la primera cuenta, con una sola solicitud de elevaci&#243;n, y antes no se instala nada. &#171;Registrar como servicio..&#187; en el grupo de intercambio hace lo mismo m&#225;s adelante.</p></details>
+<details id="client-address"><summary>Direcci&#243;n para los clientes</summary><p>&#171;Direcci&#243;n para los clientes (host:puerto):&#187; es lo que usan los dem&#225;s dispositivos para llegar a este equipo. &#171;Sugerir una direcci&#243;n local&#187; rellena el campo solo cuando lo pulsas. Una direcci&#243;n vac&#237;a mantiene v&#225;lido un primer inicio puramente local, pero oculta las emisiones y las conexiones de carpetas a los dem&#225;s dispositivos.</p></details>
+<details id="first-account"><summary>Primera cuenta</summary><p>La cuenta con la que inicia sesi&#243;n el primer dispositivo. Elige &#171;Generar una contrase&#241;a&#187; o &#171;Introducir tu contrase&#241;a&#187;; &#171;Conectar este PC a la cuenta&#187; une este equipo a la cuenta. &#171;Siguiente&#187; crea la cuenta, inicia el servidor y comprueba el certificado. La contrase&#241;a se muestra una sola vez, en el cuadro de di&#225;logo existente, y no se guarda en este PC. Un fallo posterior a la creaci&#243;n de la cuenta no la elimina.</p></details>
+<details id="server-ready"><summary>El servidor est&#225; listo</summary><p>La &#250;ltima p&#225;gina indica d&#243;nde quedan registrados la direcci&#243;n, el usuario y la huella del certificado y ofrece &#171;Copiar huella&#187; y &#171;Cadena de conexi&#243;n y c&#243;digo QR..&#187;. Un dispositivo conf&#237;a en el servidor despu&#233;s de comprobar la huella en su primera conexi&#243;n. Los enlaces &#171;Conectar un tel&#233;fono (ayuda)&#187; y &#171;Publicar la primera carpeta (ayuda)&#187; llevan a las p&#225;ginas de ayuda correspondientes.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

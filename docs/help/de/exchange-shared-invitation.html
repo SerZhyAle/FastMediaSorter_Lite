@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>Gemeinsames Einladungspasswort - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">Gemeinsames Einladungspasswort</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>In diesem Fenster k&#246;nnen sich Benutzer mit einem gemeinsamen Passwort statt mit einem einmaligen Einladungscode auf dem Server registrieren. Sie &#246;ffnen es, indem Sie &#171;Gemeinsames Einladungspasswort&#187; in der Gruppe &#171;Einladungen&#187; der Einstellungen des Austauschservers aktivieren, oder mit &#171;Gemeinsames Passwort festlegen..&#187; daneben.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Gemeinsames Einladungspasswort">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Gemeinsames Einladungspasswort">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>W&#228;hlen Sie den Kontotyp.</li><li>W&#228;hlen Sie, ob das Programm das Passwort erzeugt oder Sie es selbst eingeben.</li><li>Klicken Sie auf &#171;Festlegen&#187;.</li><li>Wurde das Passwort erzeugt, kopieren Sie es aus dem Fenster, das es einmalig anzeigt.</li><li>Um es nicht mehr zu akzeptieren, deaktivieren Sie &#171;Gemeinsames Einladungspasswort&#187; und best&#228;tigen Sie.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>Kontotyp</summary><p>&#171;Zu erstellender Kontotyp:&#187; bietet &#171;Eigenes Ger&#228;t oder Familie&#187; und &#171;Gast&#187; an. &#171;Gast&#187; ist deaktiviert, und die Zeile darunter nennt den Grund: Der Dateiserver des Programms kann ein Login nicht auf einen Ordner beschr&#228;nken. Ist bereits ein gemeinsames Passwort aktiv, ist sein aktueller Typ vorgew&#228;hlt. Ist dieser vorhandene Typ Gast, ist &#171;Festlegen&#187; deaktiviert; das gemeinsame Passwort l&#228;sst sich trotzdem ausschalten.</p></details>
+<details id="password"><summary>Passwort</summary><p>&#171;Passwort:&#187; bietet &#171;Zuf&#228;lliges sicheres Passwort generieren&#187; (standardm&#228;&#223;ig gew&#228;hlt) und &#171;Passwort manuell eingeben&#187; an. Nach &#171;Festlegen&#187; wird ein eingegebenes Passwort in einem Passwortfenster abgefragt, das die Richtlinie pr&#252;ft: mindestens 10 Zeichen mit einem lateinischen Gro&#223;buchstaben, einem lateinischen Kleinbuchstaben und einer Ziffer. Wenn Sie dieses Fenster abbrechen, kehren Sie hierher zur&#252;ck.</p></details>
+<details id="set"><summary>Festlegen</summary><p>&#171;Festlegen&#187; sendet das Passwort und den Kontotyp an den Server und schaltet das gemeinsame Passwort ein; die Seite zeigt &#171;Gemeinsames Einladungspasswort gespeichert und aktiviert.&#187; und die Statuszeile unter dem Kontrollk&#228;stchen lautet &#171;Gemeinsames Passwort aktiviert (Kontotyp: ..).&#187; Ein erzeugtes Passwort wird einmalig in einem eigenen Fenster angezeigt: Kopieren Sie es dort, es l&#228;sst sich nicht erneut lesen. Jeder, der das Passwort kennt, kann ein Konto des gew&#228;hlten Typs registrieren; geben Sie es daher nur an Personen weiter, die Sie zulassen m&#246;chten.</p></details>
+<details id="switch-off"><summary>Ausschalten</summary><p>Wenn Sie das Kontrollk&#228;stchen deaktivieren, lautet die Frage &#171;Gemeinsames Einladungspasswort deaktivieren? Neue Registrierungen damit sind dann nicht mehr m&#246;glich.&#187; Die Standardantwort ist Nein. Nach Ja zeigt die Seite &#171;Gemeinsames Einladungspasswort deaktiviert.&#187; und die Statuszeile lautet &#171;Gemeinsames Passwort deaktiviert.&#187;</p></details>
+<details id="cancel"><summary>Abbrechen</summary><p>&#171;Abbrechen&#187; oder Esc schlie&#223;t das Fenster und &#228;ndert nichts. Haben Sie es durch Aktivieren des Kontrollk&#228;stchens ge&#246;ffnet, kehrt das Kontrollk&#228;stchen in seinen vorherigen Zustand zur&#252;ck.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

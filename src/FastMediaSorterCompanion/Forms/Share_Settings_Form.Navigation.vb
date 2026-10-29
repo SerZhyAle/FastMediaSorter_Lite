@@ -13,9 +13,9 @@ Imports System.Windows.Forms
 ''' (ticket 243, slice T-7b): a page that has items has TWO targets (rule 4) - the chevron zone
 ''' at the row's trailing edge only expands or folds the item list, the rest of the row only
 ''' selects the page - and both are reachable by assistive technology (the row's default
-''' action selects, its chevron child is a second action). Clicking an item expands that
-''' group's card in the right pane, scrolls it into view and focuses its first editor - the
-''' rest of the page stays put (238 section 2.1). Which pages are expanded is the stored
+''' action selects, its chevron child is a second action). Clicking an item shows only that
+''' group's card in the right pane and focuses its first editor. Choosing a parent resumes
+''' its selected item, or its first item on first use. Which pages are expanded is the stored
 ''' context's <see cref="SettingsPageContext.NavExpanded"/>.
 ''' The rail is a tree for assistive technology (rule 7): role Outline, rows OutlineItem with
 ''' Selected / Expanded / Collapsed, ONE tab stop that roves with the focus, and Up / Down /
@@ -49,9 +49,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' walk and the language refresh address it by id) but is never a visible row, a tab stop or the selection.</summary>
     Private _flatRail As Boolean
     Private _selectedPage As String = String.Empty
-    ''' <summary>The chosen sub-menu per page: the group whose card the last reveal brought
-    ''' into view, or empty for the whole page. It owns the rail's highlight and nothing
-    ''' else - the right pane always shows every card. Runtime view state, not persisted.</summary>
+    ''' <summary>The chosen sub-menu per page. Only its card is visible in the right pane.
+    ''' On first use the saved viewport anchor restores the item, falling back to the first.</summary>
     Private ReadOnly _selectedItem As New Dictionary(Of String, String)(StringComparer.Ordinal)
 
     Private Sub BuildSettingsPages()
@@ -407,9 +406,17 @@ Partial Public NotInheritable Class Share_Settings_Form
         SelectSettingsPage(id)
     End Sub
 
-    Friend Sub SelectSettingsPage(id As String)
+    Friend Sub SelectSettingsPage(id As String, Optional groupId As String = Nothing)
         If Not _pages.ContainsKey(id) Then Return
-        If id = _selectedPage Then
+        Dim groups = _pageGroups(id)
+        Dim requestedGroup = If(groupId, SelectedItemId(id))
+        Dim selectedGroup = groups.FirstOrDefault(Function(group) group.Id = requestedGroup)
+        If selectedGroup Is Nothing Then
+            Dim anchor = managerSettingsContext.Page(id).AnchorId
+            selectedGroup = groups.FirstOrDefault(Function(group) anchor = id & "/" & group.Card.Name)
+        End If
+        If selectedGroup Is Nothing Then selectedGroup = groups.First()
+        If id = _selectedPage AndAlso selectedGroup.Id = SelectedItemId(id) Then
             managerSettingsContext.LastPageId = id
             Return
         End If
@@ -423,11 +430,20 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pageHost.SuspendLayout()
         Try
             If _selectedPage.Length > 0 Then
-                If _pages(_selectedPage).ContainsFocus Then _navButtons(id).Focus()
+                If _pages(_selectedPage).ContainsFocus Then
+                    Dim target As Button = If(NavExpanded(id),
+                        DirectCast(_navItems(id).First(Function(item) item.Group Is selectedGroup), Button), _navButtons(id))
+                    target.Focus()
+                End If
                 _pages(_selectedPage).Visible = False
             End If
             _selectedPage = id
+            _selectedItem(id) = selectedGroup.Id
             managerSettingsContext.LastPageId = id
+            For Each group In groups
+                group.Card.Visible = group Is selectedGroup
+            Next
+            SetGroupExpanded(id, selectedGroup, True)
             _pages(id).Visible = True
             _pages(id).BringToFront()
             If settingsWasPresented Then LoadSelectedSettingsPage()
@@ -441,7 +457,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' A page shown for the first time has had no layout at its width: its option rows take their heights now. Before the
         ' window is presented OnLoad lays out every page's rows once the window has its scale.
         If settingsWasPresented Then OptionRows.ArrangeAll(viewport)
-        RestoreSettingsViewport()
+        If groupId Is Nothing Then
+            RestoreSettingsViewport()
+        Else
+            viewport.AutoScrollPosition = Point.Empty
+        End If
         ApplySettingsNavigationTheme(ThemeService.Palette)
     End Sub
 
@@ -452,14 +472,9 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     ''' <summary>The SELECT target of a page row (SETTINGS-NAVIGATION 2.0 section 2 rule 4, ticket 243 T-7b). Choosing
     ''' the row selects the page and never expands or folds its items - that is the chevron's own target
-    ''' (<see cref="ToggleSettingsNavExpanded"/>), so the two never share a gesture. The page row always means the
-    ''' whole page - every card of it in its remembered fold state (238 section 2.1) - so it also gives the
-    ''' highlight back from a chosen sub-menu item.</summary>
+    ''' (<see cref="ToggleSettingsNavExpanded"/>), so the two never share a gesture. The page row resumes its
+    ''' selected item, or selects its first item when the page has not been visited.</summary>
     Private Sub OnSettingsPageClicked(id As String)
-        If SelectedItemId(id).Length > 0 Then
-            _selectedItem(id) = String.Empty
-            ApplySettingsNavigationTheme(ThemeService.Palette)
-        End If
         SelectSettingsPage(id)
     End Sub
 
@@ -498,6 +513,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If Not expanded AndAlso items.Any(Function(item) item.TabStop) Then SetNavTabStop(button)
         ' The selected row may be a child that is now hidden (the parent stands in), or a child that just showed.
         If Not _navigation.ContainsFocus Then ResetNavTabStop()
+        If id = _selectedPage Then ApplySettingsNavigationTheme(ThemeService.Palette)
     End Sub
 
     Friend Sub ApplySettingsNavExpansion()
@@ -527,17 +543,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
     End Function
 
-    ''' <summary>The one reveal path (210 sections 4.4 and 5.4, recarded by 238 section 2.1):
-    ''' a subordinate item - or a search hit - expands that group's card, scrolls its header
-    ''' to the top of the viewport and focuses the block's first editor. The rest of the page
-    ''' keeps its place: sibling cards stay visible and independently collapsible.</summary>
+    ''' <summary>The one reveal path for a subordinate item or a search hit: show only its
+    ''' group's card, expand it, scroll to its header and focus the requested editor.</summary>
     Private Sub RevealSettingsBlock(pageId As String, group As SettingsNavGroup, editor As Control)
-        SelectSettingsPage(pageId)
+        SelectSettingsPage(pageId, group.Id)
         ' Reveal the chosen child's parent (rule 4): a search hit or a restored context can name an item whose page
         ' row is folded, and a selected row nobody can see is no selection cue at all.
         If Not NavExpanded(pageId) Then SetSettingsNavExpanded(pageId, True)
         Dim viewport = _pages(pageId)
-        _selectedItem(pageId) = group.Id
         SetGroupExpanded(pageId, group, True)
         viewport.PerformLayout()
         If editor Is Nothing Then editor = FirstSettingsBlockEditor(group)
@@ -574,9 +587,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             CInt(palette.SurfaceWindow.B * 0.78 + palette.Accent.B * 0.22))
         For Each pair In _navButtons
             Dim button = pair.Value
-            ' The page row carries the selection only while no sub-menu of it is the view;
-            ' a chosen item owns the tint and the stripe instead (owner revision 2026-10-13).
-            Dim selected = pair.Key = _selectedPage AndAlso SelectedItemId(pair.Key).Length = 0
+            ' A folded parent stands in for its selected item while that rail row is hidden.
+            Dim selected = pair.Key = _selectedPage AndAlso
+                (SelectedItemId(pair.Key).Length = 0 OrElse Not NavExpanded(pair.Key))
             DirectCast(button, SettingsNavRowButton).SetSelected(selected)
             StyleSettingsNavRow(button, selected, False, fill, palette)
             Dim oldImage = button.Image

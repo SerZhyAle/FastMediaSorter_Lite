@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>Teilen - Zugangscode - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">Teilen - Zugangscode</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>Erstellt den Zugangscode f&#252;r ein Telefon: einen QR-Code und eine .fmscfg-Datei, die die Adresse, den Benutzernamen und die gew&#228;hlten Ordner enthalten. Er &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Teilen&#187; des Hauptfensters, solange die Freigabe l&#228;uft, und pr&#252;ft vor der Ausgabe des Codes, dass das Telefon den PC wirklich erreichen kann.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="Teilen - Zugangscode">
+    <img class="shot dark" src="package-wizard-dark.png" alt="Teilen - Zugangscode">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Setzen Sie H&#228;kchen bei den Ordnern, die in den Code sollen.</li><li>&#196;ndern Sie jede Zelle der Tabelle, die f&#252;r diesen Code anders sein soll.</li><li>Setzen Sie bei Bedarf ein H&#228;kchen bei &#171;Die Internetadresse nicht in diesen Code aufnehmen&#187; oder &#171;Kennwort nicht in Datei/QR aufnehmen&#187;.</li><li>Warten Sie die Zugriffspr&#252;fung ab.</li><li>Zeigen Sie den QR-Code an, speichern Sie die .fmscfg-Datei, senden Sie sie per E-Mail oder kopieren Sie Benutzername und Kennwort.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>Ordner und Einstellungen f&#252;r diesen Zugangscode</summary><p>Eine Zeile pro freigegebenem Ordner mit den Spalten Ein, Ordner, Name am Telefon, Typ, Medientypen, Unterordner scannen, Unterordner als Elemente, Versteckte, Schreibgesch&#252;tzt, RO-Hinweis, Ziel, Kommentar und Diaschau, Sek.. Klicken Sie auf eine Zelle, um sie zu &#228;ndern. Die Werte stammen aus den Einstellungen des jeweiligen Ordners, und &#196;nderungen gelten nur f&#252;r diesen Code. &#171;Schreibgesch&#252;tzt&#187; ist eine echte Sperre auf dem Server; &#171;RO-Hinweis&#187; blendet in der App nur die Bearbeiten-Schaltfl&#228;chen aus. Ein Zielordner ist immer beschreibbar, daher gilt &#171;Schreibgesch&#252;tzt&#187; f&#252;r ihn nicht.</p></details>
+<details id="common-settings"><summary>Allgemeine &#220;bertragungseinstellungen</summary><p>&#171;Die Internetadresse nicht in diesen Code aufnehmen&#187; sorgt daf&#252;r, dass sich das Telefon nur &#252;ber das lokale Netzwerk verbindet; der Server wird dadurch nicht abgeschaltet, und der Internetzugriff f&#252;r die gesamte Freigabe wird in den Einstellungen des Managers geschlossen. &#171;Kennwort nicht in Datei/QR aufnehmen&#187; entfernt das Kennwort aus dem Code; geben Sie es getrennt weiter. Ob das Telefon einen Code ohne Kennwort annimmt, h&#228;ngt von der App-Version ab.</p></details>
+<details id="access-check"><summary>Zugriffspr&#252;fung</summary><p>W&#228;hrend der Zustand abgerufen wird, steht dies im Fenster. L&#228;uft der Server nicht, ist kein Ordner markiert oder gibt es keine brauchbare Adresse, nennt ein Hinweis, was fehlt. Wird die Pr&#252;fung nicht abgeschlossen, werden der Code und die Datei nicht ausgegeben: Dr&#252;cken Sie &#171;Zugriff erneut pr&#252;fen&#187;.</p></details>
+<details id="qr-code"><summary>QR-Code anzeigen</summary><p>Der QR-Code und die .fmscfg-Datei &#246;ffnen den Zugriff auf die Ordner und enthalten das Kennwort und gegebenenfalls die PIN - bewahren Sie sie auf und geben Sie sie weiter wie einen Schl&#252;ssel. Sind die Einstellungen f&#252;r einen QR-Code zu umfangreich, speichern Sie die Datei und senden Sie sie stattdessen.</p></details>
+<details id="file-and-mail"><summary>Datei, E-Mail und Benutzername</summary><p>&#171;Datei .fmscfg speichern..&#187; schreibt die Datei; auf einem Dateisystem, das den Zugriff nicht einschr&#228;nken kann, oder in einem Ordner, den andere &#228;ndern k&#246;nnen, verweigert das Fenster dies, weil die Datei einen Zugangsschl&#252;ssel enth&#228;lt. &#171;Per E-Mail senden..&#187; h&#228;ngt die Datei mit dem Hinweis an, sie in der Android-App zu importieren und danach zu l&#246;schen. &#171;Benutzername/Kennwort kopieren&#187; legt beides in die Zwischenablage.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Enable Sharing - Fast Media Sorter</title>
+  <title>Ordnerfreigabe aktivieren - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Enable Sharing</h1>
+  <h1 id="title">Ordnerfreigabe aktivieren</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Enable Sharing.</p>
+    <p>Bittet um die Erlaubnis, die Serverseite der Freigabe zu installieren: einen kleinen SFTP-Server im Hintergrund und eine Windows-Firewall-Ausnahme. Es &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Serverfunktionen aktivieren..&#187; des Hauptfensters und aus den Assistenten und braucht einmalig Administratorrechte.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-enable-light.png" alt="Enable Sharing">
-    <img class="shot dark" src="share-enable-dark.png" alt="Enable Sharing">
+    <img class="shot light" src="share-enable-light.png" alt="Ordnerfreigabe aktivieren">
+    <img class="shot dark" src="share-enable-dark.png" alt="Ordnerfreigabe aktivieren">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lesen Sie die Erkl&#228;rung.</li><li>Dr&#252;cken Sie &#171;Serverfunktionen installieren..&#187;.</li><li>Best&#228;tigen Sie die Windows-Administratorabfrage.</li><li>Warten Sie auf die Ergebniszeile; bei Erfolg meldet das Fenster, dass die Ordnerfreigabe aktiviert ist.</li><li>Dr&#252;cken Sie &#171;Abbrechen&#187;, um ohne &#196;nderungen zu verlassen.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-it-does"><summary>Was es tut</summary><p>Zum Freigeben von Ordnern f&#252;r ein Android-Telefon braucht es einen kleinen SFTP-Server im Hintergrund und eine Berechtigung in der Windows-Firewall. Solange die Freigabe l&#228;uft, k&#246;nnen die gew&#228;hlten Ordner &#252;ber das Netzwerk gelesen werden, und die zum Schreiben ge&#246;ffneten auch beschrieben. Ist die Option nur lokales Netzwerk nicht gesetzt, bittet das Programm au&#223;erdem den Router, einen Port zu &#246;ffnen (UPnP/NAT-PMP), und pr&#252;ft die Adresse &#252;ber einen externen Dienst.</p></details>
+<details id="install-button"><summary>Serverfunktionen installieren..</summary><p>Startet die Einrichtung und die Windows-Administratorabfrage. Die Statuszeile zeigt &#171;Einrichtung l&#228;uft.. best&#228;tigen Sie die Administratorabfrage.&#187; und danach das Ergebnis. Die Schaltfl&#228;che ist nur verf&#252;gbar, wenn die Serverkomponente neben der App liegt; sonst bittet das Fenster, die Anwendung neu zu installieren.</p></details>
+<details id="outcomes"><summary>Ergebnisse</summary><p>&#171;Fertig. Die Ordnerfreigabe ist aktiviert.&#187;; &#171;Freigabe nicht aktiviert - Administratorrechte wurden nicht erteilt.&#187;, wenn die Abfrage abgelehnt wird (nichts &#228;ndert sich und Sie k&#246;nnen es erneut versuchen); oder ein Firewall-Fehler, bei dem das Fenster bittet, es erneut zu versuchen und das Protokoll &#252;ber das Men&#252; des Tray-Symbols zu senden.</p></details>
+<details id="admin-rights"><summary>Administratorrechte und wie man sie zur&#252;cknimmt</summary><p>Der Link erkl&#228;rt, wof&#252;r die Rechte verwendet werden. Zum R&#252;ckg&#228;ngigmachen nutzen Sie &#171;Serverfunktionen ausschalten..&#187; in den Einstellungen des Managers: Die Freigabe endet, verbundene Telefone werden getrennt und die Firewall-Berechtigung wird entfernt. Die Ordnerliste und das Kennwort bleiben erhalten, und alles l&#228;sst sich wieder einschalten.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

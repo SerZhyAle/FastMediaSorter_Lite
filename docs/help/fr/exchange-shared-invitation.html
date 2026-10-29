@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>Mot de passe d&#39;invitation partag&#233; - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">Mot de passe d&#39;invitation partag&#233;</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>Cette fen&#234;tre permet aux utilisateurs de s&#39;inscrire sur le serveur avec un mot de passe partag&#233; au lieu d&#39;un code d&#39;invitation &#224; usage unique. Elle s&#39;ouvre quand vous cochez &#171;Mot de passe d&#39;invitation partag&#233;&#187; dans le groupe &#171;Invitations&#187; des param&#232;tres du serveur d&#39;&#233;change, ou avec &#171;D&#233;finir le mot de passe partag&#233;..&#187; &#224; c&#244;t&#233;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Mot de passe d&#39;invitation partag&#233;">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Mot de passe d&#39;invitation partag&#233;">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Choisissez le type de compte.</li><li>Choisissez si le programme g&#233;n&#232;re le mot de passe ou si vous le saisissez vous-m&#234;me.</li><li>Cliquez sur &#171;D&#233;finir&#187;.</li><li>Si le mot de passe a &#233;t&#233; g&#233;n&#233;r&#233;, copiez-le depuis la fen&#234;tre qui l&#39;affiche une seule fois.</li><li>Pour cesser de l&#39;accepter, d&#233;cochez &#171;Mot de passe d&#39;invitation partag&#233;&#187; et confirmez.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>Type de compte</summary><p>&#171;Type de compte &#224; cr&#233;er :&#187; propose &#171;Appareil personnel ou famille&#187; et &#171;Invit&#233;&#187;. &#171;Invit&#233;&#187; est d&#233;sactiv&#233; et la ligne en dessous en donne la raison : le serveur de fichiers du programme ne peut pas limiter un identifiant &#224; un seul dossier. Quand un mot de passe partag&#233; est d&#233;j&#224; activ&#233;, son type actuel est pr&#233;s&#233;lectionn&#233;. Si ce type existant est Invit&#233;, &#171;D&#233;finir&#187; est d&#233;sactiv&#233; ; le mot de passe partag&#233; peut tout de m&#234;me &#234;tre d&#233;sactiv&#233;.</p></details>
+<details id="password"><summary>Mot de passe</summary><p>&#171;Mot de passe :&#187; propose &#171;G&#233;n&#233;rer un mot de passe s&#233;curis&#233; al&#233;atoire&#187; (s&#233;lectionn&#233; par d&#233;faut) et &#171;Saisir le mot de passe manuellement&#187;. Apr&#232;s &#171;D&#233;finir&#187;, un mot de passe saisi est demand&#233; dans une fen&#234;tre de mot de passe qui v&#233;rifie la politique : au moins 10 caract&#232;res avec une lettre latine majuscule, une lettre latine minuscule et un chiffre. Annuler cette fen&#234;tre vous ram&#232;ne ici.</p></details>
+<details id="set"><summary>D&#233;finir</summary><p>&#171;D&#233;finir&#187; envoie le mot de passe et le type de compte au serveur et active le mot de passe partag&#233; ; la page affiche &#171;Mot de passe d&#39;invitation partag&#233; enregistr&#233; et activ&#233;.&#187; et la ligne d&#39;&#233;tat sous la case indique &#171;Mot de passe partag&#233; activ&#233; (type de compte : ..).&#187; Un mot de passe g&#233;n&#233;r&#233; s&#39;affiche une seule fois dans une fen&#234;tre &#224; part : copiez-le l&#224;, il ne peut plus &#234;tre relu. Toute personne qui conna&#238;t le mot de passe peut enregistrer un compte du type choisi ; ne le transmettez donc qu&#39;aux personnes que vous voulez admettre.</p></details>
+<details id="switch-off"><summary>D&#233;sactiver</summary><p>Quand vous d&#233;cochez la case, la question pos&#233;e est &#171;D&#233;sactiver le mot de passe d&#39;invitation partag&#233; ? Les nouvelles inscriptions avec ce mot de passe ne seront plus possibles.&#187; La r&#233;ponse par d&#233;faut est Non. Apr&#232;s Oui, la page affiche &#171;Mot de passe d&#39;invitation partag&#233; d&#233;sactiv&#233;.&#187; et la ligne d&#39;&#233;tat indique &#171;Mot de passe partag&#233; d&#233;sactiv&#233;.&#187;</p></details>
+<details id="cancel"><summary>Annuler</summary><p>&#171;Annuler&#187; ou Esc ferme la fen&#234;tre sans rien modifier. Si vous l&#39;avez ouverte en cochant la case, la case revient &#224; son &#233;tat pr&#233;c&#233;dent.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

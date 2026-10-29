@@ -9,7 +9,14 @@
     message line, the totals, the elapsed time and the log path. Grep the log for more; do not
     re-run to see more.
 
-    It is a development helper, not a gate: Run-AllTests.ps1 stays the step before "done".
+    The engineering fast tier checks placement and the document registry without compiling. Other areas without a measured
+    fast check report COULD NOT VERIFY. Full builds and suites are release or explicit-owner runs.
+
+.PARAMETER Fast
+    Run only the measured check for -Area, without a build or test suite.
+
+.PARAMETER Area
+    The affected area. Currently only engineering has a measured fast check.
 
 .PARAMETER Build
     modern    src\Modern\FastMediaSorter.Modern.vbproj  (the net10 x64 mainline, Debug)
@@ -46,7 +53,9 @@ param(
     [string]$Filter = '',
     [ValidateSet('net10', 'net48', 'both')][string]$Tfm = 'net10',
     [switch]$NoRestore,
-    [int]$MaxLines = 40
+    [int]$MaxLines = 40,
+    [switch]$Fast,
+    [string]$Area = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -63,6 +72,20 @@ trap {
 function Stop-Run([int]$code, [string]$detail) {
     Exit-Verdict 'Invoke-Tests' $code $detail
 }
+
+if ($Fast) {
+    if ($Build -or $Suite -or $Filter -or $NoRestore -or $Tfm -ne 'net10' -or $Area -ne 'engineering') {
+        Stop-Run 2 'fast checks require -Area engineering alone; other areas have no measured fast check'
+    }
+    Write-Subject 'Invoke-Tests' "fast engineering placement and documentation; $(Get-TreeLabel $root)"
+    $checks = @(
+        Invoke-ChildCheck (Join-Path $PSScriptRoot 'Test-CheckPlacement.ps1')
+        Invoke-ChildCheck (Join-Path $PSScriptRoot 'Test-DocRegistry.ps1')
+    )
+    $code = if (@($checks | Where-Object { $_.Code -eq 1 }).Count) { 1 } elseif (@($checks | Where-Object { $_.Code -ne 0 }).Count) { 2 } else { 0 }
+    Stop-Run $code (($checks | ForEach-Object { $_.Verdict }) -join '; ')
+}
+if ($Area) { Stop-Run 2 '-Area requires -Fast' }
 
 if (-not $Build -and -not $Suite) {
     Stop-Run 2 'pass -Build modern|companion or -Suite lite|companion'

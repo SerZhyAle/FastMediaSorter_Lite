@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>Anleitung zur Portweiterleitung - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">Anleitung zur Portweiterleitung</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>Hilft dabei, die Freigabe von au&#223;erhalb Ihres Heimnetzes erreichbar zu machen. Es zeigt die externe Adresse und ob der Port automatisch ge&#246;ffnet wurde oder im Router weitergeleitet werden muss, und bietet einen Test sowie eine ausf&#252;hrliche Anleitung an. Es &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Internetzugriff einrichten&#187; des Hauptfensters.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="Anleitung zur Portweiterleitung">
+    <img class="shot dark" src="internet-access-dark.png" alt="Anleitung zur Portweiterleitung">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Starten Sie zuerst die Freigabe; sonst fordert das Fenster Sie dazu auf.</li><li>Lesen Sie die Statuszeilen: erreichbar, hinter CGNAT oder Portweiterleitung n&#246;tig.</li><li>Ist eine Weiterleitung n&#246;tig, &#246;ffnen Sie die ausf&#252;hrliche Anleitung und legen die Regel im Router an.</li><li>Dr&#252;cken Sie &#171;Test&#187;, um die Adresse von diesem PC aus zu pr&#252;fen.</li><li>Best&#228;tigen Sie es vom Telefon aus &#252;ber mobile Daten bei ausgeschaltetem WLAN.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>Status</summary><p>Das Fenster ermittelt die externe Adresse und meldet eines von: &#171;Aus dem Internet erreichbar&#187;, &#171;Externe Adresse: .. (Portweiterleitung n&#246;tig)&#187;, &#171;Externe Adresse unbekannt - im Router nachsehen.&#187; oder &#171;Hinter CGNAT - von au&#223;en nicht erreichbar.&#187;. Wurde der Port automatisch ge&#246;ffnet (UPnP), ist keine Router-Einrichtung n&#246;tig, doch ob es funktioniert, best&#228;tigt nur das Telefon &#252;ber mobile Daten. &#171;Aktualisieren&#187; wiederholt die Erkennung.</p></details>
+<details id="guide"><summary>Router und Anleitungen</summary><p>Die Router-Zeile zeigt dessen Adresse oder &#171;Router wird erkannt..&#187;, solange gesucht wird. Der Link &#171;Ausf&#252;hrliche Anleitung &#246;ffnen (HTML, mit Ihren Werten und Ihrem Routermodell)..&#187; &#246;ffnet eine lokale HTML-Anleitung; l&#228;sst sie sich nicht &#246;ffnen, meldet das Fenster dies. Der Link &#171;Zugriff von zu Hause und aus anderen Netzen (Portal)&#187; &#246;ffnet die passende Seite des Hilfeportals im Browser.</p></details>
+<details id="test"><summary>Test</summary><p>Pr&#252;ft die externe Adresse von diesem PC aus und meldet &#171;SFTP-Server erreichbar&#187;, &#171;Port offen, aber keine SFTP-Antwort&#187;, eine geschlossene Verbindung (m&#246;glicherweise das Verbindungslimit) oder keine Antwort. Das Ergebnis ist nicht abschlie&#223;end: Viele Router lehnen von innen eine Anfrage an ihre eigene externe Adresse ab, daher ist das Telefon mit mobilen Daten die verl&#228;ssliche Pr&#252;fung.</p></details>
+<details id="safety"><summary>Sicherheit</summary><p>Wer SFTP ins Internet &#246;ffnet, gibt jedem, der Adresse, Benutzernamen und Kennwort erf&#228;hrt, alle freigegebenen Ordner. Ver&#246;ffentlichen Sie weder den QR-Code noch die .fmscfg-Datei und schalten Sie die Freigabe aus, wenn Sie fertig sind. &#171;Schlie&#223;en&#187; verl&#228;sst das Fenster.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

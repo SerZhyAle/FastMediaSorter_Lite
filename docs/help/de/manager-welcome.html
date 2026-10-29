@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>Ersten Ordner freigeben - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">Ersten Ordner freigeben</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>Ein Assistent mit sechs Schritten, der Sie von Null zu einem Ordner f&#252;hrt, der f&#252;r Ihr Telefon bereitgestellt wird: Er schaltet den Server ein, w&#228;hlt den ersten Ordner, legt den Port und die Grundoptionen fest und endet mit einer Statuspr&#252;fung. Er &#246;ffnet sich beim ersten Start des Share Managers und kann in den Einstellungen erneut aufgerufen werden.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="Ersten Ordner freigeben">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="Ersten Ordner freigeben">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lesen Sie die Einf&#252;hrung und dr&#252;cken Sie &#171;Weiter&#187;.</li><li>Dr&#252;cken Sie auf der Seite &#171;Server einschalten&#187; die Schaltfl&#228;che einmal und best&#228;tigen Sie die Administratorabfrage.</li><li>W&#228;hlen Sie den ersten Ordner und seine Optionen.</li><li>Behalten Sie den Port bei oder &#228;ndern Sie ihn.</li><li>Legen Sie Sprache, Autostart und Optionen f&#252;r das lokale Netzwerk fest.</li><li>Pr&#252;fen Sie auf der letzten Seite den Status, &#246;ffnen Sie den QR-Code und dr&#252;cken Sie &#171;Fertig&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>Schritte und Schaltfl&#228;chen</summary><p>Die Fu&#223;zeile zeigt &#171;Schritt N von 6&#187;. &#171;Zur&#252;ck&#187; und &#171;Weiter&#187; wechseln zwischen den Seiten, &#171;Weiter&#187; wird auf der letzten Seite zu &#171;Fertig&#187;, &#171;Sp&#228;ter&#187; schlie&#223;t den Assistenten und beh&#228;lt, was Sie bereits best&#228;tigt haben, und &#171;Einrichtung ablehnen&#187; schlie&#223;t ihn endg&#252;ltig. Jede Seite hat vier kurze Bl&#246;cke: &#171;Was es ist&#187;, &#171;Wozu&#187;, &#171;So wird es funktionieren&#187; und &#171;Wo &#228;ndern&#187;.</p></details>
+<details id="enable-step"><summary>Server einschalten</summary><p>Bis zu diesem Schritt ist der Server aus. Die Schaltfl&#228;che zum Einschalten verlangt einmal Administratorrechte und f&#252;gt eine Windows-Firewall-Regel f&#252;r das Programm hinzu. Wenn Sie die Abfrage abbrechen, bleibt der Server aus und Sie k&#246;nnen es erneut versuchen; ist er bereits an, steht auf der Seite, dass keine weitere Rechteerh&#246;hung n&#246;tig ist.</p></details>
+<details id="folder-step"><summary>Erster Ordner</summary><p>W&#228;hlen Sie einen Ordner, danach seinen Namen, das Profil und den Zugriff. &#171;Erste Ressource jetzt hinzuf&#252;gen..&#187; &#246;ffnet den Ressourcenassistenten. Zum Fortfahren ist mindestens ein Ordner n&#246;tig. Die Einstellungen gehen an den Server, und die Ordner lassen sich weiterhin in der Liste des Hauptfensters bearbeiten.</p></details>
+<details id="port-step"><summary>Port</summary><p>&#171;Vom System gew&#228;hlt&#187; weist einmal einen Port zu und beh&#228;lt ihn; mit &#171;Fester Port:&#187; geben Sie eine eigene Nummer ein, zum Beispiel f&#252;r die Portweiterleitung im Router. Die Nummer steht in jedem QR-Code und jeder .fmscfg-Datei, daher werden bereits ausgegebene Codes ung&#252;ltig, wenn Sie sie sp&#228;ter &#228;ndern. Die Firewall-Regel geh&#246;rt zum Programm, nicht zum Port.</p></details>
+<details id="basics-step"><summary>Grundeinstellungen</summary><p>&#171;Sprache der Oberfl&#228;che&#187;, &#171;Beim Windows-Anmelden starten&#187;, &#171;Managerfenster beim Start &#246;ffnen&#187; und &#171;Nur lokales Netzwerk (kein Internetzugriff)&#187;. Der Modus f&#252;r das lokale Netzwerk schaltet die Portweiterleitung und die Internetadresse ab. Die Startoption der Store-Version wird in den Windows-Einstellungen verwaltet.</p></details>
+<details id="finish-step"><summary>Fertig</summary><p>Die letzte Seite pr&#252;ft den Server und die gew&#228;hlten Ordner und zeigt das Ergebnis; ein gr&#252;ner Status bedeutet, dass tats&#228;chlich eine Freigabe mit Ordnerzugriff l&#228;uft. &#171;QR-Code f&#252;r das Telefon&#187; &#246;ffnet den Code, &#171;Aktualisieren&#187; wiederholt die Pr&#252;fung. Braucht der Status Aufmerksamkeit, beheben Sie die Ursache im Hauptfenster oder gehen Sie zum Ordnerschritt zur&#252;ck.</p></details>
+<details id="replay"><summary>Assistent erneut starten</summary><p>Einstellungen - Allgemein - &#171;Willkommen..&#187; &#246;ffnet ein Men&#252; mit &#171;Ordnereinrichtung wiederholen&#187;, das diesen Assistenten erneut startet.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

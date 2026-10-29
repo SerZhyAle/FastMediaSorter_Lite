@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>فائل کے بارے میں - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">فائل کے بارے میں</h1>
   <section id="purpose">
     <h2>یہ کس مقصد کے لیے ہے</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>اسکرین پر موجود فائل کے بارے میں پروگرام جو کچھ جانتا ہے اس کی صرف پڑھنے والی جھلک: فائل خود، کیمرے کے ڈیٹا کے ساتھ تصویر، دستاویز، اور آڈیو و ویڈیو ٹریک۔ یہ پہلے پینل کے i آئٹم سے، یا ویور مینو کے فائل بلاک میں فائل کے بارے میں سے کھلتی ہے، اور فائل کو ویسا ہی بیان کرتی ہے جیسی وہ کلک کے لمحے پر تھی۔</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="فائل کے بارے میں">
+    <img class="shot dark" src="file-details-dark.png" alt="فائل کے بارے میں">
   </figure>
   <section id="order">
     <h2>اس ترتیب میں</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>ویور میں کوئی فائل دکھائیں۔</li><li>پہلے پینل کے i آئٹم پر کلک کریں، یا مینو میں فائل کے بارے میں چنیں۔</li><li>ذرا انتظار کریں: اسٹیٹس بار میں فائل کا میٹاڈیٹا پڑھا جا رہا ہے.. لکھا آتا ہے اور قطاریں بھر جاتی ہیں۔</li><li>بلاک پڑھیں، جو چاہیے اسے منتخب کریں، اور پورا متن کلپ بورڈ پر رکھنے کے لیے کاپی کریں دبائیں۔</li><li>بند کریں دبائیں یا Esc۔</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>فائل</summary><p>ہر فائل میں یہ بلاک ہوتا ہے: نام، فولڈر، قسم، سائز، بائٹس، بنایا گیا، ترمیم شدہ، آخری رسائی اور خصوصیات۔ جس قطار میں دکھانے کو کچھ نہ ہو وہ چھوڑ دی جاتی ہے۔ اگر کوئی فائل کھلی نہ ہو تو اسٹیٹس بار میں کوئی فائل منتخب نہیں لکھا آتا ہے؛ آرکائیو کی عارضی کاپی، دور دراز پتے یا غائب ہو چکی فائل پر فائل دستیاب نہیں آتا ہے، اور کوئی ونڈو نہیں کھلتی۔</p></details>
+<details id="image-block"><summary>تصویر</summary><p>تصویر کے لیے: ریزولوشن جیسا دکھایا جاتا ہے (فون میں پہلو کے بل محفوظ تصویر سیدھے سائز میں پڑھی جاتی ہے)، رنگ کی گہرائی اور پکسل کثافت، اگر فائل انہیں درج کرتی ہو۔</p></details>
+<details id="camera-block"><summary>کیمرہ</summary><p>تصویر کے EXIF ڈیٹا سے پڑھا جاتا ہے: کیمرہ، سافٹ ویئر، تصویر کھینچنے کی تاریخ، ایکسپوژر، اپرچر، ISO، فوکل فاصلہ اور مصنف۔ نقاط صرف تب نظر آتے ہیں جب تصویر میں GPS ڈیٹا ہو، اور کاپی کریں انہیں بھی شامل کرتا ہے، اس لیے شیئر کرنے سے پہلے متن دیکھ لیں۔</p></details>
+<details id="document-block"><summary>دستاویز</summary><p>متنی فائل کے لیے: سطریں، الفاظ، حروف اور انکوڈنگ، ساتھ فائل کا صرف کچھ حصہ پڑھا گیا، جب فائل اتنی بڑی ہو کہ پوری نہ پڑھی جا سکے۔ ای بک کے لیے: نام اور مصنف۔ PDF کے لیے: صفحات۔</p></details>
+<details id="media-block"><summary>میڈیا، ویڈیو اور آڈیو</summary><p>آڈیو اور ویڈیو فائلوں کے لیے ٹیگ (نام، فنکار، البم، سال، ٹریک، انواع، ہدایت کار، سیریز، سیزن، ایپیسوڈ، دورانیہ) اور ہر قسم کا پہلا ٹریک (ویڈیو: ریزولوشن، فی سیکنڈ فریمز، کوڈیک، بٹ ریٹ؛ آڈیو: کوڈیک، چینل، سیمپل ریٹ، بٹ ریٹ) باقی معلومات کے کچھ لمحے بعد شامل ہوتے ہیں، جب میڈیا انجن پڑھنا مکمل کر لیتا ہے۔ ونڈو اس کا انتظار کبھی نہیں کرتی۔ نیٹ ورک اسٹریمز کو ٹریک کی قطاریں نہیں ملتیں۔</p></details>
+<details id="related-files"><summary>متعلقہ فائلیں</summary><p>اس فائل کے پاس رکھی ہوئی وہ فائلیں جو اس سے تعلق رکھتی ہیں، نام کے ساتھ درج ہوتی ہیں: ذیلی عنوانات، گیت کے بول، سرورق اور میٹا ڈیٹا۔ ایسی کوئی فائل نہ ہو تو یہ بلاک نظر نہیں آتا۔</p></details>
+<details id="copy-close"><summary>کاپی کریں اور بند کریں</summary><p>کاپی کریں پورا متن کلپ بورڈ پر رکھ دیتا ہے اور اسٹیٹس بار میں کلپ بورڈ پر کاپی ہو گیا لکھا آتا ہے؛ اگر کوئی اور پروگرام کلپ بورڈ کو روکے ہوئے ہو تو یہ بھی بتایا جاتا ہے اور آپ دوبارہ کاپی کریں دبا سکتے ہیں۔ Ctrl+C سے منتخب حصے کی کاپی بھی کام کرتی ہے۔ اگر کچھ پڑھا نہ جا سکا ہو تو باکس میں فائل کی معلومات پڑھی نہ جا سکیں۔ لکھا ہوتا ہے۔ بٹنوں کے پاس اسٹیٹس بار فائل کا نام دکھاتا ہے۔ دوسری فائل پر جانے سے یہ ونڈو نہیں بدلتی: نئی فائل کے لیے دوبارہ i پر کلک کریں۔</p></details>
+    <p><a href="settings.html">ترتیبات</a></p>
   </section>
   <nav id="related">
     <h2>متعلقہ</h2>

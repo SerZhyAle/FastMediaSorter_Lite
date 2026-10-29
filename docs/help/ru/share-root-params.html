@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Folder Parameters - Fast Media Sorter</title>
+  <title>Параметры ресурса - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Shared Folder Parameters</h1>
+  <h1 id="title">Параметры ресурса</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Folder Parameters.</p>
+    <p>Параметры одной общей папки: её имя на телефоне, тип, какие файлы показывать, кто может их менять и несколько дополнений. Окно открывается кнопкой &#171;Редактировать&#187; главного окна и из мастера ресурса; в настоящем заголовке после тире стоит имя папки.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-root-params-light.png" alt="Shared Folder Parameters">
-    <img class="shot dark" src="share-root-params-dark.png" alt="Shared Folder Parameters">
+    <img class="shot light" src="share-root-params-light.png" alt="Параметры ресурса">
+    <img class="shot dark" src="share-root-params-dark.png" alt="Параметры ресурса">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Задайте имя, которое увидит телефон.</li><li>Выберите тип ресурса или точный набор типов.</li><li>Задайте условия сканирования.</li><li>Выберите доступ.</li><li>В &#171;Дополнительных параметрах&#187; укажите комментарий, PIN и интервал слайд-шоу.</li><li>Нажмите OK.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="name-type"><summary>Название и тип</summary><p>&#171;Название на телефоне:&#187; - то, как папка называется в приложении; пусто означает имя папки. &#171;Тип ресурса:&#187; предлагает &#171;Обычная папка&#187;, &#171;Аудиотека&#187;, &#171;Видеотека&#187;, &#171;Фотохранилище&#187; и &#171;Документы&#187;. &#171;Точный набор типов:&#187; выбирает точные виды файлов (&#171;Изображения&#187;, &#171;Видео&#187;, &#171;Аудио&#187;, &#171;Текст&#187;, &#171;Все файлы&#187;); пусто означает, что решает тип.</p></details>
+<details id="scan"><summary>Условия сканирования</summary><p>&#171;Сканировать подпапки&#187;, &#171;Показывать подпапки как элементы&#187;, &#171;Показывать скрытые файлы&#187; и &#171;Все файлы (не только медиа)&#187;.</p></details>
+<details id="access"><summary>Доступ</summary><p>По умолчанию телефон может добавлять, переименовывать и удалять файлы в папке. &#171;Только чтение&#187; - настоящая блокировка: сервер запрещает изменения. Подсказка &#171;только чтение&#187; лишь велит приложению прятать кнопки правки, сервер ничего не блокирует. Папка-получатель принимает копии и переносы с телефона; она становится доступной на запись и попадает в список получателей, а её цвет выбирает приложение.</p></details>
+<details id="advanced"><summary>Дополнительные параметры</summary><p>Необязательный комментарий, PIN для ресурса (приложение спросит его при открытии) и интервал слайд-шоу в секундах. Параметры передаются серверу, когда вы подтверждаете окно.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

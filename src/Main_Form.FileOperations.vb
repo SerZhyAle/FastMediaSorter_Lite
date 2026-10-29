@@ -463,6 +463,8 @@ Partial Public Class Main_Form
         ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.2).
         SecureReleaseCurrent()
         ReleasePdfDocument()
+        ReleaseEpubReader()
+        ReleaseHtmlView()
         ReleaseTextDocument()
 #End If
 
@@ -1662,6 +1664,10 @@ Partial Public Class Main_Form
         If op Is Nothing Then Return
 
 #If Not NETFRAMEWORK Then
+        If failure Is Nothing AndAlso (op.Kind = FileOpKind.Move OrElse op.Kind = FileOpKind.MoveUndo) AndAlso modern_Preferences IsNot Nothing Then
+            modern_Preferences.RelocateDocumentState(op.Source, op.Destination)
+            MarkSettingsDirty()
+        End If
         ' One item of a batch: the run, not the per-file rollback below, decides what it
         ' means for the list and the history.
         If op.BatchItem IsNot Nothing Then

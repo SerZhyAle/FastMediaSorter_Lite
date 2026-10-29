@@ -737,19 +737,19 @@ Partial Public NotInheritable Class Localization
             "फ़ाइल में सर्वर का कोई उपयुक्त पता नहीं है", "ফাইলে সার্ভারের কোনো উপযুক্ত ঠিকানা নেই",
             "فائل میں سرور کا کوئی موزوں پتا نہیں ہے", "文件中没有可用的服务器地址")
 
-        Add("Файл не импортирован: папка «{0}» защищена PIN-кодом, а Fast Media Sorter пока не умеет открывать такие ресурсы.",
-            "The file was not imported: the folder «{0}» is protected by a PIN, and Fast Media Sorter cannot open such resources yet.",
-            "Файл не імпортовано: папку «{0}» захищено PIN-кодом, а Fast Media Sorter поки що не вміє відкривати такі ресурси.",
-            "Die Datei wurde nicht importiert: Der Ordner «{0}» ist durch eine PIN geschützt, und Fast Media Sorter kann solche Ressourcen noch nicht öffnen.",
-            "Il file non è stato importato: la cartella «{0}» è protetta da un PIN e Fast Media Sorter non sa ancora aprire queste risorse.",
-            "El archivo no se importó: la carpeta «{0}» está protegida con un PIN y Fast Media Sorter aún no sabe abrir esos recursos.",
-            "Le fichier n'a pas été importé : le dossier «{0}» est protégé par un PIN, et Fast Media Sorter ne sait pas encore ouvrir de telles ressources.",
-            "O arquivo não foi importado: a pasta «{0}» está protegida por um PIN e o Fast Media Sorter ainda não sabe abrir esses recursos.",
-            "لم يُستورد الملف: المجلد «{0}» محمي برمز PIN، ولا يستطيع Fast Media Sorter فتح مثل هذه الموارد حتى الآن.",
-            "फ़ाइल आयात नहीं हुई: फ़ोल्डर «{0}» PIN से सुरक्षित है, और Fast Media Sorter अभी ऐसे संसाधन खोलना नहीं जानता।",
-            "ফাইল আমদানি হয়নি: «{0}» ফোল্ডারটি PIN দিয়ে সুরক্ষিত, আর Fast Media Sorter এখনও এমন রিসোর্স খুলতে পারে না।",
-            "فائل درآمد نہیں ہوئی: فولڈر «{0}» PIN سے محفوظ ہے، اور Fast Media Sorter ابھی ایسے وسائل کھولنا نہیں جانتا۔",
-            "文件未导入：文件夹「{0}」受 PIN 保护，而 Fast Media Sorter 目前还无法打开此类资源。")
+        Add("Файл не импортирован: папка «{0}» защищена PIN-кодом, а Fast Media Sorter не умеет открывать такие ресурсы.",
+            "The file was not imported: the folder «{0}» is protected by a PIN, and Fast Media Sorter cannot open such resources.",
+            "Файл не імпортовано: папку «{0}» захищено PIN-кодом, а Fast Media Sorter не вміє відкривати такі ресурси.",
+            "Die Datei wurde nicht importiert: Der Ordner «{0}» ist durch eine PIN geschützt, und Fast Media Sorter kann solche Ressourcen nicht öffnen.",
+            "Il file non è stato importato: la cartella «{0}» è protetta da un PIN e Fast Media Sorter non sa aprire queste risorse.",
+            "El archivo no se importó: la carpeta «{0}» está protegida con un PIN y Fast Media Sorter no sabe abrir esos recursos.",
+            "Le fichier n'a pas été importé : le dossier «{0}» est protégé par un PIN, et Fast Media Sorter ne sait pas ouvrir de telles ressources.",
+            "O arquivo não foi importado: a pasta «{0}» está protegida por um PIN e o Fast Media Sorter não sabe abrir esses recursos.",
+            "لم يُستورد الملف: المجلد «{0}» محمي برمز PIN، ولا يستطيع Fast Media Sorter فتح مثل هذه الموارد.",
+            "फ़ाइल आयात नहीं हुई: फ़ोल्डर «{0}» PIN से सुरक्षित है, और Fast Media Sorter ऐसे संसाधन खोलना नहीं जानता।",
+            "ফাইল আমদানি হয়নি: «{0}» ফোল্ডারটি PIN দিয়ে সুরক্ষিত, আর Fast Media Sorter এমন রিসোর্স খুলতে পারে না।",
+            "فائل درآمد نہیں ہوئی: فولڈر «{0}» PIN سے محفوظ ہے، اور Fast Media Sorter ایسے وسائل کھولنا نہیں جانتا۔",
+            "文件未导入：文件夹「{0}」受 PIN 保护，而 Fast Media Sorter 无法打开此类资源。")
 
         Add("Ключ сервера в файле отличается от запомненного.{0}Запомнен: {1}{0}В файле: {2}{0}{0}Заменить его? Если вы не ждали этого, ответьте «Нет».",
             "The server key in the file differs from the remembered one.{0}Remembered: {1}{0}In the file: {2}{0}{0}Replace it? If you were not expecting this, answer «No».",

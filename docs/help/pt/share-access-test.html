@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Teste do acesso pela internet - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Teste do acesso pela internet</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>Verifica, a partir deste PC, se o endere&#231;o partilhado responde como um servidor SFTP. Abre-se a partir do bot&#227;o &#171;Testar o acesso pela internet&#187; da janela principal e mostra o endere&#231;o testado, um veredicto e uma explica&#231;&#227;o.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Teste do acesso pela internet">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Teste do acesso pela internet">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Abra a janela; mostra o endere&#231;o e inicia a verifica&#231;&#227;o de imediato.</li><li>Aguarde pelo t&#237;tulo do resultado.</li><li>Leia a linha de detalhe por baixo.</li><li>Se o resultado n&#227;o for conclusivo, repita a verifica&#231;&#227;o a partir do telem&#243;vel com o Wi-Fi desligado e os dados m&#243;veis ligados.</li><li>Prima &#171;Fechar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Endere&#231;o testado</summary><p>&#171;Endere&#231;o testado: ..&#187; mostra o anfitri&#227;o e a porta. Enquanto a verifica&#231;&#227;o decorre, a janela escreve &#171;A testar ..&#187;. Se n&#227;o se conhecer nenhum endere&#231;o, o resultado &#233; &#171;Ainda sem endere&#231;o de internet.&#187;; um endere&#231;o malformado d&#225; &#171;Endere&#231;o inv&#225;lido.&#187;</p></details>
+<details id="verdicts"><summary>Veredictos</summary><p>&#171;Servidor SFTP alcan&#231;&#225;vel&#187; - a porta respondeu com um banner SFTP. &#171;Porta aberta, mas sem resposta SFTP&#187; - algo escuta na porta, mas n&#227;o &#233; o nosso programa; verifique se a regra do router leva a este PC e &#224; porta da partilha. Uma liga&#231;&#227;o fechada antes da resposta pode indicar o limite de liga&#231;&#245;es; tente de novo. A falta de resposta a partir deste PC significa que o router pode bloquear, a partir de dentro, o seu pr&#243;prio endere&#231;o.</p></details>
+<details id="inconclusive"><summary>Porque pode um resultado n&#227;o ser conclusivo</summary><p>O pedido sai deste PC para o endere&#231;o externo do router e volta diretamente para dentro, pelo que testa a regra de encaminhamento e n&#227;o se o fornecedor deixa entrar liga&#231;&#245;es vindas de fora. S&#243; o telem&#243;vel pode esclarecer: desligue o seu Wi-Fi, deixe os dados m&#243;veis ligados e abra o c&#243;digo QR. Se mesmo assim n&#227;o conseguir ligar-se, configure o encaminhamento de portas com o bot&#227;o &#171;Como configurar o acesso pela internet&#187;.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

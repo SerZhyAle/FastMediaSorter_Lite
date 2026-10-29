@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>Share your first folder - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">Share your first folder</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>A six-step wizard that takes you from nothing to a folder served to your phone: it turns the server on, picks the first folder, sets the port and the basic options and ends on a status check. It opens on the first start of the Share Manager and can be replayed from Settings.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="Share your first folder">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="Share your first folder">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read the introduction and press &#39;Next&#39;.</li><li>On &#39;Turn the server on&#39; press the button once and confirm the administrator prompt.</li><li>Choose the first folder and its options.</li><li>Keep or change the port.</li><li>Set the language, startup and local-network options.</li><li>On the last page check the status, open the QR code and press &#39;Finish&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>Steps and buttons</summary><p>The footer shows &#39;Step N of 6&#39;. &#39;Back&#39; and &#39;Next&#39; move between pages, &#39;Next&#39; becomes &#39;Finish&#39; on the last page, &#39;Later&#39; closes the wizard and keeps what you already confirmed, and &#39;Decline setup&#39; closes it for good. Every page has four short blocks: &#39;What it is&#39;, &#39;Why it exists&#39;, &#39;How it will work&#39; and &#39;Where to change it&#39;.</p></details>
+<details id="enable-step"><summary>Turn the server on</summary><p>The server is off until this step. The enable button asks for administrator rights once and adds one Windows Firewall rule for the program. If you cancel the prompt the server stays off and you can try again; if it is already on, the page says no further elevation is needed.</p></details>
+<details id="folder-step"><summary>First folder</summary><p>Choose a folder, then its name, profile and access. &#39;Add the first resource now..&#39; opens the resource wizard. At least one folder is needed to continue. The settings go to the server, and folders stay editable in the main window&#39;s list.</p></details>
+<details id="port-step"><summary>Port</summary><p>&#39;Chosen by the system&#39; assigns a port once and keeps it; &#39;Fixed port:&#39; lets you type your own number, for example for router port forwarding. The number is written into every QR code and .fmscfg file, so changing it later stops the codes already handed out. The firewall rule belongs to the program, not to the port.</p></details>
+<details id="basics-step"><summary>Basic settings</summary><p>&#39;Interface language&#39;, &#39;Start at Windows logon&#39;, &#39;Open the manager window at startup&#39; and &#39;Local network only (no internet access)&#39;. Local-network mode switches off port forwarding and the internet address. The startup option of the Store version is managed in Windows settings.</p></details>
+<details id="finish-step"><summary>Finish</summary><p>The last page checks the server and the chosen folders and shows the result; a green status means a share is really running with folder access. &#39;QR code for the phone&#39; opens the code and &#39;Refresh&#39; repeats the check. If the status needs attention, fix the cause in the main window or go back to the folder step.</p></details>
+<details id="replay"><summary>Replaying the wizard</summary><p>Settings - General - &#39;Welcome..&#39; opens a menu with &#39;Repeat folder setup&#39;, which opens this wizard again.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection String - Fast Media Sorter</title>
+  <title>Cha&#238;ne de connexion au serveur d&#39;&#233;change - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection String</h1>
+  <h1 id="title">Cha&#238;ne de connexion au serveur d&#39;&#233;change</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection String.</p>
+    <p>Cette fen&#234;tre cr&#233;e la cha&#238;ne de connexion que les autres appareils utilisent pour trouver ce serveur d&#39;&#233;change et v&#233;rifier son certificat. Elle s&#39;ouvre avec &#171;Cha&#238;ne de connexion et code QR..&#187; dans les param&#232;tres du serveur d&#39;&#233;change ou dans l&#39;accueil du serveur au premier lancement. La fen&#234;tre ne modifie aucun param&#232;tre.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connection-string-light.png" alt="Connection String">
-    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Connection String">
+    <img class="shot light" src="exchange-connection-string-light.png" alt="Cha&#238;ne de connexion au serveur d&#39;&#233;change">
+    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Cha&#238;ne de connexion au serveur d&#39;&#233;change">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>V&#233;rifiez que le serveur a un certificat et que l&#39;adresse pour les clients est d&#233;finie.</li><li>Ouvrez la fen&#234;tre : la cha&#238;ne appara&#238;t tout de suite.</li><li>Si vous le souhaitez, saisissez un nom de serveur et un identifiant ; la cha&#238;ne est recr&#233;&#233;e un instant apr&#232;s que vous avez cess&#233; de taper.</li><li>Copiez la cha&#238;ne, enregistrez-la dans un fichier, affichez son code QR ou copiez le lien de connexion.</li><li>Transmettez le r&#233;sultat &#224; l&#39;autre personne et communiquez le mot de passe du compte s&#233;par&#233;ment.</li><li>Cliquez sur &#171;Fermer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Quand le bouton est actif</summary><p>Le bouton &#171;Cha&#238;ne de connexion et code QR..&#187; n&#39;est actif que si le serveur a un certificat et que l&#39;adresse pour les clients est d&#233;finie. Quand l&#39;adresse est vide, le bouton reste d&#233;sactiv&#233; et l&#39;indication en dessous dit &#171;D&#233;finissez d&#39;abord l&#39;adresse pour les clients : sans elle, la cha&#238;ne de connexion ne peut pas &#234;tre cr&#233;&#233;e.&#187; Dans la fen&#234;tre, les boutons restent d&#233;sactiv&#233;s tant qu&#39;il n&#39;y a pas de cha&#238;ne.</p></details>
+<details id="name-and-login"><summary>Nom du serveur et identifiant</summary><p>&#171;Nom du serveur (facultatif) :&#187; accepte jusqu&#39;&#224; 64 caract&#232;res et est enregistr&#233; dans la cha&#238;ne comme nom du serveur. &#171;Pour cet identifiant (facultatif) :&#187; accepte de 3 &#224; 64 caract&#232;res (a-z, 0-9, point, tiret bas, trait d&#39;union) et est renseign&#233; dans le formulaire de connexion de l&#39;appareil qui utilise la cha&#238;ne. Un mot de passe n&#39;entre jamais dans la cha&#238;ne.</p></details>
+<details id="connection-string"><summary>Cha&#238;ne de connexion</summary><p>Le champ en lecture seule &#171;Cha&#238;ne de connexion :&#187; affiche le r&#233;sultat : l&#39;adresse pour les clients, l&#39;empreinte du certificat ainsi que le nom et l&#39;identifiant facultatifs. L&#39;appareil qui re&#231;oit la cha&#238;ne fait confiance &#224; l&#39;empreinte qu&#39;elle contient, si bien que personne n&#39;a &#224; la comparer &#224; la main.</p></details>
+<details id="copy-and-save"><summary>Copier et enregistrer</summary><p>&#171;Copier la cha&#238;ne&#187; la place dans le presse-papiers sous forme de texte ordinaire, car elle n&#39;est pas secr&#232;te, et la ligne en dessous indique &#171;La cha&#238;ne a &#233;t&#233; copi&#233;e.&#187; &#171;Enregistrer dans un fichier..&#187; &#233;crit un fichier texte .fmsexch (nom propos&#233; exchange-server.fmsexch) et affiche son chemin ; l&#39;autre appareil le lit avec &#171;Ouvrir un fichier..&#187; dans sa fen&#234;tre du compte d&#39;&#233;change. Si le presse-papiers est occup&#233; ou si le fichier ne peut pas &#234;tre &#233;crit, une ligne l&#39;indique.</p></details>
+<details id="qr-and-link"><summary>Code QR et lien de connexion</summary><p>&#171;Afficher le code QR&#187; ouvre une image de la m&#234;me cha&#238;ne &#224; scanner ; elle d&#233;signe un serveur et ne donne acc&#232;s &#224; rien. &#171;Copier le lien de connexion&#187; n&#39;appara&#238;t que si ce serveur fournit un client web ; il copie un lien pour le navigateur qui contient la m&#234;me cha&#238;ne.</p></details>
+<details id="refusals"><summary>Si la cha&#238;ne ne peut pas &#234;tre cr&#233;&#233;e</summary><p>Une ligne de la couleur d&#39;avertissement indique la cause : le nom ou l&#39;identifiant est hors des limites ; le serveur n&#39;a pas de certificat (d&#233;marrez le serveur une fois) ; ou le serveur d&#39;&#233;change n&#39;a pas r&#233;pondu. Corrigez la cause et la cha&#238;ne est recr&#233;&#233;e. &#171;Fermer&#187; termine la fen&#234;tre ; le nom et l&#39;identifiant ne sont pas enregistr&#233;s.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

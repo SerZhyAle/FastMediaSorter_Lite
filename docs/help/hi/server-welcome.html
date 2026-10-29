@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>सर्वर का पहला चलन - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">सर्वर का पहला चलन</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Share Manager के एक्सचेंज सर्वर समूह के लिए पहली बार चलाने की मार्गदर्शिका। यह बताती है कि यह कंप्यूटर क्या बन जाता है, ऑपरेटर का वक्तव्य दिखाती है, पोर्ट, क्लाइंट के लिए पता और पहला खाता तय करवाती है, और सर्वर की स्थिति पर समाप्त होती है। यह तभी खुलती है जब एक्सचेंज सर्वर मौजूद और सक्षम हो।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="सर्वर का पहला चलन">
+    <img class="shot dark" src="server-welcome-dark.png" alt="सर्वर का पहला चलन">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>पहले पृष्ठ पर ऑपरेटर का वक्तव्य पढ़ें।</li><li>पोर्ट और फ़ायरवॉल का नियम देखें।</li><li>जिस सर्वर संस्करण में सेवा नहीं है, वहाँ Windows सेवा के बारे में निर्णय लें।</li><li>क्लाइंट के लिए पता भरें।</li><li>पहला खाता बनाएँ।</li><li>प्रमाणपत्र का फ़िंगरप्रिंट जाँचें और समाप्त दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>पृष्ठ और बटन</summary><p>नीचे की पट्टी में चरण N / M दिखता है; पीछे, आगे और बाद में किसी भी विज़ार्ड की तरह काम करते हैं, और अंतिम पृष्ठ पर समाप्त प्रबंधक का एक्सचेंज सर्वर समूह खोलता है। किसी पृष्ठ को बिना बदलाव छोड़ा जा सकता है: तब सर्वर बंद रहता है या जैसा था वैसा ही रहता है।</p></details>
+<details id="operator-statement"><summary>ऑपरेटर का वक्तव्य</summary><p>सर्वर पर कौन क्या देखता है, इसका पूरा वक्तव्य। इसे छोड़ा नहीं जा सकता। सर्वर एक खाते के डिवाइस को आपस में जोड़ता है और बताता है कि उनमें से कौन-से ऑनलाइन हैं।</p></details>
+<details id="ports"><summary>पोर्ट और फ़ायरवॉल</summary><p>डिवाइस के मिलने के लिए एक पोर्ट और बाहरी क्लाइंट के लिए पोर्ट की एक श्रेणी। डिवाइस को सर्वर का पोर्ट पता होना चाहिए, इसलिए बदलाव केवल नए कोड पर लागू होते हैं। फ़ायरवॉल का नियम प्रोग्राम के नाम पर है, इसलिए पोर्ट बदलने पर नया नियम नहीं चाहिए। ये मान एक्सचेंज सर्वर समूह में रहते हैं।</p></details>
+<details id="service"><summary>Windows सेवा</summary><p>केवल उस सर्वर संस्करण में दिखती है जहाँ सेवा अभी मौजूद नहीं है। सेवा सर्वर को तब भी उपलब्ध रखती है जब कोई साइन इन नहीं होता। चेक बॉक्स केवल आपकी सहमति याद रखता है: सेवा पहला खाता बनने के बाद, अनुमति के एक अनुरोध के साथ पंजीकृत होती है, और उससे पहले कुछ भी स्थापित नहीं होता। एक्सचेंज समूह में सेवा के रूप में पंजीकृत करें.. बाद में यही काम करता है।</p></details>
+<details id="client-address"><summary>क्लाइंट के लिए पता</summary><p>क्लाइंट के लिए पता (होस्ट:पोर्ट): वह पता है जिससे दूसरे डिवाइस इस कंप्यूटर तक पहुँचते हैं। स्थानीय पता सुझाएँ दबाने पर ही फ़ील्ड भरता है। खाली पता केवल स्थानीय पहली शुरुआत को मान्य रखता है, पर प्रसारण और फ़ोल्डर कनेक्शन दूसरे डिवाइस से छिपा देता है।</p></details>
+<details id="first-account"><summary>पहला खाता</summary><p>वह खाता जिससे पहला डिवाइस साइन इन करता है। पासवर्ड बनाएँ या अपना पासवर्ड दर्ज करें चुनें; इस कंप्यूटर को खाते से जोड़ें इस कंप्यूटर को उसमें जोड़ता है। आगे दबाने पर खाता बनता है, सर्वर शुरू होता है और प्रमाणपत्र जाँचा जाता है। पासवर्ड मौजूदा संवाद में एक बार दिखाया जाता है और इस पीसी पर सहेजा नहीं जाता। खाता बनने के बाद कोई विफलता हो तो खाता हटाया नहीं जाता।</p></details>
+<details id="server-ready"><summary>सर्वर तैयार है</summary><p>अंतिम पृष्ठ बताता है कि पता, लॉगिन और प्रमाणपत्र का फ़िंगरप्रिंट कहाँ दर्ज हैं, और फ़िंगरप्रिंट कॉपी करें तथा कनेक्शन स्ट्रिंग और QR कोड.. बटन देता है। पहले कनेक्शन पर फ़िंगरप्रिंट जाँचने के बाद डिवाइस सर्वर पर भरोसा करता है। फ़ोन जोड़ें (सहायता) और पहला फ़ोल्डर प्रकाशित करें (सहायता) के लिंक संबंधित सहायता पृष्ठों पर ले जाते हैं।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

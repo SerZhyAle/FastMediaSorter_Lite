@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>共享邀请密码 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">共享邀请密码</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>此窗口让用户可以用一个共享密码在服务器上注册，而不必使用一次性邀请代码。可在交换服务器设置的「邀请」组中勾选「共享邀请密码」打开，或使用旁边的「设置共享密码..」打开。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="共享邀请密码">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="共享邀请密码">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>选择账户类型。</li><li>选择由程序生成密码还是自己输入。</li><li>点击「设置」。</li><li>如果密码是生成的，请在只显示一次的窗口中复制它。</li><li>要停止接受它，请取消勾选「共享邀请密码」并确认。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>账户类型</summary><p>「要创建的账户类型：」提供「自己的设备或家庭」和「访客」。「访客」被禁用，其下一行给出原因：程序的文件服务器无法把登录限制在一个文件夹内。如果共享密码已经启用，会预先选中它当前的类型。如果该现有类型是访客，「设置」被禁用；但仍可关闭共享密码。</p></details>
+<details id="password"><summary>密码</summary><p>「密码：」提供「生成随机安全密码」（默认选中）和「手动输入密码」。点击「设置」后，手动输入的密码会在一个检查规则的密码窗口中请求：至少 10 个字符，包含一个大写拉丁字母、一个小写拉丁字母和一个数字。取消该窗口会回到这里。</p></details>
+<details id="set"><summary>设置</summary><p>「设置」把密码和账户类型发送给服务器并启用共享密码；页面显示「共享邀请密码已保存并启用。」，复选框下方的状态行显示「共享密码已启用（账户类型：..）。」生成的密码会在单独的窗口中只显示一次：请在那里复制，之后无法再读取。凡是知道该密码的人都可以注册所选类型的账户，所以只把它交给你想接纳的人。</p></details>
+<details id="switch-off"><summary>关闭</summary><p>取消勾选复选框会询问：「禁用共享邀请密码？将无法再使用它进行新注册。」默认答案是「否」。点击「是」后，页面显示「共享邀请密码已禁用。」，状态行显示「共享密码已禁用。」</p></details>
+<details id="cancel"><summary>取消</summary><p>「取消」或 Esc 会关闭窗口，不更改任何内容。如果你是通过勾选复选框打开的，复选框会恢复到原来的状态。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

@@ -12,8 +12,8 @@ Imports System.Windows.Forms
 ''' admin-level action, so the WHOLE Share surface (toolbar-button action, the
 ''' Settings "Поделиться" tab body, the tray indicator, Shift+S, and - crucially -
 ''' spawning the worker) is gated behind <see cref="IsEnabled"/>. Until the user
-''' consents, the viewer is a pure image/video viewer and sorter and the
-''' worker process is never started.
+''' consents, the Share surface stays hidden, the media and file manager works
+''' on its own and the worker process is never started.
 '''
 ''' <see cref="IsEnabled"/> is true when ANY of:
 '''   * a machine marker file exists (written by the elevated installer when the

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled Operations History - Fast Media Sorter</title>
+  <title>Verlauf der geplanten Vorg&#228;nge - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled Operations History</h1>
+  <h1 id="title">Verlauf der geplanten Vorg&#228;nge</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled Operations History.</p>
+    <p>Zeigt die j&#252;ngsten L&#228;ufe und Hinweise der geplanten Dateivorg&#228;nge, wie sie im Journal aufgezeichnet sind. Das Fenster &#246;ffnet sich &#252;ber &#171;Verlauf..&#187; auf der Seite &#171;Geplante Dateivorg&#228;nge&#187; der Einstellungen von Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled Operations History">
-    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled Operations History">
+    <img class="shot light" src="scheduled-history-light.png" alt="Verlauf der geplanten Vorg&#228;nge">
+    <img class="shot dark" src="scheduled-history-dark.png" alt="Verlauf der geplanten Vorg&#228;nge">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lesen Sie die Liste: Zeit, Vorgang, Start und Ergebnis.</li><li>Vergr&#246;&#223;ern Sie das Fenster, wenn ein Ergebnis lang ist.</li><li>Klicken Sie auf &#171;Aktualisieren&#187;, um das Journal erneut zu lesen.</li><li>Klicken Sie auf &#171;Verlauf l&#246;schen&#187; und best&#228;tigen Sie, um es zu leeren.</li><li>Klicken Sie auf &#171;Schlie&#223;en&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="columns"><summary>Spalten</summary><p>Zeit, Vorgang (sein Name), Start und Ergebnis. Start ist Nach Zeitplan, Manuell, Alle ausf&#252;hren oder Versp&#228;tet und bleibt bei einem Hinweis leer. Das Fenster liest beim &#214;ffnen und bei &#171;Aktualisieren&#187; die letzten 200 Journaleintr&#228;ge; es aktualisiert sich nicht von selbst.</p></details>
+<details id="results"><summary>Ergebnisse eines Laufs</summary><p>&#171;Abgeschlossen: N Datei(en)&#187;, mit &#171;, &#252;bersprungen: M&#187;, wenn manche ausgelassen wurden, und &#171;(in den Papierkorb)&#187; bei L&#246;schungen. &#171;Mit Fehlern: N; abgeschlossen: M Datei(en)&#187; gefolgt von der ersten Ursache, etwa eine Datei in Benutzung, kein Zugriff, eine nicht gefundene oder ge&#228;nderte Datei oder ein volles Laufwerk. &#171;Angehalten: ..&#187;, wenn eine H&#252;rde einen Lauf beendet, zum Beispiel ein nicht erreichbarer Ordner, eine Ressource ohne gespeichertes Passwort oder mit unbest&#228;tigtem Serverschl&#252;ssel oder ein Ger&#228;t, das offline ist. &#171;Nicht gestartet: ..&#187;, wenn die Definition abgelehnt wird, au&#223;erdem &#171;&#220;bersprungen: ..&#187; und &#171;Unterbrochen&#187;. Das Journal speichert Codes, nicht rohen Fehlertext, daher folgt die Formulierung der aktuellen Sprache.</p></details>
+<details id="notes"><summary>Hinweise</summary><p>Eine Zeile ohne Start ist ein Hinweis: &#171;&#220;bersprungen: Die Ausf&#252;hrungszeit (..) ist verstrichen, w&#228;hrend der Manager geschlossen war&#187;, &#171;L&#228;uft versp&#228;tet: Die Ausf&#252;hrung war f&#252;r .. vorgesehen&#187;, &#171;Abgelehnt: Dieser Vorgang wird bereits ausgef&#252;hrt oder wartet in der Warteschlange&#187; und &#171;Fortgesetzt: Die Ursache des Stopps ist behoben&#187;.</p></details>
+<details id="clear"><summary>Verlauf l&#246;schen</summary><p>Fragt &#171;Den Verlauf der geplanten Vorg&#228;nge l&#246;schen? Die Vorg&#228;nge selbst und ihr Zeitplan bleiben unver&#228;ndert.&#187; mit Nein als Standardantwort. Es leert nur dieses Journal; die Vorg&#228;nge und ihre Zeitpl&#228;ne bleiben bestehen. Die Schaltfl&#228;che ist deaktiviert, solange der Verlauf leer ist.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

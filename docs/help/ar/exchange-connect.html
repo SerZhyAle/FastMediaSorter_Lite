@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>إضافة من خادم تبادل - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">إضافة من خادم تبادل</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>يربط هذا الكمبيوتر بحساب على خادم تبادل، فتظهر مجلدات كل أجهزة ذلك الحساب في قائمة الموارد. يُفتح من الزر إضافة من خادم تبادل.. في القسم أجهزتي من قائمة الموارد، وعند إسقاط سلسلة اتصال أو ملف على العارض أو كتابة واحدة في مربع المجلد.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="إضافة من خادم تبادل">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="إضافة من خادم تبادل">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>الصق سلسلة الاتصال من مشغّل الخادم، أو اكتب العنوان بصيغة host:port، أو اضغط الزر فتح ملف..</li><li>تحقق من السطر (ستُرسَل كلمة المرور إلى: ..)؛ هذا العنوان هو المكان الوحيد الذي تذهب إليه كلمة المرور.</li><li>أدخل اسم المستخدم وكلمة المرور.</li><li>اضغط الزر اتصال.</li><li>إذا سأل البرنامج عن شهادة الخادم، فقارن البصمة بالبصمة التي ذكرها المشغّل.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>سلسلة الاتصال أو العنوان</summary><p>يقبل المربع الأول سلسلة اتصال (تبدأ بـ FMSEXCH1:) أو عنوانًا بصيغة host:port. الزر لصق يملؤه من الحافظة، من نص أو من صورة رمز QR، والزر فتح ملف.. يقرأ ملف .fmsexch أو صورة QR. اللصق يملأ النموذج فقط: لا يُرسَل شيء حتى تضغط اتصال. يعرض السطر تحت المربع إلى أين ستذهب كلمة المرور؛ وعنوان الويب أو رمز المجلد أو السلسلة التالفة تُرفض هناك بكلمات واضحة.</p></details>
+<details id="account"><summary>اسم المستخدم وكلمة المرور</summary><p>يُملأ حقل اسم المستخدم من السلسلة عندما تحمل واحدًا. حقل كلمة المرور مقنَّع، والخيار إظهار كلمة المرور يكشفه. عند الضغط على اتصال تُفرَّغ مربعات كلمة المرور قبل أن يغادر أول بايت الكمبيوتر. يعرض سطر الحالة التقدم، وعند الفشل السبب: اسم مستخدم أو كلمة مرور غير مطابقة، أو محاولات كثيرة جدًا، أو خادم لا يجيب.</p></details>
+<details id="register"><summary>سلسلة دعوة</summary><p>السلسلة التي هي دعوة تسمّي الخادم بالفعل وتحوّل النافذة إلى إنشاء حساب: يظهر الحقل كلمة المرور مرة أخرى وملاحظة عن قاعدة كلمة المرور (10 أحرف على الأقل، مع حرف لاتيني كبير وآخر صغير ورقم)، ويصبح نص الزر إنشاء الحساب. وللخادم الكلمة الأخيرة في القاعدة.</p></details>
+<details id="trust"><summary>شهادة الخادم</summary><p>إذا كانت الشهادة غير معروفة يعرض سؤال بصمتها ويسأل هل تثق بالخادم وتتذكّره؛ والجواب الافتراضي هو لا. إذا سمّت السلسلة بصمة وقدّم الخادم بصمة أخرى، تُعرض الاثنتان ولا يُتذكَّر شيء ولا تُرسَل كلمة مرور.</p></details>
+<details id="sign-in-again"><summary>تسجيل الدخول من جديد</summary><p>عند فتح النافذة لإدخال خادم قائم لتسجيل الدخول من جديد، تعرض العنوان واسم المستخدم للقراءة فقط، وتكون البصمة التي يتذكرها ذلك الإدخال هي مرساة الثقة.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

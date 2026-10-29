@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Folder Parameters - Fast Media Sorter</title>
+  <title>资源选项 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Shared Folder Parameters</h1>
+  <h1 id="title">资源选项</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Folder Parameters.</p>
+    <p>一个共享文件夹的选项：它在手机上的名称、类型、显示哪些文件、谁可以修改，以及一些附加项。它从主窗口的「编辑」、文件夹所在行和资源向导中打开。实际的标题以文件夹名称结尾。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-root-params-light.png" alt="Shared Folder Parameters">
-    <img class="shot dark" src="share-root-params-dark.png" alt="Shared Folder Parameters">
+    <img class="shot light" src="share-root-params-light.png" alt="资源选项">
+    <img class="shot dark" src="share-root-params-dark.png" alt="资源选项">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>设置手机显示的名称。</li><li>选择资源类型或确切的媒体集合。</li><li>设置扫描条件。</li><li>选择访问权限。</li><li>打开「高级选项」填写备注、PIN 和幻灯片间隔。</li><li>点击「确定」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="name-type"><summary>名称和类型</summary><p>「手机上的名称：」是文件夹在应用中的名称；留空表示使用文件夹名。「资源类型：」提供普通文件夹、音频库、视频库、照片存储和文档。「确切类型集合：」选择确切的种类（图片、视频、音频、文本、所有文件）；留空表示由类型决定。</p></details>
+<details id="scan"><summary>扫描条件</summary><p>扫描子文件夹、把子文件夹显示为条目、显示隐藏文件，以及显示所有文件而不仅是媒体文件。</p></details>
+<details id="access"><summary>访问权限</summary><p>默认情况下，手机可以在该文件夹中添加、重命名和删除文件。「只读」是真正的锁定：服务器会拒绝更改。只读提示只是让应用隐藏编辑按钮；服务器并不阻止。目标文件夹可以接收手机复制和移动来的文件；它会变为可写并加入接收者列表，其颜色由应用选择。</p></details>
+<details id="advanced"><summary>高级选项</summary><p>一条备注（可选）、该资源的 PIN（打开资源时应用会要求输入）以及以秒为单位的幻灯片间隔。确认时，设置会发送到服务器。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

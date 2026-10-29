@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>&#220;bertragungen f&#252;r StreamsPlayer - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">&#220;bertragungen f&#252;r StreamsPlayer</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>Verwaltet die HTTP-&#220;bertragungen von Mediendateien und Ordnern, die dieser PC der App StreamsPlayer anbietet. Das Fenster &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;&#220;bertragungen..&#187; oder den Men&#252;eintrag zum Hinzuf&#252;gen im Hauptfenster von Share Manager; beide erscheinen nur, wenn der Freigabedienst &#220;bertragungen unterst&#252;tzt. Ein Start mit einem Pfad &#246;ffnet das Fenster und f&#252;hrt direkt zum Dialog &#171;&#220;bertragung erstellen&#187; f&#252;r diesen Pfad.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="&#220;bertragungen f&#252;r StreamsPlayer">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="&#220;bertragungen f&#252;r StreamsPlayer">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Haken Sie &#171;HTTP-&#220;bertragungs-Gateway aktivieren&#187; an oder erstellen Sie einfach eine &#220;bertragung, wodurch das Gateway eingeschaltet wird.</li><li>Klicken Sie auf &#171;&#220;bertragung erstellen..&#187;, w&#228;hlen Sie die Mediendatei, legen Sie Titel, G&#252;ltigkeitsdauer und die Internet-Option fest und klicken Sie auf &#171;&#220;bertragen&#187;.</li><li>Der Link wird in die Zwischenablage kopiert.</li><li>W&#228;hlen Sie eine Zeile und nutzen Sie &#171;Link kopieren&#187;, &#171;.spres speichern..&#187; oder &#171;QR anzeigen&#187;, um die &#220;bertragung an ein Ger&#228;t weiterzugeben.</li><li>Mit &#171;Widerrufen&#187; heben Sie eine &#220;bertragung auf, wenn sie nicht mehr gebraucht wird.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>Gateway-Schalter</summary><p>Das Kontrollk&#228;stchen schaltet das HTTP-Gateway ein oder aus. Die Zeile darunter lautet &#171;&#220;bertragungs-Gateway ist aus&#187; oder &#171;&#220;bertragungs-Gateway l&#228;uft (Port N)&#187;. Solange das Gateway l&#228;uft, beantwortet dieser PC HTTP-Anfragen f&#252;r die &#220;bertragungsdateien. Kann das Gateway nicht starten (Port, Firewall), kehrt das Kontrollk&#228;stchen in seinen tats&#228;chlichen Zustand zur&#252;ck, und der Grund erscheint in einer roten Zeile darunter; eine Ablehnung &#246;ffnet nie einen Dialog.</p></details>
+<details id="broadcast-list"><summary>&#220;bertragungsliste</summary><p>Spalten: Name, Typ (Datei oder Ordner mit der Anzahl seiner Elemente), Erstellt, G&#252;ltig bis (ein Datum, &#171;Bis auf Widerruf&#187; oder &#171;Abgelaufen&#187;), Zugriffe und Token, das nur die ersten sechs Zeichen zeigt. Die Liste liest sich alle 5 Sekunden selbst neu ein. Ein Doppelklick auf eine Zeile kopiert ihren Link.</p></details>
+<details id="create"><summary>&#220;bertragung erstellen..</summary><p>Fragt nach einer Mediendatei und &#246;ffnet den Dialog &#171;&#220;bertragung erstellen&#187;. Nachdem Sie ihn best&#228;tigt haben, wird das Gateway bei Bedarf eingeschaltet, die &#220;bertragung erstellt und ihr Link mit Datenschutzmarkierungen in die Zwischenablage kopiert; eine Meldung best&#228;tigt das Kopieren.</p></details>
+<details id="share-link"><summary>Link kopieren, .spres speichern.. und QR anzeigen</summary><p>Diese drei wirken auf die ausgew&#228;hlte Zeile und setzen ein laufendes Gateway mit einem Port voraus. Sie bilden den Link aus den aktuellen Adressen dieses PCs; die beim Erstellen getroffene Internet-Wahl wird f&#252;r jede &#220;bertragung gemerkt. &#171;.spres speichern..&#187; schreibt eine StreamsPlayer-Ressourcendatei, und &#171;QR anzeigen&#187; &#246;ffnet einen Code zum Scannen.</p></details>
+<details id="refresh-revoke"><summary>Aktualisieren und Widerrufen</summary><p>&#171;Aktualisieren&#187; ist nur f&#252;r eine Ordner&#252;bertragung verf&#252;gbar und bittet den Dienst, sie zu aktualisieren; eine Meldung best&#228;tigt das. &#171;Widerrufen&#187; funktioniert bei jeder Zeile und fragt vorher: &#171;&#220;bertragung X widerrufen? Der Link funktioniert sofort nicht mehr.&#187; Eine widerrufene &#220;bertragung l&#228;sst sich nicht wiederherstellen; erstellen Sie eine neue.</p></details>
+<details id="problems"><summary>Wenn die Seite aus ist</summary><p>Antwortet der Freigabedienst nicht oder fehlt ihm die Unterst&#252;tzung f&#252;r &#220;bertragungen, schaltet sich die Seite an Ort und Stelle selbst aus, und die rote Zeile nennt den Grund, zum Beispiel dass diese Version des &#220;bertragungsdienstes veraltet ist oder dass die Aktion nicht abgeschlossen werden konnte, mit Details im Protokoll.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

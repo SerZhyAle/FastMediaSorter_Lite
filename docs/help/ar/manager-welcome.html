@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>شارك مجلدك الأول - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">شارك مجلدك الأول</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>معالج من ست خطوات ينقلك من لا شيء إلى مجلد يُقدَّم لهاتفك: يشغّل الخادم، ويختار المجلد الأول، ويضبط المنفذ والخيارات الأساسية، وينتهي بفحص الحالة. يُفتح عند أول تشغيل لـ Share Manager ويمكن إعادة تشغيله من الإعدادات.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="شارك مجلدك الأول">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="شارك مجلدك الأول">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اقرأ المقدمة واضغط التالي.</li><li>في صفحة تشغيل الخادم اضغط الزر مرة واحدة وأكّد طلب المسؤول.</li><li>اختر المجلد الأول وخياراته.</li><li>أبقِ المنفذ أو غيّره.</li><li>اضبط اللغة وخيارات بدء التشغيل والشبكة المحلية.</li><li>في الصفحة الأخيرة تحقّق من الحالة وافتح رمز QR واضغط إنهاء.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>الخطوات والأزرار</summary><p>يعرض التذييل الخطوة N من 6. رجوع والتالي ينقلان بين الصفحات، ويتحول التالي إلى إنهاء في الصفحة الأخيرة، ولاحقاً يغلق المعالج ويُبقي ما أكّدته مسبقاً، ورفض الإعداد يغلقه نهائياً. في كل صفحة أربع كتل قصيرة: ما هو، لماذا، كيف سيعمل، وأين يمكن تغييره.</p></details>
+<details id="enable-step"><summary>تشغيل الخادم</summary><p>يبقى الخادم متوقفاً حتى هذه الخطوة. يطلب زر التفعيل صلاحيات المسؤول مرة واحدة ويضيف قاعدة واحدة في جدار حماية Windows للبرنامج. إذا ألغيت الطلب يبقى الخادم متوقفاً ويمكنك المحاولة مرة أخرى؛ وإذا كان قيد التشغيل بالفعل تذكر الصفحة أنه لا حاجة إلى رفع صلاحيات إضافي.</p></details>
+<details id="folder-step"><summary>المجلد الأول</summary><p>اختر مجلداً، ثم اسمه وملفه الشخصي وصلاحية الوصول. إضافة المورد الأول الآن.. يفتح معالج الموارد. يلزم مجلد واحد على الأقل للمتابعة. تُرسل الإعدادات إلى الخادم، وتبقى المجلدات قابلة للتعديل من قائمة النافذة الرئيسية.</p></details>
+<details id="port-step"><summary>المنفذ</summary><p>يختاره النظام يعيّن منفذاً مرة واحدة ويحتفظ به؛ ومنفذ ثابت: يتيح لك كتابة رقمك الخاص، مثلاً لتوجيه المنفذ في الموجّه. يُكتب الرقم في كل رمز QR وملف .fmscfg، لذا فتغييره لاحقاً يوقف الرموز التي سُلّمت بالفعل. قاعدة جدار الحماية تخص البرنامج لا المنفذ.</p></details>
+<details id="basics-step"><summary>الإعدادات الأساسية</summary><p>لغة الواجهة، والتشغيل عند تسجيل الدخول إلى Windows، وفتح نافذة المدير عند بدء التشغيل، والشبكة المحلية فقط (بدون وصول من الإنترنت). وضع الشبكة المحلية يوقف توجيه المنافذ وعنوان الإنترنت. خيار بدء التشغيل في إصدار Store يُدار من إعدادات Windows.</p></details>
+<details id="finish-step"><summary>الإنهاء</summary><p>تفحص الصفحة الأخيرة الخادم والمجلدات المختارة وتعرض النتيجة؛ والحالة الخضراء تعني أن هناك مشاركة تعمل فعلاً مع وصول إلى المجلد. رمز QR للهاتف يفتح الرمز، وتحديث يكرر الفحص. إذا كانت الحالة تحتاج إلى انتباه، فأصلح السبب في النافذة الرئيسية أو ارجع إلى خطوة المجلد.</p></details>
+<details id="replay"><summary>إعادة تشغيل المعالج</summary><p>الإعدادات - عام - الترحيب.. يفتح قائمة فيها إعادة إعداد المجلدات، وهي تفتح هذا المعالج من جديد.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

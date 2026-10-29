@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>Partager - code d&#39;acc&#232;s - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">Partager - code d&#39;acc&#232;s</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>Cr&#233;e le code d&#39;acc&#232;s pour un t&#233;l&#233;phone : un code QR et un fichier .fmscfg qui contiennent l&#39;adresse, l&#39;identifiant et les dossiers choisis. Il s&#39;ouvre depuis le bouton &#171;Partager&#187; de la fen&#234;tre principale tant que le partage est actif, et v&#233;rifie que le t&#233;l&#233;phone peut r&#233;ellement joindre le PC avant de remettre le code.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="Partager - code d&#39;acc&#232;s">
+    <img class="shot dark" src="package-wizard-dark.png" alt="Partager - code d&#39;acc&#232;s">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Cochez les dossiers &#224; mettre dans le code.</li><li>Modifiez chaque cellule du tableau qui doit diff&#233;rer pour ce code.</li><li>Si besoin, cochez &#171;Ne pas inclure l&#39;adresse Internet dans ce code&#187; ou &#171;Ne pas inclure le mot de passe dans le fichier/QR&#187;.</li><li>Attendez la v&#233;rification de l&#39;acc&#232;s.</li><li>Affichez le code QR, enregistrez le fichier .fmscfg, envoyez-le par e-mail ou copiez l&#39;identifiant et le mot de passe.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>Dossiers et r&#233;glages pour ce code d&#39;acc&#232;s</summary><p>Une ligne par dossier partag&#233;, avec les colonnes Actif, Dossier, Nom sur le t&#233;l&#233;phone, Type, Types de m&#233;dias, Analyser les sous-dossiers, Sous-dossiers comme &#233;l&#233;ments, Masqu&#233;s, Lecture seule, Indication RO, Destination, Commentaire et Diaporama, s. Cliquez sur une cellule pour la modifier. Les valeurs partent des r&#233;glages propres &#224; chaque dossier, et les modifications ne valent que pour ce code. &#171;Lecture seule&#187; est un vrai verrou sur le serveur ; &#171;Indication RO&#187; masque seulement les boutons de modification dans l&#39;application. Un dossier de destination est toujours accessible en &#233;criture, donc &#171;Lecture seule&#187; ne s&#39;y applique pas.</p></details>
+<details id="common-settings"><summary>R&#233;glages de transfert communs</summary><p>&#171;Ne pas inclure l&#39;adresse Internet dans ce code&#187; fait que le t&#233;l&#233;phone se connecte uniquement par le r&#233;seau local ; cela n&#39;&#233;teint pas le serveur, et l&#39;acc&#232;s par internet pour l&#39;ensemble du partage se ferme dans les param&#232;tres du gestionnaire. &#171;Ne pas inclure le mot de passe dans le fichier/QR&#187; retire le mot de passe du code ; transmettez-le s&#233;par&#233;ment. Le fait que le t&#233;l&#233;phone accepte un code sans mot de passe d&#233;pend de la version de l&#39;application.</p></details>
+<details id="access-check"><summary>V&#233;rification de l&#39;acc&#232;s</summary><p>Pendant la lecture de l&#39;&#233;tat, la fen&#234;tre l&#39;indique. Si le serveur ne fonctionne pas, si aucun dossier n&#39;est coch&#233; ou s&#39;il n&#39;y a pas d&#39;adresse utilisable, une indication dit ce qui manque. Lorsque la v&#233;rification n&#39;aboutit pas, ni le code ni le fichier ne sont remis : appuyez sur &#171;Rev&#233;rifier l&#39;acc&#232;s&#187;.</p></details>
+<details id="qr-code"><summary>Afficher le code QR</summary><p>Le code QR et le fichier .fmscfg donnent acc&#232;s aux dossiers et contiennent le mot de passe et le code PIN, s&#39;il est d&#233;fini : conservez-les et remettez-les comme une cl&#233;. Si les r&#233;glages sont trop volumineux pour un code QR, enregistrez le fichier et envoyez-le &#224; la place.</p></details>
+<details id="file-and-mail"><summary>Fichier, e-mail et identifiant</summary><p>&#171;Enregistrer un fichier .fmscfg..&#187; &#233;crit le fichier ; sur un syst&#232;me de fichiers qui ne peut pas restreindre l&#39;acc&#232;s, ou dans un dossier que d&#39;autres peuvent modifier, la fen&#234;tre refuse, car le fichier contient une cl&#233; d&#39;acc&#232;s. &#171;Envoyer par e-mail..&#187; joint le fichier avec une note invitant &#224; l&#39;importer dans l&#39;application Android puis &#224; le supprimer. &#171;Copier identifiant/mot de passe&#187; place les deux dans le presse-papiers.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

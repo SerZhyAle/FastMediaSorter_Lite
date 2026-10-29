@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>Partagez votre premier dossier - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">Partagez votre premier dossier</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>Un assistant en six &#233;tapes qui m&#232;ne de rien &#224; un dossier servi &#224; votre t&#233;l&#233;phone : il active le serveur, choisit le premier dossier, r&#232;gle le port et les options de base, et se termine par un contr&#244;le de l&#39;&#233;tat. Il s&#39;ouvre au premier d&#233;marrage de Share Manager et peut &#234;tre relanc&#233; depuis les param&#232;tres.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="Partagez votre premier dossier">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="Partagez votre premier dossier">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez l&#39;introduction et appuyez sur &#171;Suivant&#187;.</li><li>&#192; l&#39;&#233;tape &#171;Activer le serveur&#187;, appuyez une fois sur le bouton et confirmez la demande d&#39;administrateur.</li><li>Choisissez le premier dossier et ses options.</li><li>Gardez le port ou changez-le.</li><li>R&#233;glez la langue, le d&#233;marrage et les options du r&#233;seau local.</li><li>Sur la derni&#232;re page, v&#233;rifiez l&#39;&#233;tat, ouvrez le code QR et appuyez sur &#171;Terminer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>&#201;tapes et boutons</summary><p>Le pied de page affiche &#171;&#201;tape N sur 6&#187;. &#171;Pr&#233;c&#233;dent&#187; et &#171;Suivant&#187; passent d&#39;une page &#224; l&#39;autre, &#171;Suivant&#187; devient &#171;Terminer&#187; sur la derni&#232;re page, &#171;Plus tard&#187; ferme l&#39;assistant en conservant ce que vous avez d&#233;j&#224; confirm&#233;, et &#171;Refuser la configuration&#187; le ferme d&#233;finitivement. Chaque page comporte quatre courts blocs : &#171;Ce que c&#39;est&#187;, &#171;Pourquoi&#187;, &#171;Comment cela fonctionnera&#187; et &#171;O&#249; le modifier&#187;.</p></details>
+<details id="enable-step"><summary>Activer le serveur</summary><p>Jusqu&#39;&#224; cette &#233;tape, le serveur est arr&#234;t&#233;. Le bouton d&#39;activation demande une fois les droits d&#39;administrateur et ajoute une r&#232;gle du Pare-feu Windows pour le programme. Si vous annulez la demande, le serveur reste arr&#234;t&#233; et vous pouvez r&#233;essayer ; s&#39;il est d&#233;j&#224; actif, la page indique qu&#39;aucune autre &#233;l&#233;vation n&#39;est n&#233;cessaire.</p></details>
+<details id="folder-step"><summary>Premier dossier</summary><p>Choisissez un dossier, puis son nom, son profil et son acc&#232;s. &#171;Ajouter la premi&#232;re ressource maintenant..&#187; ouvre l&#39;assistant de ressource. Il faut au moins un dossier pour continuer. Les r&#233;glages sont envoy&#233;s au serveur, et les dossiers restent modifiables dans la liste de la fen&#234;tre principale.</p></details>
+<details id="port-step"><summary>Port</summary><p>&#171;Choisi par le syst&#232;me&#187; attribue un port une seule fois et le conserve ; &#171;Port fixe :&#187; vous permet de saisir votre propre num&#233;ro, par exemple pour la redirection de port du routeur. Le num&#233;ro est &#233;crit dans chaque code QR et chaque fichier .fmscfg, donc le changer plus tard rend inutilisables les codes d&#233;j&#224; remis. La r&#232;gle du pare-feu appartient au programme, pas au port.</p></details>
+<details id="basics-step"><summary>R&#233;glages de base</summary><p>&#171;Langue de l&#39;interface&#187;, &#171;D&#233;marrer &#224; l&#39;ouverture de session Windows&#187;, &#171;Ouvrir la fen&#234;tre du gestionnaire au d&#233;marrage&#187; et &#171;R&#233;seau local uniquement (sans acc&#232;s Internet)&#187;. Le mode r&#233;seau local d&#233;sactive la redirection de port et l&#39;adresse internet. L&#39;option de d&#233;marrage de la version du Store se g&#232;re dans les param&#232;tres de Windows.</p></details>
+<details id="finish-step"><summary>Terminer</summary><p>La derni&#232;re page v&#233;rifie le serveur et les dossiers choisis et affiche le r&#233;sultat ; un &#233;tat vert signifie qu&#39;un partage fonctionne r&#233;ellement avec acc&#232;s aux dossiers. &#171;Code QR pour le t&#233;l&#233;phone&#187; ouvre le code et &#171;Actualiser&#187; r&#233;p&#232;te la v&#233;rification. Si l&#39;&#233;tat demande de l&#39;attention, corrigez la cause dans la fen&#234;tre principale ou revenez &#224; l&#39;&#233;tape du dossier.</p></details>
+<details id="replay"><summary>Relancer l&#39;assistant</summary><p>Param&#232;tres - G&#233;n&#233;ral - &#171;Bienvenue..&#187; ouvre un menu avec &#171;Reprendre la configuration des dossiers&#187;, qui relance cet assistant.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

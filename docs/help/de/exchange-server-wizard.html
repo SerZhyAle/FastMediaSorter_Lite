@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>Mein Server auf diesem PC - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">Mein Server auf diesem PC</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Richtet in einem Durchgang einen pers&#246;nlichen Media Exchange Server auf diesem PC ein: Der Assistent legt das erste Konto an, startet den Server und verbindet denselben PC damit. Er &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Diesen PC als meinen Server verwenden..&#187; auf der Seite Media Exchange Server der Einstellungen von Share Manager, die nur angezeigt wird, solange auf diesem PC noch kein Server eingerichtet ist.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="Mein Server auf diesem PC">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Mein Server auf diesem PC">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Pr&#252;fen Sie das vorgeschlagene Login, das aus Ihrem Windows-Benutzernamen &#252;bernommen wird, oder geben Sie ein eigenes ein.</li><li>Lesen Sie die Erkl&#228;rung, was der Betreiber des Servers sehen kann.</li><li>Klicken Sie auf &#171;Starten&#187; und warten Sie die vier Schritte ab.</li><li>Kopieren Sie das Passwort sofort, danach den Fingerabdruck oder die Verbindungszeichenfolge f&#252;r Ihre anderen Ger&#228;te.</li><li>Klicken Sie auf &#171;Schlie&#223;en&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Login</summary><p>&#171;Login Ihres Kontos:&#187; nimmt 3 bis 64 Zeichen an: lateinische Kleinbuchstaben, Ziffern, Punkt, Unterstrich und Bindestrich; Gro&#223;buchstaben werden in Kleinbuchstaben umgewandelt. Der Hinweis unter dem Feld wechselt zur Warnfarbe, solange der Text kein Login sein kann, und &#171;Starten&#187; bewirkt nichts, bis er eines sein kann.</p></details>
+<details id="statement"><summary>Was der Betreiber sehen kann</summary><p>Das schreibgesch&#252;tzte Feld unter &#171;Lesen Sie, bevor Sie das erste Konto anlegen, was der Betreiber des Servers sehen kann:&#187; listet auf, was ein Serverbetreiber &#252;ber Konten, Ger&#228;te, Ordner, &#220;bertragungen und die Zwischenablage sehen kann, was der Server nicht lesen kann und wie viele Tage Protokolle aufbewahrt werden. Auf Ihrem eigenen Server sind Sie der Betreiber.</p></details>
+<details id="steps"><summary>Schritte und Fehler</summary><p>&#171;Starten&#187; f&#252;hrt vier Schritte aus und nennt jeweils den aktuellen: &#171;Konto wird angelegt..&#187;, &#171;Server wird gestartet..&#187;, &#171;Zertifikat wird gepr&#252;ft..&#187; und &#171;Dieser PC wird verbunden..&#187;. W&#228;hrenddessen ist das Login gesperrt und das Fenster l&#228;sst sich nicht schlie&#223;en. Wurde kein Konto angelegt, nennt ein Satz den Grund, zum Beispiel &#171;Dieses Konto gibt es schon - w&#228;hlen Sie ein anderes Login.&#187;; korrigieren Sie das Login und klicken Sie erneut auf &#171;Starten&#187;.</p></details>
+<details id="result"><summary>Ergebnis und Adressen</summary><p>Bei Erfolg meldet das Fenster &#171;Fertig: Der Server l&#228;uft, das Konto ist angelegt und dieser PC ist damit verbunden.&#187; und listet &#171;Adresse f&#252;r diesen PC:&#187;, &#171;Adresse f&#252;r andere Ger&#228;te:&#187; (dort steht &#171;nicht festgelegt - tragen Sie ihn in den Einstellungen des Austauschservers ein&#187;, bis diese Adresse festgelegt ist), &#171;Benutzername:&#187;, &#171;Passwort (einmal angezeigt):&#187; und &#171;Zertifikat-Fingerabdruck:&#187; auf. Sobald die Adresse f&#252;r andere Ger&#228;te festgelegt ist, kommt &#171;Verbindungszeichenfolge:&#187; hinzu. Ist der Server nicht gestartet, existiert das Konto trotzdem, und sein Passwort wird unten einmal angezeigt.</p></details>
+<details id="password-and-copying"><summary>Passwort und Kopieren</summary><p>Das Passwort ist maskiert. &#171;Passwort anzeigen&#187; zeigt es an; &#171;Passwort kopieren&#187; legt es auf dem gesch&#252;tzten Weg in die Zwischenablage, der es aus dem Zwischenablageverlauf von Windows und aus der Cloud-Zwischenablage heraush&#228;lt. Das Fenster zeigt es nur dieses eine Mal, es sei denn, &#171;Kontopassw&#246;rter auf diesem PC speichern&#187; ist eingeschaltet. &#171;Fingerabdruck kopieren&#187; und &#171;Zeichenfolge kopieren&#187; sind einfache Kopien: Keine von beiden enth&#228;lt ein Passwort. Andere Ger&#228;te brauchen Adresse, Login, Passwort und Fingerabdruck, den sie bei der ersten Verbindung vergleichen.</p></details>
+<details id="close-warning"><summary>Schlie&#223;en</summary><p>Wurde das Passwort weder kopiert noch angezeigt noch auf diesem PC gespeichert, fragt &#171;Schlie&#223;en&#187; nach: &#171;Schlie&#223;en, ohne das Passwort zu kopieren?&#187; mit Nein als Standardantwort, weil das Passwort nicht erneut angezeigt, sondern nur zur&#252;ckgesetzt werden kann.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

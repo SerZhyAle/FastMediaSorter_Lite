@@ -231,6 +231,20 @@ Partial Public Class Share_Root_Params_Form
             ' stands under its caption for good, so nothing toggling at run time can grow the content later.
             OptionRows.ArrangeAll(Me)
             Dim content As Size = _content.PreferredSize
+            ' The full-width rows (the notes and the access options) are one line each and set the grid's width. On a screen
+            ' narrower than that (a small monitor at a high scale) they wrap at the width the window can have, so no row runs
+            ' past the window's right edge; only the vertical axis scrolls.
+            Dim roomW As Integer = wa.Width - chromeW - SystemInformation.VerticalScrollBarWidth
+            If content.Width > roomW Then
+                Dim rowW As Integer = Math.Max(1, roomW - _content.Padding.Horizontal)
+                For Each c As Control In _content.Controls
+                    If _content.GetColumnSpan(c) = 2 AndAlso (TypeOf c Is OptionRowHost OrElse (TypeOf c Is Label AndAlso c.AutoSize)) Then
+                        c.MaximumSize = New Size(rowW, 0)
+                    End If
+                Next
+                OptionRows.ArrangeAll(Me)
+                content = _content.PreferredSize
+            End If
             ' the row wraps whole buttons when it is narrow, so its height depends on the width it gets
             Dim barH As Integer = _buttonBar.GetPreferredSize(New Size(content.Width, 0)).Height
             Dim desiredClientH As Integer = content.Height + barH

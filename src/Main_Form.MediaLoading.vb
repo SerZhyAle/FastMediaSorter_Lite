@@ -1478,6 +1478,8 @@ Partial Public Class Main_Form
         ' An animation video (spec 242) is let go of before the screen moves: the player is shared with the next video.
         StopAnimationVideo()
         ReleasePdfDocument()
+        ReleaseEpubReader()
+        ReleaseHtmlView()
         ReleaseTextDocument()
         ClearEpubPlaceholderData()
         ClearAudioSurface()
@@ -1736,14 +1738,8 @@ Partial Public Class Main_Form
                     PlayVideoWithVlcAsync(Current_File_Name)
                     RequestAudioMetadataAsync(Current_File_Name, media_Generation)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: Audio is set")
-                ElseIf current_File_Extension = ".pdf" Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: PDF to load")
-                    LoadPdfDocument(Current_File_Name)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: PDF is set")
-                ElseIf TextFileReader.IsTextExtension(current_File_Extension) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: Text document to load")
-                    LoadTextDocument(Current_File_Name)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: Text is set")
+                ElseIf TryLoadDocumentContent(Current_File_Name) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: Document is set")
 #End If
                 ElseIf video_File_Extensions.Contains(current_File_Extension) Then
 #If NETFRAMEWORK Then

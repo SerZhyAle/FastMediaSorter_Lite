@@ -161,6 +161,12 @@
          with no OS codec involved (no Store "HEVC Video Extensions" needed). Its native
          dll publishes loose next to the exe, same as libvlc. -->
     <PackageReference Include="Docnet.Core" Version="2.6.0" />
+    <!-- 274/275: used only by the opt-in EPUB and HTML surfaces. The legacy import stays intact.
+         ExcludeAssets="native" keeps NuGet from flattening runtimes\win-x64\native\WebView2Loader.dll
+         into the publish root (275 section 9.2: no root/PATH loader); the one loader is the Content
+         item below, in webview2\win-x64\, which HtmlRuntimeService.PrepareLoader points the SDK at. -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" GeneratePathProperty="true" ExcludeAssets="native" />
+    <PackageReference Include="AngleSharp" Version="1.8.5" />
     <PackageReference Include="Magick.NET-Q8-x64" Version="15.0.0" />
 
     <!-- Single video engine (epic §6.2) - same versions the net48 build vendors. -->
@@ -201,4 +207,16 @@
     <PackageReference Include="QRCoder" Version="1.4.3" />
   </ItemGroup>
 
+  <Target Name="RemoveUnusedWebViewWpfReference" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+  <PropertyGroup>
+    <!-- The package's own targets would also lay down runtimes\win-*\native\WebView2Loader.dll. -->
+    <WebView2NeverCopyLoaderDllToOutputDirectory>true</WebView2NeverCopyLoaderDllToOutputDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll" Link="webview2\win-x64\WebView2Loader.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

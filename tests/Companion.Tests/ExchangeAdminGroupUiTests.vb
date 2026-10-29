@@ -89,6 +89,13 @@ Public Class ExchangeAdminGroupUiTests
         Application.DoEvents()
     End Sub
 
+    ''' <summary>Whether the control is on screen once its own group card is the selected rail item: the page shows one
+    ''' card at a time, and accounts, devices and the service commands are separate cards.</summary>
+    Private Shared Function Shown(form As Share_Settings_Form, target As Control) As Boolean
+        ExchangeTestSupport.ShowSettingsCardOf(form, target)
+        Return target.Visible
+    End Function
+
     <Fact>
     Public Sub An_account_selected_shows_its_devices_a_device_selected_offers_revoke_and_a_refresh_keeps_both_selections()
         ExchangeTestSupport.OnUi(
@@ -98,7 +105,7 @@ Public Class ExchangeAdminGroupUiTests
                     form.Location = New Point(-6000, -6000)
                     form.ShowInTaskbar = False
                     form.Show()
-                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
+                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange", Nothing})
                     ExpandAllExchangeCards(form)
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
                     Dim devices As ListView = Field(Of ListView)(form, "_lvXDevices")
@@ -106,29 +113,31 @@ Public Class ExchangeAdminGroupUiTests
                     Dim remove As Button = Field(Of Button)(form, "_btnXRemoveAccount")
                     Dim revoke As Button = Field(Of Button)(form, "_btnXRevoke")
                     Dim add As Button = Field(Of Button)(form, "_btnXAddAccount")
+                    ' The page shows one group card at a time: the accounts card, as its rail item selects it.
+                    ExchangeTestSupport.ShowSettingsCardOf(form, accounts)
 
                     Pump(Function() accounts.Items.Count = 2, "the accounts list")
                     Assert.Equal({"alice", "bob"}, accounts.Items.Cast(Of ListViewItem)().Select(Function(i) i.Text).ToArray())
-                    Assert.True(add.Visible)
-                    Assert.False(reset.Visible OrElse remove.Visible, "nothing is selected: nothing to reset or remove")
-                    Assert.False(devices.Visible)
-                    Assert.True(Field(Of Label)(form, "_lblXAccOffline").Visible, "no server runs: the note says a change applies when it starts")
+                    Assert.True(Shown(form, add))
+                    Assert.False(Shown(form, reset) OrElse Shown(form, remove), "nothing is selected: nothing to reset or remove")
+                    Assert.False(Shown(form, devices))
+                    Assert.True(Shown(form, Field(Of Label)(form, "_lblXAccOffline")), "no server runs: the note says a change applies when it starts")
 
                     ' selecting an account (programmatically here, by a click in life) must not throw and shows its devices
                     accounts.Handle.ToString()
                     accounts.Items(0).Selected = True
                     Pump(Function() devices.Items.Count = 2, "the devices of alice")
-                    Assert.True(devices.Visible)
-                    Assert.True(reset.Visible AndAlso remove.Visible)
+                    Assert.True(Shown(form, devices))
+                    Assert.True(Shown(form, reset) AndAlso Shown(form, remove))
                     Assert.Contains("alice", Field(Of Label)(form, "_lblXDevTitle").Text)
-                    Assert.False(revoke.Visible, "no device is selected")
+                    Assert.False(Shown(form, revoke), "no device is selected")
                     Assert.Equal("OFFICE-PC", devices.Items(0).Text)
                     Assert.Equal("Phone", devices.Items(1).Text)
 
                     devices.Handle.ToString()
                     devices.Items(1).Selected = True
                     Application.DoEvents()
-                    Assert.True(revoke.Visible)
+                    Assert.True(Shown(form, revoke))
 
                     ' a refresh (the poll, or an action's) changes no row: both selections stay
                     Refresh(form)
@@ -137,13 +146,13 @@ Public Class ExchangeAdminGroupUiTests
                     Assert.Equal("alice", accounts.SelectedItems(0).Text)
                     Assert.Equal(1, devices.SelectedItems.Count)
                     Assert.Equal("Phone", devices.SelectedItems(0).Text)
-                    Assert.True(revoke.Visible)
+                    Assert.True(Shown(form, revoke))
 
                     ' another account: its devices replace them (bob has none, so the devices block goes), the revoke button with them
                     accounts.Items(1).Selected = True
-                    Pump(Function() Not devices.Visible, "the devices of bob to be hidden")
-                    Assert.False(revoke.Visible)
-                    Assert.True(reset.Visible AndAlso remove.Visible)
+                    Pump(Function() Not Shown(form, devices), "the devices of bob to be hidden")
+                    Assert.False(Shown(form, revoke))
+                    Assert.True(Shown(form, reset) AndAlso Shown(form, remove))
                     form.Hide()
                 End Using
             End Sub)
@@ -159,13 +168,18 @@ Public Class ExchangeAdminGroupUiTests
                     form.ShowInTaskbar = False
                     form.Show()
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
-                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
+                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange", Nothing})
                     ExpandAllExchangeCards(form)
+                    ExchangeTestSupport.ShowSettingsCardOf(form, accounts)
                     Pump(Function() accounts.Items.Count = 2, "the accounts list")
                     Assert.False(Field(Of FlowLayoutPanel)(form, "_rowXWizard").Visible, "accounts exist: the wizard is for a PC where nothing exists yet")
                     Assert.Equal(ExchangeAdminText.Totals(2, 2), Field(Of Label)(form, "_lblXAccTotals").Text)
                     Dim pages = Field(Of Dictionary(Of String, Panel))(form, "_pages")
-                    Assert.True(pages("exchange").DisplayRectangle.Height > pages("exchange").ClientSize.Height)
+                    ' The page shows the accounts card alone: its scroll extent reaches the card's last row.
+                    Dim card = ExchangeTestSupport.SettingsGroups(form, "exchange").Single(Function(g) g.Card.Contains(accounts)).Card
+                    Dim cardBottom = card.PointToScreen(New Point(0, card.Height)).Y - pages("exchange").PointToScreen(Point.Empty).Y - pages("exchange").AutoScrollPosition.Y
+                    Assert.True(cardBottom <= pages("exchange").DisplayRectangle.Height + 1,
+                                "the accounts card ends at " & cardBottom & " below a scroll extent of " & pages("exchange").DisplayRectangle.Height)
                     Dim capture = Environment.GetEnvironmentVariable("FMS_SETTINGS_CAPTURE")
                     If Not String.IsNullOrEmpty(capture) Then
                         IO.Directory.CreateDirectory(capture)
@@ -191,7 +205,7 @@ Public Class ExchangeAdminGroupUiTests
                     form.ShowInTaskbar = False
                     form.Show()
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
-                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
+                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange", Nothing})
                     Pump(Function() accounts.Items.Count = 2, "the accounts list")
                     accounts.Handle.ToString()
                     accounts.Items(1).Selected = True

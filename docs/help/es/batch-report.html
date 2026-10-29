@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>Informe de la operaci&#243;n - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">Informe de la operaci&#243;n</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>Enumera lo que ocurri&#243; con cada archivo de la &#250;ltima operaci&#243;n por lotes (mover, copiar, eliminar o deshacer) y por qu&#233; algo se omiti&#243; o fall&#243;. Nunca se abre solo: haga clic en la l&#237;nea del informe al pie del panel de miniaturas (F3) despu&#233;s de una ejecuci&#243;n. Si la ejecuci&#243;n no fue limpia, la l&#237;nea termina con &#171;haga clic para ver los detalles&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="Informe de la operaci&#243;n">
+    <img class="shot dark" src="batch-report-dark.png" alt="Informe de la operaci&#243;n">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Ejecute una operaci&#243;n sobre varios archivos en el panel de miniaturas.</li><li>Lea la l&#237;nea de resumen al pie del panel.</li><li>Haga clic en la l&#237;nea para abrir esta ventana.</li><li>Mire la parte superior de la lista: los fallos van primero.</li><li>Seleccione filas y use &#171;Copiar&#187; para tomar sus rutas o &#171;Mostrar en el Explorador de archivos&#187; para encontrar un archivo.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>La l&#237;nea de resumen</summary><p>La l&#237;nea empieza con el resultado: &#171;Archivos movidos: 5&#187;, &#171;Archivos copiados: 5&#187;, &#171;Archivos eliminados: 5&#187;, &#171;Archivos restaurados: 5&#187; u &#171;Operaciones completadas: 5&#187;. Otras partes, cada una con su n&#250;mero, aparecen solo cuando el n&#250;mero no es cero: &#171;omitidos&#187;, &#171;errores&#187;, &#171;operaciones sin deshacer&#187;, &#171;eliminados permanentemente, no se pueden restaurar&#187; y, cuando la ejecuci&#243;n se detiene antes de tiempo, &#171;interrumpido, sin conexi&#243;n con la carpeta - no iniciado&#187; (tres conexiones fallidas seguidas la detienen) o &#171;cancelado - no iniciado&#187;.</p></details>
+<details id="list"><summary>La lista</summary><p>Columnas: Archivo, Estado y Detalles. Las filas peores van primero: fallidas, despu&#233;s no iniciadas, despu&#233;s omitidas y por &#250;ltimo hechas; dentro de un grupo los archivos conservan el orden de la ejecuci&#243;n. La informaci&#243;n en pantalla de una fila muestra la ruta completa. Los detalles dan un motivo claro para un fallo, la carpeta de destino para un archivo terminado, &#171;guardado como&#187; y el nombre nuevo cuando el antiguo estaba ocupado, y &#171;Eliminado permanentemente - no se puede deshacer&#187; para una eliminaci&#243;n que se salt&#243; la Papelera.</p></details>
+<details id="states"><summary>Estados y motivos de omisi&#243;n</summary><p>Estados: &#171;listo&#187;, &#171;Error&#187;, &#171;omitido&#187;, &#171;no iniciado&#187;. Un archivo omitido dice por qu&#233;: &#171;ya en esta carpeta&#187;, &#171;el archivo ya no est&#225; en el disco&#187;, &#171;los archivos dentro del archivo no se modifican&#187;, &#171;el mismo nombre ya existe entre los archivos seleccionados&#187;, &#171;el recurso es de solo lectura&#187;, &#171;este es el mismo archivo&#187; o &#171;nombre ya ocupado en la carpeta de destino&#187;. Un archivo no iniciado dice &#171;inicio no efectuado: operaci&#243;n interrumpida&#187;.</p></details>
+<details id="copy-show"><summary>Mostrar en el Explorador de archivos, Copiar, Cerrar</summary><p>&#171;Mostrar en el Explorador de archivos&#187; est&#225; activo cuando hay una fila seleccionada; abre una ventana de carpeta con el primer archivo seleccionado resaltado, o la carpeta si el archivo se ha movido. &#171;Copiar&#187; (tambi&#233;n Ctrl+C) pone en el portapapeles las rutas completas de las filas seleccionadas, una por l&#237;nea, o de todas las filas si no hay ninguna seleccionada: una forma r&#225;pida de pasar la lista de archivos con problemas. &#171;Cerrar&#187; termina el informe.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

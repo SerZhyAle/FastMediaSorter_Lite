@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>Ressource ausw&#228;hlen - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">Ressource ausw&#228;hlen</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>W&#228;hlt eine Ressource aus der Ressourcenliste des Viewers als Quelle oder Ziel eines geplanten Vorgangs. Das Fenster &#246;ffnet sich &#252;ber &#171;Ressource..&#187; neben Quelle oder Ziel im Fenster des geplanten Vorgangs.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Ressource ausw&#228;hlen">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Ressource ausw&#228;hlen">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>W&#228;hlen Sie die Ressource in der Liste &#171;Ressource&#187;.</li><li>Pr&#252;fen oder &#228;ndern Sie &#171;Ordner innerhalb der Ressource&#187;; er beginnt im Stammordner der Ressource.</li><li>Klicken Sie auf &#171;Ausw&#228;hlen&#187;. &#171;Abbrechen&#187; beh&#228;lt den bisherigen Ort.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>Ressourcenliste</summary><p>Angeboten werden nur die SFTP-Server und Netzwerkordner aus der Liste des Viewers, nach Namen sortiert; Ressourcen anderer Art erscheinen nicht. Gibt es keine, sagt das Fenster: &#171;In der Ressourcenliste gibt es keine passenden Ressourcen. F&#252;gen Sie im Viewer einen SFTP-Server oder einen Netzwerkordner hinzu.&#187;, und &#171;Ausw&#228;hlen&#187; bleibt deaktiviert. Das Hinzuf&#252;gen einer Ressource oder das erneute Best&#228;tigen ihres Vertrauens geschieht im Viewer; dieses Fenster baut keine Verbindung auf.</p></details>
+<details id="folder"><summary>Ordner innerhalb der Ressource</summary><p>Der Ordner muss im Stammordner der gew&#228;hlten Ressource liegen, sonst lehnt ihn &#171;Speichern&#187; im Vorgangsfenster ab. Die Wahl einer anderen Ressource f&#252;llt das Feld mit deren Stammordner neu.</p></details>
+<details id="unattended"><summary>L&#228;uft ohne R&#252;ckfragen</summary><p>Das Passwort und der Serverschl&#252;ssel stammen aus der Ressourcenliste des Viewers. Ein Lauf fragt nichts: Ist das Passwort nicht gespeichert oder der Serverschl&#252;ssel nicht best&#228;tigt, bricht der Vorgang ab, und der Verlauf nennt den Grund. Eine schreibgesch&#252;tzte Ressource kann nicht Ziel eines Verschiebens oder L&#246;schens sein, eine Ressource, deren Stammordner per PIN gesch&#252;tzt ist, wird abgelehnt, und ein Archiv nimmt nur gew&#246;hnliche Ordner an.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

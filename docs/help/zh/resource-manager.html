@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>资源 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">资源</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>查看器可以打开的服务器和网络文件夹列表：SFTP 服务器、Windows 网络文件夹 (SMB)，以及 Share Manager 从这台电脑共享出去的文件夹。它从文件夹菜单中的「管理资源..」打开；同一份列表也位于设置窗口的「服务器和资源」页。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="资源">
+    <img class="shot dark" src="resource-manager-dark.png" alt="资源">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>点击「添加..」并填写服务器信息，或通过「更多」按钮导入设置文件。</li><li>选中新添加的行，点击「检查」。</li><li>点击「打开」，或双击该行：查看器会连接并显示服务器的文件夹。</li><li>用「编辑..」修改地址或密码，用「删除」忘记一个资源。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>列表</summary><p>列为：名称、类型、地址、访问和上次打开。类型是「SFTP 服务器」、「网络文件夹 (SMB)」或「共享文件夹 (Share Manager)」；访问显示「只读」或「读写」。列表下方有一行统计资源数量；没有资源时，窗口会显示一条提示和一个「添加..」按钮。编辑、删除和检查（以及资源窗口底部一行中的打开）需要先选中一行；在此之前，它们的工具提示是「请先在列表中选择一个资源」。</p></details>
+<details id="add-edit"><summary>添加.. 和 编辑..</summary><p>「添加..」打开新资源的表单，「编辑..」打开所选资源的表单。在其中输入的密码会按你的 Windows 账户加密保存，绝不会存放在列表本身中。</p></details>
+<details id="remove"><summary>删除</summary><p>「删除」会先询问，默认答案是「否」。提示会写明资源名称，并说明为它保存的密码也会一并删除，而服务器上的文件不受影响。</p></details>
+<details id="check"><summary>检查</summary><p>「检查」会在不打开的情况下测试所选行。对于 SFTP 服务器，它会尝试该资源所有已知的地址，并把每个地址以 host:port 的形式连同结论一并报告：只要有一个 SSH 应答，检查即成功；端口开放但不是 SSH 则为警告；没有任何应答则为失败。检查不会发送密码。对于网络文件夹，它使用已保存的密码打开共享并读取其顶层文件夹；如果没有保存密码，会提示你通过「编辑..」输入。对于 Share Manager 行，它只查看该文件夹是否存在于这台电脑上。</p></details>
+<details id="open"><summary>打开</summary><p>「打开」或双击某一行，会把该资源交给查看器，由查看器连接并显示其文件夹。如果没有保存密码，或保存的密码被拒绝，会先弹出一个小窗口询问密码。</p></details>
+<details id="more-menu"><summary>「更多」按钮</summary><p>标有圆点的按钮包含：「导出..」（需要选中一个资源）、「从文件导入..」（.fmscfg、.json 或 .txt 文件，或二维码图片；也可以把文件拖放到列表上）、「从剪贴板导入」、「使用摄像头扫描..」（仅在已安装 Share Manager 且找到摄像头时才会出现）、「显示手机连接码..」，以及在选中某一行时出现的「为什么连不上？..」，它会打开连接诊断。</p></details>
+<details id="share-manager-rows"><summary>Share Manager 行和「我的设备」</summary><p>Share Manager 从这台电脑共享的文件夹在 Share Manager 中管理：它的工具提示是「此共享文件夹由 Share Manager 管理」，其所在行的「编辑..」和「删除」会打开 Share Manager，而不是在这里更改任何内容，「导出..」则不可用。当交换客户端可用时，列表下方的「我的设备」区域会显示你在交换服务器上的其他设备的文件夹。</p></details>
+    <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

@@ -9,7 +9,7 @@ You implement one slice of work in the FastMediaSorter repository. The core CLAU
 
 - Stay inside the slice named in the brief. Another agent may be editing other files in this tree: never revert, restore, stash or reformat anything you were not asked to change.
 - Find before you read: Grep the symbol, then Read an offset/limit window. Never read a file of more than 500 lines whole.
-- Check with `pwsh -NoProfile -File tools\Invoke-Tests.ps1`: `-Build modern` after edits, `-Suite lite|companion -Filter <fragment>` for the tests you touched. Grep the log it keeps instead of re-running. Run `tools\Run-AllTests.ps1` only when the brief says so.
+- Between releases, run only measured checks of at most 5 seconds and a direct check of the change. For engineering placement use `pwsh -NoProfile -File tools\Invoke-Tests.ps1 -Fast -Area engineering`; other areas have no measured fast selector. Record deferred builds and tests as RELEASE items naming their commands. A slower run needs an explicit owner request.
 - Long commands go with run_in_background; never poll with sleep.
 - If the slice is not finished after about 80 turns, stop at a clean point and write a handoff: what is done, what is left, the exact next step and the files, so a fresh agent can continue without this context.
 - Report in under 25 lines: files changed, what you verified (command and its exit code), what you did not verify.

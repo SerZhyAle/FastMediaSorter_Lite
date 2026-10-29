@@ -109,8 +109,9 @@ Public Class DriveSettingsPageLayoutTests
         Return DirectCast(GetType(Share_Settings_Form).GetField("_pages", Flags).GetValue(window), Dictionary(Of String, Panel))
     End Function
 
-    Private Shared Sub ShowPage(window As Share_Settings_Form, pageId As String)
-        GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", Flags).Invoke(window, New Object() {pageId})
+    ''' <summary>Selects the page at one rail group: a page shows only the selected group's card.</summary>
+    Private Shared Sub ShowPage(window As Share_Settings_Form, pageId As String, Optional groupId As String = Nothing)
+        GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", Flags).Invoke(window, New Object() {pageId, groupId})
         Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", Flags).GetValue(window),
                                 Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
         If groups.ContainsKey(pageId) Then
@@ -246,12 +247,16 @@ Public Class DriveSettingsPageLayoutTests
         Dim wantSignIn As Boolean = kind = "not-configured" OrElse kind = "signed-out"
         Dim wantCancel As Boolean = kind = "signing-in"
         Dim wantSignOut As Boolean = kind = "signed-in" OrElse kind = "unavailable"
+        ' One group card is on screen at a time: each line is read with its own card selected.
+        ShowSettingsCardOf(window, signIn)
         If signIn.Visible <> wantSignIn Then found.Add(lbl & ": 'Sign in' is " & If(signIn.Visible, "shown", "hidden") & " in the state " & kind)
         If cancel.Visible <> wantCancel Then found.Add(lbl & ": 'Cancel' is " & If(cancel.Visible, "shown", "hidden") & " in the state " & kind)
         If signOut.Visible <> wantSignOut Then found.Add(lbl & ": 'Sign out' is " & If(signOut.Visible, "shown", "hidden") & " in the state " & kind)
         If kind = "not-configured" AndAlso signIn.Enabled Then found.Add(lbl & ": 'Sign in' is enabled with no OAuth client")
         If kind = "signed-out" AndAlso Not signIn.Enabled Then found.Add(lbl & ": 'Sign in' is disabled although a client exists")
+        ShowSettingsCardOf(window, result)
         If kind = "signed-out" AndAlso Not result.Visible Then found.Add(lbl & ": the sign-out result is not shown")
+        ShowSettingsCardOf(window, device)
         If kind = "signed-in" AndAlso Not device.Visible Then found.Add(lbl & ": this PC's line is not shown while signed in")
     End Sub
 
@@ -330,7 +335,12 @@ Public Class DriveSettingsPageLayoutTests
                                 ShowPage(window, "drive")
                                 Dim lbl As String = code & " @" & CInt(factor * 100).ToString(CultureInfo.InvariantCulture) & "% " & kind
                                 ExpectState(window, kind, lbl, found)
-                                Dim audited As Integer = Audit(window, lbl, factor, found)
+                                Dim audited As Integer = 0
+                                For Each grp In SettingsGroups(window, "drive")
+                                    ShowPage(window, "drive", grp.Id)
+                                    audited += Audit(window, lbl & "/" & grp.Id, factor, found)
+                                Next
+                                If audited = 0 Then audited = Audit(window, lbl, factor, found)
                                 If audited < 4 Then found.Add(lbl & ": only " & audited.ToString(CultureInfo.InvariantCulture) & " texts and buttons were audited - the audit has stopped looking at the page")
                                 window.Hide()
                             End Using

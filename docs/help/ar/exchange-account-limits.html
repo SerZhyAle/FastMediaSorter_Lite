@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>حدود الحساب - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">حدود الحساب</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>يضبط حدودًا فردية لحساب واحد في Media Exchange Server الذي تشغّله؛ وأي قيمة تُترك 0 تتبع الافتراضي في الخادم. تُفتح النافذة من الزر الحدود.. أسفل قائمة الحسابات في صفحة Media Exchange Server ضمن إعدادات Share Manager، ويظهر هذا الزر بعد تحديد حساب. ويسمّي العنوان الحساب: حدود الحساب: &lt;اسم الدخول&gt;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="حدود الحساب">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="حدود الحساب">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>حدّد الحساب ثم اضغط الزر الحدود..</li><li>اضبط رقمًا لكل حد تريد تغييره، واترك 0 للافتراضي في الخادم.</li><li>اضغط حفظ.</li><li>اقرأ سطر النتيجة: تم حفظ حدود الحساب &lt;اسم الدخول&gt;.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>الأجهزة والموارد</summary><p>الحقل الحد الأقصى للأجهزة (0 = الافتراضي) يحدّد عدد الأجهزة التي يجوز تسجيل دخولها إلى الحساب. والحقل الحد الأقصى للموارد المنشورة (0 = الافتراضي) يحدّد عدد المجلدات المشاركة والموارد الأخرى التي يجوز للحساب نشرها على الخادم.</p></details>
+<details id="broadcasts"><summary>البثوث</summary><p>الحقل الحد الأقصى للبثوث (0 = الافتراضي) يحدّد بثوث الحساب كله، والحقل الحد الأقصى للبثوث لكل جهاز (0 = الافتراضي) يحدّد ما يجوز لجهاز واحد منه أن يبدأه.</p></details>
+<details id="clipboard"><summary>حد الحافظة</summary><p>الحقل حد الحافظة، ميغابايت (0 = 5 غيغابايت افتراضيًا) يحدّد أكبر قيمة يستطيع الحساب إرسالها إلى حافظته على الخادم، بالميغابايت الكاملة. أما الحد المخزَّن بوحدات أصغر، مثل 512 كيلوبايت، فيظهر 0 ويحتفظ بحجمه الدقيق ما دمت لا تلمس هذا الحقل.</p></details>
+<details id="save"><summary>الحفظ والإلغاء</summary><p>يستبدل الزر حفظ حدود الحساب كلها دفعة واحدة: كل رقم أكبر من 0 يصبح حدًّا، وكل 0 يعني الافتراضي في الخادم، وخمسة أصفار تزيل تجاوزات الحساب. ولا يغيّر الزر إلغاء شيئًا. وإذا رفض الخادم قيمة يذكر سطر النتيجة السبب، مثل: الحد غير مسموح به: يجب أن يكون رقمًا صحيحًا ضمن النطاق الذي يقبله الخادم.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

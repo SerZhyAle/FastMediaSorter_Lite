@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Live Broadcast - Fast Media Sorter</title>
+  <title>Crear transmisi&#243;n - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Create Live Broadcast</h1>
+  <h1 id="title">Crear transmisi&#243;n</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Live Broadcast.</p>
+    <p>Configura una transmisi&#243;n antes de crearla: su t&#237;tulo, cu&#225;nto dura y si llega m&#225;s all&#225; de la red local. Se abre desde &#171;Crear transmisi&#243;n..&#187; en la ventana de transmisiones para el archivo o la carpeta elegidos. No se crea ni se env&#237;a nada hasta que pulsas &#171;Transmitir&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcast-create-light.png" alt="Create Live Broadcast">
-    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Create Live Broadcast">
+    <img class="shot light" src="share-broadcast-create-light.png" alt="Crear transmisi&#243;n">
+    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Crear transmisi&#243;n">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Comprueba la ruta de la primera l&#237;nea (Carpeta: o Archivo:).</li><li>Edita &#171;T&#237;tulo del canal:&#187;; empieza con el nombre de la carpeta o del archivo.</li><li>Elige &#171;Duraci&#243;n:&#187;.</li><li>Para una carpeta, marca &#171;Incluir subcarpetas&#187; si las necesitas.</li><li>Deja marcada o desmarca &#171;Tambi&#233;n por internet&#187;.</li><li>Pulsa &#171;Transmitir&#187; (Intro) o &#171;Cancelar&#187; (Esc).</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="title-lifetime"><summary>T&#237;tulo y duraci&#243;n</summary><p>El t&#237;tulo del canal es lo que muestra la lista de transmisiones. La duraci&#243;n ofrece 24 horas (predeterminada), 1 hora, 7 d&#237;as y &#171;Hasta revocaci&#243;n&#187;, que no tiene fecha de fin y permanece hasta que la revoques en la ventana de transmisiones.</p></details>
+<details id="subfolders"><summary>Incluir subcarpetas</summary><p>Solo se muestra cuando el destino es una carpeta y est&#225; desactivada de forma predeterminada. Decide si se incluyen los archivos de las subcarpetas de la carpeta transmitida.</p></details>
+<details id="internet"><summary>Tambi&#233;n por internet</summary><p>Est&#225; marcada salvo que los ajustes de uso compartido limiten las exportaciones a la red local. Cuando est&#225; marcada, el enlace incluye tambi&#233;n las direcciones de internet IPv6 y con puerto redirigido de este PC, si se conocen, junto a la local. Marcarla cambia la duraci&#243;n de 24 horas a 1 hora (puedes volver a cambiarla) y muestra una advertencia roja: el tr&#225;fico HTTP no est&#225; cifrado, as&#237; que el contenido y el token de la transmisi&#243;n viajan sin cifrar. Cualquiera que tenga el enlace puede leer los archivos de la transmisi&#243;n hasta que caduque o se revoque. Desmarca la casilla para mantener la transmisi&#243;n dentro de la red local.</p></details>
+<details id="answer"><summary>Transmitir y Cancelar</summary><p>&#171;Transmitir&#187; solo devuelve tus elecciones a la ventana de transmisiones, que entonces crea la transmisi&#243;n y copia su enlace. &#171;Cancelar&#187; cierra el cuadro y no crea nada.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

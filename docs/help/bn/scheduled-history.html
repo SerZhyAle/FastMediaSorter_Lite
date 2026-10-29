@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled Operations History - Fast Media Sorter</title>
+  <title>সময়সূচিবদ্ধ অপারেশনের ইতিহাস - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled Operations History</h1>
+  <h1 id="title">সময়সূচিবদ্ধ অপারেশনের ইতিহাস</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled Operations History.</p>
+    <p>জার্নালে নথিবদ্ধ সময়সূচিবদ্ধ ফাইল অপারেশনের সাম্প্রতিক রান ও নোট দেখায়। এটি Share Manager সেটিংসের সময়সূচিবদ্ধ ফাইল অপারেশন পৃষ্ঠার ইতিহাস.. থেকে খোলে।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled Operations History">
-    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled Operations History">
+    <img class="shot light" src="scheduled-history-light.png" alt="সময়সূচিবদ্ধ অপারেশনের ইতিহাস">
+    <img class="shot dark" src="scheduled-history-dark.png" alt="সময়সূচিবদ্ধ অপারেশনের ইতিহাস">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>তালিকা পড়ুন: সময়, অপারেশন, স্টার্টআপ ও ফলাফল।</li><li>ফলাফল লম্বা হলে উইন্ডো চওড়া করুন।</li><li>জার্নাল আবার পড়তে রিফ্রেশ চাপুন।</li><li>খালি করতে ইতিহাস মুছে ফেলুন চাপুন ও নিশ্চিত করুন।</li><li>বন্ধ করুন চাপুন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="columns"><summary>কলাম</summary><p>সময়, অপারেশন (তার নাম), স্টার্টআপ এবং ফলাফল। স্টার্টআপ হলো সময়সূচি অনুযায়ী, ম্যানুয়াল, সব চালান বা দেরিতে, এবং নোটের ক্ষেত্রে ফাঁকা থাকে। উইন্ডো খোলার সময় ও রিফ্রেশে জার্নালের সর্বশেষ 200টি এন্ট্রি পড়ে; নিজে থেকে হালনাগাদ হয় না।</p></details>
+<details id="results"><summary>রানের ফলাফল</summary><p>সম্পন্ন: Nটি ফাইল, আর কিছু বাদ গেলে তার সঙ্গে , বাদ দেওয়া হয়েছে: M যোগ হয়, এবং মুছে ফেলার ক্ষেত্রে (রিসাইকেল বিনে)। ত্রুটিসহ: N; সম্পন্ন: Mটি ফাইল, এর পরে প্রথম কারণ, যেমন ফাইল ব্যবহারে আছে, অ্যাক্সেস নেই, ফাইল পাওয়া যায়নি বা বদলে গেছে, অথবা ডিস্ক ভরা। থামানো হয়েছে: .. যখন কোনো বাধা রান থামায়, যেমন নাগালের বাইরের ফোল্ডার, যে রিসোর্সের পাসওয়ার্ড সংরক্ষিত নেই বা সার্ভারের কী নিশ্চিত করা হয়নি, অথবা অফলাইন ডিভাইস। চালু হয়নি: .. যখন সংজ্ঞা প্রত্যাখ্যাত হয়, বাদ দেওয়া হয়েছে: .. এবং বাধাপ্রাপ্ত। জার্নাল কোড রাখে, কাঁচা ত্রুটির লেখা নয়, তাই শব্দচয়ন বর্তমান ভাষা অনুসরণ করে।</p></details>
+<details id="notes"><summary>নোট</summary><p>যে সারিতে স্টার্টআপ নেই সেটি নোট: বাদ দেওয়া হয়েছে: ম্যানেজার বন্ধ থাকার সময় রানের সময় (..) পার হয়ে গেছে; দেরিতে চলছে: রানটি ..-এর জন্য নির্ধারিত ছিল; প্রত্যাখ্যাত: এই অপারেশন ইতিমধ্যে চলছে বা সারিতে অপেক্ষা করছে; এবং পুনরায় শুরু হয়েছে: থামার কারণ দূর হয়েছে।</p></details>
+<details id="clear"><summary>ইতিহাস মুছে ফেলুন</summary><p>জিজ্ঞাসা করে: সময়সূচিবদ্ধ অপারেশনের ইতিহাস মুছে ফেলবেন? অপারেশন ও তাদের সময়সূচি অপরিবর্তিত থাকবে। ডিফল্ট উত্তর না। এটি শুধু এই জার্নাল খালি করে; অপারেশন ও তাদের সময়সূচি থেকে যায়। ইতিহাস খালি থাকলে বোতামটি নিষ্ক্রিয় থাকে।</p></details>
+    <p><a href="share-settings.html">ম্যানেজার সেটিংস</a> · <a href="sftp-settings.html">SFTP শেয়ারিং সেটিংস</a> · <a href="exchange-server-settings.html">এক্সচেঞ্জ সার্ভার সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

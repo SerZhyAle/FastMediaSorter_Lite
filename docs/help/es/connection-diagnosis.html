@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection Diagnosis - Fast Media Sorter</title>
+  <title>Diagn&#243;stico de conexi&#243;n - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection Diagnosis</h1>
+  <h1 id="title">Diagn&#243;stico de conexi&#243;n</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Explica por qu&#233; no se puede llegar a un servidor o a un dispositivo y ofrece lo que se puede probar, paso a paso. No cambia ning&#250;n ajuste del equipo ni de Windows. Se abre desde &#171;&#191;Por qu&#233; no conecta?..&#187; en el men&#250; &#171;M&#225;s&#187; de la lista de recursos (para una fila seleccionada), desde una entrada de servidor de &#171;Mis dispositivos&#187; que est&#225; volviendo a iniciar sesi&#243;n, muestra un certificado cambiado o no puede conectar, y por s&#237; sola cuando falla la apertura de un recurso.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
-    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Connection Diagnosis">
+    <img class="shot light" src="connection-diagnosis-light.png" alt="Diagn&#243;stico de conexi&#243;n">
+    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Diagn&#243;stico de conexi&#243;n">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lea &#171;Qu&#233; ocurri&#243;:&#187;.</li><li>Pruebe lo que dice &#171;Qu&#233; intentar:&#187;.</li><li>Si esa no es la causa, pulse &#171;Siguiente paso&#187;.</li><li>Pulse &#171;Detalles&#187; si alguien pide los c&#243;digos, y &#171;Copiar&#187; para entregarlos.</li><li>Cierre la ventana.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>Qu&#233; ocurri&#243;</summary><p>Una frase sobre el fallo, por ejemplo &#171;No se puede establecer conexi&#243;n con el servidor.&#187;, &#171;El usuario o la contrase&#241;a son incorrectos.&#187; o &#171;Este servidor no coincide con el conectado anteriormente.&#187;. Depende del tipo de fallo que abri&#243; la ventana.</p></details>
+<details id="what-to-try"><summary>Qu&#233; intentar</summary><p>La ventana empieza en el primer paso que fall&#243; en la comprobaci&#243;n, o en el primer paso si ninguno fall&#243;. Pasos t&#237;picos: despertar el dispositivo que ejecuta el servidor, comprobar que ambos dispositivos est&#225;n en la misma red, salir de una red Wi-Fi de invitados, desactivar un momento una VPN, poner la red de Windows como privada, comprobar el servidor desde otra red, poner bien la fecha y la hora, confirmar una huella digital nueva, volver a escribir el usuario y la contrase&#241;a. El &#250;ltimo paso dice que solo el administrador del servidor puede solucionarlo.</p></details>
+<details id="next-step"><summary>Siguiente paso y Configuraci&#243;n de Windows</summary><p>&#171;Siguiente paso&#187; avanza por los pasos y desaparece en el &#250;ltimo. Para los dos pasos que la configuraci&#243;n de Windows puede resolver, el perfil de red y el reloj, un bot&#243;n &#171;Abrir configuraci&#243;n de Windows&#187; abre la p&#225;gina correspondiente de Windows; el programa no cambia nada por s&#237; mismo.</p></details>
+<details id="details-copy"><summary>Detalles y Copiar</summary><p>&#171;Detalles&#187; muestra u oculta un cuadro de solo lectura con los c&#243;digos del diagn&#243;stico: el tipo de fallo, el destino, la ruta, el paso fallido y los pasos recorridos. Nunca contiene una direcci&#243;n, un usuario, una contrase&#241;a ni una huella digital. &#171;Copiar&#187; pone esa l&#237;nea en el portapapeles y la ventana dice &#171;C&#243;digos de diagn&#243;stico copiados al portapapeles.&#187;</p></details>
+<details id="how-it-checks"><summary>C&#243;mo funciona la comprobaci&#243;n</summary><p>La comprobaci&#243;n se ejecuta solo para la conexi&#243;n que intent&#243; y &#250;nicamente lee: intenta llegar al host y al puerto y examina el estado de la red, los adaptadores VPN, el perfil de red de Windows, la familia de direcciones, el reloj y el certificado. Se detiene en el primer paso fallido, y una comprobaci&#243;n que no se pudo hacer nunca se cuenta como superada ni como fallida.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

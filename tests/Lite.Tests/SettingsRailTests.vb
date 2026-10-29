@@ -533,7 +533,7 @@ Public Class SettingsRailTests
                 list.Add(New NavCaption("", m.Groups(2).Value))
             End If
         Next
-        Assert.Equal(12, list.Count)
+        Assert.Equal(13, list.Count)
         Return list
     End Function
 

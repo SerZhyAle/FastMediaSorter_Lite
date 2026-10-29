@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>Новий обліковий запис - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">Новий обліковий запис</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>Одне вікно у двох режимах. &#171;Новий обліковий запис&#187; додає обліковий запис на Media Exchange Server, яким ви керуєте; &#171;Скидання пароля: &lt;логін&gt;&#187; задає наявному обліковому запису новий пароль. Режими відкриваються кнопками &#171;Додати обліковий запис..&#187; і &#171;Скинути пароль..&#187; під списком облікових записів на сторінці Media Exchange Server у налаштуваннях Share Manager; для скидання потрібно вибрати обліковий запис.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="Новий обліковий запис">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Новий обліковий запис">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>У режимі додавання введіть логін.</li><li>Виберіть, як створюється пароль.</li><li>У режимі скидання вирішіть, чи виводити із системи всі пристрої облікового запису.</li><li>Натисніть &#171;Створити&#187; або &#171;Скинути&#187;.</li><li>Скопіюйте створений пароль у наступному вікні або введіть свій.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>Заява для першого запису</summary><p>Для самого першого облікового запису вікно починається з рядка &#171;Перш ніж створити перший обліковий запис, прочитайте, що бачить оператор сервера:&#187; і поля лише для читання із цією заявою. Для наступних записів і для скидання її немає.</p></details>
+<details id="login"><summary>Логін</summary><p>Лише в режимі додавання. Від 3 до 64 символів: малі латинські літери, цифри, крапка, підкреслення та дефіс; великі перетворюються на малі. Підказка набуває кольору попередження, коли текст не може бути логіном, і &#171;Створити&#187; не продовжує роботу, якщо він не підходить.</p></details>
+<details id="password-choice"><summary>Як створюється пароль</summary><p>&#171;Створити пароль (його покажуть один раз)&#187; вибрано за замовчуванням: програма робить випадковий пароль, що відповідає правилам, і наступне вікно показує його один раз. &#171;Ввести пароль самому&#187; відкриває вікно &#171;Пароль облікового запису&#187;, де рядок під полем одразу називає, чого бракує: не коротше 10 символів, із великою та малою латинською літерою і цифрою.</p></details>
+<details id="sign-out"><summary>Вихід усіх пристроїв</summary><p>Лише в режимі скидання. Прапорець &#171;Одразу вивести із системи всі пристрої цього облікового запису&#187; стоїть за замовчуванням. Тоді рядок підсумку повідомляє, що пароль змінено й усі пристрої облікового запису виведено із системи; без прапорця - лише що пароль змінено.</p></details>
+<details id="after"><summary>Після відповіді сервера</summary><p>Рядок підсумку повідомляє про створення облікового запису. Створений пароль один раз показується в окремому вікні з кнопками &#171;Скопіювати пароль&#187; і &#171;Задати свій пароль..&#187;, яка повертає до скидання з уведенням пароля вручну. Якщо ввімкнено &#171;Зберігати паролі облікових записів на цьому ПК&#187;, пароль додатково зберігається на цьому ПК, і в облікового запису з&#39;являється &#171;Показати пароль..&#187;. Якщо ця збірка пропонує клієнтські можливості обміну, а в цього ПК немає власного облікового запису, ПК входить із цим паролем як перший пристрій облікового запису.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Keyboard Shortcuts - Fast Media Sorter</title>
+  <title>Keyboard shortcuts - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Keyboard Shortcuts</h1>
+  <h1 id="title">Keyboard shortcuts</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Keyboard Shortcuts.</p>
+    <p>The list of every viewer action whose key you can change, with the shortcut it answers to now. It opens from Settings, Files and system page, with the Configure.. button on the Keyboard shortcuts row. The window edits a copy: nothing reaches your profile until you press OK.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="hotkeys-light.png" alt="Keyboard Shortcuts">
-    <img class="shot dark" src="hotkeys-dark.png" alt="Keyboard Shortcuts">
+    <img class="shot light" src="hotkeys-light.png" alt="Keyboard shortcuts">
+    <img class="shot dark" src="hotkeys-dark.png" alt="Keyboard shortcuts">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Open Settings, go to Files and system and press Configure.. on the Keyboard shortcuts row.</li><li>Select an action in the list.</li><li>Click the field under the list and press the new combination.</li><li>If another action already owns it, choose Swap shortcuts, Remove it from that action or Cancel.</li><li>Repeat for other actions; use Reset, Remove the shortcut or Reset all where needed.</li><li>Press OK to keep the changes, or Cancel to drop them all.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="shortcut-list"><summary>The Action and Shortcut list</summary><p>Each row is one action and its main shortcut; an action with no key shows Not assigned. The ten folder slots appear as Move to folder 1..0 and Copy to folder 1..0 (digit keys move, Shift plus a top-row digit copies). Some actions also answer to extra factory keys (Next file also reacts to Space and PageDown). The list shows only the main one, but as soon as you give the action a new shortcut, all its old factory keys stop working. The text above the list names fixed keys for documents (wheel, PgUp/PgDn, Home/End, arrows) that are not in the list.</p></details>
+<details id="record-shortcut"><summary>Recording a combination</summary><p>Select a row, then click the field below the list (or double-click the row) and press the keys, with Ctrl, Shift or Alt if you want them. The field records the whole combination at once, and a modifier alone is not a combination. Esc leaves the field without recording anything. The change appears in the list straight away, but it is still only in the working copy.</p></details>
+<details id="reserved-keys"><summary>Keys that cannot be assigned</summary><p>F1, F10, F11, Esc, the Windows keys, the Menu key, Alt+Tab, Alt+F4 and Ctrl+Alt+Delete belong to Windows or to the program. Pressing one shows: This combination is reserved by the system or the program and cannot be assigned. Nothing changes.</p></details>
+<details id="conflicts"><summary>A combination that is already taken</summary><p>The question names the owner: The combination X already belongs to the other action. Swap shortcuts gives that action the shortcut the current one had (possibly none). Remove it from that action leaves it with Not assigned and gives you the combination. Cancel changes nothing.</p></details>
+<details id="reset-remove"><summary>Reset, Remove the shortcut and Reset all</summary><p>Reset returns the selected action to its factory key. Remove the shortcut leaves the action with no key at all, so its factory key stops working too; use it to switch a key off. Reset all asks: Reset every shortcut to its default? Reset to defaults clears all your changes in the window; Cancel keeps them.</p></details>
+<details id="save-cancel"><summary>OK and Cancel</summary><p>OK saves the whole map into the profile and the viewer uses it at once. Cancel closes the window and leaves the profile exactly as it was. Keys for video and audio (pause, mute, volume, seeking, speed, frame step, tracks) act on the media that is playing.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

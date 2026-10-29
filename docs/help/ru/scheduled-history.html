@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled Operations History - Fast Media Sorter</title>
+  <title>Журнал операций по расписанию - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled Operations History</h1>
+  <h1 id="title">Журнал операций по расписанию</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled Operations History.</p>
+    <p>Показывает последние запуски и заметки файловых операций по расписанию так, как они записаны в журнале. Окно открывается кнопкой &#171;Журнал..&#187; на странице &#171;Файловые операции по расписанию&#187; в настройках Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled Operations History">
-    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled Operations History">
+    <img class="shot light" src="scheduled-history-light.png" alt="Журнал операций по расписанию">
+    <img class="shot dark" src="scheduled-history-dark.png" alt="Журнал операций по расписанию">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте список: Время, Операция, Запуск и Результат.</li><li>Расширьте окно, если результат длинный.</li><li>&#171;Обновить&#187; читает журнал заново.</li><li>&#171;Очистить журнал&#187; после подтверждения опустошает его.</li><li>&#171;Закрыть&#187; закрывает окно.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="columns"><summary>Колонки</summary><p>Время, Операция (её название), Запуск и Результат. Запуск - По расписанию, Вручную, Запустить все или С опозданием; у заметки он пуст. Окно читает последние 200 записей журнала при открытии и по &#171;Обновить&#187; и само не обновляется.</p></details>
+<details id="results"><summary>Результаты запуска</summary><p>&#171;Выполнено: N файл(ов)&#187;, с &#171;, пропущено: M&#187;, если часть файлов пропущена, и &#171;(в Корзину)&#187; для удалений. &#171;С ошибками: N; выполнено: M файл(ов)&#187; и первая причина: файл занят, нет доступа, файл не найден или изменился, на диске не хватило места. &#171;Остановлено: ..&#187;, когда запуск прекращает преграда: недоступная папка, ресурс без сохранённого пароля или с неподтверждённым ключом сервера, устройство не в сети. &#171;Не запущено: ..&#187;, если определение отклонено, а также &#171;Пропущено: ..&#187; и &#171;Прервано&#187;. Журнал хранит коды, а не текст ошибок, поэтому формулировки соответствуют текущему языку.</p></details>
+<details id="notes"><summary>Заметки</summary><p>Строка без значения в колонке &#171;Запуск&#187; - заметка: &#171;Пропущено: время запуска (..) прошло, пока менеджер был закрыт&#187;, &#171;Выполняется с опозданием: запуск был назначен на ..&#187;, &#171;Отклонено: эта операция уже выполняется или ждёт очереди&#187; и &#171;Возобновлена: причина остановки устранена&#187;.</p></details>
+<details id="clear"><summary>Очистить журнал</summary><p>Спрашивает &#171;Очистить журнал операций по расписанию? Сами операции и их расписание не изменятся.&#187; с ответом &#171;Нет&#187; по умолчанию. Очищается только этот журнал; операции и их расписания остаются. Пока журнал пуст, кнопка отключена.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

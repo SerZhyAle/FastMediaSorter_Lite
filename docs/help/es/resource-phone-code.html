@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>Conexi&#243;n del tel&#233;fono - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">Conexi&#243;n del tel&#233;fono</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>Muestra un c&#243;digo QR que un tel&#233;fono escanea para enviar a este equipo la configuraci&#243;n de una carpeta. Se abre desde &#171;Mostrar c&#243;digo para el tel&#233;fono..&#187; en el men&#250; &#171;M&#225;s&#187; de la lista de recursos.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>No hay captura de esta ventana: al abrirse pone en marcha un dispositivo, una escucha de red o todo el visor, por eso no se captura.</figcaption></figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Abra &#171;Mostrar c&#243;digo para el tel&#233;fono..&#187;.</li><li>Escanee el c&#243;digo QR con el tel&#233;fono; el tel&#233;fono debe llegar a este equipo en la red local.</li><li>El tel&#233;fono env&#237;a su c&#243;digo, la ventana dice &#171;C&#243;digo recibido&#187; y se cierra, y empieza la importaci&#243;n.</li><li>Si el tel&#233;fono no llega al equipo, ponga su c&#243;digo en el portapapeles de este equipo, como texto o como captura del c&#243;digo QR, y pulse &#171;Pegar desde el portapapeles..&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>El c&#243;digo QR</summary><p>El c&#243;digo representa una direcci&#243;n de un solo uso en su red local con un token de un solo uso. La ventana escucha en esa direcci&#243;n solo mientras est&#225; abierta y deja de hacerlo al cerrarse; se escucha &#250;nicamente esa direcci&#243;n, no todos los adaptadores de red. Si la escucha no puede iniciarse, la l&#237;nea de estado dice &#171;No se pudo iniciar la recepci&#243;n local&#187;.</p></details>
+<details id="address"><summary>El cuadro de la direcci&#243;n y Copiar</summary><p>El cuadro de solo lectura bajo el c&#243;digo muestra la misma direcci&#243;n como texto. &#171;Copiar&#187; la pone en el portapapeles con las marcas de privacidad (sin historial del portapapeles, sin sincronizaci&#243;n en la nube), porque el token que contiene permite a quien lo tenga entregar un c&#243;digo a esta ventana. Quien abre la direcci&#243;n en un navegador solo ve una p&#225;gina breve que dice que es una direcci&#243;n de un solo uso.</p></details>
+<details id="paste"><summary>Pegar desde el portapapeles</summary><p>&#171;Pegar desde el portapapeles..&#187; lee del portapapeles un texto, o una captura del c&#243;digo QR del tel&#233;fono, y lo comprueba con el mismo lector que el texto escrito. Si no es un c&#243;digo, la l&#237;nea de estado dice por qu&#233; y la ventana sigue abierta para el tel&#233;fono.</p></details>
+<details id="result"><summary>Qu&#233; ocurre con el c&#243;digo</summary><p>El primer c&#243;digo que llega, del tel&#233;fono o del portapapeles, ocupa la ventana; un segundo se descarta. La ventana se cierra y se ejecuta la misma importaci&#243;n que con &#171;Importar de archivo..&#187;: un resumen para confirmar, una pregunta por la contrase&#241;a si el c&#243;digo la necesita y, despu&#233;s, &#171;Recursos a&#241;adidos o actualizados&#187; con un n&#250;mero en la l&#237;nea de estado.</p></details>
+<details id="close"><summary>Espera y Cerrar</summary><p>Mientras espera, la l&#237;nea de estado dice &#171;Esperando la conexi&#243;n del tel&#233;fono..&#187;. &#171;Cerrar&#187; solo termina la espera; Intro y Esc eligen ambos este bot&#243;n, de modo que pulsar una tecla nunca acepta el c&#243;digo del tel&#233;fono.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

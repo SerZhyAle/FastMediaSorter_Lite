@@ -55,6 +55,23 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Function
 
     Private Sub BuildScheduledSection(sec As CollapsibleSection)
+        ' --- this PC ---
+        _schedFeature = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Name = "managerSchedFeature",
+            .Text = Localization.T("Выполнять операции по расписанию на этом компьютере")}
+        AddHandler _schedFeature.CheckedChanged, AddressOf OnScheduledFeatureChanged
+        Dim featureRow As OptionRowHost = OptionRows.InFlow(_schedFeature,
+            OptionHint(_schedFeature, Localization.T("Выключите, чтобы остановить все расписания. Запуск вручную остаётся доступным.")))
+        featureRow.Margin = New Padding(0, 6, 0, 2)
+        sec.AddBodyRow(featureRow)
+
+        _schedAutostart = NoteLabel("")
+        _schedAutostart.Name = "managerSchedAutostart"
+        sec.AddBodyRow(_schedAutostart)
+        _schedAutostartLink = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 6), .Name = "managerSchedAutostartLink",
+            .Text = Localization.T("Открыть настройку автозапуска")}
+        AddHandler _schedAutostartLink.LinkClicked, Sub() SelectSettingsPage("startup", "startup")
+        sec.AddBodyRow(_schedAutostartLink)
+
         ' The statement of section 0, once: what this is and where it lives. The sentence every surface repeats.
         _schedNote = NoteLabel(Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним, выполняются им и настраиваются в его настройках. Расписание работает только пока менеджер запущен."))
         _schedNote.Name = "managerSchedNote"
@@ -90,23 +107,6 @@ Partial Public NotInheritable Class Share_Settings_Form
         _schedDiagnose = SchedButton("managerSchedDiagnose", ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), "action.test-connection", AddressOf OnScheduledDiagnoseClicked)
         _schedDiagnose.Visible = False
         sec.AddBodyRow(_schedDiagnose)
-
-        ' --- this PC ---
-        _schedFeature = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Name = "managerSchedFeature",
-            .Text = Localization.T("Выполнять операции по расписанию на этом компьютере")}
-        AddHandler _schedFeature.CheckedChanged, AddressOf OnScheduledFeatureChanged
-        Dim featureRow As OptionRowHost = OptionRows.InFlow(_schedFeature,
-            OptionHint(_schedFeature, Localization.T("Выключите, чтобы остановить все расписания. Запуск вручную остаётся доступным.")))
-        featureRow.Margin = New Padding(0, 6, 0, 2)
-        sec.AddBodyRow(featureRow)
-
-        _schedAutostart = NoteLabel("")
-        _schedAutostart.Name = "managerSchedAutostart"
-        sec.AddBodyRow(_schedAutostart)
-        _schedAutostartLink = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 6), .Name = "managerSchedAutostartLink",
-            .Text = Localization.T("Открыть настройку автозапуска")}
-        AddHandler _schedAutostartLink.LinkClicked, Sub() SelectSettingsPage("startup")
-        sec.AddBodyRow(_schedAutostartLink)
 
         ApplyScheduledState()
         If ScheduledHost.Engine IsNot Nothing Then
@@ -373,7 +373,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>The tray menu and the viewer's launcher open this page. A folder starts a new operation
     ''' with that source in the editor (7.4), once the window is up.</summary>
     Friend Sub FocusScheduledPage(Optional folder As String = "")
-        SelectSettingsPage("scheduled")
+        SelectSettingsPage("scheduled", "operations")
         _schedPrefill = If(folder, "")
         _schedOpenEditor = _schedPrefill.Length > 0
         ' Already on screen (a second request while the window is open): there is no OnShown to wait for.

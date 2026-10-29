@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>कार्रवाई की रिपोर्ट - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">कार्रवाई की रिपोर्ट</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>पिछली बैच कार्रवाई (मूव, कॉपी, डिलीट या पूर्ववत) की हर फ़ाइल के साथ क्या हुआ, और कुछ क्यों छोड़ा गया या विफल हुआ, यह सूचीबद्ध करता है। यह कभी अपने आप नहीं खुलता: रन के बाद थंबनेल पैनल (F3) के नीचे की रिपोर्ट पंक्ति पर क्लिक करें। जब रन साफ़-सुथरा नहीं होता, तो पंक्ति विवरण देखने के लिए क्लिक करें पर समाप्त होती है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="कार्रवाई की रिपोर्ट">
+    <img class="shot dark" src="batch-report-dark.png" alt="कार्रवाई की रिपोर्ट">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>थंबनेल पैनल में कई फ़ाइलों पर कोई कार्रवाई चलाएँ।</li><li>पैनल के नीचे की सारांश पंक्ति पढ़ें।</li><li>इस विंडो को खोलने के लिए पंक्ति पर क्लिक करें।</li><li>सूची के ऊपरी भाग को देखें: विफलताएँ सबसे पहले आती हैं।</li><li>पंक्तियाँ चुनें, फिर उनके पथ लेने के लिए कॉपी करें या फ़ाइल ढूँढने के लिए एक्सप्लोरर में दिखाएँ का उपयोग करें।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>सारांश पंक्ति</summary><p>पंक्ति नतीजे से शुरू होती है: स्थानांतरित फ़ाइलें: 5, कॉपी की गई फ़ाइलें: 5, हटाई गई फ़ाइलें: 5, पुनर्स्थापित फ़ाइलें: 5 या पूर्ण कार्रवाइयाँ: 5। आगे के हिस्से, हर एक अपनी गिनती के साथ, केवल तब दिखते हैं जब गिनती शून्य न हो: छोड़ी गईं; त्रुटियाँ; पूर्ववत न होने वाली कार्रवाइयाँ; स्थायी रूप से हटाया गया, पुनर्स्थापित नहीं किया जा सकता; और, जब रन जल्दी रुक जाए, बाधित, फ़ोल्डर से कोई कनेक्शन नहीं - शुरू नहीं हुआ (लगातार तीन विफल कनेक्शन उसे रोकते हैं) या रद्द - शुरू नहीं हुआ।</p></details>
+<details id="list"><summary>सूची</summary><p>कॉलम: फ़ाइल, स्थिति और विवरण। सबसे खराब पंक्तियाँ पहले आती हैं: विफल, फिर शुरू नहीं हुई, फिर छोड़ी गई, फिर पूरी हुई; समूह के भीतर फ़ाइलें रन का क्रम रखती हैं। पंक्ति का टूलटिप पूरा पथ दिखाता है। विवरण विफलता का सीधा कारण, पूरी हुई फ़ाइल के लिए गंतव्य फ़ोल्डर, पुराना नाम लिया हुआ होने पर नया नाम (नया नाम के रूप में सहेजा गया), और रीसायकल बिन को छोड़कर किए गए डिलीट के लिए स्थायी रूप से हटाया गया - पूर्ववत उपलब्ध नहीं देते हैं।</p></details>
+<details id="states"><summary>स्थितियाँ और छोड़ने के कारण</summary><p>स्थितियाँ: तैयार; त्रुटि; छोड़ा गया; शुरू नहीं हुआ। छोड़ी गई फ़ाइल कारण बताती है: पहले से इस फ़ोल्डर में है; फ़ाइल अब डिस्क पर नहीं है; आर्काइव के अंदर फ़ाइलें संशोधित नहीं होती हैं; चयनित फ़ाइलों में वही नाम पहले से मौजूद है; संसाधन केवल पढ़ने के लिए है; यह वही फ़ाइल है; या गंतव्य फ़ोल्डर में नाम पहले से लिया गया है। जो फ़ाइल शुरू नहीं हुई वह बताती है: लॉन्च नहीं हुआ: कार्रवाई बाधित हुई।</p></details>
+<details id="copy-show"><summary>एक्सप्लोरर में दिखाएँ, कॉपी, बंद</summary><p>एक्सप्लोरर में दिखाएँ तब सक्षम होता है जब कोई पंक्ति चुनी हो; यह एक फ़ोल्डर विंडो खोलता है जिसमें चुनी गई पहली फ़ाइल हाइलाइट होती है, या फ़ाइल हट गई हो तो फ़ोल्डर। कॉपी करें (Ctrl+C से भी) चुनी हुई पंक्तियों के पूरे पथ क्लिपबोर्ड पर रखता है, हर पंक्ति में एक, या कुछ चुना न हो तो सभी पंक्तियों के: समस्या वाली फ़ाइलों की सूची आगे देने का आसान तरीका। बंद करें रिपोर्ट समाप्त करता है।</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

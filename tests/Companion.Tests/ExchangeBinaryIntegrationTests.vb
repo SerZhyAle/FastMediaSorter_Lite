@@ -542,7 +542,7 @@ Public Class ExchangeBinaryIntegrationTests
                     form.Location = New System.Drawing.Point(-5000, -5000)
                     form.ShowInTaskbar = False
                     form.Show()
-                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", System.Reflection.BindingFlags.Instance Or System.Reflection.BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
+                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", System.Reflection.BindingFlags.Instance Or System.Reflection.BindingFlags.NonPublic).Invoke(form, New Object() {"exchange", Nothing})
                     Dim deadline As DateTime = DateTime.UtcNow.AddSeconds(20)
                     Dim section As CollapsibleSection = DirectCast(GetType(Share_Settings_Form).GetField("_secExchange",
                         System.Reflection.BindingFlags.Instance Or System.Reflection.BindingFlags.NonPublic).GetValue(form), CollapsibleSection)

@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>Resources - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">Resources</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>The list of servers and network folders the viewer can open: SFTP servers, Windows network folders (SMB) and folders that Share Manager shares from this computer. It opens from &#171;Manage resources..&#187; in the folder menu; the same list sits on the &#171;Server and resources&#187; page of the Settings window.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="Resources">
+    <img class="shot dark" src="resource-manager-dark.png" alt="Resources">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Press &#171;Add..&#187; and fill in the server, or bring a settings file in through the &#171;More&#187; button.</li><li>Select the new row and press &#171;Check&#187;.</li><li>Press &#171;Open&#187;, or double-click the row: the viewer connects and shows the server&#39;s folder.</li><li>Use &#171;Edit..&#187; to change an address or a password and &#171;Delete&#187; to forget a resource.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>The list</summary><p>Columns: Name, Type, Address, Access and Last opened. Type is &#171;SFTP server&#187;, &#171;Network folder (SMB)&#187; or &#171;Shared folder (Share Manager)&#187;; Access says &#171;read-only&#187; or &#171;read and write&#187;. A line under the list counts the resources, and with none the window shows a hint and an &#171;Add..&#187; button. Edit, Delete and Check (and Open in the bottom row of the Resources window) need a selected row; until then their tooltip says &#171;Select a resource in the list first&#187;.</p></details>
+<details id="add-edit"><summary>Add.. and Edit..</summary><p>&#171;Add..&#187; opens the form of a new resource and &#171;Edit..&#187; the form of the selected one. A password typed there is stored encrypted for your Windows account, never in the list itself.</p></details>
+<details id="remove"><summary>Delete</summary><p>&#171;Delete&#187; asks first, and the default answer is No. The question names the resource and says that the password saved for it goes too, while files on the server are not affected.</p></details>
+<details id="check"><summary>Check</summary><p>&#171;Check&#187; tests the selected row without opening it. For an SFTP server it tries every known address of the resource and reports each as host:port with a verdict: one live SSH answer makes the check a success, an open port that is not SSH is a warning, silence is a failure. No password is sent. For a network folder it opens the share with the saved password and reads its top folder; if no password is saved it asks you to enter one through &#171;Edit..&#187;. For a Share Manager row it only looks whether the folder exists on this computer.</p></details>
+<details id="open"><summary>Open</summary><p>&#171;Open&#187;, or a double-click on a row, hands the resource to the viewer, which connects and shows its folder. If no password is saved, or the saved one is refused, a small window asks for it first.</p></details>
+<details id="more-menu"><summary>The More button</summary><p>The button with the dots holds: &#171;Export..&#187; (needs a selected resource), &#171;Import from file..&#187; (a .fmscfg, .json or .txt file, or a picture of a QR code; a file can also be dropped onto the list), &#171;Import from clipboard&#187;, &#171;Scan with camera..&#187; (present only when Share Manager is installed and a camera is found), &#171;Show code for phone..&#187; and, for a selected row, &#171;Why doesn&#39;t it connect?..&#187;, which opens the connection diagnosis.</p></details>
+<details id="share-manager-rows"><summary>Share Manager rows and My devices</summary><p>A folder that Share Manager shares from this computer is managed there: its tooltip says &#171;This shared folder is managed in Share Manager&#187;, Edit and Delete on its row open Share Manager instead of changing anything here, and Export is disabled. When the exchange client is available, a &#171;My devices&#187; section under the list shows the folders of your other devices on an exchange server.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

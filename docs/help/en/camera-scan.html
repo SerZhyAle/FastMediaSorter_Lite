@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>Scanning QR code with camera - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">Scanning QR code with camera</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>Reads the QR code shown by the phone app through a camera of this PC. It opens from &#39;Scan with camera..&#39; in the phone code window and from the connection string field of the exchange account window, and the camera starts when the window is shown.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>There is no screenshot of this window: opening it starts a device, a network listener or the whole viewer, so it is not captured.</figcaption></figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Hold the phone&#39;s QR code in front of the camera.</li><li>The window scans the picture by itself; when a valid code is found, the status reads &#39;Code received&#39; and the window closes.</li><li>Press &#39;Cancel&#39; (Escape) to close without scanning.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>Preview and status</summary><p>The black area shows the live picture. The line under it says &#39;Point the camera at the phone&#39;s QR code&#39; until a code is read.</p></details>
+<details id="camera"><summary>Which camera</summary><p>Only the first camera found is used. If there is none, or it cannot be started, the line reads &#39;Camera is unavailable&#39;, followed by the reason when there is one.</p></details>
+<details id="result"><summary>After the scan</summary><p>The text of the first valid QR code is returned to the window that opened the scanner and handled there as if it was pasted; in the phone code window it fills the code field and is handed over, and Fast Media Sorter still asks its usual questions. Frames stay in memory only: this window saves and sends nothing.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

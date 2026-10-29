@@ -546,19 +546,19 @@ Partial Public NotInheritable Class Localization
             "پہلے میڈیا فائلوں والا فولڈر بتائیں.. پروگرام اچھا ہے، مگر ذہن نہیں پڑھ سکتا۔",
             "请先指定一个含有媒体文件的文件夹.. 程序很好，但不会读心。")
 
-        Add("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}",
-            "A modern photo and video viewer and sorter." & vbCrLf & "Version {0}",
-            "Сучасний переглядач і сортувальник фото та відео." & vbCrLf & "Версія {0}",
-            "Ein moderner Foto- und Video-Betrachter mit Sortierung." & vbCrLf & "Version {0}",
-            "Un moderno visualizzatore e ordinatore di foto e video." & vbCrLf & "Versione {0}",
-            "Un visor y clasificador moderno de fotos y vídeos." & vbCrLf & "Versión {0}",
-            "Une visionneuse et un trieur modernes de photos et vidéos." & vbCrLf & "Version {0}",
-            "Um visualizador e organizador moderno de fotos e vídeos." & vbCrLf & "Versão {0}",
-            "عارض ومنظّم حديث للصور والفيديو." & vbCrLf & "الإصدار {0}",
-            "फ़ोटो और वीडियो का आधुनिक दर्शक और छँटाई उपकरण।" & vbCrLf & "संस्करण {0}",
-            "ছবি ও ভিডিওর আধুনিক দর্শক এবং সাজানোর সরঞ্জাম।" & vbCrLf & "সংস্করণ {0}",
-            "تصاویر اور ویڈیو کا جدید ویوَر اور ترتیب دینے والا۔" & vbCrLf & "ورژن {0}",
-            "现代化的照片与视频查看和整理工具。" & vbCrLf & "版本 {0}")
+        Add("Медиа- и файловый менеджер: просмотр и сортировка фото и видео одной клавишей, работа с файлами в папках, на серверах и устройствах." & vbCrLf & "Версия {0}",
+            "A media and file manager: view and sort photos and videos with one key, manage files in folders, on servers and on devices." & vbCrLf & "Version {0}",
+            "Медіа- та файловий менеджер: перегляд і сортування фото та відео однією клавішею, робота з файлами в теках, на серверах і пристроях." & vbCrLf & "Версія {0}",
+            "Medien- und Dateimanager: Fotos und Videos mit einer Taste ansehen und sortieren, Dateien in Ordnern, auf Servern und auf Geräten verwalten." & vbCrLf & "Version {0}",
+            "Gestore di media e file: visualizza e ordina foto e video con un tasto, gestisci i file in cartelle, su server e su dispositivi." & vbCrLf & "Versione {0}",
+            "Gestor de medios y archivos: ve y ordena fotos y vídeos con una tecla, gestiona archivos en carpetas, en servidores y en dispositivos." & vbCrLf & "Versión {0}",
+            "Gestionnaire de médias et fichiers : affichez et triez photos et vidéos d'une touche, gérez les fichiers dans des dossiers, sur des serveurs et sur des appareils." & vbCrLf & "Version {0}",
+            "Gestor de média e ficheiros: veja e ordene fotos e vídeos com uma tecla, gira ficheiros em pastas, em servidores e em dispositivos." & vbCrLf & "Versão {0}",
+            "مدير وسائط وملفات: اعرض الصور والفيديو ورتّبها بمفتاح واحد، وأدِر الملفات في المجلدات وعلى الخوادم والأجهزة." & vbCrLf & "الإصدار {0}",
+            "मीडिया और फ़ाइल मैनेजर: एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें, फ़ोल्डरों, सर्वरों और उपकरणों पर फ़ाइलें प्रबंधित करें।" & vbCrLf & "संस्करण {0}",
+            "মিডিয়া ও ফাইল ম্যানেজার: এক কী-তে ছবি ও ভিডিও দেখুন ও সাজান, ফোল্ডার, সার্ভার ও ডিভাইসে ফাইল পরিচালনা করুন।" & vbCrLf & "সংস্করণ {0}",
+            "میڈیا اور فائل مینیجر: ایک کلید سے تصاویر اور ویڈیو دیکھیں اور ترتیب دیں، فولڈرز، سرورز اور آلات پر فائلیں منظم کریں۔" & vbCrLf & "ورژن {0}",
+            "媒体与文件管理器：一键查看并整理照片和视频，管理文件夹、服务器和设备上的文件。" & vbCrLf & "版本 {0}")
 
         ' --- optional runtimes downloaded on demand ---------------------------------
 

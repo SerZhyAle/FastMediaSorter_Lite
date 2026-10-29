@@ -776,7 +776,39 @@
     <Compile Include="RuntimeBootstrap.vb" />
     <Compile Include="Documents\TextFileReader.vb" />
     <Compile Include="Documents\PdfDocumentSource.vb" />
+    <Compile Include="Documents\PdfReaderNative.vb" />
+    <Compile Include="Documents\DocumentSpeech.vb" />
+    <Compile Include="Documents\DocumentSnapshot.vb" />
+    <Compile Include="Documents\HtmlReaderContent.vb" />
+    <Compile Include="Documents\HtmlRestrictedHost.vb" />
+    <Compile Include="Main_Form.EpubReader.vb"><DependentUpon>Main_Form.vb</DependentUpon></Compile>
+    <Compile Include="Documents\DocumentContentPolicy.vb" />
+    <Compile Include="Main_Form.DocumentDispatch.vb"><DependentUpon>Main_Form.vb</DependentUpon></Compile>
+    <Compile Include="Documents\PdfReadingCanvas.vb" />
+    <Compile Include="Localization\Localization.Documents.vb" />
+    <Compile Include="Documents\EpubPackage.vb" />
+    <Compile Include="Table_Form.Documents.vb"><DependentUpon>Table_Form.vb</DependentUpon></Compile>
+    <Compile Include="Main_Form.PdfReader.vb"><DependentUpon>Main_Form.vb</DependentUpon></Compile>
+    <Compile Include="Documents\DocumentReadingState.vb" />
+    <Compile Include="ModernViewerPreferences.Documents.vb" />
     <Compile Include="Documents\EpubMetadata.vb" />
+    <!-- Specification 275 (HTML viewer): modern-only, whole-file "#If Not NETFRAMEWORK" except the
+         pure models/policy; listed so the two projects keep one source tree. -->
+    <Compile Include="Documents\HtmlDocumentModels.vb" />
+    <Compile Include="Documents\HtmlDocumentPolicy.vb" />
+    <Compile Include="Documents\HtmlFileAccess.vb" />
+    <Compile Include="Documents\HtmlDocumentSource.vb" />
+    <Compile Include="Documents\HtmlDocumentSanitizer.vb" />
+    <Compile Include="Documents\HtmlReaderState.vb" />
+    <Compile Include="Documents\HtmlNetworkFetcher.vb" />
+    <Compile Include="Documents\HtmlRuntimeService.vb" />
+    <Compile Include="Documents\HtmlDocumentHost.vb" />
+    <Compile Include="Documents\HtmlDocumentAdapters.vb" />
+    <Compile Include="Documents\HtmlBrowserLauncher.vb" />
+    <Compile Include="Main_Form.HtmlView.vb"><DependentUpon>Main_Form.vb</DependentUpon></Compile>
+    <Compile Include="ModernViewerPreferences.Html.vb" />
+    <Compile Include="Localization\Localization.HtmlViewer.vb" />
+    <Compile Include="Localization\Localization.HtmlSettings.vb" />
     <!-- Ticket 124 UX-216: the pure rules of the text view's selection and scroll cue - whole-file
          "#If Not NETFRAMEWORK", so it compiles to nothing here; listed so the two projects keep one source tree. -->
     <Compile Include="TextViewRules.vb" />
@@ -812,6 +844,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Support\LogPackage.vb" />
+    <Compile Include="Support\ServerLogSources.vb" />
     <!-- Ticket 182 L-4: the report's [hosting] block and its live probes. Whole-file
          "#If Not NETFRAMEWORK" like LogPackage.vb - listed so the two file sets stay identical. -->
     <Compile Include="Support\HostingReport.vb" />

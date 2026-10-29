@@ -185,6 +185,7 @@ Partial Public Class Main_Form
         ' Spec 012: Fit is the viewport dropped - the boxes paint the whole image
         ' per SizeMode again, and the percent readout reflects the panel-derived fit.
         ResetZoomViewport()
+        ApplyPdfReaderFitViewport()
         UpdateZoomLabel()
 #Else
         lbl_Zoom.Text = ""

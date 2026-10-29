@@ -335,6 +335,19 @@ func (o *Ops) Handle(req Request) Response {
 	return fail(CodeBadRequest, "unknown operation")
 }
 
+// isReadOp names the operations that only report state and change nothing. The default is "not a
+// read", so an operation added later is logged on the channel unless it joins this list. The remote
+// administration stream and the offline command line have their own, quieter rules; this governs the
+// local pipe only, where the Share Manager's five-second poll arrives.
+func isReadOp(op string) bool {
+	switch op {
+	case OpAccountList, OpDeviceList, OpStatus, OpInvitationList, OpSharedInvitationStatus,
+		OpPolicyStatus, OpGrantList, OpBroadcastList, OpResourceList, OpClipboardInfo, OpAdminAuditList:
+		return true
+	}
+	return false
+}
+
 // Serve answers connections from l until it is closed. At most maxConcurrent run at once; the rest
 // are closed unanswered. Every connection has a deadline, a bounded request and exactly one answer.
 func Serve(l net.Listener, o *Ops, log *logx.Logger) {
@@ -372,8 +385,17 @@ func serveOne(c net.Conn, o *Ops, log *logx.Logger) {
 		_ = c.SetDeadline(time.Now().Add(2 * time.Second))
 		resp = fail(CodeBadRequest, "the request is not one JSON object within the bound")
 	} else {
-		log.Info("admin-request", logx.Text("op", req.Op))
+		// A read that answers is silent (isReadOp): the Share Manager's accounts panel polls a fixed set
+		// of reads every five seconds while its group is unfolded, and an idle day must not fill the log
+		// with identical poll entries. Every mutation keeps its line before it runs, so the order of a
+		// change and its effect is never in doubt; a failed read gets one line with the answer's code.
+		if !isReadOp(req.Op) {
+			log.Info("admin-request", logx.Text("op", req.Op))
+		}
 		resp = o.HandleAudited(req, logx.AuditEvent{Transport: "NamedPipe", Product: ClientProductLocal})
+		if isReadOp(req.Op) && !resp.OK {
+			log.Info("admin-request", logx.Text("op", req.Op), logx.Text("code", resp.Code))
+		}
 		if o.Audit != nil {
 			target := req.Login
 			if target == "" {

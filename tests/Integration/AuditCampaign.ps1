@@ -222,6 +222,16 @@ try {
     Assert ($r.Code -eq 1 -and $r.Out -match '057\.S01-1 \(P1\)') 'status: a P1 with neither ticket nor inline fix -> exit 1, named'
     [System.IO.File]::WriteAllText($victim, $orig)
 
+    $inline = $orig.Replace('## Last Audit', "| 057.S01-1 | P1 | Confirmed | both | src/Big/A.vb:1 | loses a file | unit test | inline |`n`n## Last Audit")
+    $deferred = "## Last Audit`n`nSTATIC: rg pattern file, exit 0`nRELEASE: tools/Release.ps1 (Build-OfflineRelease.ps1)`nRELEASE: tools/Release.ps1 (Run-AllTests.ps1)`n"
+    [System.IO.File]::WriteAllText($victim, [regex]::Replace($inline, '(?ms)^## Last Audit\s*\n.*\z', $deferred))
+    $r = Run 'Audit-Status.ps1' $statusArgs
+    Assert ($r.Code -eq 0) 'status: inline fix with static evidence and both release items -> exit 0'
+    [System.IO.File]::WriteAllText($victim, [regex]::Replace($inline, '(?ms)^## Last Audit\s*\n.*\z', $deferred.Replace("RELEASE: tools/Release.ps1 (Run-AllTests.ps1)`n", '')))
+    $r = Run 'Audit-Status.ps1' $statusArgs
+    Assert ($r.Code -eq 1 -and $r.Out -match 'inline fixes need') 'status: missing deferred suite -> exit 1'
+    [System.IO.File]::WriteAllText($victim, $orig)
+
     # A doubled file.
     $raw = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     $raw.slices[1].files = @($raw.slices[1].files) + @($raw.slices[0].files[0])

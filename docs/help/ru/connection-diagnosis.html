@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection Diagnosis - Fast Media Sorter</title>
+  <title>Диагностика подключения - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection Diagnosis</h1>
+  <h1 id="title">Диагностика подключения</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Объясняет, почему не удаётся связаться с сервером или устройством, и по одному шагу предлагает, что попробовать. Она не меняет ни одной настройки компьютера или Windows. Окно открывается пунктом &#171;Почему не подключается?..&#187; в меню &#171;Ещё&#187; списка ресурсов (для выбранной строки), кнопкой записи сервера в &#171;Мои устройства&#187;, когда запись требует входа заново, показывает смену сертификата или не может подключиться, а также само - когда ресурс не открылся.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
-    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Connection Diagnosis">
+    <img class="shot light" src="connection-diagnosis-light.png" alt="Диагностика подключения">
+    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Диагностика подключения">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте &#171;Что произошло:&#187;.</li><li>Попробуйте то, что написано в &#171;Что попробовать:&#187;.</li><li>Если причина не в этом, нажмите &#171;Следующий шаг&#187;.</li><li>Нажмите &#171;Подробности&#187;, если нужны коды, и &#171;Копировать&#187;, чтобы передать их.</li><li>Закройте окно.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>Что произошло</summary><p>Одна фраза о сбое, например &#171;Не удаётся связаться с сервером.&#187;, &#171;Логин или пароль неверны.&#187; или &#171;Этот сервер не похож на тот, к которому вы подключались раньше.&#187;. Она зависит от вида сбоя, из-за которого открылось окно.</p></details>
+<details id="what-to-try"><summary>Что попробовать</summary><p>Окно начинается с первого шага, на котором проверка нашла неполадку, а если такого нет - с первого шага списка. Типичные шаги: разбудить устройство, на котором работает сервер; убедиться, что оба устройства в одной сети; выйти из гостевой сети Wi-Fi; ненадолго выключить VPN; переключить сеть Windows на &#171;Частная&#187;; проверить сервер из другой сети; установить правильные дату и время; подтвердить новый отпечаток; заново ввести логин и пароль. Последний шаг говорит, что исправить это может только тот, кто управляет сервером.</p></details>
+<details id="next-step"><summary>Следующий шаг и настройки Windows</summary><p>&#171;Следующий шаг&#187; переходит по шагам и исчезает на последнем. Для двух шагов, которые решаются в настройках Windows (профиль сети и часы), кнопка &#171;Открыть настройки Windows&#187; открывает нужную страницу Windows; сама программа ничего не меняет.</p></details>
+<details id="details-copy"><summary>Подробности и &#171;Копировать&#187;</summary><p>&#171;Подробности&#187; показывают или скрывают нередактируемое поле с кодами диагностики: вид сбоя, цель, маршрут, шаг с неполадкой и пройденные шаги. В нём никогда нет адреса, логина, пароля или отпечатка. &#171;Копировать&#187; кладёт эту строку в буфер, и окно сообщает &#171;Коды диагностики скопированы в буфер обмена.&#187;</p></details>
+<details id="how-it-checks"><summary>Как работает проверка</summary><p>Проверка выполняется только для подключения, которое вы пытались установить, и только читает: она пробует достучаться до хоста и порта и смотрит состояние сети, адаптеры VPN, профиль сети Windows, вид адреса, часы и сертификат. Она останавливается на первом шаге с неполадкой, а проверка, которую не удалось выполнить, никогда не считается ни пройденной, ни проваленной.</p></details>
+    <p><a href="settings.html">Настройки</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

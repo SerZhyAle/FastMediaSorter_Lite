@@ -615,6 +615,12 @@ Public Class ExchangeGroupTests
                                              Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                                                  Dim exchange As CollapsibleSection = SectionField(form, "_secExchange")
                                                  exchange.Expanded = True
+                                                 ' The rail shows one group card at a time; this check is about the group's content, so every
+                                                 ' card of the page is put on show and measured together, as the section lays them out.
+                                                 For Each grp In ExchangeTestSupport.SettingsGroups(form, "exchange")
+                                                     grp.Card.Visible = True
+                                                     grp.Expanded = True
+                                                 Next
                                                  form.PerformLayout()
                                                  Assert.True(exchange.Body.PreferredSize.Height > 100, code & ": the unfolded group has no height")
                                                  Dim limit As Integer = 560 + 40
@@ -628,7 +634,7 @@ Public Class ExchangeGroupTests
                                                      ' the caption and the explanation of a boolean option row are sized by the row at its own width
                                                      ' (SetBounds, wrapped); their unwrapped "preferred" width says nothing - the row itself is checked
                                                      If TypeOf c Is Label AndAlso TypeOf c.Parent Is OptionRowHost Then Continue For
-                                                     Assert.True(c.PreferredSize.Width <= limit, code & ": " & c.GetType().Name & " '" & c.Text & "' wants " & c.PreferredSize.Width & " px")
+                                                     Assert.True(c.PreferredSize.Width <= limit, code & ": " & c.GetType().Name & " '" & c.Text & "' in " & c.Parent?.Name & " wants " & c.PreferredSize.Width & " px")
                                                  Next
                                              End Using
                                          End Sub)

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>تعديل المورد - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">تعديل المورد</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>نموذج لخادم أو مجلد شبكة محفوظ واحد. الزر إضافة.. في قائمة الموارد يفتحه فارغًا بعنوان مورد جديد، والزر تعديل.. يفتحه معبّأً بعنوان تعديل المورد، وعنوان sftp:// يُكتب في مربع المجلد يفتحه معبّأً مسبقًا.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="تعديل المورد">
+    <img class="shot dark" src="resource-edit-dark.png" alt="تعديل المورد">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اختر النوع: خادم SFTP أو مجلد شبكة (SMB).</li><li>أعطِ المورد اسمًا وأدخل عنوان الخادم والمنفذ، أو مسار الشبكة.</li><li>أدخل اسم المستخدم وكلمة المرور.</li><li>حدّد المجلد على الخادم وعلّم للقراءة فقط إذا كان يجب ألا يتغير شيء هناك.</li><li>اضغط الزر حفظ.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>النوع</summary><p>حقل النوع يُختار عند إنشاء المورد، وقيمتاه: خادم SFTP (المنفذ 22، المجلد /) أو مجلد شبكة (SMB). في المورد المحفوظ تكون القائمة معطّلة، لأن كلمة المرور المخزّنة ومفتاح الخادم يخصّان نوعًا واحدًا. في SMB يحمل حقل العنوان التسمية مجلد الشبكة ويقبل مسارًا مثل \\server\folder؛ أما حقلا المنفذ والمجلد فلـ SFTP فقط.</p></details>
+<details id="address"><summary>الاسم والخادم والمنفذ</summary><p>حقل الاسم هو ما تعرضه القائمة؛ وعند تركه فارغًا يُستخدم عنوان الخادم. حقل الخادم اسم أو عنوان IP، وحقل المنفذ رقم من 1 إلى 65535. تغيير الخادم أو المنفذ يُسقط العناوين الأخرى التي جاءت مع مورد مستورد، فلا تذهب كلمة مرور محفوظة أبدًا إلى عنوان لم تُدخله أنت.</p></details>
+<details id="credentials"><summary>المستخدم وكلمة المرور</summary><p>حقلا المستخدم وكلمة المرور. تُخزَّن كلمة المرور مشفّرة لحساب Windows الخاص بك؛ وتحتفظ القائمة بمرجع إليها فقط. في المورد المحفوظ يكون المربع فارغًا مع التلميح فارغ - الإبقاء على كلمة المرور المحفوظة: اكتب شيئًا فقط لاستبدالها. الخيار إظهار كلمة المرور غير مفعّل في البداية. المورد الجديد يحتاج إلى كلمة مرور.</p></details>
+<details id="folder-readonly"><summary>المجلد وللقراءة فقط</summary><p>حقل المجلد على الخادم هو المجلد الذي يفتحه العارض أولاً، وهو مسار يبدأ بـ /. الخيار للقراءة فقط (دون تغيير أي شيء على الخادم) يجعل العارض يعامل المورد على أنه للقراءة فقط: لا نقل ولا نسخ إليه، ولا حذف ولا إعادة تسمية فيه.</p></details>
+<details id="server-key"><summary>مفتاح الخادم</summary><p>يعرض حقل مفتاح الخادم البصمة المحفوظة لهذا الخادم، أو يذكر أنها ستظهر عند أول اتصال حيث تؤكدها. الزر نسيان مفتاح الخادم.. يظهر فقط عندما يكون مفتاح محفوظًا. يسأل أولاً (الجواب الافتراضي هو لا) ويشرح: إذا أُعيد تثبيت الخادم فهذا طبيعي، وإلا فقد ينتحل أحدٌ صفته. يمسح المفتاح فقط: الاتصال التالي يعرض البصمة الجديدة ويسأل من جديد.</p></details>
+<details id="save-errors"><summary>حفظ</summary><p>يفحص الزر حفظ الحقول ويسمّي أول مشكلة بالأحمر تحتها: العنوان أو المنفذ أو المجلد أو اسم المستخدم أو كلمة مرور ناقصة. الزر إلغاء يغلق النموذج دون تغييرات.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

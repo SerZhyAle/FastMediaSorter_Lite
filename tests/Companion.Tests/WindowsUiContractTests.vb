@@ -17,7 +17,7 @@ Public Class WindowsUiContractTests
     Private Shared Function GetWindowThreadProcessId(handle As IntPtr, ByRef processId As UInteger) As UInteger
     End Function
 
-    Private Shared Sub OnUi(test As Action)
+    Private Shared Sub OnUi(test As Action, Optional seconds As Integer = 15)
         Dim failure As Exception = Nothing
         Dim thread As New Thread(Sub()
                                      Try
@@ -28,7 +28,7 @@ Public Class WindowsUiContractTests
                                  End Sub)
         thread.SetApartmentState(ApartmentState.STA)
         thread.Start()
-        Assert.True(thread.Join(TimeSpan.FromSeconds(15)), "UI contract check timed out.")
+        Assert.True(thread.Join(TimeSpan.FromSeconds(seconds)), "UI contract check timed out.")
         If failure IsNot Nothing Then Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
     End Sub
 
@@ -150,8 +150,8 @@ Public Class WindowsUiContractTests
                      Next
                      If Not flatRail Then buttons("exchange").AccessibilityObject.GetChild(0).DoDefaultAction()
                      ' A subordinate item expands its card, scrolls it into view and focuses
-                     ' its first editor - and the sibling cards stay on the page (238 section
-                     ' 2.1), collapsible without navigating away.
+                     ' its first editor; the page shows that one card and hides its siblings
+                     ' (owner decision 2026-10-26, SHARING_SETTINGS_WINDOWS "one card per item").
                      items("exchange")(items("exchange").Count - 1).PerformClick()
                      Application.DoEvents()
                      Assert.Equal("exchange", context.LastPageId)
@@ -165,7 +165,7 @@ Public Class WindowsUiContractTests
                      Assert.True(headerTop >= 0 AndAlso headerTop < pages("exchange").ClientSize.Height,
                                  "the card scrolled into view, top " & headerTop.ToString())
                      Assert.All(pages("exchange").Controls.Find("managerSettingsCard_exchange_server", True),
-                                Sub(card) Assert.True(card.Visible, "the sibling card stays on the page"))
+                                Sub(card) Assert.False(card.Visible, "the sibling card leaves the page"))
                      Assert.All(pages("exchange").Controls.Find("managerSettingsCard_exchange_server", True),
                                 Sub(card) Assert.False(DirectCast(card, SettingsGroupCard).Expanded, "the sibling keeps its fold"))
                      ' The block's first editor takes the focus - when the model gives this
@@ -177,10 +177,11 @@ Public Class WindowsUiContractTests
                      If firstEditor IsNot Nothing Then
                          Assert.True(chosen.Contains(window.ActiveControl), "an editor of the block holds the focus")
                      End If
-                     ' The page row means the whole page: every card of it in its remembered state.
+                     ' The page row returns to the page's selected item: its card alone, in its remembered state.
                      buttons("exchange").PerformClick()
                      Application.DoEvents()
-                     Assert.All(groups("exchange"), Sub(grp) Assert.True(grp.Card.Visible, grp.Id & " visible"))
+                     Dim lastGroup = groups("exchange").Last()
+                     Assert.All(groups("exchange"), Sub(grp) Assert.Equal(grp Is lastGroup, grp.Card.Visible))
                      Assert.True(groups("exchange").Last().Card.Expanded, "remembered fold survives the page click")
                      ' Left/Right fold and unfold the selected page's items.
                      Dim keyDown = GetType(Share_Settings_Form).GetMethod("OnSettingsNavigationKeyDown", flags)
@@ -215,7 +216,7 @@ Public Class WindowsUiContractTests
                  Using window As New Share_Settings_Form()
                      Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                      Dim selectPage = GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags)
-                     selectPage.Invoke(window, New Object() {"hosting"})
+                     selectPage.Invoke(window, New Object() {"hosting", Nothing})
                      window.Show()
                      Application.DoEvents()
                      timings.Add("dialog=" & clock.ElapsedMilliseconds.ToString())
@@ -225,7 +226,7 @@ Public Class WindowsUiContractTests
                          Dim before = window.Bounds
                          Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
                          clock.Restart()
-                         selectPage.Invoke(window, New Object() {"network"})
+                         selectPage.Invoke(window, New Object() {"network", Nothing})
                          Application.DoEvents()
                          timings.Add("network-first=" & clock.ElapsedMilliseconds.ToString())
                          Assert.Single(pages.Values.Where(Function(page) page.Visible))
@@ -235,11 +236,11 @@ Public Class WindowsUiContractTests
                          pages("network").AutoScrollPosition = New Point(0, 120)
                          Dim scroll = pages("network").AutoScrollPosition.Y
                          Assert.True(scroll < 0, "Scroll position is " & scroll.ToString())
-                         selectPage.Invoke(window, New Object() {"hosting"})
+                         selectPage.Invoke(window, New Object() {"hosting", Nothing})
                          Application.DoEvents()
                          Assert.Equal(before, window.Bounds)
                          clock.Restart()
-                         selectPage.Invoke(window, New Object() {"network"})
+                         selectPage.Invoke(window, New Object() {"network", Nothing})
                          Application.DoEvents()
                          timings.Add("network-repeat=" & clock.ElapsedMilliseconds.ToString())
                          Assert.InRange(pages("network").AutoScrollPosition.Y, scroll - 2, scroll + 2)
@@ -252,7 +253,7 @@ Public Class WindowsUiContractTests
                              IO.File.WriteAllLines(IO.Path.Combine(capture, "timings.txt"), timings)
                              window.ClientSize = New Size(820, 600)
                              For Each id In pages.Keys
-                                 selectPage.Invoke(window, New Object() {id})
+                                 selectPage.Invoke(window, New Object() {id, Nothing})
                                  Application.DoEvents()
                                  Using bitmap As New Bitmap(window.Width, window.Height)
                                      window.DrawToBitmap(bitmap, New Rectangle(Point.Empty, bitmap.Size))
@@ -284,7 +285,7 @@ Public Class WindowsUiContractTests
                      Assert.Equal("help", pages.Keys.Last())
                      window.Show()
                      window.ClientSize = New Size(820, 600)
-                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup"})
+                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup", Nothing})
                      Application.DoEvents()
                      For Each row In ControlsBelow(window).OfType(Of ManagerSettingRow)()
                          Assert.False(String.IsNullOrWhiteSpace(row.Hint.Text), row.Caption.Text)
@@ -299,11 +300,17 @@ Public Class WindowsUiContractTests
                      Assert.Contains(Environment.NewLine, license.Text)
                      Dim support = Assert.Single(ControlsBelow(window).OfType(Of Button)().Where(Function(c) c.Name = "managerSupportBundle"))
                      Assert.True(pages("help").Contains(support))
-                     Assert.Single(ControlsBelow(window).Where(Function(c) c.Text = Localization.T("Отправить журнал автору..")))
+                     Assert.Single(ControlsBelow(window).Where(Function(c) c.Text = Localization.T("Экспорт журналов для анализа")))
                      Assert.DoesNotContain(ControlsBelow(window).OfType(Of Button)(), Function(c) c.Text = Localization.T("Закрыть"))
                      Assert.Null(window.AcceptButton)
                      Assert.Null(window.CancelButton)
-                     Assert.True((buttons("startup").AccessibilityObject.State And AccessibleStates.Selected) <> 0)
+                     ' Exactly one rail row reads selected: the page's chosen item, or the page row while its items are folded.
+                     Dim startupItems = DirectCast(GetType(Share_Settings_Form).GetField("_navItems", flags).GetValue(window),
+                         Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavItemButton)))
+                     Dim selectedRows = New Control() {buttons("startup")}.
+                         Concat(If(startupItems.ContainsKey("startup"), startupItems("startup").Cast(Of Control)(), Enumerable.Empty(Of Control)())).
+                         Count(Function(c) (c.AccessibilityObject.State And AccessibleStates.Selected) <> 0)
+                     Assert.Equal(1, selectedRows)
                      window.Hide()
                  End Using
              End Sub)
@@ -346,7 +353,7 @@ Public Class WindowsUiContractTests
                          Dim setExpanded = GetType(Share_Settings_Form).GetMethod("SetSettingsNavExpanded", flags)
                          Dim before = window.Bounds
                          For Each pageId In pages.Keys
-                             selectPage.Invoke(window, New Object() {pageId})
+                             selectPage.Invoke(window, New Object() {pageId, Nothing})
                              Application.DoEvents()
                              ' Warm both states before timing repeats.
                              setExpanded.Invoke(window, New Object() {pageId, True})
@@ -412,7 +419,7 @@ Public Class WindowsUiContractTests
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
                          window.Show()
-                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"exchange"})
+                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"exchange", Nothing})
                          Dim previousContext = SynchronizationContext.Current
                          Dim refresh As Threading.Tasks.Task
                          Try
@@ -464,7 +471,7 @@ Public Class WindowsUiContractTests
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
-                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup"})
+                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup", Nothing})
                          window.Show()
                          window.ClientSize = New Size(window.LogicalToDeviceUnits(width), window.LogicalToDeviceUnits(480))
                          Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
@@ -478,8 +485,12 @@ Public Class WindowsUiContractTests
                                      .CertPresent = state <> 0, .Fingerprint = If(state = 0, "", "SHA256:abc"),
                                      .Listen = ":22022", .PortRange = "40000-40100", .PublicEndpoint = "203.0.113.7:22022"}}
                              If destination = SettingsDestination.ExchangeServer Then GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", flags).Invoke(window, New Object() {snapshot})
+                             ' A page shows one group card at a time (the selected rail item): every group is visited.
                              For Each pageId In pages.Keys
-                                 selectPage.Invoke(window, New Object() {pageId})
+                             Dim groupIds As List(Of String) = ExchangeTestSupport.SettingsGroups(window, pageId).Select(Function(g) g.Id).ToList()
+                             If groupIds.Count = 0 Then groupIds.Add(Nothing)
+                             For Each groupId In groupIds
+                                 selectPage.Invoke(window, New Object() {pageId, groupId})
                                  Dim pageGroups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window),
                                                              Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
                                  Dim setExpanded = GetType(Share_Settings_Form).GetMethod("SetGroupExpanded", flags)
@@ -494,11 +505,6 @@ Public Class WindowsUiContractTests
                                      DirectCast(GetType(Share_Settings_Form).GetField("numXPort", flags).GetValue(window), NumericUpDown).Value = 22023
                                  End If
                                  Application.DoEvents()
-                                 If pageId = "exchange" AndAlso state = 1 Then
-                                     For Each name In {"_btnXApplyEndpoint", "_btnXApplyRange", "_btnXApplyPort"}
-                                         Assert.True(DirectCast(GetType(Share_Settings_Form).GetField(name, flags).GetValue(window), Button).Visible, name)
-                                     Next
-                                 End If
                                  ' Nothing folds any more (210): every editor of the page is on
                                  ' show and must sit inside its parent's layout box.
                                  For Each control In ControlsBelow(pages(pageId)).Where(Function(c) c.Visible AndAlso
@@ -518,9 +524,17 @@ Public Class WindowsUiContractTests
                                      Select(Function(row) row.PointToScreen(New Point(row.ClientSize.Width, 0)).X).ToArray()
                                  If rowEnds.Length > 1 Then Assert.InRange(rowEnds.Max() - rowEnds.Min(), 0, 1)
                              Next
+                             Next
+                             If destination = SettingsDestination.ExchangeServer AndAlso state = 1 Then
+                                 For Each name In {"_btnXApplyEndpoint", "_btnXApplyRange", "_btnXApplyPort"}
+                                     Dim apply = DirectCast(GetType(Share_Settings_Form).GetField(name, flags).GetValue(window), Button)
+                                     ExchangeTestSupport.ShowSettingsCardOf(window, apply)
+                                     Assert.True(apply.Visible, name)
+                                 Next
+                             End If
                              If destination = SettingsDestination.ExchangeServer Then
                              Dim keep = DirectCast(GetType(Share_Settings_Form).GetField("_chkXKeep", flags).GetValue(window), CheckBox)
-                             selectPage.Invoke(window, New Object() {"exchange"})
+                             ExchangeTestSupport.ShowSettingsCardOf(window, keep)
                              Dim hint = ControlsBelow(window).Single(Function(c) c.Name = keep.Name & "Hint")
                              Assert.Equal(keep.Visible, hint.Visible)
                              End If
@@ -534,7 +548,7 @@ Public Class WindowsUiContractTests
                      ExchangeTestSupport.DeleteQuietly(component)
                      ExchangeTestSupport.DeleteQuietly(worker)
                  End Try
-             End Sub)
+             End Sub, 60)   ' every rail group of every page in four server states: a loaded full run needs more than the default
     End Sub
 
     <Theory>
@@ -552,7 +566,7 @@ Public Class WindowsUiContractTests
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          window.Show()
                          window.ClientSize = New Size(820, 600)
-                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup"})
+                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup", Nothing})
                          Application.DoEvents()
                          Dim buttons = DirectCast(GetType(Share_Settings_Form).GetField("_navButtons", flags).GetValue(window), Dictionary(Of String, Button))
                          Dim items = DirectCast(GetType(Share_Settings_Form).GetField("_navItems", flags).GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavItemButton)))

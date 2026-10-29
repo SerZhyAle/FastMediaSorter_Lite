@@ -128,7 +128,8 @@ function Invoke-ChildCheck([string]$Script, [string[]]$Arguments = @()) {
 # answered NOT APPLICABLE carries exit 0, so it never moves this code - Test-AllNotApplicable says
 # whether the zero it returns is a PASS or the aggregate's own NOT APPLICABLE.
 function Get-AggregateCode([int[]]$Codes) {
-    if (-not $Codes -or $Codes.Count -eq 0) { return 2 }
+    # `-not $Codes` is true for @(0) (one PASS), which would read a lone pass as "nothing inspected"
+    if ($null -eq $Codes -or $Codes.Count -eq 0) { return 2 }
     if ($Codes -contains 1) { return 1 }
     if ($Codes -contains 2) { return 2 }
     if ($Codes -contains 3) { return 3 }

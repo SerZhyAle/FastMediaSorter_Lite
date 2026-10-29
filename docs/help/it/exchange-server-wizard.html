@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>Il mio server su questo PC - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">Il mio server su questo PC</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Configura in un solo passaggio un Media Exchange Server personale su questo PC: crea il primo account, avvia il server e collega a esso lo stesso PC. Si apre dal pulsante &#171;Usa questo PC come mio server..&#187; nella pagina Media Exchange Server delle impostazioni di Share Manager, che compare solo finch&#233; su questo PC non &#232; configurato alcun server.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="Il mio server su questo PC">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Il mio server su questo PC">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Controlla il login proposto, ricavato dal tuo nome utente di Windows, oppure scrivine uno tuo.</li><li>Leggi la dichiarazione su che cosa pu&#242; vedere l&#39;operatore.</li><li>Premi &#171;Avvia&#187; e attendi i quattro passaggi.</li><li>Copia subito la password, poi l&#39;impronta o la stringa di connessione per gli altri tuoi dispositivi.</li><li>Premi &#171;Chiudi&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Login</summary><p>&#171;Login del tuo account:&#187; accetta da 3 a 64 caratteri: lettere latine minuscole, cifre, punto, trattino basso e trattino; le maiuscole vengono convertite in minuscole. Il suggerimento sotto il campo diventa del colore di avviso finch&#233; il testo non pu&#242; essere un login, e &#171;Avvia&#187; non fa nulla finch&#233; non lo diventa.</p></details>
+<details id="statement"><summary>Che cosa pu&#242; vedere l&#39;operatore</summary><p>Il riquadro di sola lettura sotto &#171;Prima di creare il primo account, leggi che cosa pu&#242; vedere l&#39;operatore del server:&#187; elenca che cosa un operatore del server pu&#242; vedere di account, dispositivi, cartelle, trasmissioni e appunti, che cosa il server non pu&#242; leggere e per quanti giorni vengono conservati i registri. Sul tuo server l&#39;operatore sei tu.</p></details>
+<details id="steps"><summary>Passaggi ed errori</summary><p>&#171;Avvia&#187; esegue quattro passaggi e indica quello in corso: &#171;Creo l&#39;account..&#187;, &#171;Avvio il server..&#187;, &#171;Controllo il certificato..&#187; e &#171;Collego questo PC..&#187;. Nel frattempo il login &#232; bloccato e la finestra non si pu&#242; chiudere. Se non &#232; stato creato nessun account, una frase ne spiega il motivo, per esempio &#171;Quell&#39;account esiste gi&#224; - scegli un altro login.&#187;; correggi il login e premi di nuovo &#171;Avvia&#187;.</p></details>
+<details id="result"><summary>Risultato e indirizzi</summary><p>Se tutto va a buon fine, la finestra mostra &#171;Fatto: il server &#232; in esecuzione, l&#39;account &#232; stato creato e questo PC &#232; collegato.&#187; ed elenca &#171;Indirizzo per questo PC:&#187;, &#171;Indirizzo per gli altri dispositivi:&#187; (che riporta &#171;non impostato - inseriscilo nelle impostazioni del server di scambio&#187; finch&#233; quell&#39;indirizzo non &#232; impostato), &#171;Utente:&#187;, &#171;Password (mostrata una sola volta):&#187; e &#171;Impronta del certificato:&#187;. Quando l&#39;indirizzo per gli altri dispositivi &#232; impostato, si aggiunge &#171;Stringa di connessione:&#187;. Se il server non si &#232; avviato, l&#39;account esiste comunque e la sua password &#232; mostrata una sola volta pi&#249; in basso.</p></details>
+<details id="password-and-copying"><summary>Password e copia</summary><p>La password &#232; mascherata. &#171;Mostra la password&#187; la rivela; &#171;Copia password&#187; la mette negli appunti attraverso il percorso protetto che la tiene fuori dalla cronologia degli appunti di Windows e dagli appunti nel cloud. La finestra la mostra solo questa volta, a meno che &#171;Conserva le password degli account su questo PC&#187; sia attivo. &#171;Copia impronta&#187; e &#171;Copia la stringa&#187; sono copie normali: nessuna delle due contiene una password. Gli altri dispositivi hanno bisogno di indirizzo, login, password e impronta, che confrontano al primo collegamento.</p></details>
+<details id="close-warning"><summary>Chiusura</summary><p>Se la password non &#232; stata n&#233; copiata, n&#233; mostrata, n&#233; conservata su questo PC, &#171;Chiudi&#187; chiede &#171;Chiudere senza copiare la password?&#187; con No come risposta predefinita, perch&#233; la password non pu&#242; essere mostrata di nuovo, ma solo reimpostata.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>新账户 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">新账户</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>一个窗口，两种模式。「新账户」向您运行的 Media Exchange Server 添加账户；「重置密码：&lt;登录名&gt;」为现有账户设置新密码。它们分别从 Share Manager 设置中 Media Exchange Server 页面账户列表下方的「添加账户..」和「重置密码..」按钮打开；重置需要先选中一个账户。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="新账户">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="新账户">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>在添加模式下输入登录名。</li><li>选择密码的生成方式。</li><li>在重置模式下决定是否让该账户的所有设备登出。</li><li>点击「创建」或「重置」。</li><li>从下一个窗口复制生成的密码，或输入您自己的密码。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>首个账户的声明</summary><p>创建最初的第一个账户时，窗口以「创建第一个账户之前，请阅读服务器运营者能看到什么：」开头，下方是显示声明的只读框。之后的账户以及重置都不显示它。</p></details>
+<details id="login"><summary>登录名</summary><p>仅限添加模式。3 到 64 个字符：小写拉丁字母、数字、点、下划线和连字符；大写字母会自动转为小写。在文本还不能作为登录名时，提示显示为警告色，「创建」在此之前不会继续。</p></details>
+<details id="password-choice"><summary>密码的生成方式</summary><p>「生成密码（只显示一次）」是默认选项：程序生成符合规则的随机密码，并在下一个窗口中仅显示一次。「自己输入密码」会打开「账户密码」窗口，其中一行实时提示还缺少什么：至少 10 个字符，含一个大写和一个小写拉丁字母以及一个数字。</p></details>
+<details id="sign-out"><summary>登出所有设备</summary><p>仅限重置模式。「同时立即登出此账户的所有设备」默认已勾选。此时结果行会说明密码已更改，且该账户的所有设备已登出；不勾选时，结果行只说明密码已更改。</p></details>
+<details id="after"><summary>服务器接受之后</summary><p>结果行会说明账户已创建。生成的密码只在单独的窗口中出现一次，窗口中有「复制密码」和「设置我自己的密码..」，后者会回到重置模式并选中手动输入。如果开启了「在此电脑上保存账户密码」，密码也会保存在这台电脑上，该账户会出现「显示密码..」按钮。如果此版本提供交换客户端功能，且这台电脑还没有自己的账户，它会用这个密码作为该账户的第一台设备登录。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

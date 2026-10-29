@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>使用摄像头扫描二维码 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">使用摄像头扫描二维码</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>通过此电脑的摄像头读取手机应用显示的二维码。它从手机验证码窗口中的「使用摄像头扫描..」打开，也从交换账户窗口的连接字符串框打开，窗口显示时摄像头即启动。</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>此窗口没有截图：它一打开就会启动设备、网络监听或整个查看器，因此不截取。</figcaption></figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>把手机上的二维码举到摄像头前。</li><li>窗口自动扫描画面；找到有效代码时，状态显示「已接收连接码」，窗口关闭。</li><li>点击「取消」（Escape）可不扫描直接关闭。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>预览和状态</summary><p>黑色区域显示实时画面。在读取到代码之前，其下方的一行显示「将摄像头对准手机上的二维码」。</p></details>
+<details id="camera"><summary>使用哪个摄像头</summary><p>只使用找到的第一个摄像头。如果没有，或无法启动，该行显示「摄像头不可用」，如有原因则跟在后面。</p></details>
+<details id="result"><summary>扫描之后</summary><p>第一个有效二维码的文本会返回给打开扫描器的窗口，并在那里按粘贴处理；在手机验证码窗口中，它会填入代码框并传递，Fast Media Sorter 仍会照常询问。画面只保留在内存中：此窗口不保存也不发送任何内容。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Exchange Invitation - Fast Media Sorter</title>
+  <title>创建邀请 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Create Exchange Invitation</h1>
+  <h1 id="title">创建邀请</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Exchange Invitation.</p>
+    <p>这个小窗口询问新邀请将创建哪种账户。可在交换服务器设置的「邀请」组中点击「创建邀请..」打开；管理器连上服务器后才会显示该组。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-invitation-create-light.png" alt="Create Exchange Invitation">
-    <img class="shot dark" src="exchange-invitation-create-dark.png" alt="Create Exchange Invitation">
+    <img class="shot light" src="exchange-invitation-create-light.png" alt="创建邀请">
+    <img class="shot dark" src="exchange-invitation-create-dark.png" alt="创建邀请">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>在交换服务器设置中找到「邀请」组，点击「创建邀请..」。</li><li>保持选中「自己的设备或家庭」。</li><li>点击「创建」。</li><li>「邀请已创建」窗口随即打开并只显示一次代码：请在那里复制。点击「取消」或按 Esc 可退出而不创建任何内容。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="invitation-type"><summary>邀请类型</summary><p>问题「选择要创建的用于用户注册的邀请类型：」下有两个单选按钮。「自己的设备或家庭」默认选中，其下一行写着：「创建具有资源发布功能的完整账户。」使用邀请的人会注册自己的登录名和密码。</p></details>
+<details id="guest-unavailable"><summary>访客选项</summary><p>「访客」被禁用，无法选择。其下一行给出原因：程序的文件服务器无法把登录限制在一个文件夹内。因此只能创建第一种邀请。已存在的访客邀请和共享密码仍留在列表中，仍可撤回或关闭。</p></details>
+<details id="create"><summary>创建</summary><p>「创建」向服务器请求一个一次性邀请。成功后，设置页面会显示「邀请已成功创建。」，并打开显示代码的窗口。如果服务器拒绝，原因会显示在页面上，代码窗口不会打开。列表按类型、创建时间、状态和哈希显示每个邀请，绝不显示其代码。</p></details>
+<details id="withdraw"><summary>撤回邀请</summary><p>要取消已创建的邀请，请在列表中选中它并点击「撤销」。确认后，其代码即停止生效。</p></details>
+<details id="cancel"><summary>取消</summary><p>「取消」或 Esc 会关闭窗口，不创建任何内容。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

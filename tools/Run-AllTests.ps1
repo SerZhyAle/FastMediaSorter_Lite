@@ -30,13 +30,15 @@
                                        surface, the availability matrix against the packaging files, the component in development, the
                                        editions, the language count and the platform floor; offline)
 
-    These are UNIT/logic suites - fast, no network, no phone. Three live suites are opt-in:
+    These are UNIT/logic suites - fast, no network, no phone. Four live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it
     never starts a worker or touches its data), -OcrScenes drives the built mainline viewer
     over the OCR overlay scenes - minutes, a window on screen, the OCR settings borrowed and put
-    back - and -DynAudit runs the dynamic-audit campaign of specification 209 (self-test,
-    control run, measured scenes against an isolated profile; hours, injected input), so
-    neither is ever part of a default run.
+    back - -HtmlScenes opens a local .html in the built mainline viewer with the optional HTML
+    viewer off and on (a window on screen, a real WebView2 browser process, the viewer settings
+    key exported, borrowed and restored byte for byte), and -DynAudit runs the dynamic-audit
+    campaign of specification 209 (self-test, control run, measured scenes against an isolated
+    profile; hours, injected input), so none of them is ever part of a default run.
 
     Every suite runs whatever the one before it returned, and the summary names all of them.
 
@@ -47,6 +49,12 @@
 .PARAMETER OcrScenes
     Also run tests/Integration/OcrOverlayScenes.ps1 (needs a built bin\Release viewer and no
     viewer running; about 45 s per scene).
+
+.PARAMETER HtmlScenes
+    Also run tests/Integration/HtmlViewerScenes.ps1 (specification 275, work package W10: needs a
+    built bin\Release viewer with the HTML payload, an unlocked desktop, an installed WebView2 Runtime
+    and no viewer running; scenes S1-S9, about three minutes). Without any of them the suite is
+    COULD NOT VERIFY.
 
 .PARAMETER DynAudit
     Also run tools/dynaudit/DynAudit.ps1 (specification 209: the dynamic-audit campaign -
@@ -87,6 +95,7 @@
 param(
     [switch]$Integration,
     [switch]$OcrScenes,
+    [switch]$HtmlScenes,
     [switch]$DynAudit,
     [switch]$SkipGo,
     [switch]$SkipExchangeGo,
@@ -114,6 +123,7 @@ $plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } el
           'placement', 'documentation', 'naming', 'site', 'site-addresses', 'site-origins', 'site-positioning')
 if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
+if ($HtmlScenes)  { $plan += 'html-scenes' }
 if ($DynAudit)     { $plan += 'dynaudit' }
 Write-Subject 'Run-AllTests' "$($plan -join ', '); $(Get-TreeLabel $root)"
 
@@ -341,6 +351,9 @@ if ($Integration) {
 }
 if ($OcrScenes) {
     Invoke-ScriptSuite 'ocr-scenes' 'OCR overlay scenes' (Join-Path $root 'tests\Integration\OcrOverlayScenes.ps1')
+}
+if ($HtmlScenes) {
+    Invoke-ScriptSuite 'html-scenes' 'HTML viewer scenes' (Join-Path $root 'tests\Integration\HtmlViewerScenes.ps1')
 }
 if ($DynAudit) {
     Invoke-ScriptSuite 'dynaudit' 'Dynamic audit campaign' (Join-Path $root 'tools\dynaudit\DynAudit.ps1')

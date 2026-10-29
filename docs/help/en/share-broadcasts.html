@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>Broadcasts for StreamsPlayer - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">Broadcasts for StreamsPlayer</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>Manages the HTTP broadcasts of media files and folders that this PC offers to the StreamsPlayer app. It opens from the &#39;Broadcasts..&#39; button or Add-menu item of the Share Manager main window, which appear only when the sharing service reports broadcast support. A launch that carries a path opens it and goes straight to the Create Broadcast dialog for that path.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="Broadcasts for StreamsPlayer">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="Broadcasts for StreamsPlayer">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Tick &#39;Enable HTTP broadcast gateway&#39;, or just create a broadcast, which switches the gateway on.</li><li>Press &#39;Create broadcast..&#39;, choose the media file, set the title, lifetime and internet option, and press &#39;Broadcast&#39;.</li><li>The link is copied to the clipboard.</li><li>Select a row and use &#39;Copy link&#39;, &#39;Save .spres..&#39; or &#39;Show QR&#39; to hand the broadcast to a device.</li><li>&#39;Revoke&#39; a broadcast when it is no longer needed.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>Gateway switch</summary><p>The checkbox turns the HTTP gateway on or off. The line under it reads &#39;Broadcast gateway is off&#39; or &#39;Broadcast gateway is running (port N)&#39;. While the gateway runs, this PC answers HTTP requests for the broadcast files. If the gateway cannot start (port, firewall), the checkbox goes back to its real state and the reason appears in one red line under it; a refusal never opens a dialog.</p></details>
+<details id="broadcast-list"><summary>Broadcast list</summary><p>Columns: Name, Type (File, or Folder with its item count), Created, Expires (a date, &#39;Until revoked&#39; or &#39;Expired&#39;), Hits and Token, which shows only the first six characters. The list re-reads itself every 5 seconds. A double click on a row copies its link.</p></details>
+<details id="create"><summary>Create broadcast..</summary><p>Asks for a media file and opens the Create Broadcast dialog. After you accept it, the gateway is switched on if needed, the broadcast is made and its link is copied to the clipboard with privacy markers; a message confirms the copy.</p></details>
+<details id="share-link"><summary>Copy link, Save .spres.. and Show QR</summary><p>These three work on the selected row and need the gateway running with a port. They build the link from the current addresses of this PC; the internet choice made at creation is remembered for each broadcast. &#39;Save .spres..&#39; writes a StreamsPlayer resource file, and &#39;Show QR&#39; opens a code to scan.</p></details>
+<details id="refresh-revoke"><summary>Refresh and Revoke</summary><p>&#39;Refresh&#39; is available for a folder broadcast only and asks the service to refresh it; a message confirms. &#39;Revoke&#39; works on any row and asks first: &#39;Revoke broadcast X? The link will stop working immediately.&#39; A revoked broadcast cannot be restored; create a new one.</p></details>
+<details id="problems"><summary>When the page is off</summary><p>If the sharing service does not answer or lacks broadcast support, the page turns itself off in place and the red line says why, for example that this version of the broadcast service is out of date, or that the action could not be completed with details in the log.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

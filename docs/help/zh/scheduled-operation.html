@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled File Operation - Fast Media Sorter</title>
+  <title>计划操作 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled File Operation</h1>
+  <h1 id="title">计划操作</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled File Operation.</p>
+    <p>编辑一个计划文件操作：按重复计划将文件从来源复制、移动、删除或归档到目标。它从 Share Manager 设置的「计划文件操作」页面上的「新建..」或「编辑..」打开，也从查看器文件夹菜单项「为此文件夹安排计划操作..」打开，后者会把该文件夹填为来源。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled File Operation">
-    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled File Operation">
+    <img class="shot light" src="scheduled-operation-light.png" alt="计划操作">
+    <img class="shot dark" src="scheduled-operation-dark.png" alt="计划操作">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>输入名称并选择动作。</li><li>用「选择..」、「资源..」或「通过 Google 云端硬盘」设置来源，以及用于复制、移动和归档的目标。</li><li>对于复制和移动，选择「名称已存在时」的处理方式。</li><li>打开「文件筛选条件」以缩小文件范围。</li><li>设置「开始时间」和「重复间隔」，并保持勾选「按计划运行」。</li><li>查看「现在将执行什么..」，然后点击「保存」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="action"><summary>动作和名称冲突</summary><p>动作为复制、移动、删除或归档，窗口只显示该动作需要的行：删除没有目标；「名称已存在时」（跳过、覆盖、保留两个副本）只出现在复制和移动中；「归档文件校验通过后删除原文件」只出现在归档中，并且只有在归档被读回并校验后才会删除原文件。</p></details>
+<details id="places"><summary>来源和目标</summary><p>输入完整路径或点击「选择..」。「资源..」从查看器的资源列表中选取 SFTP 服务器或网络文件夹，归档不提供该选项，归档只接受普通文件夹和 Google 云端硬盘。「通过 Google 云端硬盘」仅在你已登录云端硬盘，或该侧已在使用它时出现。当「包括子文件夹」关闭时，只处理来源文件夹本身的文件。「保存」会拒绝系统文件夹和程序文件夹，以及等于来源或位于来源内部的目标，并说明问题所在。</p></details>
+<details id="delete-verdict"><summary>删除文件</summary><p>当文件将被移除时（删除，或带有「归档文件校验通过后删除原文件」选项的归档），「删除：..」这一行会说明它们的去向：放入回收站，或永久删除并附带原因，例如网络磁盘或可移动磁盘没有回收站。对于这样的操作，Enter 不会保存；请有意识地点击「保存」。计划运行从不提问，并会记录已删除文件的去向。</p></details>
+<details id="conditions"><summary>文件筛选条件</summary><p>当条件与默认值不同时，该面板会自动展开。文件类型：所有文件、图片、音频、视频、文档（「所有文件」会关闭其余四项）。修改时间：全部时间、自上次运行以来新增的、最近一小时、最近一天。「名称通配符」和「按通配符排除」可以接受多个以分号分隔的通配符，例如 *.jpg;IMG_??.png，与文件名比较。「超过」和「不足」以天和小时为单位，「大于」和「小于」以 MB 为单位。「包括隐藏文件和系统文件」默认关闭。</p></details>
+<details id="schedule"><summary>计划</summary><p>「开始时间」设置一天中的时刻，「重复间隔」设置以小时和分钟计的间隔；整数天会在同一时刻重复。它们下方的一行显示「下次运行：时间（规则）」或「计划已关闭：该操作只能手动运行。」。「程序启动时补执行一次错过的计划」和「出错时显示通知」是各自独立的选项。另一行说明该计划仅在 Share Manager 运行时有效，以及它是否随 Windows 登录启动；此窗口中的任何内容都不会更改自动启动。</p></details>
+<details id="preview"><summary>预览和保存</summary><p>「现在将执行什么..」列出操作将处理的文件，且不会更改任何内容；运行并不需要它。「保存」存储该操作，或列出必须修正的内容。「取消」放弃你的编辑。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

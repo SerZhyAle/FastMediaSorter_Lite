@@ -1,31 +1,29 @@
 <#
 .SYNOPSIS
-    Hold the site's claims to one positioning source and to facts typed once, offline (tickets 155 and 249,
+    Hold the site's claims to one positioning source and to facts typed once, offline (tickets 155, 249 and 273,
     SITE-REPRESENTATION rules 1 to 4).
 
 .DESCRIPTION
     docs/guides/POSITIONING.md is the one positioning source; tools/site-facts.json is its machine form
-    (the family sentence, the three components in order and the state of each, the two install profiles, the
-    public editions, the component x channel availability matrix with the files that prove each cell, the words
-    that mark a component in development, the language count and the platform floor, and the surfaces that must
-    follow them). Judged over the current files on disk, no network:
+    (the family sentence, the three components in order and the state of each, the capability register, the
+    retired phrases, the two install profiles, the public editions, the component x channel availability matrix
+    with the files that prove each cell, the rules for the gated component, the language count and the platform
+    floor, and the surfaces that must follow them). Judged over the current files on disk, no network:
 
-      1  source    the data file parses; the components are unique, each shipped or in-development, none of
-                   them FileDO (a capability of sharing); POSITIONING.md quotes the family sentence, lists the
-                   components in the data file's order, names every capability and edition and says the viewer
-                   is no longer the core of every package; PRODUCT_NAMING.md owns every edition name and the
-                   in-development component's name; the family sentence carries a development marker while a
-                   component is in development; the landing copy's English family sentence is the data file's
-                   (rule 1);
+      1  source    the data file parses; the components are unique, each shipped or gated, none of them FileDO
+                   (a capability of sharing); POSITIONING.md quotes the family sentence, lists the components in
+                   the data file's order and names every capability and edition; PRODUCT_NAMING.md owns every
+                   edition name and the gated component's name; the landing copy's English family sentence is
+                   the data file's (rule 1);
       2  surfaces  every declared surface (landing and its locale pages, the server page, the READMEs, the
                    Store description, the winget description) has its region, names the first N components and
                    names them in the source's order (rule 2);
       3  editions  a name of the form "Fast Media Sorter & Sharing: <X>" on any scanned file is a declared
-                   public edition; the in-development component is named wherever the data file lets it be,
-                   always within reach of a development marker, never inside a link to a download, an installer,
-                   a release, a store or a winget command, never with a date (rule 4 as the owner's decision of
-                   2026-10-20 replaced the Q155-2 reservation); the Microsoft Store listing says what the Store
-                   package is and is not;
+                   public edition; the gated component is named as what it does, in the present tense, never
+                   inside a link to a download, an installer, a release, a store or a winget command, never with
+                   a date, never with an instruction to download or install it, and its door carries no call to
+                   action (rule 4; specification 273 Q273-4 removed the development marker); the Microsoft Store
+                   listing says what the Store package is and is not;
       4  profiles  the two install profiles each have their entry page, their channels and the cross-link to
                    the other profile's page, and the availability matrix is complete: every component x channel
                    cell holds a known state, every cell cites evidence, and every evidence pattern still matches
@@ -40,7 +38,15 @@
                    social card's words - holds its channels' limits and none of the words the naming
                    standard retired; no published surface, topic, tag or search term names a competitor
                    (the names are read from the research guide's gate-terms block, never from the data
-                   file); and each channel the block lists as `applied` matches the tree.
+                   file); and each channel the block lists as `applied` matches the tree;
+      7  register  the capability register (specification 273 T-1): every capability has a known state and
+                   component, evidence that exists, the release that brought it when it is released (a CHANGELOG
+                   version heading), surface classes the register knows, and a planned capability is allowed in
+                   class A only and carries its plannedClaims; every capability a coverage set must name is named
+                   in every file of that set, in that file's language; no published surface makes a planned
+                   capability's claim outside an allowed context; and no published surface says a retired phrase
+                   (an old definition, a phrase of a retired model, or a promise marker such as 'in development' -
+                   canon invariant 17).
 
     Ends in the shared one-line verdict (CHECK-VERDICT): exit 0 PASS / 1 FAIL / 2 COULD NOT VERIFY.
 
@@ -98,7 +104,7 @@ function Expand-Patterns([string[]]$patterns) {
 }
 
 $decl = Read-Utf8 $Facts | ConvertFrom-Json
-foreach ($k in 'positioning', 'profiles', 'editions', 'availability', 'development', 'facts', 'surfaces') {
+foreach ($k in 'positioning', 'capabilities', 'retiredPhrases', 'profiles', 'editions', 'availability', 'gated', 'facts', 'surfaces') {
     if (-not $decl.PSObject.Properties[$k]) { Exit-Verdict 'Test-SitePositioning' 2 "$Facts has no '$k'" }
 }
 
@@ -110,14 +116,14 @@ if (@($ids | Select-Object -Unique).Count -ne $ids.Count) { Problem 'site-facts.
 $capabilityIds = [Collections.Generic.List[string]]::new()
 foreach ($c in $components) {
     if (-not [string]$c.title) { Problem "component '$($c.id)' has no title" }
-    if (@('shipped', 'in-development') -notcontains [string]$c.state) { Problem "component '$($c.id)' has the state '$($c.state)', not shipped or in-development" }
+    if (@('shipped', 'gated') -notcontains [string]$c.state) { Problem "component '$($c.id)' has the state '$($c.state)', not shipped or gated" }
     if ([string]$c.title -match 'FileDO') { Problem "component '$($c.id)' is titled '$($c.title)': FileDO hosting is a capability of sharing, not a component of its own (specification 249)" }
     if ($c.PSObject.Properties['capabilities']) { foreach ($cap in @($c.capabilities)) { $capabilityIds.Add([string]$cap.id) } }
 }
 $lead = [string]$decl.positioning.lead
 if (-not $lead) { Problem 'site-facts.json has no family sentence (positioning.lead)' }
 if ($lead -match 'FileDO') { Problem 'the family sentence names FileDO: hosting FileDO disks is a capability of sharing, not a part of its own (specification 249)' }
-$inDevelopment = @($components | Where-Object { [string]$_.state -eq 'in-development' })
+$gatedComponents = @($components | Where-Object { [string]$_.state -eq 'gated' })
 
 $sourceRel = [string]$decl.positioning.source
 $sourceText = Require-Text $sourceRel
@@ -143,12 +149,9 @@ foreach ($e in @($decl.editions)) {
     if (-not $sourceText.Contains('`' + $n + '`')) { Problem "$sourceRel does not name the edition '$n'" }
     if (-not $naming.Contains('`' + $n + '`')) { Problem "$($decl.facts.sources.naming) does not own the edition name '$n'" }
 }
-foreach ($c in $inDevelopment) {
-    if (-not $naming.Contains([string]$c.title)) { Problem "$($decl.facts.sources.naming) does not own the name '$($c.title)' of the component in development" }
+foreach ($c in $gatedComponents) {
+    if (-not $naming.Contains([string]$c.title)) { Problem "$($decl.facts.sources.naming) does not own the name '$($c.title)' of the gated component" }
 }
-$devMarkers = @($decl.development.markers | ForEach-Object { [string]$_ })
-$markerRx = [regex]::new('(?i)(?:' + (($devMarkers | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')')
-if ($inDevelopment.Count -and $lead -and -not $markerRx.IsMatch($lead)) { Problem "the family sentence names a component in development but carries none of the development markers (specification 249)" }
 $siteCopyRel = [string]$decl.facts.sources.siteCopy
 $siteCopy = Require-Text $siteCopyRel | ConvertFrom-Json
 if ($siteCopy.en.family -ne $lead) { Problem "$siteCopyRel en.family is not the family sentence of site-facts.json" }
@@ -190,9 +193,9 @@ foreach ($s in @($decl.surfaces)) {
     }
 }
 
-# --- 3: the editions, the component in development, the Store listing ------------------------------------
+# --- 3: the editions, the gated component, the Store listing ----------------------------------------------
 $suffixes = @($decl.editions | Where-Object { $_.PSObject.Properties['nameSuffix'] } | ForEach-Object { [string]$_.nameSuffix })
-$dev = $decl.development
+$dev = $decl.gated
 $editionScan = New-Object Collections.Generic.SortedSet[string] ([StringComparer]::Ordinal)
 foreach ($f in (Expand-Patterns @($dev.scan))) { [void]$editionScan.Add($f) }
 foreach ($f in (Expand-Patterns @($decl.facts.scan))) { [void]$editionScan.Add($f) }
@@ -208,23 +211,12 @@ foreach ($file in $editionScan) {
     }
 }
 
-# the phrases of the retired model, on every published surface
-$bannedPhrases = @($decl.positioning.bannedPhrases | ForEach-Object { [string]$_ })
-foreach ($file in (Expand-Patterns @($dev.scan))) {
-    $text = Get-Text $file
-    foreach ($b in $bannedPhrases) {
-        $i = $text.IndexOf($b, [StringComparison]::OrdinalIgnoreCase)
-        if ($i -ge 0) { Problem "${file}:$(Get-LineAt $text $i) says '$b', a phrase of the model specification 249 retired" }
-    }
-}
-
-# the component in development: named, marked, never sold
+# the gated component: named as what it does, never linked to a download, never sold
 $mentionSites = 0
 $devComponent = $components | Where-Object { [string]$_.id -eq [string]$dev.component } | Select-Object -First 1
-if ($null -eq $devComponent) { Problem "development.component '$($dev.component)' is not a component of site-facts.json" }
-elseif ([string]$devComponent.state -ne 'in-development') { Problem "the development block governs '$($dev.component)', whose state is '$($devComponent.state)' - drop the block when the component ships, and move its pages to the shipped wording" }
+if ($null -eq $devComponent) { Problem "gated.component '$($dev.component)' is not a component of site-facts.json" }
+elseif ([string]$devComponent.state -ne 'gated') { Problem "the gated block governs '$($dev.component)', whose state is '$($devComponent.state)' - drop the block when the component ships, and put its packages into the matrix" }
 else {
-    $window = [int]$dev.window
     $mentionRx = [regex]::new([string]$dev.mentionPattern)
     $linkRx = [regex]::new([string]$dev.downloadLink)
     $sellRx = [regex]::new('(?i)(?<!\bnot\s)(?:\b(?:download|install|get)\s+(?:the\s+)?|\b(?:скача\w+|загрузит\w+|установит\w+|завантаж\w+|встанови\w*)\s+)Media Exchange Server')
@@ -233,32 +225,29 @@ else {
         foreach ($m in $mentionRx.Matches($text)) {
             $mentionSites++
             $at = "${file}:$(Get-LineAt $text $m.Index)"
-            $lo = [Math]::Max(0, $m.Index - $window)
-            $hi = [Math]::Min($text.Length, $m.Index + $m.Length + $window)
-            if (-not $markerRx.IsMatch($text.Substring($lo, $hi - $lo))) { Problem "$at names '$($m.Value)' with no development marker within $window characters: a component in development is always marked as such" }
             $dlo = [Math]::Max(0, $m.Index - 60)
             $dhi = [Math]::Min($text.Length, $m.Index + $m.Length + 60)
-            if ($text.Substring($dlo, $dhi - $dlo) -match '\b20\d\d\b') { Problem "$at gives a date next to '$($m.Value)': a component in development carries no date" }
+            if ($text.Substring($dlo, $dhi - $dlo) -match '\b20\d\d\b') { Problem "$at gives a date next to '$($m.Value)': a surface promises no date for a part no package carries" }
             # inside an anchor whose address is a download
             $open = $text.LastIndexOf('<a ', $m.Index, [StringComparison]::OrdinalIgnoreCase)
             if ($open -ge 0) {
                 $close = $text.IndexOf('</a>', $open, [StringComparison]::OrdinalIgnoreCase)
                 $tagEnd = $text.IndexOf('>', $open)
-                if ($close -gt $m.Index -and $tagEnd -gt $open -and $linkRx.IsMatch($text.Substring($open, $tagEnd - $open))) { Problem "$at names '$($m.Value)' inside a link to a download, an installer, a release, a store or the server page: there is nothing to download" }
+                if ($close -gt $m.Index -and $tagEnd -gt $open -and $linkRx.IsMatch($text.Substring($open, $tagEnd - $open))) { Problem "$at names '$($m.Value)' inside a link to a download, an installer, a release, a store or the server page: no package carries it" }
             }
         }
         foreach ($m in [regex]::Matches($text, '\[[^\]\r\n]*Media Exchange Server[^\]\r\n]*\]\((?<u>[^)\r\n]*)\)')) {
-            if ($linkRx.IsMatch($m.Groups['u'].Value)) { Problem "${file}:$(Get-LineAt $text $m.Index) links '$($m.Value)' to a download, an installer, a release, a store or the server page: there is nothing to download" }
+            if ($linkRx.IsMatch($m.Groups['u'].Value)) { Problem "${file}:$(Get-LineAt $text $m.Index) links '$($m.Value)' to a download, an installer, a release, a store or the server page: no package carries it" }
         }
-        foreach ($m in [regex]::Matches($text, '(?i)winget(?:\s|%20)install\s+\S*xchange|releases/download/\S*xchange')) { Problem "${file}:$(Get-LineAt $text $m.Index) has an install command or a release asset for the component in development: '$($m.Value)'" }
-        foreach ($m in $sellRx.Matches($text)) { Problem "${file}:$(Get-LineAt $text $m.Index) tells the reader to '$($m.Value)': there is nothing to obtain yet" }
+        foreach ($m in [regex]::Matches($text, '(?i)winget(?:\s|%20)install\s+\S*xchange|releases/download/\S*xchange')) { Problem "${file}:$(Get-LineAt $text $m.Index) has an install command or a release asset for the gated component: '$($m.Value)'" }
+        foreach ($m in $sellRx.Matches($text)) { Problem "${file}:$(Get-LineAt $text $m.Index) tells the reader to '$($m.Value)': no package carries it" }
     }
-    # a door or card of the site copy for the component in development has no call to action
+    # a door or card of the site copy for the gated component has no call to action
     foreach ($prop in $siteCopy.PSObject.Properties) {
         if ($prop.Value -isnot [pscustomobject] -or -not $prop.Value.PSObject.Properties['doors']) { continue }
         foreach ($d in @($prop.Value.doors)) {
             $row = @($d)
-            if ($row.Count -ge 4 -and $mentionRx.IsMatch([string]$row[1]) -and [string]$row[3]) { Problem "$siteCopyRel $($prop.Name).doors: the door of the component in development carries a call to action ('$($row[3])')" }
+            if ($row.Count -ge 4 -and $mentionRx.IsMatch([string]$row[1]) -and [string]$row[3]) { Problem "$siteCopyRel $($prop.Name).doors: the door of the gated component carries a call to action ('$($row[3])')" }
         }
     }
 }
@@ -267,7 +256,7 @@ else {
 $sl = $dev.storeListing
 if ($null -ne $sl) {
     $listing = Get-Text ([string]$sl.file)
-    if ($null -eq $listing) { Problem "development.storeListing names $($sl.file), which is not a file" }
+    if ($null -eq $listing) { Problem "gated.storeListing names $($sl.file), which is not a file" }
     else {
         foreach ($p in @($sl.mustSay)) { if ($listing -notmatch [string]$p) { Problem "$($sl.file) does not say /$p/: $($sl.why)" } }
         foreach ($p in @($sl.mustNotSay)) { foreach ($m in [regex]::Matches($listing, [string]$p)) { Problem "$($sl.file):$(Get-LineAt $listing $m.Index) says '$($m.Value)': $($sl.why)" } }
@@ -316,8 +305,7 @@ foreach ($c in $components) {
     foreach ($ch in $avChannels) {
         $st = $cellState["$($c.id)/$ch"]
         if ($null -eq $st) { continue }
-        if ([string]$c.state -eq 'in-development' -and @('in-development', 'absent') -notcontains $st) { Problem "the component '$($c.id)' is in development and the matrix says '$st' for ${ch}: a component in development is in no package" }
-        if ([string]$c.state -eq 'shipped' -and $st -eq 'in-development') { Problem "the component '$($c.id)' is shipped and the matrix says 'in-development' for $ch" }
+        if ([string]$c.state -eq 'gated' -and $st -ne 'absent') { Problem "the component '$($c.id)' is gated and the matrix says '$st' for ${ch}: its shipping gate is shut, so no package carries it" }
     }
     if ($c.PSObject.Properties['capabilities']) {
         foreach ($cap in @($c.capabilities)) {
@@ -608,9 +596,107 @@ if ($decl.PSObject.Properties['discoverability']) {
     $discSummary = "$($topics.Count) topics, $($tags.Count) winget tags, $($terms.Count) competitor terms over $competitorHits hits, channels held: $($applied -join '+')"
 }
 
+# --- 7: the capability register (specification 273 T-1) ------------------------------------------------
+# What the product does, one row per capability. A row is judged for itself (state, component, release, evidence,
+# surface classes), for coverage (a set that must name it names it in every file, in that file's language: the
+# words are language-bound, so a trilingual page is judged per language over the whole file), and a planned row for
+# its claims, which no published surface may make outside an allowed context (canon invariant 17: a surface says
+# only what works). The retired phrases are judged over the same scan.
+$reg = $decl.capabilities
+$capStates = @($reg.states.PSObject.Properties.Name)
+$capClasses = @($reg.classes.PSObject.Properties.Name)
+$capItems = @($reg.items)
+$capSeen = @{}
+$changelog = Get-Text 'CHANGELOG.md'
+$coverageChecks = 0
+foreach ($it in $capItems) {
+    $cid = [string]$it.id
+    if (-not $cid) { Problem 'capabilities.items holds a row with no id'; continue }
+    if ($capSeen.ContainsKey($cid)) { Problem "capabilities.items repeats the id '$cid'" }
+    $capSeen[$cid] = $true
+    $st = [string]$it.state
+    if ($capStates -notcontains $st) { Problem "capability '$cid' has the state '$st', which capabilities.states does not define" }
+    $owner = $components | Where-Object { [string]$_.id -eq [string]$it.component } | Select-Object -First 1
+    if ($null -eq $owner) { Problem "capability '$cid' belongs to '$($it.component)', which is not a component" }
+    elseif ([string]$owner.state -eq 'gated' -and @('gated', 'development', 'planned') -notcontains $st) { Problem "capability '$cid' is $st and its component '$($owner.id)' is gated: no package carries a capability of a gated component" }
+    if ($st -eq 'released') {
+        $since = [string]$it.since
+        if (-not $since) { Problem "capability '$cid' is released and names no release ('since')" }
+        elseif ($null -eq $changelog -or $changelog -notmatch ('(?m)^## \[' + [regex]::Escape($since) + '\]')) { Problem "capability '$cid' came with $since, which is no version heading of CHANGELOG.md" }
+    }
+    elseif ([string]$it.since) { Problem "capability '$cid' is $st and still names the release '$($it.since)'" }
+    $evs = @($it.evidence | ForEach-Object { [string]$_ } | Where-Object { $_ })
+    if (-not $evs.Count) { Problem "capability '$cid' cites no evidence" }
+    foreach ($ev in $evs) {
+        $spec = [regex]::Match($ev, '^specification (?<n>\d+)$')
+        if ($spec.Success) {
+            if (-not @(Get-ChildItem -Path (Join-Path $Root 'docs/specifications') -Recurse -File -Filter "$($spec.Groups['n'].Value)_*" -ErrorAction SilentlyContinue).Count) { Problem "capability '$cid' cites $ev, which has no file under docs/specifications" }
+        }
+        elseif (-not (Test-Path -LiteralPath (Join-Path $Root $ev))) { Problem "capability '$cid' cites the evidence '$ev', which is not a file or folder of the tree" }
+    }
+    $surf = @($it.surfaces | ForEach-Object { [string]$_ })
+    $mustName = @($it.mustName | Where-Object { $_ } | ForEach-Object { [string]$_ })
+    foreach ($s in $surf) { if ($capClasses -notcontains $s) { Problem "capability '$cid' lists the surface class '$s', which capabilities.classes does not define" } }
+    if ($st -eq 'planned') {
+        if (@($surf | Where-Object { $_ -ne 'A' }).Count) { Problem "capability '$cid' is planned and lists the surface classes $($surf -join ', '): a planned capability lives in the positioning source (class A) only" }
+        if ($mustName.Count) { Problem "capability '$cid' is planned and a coverage set must name it: a surface names only what works" }
+        if (-not $it.PSObject.Properties['plannedClaims']) { Problem "capability '$cid' is planned and carries no plannedClaims" }
+        else { foreach ($lang in 'en', 'ru', 'uk') { if (-not @($it.plannedClaims.$lang).Count) { Problem "capability '$cid' has no plannedClaims for '$lang'" } } }
+    }
+    foreach ($set in $mustName) {
+        $members = @($reg.coverage.$set)
+        if (-not $members.Count) { Problem "capability '$cid' must be named by the coverage set '$set', which capabilities.coverage does not define"; continue }
+        foreach ($mem in $members) {
+            $lang = [string]$mem.lang
+            $rx = [string]$it.names.$lang
+            if (-not $rx) { Problem "capability '$cid' has no words for '$lang' (names.$lang), which the coverage set '$set' needs"; continue }
+            $t = Get-Text ([string]$mem.file)
+            if ($null -eq $t) { Problem "the coverage set '$set' names $($mem.file), which is not a file"; continue }
+            $coverageChecks++
+            if (-not [regex]::IsMatch($t, $rx)) { Problem "$($mem.file) ($lang) does not name the capability '$cid' ($($it.label)): every file of the coverage set '$set' names it, /$rx/" }
+        }
+    }
+}
+
+$rp = $decl.retiredPhrases
+$allowPaths = @($rp.allow | ForEach-Object { [string]$_.path })
+$scanFiles = @(Expand-Patterns @($rp.scan) | Where-Object { $f = $_; -not @($allowPaths | Where-Object { $f -like $_ }).Count })
+$plannedAllow = @($reg.plannedAllow)
+$claimHits = 0
+foreach ($it in @($capItems | Where-Object { [string]$_.state -eq 'planned' -and $_.PSObject.Properties['plannedClaims'] })) {
+    $rxs = @(foreach ($p in $it.plannedClaims.PSObject.Properties) { foreach ($r in @($p.Value)) { [regex]::new([string]$r) } })
+    foreach ($file in $scanFiles) {
+        $text = Get-Text $file
+        foreach ($rx in $rxs) {
+            foreach ($m in $rx.Matches($text)) {
+                $lo = [Math]::Max(0, $m.Index - 1200)
+                $hi = [Math]::Min($text.Length, $m.Index + $m.Length + 200)
+                $ctx = $text.Substring($lo, $hi - $lo)
+                $allowed = $false
+                foreach ($a in $plannedAllow) { if ($file -like [string]$a.path -and $ctx -match [string]$a.context) { $allowed = $true; break } }
+                if (-not $allowed) { $claimHits++; Problem "${file}:$(Get-LineAt $text $m.Index) says '$($m.Value)', a claim of the planned capability '$($it.id)': a surface names only what the product does" }
+            }
+        }
+    }
+}
+$retiredHits = 0
+foreach ($file in $scanFiles) {
+    $text = Get-Text $file
+    foreach ($ph in @($rp.phrases)) {
+        $w = [string]$ph.text
+        if (-not $w) { continue }
+        $i = $text.IndexOf($w, [StringComparison]::OrdinalIgnoreCase)
+        while ($i -ge 0) {
+            $retiredHits++
+            Problem "${file}:$(Get-LineAt $text $i) says '$w', a retired phrase ($($ph.ground))"
+            $i = $text.IndexOf($w, $i + $w.Length, [StringComparison]::OrdinalIgnoreCase)
+        }
+    }
+}
+
 # --- verdict -------------------------------------------------------------------------------------------
 if (-not $surfaceFiles) { Exit-Verdict 'Test-SitePositioning' 2 'no declared surface was found to judge' }
-$summary = "$($ids.Count) components, $regions regions of $surfaceFiles surface files, $editionHits edition names, $mentionSites in-development mentions, $cellCount matrix cells over $evidenceChecked evidence patterns, $claims typed claims in $($factFiles.Count) files; $discSummary"
+$summary = "$($ids.Count) components, $regions regions of $surfaceFiles surface files, $editionHits edition names, $mentionSites gated-component mentions, $cellCount matrix cells over $evidenceChecked evidence patterns, $claims typed claims in $($factFiles.Count) files; $($capItems.Count) capabilities, $coverageChecks coverage checks, $($scanFiles.Count) files free of retired phrases and planned claims; $discSummary"
 if ($problems.Count) {
     foreach ($p in $problems) { Write-Host "  $p" -ForegroundColor Red }
     Exit-Verdict 'Test-SitePositioning' 1 "$($problems.Count) problems; $summary"

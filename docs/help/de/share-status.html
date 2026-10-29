@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Sharing Status - Fast Media Sorter</title>
+  <title>Freigabestatus - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Sharing Status</h1>
+  <h1 id="title">Freigabestatus</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Sharing Status.</p>
+    <p>Zeigt den aktuellen Zustand der Freigabe und ihre einfachen Z&#228;hler. Es &#246;ffnet sich &#252;ber den Link &#171;Statistik&#187; des Hauptfensters.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-status-light.png" alt="Sharing Status">
-    <img class="shot dark" src="share-status-dark.png" alt="Sharing Status">
+    <img class="shot light" src="share-status-light.png" alt="Freigabestatus">
+    <img class="shot dark" src="share-status-dark.png" alt="Freigabestatus">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lesen Sie oben den Zustand.</li><li>Pr&#252;fen Sie die letzte Verbindung, die Zahl der Verbindungen und der ausgelieferten Dateien.</li><li>Dr&#252;cken Sie &#171;Aktualisieren&#187; f&#252;r neue Werte.</li><li>Dr&#252;cken Sie &#171;Z&#228;hler zur&#252;cksetzen&#187;, um die Z&#228;hlung neu zu beginnen.</li><li>Dr&#252;cken Sie &#171;Schlie&#223;en&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="state"><summary>Zustand</summary><p>&#171;Freigabe:&#187; sagt, ob die Freigabe l&#228;uft und auf welchem Port, oder dass sie aus ist, oder dass der Worker nicht verf&#252;gbar ist. &#171;In Nutzung seit:&#187; zeigt, wann die Freigabe gestartet wurde.</p></details>
+<details id="counters"><summary>Z&#228;hler</summary><p>&#171;Letzte Verbindung:&#187; zeigt den Zeitpunkt des letzten Telefons oder &#171;noch nie&#187;. &#171;Verbindungen:&#187; und &#171;Ausgelieferte Dateien:&#187; zeigen die Gesamtzahl und in Klammern die Zahl seit dem letzten Start. Die Z&#228;hler bleiben nur auf diesem PC und werden nirgendwohin gesendet.</p></details>
+<details id="reset-refresh"><summary>Aktualisieren und zur&#252;cksetzen</summary><p>&#171;Aktualisieren&#187; liest die Werte erneut vom Server. &#171;Z&#228;hler zur&#252;cksetzen&#187; fragt vorher nach: Die fr&#252;heren Werte lassen sich nicht wiederherstellen. Schl&#228;gt das Zur&#252;cksetzen fehl, zeigt die Schaltfl&#228;che &#171;Zur&#252;cksetzen fehlgeschlagen&#187;. &#171;Schlie&#223;en&#187; verl&#228;sst das Fenster.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

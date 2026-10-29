@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Sharing Status - Fast Media Sorter</title>
+  <title>Estado del uso compartido - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Sharing Status</h1>
+  <h1 id="title">Estado del uso compartido</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Sharing Status.</p>
+    <p>Muestra el estado actual del uso compartido y sus contadores sencillos. Se abre desde el enlace &#171;Estad&#237;sticas&#187; de la ventana principal.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-status-light.png" alt="Sharing Status">
-    <img class="shot dark" src="share-status-dark.png" alt="Sharing Status">
+    <img class="shot light" src="share-status-light.png" alt="Estado del uso compartido">
+    <img class="shot dark" src="share-status-dark.png" alt="Estado del uso compartido">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lee el estado en la parte superior.</li><li>Comprueba la &#250;ltima conexi&#243;n, el n&#250;mero de conexiones y los archivos servidos.</li><li>Pulsa &#171;Actualizar&#187; para obtener valores nuevos.</li><li>Pulsa &#171;Restablecer contadores&#187; para empezar de nuevo las cuentas.</li><li>Pulsa &#171;Cerrar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="state"><summary>Estado</summary><p>&#171;Uso compartido:&#187; indica si el uso compartido est&#225; en marcha y en qu&#233; puerto, o que est&#225; apagado, o que el worker no est&#225; disponible. &#171;En uso desde:&#187; muestra cu&#225;ndo se inici&#243; el uso compartido.</p></details>
+<details id="counters"><summary>Contadores</summary><p>&#171;&#218;ltima conexi&#243;n:&#187; muestra la hora del &#250;ltimo tel&#233;fono, o &#171;nunca&#187;. &#171;Conexiones:&#187; y &#171;Archivos servidos:&#187; muestran el total y, entre par&#233;ntesis, el n&#250;mero desde el &#250;ltimo inicio. Los contadores se guardan solo en este PC y no se env&#237;an a ninguna parte.</p></details>
+<details id="reset-refresh"><summary>Actualizar y restablecer</summary><p>&#171;Actualizar&#187; vuelve a leer los valores del servidor. &#171;Restablecer contadores&#187; pregunta antes: los valores anteriores no se pueden recuperar. Si el restablecimiento falla, el bot&#243;n muestra &#171;No se pudo restablecer&#187;. &#171;Cerrar&#187; sale de la ventana.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

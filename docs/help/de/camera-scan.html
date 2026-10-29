@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>QR-Code mit Kamera scannen - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">QR-Code mit Kamera scannen</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>Liest den QR-Code, den die Telefon-App anzeigt, &#252;ber eine Kamera dieses PCs. Das Fenster &#246;ffnet sich &#252;ber &#171;Mit Kamera scannen..&#187; im Fenster f&#252;r den Telefoncode und &#252;ber das Feld f&#252;r die Verbindungszeichenfolge im Fenster des Austauschkontos; die Kamera startet, sobald das Fenster angezeigt wird.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>F&#252;r dieses Fenster gibt es keinen Screenshot: Beim &#214;ffnen startet es ein Ger&#228;t, einen Netzwerkempfang oder den ganzen Betrachter, daher wird es nicht aufgenommen.</figcaption></figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Halten Sie den QR-Code des Telefons vor die Kamera.</li><li>Das Fenster scannt das Bild von selbst; wird ein g&#252;ltiger Code gefunden, lautet der Status &#171;Code empfangen&#187;, und das Fenster schlie&#223;t sich.</li><li>Klicken Sie auf &#171;Abbrechen&#187; (Escape), um ohne Scan zu schlie&#223;en.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>Vorschau und Status</summary><p>Der schwarze Bereich zeigt das Live-Bild. Die Zeile darunter lautet &#171;Richten Sie die Kamera auf den QR-Code des Telefons&#187;, bis ein Code gelesen wurde.</p></details>
+<details id="camera"><summary>Welche Kamera</summary><p>Es wird nur die erste gefundene Kamera verwendet. Gibt es keine oder l&#228;sst sie sich nicht starten, lautet die Zeile &#171;Kamera nicht verf&#252;gbar&#187;, gefolgt vom Grund, wenn es einen gibt.</p></details>
+<details id="result"><summary>Nach dem Scan</summary><p>Der Text des ersten g&#252;ltigen QR-Codes wird an das Fenster zur&#252;ckgegeben, das den Scanner ge&#246;ffnet hat, und dort behandelt, als w&#228;re er eingef&#252;gt worden; im Fenster f&#252;r den Telefoncode f&#252;llt er das Codefeld und wird &#252;bergeben, und Fast Media Sorter stellt weiterhin seine &#252;blichen Fragen. Bilder bleiben nur im Arbeitsspeicher: Dieses Fenster speichert und sendet nichts.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

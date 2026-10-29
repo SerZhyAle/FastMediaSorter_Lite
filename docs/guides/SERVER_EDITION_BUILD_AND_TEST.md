@@ -48,8 +48,8 @@ plus its `.sha256` to the GitHub Release.
 
 ## The optional viewer component (ticket 132)
 
-The Server edition leads with the server role and carries the media viewer as a **secondary
-role**: an **unchecked** `viewer` component on the components page, described in one line as
+The Server edition leads with the server role and carries the media and file manager (the viewer
+program) as a **secondary role**: an **unchecked** `viewer` component on the components page, described in one line as
 optional. Everything about it follows from "optional and de-emphasised, never hidden":
 
 - **Default payload unchanged.** The component has no `Types:` entry, so it starts unticked; a

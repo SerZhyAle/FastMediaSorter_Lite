@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>Report dell&#39;operazione - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">Report dell&#39;operazione</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>Elenca che cosa &#232; successo a ogni file dell&#39;ultima operazione multipla (spostamento, copia, eliminazione o annullamento) e perch&#233; qualcosa &#232; stato saltato o &#232; fallito. Non si apre mai da solo: fai clic sulla riga del report in fondo al pannello miniature (F3) dopo un&#39;esecuzione. Se l&#39;esecuzione non &#232; stata pulita, la riga termina con &#171;fai clic per i dettagli&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="Report dell&#39;operazione">
+    <img class="shot dark" src="batch-report-dark.png" alt="Report dell&#39;operazione">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Esegui un&#39;operazione su pi&#249; file nel pannello miniature.</li><li>Leggi la riga di riepilogo in fondo al pannello.</li><li>Fai clic sulla riga per aprire questa finestra.</li><li>Guarda in cima all&#39;elenco: i fallimenti vengono per primi.</li><li>Seleziona delle righe, poi usa &#171;Copia&#187; per prendere i loro percorsi o &#171;Mostra in Esplora file&#187; per trovare un file.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>La riga di riepilogo</summary><p>La riga inizia con il risultato: &#171;File spostati: 5&#187;, &#171;File copiati: 5&#187;, &#171;File eliminati: 5&#187;, &#171;File ripristinati: 5&#187; o &#171;Operazioni completate: 5&#187;. Altre parti, ciascuna con il suo numero, compaiono solo quando il numero non &#232; zero: &#171;ignorati&#187;, &#171;errori&#187;, &#171;operazioni non annullabili&#187;, &#171;eliminati definitivamente, impossibile ripristinare&#187; e, quando l&#39;esecuzione si ferma in anticipo, &#171;interrotto, nessuna connessione alla cartella - non avviato&#187; (tre connessioni fallite di fila la fermano) o &#171;annullato - non avviato&#187;.</p></details>
+<details id="list"><summary>L&#39;elenco</summary><p>Colonne: File, Stato e Dettagli. Le righe peggiori vengono per prime: fallite, poi non avviate, poi saltate, poi completate; all&#39;interno di un gruppo i file mantengono l&#39;ordine dell&#39;esecuzione. Il suggerimento di una riga mostra il percorso completo. I dettagli danno un motivo semplice per un fallimento, la cartella di destinazione per un file completato, &#171;salvato come&#187; e il nuovo nome quando il vecchio era gi&#224; occupato, e &#171;Eliminato definitivamente - annullamento non disponibile&#187; per un&#39;eliminazione che ha saltato il Cestino.</p></details>
+<details id="states"><summary>Stati e motivi di salto</summary><p>Stati: &#171;pronto&#187;, &#171;Errore&#187;, &#171;ignorato&#187;, &#171;non avviato&#187;. Un file saltato dice perch&#233;: &#171;gi&#224; in questa cartella&#187;, &#171;il file non &#232; pi&#249; sul disco&#187;, &#171;i file all&#39;interno dell&#39;archivio non vengono modificati&#187;, &#171;lo stesso nome esiste gi&#224; tra i file selezionati&#187;, &#171;la risorsa &#232; di sola lettura&#187;, &#171;questo &#232; lo stesso file&#187; o &#171;nome gi&#224; in uso nella cartella di destinazione&#187;. Un file non avviato dice &#171;avvio non riuscito: operazione interrotta&#187;.</p></details>
+<details id="copy-show"><summary>Mostra in Esplora file, Copia, Chiudi</summary><p>&#171;Mostra in Esplora file&#187; &#232; attivo quando una riga &#232; selezionata; apre una finestra della cartella con il primo file selezionato evidenziato, o la cartella se il file &#232; stato spostato. &#171;Copia&#187; (anche Ctrl+C) mette negli appunti i percorsi completi delle righe selezionate, uno per riga, o di tutte le righe se nessuna &#232; selezionata: un modo rapido per passare l&#39;elenco dei file problematici. &#171;Chiudi&#187; termina il report.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

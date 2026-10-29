@@ -172,7 +172,7 @@ Partial Public Class Main_Form
 
         Dim endpoint As LiveBroadcastEndpoint = LiveEndpointSelector.SelectEndpoint(descriptor)
         If endpoint Is Nothing Then
-            lbl_Status.Text = Localization.T("Этот режим пока не поддерживается")
+            lbl_Status.Text = Localization.T("Этот режим не поддерживается")
             Return
         End If
 

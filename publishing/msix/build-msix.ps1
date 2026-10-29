@@ -182,6 +182,12 @@ Get-ChildItem $ReleaseDir -Recurse -File |
 Get-ChildItem $ModernPublish -File |
     Where-Object { $_.Extension -notin '.pdb', '.xml' } |
     ForEach-Object { Copy-Item $_.FullName (Join-Path $Stage $_.Name) -Force }
+# Specification 275 section 9.2: the WebView2 loader sits in its own subfolder, not beside the exe.
+# The user data folder is per-user under %LOCALAPPDATA%, never the read-only install directory.
+$loader = Join-Path $ModernPublish 'webview2\win-x64\WebView2Loader.dll'
+if (-not (Test-Path -LiteralPath $loader)) { throw "The modern publish output has no webview2\win-x64\WebView2Loader.dll." }
+New-Item -ItemType Directory -Path (Join-Path $Stage 'webview2\win-x64') -Force | Out-Null
+Copy-Item -LiteralPath $loader -Destination (Join-Path $Stage 'webview2\win-x64') -Force
 Remove-Item $ModernPublish -Recurse -Force -ErrorAction SilentlyContinue
 foreach ($extra in 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt') {
     $src = Join-Path $RepoRoot $extra
@@ -232,6 +238,9 @@ if (Test-Path -LiteralPath (Join-Path $Stage 'filedo')) {
 # mainline and inside the Share Manager's bundle, notices that name what ships.
 & (Join-Path $RepoRoot 'tools\Test-ImageBackendArtifacts.ps1') -Path $Stage
 if ($LASTEXITCODE -ne 0) { throw "The MSIX stage does not hold the image backend of specification 270 (exit $LASTEXITCODE)." }
+# Specification 275 section 9.2: one x64 WebView2 loader in webview2\win-x64, from the pinned SDK.
+& (Join-Path $RepoRoot 'tools\Test-HtmlHostArtifacts.ps1') -Path $Stage
+if ($LASTEXITCODE -ne 0) { throw "The MSIX stage does not hold the WebView2 host of specification 275 (exit $LASTEXITCODE)." }
 $strayExchange = @(Get-ChildItem -LiteralPath $Stage -Recurse -File -Filter 'fms-exchange-server*' -ErrorAction SilentlyContinue)
 if ($strayExchange.Count -gt 0) {
     throw "The MSIX stage carries the exchange server binary ($($strayExchange[0].FullName)) - it is not part of the Store package."

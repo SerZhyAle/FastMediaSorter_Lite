@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>এক্সচেঞ্জ সার্ভার থেকে যোগ করুন - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">এক্সচেঞ্জ সার্ভার থেকে যোগ করুন</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>এই কম্পিউটারকে একটি এক্সচেঞ্জ সার্ভারের অ্যাকাউন্টে যুক্ত করে, যাতে সেই অ্যাকাউন্টের সব ডিভাইসের ফোল্ডার রিসোর্স তালিকায় দেখা যায়। এটি রিসোর্স তালিকার আমার ডিভাইস অংশের এক্সচেঞ্জ সার্ভার থেকে যোগ করুন.. বোতাম থেকে খোলে, এবং যখন আপনি কোনো সংযোগ স্ট্রিং বা ফাইল ভিউয়ারে ফেলেন বা ফোল্ডার বাক্সে টাইপ করেন তখনও।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="এক্সচেঞ্জ সার্ভার থেকে যোগ করুন">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="এক্সচেঞ্জ সার্ভার থেকে যোগ করুন">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>সার্ভারের অপারেটরের দেওয়া সংযোগ স্ট্রিং পেস্ট করুন, ঠিকানা host:port আকারে টাইপ করুন, অথবা ফাইল খুলুন.. চাপুন।</li><li>লাইনটি (পাসওয়ার্ড পাঠানো হবে: ..) দেখুন: ওই ঠিকানাই একমাত্র জায়গা যেখানে পাসওয়ার্ড যায়।</li><li>লগইন ও পাসওয়ার্ড লিখুন।</li><li>সংযুক্ত করুন চাপুন।</li><li>প্রোগ্রাম সার্ভারের সার্টিফিকেট নিয়ে জিজ্ঞেস করলে ফিঙ্গারপ্রিন্টটি অপারেটরের বলা ফিঙ্গারপ্রিন্টের সঙ্গে মেলান।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>সংযোগ স্ট্রিং বা ঠিকানা</summary><p>প্রথম বাক্সটি একটি সংযোগ স্ট্রিং (যা FMSEXCH1: দিয়ে শুরু হয়) বা host:port আকারে ঠিকানা নেয়। পেস্ট করুন সেটি ক্লিপবোর্ড থেকে ভরে, টেক্সট থেকে বা QR কোডের ছবি থেকে, আর ফাইল খুলুন.. একটি .fmsexch ফাইল বা QR ছবি পড়ে। পেস্ট শুধু ফর্ম ভরে: সংযুক্ত করুন চাপার আগে কিছুই পাঠানো হয় না। বাক্সের নিচের লাইনটি দেখায় পাসওয়ার্ড কোথায় যাবে; ওয়েব ঠিকানা, ফোল্ডার কোড বা নষ্ট স্ট্রিং সেখানে সহজ ভাষায় প্রত্যাখ্যাত হয়।</p></details>
+<details id="account"><summary>লগইন ও পাসওয়ার্ড</summary><p>স্ট্রিংয়ে লগইন থাকলে লগইন ঘরটি তা থেকে ভরে। পাসওয়ার্ড ঢাকা থাকে; পাসওয়ার্ড দেখান সেটি দেখায়। সংযুক্ত করুন চাপলে প্রথম বাইট কম্পিউটার ছাড়ার আগেই পাসওয়ার্ড বাক্স খালি করা হয়। অবস্থা লাইন অগ্রগতি দেখায় এবং ব্যর্থ হলে কারণ: মেলেনি এমন লগইন বা পাসওয়ার্ড, অনেক বেশি চেষ্টা, বা সাড়া না দেওয়া সার্ভার।</p></details>
+<details id="register"><summary>একটি আমন্ত্রণ স্ট্রিং</summary><p>যে স্ট্রিং একটি আমন্ত্রণ, সেটি আগে থেকেই সার্ভারের নাম বলে এবং উইন্ডোকে অ্যাকাউন্ট তৈরির অবস্থায় নেয়: পাসওয়ার্ড আরেকবার ঘর এবং পাসওয়ার্ড নিয়মের একটি টীকা দেখা যায় (কমপক্ষে 10 অক্ষর, একটি বড় ও একটি ছোট ল্যাটিন অক্ষর এবং একটি সংখ্যা), আর বোতামের নাম হয় অ্যাকাউন্ট তৈরি করুন। নিয়ম নিয়ে শেষ কথা সার্ভারের।</p></details>
+<details id="trust"><summary>সার্ভারের সার্টিফিকেট</summary><p>সার্টিফিকেট অজানা হলে একটি প্রশ্ন তার ফিঙ্গারপ্রিন্ট দেখায় এবং জিজ্ঞেস করে সার্ভারকে বিশ্বাস করে মনে রাখা হবে কি না; ডিফল্ট উত্তর না। স্ট্রিং কোনো ফিঙ্গারপ্রিন্টের নাম বললে এবং সার্ভার অন্য একটি দেখালে দুটোই দেখানো হয়, কিছুই মনে রাখা হয় না এবং কোনো পাসওয়ার্ড পাঠানো হয় না।</p></details>
+<details id="sign-in-again"><summary>আবার সাইন-ইন</summary><p>বিদ্যমান সার্ভার এন্ট্রির জন্য আবার সাইন-ইন করতে খোলা হলে উইন্ডো ঠিকানা ও লগইন শুধু-পড়ার আকারে দেখায়, আর ওই এন্ট্রির মনে রাখা ফিঙ্গারপ্রিন্টই বিশ্বাসের ভিত্তি।</p></details>
+    <p><a href="settings.html">সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

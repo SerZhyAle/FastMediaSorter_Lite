@@ -14,7 +14,7 @@ Partial Public Class Main_Form
     ''' into the middle - see ModernHelpLines.
     ''' </summary>
     Private Shared ReadOnly Help_Lines_Before_Zoom As String() = {
-        " Программа для быстрого переноса/копирования изображений по папкам. Да, та самая, которой вам не хватало.",
+        " Медиа- и файловый менеджер: быстро раскладывает фото и видео по папкам одной клавишей. Да, тот самый, которого вам не хватало.",
         "",
         "Сначала заполните таблицу каталогов-получателей по клавишам 1,2,3.. - 0. ",
         "Затем укажите каталог-источник для сортировки (тот самый, где творится беспорядок). ",
@@ -93,6 +93,7 @@ Partial Public Class Main_Form
         LocalizeImageEditor()
         LocalizeToVideo()
         LocalizeResourceButton()
+        LocalizePdfReader()
         ApplyCatalogToolbarGlyphs()
         ChromeRefreshText()
 #End If

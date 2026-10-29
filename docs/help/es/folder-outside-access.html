@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Outside Folder Access - Fast Media Sorter</title>
+  <title>Dar acceso externo - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Outside Folder Access</h1>
+  <h1 id="title">Dar acceso externo</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Outside Folder Access.</p>
+    <p>Controla el acceso a una carpeta compartida para personas ajenas a tus dispositivos: una invitaci&#243;n de invitado o un enlace con contrase&#241;a que no necesita cuenta. Se abre desde el bot&#243;n &#171;Dar acceso externo..&#187; de la ventana principal de Share Manager para la carpeta seleccionada. En esta versi&#243;n los controles que crean nuevos accesos est&#225;n desactivados y la ventana muestra el motivo, mientras que el acceso ya existente todav&#237;a se puede retirar.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Outside Folder Access">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Outside Folder Access">
+    <img class="shot light" src="folder-outside-access-light.png" alt="Dar acceso externo">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="Dar acceso externo">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lee la l&#237;nea de encabezado con el nombre y la ruta de la carpeta.</li><li>En cada grupo, lee la l&#237;nea del motivo; mientras se muestra, no se puede crear nada nuevo.</li><li>Para quitar un acceso, selecciona una invitaci&#243;n y pulsa &#171;Retirar seleccionado&#187;, o pulsa &#171;Retirar enlace&#187;.</li><li>Pulsa &#171;Cerrar&#187; (Esc) para salir.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="header"><summary>Carpeta y estado</summary><p>La l&#237;nea en negrita indica la carpeta y su ruta. La l&#237;nea de estado de abajo informa del &#250;ltimo resultado. Cuando el servicio de publicaci&#243;n no est&#225; en ejecuci&#243;n, la ventana dice &#171;Servicio de publicaci&#243;n no disponible.&#187; y sus botones est&#225;n desactivados.</p></details>
+<details id="guest-invitation"><summary>Invitaci&#243;n de invitado</summary><p>El grupo tiene &#171;Crear invitaci&#243;n de invitado..&#187;, &#171;Retirar seleccionado&#187; y una lista con Tipo, Creado y Usado para las invitaciones de invitado de esta carpeta. Retirar quita la invitaci&#243;n; no elimina la carpeta ni sus archivos.</p></details>
+<details id="password-link"><summary>Enlace con contrase&#241;a (sin cuenta)</summary><p>El estado dice &#171;Enlace no creado.&#187; o &#171;El enlace est&#225; activo.&#187; El cuadro &#171;Contrase&#241;a del enlace:&#187; est&#225; enmascarado y &#171;Generar&#187; lo rellena. &#171;Crear enlace&#187; pasa a ser &#171;Actualizar enlace&#187; mientras hay un enlace activo. &#171;Retirar enlace&#187; pregunta antes, porque todas las sesiones activas del enlace terminan. &#171;Mostrar QR / C&#243;digo..&#187; muestra el enlace como un c&#243;digo.</p></details>
+<details id="availability"><summary>Por qu&#233; la creaci&#243;n est&#225; desactivada</summary><p>Cada grupo muestra una l&#237;nea con el motivo: el servidor de archivos del programa no puede limitar un inicio de sesi&#243;n a una sola carpeta. Mientras se muestra, todos los controles que crean invitaciones o enlaces est&#225;n desactivados. Retirar los accesos existentes depende solo de lo que exista.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

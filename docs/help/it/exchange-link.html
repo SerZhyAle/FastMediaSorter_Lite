@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Link per una cartella - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Link per una cartella</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Consegna una cartella pubblicata a una persona che non ha un account sul server di scambio: come QR code, come testo del link e come file .fmscfg. Si apre dopo &#171;Crea un link..&#187; o &#171;Nuovo link..&#187; nel gruppo &#171;Le mie cartelle condivise nell&#39;account di scambio&#187; e con &#171;Mostra QR / Codice..&#187; nella finestra &#171;Dai accesso esterno..&#187; di una cartella. Nel programma attuale entrambi i comandi sono disattivati, perch&#233; l&#39;accesso per le persone esterne all&#39;account non &#232; offerto; questa pagina descrive che cosa mostra la finestra quando esiste un link.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Link per una cartella">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Link per una cartella">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Seleziona una cartella pubblicata e premi &#171;Crea un link..&#187; (oppure &#171;Nuovo link..&#187; per sostituire un vecchio link).</li><li>Leggi l&#39;avviso in alto.</li><li>Consegna il link con &#171;Mostra il QR code&#187;, &#171;Copia il testo del link&#187; o &#171;Salva un file .fmscfg..&#187;.</li><li>Premi &#171;Chiudi&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Quando la finestra &#232; disponibile</summary><p>La finestra esiste solo per un link appena creato o gi&#224; esistente. Finch&#233; l&#39;accesso per le persone esterne all&#39;account non &#232; offerto, &#171;Crea un link..&#187; e &#171;Nuovo link..&#187; sono disattivati, un avviso sotto di essi ne indica il motivo e la finestra non si apre; anche &#171;Mostra QR / Codice..&#187; &#232; disattivato. &#171;Rimuovi il link&#187; resta disponibile.</p></details>
+<details id="note"><summary>L&#39;avviso in alto</summary><p>&#171;Consegna alla persona il codice o il file. Contengono l&#39;accesso alla cartella: non pubblicarli.&#187; Chi possiede il QR code, il testo del link o il file pu&#242; aprire quella cartella. Il testo del link non viene mai mostrato sullo schermo.</p></details>
+<details id="qr-code"><summary>Mostra il QR code</summary><p>Apre l&#39;immagine del QR code in una finestra di ingrandimento. Il pulsante c&#39;&#232; solo se &#232; stato possibile creare un QR code; a un testo del link troppo grande per un QR code si risponde con &#171;Il codice &#232; troppo grande per un QR code - usa il file.&#187;.</p></details>
+<details id="copy-text"><summary>Copia il testo del link</summary><p>Mette il testo del link (inizia con FMSSFTP2:) negli appunti attraverso un percorso protetto che lo tiene fuori dalla cronologia degli appunti di Windows e dagli appunti nel cloud, e risponde &#171;Testo del link copiato.&#187;. Presente solo se il link ha un testo.</p></details>
+<details id="save-file"><summary>Salva un file .fmscfg..</summary><p>Salva un file di impostazioni per questa singola cartella, leggibile solo dal suo proprietario. La finestra riporta &#171;File salvato:&#187; con il percorso, oppure &#171;Impossibile salvare il file.&#187;. Presente solo se &#232; stato possibile creare il file.</p></details>
+<details id="renew-or-remove"><summary>Nuovo link e Rimuovi il link</summary><p>Entrambi appartengono al gruppo, non a questa finestra, ed entrambi chiedono prima conferma, con &#171;No&#187; come risposta predefinita: &#171;Nuovo link..&#187; avverte che tutti i QR code e i file precedenti smetteranno di funzionare, &#171;Rimuovi il link&#187; che smetteranno di funzionare tutti i QR code e i file distribuiti con esso.</p></details>
+<details id="close"><summary>Chiudi</summary><p>Chiude la finestra ed elimina da essa il testo del link, il contenuto del file e l&#39;immagine del QR code.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

@@ -425,7 +425,7 @@ Friend NotInheritable Class Welcome_Form
     Private Sub BuildSortingPanel(panel As FlowLayoutPanel)
         AddWhatWhyHowWhere(panel,
             Function() Localization.T("Цифры 0-9 переносят открытый файл в папку, закреплённую за этой клавишей."),
-            Function() Localization.T("Сортировка одним нажатием - главное, ради чего существует программа. Папки назначаются заранее, поэтому нажатие не требует раздумий."),
+            Function() Localization.T("Сортировка одним нажатием - основной приём медиа- и файлового менеджера. Папки назначаются заранее, поэтому нажатие не требует раздумий."),
             Function() Localization.T("Цифра переносит файл. Shift с цифрой верхнего ряда копирует его в ту же папку вместо переноса."),
             Function() Localization.TF("Папки назначаются {0}; переход после копирования - {1}.",
                                        Localization.T("в меню папок программы"), WherePath("advance_after_copy")))

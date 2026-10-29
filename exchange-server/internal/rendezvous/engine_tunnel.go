@@ -50,14 +50,20 @@ func (e *Engine) unavailable(st *Stream, t0 time.Time) {
 
 // notFound is `unavailable` for the relay's listen URL: a 404 after the same minimum delay, from the
 // same moment, so the answer to an unknown id and to an ended one cannot be told apart by timing.
-func (e *Engine) notFound(st *Stream, t0 time.Time) {
+func (e *Engine) notFound(st *Stream, t0 time.Time) { e.httpAfterDelay(st, t0, 404) }
+
+// gone answers a listen request for a broadcast that ended and is still remembered (DEVICE-EXCHANGE item DX),
+// after the same minimum delay as 404.
+func (e *Engine) gone(st *Stream, t0 time.Time) { e.httpAfterDelay(st, t0, 410) }
+
+func (e *Engine) httpAfterDelay(st *Stream, t0 time.Time, status int) {
 	if d := e.p.UnavailableDelay - time.Since(t0); d > 0 {
 		select {
 		case <-time.After(d):
 		case <-e.closing:
 		}
 	}
-	_ = st.WriteRaw(wire.HTTPResponse(404, 0))
+	_ = st.WriteRaw(wire.HTTPResponse(status, 0))
 }
 
 func (e *Engine) relayListeners(broadcastID string) int {

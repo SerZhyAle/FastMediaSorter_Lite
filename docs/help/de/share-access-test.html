@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Test des Internetzugriffs - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Test des Internetzugriffs</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>Pr&#252;ft von diesem PC aus, ob die freigegebene Adresse wie ein SFTP-Server antwortet. Es &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Internetzugriff testen&#187; des Hauptfensters und zeigt die getestete Adresse, ein Urteil und eine Erkl&#228;rung.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Test des Internetzugriffs">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Test des Internetzugriffs">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>&#214;ffnen Sie das Fenster; es zeigt die Adresse und startet die Pr&#252;fung sofort.</li><li>Warten Sie auf die &#220;berschrift.</li><li>Lesen Sie die Detailzeile darunter.</li><li>Ist das Ergebnis nicht eindeutig, wiederholen Sie die Pr&#252;fung vom Telefon aus bei ausgeschaltetem WLAN und eingeschalteten mobilen Daten.</li><li>Dr&#252;cken Sie &#171;Schlie&#223;en&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Getestete Adresse</summary><p>&#171;Gepr&#252;fte Adresse: ..&#187; zeigt Host und Port. W&#228;hrend die Pr&#252;fung l&#228;uft, steht im Fenster &#171;Test ..&#187;. Ist keine Adresse bekannt, lautet das Ergebnis &#171;Noch keine Internetadresse.&#187;; eine fehlerhafte Adresse ergibt &#171;Ung&#252;ltige Adresse.&#187;.</p></details>
+<details id="verdicts"><summary>Urteile</summary><p>&#171;SFTP-Server erreichbar&#187; - der Port hat mit einem SFTP-Banner geantwortet. &#171;Port offen, aber keine SFTP-Antwort&#187; - am Port lauscht etwas, aber es ist nicht unser Programm; pr&#252;fen Sie, ob die Router-Regel auf diesen PC und den Freigabeport zeigt. Eine Verbindung, die vor der Antwort geschlossen wurde, kann auf das Verbindungslimit hindeuten; versuchen Sie es erneut. Keine Antwort von diesem PC hei&#223;t, dass der Router die Anfrage an die eigene Adresse von innen wom&#246;glich blockiert.</p></details>
+<details id="inconclusive"><summary>Warum ein Ergebnis nicht eindeutig sein kann</summary><p>Die Anfrage verl&#228;sst diesen PC in Richtung der externen Adresse des Routers und kommt direkt wieder nach innen zur&#252;ck; sie testet also die Weiterleitungsregel und nicht, ob der Anbieter eingehende Verbindungen zul&#228;sst. Nur das Telefon kann das kl&#228;ren: Schalten Sie dessen WLAN aus, lassen Sie die mobilen Daten an und &#246;ffnen Sie den QR-Code. Gelingt die Verbindung weiterhin nicht, richten Sie mit der Schaltfl&#228;che &#171;Internetzugriff einrichten&#187; die Portweiterleitung ein.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

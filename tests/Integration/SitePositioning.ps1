@@ -1,15 +1,15 @@
 <#
 .SYNOPSIS
-    Fixture self-test of tools/Test-SitePositioning.ps1 (tickets 155 and 249): the gate passes a clean tiny tree
-    and fails, for the right reason, each way the positioning, the components, the availability matrix, the
-    component in development, the editions or a typed fact can drift.
+    Fixture self-test of tools/Test-SitePositioning.ps1 (tickets 155, 249 and 273): the gate passes a clean tiny tree
+    and fails, for the right reason, each way the positioning, the components, the availability matrix, the gated
+    component, the capability register, a retired phrase, a planned claim, the editions or a typed fact can drift.
 
 .DESCRIPTION
     Builds a throw-away site under %TEMP% (a landing, a Server edition page, two locale pages, a README, the
-    positioning source, the naming table, the Localization table, the installer scripts, the release workflow,
-    the MSIX manifest, a Store listing and a data file that declares them), runs the gate against it with -Root
-    and expects an exit code and a message per case. Nothing in the repository is read or written.
-    About 40 child processes; run it after a change to the gate, not at every closure.
+    positioning source, the naming table, the release notes, the Localization table, the installer scripts, the
+    release workflow, the MSIX manifest, a Store listing and a data file that declares them), runs the gate against it
+    with -Root and expects an exit code and a message per case. Nothing in the repository is read or written.
+    About 50 child processes; run it after a change to the gate, not at every closure.
 
     Ends in the shared one-line verdict (CHECK-VERDICT).
 #>
@@ -48,10 +48,10 @@ function Edit-SiteCopy([scriptblock]$change) {
     Write-Text 'tools/site-copy.json' ($c | ConvertTo-Json -Depth 8)
 }
 
-$Lead = 'Three optional parts: a media viewer and sorter, a local SFTP folder-sharing service, and a Media Exchange Server (in development, not released yet).'
+$Lead = 'Three optional parts: a media and file manager that sorts photos and videos with one key, a local sharing and scheduling service that shares folders over SFTP and runs file operations on a schedule, and a Media Exchange Server that you run yourself.'
 $FullName = 'Fast Media Sorter & Sharing for Windows'
 $ServerName = 'Fast Media Sorter & Sharing: Folder Share Server'
-$States = @('core', 'bundled', 'optional-on', 'optional-off', 'required', 'absent', 'in-development')
+$States = @('core', 'bundled', 'optional-on', 'optional-off', 'required', 'absent')
 $Components = @('viewer', 'share', 'filedo', 'exchange')
 $Channels = @('full-installer', 'store', 'server-edition')
 
@@ -69,11 +69,41 @@ function New-Fixture {
         positioning = [ordered]@{
             source = 'docs/guides/POSITIONING.md'; lead = $Lead
             components = @(
-                [ordered]@{ id = 'viewer'; title = 'Media viewer and sorter'; state = 'shipped' },
-                [ordered]@{ id = 'share'; title = 'Local SFTP folder sharing'; state = 'shipped'
+                [ordered]@{ id = 'viewer'; title = 'Media and file manager'; state = 'shipped' },
+                [ordered]@{ id = 'share'; title = 'Local sharing and scheduling'; state = 'shipped'
                     capabilities = @([ordered]@{ id = 'filedo'; title = 'FileDO virtual disks' }) },
-                [ordered]@{ id = 'exchange'; title = 'Media Exchange Server'; state = 'in-development' })
-            bannedPhrases = @('core of every package', 'third pillar', 'reserved door')
+                [ordered]@{ id = 'exchange'; title = 'Media Exchange Server'; state = 'gated' })
+        }
+        capabilities = [ordered]@{
+            states = [ordered]@{ released = 'a published release carries it'; built = 'in the tree'; gated = 'held out by a shut gate'; development = 'being built'; planned = 'tickets only' }
+            classes = [ordered]@{ A = 'source'; B = 'internal'; C = 'code'; D = 'help'; E = 'site'; F = 'listings'; G = 'canon'; H = 'siblings' }
+            coverage = [ordered]@{
+                readmes = @([ordered]@{ file = 'README.md'; lang = 'en' })
+                landing = @([ordered]@{ file = 'index.html'; lang = 'en' })
+            }
+            plannedAllow = @([ordered]@{ path = 'README.md'; context = '(?i)Android'; reason = 'the Android app is another product' })
+            items = @(
+                [ordered]@{ id = 'sort-view'; component = 'viewer'; state = 'released'; since = '1.0.0'; label = 'sort with one key'
+                    evidence = @('CHANGELOG.md'); surfaces = @('A', 'E', 'F'); mustName = @('readmes', 'landing')
+                    names = [ordered]@{ en = '(?i)one key'; ru = 'одной клавишей'; uk = 'однією клавішею' } },
+                [ordered]@{ id = 'scheduled'; component = 'share'; state = 'released'; since = '1.0.0'; label = 'scheduled operations'
+                    evidence = @('CHANGELOG.md'); surfaces = @('A', 'E', 'F'); mustName = @('readmes')
+                    names = [ordered]@{ en = '(?i)schedul'; ru = 'расписани'; uk = 'розклад' } },
+                [ordered]@{ id = 'reading'; component = 'viewer'; state = 'planned'; since = $null; label = 'reading e-books'
+                    evidence = @('CHANGELOG.md'); surfaces = @('A')
+                    plannedClaims = [ordered]@{ en = @('(?i)\be-?book reader\b'); ru = @('(?i)читалк\w*'); uk = @('(?i)читалк\w*') } },
+                [ordered]@{ id = 'exchange-server'; component = 'exchange'; state = 'gated'; since = $null; label = 'the exchange server'
+                    evidence = @('.github/workflows/release.yml'); surfaces = @('A', 'E', 'F') })
+        }
+        retiredPhrases = [ordered]@{
+            scan = @('*.html', 'lang/*/*.html', 'README.md', 'publishing/store/listingData.csv', 'tools/site-copy.json')
+            allow = @([ordered]@{ path = 'whats-new.html'; reason = 'history' })
+            phrases = @(
+                [ordered]@{ text = 'core of every package'; lang = 'en'; ground = 'specification 249' },
+                [ordered]@{ text = 'media viewer and sorter'; lang = 'en'; ground = 'specification 273' },
+                [ordered]@{ text = 'in development'; lang = 'en'; ground = 'canon invariant 17' },
+                [ordered]@{ text = 'в разработке'; lang = 'ru'; ground = 'canon invariant 17' },
+                [ordered]@{ text = 'у розробці'; lang = 'uk'; ground = 'canon invariant 17' })
         }
         profiles = @(
             [ordered]@{ id = 'viewer-first'; entry = 'index.html'; leadsWith = 'viewer'; channels = @('full-installer', 'store')
@@ -86,7 +116,7 @@ function New-Fixture {
             [ordered]@{ id = 'full'; public = $true; name = $FullName },
             [ordered]@{ id = 'server'; public = $true; name = $ServerName; nameSuffix = 'Folder Share Server' })
         availability = [ordered]@{
-            states = [ordered]@{ 'core' = 'always installed'; 'bundled' = 'in the package'; 'optional-on' = 'ticked'; 'optional-off' = 'unticked'; 'required' = 'the package is this'; 'absent' = 'not in this channel'; 'in-development' = 'in no released package' }
+            states = [ordered]@{ 'core' = 'always installed'; 'bundled' = 'in the package'; 'optional-on' = 'ticked'; 'optional-off' = 'unticked'; 'required' = 'the package is this'; 'absent' = 'not in this channel' }
             channels = $Channels
             components = $Components
             evidence = [ordered]@{
@@ -100,14 +130,12 @@ function New-Fixture {
                 viewer   = [ordered]@{ 'full-installer' = @('core', 'e-core'); store = @('core', 'e-msix'); 'server-edition' = @('optional-off', 'e-server') }
                 share    = [ordered]@{ 'full-installer' = @('optional-on', 'e-share'); store = @('bundled', 'e-msix'); 'server-edition' = @('required', 'e-server') }
                 filedo   = [ordered]@{ 'full-installer' = @('optional-off', 'e-share'); store = @('absent', 'e-msix'); 'server-edition' = @('optional-on', 'e-server') }
-                exchange = [ordered]@{ 'full-installer' = @('in-development', 'e-gate'); store = @('absent', 'e-msix'); 'server-edition' = @('in-development', 'e-gate') }
+                exchange = [ordered]@{ 'full-installer' = @('absent', 'e-gate'); store = @('absent', 'e-msix'); 'server-edition' = @('absent', 'e-gate') }
             }
             facts = [ordered]@{ elevation = [ordered]@{ 'full-installer' = @('e-core'); 'server-edition' = @('e-server') } }
         }
-        development = [ordered]@{
+        gated = [ordered]@{
             component = 'exchange'; mentionPattern = 'Media Exchange Server'
-            markers = @('in development', 'в разработке', 'у розробці')
-            window = 420
             downloadLink = '(?i)(?:releases/download|/releases(?:/|\b)|winget(?:\s|%20)install|apps\.microsoft\.com|\.exe\b|-setup\b|#get\b|(?:^|/)server\.html\b)'
             scan = @('*.html', 'lang/*/*.html', 'README.md', 'publishing/store/listingData.csv', 'tools/site-copy.json')
             storeListing = [ordered]@{
@@ -153,28 +181,29 @@ function New-Fixture {
             [ordered]@{
                 file = 'index.html'; names = 3; why = 'landing family sentence'
                 scopes = @('(?s)<p class="family">(?<region>.*?)</p>')
-                anchors = [ordered]@{ viewer = 'media viewer and sorter'; share = 'folder-sharing service'; exchange = 'Media Exchange Server' }
+                anchors = [ordered]@{ viewer = 'media and file manager'; share = 'sharing and scheduling service'; exchange = 'Media Exchange Server' }
             },
             [ordered]@{
-                file = 'index.html'; names = 3; why = 'landing doors: viewer first, server first, then the component in development'
+                file = 'index.html'; names = 3; why = 'landing doors: the manager first, the server first, then the exchange server'
                 scopes = @('(?s)id="doors".*?</section>')
                 anchors = [ordered]@{ viewer = 'id="door-1"'; share = 'id="door-2"'; exchange = 'id="door-3"' }
             },
             [ordered]@{
                 file = 'README.md'; names = 3; why = 'README parts table'
                 scopes = @('(?s)\| Part \|(?<region>.*?)\r?\n\r?\n')
-                anchors = [ordered]@{ viewer = '\*\*Media viewer and sorter\*\*'; share = '\*\*Local SFTP folder sharing\*\*'; exchange = '\*\*Media Exchange Server\*\*' }
+                anchors = [ordered]@{ viewer = '\*\*Media and file manager\*\*'; share = '\*\*Local sharing and scheduling\*\*'; exchange = '\*\*Media Exchange Server\*\*' }
             })
     }
     Write-Text 'tools/site-facts.json' ($facts | ConvertTo-Json -Depth 14)
-    Write-Text 'docs/guides/POSITIONING.md' ("# Positioning`n`n> $Lead`n`n| # | Component |`n| --- | --- |`n| 1 | **Media viewer and sorter** |`n| 2 | **Local SFTP folder sharing** |`n| 3 | **Media Exchange Server** |`n`nFileDO virtual disks are a capability of sharing.`n`n``$FullName`` and ``$ServerName```n")
+    Write-Text 'docs/guides/POSITIONING.md' ("# Positioning`n`n> $Lead`n`n| # | Component |`n| --- | --- |`n| 1 | **Media and file manager** |`n| 2 | **Local sharing and scheduling** |`n| 3 | **Media Exchange Server** |`n`nFileDO virtual disks are a capability of sharing.`n`n``$FullName`` and ``$ServerName```n")
     Write-Text 'docs/guides/PRODUCT_NAMING.md' ("``$FullName`` ``$ServerName`` Media Exchange Server`n")
+    Write-Text 'CHANGELOG.md' "# Changelog`n`n## [Unreleased]`n`n## [1.0.0] - 2026-01-01`n`n- First release.`n"
     $copy = [ordered]@{
         en = [ordered]@{ dir = 'ltr'; family = $Lead; pageTitle = 'Sorting EN'; ogAlt = 'a'
             doors = @(
-                @('Viewer first', 'I need a viewer', 'Sort photos and videos.', 'Download the full package'),
+                @('Manager first', 'I need a manager', 'Sort photos and videos.', 'Download the full package'),
                 @('Server first', 'I want a server', 'Open folders on a phone.', 'Server edition'),
-                @('In development', 'Media Exchange Server', 'In development and in no package.', '')) }
+                @('Exchange server', 'Media Exchange Server', 'Your devices reach each other through a server you run.', '')) }
         ru = [ordered]@{ dir = 'ltr'; pageTitle = 'Sorting RU'; ogAlt = 'a' }
         uk = [ordered]@{ dir = 'ltr'; pageTitle = 'Sorting UK'; ogAlt = 'a' }
         _matrix = [ordered]@{ en = New-MatrixLabels 'en'; ru = New-MatrixLabels 'ru'; uk = New-MatrixLabels 'uk' }
@@ -191,11 +220,12 @@ function New-Fixture {
     Write-Text 'publishing/store/listingData.csv' "Description,2,Text,,`"Sort your media. The always-on Server edition runs as a Windows service; it is not part of the Store version.`"`n"
     Write-Text 'index.html' ('<html><head><link rel="canonical" href="https://example.test/site/"><script type="application/ld+json">{"operatingSystem": "Windows 10, Windows 11"}</script></head><body>' +
         "<p class=`"family`">$Lead</p><p>3 languages; needs Windows 10 1607+. The other two languages have pages.</p><p>$ServerName is the Server edition. <a href=`"server.html`">Server edition page</a></p>" +
-        '<section id="doors"><article id="door-1">Viewer</article><article id="door-2">Share</article><article id="door-3"><span class="pill gold">In development</span><p>Media Exchange Server is in development.</p></article></section></body></html>')
-    Write-Text 'server.html' '<html><head><title>Server</title></head><body><p>Folder sharing as a service. <a href="./">Start with the viewer</a></p></body></html>'
+        '<section id="doors"><article id="door-1">Manager</article><article id="door-2">Share</article><article id="door-3"><p>Media Exchange Server: your devices reach each other through it.</p></article></section></body></html>')
+    Write-Text 'server.html' '<html><head><title>Server</title></head><body><p>Folder sharing as a service. <a href="./">Start with the manager</a></p></body></html>'
+    Write-Text 'whats-new.html' '<html><body><p>Version 0.9: the exchange server was in development.</p></body></html>'
     Write-Text 'lang/ru/index.html' '<html><head><title>Sorting RU | Fast Media Sorter &amp; Sharing</title></head><body><p>ru</p></body></html>'
     Write-Text 'lang/uk/index.html' '<html><head><title>Sorting UK | Fast Media Sorter &amp; Sharing</title></head><body><p>uk</p></body></html>'
-    Write-Text 'README.md' "# Readme`n`n**Three optional parts.** A media viewer and sorter, a local SFTP folder-sharing service, and a Media Exchange Server (in development, not released yet).`n`n| Part | You want |`n| --- | --- |`n| **Media viewer and sorter** | view |`n| **Local SFTP folder sharing** | share |`n| **Media Exchange Server** | *in development* |`n`nThe end.`n"
+    Write-Text 'README.md' "# Readme`n`n**Three optional parts.** A media and file manager that sorts with one key, a local sharing and scheduling service, and a Media Exchange Server.`n`n| Part | You want |`n| --- | --- |`n| **Media and file manager** | view |`n| **Local sharing and scheduling** | share |`n| **Media Exchange Server** | a server you run yourself |`n`nThe Android app, a separate product, has an e-book reader.`n`nThe end.`n"
 }
 
 $failures = [Collections.Generic.List[string]]::new()
@@ -211,19 +241,19 @@ function Expect([string]$name, [int]$code, [string]$message) {
 }
 
 try {
-    New-Fixture;  Expect 'a clean tree passes' 0 'PASS'
+    New-Fixture;  Expect 'a clean tree passes (with a planned claim in an allowed context and a retired phrase in allow-listed history)' 0 'PASS'
 
     # --- the components on the surfaces ---
-    New-Fixture;  Edit-Work 'index.html' "<p class=`"family`">$Lead</p>" '<p class="family">A Media Exchange Server (in development) is separate; there is also a local SFTP folder-sharing service and a media viewer and sorter.</p>'
+    New-Fixture;  Edit-Work 'index.html' "<p class=`"family`">$Lead</p>" '<p class="family">A Media Exchange Server is separate; there is also a local sharing and scheduling service and a media and file manager with one key.</p>'
     Expect 'a family sentence that lists the components out of order fails' 1 'before it is done with'
 
-    New-Fixture;  Edit-Work 'index.html' "<p class=`"family`">$Lead</p>" '<p class="family">A media viewer and sorter and a local SFTP folder-sharing service.</p>'
+    New-Fixture;  Edit-Work 'index.html' "<p class=`"family`">$Lead</p>" '<p class="family">A media and file manager with one key and a local sharing and scheduling service.</p>'
     Expect 'a surface that drops the third component fails' 1 "does not name the component 'exchange'"
 
     New-Fixture;  Edit-Work 'index.html' 'class="family"' 'class="intro"'
     Expect 'a surface whose region is gone fails' 1 'is not found'
 
-    New-Fixture;  Edit-Work 'README.md' "| **Media viewer and sorter** | view |`n| **Local SFTP folder sharing** | share |" "| **Local SFTP folder sharing** | share |`n| **Media viewer and sorter** | view |"
+    New-Fixture;  Edit-Work 'README.md' "| **Media and file manager** | view |`n| **Local sharing and scheduling** | share |" "| **Local sharing and scheduling** | share |`n| **Media and file manager** | view |"
     Expect 'the README parts table in the wrong order fails' 1 'before it is done with'
 
     New-Fixture;  Edit-Work 'docs/guides/POSITIONING.md' "> $Lead" '> A different sentence.'
@@ -232,31 +262,82 @@ try {
     New-Fixture;  Edit-Work 'index.html' '<p>3 languages;' '<p>Get Fast Media Sorter &amp; Sharing: Home Edition today. 3 languages;'
     Expect 'an edition the data file does not declare fails' 1 'does not declare as public'
 
+    New-Fixture;  Edit-Facts { param($f) $f.positioning.components[2].state = 'in-development' }
+    Expect 'a component in the retired state in-development fails' 1 'not shipped or gated'
+
     # --- FileDO is a capability of sharing, never a part of its own ---
-    New-Fixture;  Edit-Facts { param($f) $f.positioning.components[1].title = 'Local SFTP folder sharing with FileDO' }
+    New-Fixture;  Edit-Facts { param($f) $f.positioning.components[1].title = 'Local sharing and scheduling with FileDO' }
     Expect 'a component titled with FileDO fails' 1 'FileDO hosting is a capability of sharing'
 
     New-Fixture;  Edit-Facts { param($f) $f.positioning.lead = $f.positioning.lead + ' FileDO disks too.' }
     Expect 'a family sentence that names FileDO fails' 1 'the family sentence names FileDO'
 
-    New-Fixture;  Edit-Work 'index.html' 'Viewer</article>' 'Viewer: the core of every package</article>'
-    Expect 'a phrase of the retired model fails' 1 'a phrase of the model specification 249 retired'
+    # --- the retired phrases (specification 273 T-1 check b): EN, RU, UK, and the allow-list ---
+    New-Fixture;  Edit-Work 'index.html' 'Manager</article>' 'Manager: the core of every package</article>'
+    Expect 'a phrase of a retired model fails' 1 "says 'core of every package', a retired phrase"
 
-    # --- the component in development: named, marked, never sold ---
-    New-Fixture;  Write-Text 'about.html' '<html><body><p>Media Exchange Server is coming soon.</p></body></html>'
-    Expect 'the component in development without a marker fails' 1 'with no development marker within 420 characters'
+    New-Fixture;  Edit-Work 'README.md' 'The end.' 'A media viewer and sorter.'
+    Expect 'the retired definition in English fails' 1 "says 'media viewer and sorter', a retired phrase"
 
-    New-Fixture;  Write-Text 'about.html' '<html><body><p><a href="https://example.test/releases/latest">Media Exchange Server (in development)</a></p></body></html>'
-    Expect 'the component in development inside a download link fails' 1 'inside a link to a download'
+    New-Fixture;  Edit-Work 'lang/ru/index.html' '<p>ru</p>' '<p>Media Exchange Server в разработке.</p>'
+    Expect 'a promise marker in Russian fails' 1 "says 'в разработке', a retired phrase"
 
-    New-Fixture;  Write-Text 'about.html' '<html><body><p>Media Exchange Server is in development, due 2027.</p></body></html>'
-    Expect 'a date next to the component in development fails' 1 'gives a date next to'
+    New-Fixture;  Edit-Work 'lang/uk/index.html' '<p>uk</p>' '<p>Media Exchange Server у розробці.</p>'
+    Expect 'a promise marker in Ukrainian fails' 1 "says 'у розробці', a retired phrase"
 
-    New-Fixture;  Write-Text 'about.html' '<html><body><p>Download the Media Exchange Server (in development).</p></body></html>'
-    Expect 'an invitation to get the component in development fails' 1 "tells the reader to 'Download the Media Exchange Server'"
+    New-Fixture;  Edit-SiteCopy { param($c) $c.en.doors[2][2] = 'In development and in no package.' }
+    Expect 'a promise marker on the door of the gated component fails' 1 "says 'in development', a retired phrase"
+
+    # --- the planned claims (check c): EN, RU, UK; an allowed context passes (the clean tree) ---
+    New-Fixture;  Edit-Work 'index.html' '<p>3 languages;' '<p>Now with an e-book reader. 3 languages;'
+    Expect 'a planned claim in English fails' 1 "a claim of the planned capability 'reading'"
+
+    New-Fixture;  Edit-Work 'lang/ru/index.html' '<p>ru</p>' '<p>Встроенная читалка.</p>'
+    Expect 'a planned claim in Russian fails' 1 "a claim of the planned capability 'reading'"
+
+    New-Fixture;  Edit-Work 'lang/uk/index.html' '<p>uk</p>' '<p>Вбудована читалка.</p>'
+    Expect 'a planned claim in Ukrainian fails' 1 "a claim of the planned capability 'reading'"
+
+    New-Fixture;  Edit-Work 'README.md' 'The Android app, a separate product, has an e-book reader.' 'This program has an e-book reader.'
+    Expect 'a planned claim outside its allowed context fails' 1 "a claim of the planned capability 'reading'"
+
+    # --- the capability register (check a) and its coverage ---
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[0].state = 'shipping' }
+    Expect 'a capability in an unknown state fails' 1 "has the state 'shipping', which capabilities.states does not define"
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[0].evidence = @('docs/nothing.md') }
+    Expect 'a capability whose evidence is missing fails' 1 "cites the evidence 'docs/nothing.md', which is not a file or folder"
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[1].since = '9.9.9' }
+    Expect 'a released capability whose release is no CHANGELOG heading fails' 1 'which is no version heading of CHANGELOG.md'
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[1].since = $null }
+    Expect 'a released capability without its release fails' 1 "is released and names no release"
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items += [pscustomobject][ordered]@{ id = 'remote'; component = 'viewer'; state = 'released'; since = '1.0.0'; label = 'SMB shares'; evidence = @('CHANGELOG.md'); surfaces = @('A', 'F'); mustName = @('readmes'); names = [pscustomobject]@{ en = '\bSMB\b' } } }
+    Expect 'a released capability a coverage set does not name fails, listing the surface' 1 "README.md (en) does not name the capability 'remote'"
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[2].surfaces = @('A', 'E') }
+    Expect 'a planned capability allowed beyond the positioning source fails' 1 'a planned capability lives in the positioning source'
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[2] | Add-Member -NotePropertyName mustName -NotePropertyValue @('readmes') }
+    Expect 'a planned capability a coverage set must name fails' 1 'a coverage set must name it'
+
+    New-Fixture;  Edit-Facts { param($f) $f.capabilities.items[3].state = 'released'; $f.capabilities.items[3].since = '1.0.0' }
+    Expect 'a released capability of the gated component fails' 1 'no package carries a capability of a gated component'
+
+    # --- the gated component: named, never linked to a download, never sold ---
+    New-Fixture;  Write-Text 'about.html' '<html><body><p><a href="https://example.test/releases/latest">Media Exchange Server</a></p></body></html>'
+    Expect 'the gated component inside a download link fails' 1 'inside a link to a download'
+
+    New-Fixture;  Write-Text 'about.html' '<html><body><p>Media Exchange Server, due 2027.</p></body></html>'
+    Expect 'a date next to the gated component fails' 1 'gives a date next to'
+
+    New-Fixture;  Write-Text 'about.html' '<html><body><p>Download the Media Exchange Server.</p></body></html>'
+    Expect 'an invitation to get the gated component fails' 1 "tells the reader to 'Download the Media Exchange Server'"
 
     New-Fixture;  Edit-SiteCopy { param($c) $c.en.doors[2][3] = 'Get it' }
-    Expect 'a call to action on the door of the component in development fails' 1 'carries a call to action'
+    Expect 'a call to action on the door of the gated component fails' 1 'carries a call to action'
 
     # --- the Store listing says what the Store package is and is not ---
     New-Fixture;  Edit-Work 'publishing/store/listingData.csv' 'it is not part of the Store version' 'it is great'
@@ -273,7 +354,7 @@ try {
     Expect 'a packaging change that contradicts the matrix fails' 1 'no longer matches'
 
     New-Fixture;  Edit-Facts { param($f) $f.availability.cells.exchange.store = @('optional-on', 'e-gate') }
-    Expect 'the component in development shipped in a channel fails' 1 'is in development and the matrix says'
+    Expect 'the gated component shipped in a channel fails' 1 'is gated and the matrix says'
 
     New-Fixture;  Edit-Facts { param($f) $f.availability.cells.share.store = @('absent', 'e-msix'); $f.availability.cells.filedo.store = @('optional-on', 'e-msix') }
     Expect 'a capability of sharing in a package without sharing fails' 1 'a capability of sharing is not in a package without sharing'

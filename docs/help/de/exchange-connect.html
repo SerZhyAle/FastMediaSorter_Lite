@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Von einem Austauschserver hinzuf&#252;gen - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Von einem Austauschserver hinzuf&#252;gen</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Verbindet diesen Computer mit einem Konto auf einem Austauschserver, sodass die Ordner aller Ger&#228;te dieses Kontos in der Ressourcenliste erscheinen. Das Fenster &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Von einem Austauschserver hinzuf&#252;gen..&#187; im Abschnitt &#171;Meine Ger&#228;te&#187; der Ressourcenliste sowie dann, wenn Sie eine Verbindungszeichenfolge oder -datei auf das Programm ziehen oder im Ordnerfeld eingeben.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Von einem Austauschserver hinzuf&#252;gen">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Von einem Austauschserver hinzuf&#252;gen">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>F&#252;gen Sie die Verbindungszeichenfolge des Server-Betreibers ein, geben Sie die Adresse als host:port ein oder dr&#252;cken Sie &#171;Datei &#246;ffnen..&#187;.</li><li>Pr&#252;fen Sie die Zeile &#171;Das Passwort wird gesendet an: ..&#187;: Diese Adresse ist der einzige Ort, an den das Passwort geht.</li><li>Geben Sie Login und Passwort ein.</li><li>Dr&#252;cken Sie &#171;Verbinden&#187;.</li><li>Fragt das Programm nach dem Zertifikat des Servers, vergleichen Sie den Fingerabdruck mit dem, den der Betreiber genannt hat.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Verbindungszeichenfolge oder Adresse</summary><p>Das erste Feld nimmt eine Verbindungszeichenfolge (sie beginnt mit FMSEXCH1:) oder eine Adresse als host:port. &#171;Einf&#252;gen&#187; f&#252;llt es aus der Zwischenablage, aus Text oder aus einem Bild eines QR-Codes, und &#171;Datei &#246;ffnen..&#187; liest eine .fmsexch-Datei oder ein QR-Bild. Das Einf&#252;gen f&#252;llt nur das Formular: Gesendet wird nichts, bis Sie &#171;Verbinden&#187; dr&#252;cken. Die Zeile unter dem Feld zeigt, wohin das Passwort geht; eine Webadresse, ein Ordnercode oder eine besch&#228;digte Zeichenfolge wird dort in klaren Worten abgelehnt.</p></details>
+<details id="account"><summary>Login und Passwort</summary><p>&#171;Login:&#187; wird aus der Zeichenfolge gef&#252;llt, wenn sie einen enth&#228;lt. &#171;Kennwort:&#187; ist verdeckt; &#171;Kennwort anzeigen&#187; macht es sichtbar. Beim Dr&#252;cken von &#171;Verbinden&#187; werden die Passwortfelder geleert, bevor das erste Byte den Computer verl&#228;sst. Die Statuszeile zeigt den Fortschritt und bei einem Fehlschlag den Grund: ein Login oder Passwort, das nicht passte, zu viele Versuche, ein Server, der nicht antwortet.</p></details>
+<details id="register"><summary>Eine Einladungszeichenfolge</summary><p>Eine Zeichenfolge, die eine Einladung ist, nennt den Server bereits und schaltet das Fenster auf das Anlegen eines Kontos um: &#171;Passwort noch einmal:&#187; und ein Hinweis zur Passwortregel erscheinen (mindestens 10 Zeichen, mit einem lateinischen Gro&#223;buchstaben, einem lateinischen Kleinbuchstaben und einer Ziffer), und die Schaltfl&#228;che hei&#223;t &#171;Konto erstellen&#187;. Das letzte Wort zur Regel hat der Server.</p></details>
+<details id="trust"><summary>Das Zertifikat des Servers</summary><p>Ist das Zertifikat unbekannt, zeigt eine Frage seinen Fingerabdruck und fragt, ob dem Server vertraut und er gemerkt werden soll; die Standardantwort ist Nein. Nennt die Zeichenfolge einen Fingerabdruck und der Server legt einen anderen vor, werden beide gezeigt, nichts wird gemerkt und kein Passwort gesendet.</p></details>
+<details id="sign-in-again"><summary>Erneut anmelden</summary><p>Ist das Fenster f&#252;r einen vorhandenen Servereintrag zum erneuten Anmelden ge&#246;ffnet, zeigt es Adresse und Login schreibgesch&#252;tzt, und der Fingerabdruck, den dieser Eintrag gemerkt hat, ist der Vertrauensanker.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>Scegli una risorsa - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">Scegli una risorsa</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>Sceglie una risorsa dall&#39;elenco delle risorse del visualizzatore come origine o destinazione di un&#39;operazione pianificata. Si apre da &#171;Risorsa..&#187; accanto a Origine o Destinazione nella finestra dell&#39;operazione pianificata.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Scegli una risorsa">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Scegli una risorsa">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Scegli la risorsa nell&#39;elenco &#171;Risorsa&#187;.</li><li>Controlla o cambia &#171;Cartella all&#39;interno della risorsa&#187;; inizialmente &#232; la cartella radice della risorsa.</li><li>Premi &#171;Scegli&#187;. &#171;Annulla&#187; mantiene la posizione precedente.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>Elenco delle risorse</summary><p>Vengono offerti solo i server SFTP e le cartelle di rete dell&#39;elenco del visualizzatore, ordinati per nome; le risorse di altri tipi non compaiono. Se non ce ne sono, la finestra dice: &#171;Nell&#39;elenco delle risorse non ci sono risorse adatte. Aggiungi un server SFTP o una cartella di rete nel visualizzatore.&#187; e &#171;Scegli&#187; resta disattivato. Aggiungere una risorsa o riconfermarne l&#39;attendibilit&#224; si fa nel visualizzatore; questa finestra non stabilisce alcuna connessione.</p></details>
+<details id="folder"><summary>Cartella all&#39;interno della risorsa</summary><p>La cartella deve trovarsi all&#39;interno della radice della risorsa scelta, altrimenti &#171;Salva&#187; nella finestra dell&#39;operazione la rifiuta. Scegliere un&#39;altra risorsa riempie di nuovo la casella con la radice di quella risorsa.</p></details>
+<details id="unattended"><summary>Funziona senza domande</summary><p>La password e la chiave del server provengono dall&#39;elenco delle risorse del visualizzatore. Un&#39;esecuzione non chiede nulla: se la password non &#232; memorizzata o la chiave del server non &#232; confermata, l&#39;operazione si ferma e la cronologia ne indica il motivo. Una risorsa in sola lettura non pu&#242; essere la destinazione di uno spostamento o di un&#39;eliminazione, una risorsa la cui radice &#232; protetta da un PIN viene rifiutata e un archivio accetta solo cartelle normali.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

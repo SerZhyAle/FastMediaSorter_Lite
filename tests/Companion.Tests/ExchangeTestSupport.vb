@@ -130,4 +130,31 @@ Friend Module ExchangeTestSupport
         If failure IsNot Nothing Then Throw failure
     End Sub
 
+    ''' <summary>The rail groups of a settings page, in rail order. A page shows one group card at a time: the one its
+    ''' selected rail item names (owner decision 2026-10-26).</summary>
+    Friend Function SettingsGroups(window As Share_Settings_Form, pageId As String) As List(Of Share_Settings_Form.SettingsNavGroup)
+        Dim field = GetType(Share_Settings_Form).GetField("_pageGroups", System.Reflection.BindingFlags.Instance Or System.Reflection.BindingFlags.NonPublic)
+        Dim groups = DirectCast(field.GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
+        Dim list As List(Of Share_Settings_Form.SettingsNavGroup) = Nothing
+        Return If(groups.TryGetValue(pageId, list), list, New List(Of Share_Settings_Form.SettingsNavGroup)())
+    End Function
+
+    ''' <summary>Selects the page and the rail item whose group card holds <paramref name="target"/>, as choosing that
+    ''' item does, so the control is on screen; returns the page id.</summary>
+    Friend Function ShowSettingsCardOf(window As Share_Settings_Form, target As System.Windows.Forms.Control) As String
+        Dim field = GetType(Share_Settings_Form).GetField("_pageGroups", System.Reflection.BindingFlags.Instance Or System.Reflection.BindingFlags.NonPublic)
+        Dim groups = DirectCast(field.GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
+        For Each page In groups
+            For Each grp In page.Value
+                If grp.Card Is target OrElse grp.Card.Contains(target) Then
+                    window.SelectSettingsPage(page.Key, grp.Id)
+                    System.Windows.Forms.Application.DoEvents()
+                    Return page.Key
+                End If
+            Next
+        Next
+        Assert.Fail("no settings group card holds " & target.Name)
+        Return Nothing
+    End Function
+
 End Module

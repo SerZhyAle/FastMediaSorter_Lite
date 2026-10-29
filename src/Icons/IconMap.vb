@@ -105,6 +105,7 @@ Public Module IconMap
         {"settingsNavVideo", New IconMeaning("settingsNavVideo", "content.video", "Видео", IconRole.Content)},
         {"settingsNavAudio", New IconMeaning("settingsNavAudio", "content.audio", "Аудио", IconRole.Content)},
         {"settingsNavFiles", New IconMeaning("settingsNavFiles", "content.folder", "Файлы", IconRole.Content)},
+        {"settingsNavDocuments", New IconMeaning("settingsNavDocuments", "content.document", "Документы", IconRole.Content)},
         {"settingsNavFileManager", New IconMeaning("settingsNavFileManager", "view.grid", "Панель изображений", IconRole.Content)},
         {"settingsNavResources", New IconMeaning("settingsNavResources", "source.resource", "Ресурс", IconRole.Content)},
         {"btn_Resource", New IconMeaning("btn_Resource", "source.resource", "Ресурс", IconRole.Content)},

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>Exportar recurso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">Exportar recurso</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>Prepara la configuraci&#243;n de un servidor SFTP para que otro equipo o un tel&#233;fono pueda importarla. Se abre desde &#171;Exportar..&#187; en el men&#250; &#171;M&#225;s&#187; de la lista de recursos y necesita un recurso seleccionado; una carpeta compartida por Share Manager se exporta desde Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="Exportar recurso">
+    <img class="shot dark" src="resource-export-dark.png" alt="Exportar recurso">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lea la advertencia bajo el nombre del recurso.</li><li>Elija &#171;Sin contrase&#241;a&#187; (predeterminado) o &#171;Con contrase&#241;a&#187;.</li><li>Pulse &#171;Guardar en archivo..&#187;, o copie la configuraci&#243;n como texto o como un c&#243;digo breve.</li><li>Entregue el resultado solo a su propietario.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>La advertencia</summary><p>La l&#237;nea bajo el nombre dice que el archivo lleva la clave de acceso al servidor: entr&#233;guelo solo a su propietario y nunca lo deje en discos compartidos. Vale para el archivo, para el texto copiado y para el c&#243;digo por igual.</p></details>
+<details id="password-choice"><summary>Sin o con contrase&#241;a</summary><p>&#171;Sin contrase&#241;a&#187; est&#225; seleccionado al principio. &#171;Con contrase&#241;a&#187; solo est&#225; activo cuando la contrase&#241;a guardada se puede volver a leer; de lo contrario aparece la sugerencia &#171;La contrase&#241;a no est&#225; guardada - el archivo ir&#225; sin ella.&#187;. La contrase&#241;a se descifra en memoria para la exportaci&#243;n y no va a ning&#250;n otro sitio.</p></details>
+<details id="save-copy"><summary>Guardar, copiar texto, copiar c&#243;digo</summary><p>&#171;Guardar en archivo..&#187; escribe un archivo .fmscfg mediante un cuadro de di&#225;logo de guardado; el escritor rechaza los discos FAT o exFAT, los discos de red y las carpetas que otros usuarios pueden modificar, y nunca deja un archivo escrito a medias. &#171;Copiar texto&#187; pone el documento de configuraci&#243;n en el portapapeles y &#171;Copiar c&#243;digo&#187; un c&#243;digo breve con el mismo contenido. Ambos se copian con las marcas de privacidad (sin historial del portapapeles, sin sincronizaci&#243;n en la nube). La l&#237;nea de estado muestra el resultado.</p></details>
+<details id="requirements"><summary>Qu&#233; se puede exportar</summary><p>Solo un servidor SFTP cuya clave el programa ya recuerde. La ventana se abre en cualquier caso, y una negativa aparece en la l&#237;nea de estado cuando se pulsa un bot&#243;n: una carpeta de red (SMB) no se puede describir con este archivo; la clave del servidor no est&#225; recordada (abra el recurso una vez y confirme la clave); el recurso no tiene una direcci&#243;n que entregar; la carpeta est&#225; escrita de una forma que el archivo no acepta (corr&#237;jala con &#171;Editar..&#187;).</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

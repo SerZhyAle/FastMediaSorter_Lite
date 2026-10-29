@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Outside Folder Access - Fast Media Sorter</title>
+  <title>Dai accesso esterno - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Outside Folder Access</h1>
+  <h1 id="title">Dai accesso esterno</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Outside Folder Access.</p>
+    <p>Controlla l&#39;accesso a una cartella condivisa per persone al di fuori dei tuoi dispositivi: un invito per ospite oppure un collegamento con password che non richiede un account. Si apre dal pulsante &#171;Dai accesso esterno..&#187; della finestra principale di Share Manager per la cartella selezionata. In questa versione i controlli che creano nuovi accessi sono disattivati e la finestra ne mostra il motivo, mentre gli accessi gi&#224; esistenti possono ancora essere revocati.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Outside Folder Access">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Outside Folder Access">
+    <img class="shot light" src="folder-outside-access-light.png" alt="Dai accesso esterno">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="Dai accesso esterno">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Leggi la riga di intestazione con il nome e il percorso della cartella.</li><li>In ogni gruppo leggi la riga con il motivo; finch&#233; &#232; mostrata non si pu&#242; creare nulla di nuovo.</li><li>Per rimuovere un accesso, seleziona un invito e premi &#171;Revoca selezionato&#187;, oppure premi &#171;Revoca collegamento&#187;.</li><li>Premi &#171;Chiudi&#187; (Esc) per uscire.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="header"><summary>Cartella e stato</summary><p>La riga in grassetto indica la cartella e il suo percorso. La riga di stato in basso riporta l&#39;ultimo risultato. Quando il servizio di pubblicazione non &#232; in esecuzione, la finestra mostra &#171;Servizio di pubblicazione non disponibile.&#187; e i suoi pulsanti sono disattivati.</p></details>
+<details id="guest-invitation"><summary>Invito per ospite</summary><p>Il gruppo contiene &#171;Crea invito per ospite..&#187;, &#171;Revoca selezionato&#187; e un elenco con Tipo, Creato e Usato per gli inviti per ospite di questa cartella. Revocare rimuove l&#39;invito; la cartella e i suoi file non vengono eliminati.</p></details>
+<details id="password-link"><summary>Collegamento con password (senza account)</summary><p>Lo stato riporta &#171;Collegamento non creato.&#187; oppure &#171;Il collegamento &#232; attivo.&#187; La casella &#171;Password del collegamento:&#187; &#232; mascherata e &#171;Genera&#187; la compila. &#171;Crea collegamento&#187; diventa &#171;Aggiorna collegamento&#187; mentre un collegamento &#232; attivo. &#171;Revoca collegamento&#187; chiede prima, perch&#233; ogni sessione attiva sul collegamento termina. &#171;Mostra QR / Codice..&#187; mostra il collegamento come codice.</p></details>
+<details id="availability"><summary>Perch&#233; la creazione &#232; disattivata</summary><p>Ogni gruppo mostra una riga con il motivo: il file server del programma non pu&#242; limitare un accesso a una sola cartella. Finch&#233; &#232; mostrata, tutti i controlli che creano inviti o collegamenti sono disattivati. La revoca degli accessi esistenti dipende solo da ci&#242; che esiste.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

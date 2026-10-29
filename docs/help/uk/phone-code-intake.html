@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect Phone Code Intake - Fast Media Sorter</title>
+  <title>Код телефону - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Connect Phone Code Intake</h1>
+  <h1 id="title">Код телефону</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect Phone Code Intake.</p>
+    <p>Приймає код підключення, створений застосунком на телефоні, і передає його в Fast Media Sorter, який додає папку телефону до списку ресурсів на цьому комп&#39;ютері. Вікно відкривається кнопкою &#171;Код телефона..&#187; у головному вікні Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="phone-code-intake-light.png" alt="Connect Phone Code Intake">
-    <img class="shot dark" src="phone-code-intake-dark.png" alt="Connect Phone Code Intake">
+    <img class="shot light" src="phone-code-intake-light.png" alt="Код телефону">
+    <img class="shot dark" src="phone-code-intake-dark.png" alt="Код телефону">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Отримайте код одним із чотирьох способів: введіть або вставте його в поле, натисніть &#171;Відкрити файл..&#187;, натисніть &#171;З буфера обміну..&#187; або &#171;Сканувати камерою..&#187;.</li><li>Натисніть &#171;Передати&#187;.</li><li>Підтвердьте додавання папки у вікні Fast Media Sorter, що з&#39;явиться.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="code-field"><summary>Код підключення</summary><p>Однорядкове поле, де замість символів видно крапки, бо код - секрет; у журнал він не записується. Якщо натиснути &#171;Передати&#187; за порожнього поля, вікно попросить ввести код, вставити його або відкрити файл чи знімок.</p></details>
+<details id="doors"><summary>Файл, буфер і камера</summary><p>&#171;Відкрити файл..&#187; читає файли .fmscfg, .json і .txt та зображення з QR-кодом (.png, .jpg, .jpeg, .bmp, .webp); файл можна також перетягнути у вікно. &#171;З буфера обміну..&#187; читає код із буфера обміну. &#171;Сканувати камерою..&#187; відкриває вікно камери, а відсканований текст обробляється так, ніби його вставили.</p></details>
+<details id="hand-over"><summary>Передати</summary><p>Код перевіряється й надсилається запущеному Fast Media Sorter, чий власний діалог імпорту, як і раніше, ставить свої звичайні запитання. У разі успіху рядок стану повідомляє &#171;Код передано: підтвердьте додавання у вікні Fast Media Sorter.&#187;, і вікно закривається. Якщо Fast Media Sorter не знайдено, він старої версії або не відповідає, код поміщається в буфер обміну з позначками конфіденційності, а рядок стану радить вставити його через &#171;Імпорт із буфера&#187; в панелі ресурсів.</p></details>
+<details id="problems"><summary>Повідомлення в рядку стану</summary><p>Документ, який не читається як код підключення чи файл налаштувань ресурсу, оголошується нечитабельним. Файл, створений новішою версією, просить оновити Fast Media Sorter. Якщо буфер обміну зайнятий іншою програмою, рядок стану повідомляє про це.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

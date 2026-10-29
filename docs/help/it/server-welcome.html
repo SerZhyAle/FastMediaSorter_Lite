@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>Primo avvio del server - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">Primo avvio del server</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Una guida al primo avvio per il gruppo del server di scambio di Share Manager. Spiega che cosa diventa il computer, mostra la dichiarazione dell&#39;operatore, imposta le porte, l&#39;indirizzo per i client e il primo account e termina con lo stato del server. Si apre solo quando il server di scambio &#232; presente e attivo.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="Primo avvio del server">
+    <img class="shot dark" src="server-welcome-dark.png" alt="Primo avvio del server">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Leggi la dichiarazione dell&#39;operatore nella prima pagina.</li><li>Controlla le porte e la regola del firewall.</li><li>In un&#39;edizione server senza servizio, decidi riguardo al servizio Windows.</li><li>Compila l&#39;indirizzo per i client.</li><li>Crea il primo account.</li><li>Controlla l&#39;impronta del certificato e premi &#171;Fine&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>Pagine e pulsanti</summary><p>Il pi&#232; di pagina mostra &#171;Passo N di M&#187;; &#171;Indietro&#187;, &#171;Avanti&#187; e &#171;Pi&#249; tardi&#187; funzionano come in qualsiasi procedura guidata, e &#171;Fine&#187; nell&#39;ultima pagina apre il gruppo del server di scambio del gestore. Una pagina pu&#242; essere saltata senza modifiche: il server resta allora disattivato o com&#39;era.</p></details>
+<details id="operator-statement"><summary>Dichiarazione dell&#39;operatore</summary><p>La dichiarazione completa su chi vede che cosa sul server. Non si pu&#242; saltare. Il server collega i dispositivi di un account e segnala quali sono online.</p></details>
+<details id="ports"><summary>Porte e firewall</summary><p>Una porta di incontro per i dispositivi e un intervallo di porte per i client di terze parti. I dispositivi devono conoscere la porta del server, quindi le modifiche valgono solo per i nuovi codici. La regola del firewall appartiene al programma, perci&#242; un cambio di porta non richiede una nuova regola. Questi valori si trovano nel gruppo del server di scambio.</p></details>
+<details id="service"><summary>Servizio Windows</summary><p>Compare solo in un&#39;edizione server in cui il servizio non esiste ancora. Un servizio mantiene il server disponibile quando nessuno ha effettuato l&#39;accesso. La casella ricorda soltanto il tuo consenso: il servizio viene registrato dopo la creazione del primo account, con una sola richiesta di elevazione, e prima non viene installato nulla. &#171;Registra come servizio..&#187; nel gruppo di scambio fa lo stesso in seguito.</p></details>
+<details id="client-address"><summary>Indirizzo per i client</summary><p>&#171;Indirizzo per i client (host:porta):&#187; &#232; ci&#242; che gli altri dispositivi usano per raggiungere questo computer. &#171;Suggerisci un indirizzo locale&#187; riempie il campo solo quando lo premi. Un indirizzo vuoto mantiene valido un primo avvio puramente locale, ma nasconde le trasmissioni e le connessioni alle cartelle agli altri dispositivi.</p></details>
+<details id="first-account"><summary>Primo account</summary><p>L&#39;account con cui accede il primo dispositivo. Scegli &#171;Genera una password&#187; oppure &#171;Inserisci la tua password&#187;; &#171;Collega questo PC all&#39;account&#187; collega questo computer all&#39;account. &#171;Avanti&#187; crea l&#39;account, avvia il server e controlla il certificato. La password viene mostrata una sola volta, nella finestra esistente, e non viene memorizzata su questo PC. Un errore dopo la creazione dell&#39;account non lo rimuove.</p></details>
+<details id="server-ready"><summary>Il server &#232; pronto</summary><p>L&#39;ultima pagina indica dove sono registrati l&#39;indirizzo, l&#39;utente e l&#39;impronta del certificato e offre &#171;Copia impronta&#187; e &#171;Stringa di connessione e codice QR..&#187;. Un dispositivo si fida del server dopo aver verificato l&#39;impronta alla prima connessione. I collegamenti &#171;Collega un telefono (guida)&#187; e &#171;Pubblica la prima cartella (guida)&#187; portano alle pagine della guida corrispondenti.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

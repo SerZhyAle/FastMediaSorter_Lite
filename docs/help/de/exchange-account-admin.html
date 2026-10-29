@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>Neues Konto - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">Neues Konto</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>Ein Fenster in zwei Modi. &#171;Neues Konto&#187; f&#252;gt dem von Ihnen betriebenen Media Exchange Server ein Konto hinzu; &#171;Passwort zur&#252;cksetzen: &lt;login&gt;&#187; gibt einem vorhandenen Konto ein neues Passwort. Sie &#246;ffnen sich &#252;ber &#171;Konto hinzuf&#252;gen..&#187; und &#171;Passwort zur&#252;cksetzen..&#187; unter der Kontoliste auf der Seite Media Exchange Server der Einstellungen von Share Manager; f&#252;r das Zur&#252;cksetzen muss ein Konto ausgew&#228;hlt sein.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="Neues Konto">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Neues Konto">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Geben Sie im Modus Hinzuf&#252;gen das Login ein.</li><li>W&#228;hlen Sie, wie das Passwort erzeugt wird.</li><li>Entscheiden Sie im Modus Zur&#252;cksetzen, ob alle Ger&#228;te des Kontos abgemeldet werden.</li><li>Klicken Sie auf &#171;Anlegen&#187; oder &#171;Zur&#252;cksetzen&#187;.</li><li>Kopieren Sie das erzeugte Passwort aus dem n&#228;chsten Fenster oder geben Sie ein eigenes ein.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>Erkl&#228;rung beim ersten Konto</summary><p>Beim allerersten Konto beginnt das Fenster mit &#171;Lesen Sie, bevor Sie das erste Konto anlegen, was der Betreiber des Servers sehen kann:&#187; und einem schreibgesch&#252;tzten Feld mit der Erkl&#228;rung. Sp&#228;tere Konten und das Zur&#252;cksetzen zeigen sie nicht.</p></details>
+<details id="login"><summary>Login</summary><p>Nur im Modus Hinzuf&#252;gen. 3 bis 64 Zeichen: lateinische Kleinbuchstaben, Ziffern, Punkt, Unterstrich und Bindestrich; Gro&#223;buchstaben werden in Kleinbuchstaben umgewandelt. Der Hinweis wechselt zur Warnfarbe, solange der Text kein Login sein kann, und &#171;Anlegen&#187; geht nicht weiter, bis er eines sein kann.</p></details>
+<details id="password-choice"><summary>Wie das Passwort erzeugt wird</summary><p>&#171;Passwort erzeugen (wird einmal angezeigt)&#187; ist die Vorgabe: Das Programm erzeugt ein zuf&#228;lliges Passwort, das die Regeln erf&#252;llt, und das n&#228;chste Fenster zeigt es ein einziges Mal. &#171;Passwort selbst eingeben&#187; &#246;ffnet das Fenster &#171;Kontopasswort&#187;, in dem eine Live-Zeile nennt, was fehlt: mindestens 10 Zeichen mit einem lateinischen Gro&#223;- und einem Kleinbuchstaben und einer Ziffer.</p></details>
+<details id="sign-out"><summary>Alle Ger&#228;te abmelden</summary><p>Nur im Modus Zur&#252;cksetzen. &#171;Auch sofort alle Ger&#228;te dieses Kontos abmelden&#187; ist standardm&#228;&#223;ig angehakt. Die Ergebniszeile meldet dann, dass das Passwort ge&#228;ndert und alle Ger&#228;te des Kontos abgemeldet sind; ohne Haken meldet sie nur, dass das Passwort ge&#228;ndert ist.</p></details>
+<details id="after"><summary>Nach der Annahme durch den Server</summary><p>Die Ergebniszeile meldet, dass das Konto angelegt ist. Ein erzeugtes Passwort erscheint einmal in einem eigenen Fenster mit &#171;Passwort kopieren&#187; und &#171;Eigenes Passwort festlegen..&#187;, das zum Zur&#252;cksetzen mit der Auswahl &#171;Passwort selbst eingeben&#187; zur&#252;ckf&#252;hrt. Ist &#171;Kontopassw&#246;rter auf diesem PC speichern&#187; eingeschaltet, wird das Passwort auch auf diesem PC gespeichert und das Konto erh&#228;lt &#171;Passwort anzeigen..&#187;. Bietet dieser Build die Austausch-Clientfunktionen an und hat dieser PC kein eigenes Konto, wird er mit diesem Passwort als erstes Ger&#228;t des Kontos angemeldet.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

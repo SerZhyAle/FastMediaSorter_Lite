@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>我在此电脑上的服务器 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">我在此电脑上的服务器</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>一次完成在此电脑上设置个人 Media Exchange Server：创建第一个账户、启动服务器，并把这台电脑连接到它。从 Share Manager 设置中 Media Exchange Server 页面的「将此电脑用作我的服务器..」按钮打开；只有此电脑上尚未设置服务器时才会显示该按钮。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="我在此电脑上的服务器">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="我在此电脑上的服务器">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>检查根据您的 Windows 用户名给出的建议登录名，或输入自己的登录名。</li><li>阅读关于运营者能看到什么的声明。</li><li>点击「开始」，等待四个步骤完成。</li><li>立即复制密码，然后复制指纹或连接字符串，供其他设备使用。</li><li>点击「关闭」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>登录名</summary><p>「您账户的登录名：」要求 3 到 64 个字符：小写拉丁字母、数字、点、下划线和连字符；大写字母会自动转为小写。在文本还不能作为登录名时，输入框下方的提示显示为警告色，「开始」在此之前不会执行任何操作。</p></details>
+<details id="statement"><summary>运营者能看到什么</summary><p>「创建第一个账户之前，请阅读服务器运营者能看到什么：」下方的只读框列出服务器运营者能看到的账户、设备、文件夹、广播和剪贴板信息，服务器无法读取的内容，以及日志保留的天数。在您自己的服务器上，您就是运营者。</p></details>
+<details id="steps"><summary>步骤与失败</summary><p>「开始」依次执行四个步骤并显示当前步骤：「正在创建账户..」、「正在启动服务器..」、「正在检查证书..」和「正在连接此电脑..」。在此期间登录名被锁定，窗口无法关闭。如果没有创建账户，会有一句话说明原因，例如「该账户已存在 - 请选择另一个登录名。」；修改登录名后再次点击「开始」。</p></details>
+<details id="result"><summary>结果与地址</summary><p>成功后窗口显示「完成：服务器正在运行，账户已创建，这台电脑已连接到它。」，并列出「此电脑使用的地址：」、「其他设备使用的地址：」（在该地址设置之前显示为「未设置 - 请在交换服务器的设置中填写」）、「用户名：」、「密码（只显示一次）：」和「证书指纹：」。设置好其他设备使用的地址后，会再增加「连接字符串：」。如果服务器没有启动，账户仍然存在，其密码会在下方显示一次。</p></details>
+<details id="password-and-copying"><summary>密码与复制</summary><p>密码以掩码显示。「显示密码」会将其显示出来；「复制密码」通过受保护的途径把它放入剪贴板，使其不进入 Windows 剪贴板历史记录和云剪贴板。除非开启了「在此电脑上保存账户密码」，窗口只显示这一次。「复制指纹」和「复制字符串」是普通复制：两者都不含密码。其他设备需要地址、用户名、密码和指纹，首次连接时它们会比对指纹。</p></details>
+<details id="close-warning"><summary>关闭</summary><p>如果密码既没有被复制，也没有被显示，也没有保存在此电脑上，「关闭」会询问「不复制密码就关闭吗？」，默认答案是「否」，因为密码无法再次显示，只能重置。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

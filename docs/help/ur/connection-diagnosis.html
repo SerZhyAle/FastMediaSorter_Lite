@@ -14,7 +14,7 @@
   <h1 id="title">Connection Diagnosis</h1>
   <section id="purpose">
     <h2>یہ کس مقصد کے لیے ہے</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>بتاتی ہے کہ کسی سرور یا آلے تک رسائی کیوں نہیں ہو رہی اور قدم بہ قدم کیا آزمایا جا سکتا ہے۔ یہ کمپیوٹر یا Windows کی کوئی سیٹنگ نہیں بدلتی۔ یہ وسائل کی فہرست کے مزید مینو (منتخب قطار کے لیے) Why doesn&#39;t it connect?.. سے کھلتی ہے، میرے آلات کے اس سرور اندراج سے جو دوبارہ سائن اِن کر رہا ہو، بدلا ہوا سرٹیفکیٹ دکھا رہا ہو یا جڑ نہ پا رہا ہو، اور وسیلہ کھولنا ناکام ہو تو خود بخود۔</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
@@ -22,13 +22,16 @@
   </figure>
   <section id="order">
     <h2>اس ترتیب میں</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>What happened پڑھیں۔</li><li>What to try میں جو لکھا ہے اسے آزمائیں۔</li><li>اگر وجہ وہ نہ ہو تو Next step دبائیں۔</li><li>اگر کوئی کوڈ مانگے تو Details دبائیں، اور انہیں دینے کے لیے Copy۔</li><li>ونڈو بند کریں۔</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>What happened</summary><p>ناکامی کے بارے میں ایک جملہ، مثلاً Cannot reach the server. یا The login or the password is wrong. یا This server does not look like the one you connected to before. یہ اس ناکامی کی قسم کے مطابق ہوتا ہے جس نے ونڈو کھولی۔</p></details>
+<details id="what-to-try"><summary>What to try</summary><p>ونڈو اس مرحلے سے شروع ہوتی ہے جہاں جانچ میں پہلا قدم ناکام ہوا، اور اگر کوئی ناکام نہ ہو تو پہلے قدم سے۔ عام قدم: جس آلے پر سرور چل رہا ہے اسے جگانا؛ دیکھنا کہ دونوں آلات ایک ہی نیٹ ورک پر ہیں؛ مہمان Wi-Fi کے بغیر؛ VPN کو کچھ دیر کے لیے بند کرنا؛ Windows نیٹ ورک کو نجی بنانا؛ سرور کو دوسرے نیٹ ورک سے آزمانا؛ درست تاریخ اور وقت طے کرنا؛ نیا فنگر پرنٹ تسلیم کرنا؛ لاگ ان اور پاس ورڈ دوبارہ ٹائپ کرنا۔ آخری قدم کہتا ہے کہ اسے صرف سرور کا آپریٹر ہی ٹھیک کر سکتا ہے۔</p></details>
+<details id="next-step"><summary>Next step and Windows Settings</summary><p>Next step قدموں کے درمیان آگے بڑھتا ہے اور آخری قدم پر غائب ہو جاتا ہے۔ جو دو قدم Windows کی سیٹنگز میں ٹھیک کیے جا سکتے ہیں، نیٹ ورک پروفائل اور گھڑی، ان کے لیے Open Windows Settings بٹن Windows کا متعلقہ صفحہ کھولتا ہے؛ پروگرام خود کچھ نہیں بدلتا۔</p></details>
+<details id="details-copy"><summary>Details and Copy</summary><p>Details تشخیصی کوڈ کے ساتھ ایک صرف پڑھنے والا خانہ دکھاتا یا چھپاتا ہے: ناکامی کی قسم، ہدف، راستہ، ناکام قدم اور گزرے ہوئے قدم۔ اس میں کبھی پتہ، لاگ ان، پاس ورڈ یا فنگر پرنٹ نہیں ہوتا۔ Copy وہ لائن کلپ بورڈ پر رکھتا ہے اور ونڈو کہتی ہے: Diagnosis codes copied to clipboard.</p></details>
+<details id="how-it-checks"><summary>جانچ کیسے کام کرتی ہے</summary><p>جانچ صرف اسی کنکشن کے لیے چلتی ہے جسے آپ نے آزمایا اور صرف پڑھتی ہے: یہ ہوسٹ اور پورٹ تک پہنچنے کی کوشش کرتی ہے اور نیٹ ورک کی حالت، VPN اڈاپٹر، Windows نیٹ ورک پروفائل، پتے کی قسم، گھڑی اور سرٹیفکیٹ دیکھتی ہے۔ یہ پہلے ناکام قدم پر رک جاتی ہے، اور جو جانچ کی ہی نہ جا سکی اسے کبھی کامیاب یا ناکام نہیں گنا جاتا۔</p></details>
+    <p><a href="settings.html">ترتیبات</a></p>
   </section>
   <nav id="related">
     <h2>متعلقہ</h2>

@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -8,6 +8,7 @@ Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
+Imports System.Linq
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -27,6 +28,7 @@ Partial Public Class Main_Form
     Private pdf_Indicator_Bounds As Rectangle
     Private pdf_Write_Ticks As Long
     Private pdf_File_Length As Long
+    Private pdf_Open_Cts As CancellationTokenSource
 
     Friend Function IsPdfDocumentShown() As Boolean
         Return pdf_Current_File_Path.Length > 0 AndAlso
@@ -35,6 +37,7 @@ Partial Public Class Main_Form
     End Function
 
     Friend Function IsPdfDocumentPageOnScreen() As Boolean
+        If FullPdfReaderActive() AndAlso (pdf_Reading_Canvas IsNot Nothing OrElse pdf_Reader_Info Is Nothing OrElse Not pdf_Reader_Info.CanCopy) Then Return False
         Return IsPdfDocumentShown() AndAlso pdf_Page_Error.Length = 0 AndAlso ActiveMediaImage() IsNot Nothing
     End Function
 
@@ -45,12 +48,34 @@ Partial Public Class Main_Form
         Dim session As Integer = pdf_Session
         Dim generation As Integer = media_Generation
         Dim source As New PdfDocumentSource()
+        pdf_Open_Cts?.Cancel()
+        pdf_Open_Cts?.Dispose()
+        pdf_Open_Cts = New CancellationTokenSource(TimeSpan.FromSeconds(30))
+        Dim openToken = pdf_Open_Cts.Token
+        Dim fullReader As Boolean = modern_Preferences IsNot Nothing AndAlso modern_Preferences.FullPdfReader
         Try
-            Await Task.Run(Sub() source.Open(filePath))
+            Await Task.Run(Sub()
+                               If fullReader Then source.OpenReader(filePath, Nothing, openToken) Else source.Open(filePath)
+                           End Sub)
             If IsDisposed OrElse session <> pdf_Session OrElse generation <> media_Generation Then
                 source.Dispose()
                 Return
             End If
+            While fullReader AndAlso Not source.IsOpen AndAlso source.IsPasswordProtected
+                Dim prompt As New PromptSpec(Localization.T("Чтение PDF"), source.ErrorMessage, "", Localization.T("Открыть"), Nothing) With {.IsPassword = True}
+                Using dialog As New Ask_Dialog(prompt)
+                    SlideShowStop()
+                    DialogLayer.ShowViewerDialog(dialog, Me)
+                    If dialog.Answer <> 0 Then Exit While
+                    Dim password = dialog.TypedText
+                    Await Task.Run(Sub() source.ReopenWithPassword(password))
+                    password = Nothing
+                End Using
+                If IsDisposed OrElse session <> pdf_Session OrElse generation <> media_Generation Then
+                    source.Dispose()
+                    Return
+                End If
+            End While
             If Not source.IsOpen Then
                 Dim message As String = source.ErrorMessage
                 source.Dispose()
@@ -62,8 +87,8 @@ Partial Public Class Main_Form
             pdf_Current_Source = source
             pdf_Total_Pages = source.PageCount
             Dim fi As New FileInfo(filePath)
-            pdf_Write_Ticks = fi.LastWriteTimeUtc.Ticks
-            pdf_File_Length = fi.Length
+            pdf_Write_Ticks = If(fullReader, source.SourceWriteTicks, fi.LastWriteTimeUtc.Ticks)
+            pdf_File_Length = If(fullReader, source.SourceLength, fi.Length)
             Dim page As Integer = 1
             If Not Is_slide_show_mode AndAlso modern_Preferences IsNot Nothing Then
                 page = modern_Preferences.RememberedDocumentPage(filePath, pdf_Write_Ticks, pdf_File_Length)
@@ -71,8 +96,15 @@ Partial Public Class Main_Form
             SetMediaDisplayKind(MediaKind.Book)
             ResetZoomViewport()
             SetViewSizes()
+            If fullReader Then
+                pdf_Reader_Restore = If(Is_slide_show_mode, New DocumentReadingPosition(), modern_Preferences.RememberedDocumentPosition(PdfReaderIdentity()))
+                page = pdf_Reader_Restore.PageNumber
+                pdf_Current_Page = Math.Max(1, Math.Min(page, pdf_Total_Pages))
+                OpenPdfReaderUi()
+            End If
             DisplayPdfPage(Math.Min(page, pdf_Total_Pages))
         Catch ex As Exception
+            AppFileLogger.LogException("Opening PDF reader", ex)
             source.Dispose()
             If Not IsDisposed AndAlso session = pdf_Session AndAlso generation = media_Generation Then
                 ReleasePdfDocument()
@@ -91,6 +123,12 @@ Partial Public Class Main_Form
 
     Friend Async Sub DisplayPdfPage(pageNumber As Integer, Optional preserveZoom As Boolean = False)
         If Not IsPdfDocumentShown() Then Return
+        If FullPdfReaderActive() AndAlso Not PdfReaderSourceUnchanged() Then
+            Dim path = pdf_Current_File_Path
+            ReleasePdfDocument()
+            LoadPdfDocument(path)
+            Return
+        End If
         CancelPdfRender()
         pdf_Render_Cts = New CancellationTokenSource(TimeSpan.FromSeconds(30))
         Dim token As CancellationToken = pdf_Render_Cts.Token
@@ -99,12 +137,24 @@ Partial Public Class Main_Form
         Dim generation As Integer = media_Generation
         pdf_Current_Page = Math.Max(1, Math.Min(pageNumber, pdf_Total_Pages))
         pageNumber = pdf_Current_Page
+        If FullPdfReaderActive() AndAlso pdf_Reading_Canvas IsNot Nothing Then
+            pdf_Reading_Canvas.GoToPage(pageNumber, If(pdf_Reader_Restore IsNot Nothing AndAlso pdf_Reader_Restore.PageNumber = pageNumber, pdf_Reader_Restore.Viewport, 0))
+            pdf_Reader_Restore = Nothing
+            ReadPdfReaderPage(pageNumber)
+            Return
+        End If
+        If FullPdfReaderActive() Then ReadPdfReaderPage(pageNumber)
         CancelOcrJob()
         current_Overlay_Document = Nothing
         ocr_Auto_Timer.Stop()
         Dim factor As Double = If(preserveZoom, Math.Max(1.0, CurrentZoomFactor() / FitFactorFor(ActiveMediaImage())), 1.0)
         Dim width As Integer = Math.Min(PdfDocumentSource.MaxRenderDimension, Math.Max(1, CInt(panel_Media.ClientSize.Width * factor)))
         Dim height As Integer = Math.Min(PdfDocumentSource.MaxRenderDimension, Math.Max(1, CInt(panel_Media.ClientSize.Height * factor)))
+        If FullPdfReaderActive() Then
+            Dim target = PdfReadingCanvas.RasterTarget(New Size(width, height), modern_Preferences)
+            width = target.Width
+            height = target.Height
+        End If
         Dim oldWidth As Integer = If(ActiveMediaImage() Is Nothing, 0, ActiveMediaImage().Width)
         Dim oldFactor As Double = CurrentZoomFactor()
         If Not preserveZoom Then
@@ -117,7 +167,11 @@ Partial Public Class Main_Form
         End If
         pdf_Page_Error = ""
         If modern_Preferences IsNot Nothing AndAlso Not Is_slide_show_mode Then
-            modern_Preferences.RecordDocumentPage(pdf_Current_File_Path, pdf_Write_Ticks, pdf_File_Length, pageNumber)
+            If FullPdfReaderActive() Then
+                modern_Preferences.RecordDocumentPosition(PdfReaderIdentity(), New DocumentReadingPosition With {.PageNumber = pageNumber})
+            Else
+                modern_Preferences.RecordDocumentPage(pdf_Current_File_Path, pdf_Write_Ticks, pdf_File_Length, pageNumber)
+            End If
             MarkSettingsDirty()
         End If
         Dim rendered As Bitmap = Nothing
@@ -126,7 +180,7 @@ Partial Public Class Main_Form
             pdf_Last_Render_Width = width
             pdf_Last_Render_Height = height
             If Not pdf_Page_Cache.TryGetValue(pageNumber, rendered) Then
-                rendered = Await RenderPdfPageAsync(source, pageNumber, width, height, token)
+                rendered = Await RenderPdfPageAsync(source, pageNumber, width, height, token, annotations:=FullPdfReaderActive())
                 If IsDisposed OrElse session <> pdf_Session OrElse generation <> media_Generation OrElse token.IsCancellationRequested Then
                     rendered?.Dispose()
                     Return
@@ -148,6 +202,11 @@ Partial Public Class Main_Form
             oldWidth = If(box.Image Is Nothing, 0, box.Image.Width)
             oldFactor = CurrentZoomFactor()
             Dim image As New Bitmap(rendered)
+            If FullPdfReaderActive() AndAlso PdfReaderPreferences().PdfColorMode <> "original" Then
+                Using drawing = Graphics.FromImage(image)
+                    PdfReadingCanvas.DrawPage(drawing, rendered, New Rectangle(Point.Empty, image.Size), PdfReaderPreferences().PdfColorMode)
+                End Using
+            End If
             Dim previous As Image = box.Image
             box.Image = image
             previous?.Dispose()
@@ -162,10 +221,14 @@ Partial Public Class Main_Form
             Else
                 ZoomToFit()
             End If
+            ApplyPdfReaderFitViewport()
+            If Not preserveZoom Then ApplyPdfReaderSavedZoom()
+            pdf_Reader_Restore = Nothing
             Draw_Perspective()
             lbl_Status.Text = Localization.TF("{0} - страница {1} из {2}", Path.GetFileName(pdf_Current_File_Path), pageNumber, pdf_Total_Pages)
             UpdateContentWindowTitle()
             OnMediaDisplayed()
+            If FullPdfReaderActive() Then ocr_Auto_Timer.Stop()
             box.Invalidate()
             Await PrefetchAdjacentPdfPages(source, session, generation, pageNumber, width, height, token)
         Catch ex As OperationCanceledException
@@ -187,8 +250,8 @@ Partial Public Class Main_Form
 
     Private Shared Async Function RenderPdfPageAsync(source As PdfDocumentSource, page As Integer,
                                                      width As Integer, height As Integer,
-                                                     token As CancellationToken) As Task(Of Bitmap)
-        Dim render As Task(Of Bitmap) = Task.Run(Function() source.RenderPage(page, width, height, token), token)
+                                                     token As CancellationToken, Optional annotations As Boolean = False) As Task(Of Bitmap)
+        Dim render As Task(Of Bitmap) = Task.Run(Function() source.RenderPage(page, width, height, token, annotations), token)
         Try
             ' A slow native call cannot delay the UI's timeout/refusal surface.
             Return Await render.WaitAsync(token)
@@ -207,9 +270,16 @@ Partial Public Class Main_Form
     Private Async Function PrefetchAdjacentPdfPages(source As PdfDocumentSource, session As Integer, generation As Integer,
                                                     page As Integer, width As Integer, height As Integer,
                                                     token As CancellationToken) As Task
-        For Each adjacent As Integer In New Integer() {page - 1, page + 1}
+        Dim distance = If(FullPdfReaderActive(), PdfReaderPreferences().PdfPrefetchPages, 1)
+        Dim adjacentPages As New List(Of Integer)()
+        For offset = 1 To distance
+            adjacentPages.Add(page - offset)
+            adjacentPages.Add(page + offset)
+        Next
+        For Each adjacent As Integer In adjacentPages
             If adjacent < 1 OrElse adjacent > pdf_Total_Pages OrElse pdf_Page_Cache.ContainsKey(adjacent) Then Continue For
-            Dim image As Bitmap = Await RenderPdfPageAsync(source, adjacent, width, height, token)
+            TrimPdfReaderCache(page)
+            Dim image As Bitmap = Await RenderPdfPageAsync(source, adjacent, width, height, token, annotations:=FullPdfReaderActive())
             If IsDisposed OrElse session <> pdf_Session OrElse generation <> media_Generation OrElse token.IsCancellationRequested Then
                 image?.Dispose()
                 Return
@@ -217,11 +287,27 @@ Partial Public Class Main_Form
             If image IsNot Nothing Then pdf_Page_Cache(adjacent) = image
         Next
         For Each key As Integer In New List(Of Integer)(pdf_Page_Cache.Keys)
-            If Math.Abs(key - page) <= 1 Then Continue For
+            If Math.Abs(key - page) <= distance Then Continue For
             pdf_Page_Cache(key).Dispose()
             pdf_Page_Cache.Remove(key)
         Next
+        TrimPdfReaderCache(page)
     End Function
+
+    Private Sub TrimPdfReaderCache(page As Integer)
+        If Not FullPdfReaderActive() Then Return
+        Dim budget = PdfReadingCanvas.CacheBudget(modern_Preferences)
+        Dim bytes As Long
+        For Each image In pdf_Page_Cache.Values
+            bytes += CLng(image.Width) * image.Height * 4
+        Next
+        For Each key In pdf_Page_Cache.Keys.OrderByDescending(Function(number) Math.Abs(number - page)).ToArray()
+            If bytes <= budget Then Exit For
+            bytes -= CLng(pdf_Page_Cache(key).Width) * pdf_Page_Cache(key).Height * 4
+            pdf_Page_Cache(key).Dispose()
+            pdf_Page_Cache.Remove(key)
+        Next
+    End Sub
 
     Private Sub ClearPdfCache()
         For Each image As Bitmap In pdf_Page_Cache.Values
@@ -239,10 +325,28 @@ Partial Public Class Main_Form
     End Sub
 
     Friend Sub PdfNextPage()
-        If IsPdfDocumentShown() AndAlso pdf_Current_Page < pdf_Total_Pages Then DisplayPdfPage(pdf_Current_Page + 1)
+        If Not IsPdfDocumentShown() Then Return
+        Dim target = pdf_Current_Page + 1
+        If FullPdfReaderActive() AndAlso PdfReaderPreferences().PdfLayout = "spread" Then
+            target = DocumentReadingState.SpreadPages(pdf_Current_Page, pdf_Total_Pages, PdfReaderPreferences().PdfFirstPageAlone, False).Max() + 1
+        End If
+        If target <= pdf_Total_Pages Then
+            DisplayPdfPage(target)
+        ElseIf FullPdfReaderActive() AndAlso modern_Preferences.DocumentBoundaryNavigation Then
+            ReadShowMediaFile(Mode_Next)
+        End If
     End Sub
     Friend Sub PdfPrevPage()
-        If IsPdfDocumentShown() AndAlso pdf_Current_Page > 1 Then DisplayPdfPage(pdf_Current_Page - 1)
+        If Not IsPdfDocumentShown() Then Return
+        Dim target = pdf_Current_Page - 1
+        If FullPdfReaderActive() AndAlso PdfReaderPreferences().PdfLayout = "spread" Then
+            target = DocumentReadingState.SpreadPages(pdf_Current_Page, pdf_Total_Pages, PdfReaderPreferences().PdfFirstPageAlone, False).Min() - 1
+        End If
+        If target >= 1 Then
+            DisplayPdfPage(target)
+        ElseIf FullPdfReaderActive() AndAlso modern_Preferences.DocumentBoundaryNavigation Then
+            ReadShowMediaFile(Mode_Prev)
+        End If
     End Sub
     Friend Sub PdfFirstPage()
         If IsPdfDocumentShown() Then DisplayPdfPage(1)
@@ -252,6 +356,14 @@ Partial Public Class Main_Form
     End Sub
 
     Friend Sub ReleasePdfDocument()
+        If FullPdfReaderActive() AndAlso modern_Preferences IsNot Nothing AndAlso Not Is_slide_show_mode Then
+            modern_Preferences.RecordDocumentPosition(PdfReaderIdentity(), CapturePdfReaderPosition())
+            MarkSettingsDirty()
+        End If
+        ClosePdfReaderUi()
+        pdf_Open_Cts?.Cancel()
+        pdf_Open_Cts?.Dispose()
+        pdf_Open_Cts = Nothing
         pdf_Session += 1
         CancelPdfRender()
         pdf_Current_File_Path = ""
@@ -278,6 +390,7 @@ Partial Public Class Main_Form
 
     Friend Sub PaintPdfOverlay(box As PictureBox, e As PaintEventArgs)
         If Not IsPdfDocumentShown() OrElse box IsNot GetActivePictureBox() Then Return
+        PaintPdfReaderSelection(box, e.Graphics)
         If pdf_Page_Error.Length > 0 Then
             e.Graphics.Clear(NeutralBackColor())
             TextRenderer.DrawText(e.Graphics, pdf_Page_Error, Me.Font, box.ClientRectangle,

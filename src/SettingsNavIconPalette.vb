@@ -56,7 +56,8 @@ Public Module SettingsNavIconPalette
             New NavInk("settingsNavOcr", Color.FromArgb(255, 167, 38), Color.FromArgb(225, 98, 0)),
             New NavInk("settingsNavTranslation", Color.FromArgb(92, 107, 192), Color.FromArgb(48, 63, 159)),
             New NavInk("settingsNavStorage", Color.FromArgb(120, 144, 156), Color.FromArgb(69, 90, 100)),
-            New NavInk("settingsNavAbout", Color.FromArgb(158, 158, 158), Color.FromArgb(97, 97, 97))
+            New NavInk("settingsNavAbout", Color.FromArgb(158, 158, 158), Color.FromArgb(97, 97, 97)),
+            New NavInk("settingsNavDocuments", Color.FromArgb(220, 210, 70), Color.FromArgb(120, 100, 0))
         }
     End Function
 

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Folder Parameters - Fast Media Sorter</title>
+  <title>Resource options - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Shared Folder Parameters</h1>
+  <h1 id="title">Resource options</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Folder Parameters.</p>
+    <p>Options of one shared folder: its name on the phone, the type, which files are shown, who may change them and a few extras. It opens from &#39;Edit&#39; in the main window, from a folder row, and from the resource wizard. The real caption ends with the folder name.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-root-params-light.png" alt="Shared Folder Parameters">
-    <img class="shot dark" src="share-root-params-dark.png" alt="Shared Folder Parameters">
+    <img class="shot light" src="share-root-params-light.png" alt="Resource options">
+    <img class="shot dark" src="share-root-params-dark.png" alt="Resource options">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Set the name the phone will show.</li><li>Choose the resource type or an exact media set.</li><li>Set the scan conditions.</li><li>Choose the access.</li><li>Open &#39;Advanced options&#39; for a comment, a PIN and the slideshow interval.</li><li>Press OK.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="name-type"><summary>Name and type</summary><p>&#39;Name on the phone:&#39; is how the folder is named in the app; empty means the folder name. &#39;Resource type:&#39; offers Regular folder, Audio library, Video library, Photo storage and Documents. &#39;Exact media set:&#39; picks the exact kinds (Images, Video, Audio, Text, All files); empty means the type decides.</p></details>
+<details id="scan"><summary>Scan conditions</summary><p>Scan subfolders, show subfolders as items, show hidden files and show all files, not only media.</p></details>
+<details id="access"><summary>Access</summary><p>By default the phone can add, rename and delete files in the folder. Read-only is a real lock: the server refuses changes. A read-only hint only tells the app to hide edit buttons; the server does not block. A destination folder can receive copies and moves from the phone; it becomes writable and joins the list of recipients, and its colour is chosen by the app.</p></details>
+<details id="advanced"><summary>Advanced options</summary><p>A comment (optional), a PIN for the resource (the app asks for it when the resource is opened) and the slideshow interval in seconds. Settings are sent to the server when you confirm.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

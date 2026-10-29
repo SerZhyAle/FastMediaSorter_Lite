@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>Gu&#237;a de redirecci&#243;n de puertos - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">Gu&#237;a de redirecci&#243;n de puertos</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>Ayuda a hacer que el recurso compartido sea accesible desde fuera de tu red dom&#233;stica. Muestra la direcci&#243;n externa y si el puerto se abri&#243; autom&#225;ticamente o requiere redirecci&#243;n en el router, y ofrece una prueba y una gu&#237;a detallada. Se abre desde el bot&#243;n &#171;C&#243;mo configurar el acceso desde internet&#187; de la ventana principal.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="Gu&#237;a de redirecci&#243;n de puertos">
+    <img class="shot dark" src="internet-access-dark.png" alt="Gu&#237;a de redirecci&#243;n de puertos">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Inicia primero el uso compartido; si no, la ventana te lo pide.</li><li>Lee las l&#237;neas de estado: accesible, tras CGNAT o necesita redirecci&#243;n de puertos.</li><li>Si hace falta redirecci&#243;n, abre la gu&#237;a detallada y crea la regla en el router.</li><li>Pulsa &#171;Prueba&#187; para sondear la direcci&#243;n desde este PC.</li><li>Conf&#237;rmalo desde el tel&#233;fono con datos m&#243;viles y el Wi-Fi apagado.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>Estado</summary><p>La ventana detecta la direcci&#243;n externa e indica una de estas opciones: &#171;Accesible desde internet&#187;, &#171;Direcci&#243;n externa: .. (requiere redirecci&#243;n de puerto)&#187;, &#171;Direcci&#243;n externa desconocida: cons&#250;ltala en el router.&#187; o &#171;Detr&#225;s de CGNAT: no accesible desde fuera.&#187;. Cuando el puerto se abri&#243; autom&#225;ticamente (UPnP) no hace falta configurar el router, pero solo el tel&#233;fono con datos m&#243;viles puede confirmar que funciona. &#171;Actualizar&#187; repite la detecci&#243;n.</p></details>
+<details id="guide"><summary>Router y gu&#237;as</summary><p>La l&#237;nea del router muestra su direcci&#243;n, o &#171;Detectando el router..&#187; mientras se busca. El enlace &#171;Abrir la gu&#237;a detallada (HTML, con tus valores y el modelo de router)..&#187; abre una gu&#237;a HTML local; si no se puede abrir, la ventana lo indica. El enlace &#171;Acceso desde casa y desde otras redes (portal)&#187; abre en el navegador la p&#225;gina correspondiente del portal de ayuda.</p></details>
+<details id="test"><summary>Prueba</summary><p>Sondea la direcci&#243;n externa desde este PC e informa de &#171;Servidor SFTP accesible&#187;, &#171;Puerto abierto, pero sin respuesta SFTP&#187;, una conexi&#243;n cerrada (posiblemente el l&#237;mite de conexiones) o ninguna respuesta. No es concluyente: muchos routers rechazan desde dentro una solicitud a su propia direcci&#243;n externa, as&#237; que la comprobaci&#243;n fiable es el tel&#233;fono con datos m&#243;viles.</p></details>
+<details id="safety"><summary>Seguridad</summary><p>Abrir SFTP a internet da todas las carpetas compartidas a cualquiera que conozca la direcci&#243;n, el usuario y la contrase&#241;a. No publiques el c&#243;digo QR ni el archivo .fmscfg y desactiva el uso compartido cuando termines. &#171;Cerrar&#187; sale de la ventana.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

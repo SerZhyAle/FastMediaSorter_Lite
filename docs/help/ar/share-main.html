@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Main Window - Fast Media Sorter</title>
+  <title>Share Manager - Fast Media Sorter &amp; Sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Main Window</h1>
+  <h1 id="title">Share Manager - Fast Media Sorter &amp; Sharing</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Main Window.</p>
+    <p>النافذة الرئيسية لـ Share Manager، خدمة المشاركة والجدولة المحلية. تسرد المجلدات التي يشاركها هذا الكمبيوتر مع الهاتف عبر SFTP، وتبدأ المشاركة وتوقفها، وتُصدر رمز الوصول، وتُظهر كيف يصل الهاتف إلى الكمبيوتر. وللعمليات المجدولة وحساب التبادل صفحاتهما في إعدادات المدير. تُفتح من العارض أو من أيقونة منطقة الإشعارات؛ وإغلاق النافذة يُبقي التطبيق في منطقة الإشعارات.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-main-light.png" alt="Share Manager Main Window">
-    <img class="shot dark" src="share-main-dark.png" alt="Share Manager Main Window">
+    <img class="shot light" src="share-main-light.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
+    <img class="shot dark" src="share-main-dark.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اضغط إضافة.. واختر مجلد.. لإضافة مجلد إلى القائمة.</li><li>ضع علامة على المجلد: المجلدات المحدّدة هي التي تُقدَّم.</li><li>اضغط بدء المشاركة (يلزم مجلد واحد محدّد على الأقل).</li><li>اضغط مشاركة للحصول على رمز QR أو ملف .fmscfg للهاتف.</li><li>للوصول من خارج شبكتك المنزلية افتح مجموعة الوصول عبر الإنترنت واستخدم زرّيها.</li><li>اضغط إيقاف المشاركة عند الانتهاء.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="top-row"><summary>الصف العلوي</summary><p>الإعدادات يفتح إعدادات المدير. بدء المشاركة يتحول إلى إيقاف المشاركة أثناء عمل الخادم. مشاركة يفتح معالج رمز الوصول ويعمل فقط والمشاركة قيد التشغيل؛ وإلا يطلب التلميح تشغيل الخادم أولاً. توسيع الكل وطي الكل يفتحان المجموعات أدناه أو يغلقانها.</p></details>
+<details id="add-menu"><summary>قائمة إضافة..</summary><p>مجلد.. يضيف مجلداً عبر أداة الاختيار المعتادة؛ و+ الحالي (مع اسم المجلد) يظهر فقط عند فتح المدير من مجلد في العارض ويضيف ذلك المجلد. أقراص .fdd.. يفتح قائمة أقراص FileDO، ومعالج إضافة الموارد.. يرشدك خطوة بخطوة إلى إضافة مورد جديد.</p></details>
+<details id="list-buttons"><summary>تعديل وإزالة ورمز الهاتف والحافظة</summary><p>تعديل يفتح خيارات المجلد المحدّد. إزالة يحذف الصف المحدّد بعد سؤال: تزول معه إعدادات المجلد الخاصة (PIN والمرشّحات والوجهة) ولا يمكن استعادتها. رمز الهاتف.. يفتح النافذة التي تستقبل رمز اتصال من الهاتف. تظهر قائمة الحافظة (إرسال الحافظة إلى الخادم، جلب الحافظة من الخادم) فقط عندما يكون تبادل الحافظة متاحاً.</p></details>
+<details id="folder-list"><summary>الموارد المشاركة</summary><p>صف واحد لكل مورد مع خانة اختيار والأعمدة الاسم والنوع والمجلد. الصف المحدّد يُقدَّم للهواتف؛ والقائمة الفارغة تعرض أضف المورد الأول.. وعند إلغاء تحديد آخر مجلد محدّد تسأل النافذة هل تُوقَف المشاركة، لأن الهواتف المتصلة ستُفصَل. بدء المشاركة دون تحديد أي مجلد يعرض فقط التلميح أضف مجلدًا أولاً وحدّده بعلامة.</p></details>
+<details id="phone-access"><summary>الوصول من الهاتف</summary><p>بيانات الاتصال التي يحتاجها الهاتف أو أي عميل SFTP: العنوان عبر الإنترنت وفي المنزل (Wi-Fi) وعنوان IPv6 ومفتاح المضيف واسم المستخدم وكلمة المرور. إظهار كلمة المرور يكشفها وإخفاء كلمة المرور يغطيها من جديد. النص أسفل المجموعة يوضح هل يصل الهاتف إلى الكمبيوتر في المنزل فقط أم من الخارج أيضاً.</p></details>
+<details id="internet-access"><summary>الوصول عبر الإنترنت</summary><p>اختبار الوصول من الإنترنت يفتح نافذة اختبار الوصول عبر الإنترنت. كيفية إعداد الوصول من الإنترنت يفتح دليل الموجّه. الرابط الموجّه: .. يفتح صفحة الموجّه نفسها؛ ويُكتب الموجّه: غير معروف عندما لا يُعثر على موجّه. تحمل المجموعة تحذيراً: كل من يعرف العنوان واسم المستخدم وكلمة المرور يستطيع الوصول إلى كل مجلد مشترك، لذا لا تنشر رمز QR ولا ملف .fmscfg وأوقف المشاركة عند الانتهاء.</p></details>
+<details id="statistics"><summary>الإحصائيات</summary><p>أسفل المجموعات يوجد رابط الإحصائيات بجوار ملخص قصير مثل N اتصالات، M ملفات. يفتح الرابط نافذة حالة المشاركة بالعدادات الكاملة.</p></details>
+<details id="server-features-off"><summary>عندما تكون وظائف الخادم متوقفة</summary><p>إلى أن يُفعَّل مكوّن الخادم تعرض النافذة وظائف الخادم متوقفة والزر تفعيل وظائف الخادم..، الذي يفتح نافذة تفعيل مشاركة المجلدات. وإذا كان مكوّن المشاركة غير موجود في التثبيت، تذكر النافذة ذلك وتطلب إعادة تثبيت التطبيق.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

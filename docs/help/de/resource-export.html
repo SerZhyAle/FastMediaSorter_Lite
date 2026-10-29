@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>Ressource exportieren - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">Ressource exportieren</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>Bereitet die Einstellungen eines SFTP-Servers so vor, dass ein anderer Computer oder ein Telefon sie importieren kann. Das Fenster &#246;ffnet sich &#252;ber &#171;Exportieren..&#187; im Men&#252; &#171;Mehr&#187; der Ressourcenliste und braucht eine ausgew&#228;hlte Ressource; ein von Share Manager freigegebener Ordner wird stattdessen in Share Manager exportiert.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="Ressource exportieren">
+    <img class="shot dark" src="resource-export-dark.png" alt="Ressource exportieren">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lesen Sie die Warnung unter dem Ressourcennamen.</li><li>W&#228;hlen Sie &#171;Ohne Kennwort&#187; (Standard) oder &#171;Mit Kennwort&#187;.</li><li>Dr&#252;cken Sie &#171;In Datei speichern..&#187; oder kopieren Sie die Einstellungen als Text oder als kurzen Code.</li><li>Geben Sie das Ergebnis nur an den Besitzer weiter.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>Die Warnung</summary><p>Die Zeile unter dem Namen sagt, dass die Datei den Zugangsschl&#252;ssel zum Server enth&#228;lt: Geben Sie sie nur an den Besitzer weiter und lassen Sie sie nie auf gemeinsamen Datentr&#228;gern liegen. Das gilt f&#252;r die Datei, den kopierten Text und den Code gleicherma&#223;en.</p></details>
+<details id="password-choice"><summary>Ohne oder mit Kennwort</summary><p>&#171;Ohne Kennwort&#187; ist am Anfang ausgew&#228;hlt. &#171;Mit Kennwort&#187; ist nur aktiv, wenn sich das gespeicherte Kennwort zur&#252;cklesen l&#228;sst; sonst erscheint der Hinweis &#171;Das Kennwort ist nicht gespeichert - die Datei wird ohne eines erstellt.&#187;. Das Kennwort wird f&#252;r den Export im Arbeitsspeicher entschl&#252;sselt und geht sonst nirgendwohin.</p></details>
+<details id="save-copy"><summary>Speichern, Text kopieren, Code kopieren</summary><p>&#171;In Datei speichern..&#187; schreibt &#252;ber einen Speichern-Dialog eine .fmscfg-Datei; der Schreibvorgang lehnt FAT- oder exFAT-Datentr&#228;ger, Netzlaufwerke und Ordner ab, die andere Benutzer &#228;ndern k&#246;nnen, und hinterl&#228;sst nie eine halb geschriebene Datei. &#171;Text kopieren&#187; legt das Einstellungsdokument in die Zwischenablage und &#171;Code kopieren&#187; einen kurzen Code mit demselben Inhalt. Beides wird mit den Datenschutzmarkierungen kopiert (kein Zwischenablageverlauf, keine Cloud-Synchronisierung). Die Statuszeile zeigt das Ergebnis.</p></details>
+<details id="requirements"><summary>Was exportiert werden kann</summary><p>Nur ein SFTP-Server, dessen Schl&#252;ssel das Programm bereits gemerkt hat. Das Fenster &#246;ffnet sich in jedem Fall, und eine Ablehnung erscheint in der Statuszeile, wenn Sie eine Schaltfl&#228;che dr&#252;cken: Ein Netzwerkordner (SMB) l&#228;sst sich mit dieser Datei nicht beschreiben; der Serverschl&#252;ssel ist nicht gemerkt (&#246;ffnen Sie die Ressource einmal und best&#228;tigen Sie den Schl&#252;ssel); die Ressource hat keine Adresse, die sich weitergeben lie&#223;e; der Ordner ist so geschrieben, dass die Datei ihn nicht annimmt (korrigieren Sie ihn &#252;ber &#171;Bearbeiten..&#187;).</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

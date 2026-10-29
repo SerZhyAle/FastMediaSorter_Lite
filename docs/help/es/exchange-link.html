@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Enlace para una carpeta - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Enlace para una carpeta</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Entrega una carpeta publicada a una persona que no tiene cuenta en el servidor de intercambio: como c&#243;digo QR, como texto del enlace y como archivo .fmscfg. Se abre despu&#233;s de &#171;Crear un enlace..&#187; o &#171;Nuevo enlace..&#187; en el grupo &#171;Mis carpetas compartidas en la cuenta de intercambio&#187; y con &#171;Mostrar QR / C&#243;digo..&#187; en la ventana &#171;Dar acceso externo..&#187; de una carpeta. En el programa actual ambos comandos est&#225;n desactivados, porque no se ofrece acceso a personas ajenas a la cuenta; esta p&#225;gina describe lo que muestra la ventana cuando existe un enlace.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Enlace para una carpeta">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Enlace para una carpeta">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Selecciona una carpeta publicada y pulsa &#171;Crear un enlace..&#187; (o &#171;Nuevo enlace..&#187; para sustituir uno antiguo).</li><li>Lee el aviso de la parte superior.</li><li>Entrega el enlace con &#171;Mostrar el c&#243;digo QR&#187;, &#171;Copiar el texto del enlace&#187; o &#171;Guardar un archivo .fmscfg..&#187;.</li><li>Pulsa &#171;Cerrar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Cu&#225;ndo est&#225; disponible la ventana</summary><p>La ventana solo existe para un enlace reci&#233;n creado o ya existente. Mientras no se ofrezca acceso a personas ajenas a la cuenta, &#171;Crear un enlace..&#187; y &#171;Nuevo enlace..&#187; est&#225;n desactivados, un aviso debajo indica el motivo y la ventana no se abre; &#171;Mostrar QR / C&#243;digo..&#187; tambi&#233;n est&#225; desactivado. &#171;Eliminar el enlace&#187; sigue disponible.</p></details>
+<details id="note"><summary>El aviso de la parte superior</summary><p>&#171;Entrega a la persona el c&#243;digo o el archivo. Contienen el acceso a la carpeta: no los publiques.&#187; Quien tenga el c&#243;digo QR, el texto del enlace o el archivo puede abrir esa carpeta. El texto del enlace nunca se muestra en pantalla.</p></details>
+<details id="qr-code"><summary>Mostrar el c&#243;digo QR</summary><p>Abre la imagen del c&#243;digo QR en una ventana de ampliaci&#243;n. El bot&#243;n solo aparece si se pudo crear un c&#243;digo QR; a un texto del enlace demasiado grande para un c&#243;digo QR se responde con &#171;El c&#243;digo es demasiado grande para un c&#243;digo QR: usa el archivo.&#187;.</p></details>
+<details id="copy-text"><summary>Copiar el texto del enlace</summary><p>Pone el texto del enlace (empieza por FMSSFTP2:) en el portapapeles por una v&#237;a protegida que lo mantiene fuera del historial del portapapeles de Windows y del portapapeles en la nube, y responde &#171;Texto del enlace copiado.&#187;. Solo aparece si el enlace tiene texto.</p></details>
+<details id="save-file"><summary>Guardar un archivo .fmscfg..</summary><p>Guarda un archivo de configuraci&#243;n para esta &#250;nica carpeta, que solo puede leer su propietario. La ventana informa &#171;Archivo guardado:&#187; con la ruta, o &#171;No se pudo guardar el archivo.&#187;. Solo aparece si se pudo crear el archivo.</p></details>
+<details id="renew-or-remove"><summary>Nuevo enlace y Eliminar el enlace</summary><p>Ambos pertenecen al grupo, no a esta ventana, y ambos preguntan primero, con &#171;No&#187; como respuesta predeterminada: &#171;Nuevo enlace..&#187; avisa de que todos los c&#243;digos QR y archivos anteriores dejar&#225;n de funcionar, &#171;Eliminar el enlace&#187; de que dejar&#225;n de funcionar todos los c&#243;digos QR y archivos entregados con &#233;l.</p></details>
+<details id="close"><summary>Cerrar</summary><p>Cierra la ventana y descarta de ella el texto del enlace, el contenido del archivo y la imagen del c&#243;digo QR.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

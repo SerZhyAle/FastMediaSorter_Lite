@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Gestione file - Fast Media Sorter</title>
+  <title>Pannello immagini - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Gestione file</h1>
+  <h1 id="title">Pannello immagini</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Gestione file: doppio clic o Invio su una cartella per aprirla; navigare, selezionare e chiudere il pannello non cambia ci&#242; che mostra la finestra principale</p>
+    <p>Il pannello immagini si apre con F3 dal visualizzatore e lavora in due modalit&#224; scelte nella casella &#171;Modalit&#224; pannello&#187;: Ordinamento, una griglia di miniature della cartella corrente, e Gestione file, un browser con posizioni, cartelle e comandi per i file. Guardare i file, selezionarli e chiudere il pannello non cambiano ci&#242; che mostra la finestra principale.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="thumbnail-panel-light.png" alt="Gestione file">
-    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Gestione file">
+    <img class="shot light" src="thumbnail-panel-light.png" alt="Pannello immagini">
+    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Pannello immagini">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Crea ZIP: l&#39;archivio include tutte le cartelle e i file selezionati; l&#39;eliminazione degli originali &#232; disattivata e richiede la pubblicazione verificata dell&#39;archivio Estrai qui: seleziona un archivio; conserva cartelle e file ordinari, mantiene l&#39;archivio e non avvia programmi estratti; Esc annulla l&#39;operazione</p>
+    <ol class="order"><li>Premi F3 nel visualizzatore.</li><li>Scegli la modalit&#224; in &#171;Modalit&#224; pannello&#187;.</li><li>Seleziona i file: clic, Shift+clic per un intervallo, Ctrl+clic per attivarne o disattivarne uno, oppure trascina un rettangolo.</li><li>Nella modalit&#224; Ordinamento premi 0-9 per spostare la selezione in una cartella di destinazione, oppure Shift con una cifra della riga superiore per copiarla; Ctrl+Z annulla l&#39;ultima operazione.</li><li>Fai doppio clic su un file o premi Enter per aprirlo nella finestra principale.</li><li>Premi Esc per annullare un&#39;operazione in corso, poi di nuovo Esc per chiudere il pannello.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-<details id="zip"><summary>Crea ZIP</summary><p>Crea ZIP: l&#39;archivio include tutte le cartelle e i file selezionati; l&#39;eliminazione degli originali &#232; disattivata e richiede la pubblicazione verificata dell&#39;archivio</p></details>
-<details id="extract"><summary>Estrai qui</summary><p>Estrai qui: seleziona un archivio; conserva cartelle e file ordinari, mantiene l&#39;archivio e non avvia programmi estratti; Esc annulla l&#39;operazione</p></details>
-    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
+<details id="mode"><summary>Modalit&#224; pannello</summary><p>&#171;Modalit&#224; pannello&#187; passa tra Ordinamento e Gestione file. La modalit&#224; Ordinamento mostra le miniature della cartella corrente per spostare e copiare in fretta; la gestione file sfoglia qualsiasi cartella e offre comandi per i file.</p></details>
+<details id="toolbar"><summary>Dimensione, disposizione e selezione</summary><p>Il cursore (Dimensione:) imposta la dimensione delle miniature, &#171;Riquadri&#187; ed &#171;Elenco&#187; cambiano la disposizione (Ctrl+L), e il contatore della selezione mostra quanti file sono selezionati sul totale.</p></details>
+<details id="sorting"><summary>Selezione e ordinamento</summary><p>Il clic seleziona, Shift+clic seleziona un intervallo, Ctrl+clic attiva o disattiva un singolo file e il trascinamento disegna un rettangolo di selezione. Ctrl+A seleziona tutto, Ctrl+Shift+A annulla la selezione, Ctrl+I la inverte, la barra spaziatrice contrassegna un file, e le frecce, Home, End, PgUp e PgDn permettono di muoversi. Le cifre 0-9 spostano la selezione nella cartella di destinazione di quel tasto, Shift con una cifra della riga superiore la copia, Del la elimina e Ctrl+Z annulla l&#39;ultima operazione.</p></details>
+<details id="navigation"><summary>Indirizzo e posizioni</summary><p>Nella gestione file la barra degli indirizzi (Alt+D) accetta un percorso: Enter vi porta, Esc ripristina quello corrente. Indietro, Avanti, Su e Aggiorna hanno Alt+Left, Alt+Right, Alt+Up e F5. L&#39;elenco Posizioni a sinistra d&#224; accesso rapido a cartelle, risorse e dispositivi.</p></details>
+<details id="filter"><summary>Filtro e file nascosti</summary><p>Il filtro contenuti sceglie File multimediali, File multimediali e documenti o Tutti i file, e &#171;Nascosti&#187; mostra o nasconde i file nascosti. &#171;Impostazioni..&#187; apre la finestra Impostazioni sulla pagina Gestione file, dove si impostano la modalit&#224; di visualizzazione, il filtro, le posizioni e l&#39;ordinamento memorizzato.</p></details>
+<details id="files"><summary>Comandi per i file</summary><p>Ctrl+C, Ctrl+X e Ctrl+V copiano, tagliano e incollano, F2 rinomina, Ctrl+Shift+N crea una cartella, Del e Shift+Del eliminano gli elementi selezionati e Alt+Enter mostra le propriet&#224;. La copia o lo spostamento tra risorse passa da questo PC.</p></details>
+<details id="zip"><summary>Crea ZIP</summary><p>&#171;Crea ZIP&#187; comprime tutte le cartelle e i file selezionati in un unico archivio. L&#39;eliminazione degli originali &#232; disattivata per impostazione predefinita ed &#232; consentita solo dopo che l&#39;archivio &#232; stato verificato e pubblicato.</p></details>
+<details id="extract"><summary>Estrai qui</summary><p>&#171;Estrai qui&#187; agisce su un solo archivio selezionato: le cartelle e i file normali vengono conservati, l&#39;archivio originale resta al suo posto e i programmi estratti non vengono mai eseguiti. Esc annulla l&#39;operazione.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

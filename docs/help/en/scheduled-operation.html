@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled File Operation - Fast Media Sorter</title>
+  <title>Scheduled operation - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled File Operation</h1>
+  <h1 id="title">Scheduled operation</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled File Operation.</p>
+    <p>Edits one scheduled file operation: copy, move, delete or archive files from a source to a destination on a repeating schedule. It opens from &#39;New..&#39; or &#39;Edit..&#39; on the &#39;Scheduled file operations&#39; page of the Share Manager settings, and from the viewer&#39;s folder menu item &#39;Schedule an operation for this folder..&#39;, which fills in that folder as the source.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled File Operation">
-    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled File Operation">
+    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled operation">
+    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled operation">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Enter a Name and choose the Action.</li><li>Set the Source, and the Destination for copy, move and archive, with &#39;Choose..&#39;, &#39;Resource..&#39; or &#39;Through Google Drive&#39;.</li><li>For copy and move choose what happens &#39;If the name is taken&#39;.</li><li>Open &#39;File selection conditions&#39; to narrow the files.</li><li>Set &#39;Start at&#39; and &#39;Repeat every&#39; and keep &#39;Run on a schedule&#39; ticked.</li><li>Check &#39;What would run now..&#39; and press &#39;Save&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="action"><summary>Action and name conflicts</summary><p>The Action is Copy, Move, Delete or Archive, and the window shows only the rows that action needs: Delete has no Destination; &#39;If the name is taken&#39; (Skip, Overwrite, Keep both copies) appears for Copy and Move only; &#39;Delete the original files after the archive is verified&#39; appears for Archive only and removes originals only after the archive has been read back and checked.</p></details>
+<details id="places"><summary>Source and destination</summary><p>Type a full path or press &#39;Choose..&#39;. &#39;Resource..&#39; picks an SFTP server or network folder from the viewer&#39;s resource list and is not offered for Archive, which takes ordinary folders and Google Drive only. &#39;Through Google Drive&#39; appears only when you are signed in to Drive or that side already uses it. When &#39;Include subfolders&#39; is off, only the files of the source folder itself are processed. Save refuses system and program folders and a destination equal to or inside the source, and says what is wrong.</p></details>
+<details id="delete-verdict"><summary>Deleting files</summary><p>When files will be removed (Delete, or Archive with the originals option), a line &#39;Delete: ..&#39; tells where they go: to the Recycle Bin, or permanently with the reason, for example a network or removable disk has no Recycle Bin. For such an operation Enter does not save; press &#39;Save&#39; on purpose. A scheduled run never asks questions and records where deleted files went.</p></details>
+<details id="conditions"><summary>File selection conditions</summary><p>The panel opens by itself when conditions differ from the defaults. File types: All files, Images, Audio, Video, Documents (All files switches the other four off). Modified: All time, New since the last run, Last hour, Last 24 hours. Name mask and Exclude by mask take several masks separated by a semicolon, for example *.jpg;IMG_??.png, compared with the file name. Older than and Younger than are in days and hours, Larger than and Smaller than in MB. &#39;Include hidden and system files&#39; is off by default.</p></details>
+<details id="schedule"><summary>Schedule</summary><p>&#39;Start at&#39; sets the time of day and &#39;Repeat every&#39; the interval in hours and minutes; a whole number of days repeats at the same time. The line under them shows &#39;Next run: time (rule)&#39; or &#39;The schedule is off: the operation runs by hand only.&#39; &#39;Run a missed schedule once when the program starts&#39; and &#39;Show a notification on error&#39; are separate choices. Another line states that the schedule works only while the Share Manager is running, and whether it starts at Windows sign-in; nothing in this window changes autostart.</p></details>
+<details id="preview"><summary>Preview and Save</summary><p>&#39;What would run now..&#39; lists the files the operation would process and changes nothing; a run does not need it. &#39;Save&#39; stores the operation, or lists what must be fixed. &#39;Cancel&#39; discards your edits.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

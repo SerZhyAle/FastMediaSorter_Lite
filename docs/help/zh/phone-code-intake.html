@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect Phone Code Intake - Fast Media Sorter</title>
+  <title>手机连接码 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Connect Phone Code Intake</h1>
+  <h1 id="title">手机连接码</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect Phone Code Intake.</p>
+    <p>接收手机应用生成的连接码并交给 Fast Media Sorter，后者会把手机的文件夹添加到此电脑上的资源列表中。它从 Share Manager 主窗口的「手机验证码..」按钮打开。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="phone-code-intake-light.png" alt="Connect Phone Code Intake">
-    <img class="shot dark" src="phone-code-intake-dark.png" alt="Connect Phone Code Intake">
+    <img class="shot light" src="phone-code-intake-light.png" alt="手机连接码">
+    <img class="shot dark" src="phone-code-intake-dark.png" alt="手机连接码">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>用四种方式之一把代码送入窗口：在文本框中输入或粘贴，或点击「打开文件..」、「从剪贴板..」或「使用摄像头扫描..」。</li><li>点击「传递」。</li><li>在出现的 Fast Media Sorter 窗口中确认添加文件夹。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="code-field"><summary>连接码</summary><p>一个单行文本框，显示圆点而不是字符，因为代码是机密；它从不写入日志。文本框为空时点击「传递」，会提示你输入代码、粘贴代码，或打开文件或截图。</p></details>
+<details id="doors"><summary>打开文件、剪贴板和摄像头</summary><p>「打开文件..」读取 .fmscfg、.json 和 .txt 文件以及二维码图片（.png、.jpg、.jpeg、.bmp、.webp）；也可以把文件拖到窗口上。「从剪贴板..」从剪贴板读取代码。「使用摄像头扫描..」打开摄像头窗口，扫描到的文本按粘贴处理。</p></details>
+<details id="hand-over"><summary>传递</summary><p>代码经过检查后，发送给正在运行的 Fast Media Sorter，其自己的导入对话框仍会照常询问。成功时状态显示「代码已传递：请在 Fast Media Sorter 窗口中确认添加。」，此窗口随即关闭。如果找不到 Fast Media Sorter、版本较旧或没有响应，代码会连同隐私标记放到剪贴板上，状态行提示通过资源面板中的「从剪贴板导入」粘贴。</p></details>
+<details id="problems"><summary>状态行中的消息</summary><p>既不是连接码也不是资源设置文件的文档会被报告为无法读取。由较新版本生成的文件会提示你更新 Fast Media Sorter。如果其他程序占用了剪贴板，状态会如此说明。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

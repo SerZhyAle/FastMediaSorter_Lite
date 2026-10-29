@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>A&#241;adir desde un servidor de intercambio - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">A&#241;adir desde un servidor de intercambio</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Conecta este equipo con una cuenta en un servidor de intercambio, de modo que las carpetas de todos los dispositivos de esa cuenta aparezcan en la lista de recursos. Se abre desde el bot&#243;n &#171;A&#241;adir desde un servidor de intercambio..&#187; de la secci&#243;n &#171;Mis dispositivos&#187; de la lista de recursos, y cuando suelta una cadena o un archivo de conexi&#243;n sobre el programa o escribe una en el cuadro de carpeta.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="A&#241;adir desde un servidor de intercambio">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="A&#241;adir desde un servidor de intercambio">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Pegue la cadena de conexi&#243;n del operador del servidor, escriba la direcci&#243;n como host:puerto o pulse &#171;Abrir archivo..&#187;.</li><li>Compruebe la l&#237;nea &#171;La contrase&#241;a se enviar&#225; a: ..&#187;: esa direcci&#243;n es el &#250;nico lugar al que va la contrase&#241;a.</li><li>Introduzca el usuario y la contrase&#241;a.</li><li>Pulse &#171;Conectar&#187;.</li><li>Si el programa pregunta por el certificado del servidor, compare la huella digital con la que indic&#243; el operador.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Cadena de conexi&#243;n o direcci&#243;n</summary><p>El primer cuadro admite una cadena de conexi&#243;n (empieza por FMSEXCH1:) o una direcci&#243;n como host:puerto. &#171;Pegar&#187; lo rellena desde el portapapeles, con texto o con la imagen de un c&#243;digo QR, y &#171;Abrir archivo..&#187; lee un archivo .fmsexch o una imagen QR. Pegar solo rellena el formulario: no se env&#237;a nada hasta que pulse &#171;Conectar&#187;. La l&#237;nea bajo el cuadro muestra ad&#243;nde ir&#225; la contrase&#241;a; una direcci&#243;n web, un c&#243;digo de carpeta o una cadena da&#241;ada se rechazan all&#237; con palabras sencillas.</p></details>
+<details id="account"><summary>Usuario y contrase&#241;a</summary><p>&#171;Usuario:&#187; se rellena a partir de la cadena cuando esta incluye uno. &#171;Contrase&#241;a:&#187; aparece oculta; &#171;Mostrar la contrase&#241;a&#187; la revela. Al pulsar &#171;Conectar&#187;, los cuadros de contrase&#241;a se vac&#237;an antes de que el primer byte salga del equipo. La l&#237;nea de estado muestra el progreso y, si falla, el motivo: un usuario o una contrase&#241;a que no encajaron, demasiados intentos, un servidor que no responde.</p></details>
+<details id="register"><summary>Una cadena de invitaci&#243;n</summary><p>Una cadena que es una invitaci&#243;n ya nombra el servidor y cambia la ventana a la creaci&#243;n de una cuenta: aparecen &#171;Contrase&#241;a una vez m&#225;s:&#187; y una nota sobre la regla de la contrase&#241;a (al menos 10 caracteres, con una letra latina may&#250;scula, una min&#250;scula y un d&#237;gito), y el bot&#243;n pasa a decir &#171;Crear la cuenta&#187;. La &#250;ltima palabra sobre la regla la tiene el servidor.</p></details>
+<details id="trust"><summary>El certificado del servidor</summary><p>Si el certificado es desconocido, una pregunta muestra su huella digital y pregunta si se conf&#237;a en el servidor y se recuerda; la respuesta predeterminada es No. Si la cadena indica una huella digital y el servidor presenta otra, se muestran ambas, no se recuerda nada y no se env&#237;a ninguna contrase&#241;a.</p></details>
+<details id="sign-in-again"><summary>Iniciar sesi&#243;n de nuevo</summary><p>Cuando la ventana se abre para iniciar sesi&#243;n de nuevo en una entrada de servidor existente, muestra la direcci&#243;n y el usuario de solo lectura, y la huella digital que esa entrada recuerda es el ancla de confianza.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

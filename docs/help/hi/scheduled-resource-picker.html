@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>संसाधन चुनें - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">संसाधन चुनें</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>व्यूअर की संसाधन सूची से कोई संसाधन शेड्यूल किए गए ऑपरेशन के स्रोत या गंतव्य के रूप में चुनती है। यह शेड्यूल किए गए ऑपरेशन की विंडो में स्रोत या गंतव्य के पास संसाधन.. से खुलती है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="संसाधन चुनें">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="संसाधन चुनें">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>संसाधन सूची में संसाधन चुनें।</li><li>संसाधन के अंदर का फ़ोल्डर जाँचें या बदलें; यह संसाधन के रूट फ़ोल्डर से शुरू होता है।</li><li>चुनें दबाएँ। रद्द करें पिछली जगह बनाए रखता है।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>संसाधन सूची</summary><p>व्यूअर की सूची में से केवल SFTP सर्वर और नेटवर्क फ़ोल्डर दिए जाते हैं, नाम के क्रम में; दूसरे प्रकार के संसाधन नहीं दिखते। कोई न हो तो विंडो कहती है: संसाधन सूची में कोई उपयुक्त संसाधन नहीं है. व्यूअर में SFTP सर्वर या नेटवर्क फ़ोल्डर जोड़ें. और चुनें अक्षम रहता है। संसाधन जोड़ना या उस पर फिर से भरोसा करना व्यूअर में होता है; यह विंडो कोई कनेक्शन नहीं बनाती।</p></details>
+<details id="folder"><summary>संसाधन के अंदर का फ़ोल्डर</summary><p>फ़ोल्डर चुने गए संसाधन के रूट के भीतर होना चाहिए, वरना ऑपरेशन विंडो में सहेजें उसे अस्वीकार कर देता है। दूसरा संसाधन चुनने पर बॉक्स उस संसाधन के रूट से फिर भर जाता है।</p></details>
+<details id="unattended"><summary>बिना प्रश्नों के रन</summary><p>पासवर्ड और सर्वर की कुंजी व्यूअर की संसाधन सूची से आती हैं। रन कुछ नहीं पूछता: यदि पासवर्ड सहेजा नहीं गया है या सर्वर की कुंजी की पुष्टि नहीं हुई है, तो ऑपरेशन रुक जाता है और इतिहास कारण बताता है। केवल पढ़ने योग्य संसाधन स्थानांतरित करने या हटाने का लक्ष्य नहीं हो सकता, जिस संसाधन का रूट PIN से सुरक्षित है उसे अस्वीकार किया जाता है, और आर्काइव केवल सामान्य फ़ोल्डर लेता है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

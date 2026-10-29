@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>导出资源 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">导出资源</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>准备一台 SFTP 服务器的设置，以便另一台电脑或手机导入。它从资源列表「更多」菜单中的「导出..」打开，并需要先选中一个资源；Share Manager 共享的文件夹则要在 Share Manager 中导出。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="导出资源">
+    <img class="shot dark" src="resource-export-dark.png" alt="导出资源">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>阅读资源名称下方的警告。</li><li>选择「不带密码」（默认）或「带密码」。</li><li>点击「保存到文件..」，或把设置复制为文本或短代码。</li><li>只把结果交给其所有者。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>警告</summary><p>名称下方的那一行说明，该文件携带了访问服务器的密钥：只能交给其所有者，切勿留在共享磁盘上。它同样适用于文件、复制的文本和代码。</p></details>
+<details id="password-choice"><summary>不带或带密码</summary><p>「不带密码」一开始就是选中的。只有在已保存的密码可以读回时，「带密码」才可用；否则会显示提示「密码未保存 - 文件将不含密码。」密码仅在内存中为导出而解密，不会去往其他任何地方。</p></details>
+<details id="save-copy"><summary>保存、复制文本、复制代码</summary><p>「保存到文件..」通过保存对话框写入一个 .fmscfg 文件；写入程序会拒绝 FAT 或 exFAT 磁盘、网络磁盘以及其他用户可以更改的文件夹，并且绝不会留下写了一半的文件。「复制文本」把设置文档放到剪贴板，「复制代码」则放入内容相同的短代码。两者复制时都带有隐私标记（不进入剪贴板历史，不进行云同步）。状态栏显示结果。</p></details>
+<details id="requirements"><summary>可导出的内容</summary><p>只有查看器已经记住其密钥的 SFTP 服务器才能导出。窗口无论如何都会打开，点击按钮时，拒绝原因会显示在状态栏：网络文件夹 (SMB) 无法用该文件描述；没有记住服务器密钥（请打开一次该资源并确认密钥）；资源没有可交出的地址；文件夹的写法不被该文件接受（请通过「编辑..」修正）。</p></details>
+    <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

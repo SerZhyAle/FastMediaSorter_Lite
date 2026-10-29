@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Fast Media Sorter &amp; Sharing Viewer - Fast Media Sorter</title>
+  <title>Finestra del visualizzatore - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Fast Media Sorter &amp; Sharing Viewer</h1>
+  <h1 id="title">Finestra del visualizzatore</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Fast Media Sorter &amp; Sharing Viewer.</p>
+    <p>La finestra del visualizzatore &#232; la finestra principale del gestore di media e file. Mostra un&#39;immagine o un video alla volta da una cartella e smista i file nelle cartelle con un solo tasto. Nella versione a 64 bit documenti e altri file entrano nello stesso elenco come anteprime, se nella pagina &#171;File&#187; delle Impostazioni &#232; spuntato &#171;Ordina documenti&#187; o &#171;Ordina altri file&#187;; F3 apre il &#171;Pannello immagini&#187;, che funziona anche come gestore di file per cartelle locali, server e dispositivi collegati. La finestra si apre quando si avvia il programma o si apre con esso un file multimediale.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="main-viewer-light.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-    <img class="shot dark" src="main-viewer-dark.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>Non c&#39;&#232; uno screenshot di questa finestra: all&#39;apertura avvia un dispositivo, un ascolto di rete o l&#39;intero visualizzatore, quindi non viene acquisita.</figcaption></figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Premere F4, oppure digitare un percorso nella casella &#171;Cartella:&#187; e premere Enter.</li><li>Scorrere con i tasti freccia, la barra spaziatrice e P.</li><li>Premere una cifra per spostare il file nella sua cartella, oppure Shift pi&#249; una cifra della riga superiore per copiarlo.</li><li>Premere Del per eliminare il file.</li><li>Premere F2 per le Impostazioni.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="open-folder"><summary>Aprire una cartella</summary><p>F4 apre una finestra di scelta file; il file scelto viene mostrato e tutta la sua cartella diventa l&#39;elenco da scorrere. Nella casella &#171;Cartella:&#187; si inserisce il percorso di una cartella, poi Enter. Finch&#233; non &#232; aperto nulla, una scheda di aiuto elenca i tasti principali: F1 la mostra o la nasconde. Sulla schermata vuota c&#39;&#232; anche il pulsante &#171;Configurazione iniziale&#187;, che avvia i passaggi di benvenuto.</p></details>
+<details id="floating-chrome"><summary>Pannelli flottanti e riga di stato</summary><p>Due file di pulsanti della barra degli strumenti e una striscia di stato fluttuano sopra l&#39;immagine e svaniscono finch&#233; il mouse resta fermo. Una puntina nell&#39;angolo di un pannello lo tiene in posizione; l&#39;opzione &#171;Non nascondere i pannelli flottanti&#187; nella pagina &#171;Generali&#187; delle Impostazioni li mantiene tutti visibili. La riga di stato mostra i messaggi, per esempio il risultato di un&#39;operazione sui file.</p></details>
+<details id="navigation"><summary>Scorrere i file</summary><p>Barra spaziatrice e PgDn mostrano il file successivo, P e PgUp quello precedente; Freccia su e Freccia gi&#249; saltano di dieci file, Home e End vanno al primo e all&#39;ultimo. Anche la rotella del mouse scorre i file, a meno che non sia impostata sullo zoom.</p></details>
+<details id="sorting"><summary>Spostare, copiare ed eliminare</summary><p>Una cifra da 1..9 o 0 sposta il file corrente nella cartella associata a quel tasto; Shift pi&#249; una cifra della riga superiore (non del NumPad) lo copia. Le cartelle si associano nella pagina &#171;Destinazioni&#187; delle Impostazioni. U riporta indietro l&#39;ultimo file spostato. Del invia un file al Cestino (opzione &#171;Elimina nel Cestino&#187; nella pagina &#171;File&#187;), Shift+Del lo elimina definitivamente; le unit&#224; di rete e le chiavette USB non hanno il Cestino, e il programma lo segnala in anticipo. F3 apre il &#171;Pannello immagini&#187;.</p></details>
+<details id="slideshow"><summary>Presentazione e visualizzazione</summary><p>S avvia una presentazione, I o F5 una presentazione casuale, e Y passa a un file casuale; l&#39;intervallo e l&#39;ordine si impostano nella pagina &#171;Immagini&#187; delle Impostazioni. R ruota l&#39;immagine e F7 attiva lo schermo intero.</p></details>
+<details id="zoom"><summary>Zoom e menu dell&#39;immagine</summary><p>Nella versione a 64 bit lo zoom si controlla con il blocco grigio del NumPad: + e - sul cursore del mouse, / adatta l&#39;immagine alla finestra, * la mostra al 100 %. L&#39;opzione &#171;Zoom con la rotella&#187; nella pagina &#171;Immagini&#187; permette alla rotella di fare lo zoom.</p></details>
+<details id="video"><summary>Video</summary><p>Un clic mette in pausa o riprende un video, il pulsante destro apre il menu del video. Nella versione a 64 bit A cambia la traccia audio e V i sottotitoli; il pulsante &#171;Tracce&#187; compare nella barra degli strumenti solo quando il file offre una scelta.</p></details>
+<details id="settings-keys"><summary>Impostazioni ed elenco dei tasti</summary><p>F2 o il pulsante &#171;Impostazioni&#187; della barra degli strumenti apre le Impostazioni. L&#39;elenco completo dei tasti: pagina &#171;File&#187;, gruppo &#171;Tasti e associazioni&#187;, pulsante &#171;Scorciatoie da tastiera&#187;.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

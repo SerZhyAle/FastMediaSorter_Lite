@@ -57,6 +57,8 @@ Public Module LogPackage
         ''' but could not be read has its own line here, naming the reason (ticket 182 L-3).</summary>
         Public Entries As List(Of String)
         Public OverSizeLimit As Boolean
+        Public IsPartial As Boolean
+        Public ServerSourcesFound As Boolean
         ''' <summary>The failure's type, for a test's message - never shown to the user.</summary>
         Public ErrorText As String
         ''' <summary>What ended the build, for the caller to describe in its own words
@@ -83,6 +85,16 @@ Public Module LogPackage
         Public ExchangeDataDirOverride As String
         ''' <summary>The running program's own log (current.log in the viewer, companion.log in the Share Manager), or "".</summary>
         Public OwnLogPath As String
+        Public ExchangeServiceDataDir As String
+        Public RoamingAppData As String
+        Public SystemTempDir As String
+        Public WorkerDataDirOverride As String
+        Public WorkerServiceDataDir As String
+        Public RegistrationFailure As Boolean
+        Public WorkerRegistrationFailure As Boolean
+        Public ServerCommonAppData As String
+        Public ServerLocalAppData As String
+        Public ServerUserConfig As String
     End Structure
 
     ''' <summary>One archive entry and the places its file may be, in the order they are tried.</summary>
@@ -92,6 +104,9 @@ Public Module LogPackage
         ''' <summary>The entry name of the log this one is the rolled-over copy of, or Nothing. Such a source has
         ''' no fixed candidates: <see cref="ResolveRolledSource"/> derives them from where its log was found.</summary>
         Public RolledOf As String
+        Public Discovered As Boolean
+        Public DiscoveryFailure As LogReadFailure
+        Public IsServer As Boolean
     End Structure
 
     ''' <summary>Why a log that exists could not be read.</summary>
@@ -100,6 +115,10 @@ Public Module LogPackage
         AccessDenied
         InUse
         Other
+        Disappeared
+        ReparsePoint
+        EnumerationFailed
+        NonLocal
     End Enum
 
     Friend Enum LogSourceState
@@ -123,10 +142,12 @@ Public Module LogPackage
         ''' <summary>Bytes of text written into the entry (included sources), else 0.</summary>
         Public Bytes As Integer
         Public Line As String
+        Public Cut As Boolean
+        Public Omitted As Boolean
+        Public IncompleteSnapshot As Boolean
     End Structure
 
-    ''' <summary>The bytes of a source read ONCE, before anything is written: the report that names what
-    ''' could not be read is written first, so every read is finished before the archive gets an entry.</summary>
+    ''' <summary>One bounded source snapshot. Server exports write it immediately and retain only report metadata.</summary>
     Friend Structure LogSourceRead
         Public EntryName As String
         Public State As LogSourceState
@@ -135,6 +156,7 @@ Public Module LogPackage
         Public Content As CompactedLog
         Public Failure As LogReadFailure
         Public FailureType As String
+        Public ContentBytes As Long
     End Structure
 
     ''' <summary>
@@ -148,6 +170,7 @@ Public Module LogPackage
         Public SourceLength As Long
         ''' <summary>True when the source was too long to read through the redactor: nothing of it is kept.</summary>
         Public Omitted As Boolean
+        Public IncompleteSnapshot As Boolean
         ''' <summary>The first whole lines, redacted. Never more than <see cref="HeadKeepBytes"/>.</summary>
         Public HeadBytes As Byte()
         ''' <summary>The last whole lines, redacted. Empty when the log was never cut and all of it is in the head.</summary>
@@ -177,6 +200,12 @@ Public Module LogPackage
         Return Build(AddressOf ReadRegistrySettings, Nothing, Nothing, Nothing)
     End Function
 
+    ''' <summary>All retained local server logs, without launching or controlling a server (specification 272).</summary>
+    Public Function BuildServerLogs() As LogPackageResult
+        Dim roots As LogSourceRoots = CurrentLogRoots()
+        Return Build(AddressOf ReadRegistrySettings, Nothing, Nothing, roots:=roots, allServerLogs:=True)
+    End Function
+
     ''' <summary>
     ''' The same, with the settings source injected - the registry in the product, a
     ''' seeded list in the tests that prove a secret never reaches the archive.
@@ -187,8 +216,8 @@ Public Module LogPackage
 
     ''' <summary>
     ''' Full builder with injectable clock, destination directory, and report generator for deterministic tests.
-    ''' Atomically reserves the unique package with FileMode.CreateNew and deletes on failure only the file
-    ''' reserved by this invocation.
+    ''' Reserves a unique .partial file with CreateNew, finalizes it, then atomically publishes the ZIP.
+    ''' Failure deletes only the unfinished file owned by this invocation.
     ''' </summary>
     ''' <param name="roots">Where the logs are (default: this machine, this process). A test seeds a whole layout.</param>
     ''' <param name="openSource">How a log is opened (default: shared read of a live file). A test makes one fail.</param>
@@ -199,9 +228,12 @@ Public Module LogPackage
                           Optional reportGenerator As Func(Of Func(Of List(Of KeyValuePair(Of String, Object))), String) = Nothing,
                           Optional roots As LogSourceRoots? = Nothing,
                           Optional openSource As Func(Of String, Stream) = Nothing,
-                          Optional hostingProbes As HostingProbes = Nothing) As LogPackageResult
+                          Optional hostingProbes As HostingProbes = Nothing,
+                          Optional allServerLogs As Boolean = False,
+                          Optional enumerateSources As Func(Of String, IEnumerable(Of String)) = Nothing) As LogPackageResult
         Dim result As New LogPackageResult With {.Path = "", .Entries = New List(Of String)(), .Sources = New List(Of LogEntryOutcome)()}
         Dim reservedPath As String = Nothing
+        Dim pendingPath As String = Nothing
 
         Try
             ' Both a marker in the log ("this is where the user asked") and a flush.
@@ -224,10 +256,13 @@ Public Module LogPackage
                 Dim stamp As String = currentTime.AddSeconds(attempt).ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
                 Dim candidate As String = Path.Combine(destDir, PackagePrefix & version & "-" & stamp & ".zip")
                 Try
-                    zipStream = New FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None)
+                    ' The final name never exposes an unfinished ZIP. The reservation is a sidecar.
+                    If File.Exists(candidate) Then Continue For
+                    zipStream = New FileStream(candidate & ".partial", FileMode.CreateNew, FileAccess.Write, FileShare.None)
+                    pendingPath = candidate & ".partial"
                     reservedPath = candidate
                     Exit For
-                Catch ex As IOException When File.Exists(candidate)
+                Catch ex As IOException When File.Exists(candidate) OrElse File.Exists(candidate & ".partial")
                     ' Collision with existing file - retry with another token
                 End Try
             Next
@@ -238,13 +273,14 @@ Public Module LogPackage
 
             Using zipStream
                 Using archive As New ZipArchive(zipStream, ZipArchiveMode.Create)
-                    ' Every source is READ first (nothing is written yet): report.txt, which is the first
-                    ' entry of the archive, has to say which of them could not be read. Memory is bounded
-                    ' by the per-entry cap times the number of sources.
+                    ' Server mode streams one sanitized source at a time; the report follows the sources.
+                    ' The viewer retains its fixed source list and its existing report-first entry order.
                     Dim effectiveRoots As LogSourceRoots = If(roots.HasValue, roots.Value, CurrentLogRoots())
                     Dim reads As New List(Of LogSourceRead)()
                     Dim readByName As New Dictionary(Of String, LogSourceRead)(StringComparer.OrdinalIgnoreCase)
-                    For Each planned As LogSourceSpec In PlanLogSources(effectiveRoots)
+                    Dim plan As List(Of LogSourceSpec) = If(allServerLogs,
+                        ServerLogSources.Discover(effectiveRoots, enumerateSources), PlanLogSources(effectiveRoots))
+                    For Each planned As LogSourceSpec In plan
                         ' A rolled-over log is looked for beside the log it belongs to; the plan lists it right
                         ' after that log, so the parent is always read by now.
                         Dim spec As LogSourceSpec = planned
@@ -254,6 +290,19 @@ Public Module LogPackage
                             spec = ResolveRolledSource(planned, parent)
                         End If
                         Dim read As LogSourceRead = ReadLogSource(spec, openSource)
+                        If planned.IsServer AndAlso planned.Discovered Then result.ServerSourcesFound = True
+                        If allServerLogs Then
+                            Dim outcome As LogEntryOutcome = WriteLogSource(archive, read)
+                            If outcome.State <> LogSourceState.Missing Then
+                                result.Sources.Add(outcome)
+                                If outcome.Line IsNot Nothing Then result.Entries.Add(outcome.Line)
+                                result.IsPartial = result.IsPartial OrElse outcome.State = LogSourceState.Unreadable OrElse outcome.Cut OrElse outcome.Omitted OrElse outcome.IncompleteSnapshot
+                            End If
+                            ' Keep only metadata after writing; memory does not grow by 2 MiB per source.
+                            read.ContentBytes = read.Content.KeptBytes
+                            read.Content.HeadBytes = Nothing
+                            read.Content.TailBytes = Nothing
+                        End If
                         readByName(spec.EntryName) = read
                         If read.State <> LogSourceState.Missing Then reads.Add(read)
                     Next
@@ -261,33 +310,42 @@ Public Module LogPackage
                     Dim reportText As String = If(reportGenerator IsNot Nothing,
                                                   reportGenerator(effectiveSettingsSource),
                                                   BuildReport(effectiveSettingsSource, Nothing, DescribeLogSources(reads),
-                                                              HostingReport.Build(If(hostingProbes, HostingProbesLive.Live()))))
+                                                              HostingReport.Build(If(hostingProbes, HostingProbesLive.Live())),
+                                                              safeMetadata:=allServerLogs))
+                    If allServerLogs Then
+                        reportText &= Environment.NewLine & "[export]" & Environment.NewLine &
+                            "partial=" & result.IsPartial.ToString() & Environment.NewLine &
+                            "snapshot=bounded per file; files may grow or rotate during collection" & Environment.NewLine &
+                            "remote_logs=not collected" & Environment.NewLine
+                    End If
 
-                    WriteTextEntry(archive, "report.txt", RedactUserProfile(reportText))
-                    result.Entries.Add("report.txt")
+                    WriteTextEntry(archive, "report.txt", RedactUserProfile(New DiagnosticRedactor().Redact(reportText)))
+                    result.Entries.Insert(0, "report.txt")
 
                     ' The machine-readable summary a parser reads (the report above is for a person):
                     ' KEY=value, UTC, schema_version first. Facts and counts only (DIAGNOSTIC-REPORT rule 2).
                     WriteTextEntry(archive, "environment.txt", BuildEnvironment(currentTime.ToUniversalTime()))
-                    result.Entries.Add("environment.txt")
-
-                    For Each read As LogSourceRead In reads
-                        Dim outcome As LogEntryOutcome = WriteLogSource(archive, read)
-                        result.Sources.Add(outcome)
-                        If outcome.Line IsNot Nothing Then result.Entries.Add(outcome.Line)
-                    Next
+                    result.Entries.Insert(1, "environment.txt")
+                    If Not allServerLogs Then
+                        For Each read As LogSourceRead In reads
+                            Dim outcome As LogEntryOutcome = WriteLogSource(archive, read)
+                            result.Sources.Add(outcome)
+                            If outcome.Line IsNot Nothing Then result.Entries.Add(outcome.Line)
+                        Next
+                    End If
                 End Using
             End Using
 
+            File.Move(pendingPath, reservedPath)
             Dim info As New FileInfo(reservedPath)
             result.Path = reservedPath
             result.SizeBytes = info.Length
             result.OverSizeLimit = info.Length > MaxPackageBytes
         Catch ex As Exception
             AppFileLogger.LogException("LogPackage.Build", ex)
-            If Not String.IsNullOrEmpty(reservedPath) Then
+            If Not String.IsNullOrEmpty(pendingPath) Then
                 Try
-                    If File.Exists(reservedPath) Then File.Delete(reservedPath)
+                    If File.Exists(pendingPath) Then File.Delete(pendingPath)
                 Catch delEx As Exception
                     AppFileLogger.LogException("LogPackage.Build cleanup", delEx)
                 End Try
@@ -316,13 +374,42 @@ Public Module LogPackage
 
             For Each stale As String In Directory.GetFiles(dir, PackagePrefix & "*.zip")
                 Try
-                    If File.GetLastWriteTime(stale) < cutoff Then File.Delete(stale)
+                    SyncLock ActivePackages
+                        If Not ActivePackages.Contains(stale) AndAlso File.GetLastWriteTime(stale) < cutoff Then File.Delete(stale)
+                    End SyncLock
                 Catch
                 End Try
             Next
         Catch
         End Try
     End Sub
+
+    Private ReadOnly ActivePackages As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>Protect a reviewed/handed-off archive from cleanup while a dialog or composer owns it.</summary>
+    Public Function ProtectPackage(zipPath As String) As IDisposable
+        Return New PackageLease(zipPath)
+    End Function
+
+    Private NotInheritable Class PackageLease
+        Implements IDisposable
+        Private ReadOnly zipPath As String
+        Private ReadOnly heldFile As FileStream
+        Public Sub New(value As String)
+            zipPath = Path.GetFullPath(value)
+            ' Read sharing lets Explorer/mail copy it; no delete sharing protects it from another process's sweep.
+            heldFile = New FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Read)
+            SyncLock ActivePackages
+                ActivePackages.Add(zipPath)
+            End SyncLock
+        End Sub
+        Public Sub Dispose() Implements IDisposable.Dispose
+            SyncLock ActivePackages
+                ActivePackages.Remove(zipPath)
+            End SyncLock
+            heldFile.Dispose()
+        End Sub
+    End Class
 
     ''' <summary>This machine, this process: the folders every log location is built from.</summary>
     Friend Function CurrentLogRoots() As LogSourceRoots
@@ -334,6 +421,27 @@ Public Module LogPackage
         Try : roots.TempDir = Path.GetTempPath() : Catch : End Try
         Try : roots.ExchangeDataDirOverride = If(Environment.GetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR"), "") : Catch : End Try
         Try : roots.OwnLogPath = If(AppFileLogger.LogFilePath, "") : Catch : End Try
+        Try : roots.RoamingAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) : Catch : End Try
+        Try : roots.SystemTempDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp") : Catch : End Try
+        Try
+            Using key As RegistryKey = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\FastMediaSorterExchangeServer")
+                roots.ExchangeServiceDataDir = ServerLogSources.ServiceDataDirectory(TryCast(key?.GetValue("ImagePath"), String))
+            End Using
+        Catch
+            roots.RegistrationFailure = True
+        End Try
+        Try
+            Using key As RegistryKey = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\FastMediaSorterCompanionSFTP")
+                roots.WorkerServiceDataDir = ServerLogSources.WorkerServiceDataDirectory(TryCast(key?.GetValue("ImagePath"), String))
+            End Using
+        Catch
+            roots.WorkerRegistrationFailure = True
+        End Try
+        Try : roots.WorkerDataDirOverride = If(Environment.GetEnvironmentVariable("FMS_COMPANION_DATA_DIR"), "") : Catch : End Try
+        ' Go resolves these through its environment; known Windows folders remain historical candidates.
+        Try : roots.ServerCommonAppData = If(Environment.GetEnvironmentVariable("ProgramData"), "") : Catch : End Try
+        Try : roots.ServerLocalAppData = If(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "") : Catch : End Try
+        Try : roots.ServerUserConfig = If(Environment.GetEnvironmentVariable("APPDATA"), "") : Catch : End Try
         Return roots
     End Function
 
@@ -553,6 +661,10 @@ Public Module LogPackage
         Select Case failure
             Case LogReadFailure.AccessDenied : Return "access denied"
             Case LogReadFailure.InUse : Return "in use by another process"
+            Case LogReadFailure.Disappeared : Return "disappeared during collection"
+            Case LogReadFailure.ReparsePoint : Return "reparse point omitted for safety"
+            Case LogReadFailure.EnumerationFailed : Return "directory enumeration failed"
+            Case LogReadFailure.NonLocal : Return "network store omitted; local export only"
             Case Else : Return "could not be read"
         End Select
     End Function
@@ -562,6 +674,10 @@ Public Module LogPackage
         Select Case failure
             Case LogReadFailure.AccessDenied : Return "доступ к файлу запрещён"
             Case LogReadFailure.InUse : Return "файл занят другим процессом"
+            Case LogReadFailure.Disappeared : Return "файл исчез во время сбора"
+            Case LogReadFailure.ReparsePoint : Return "ссылка пропущена для безопасности"
+            Case LogReadFailure.EnumerationFailed : Return "не удалось получить список файлов"
+            Case LogReadFailure.NonLocal : Return "сетевое хранилище пропущено: экспорт только локальный"
             Case Else : Return "файл не удалось прочитать"
         End Select
     End Function
@@ -619,6 +735,7 @@ Public Module LogPackage
                     End If
                     line = reader.ReadLine()
                 End While
+                result.IncompleteSnapshot = bounded.ShortRead
             End Using
         End Using
 
@@ -662,11 +779,21 @@ Public Module LogPackage
             .EntryName = spec.EntryName, .State = LogSourceState.Missing, .SourcePath = "",
             .Failure = LogReadFailure.None, .FailureType = ""}
         Dim opener As Func(Of String, Stream) = If(openSource, AddressOf OpenLiveLog)
+        If spec.DiscoveryFailure <> LogReadFailure.None Then
+            result.State = LogSourceState.Unreadable
+            result.Failure = spec.DiscoveryFailure
+            Return result
+        End If
         If spec.Candidates Is Nothing Then Return result
         For Each candidate As String In spec.Candidates
             If String.IsNullOrEmpty(candidate) Then Continue For
             Try
                 Dim content As CompactedLog
+                If spec.Discovered AndAlso openSource Is Nothing AndAlso ServerLogSources.HasReparsePoint(candidate) Then
+                    result.State = LogSourceState.Unreadable
+                    result.Failure = LogReadFailure.ReparsePoint
+                    Return result
+                End If
                 Using source As Stream = opener(candidate)
                     content = CompactRedacted(source)
                 End Using
@@ -675,11 +802,15 @@ Public Module LogPackage
                 result.Content = content
                 Return result
             Catch ex As Exception
-                If IsMissingFailure(ex) Then Continue For
-                AppFileLogger.LogException("LogPackage: " & spec.EntryName & " exists but could not be read", ex)
+                If IsMissingFailure(ex) AndAlso Not spec.Discovered Then Continue For
+                If spec.Discovered Then
+                    AppFileLogger.WriteLine("LogPackage: " & spec.EntryName & " read failed; reason=" & If(IsMissingFailure(ex), LogReadFailure.Disappeared, ClassifyReadFailure(ex)).ToString())
+                Else
+                    AppFileLogger.LogException("LogPackage: " & spec.EntryName & " exists but could not be read", ex)
+                End If
                 result.State = LogSourceState.Unreadable
                 result.SourcePath = candidate
-                result.Failure = ClassifyReadFailure(ex)
+                result.Failure = If(IsMissingFailure(ex), LogReadFailure.Disappeared, ClassifyReadFailure(ex))
                 result.FailureType = ex.GetType().Name
                 Return result
             End Try
@@ -694,6 +825,9 @@ Public Module LogPackage
         Dim outcome As New LogEntryOutcome With {
             .EntryName = read.EntryName, .State = read.State, .SourcePath = read.SourcePath,
             .Failure = read.Failure, .FailureType = read.FailureType, .Bytes = 0, .Line = Nothing}
+        outcome.Cut = read.Content.Cut
+        outcome.Omitted = read.Content.Omitted
+        outcome.IncompleteSnapshot = read.Content.IncompleteSnapshot
         Select Case read.State
             Case LogSourceState.Included
                 Try
@@ -720,13 +854,12 @@ Public Module LogPackage
                     End Using
                     outcome.Bytes = CInt(Math.Min(written, CLng(Integer.MaxValue)))
                     outcome.Line = read.EntryName & "  (" & DescribeSize(written) & ")"
+                    If content.Cut Then outcome.Line = Localization.TF("{0} - сокращён: сохранены начало и конец", outcome.Line)
+                    If content.Omitted Then outcome.Line = Localization.TF("{0} - пропущен: превышен предел чтения", read.EntryName)
+                    If content.IncompleteSnapshot Then outcome.Line = Localization.TF("{0} - файл сократился во время сбора", outcome.Line)
                 Catch ex As Exception
-                    ' The archive itself refused the entry: that is the same news as an unreadable source.
-                    AppFileLogger.LogException("LogPackage.WriteLogSource " & read.EntryName, ex)
-                    outcome.State = LogSourceState.Unreadable
-                    outcome.Failure = LogReadFailure.Other
-                    outcome.FailureType = ex.GetType().Name
-                    outcome.Line = UnreadableLine(read.EntryName, LogReadFailure.Other)
+                    ' A failed ZIP write invalidates the entire archive, including disk-full failures.
+                    Throw
                 End Try
             Case LogSourceState.Unreadable
                 outcome.Line = UnreadableLine(read.EntryName, read.Failure)
@@ -758,16 +891,15 @@ Public Module LogPackage
                 Case LogSourceState.Included
                     If read.Content.Omitted Then
                         lines.Add(read.EntryName & ": NOT included - " & DescribeSize(read.Content.SourceLength) &
-                                  " is over the " & DescribeSize(MaxSourceBytes) & " read limit; a marker stands in its place (source " &
-                                  read.SourcePath & ")")
+                                  " is over the " & DescribeSize(MaxSourceBytes) & " read limit; reason=oversized_untrusted")
                     Else
-                        lines.Add(read.EntryName & ": included (" & DescribeSize(read.Content.KeptBytes) & ")" &
+                        lines.Add(read.EntryName & ": included (" & DescribeSize(If(read.Content.HeadBytes Is Nothing, read.ContentBytes, read.Content.KeptBytes)) & ")" &
                                   If(read.Content.Cut, ", head and tail (" & DescribeSize(read.Content.DroppedMiddleBytes) & " of the middle left out)", "") &
-                                  " from " & read.SourcePath)
+                                  If(read.Content.IncompleteSnapshot, "; reason=source_shortened", ""))
                     End If
                 Case LogSourceState.Unreadable
                     lines.Add(read.EntryName & ": NOT included - " & ReasonText(read.Failure) &
-                              " (" & read.FailureType & "; source " & read.SourcePath & ")")
+                              " (reason=" & read.Failure.ToString() & ")")
             End Select
         Next
         If lines.Count = 0 Then lines.Add("no log file found")
@@ -786,6 +918,7 @@ Public Module LogPackage
 
         Private ReadOnly inner As Stream
         Private remainingBytes As Long
+        Friend Property ShortRead As Boolean
 
         Public Sub New(inner As Stream, maxBytesToRead As Long)
             Me.inner = inner
@@ -832,6 +965,7 @@ Public Module LogPackage
             If readCount > 0 Then
                 remainingBytes -= readCount
             Else
+                ShortRead = True
                 remainingBytes = 0
             End If
             Return readCount
@@ -866,7 +1000,8 @@ Public Module LogPackage
     Friend Function BuildReport(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object))),
                                 Optional dumpDirectory As String = Nothing,
                                 Optional logSourceLines As IEnumerable(Of String) = Nothing,
-                                Optional hostingBlock As String = Nothing) As String
+                                Optional hostingBlock As String = Nothing,
+                                Optional safeMetadata As Boolean = False) As String
         Dim sb As New StringBuilder()
 
         sb.AppendLine(ProductNames.Full & " - diagnostic report")
@@ -874,7 +1009,7 @@ Public Module LogPackage
         sb.AppendLine()
 
         sb.AppendLine("[application]")
-        sb.AppendLine("Running exe: " & CurrentExePath())
+        sb.AppendLine("Running exe: " & Path.GetFileName(CurrentExePath()))
         sb.AppendLine("Version: " & AppVersion())
         For Each sibling As String In {"FastMediaSorter_LITE.exe", "FastMediaSorter_x86.exe", "FastMediaSorterCompanion.exe"}
             ' VB is case-insensitive, so a local named "path" would shadow System.IO.Path.
@@ -941,21 +1076,21 @@ Public Module LogPackage
 
         sb.AppendLine("[settings]")
         Try
-            For Each line As String In DescribeSettings(settingsSource())
+            For Each line As String In DescribeSettings(settingsSource(), safeNamesOnly:=safeMetadata)
                 sb.AppendLine(line)
             Next
         Catch ex As Exception
-            sb.AppendLine("unreadable: " & ex.Message)
+            sb.AppendLine("unreadable: settings_read_failed")
         End Try
         sb.AppendLine()
 
         sb.AppendLine("[crash dumps - names and sizes only; contents excluded]")
-        sb.AppendLine(DescribeCrashDumps(If(dumpDirectory, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"))))
+        sb.AppendLine(If(safeMetadata, "not collected", DescribeCrashDumps(If(dumpDirectory, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps")))))
         sb.AppendLine()
         sb.AppendLine("[recent errors]")
-        Dim errors As List(Of String) = RecentErrorLines()
+        Dim errors As List(Of String) = If(safeMetadata, New List(Of String)(), RecentErrorLines())
         If errors.Count = 0 Then
-            sb.AppendLine("none found in the log")
+            sb.AppendLine(If(safeMetadata, "see sanitized log entries", "none found in the log"))
         Else
             For Each line As String In errors
                 sb.AppendLine(line)
@@ -1099,7 +1234,9 @@ Public Module LogPackage
         Using key As RegistryKey = Registry.CurrentUser.OpenSubKey(keyPath, False)
             If key Is Nothing Then Return values
             For Each name As String In key.GetValueNames()
-                values.Add(New KeyValuePair(Of String, Object)(name, key.GetValue(name)))
+                ' Unknown values need only contribute a count; secret values are never read for export.
+                Dim readValue As Boolean = SafeSettingNames.Contains(name) OrElse CountedListSettingNames.Contains(name) OrElse IsRecipientSlot(name)
+                values.Add(New KeyValuePair(Of String, Object)(name, If(readValue, key.GetValue(name), Nothing)))
             Next
         End Using
         Return values
@@ -1111,7 +1248,8 @@ Public Module LogPackage
     ''' only whether it is set; everything else is summed into one "not sent" line.
     ''' Pure, so the tests can seed it.
     ''' </summary>
-    Friend Function DescribeSettings(values As IEnumerable(Of KeyValuePair(Of String, Object))) As List(Of String)
+    Friend Function DescribeSettings(values As IEnumerable(Of KeyValuePair(Of String, Object)),
+                                     Optional safeNamesOnly As Boolean = False) As List(Of String)
         Dim lines As New List(Of String)()
         Dim withheld As Integer = 0
         Dim any As Boolean = False
@@ -1121,6 +1259,10 @@ Public Module LogPackage
                 any = True
                 Dim name As String = If(pair.Key, "")
                 If NeverEmittedSettingNames.Contains(name) Then Continue For
+                If safeNamesOnly AndAlso Not SafeSettingNames.Contains(name) AndAlso Not CountedListSettingNames.Contains(name) AndAlso Not IsRecipientSlot(name) Then
+                    withheld += 1
+                    Continue For
+                End If
 
                 Dim text As String = If(Convert.ToString(pair.Value, CultureInfo.InvariantCulture), "")
                 If IsSecretSetting(name) Then

@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>Editar imagen - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">Editar imagen</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>Un peque&#241;o editor para una sola imagen fija: dibujar formas, recortar, girar y voltear, y luego guardar sobre el original o como archivo nuevo. Se abre, con el nombre de archivo de la imagen en el t&#237;tulo, desde el bot&#243;n Editar de la barra de herramientas o el primer elemento del men&#250; de la imagen, y solo para una imagen fija (no para una animaci&#243;n). El editor vuelve a leer el archivo y trabaja con su propia copia.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="Editar imagen">
+    <img class="shot dark" src="image-editor-dark.png" alt="Editar imagen">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Pulse Editar en el visor.</li><li>Elija una herramienta, un color y un grosor.</li><li>Dibuje sobre la imagen, o rec&#243;rtela, g&#237;rela o volt&#233;ela; Deshacer retrocede un paso.</li><li>Pulse Guardar para escribir sobre el original, o Guardar como.. para un archivo nuevo.</li><li>Cierre la ventana; si hay cambios sin guardar, responda a la pregunta.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>Herramientas</summary><p>En la tira: Recortar, Pincel, Rect&#225;ngulo, Rect&#225;ngulo relleno, &#211;valo y &#211;valo relleno. Las teclas son C, B, R y O (las de relleno no tienen). Mantenga pulsada Shift al dibujar un rect&#225;ngulo o un &#243;valo para obtener un cuadrado o un c&#237;rculo. Al pasar el cursor sobre una herramienta se muestran su nombre y su tecla.</p></details>
+<details id="colour-thickness"><summary>Color y grosor</summary><p>El bot&#243;n de color abre el cuadro de colores, y a su lado hay ocho muestras r&#225;pidas (negro, blanco, rojo, amarillo, lima, azul, magenta, gris). El grosor va de 1 a 64 p&#237;xeles de la imagen (4 por defecto); las teclas [ y ] lo cambian de uno en uno. El color y el grosor son comunes a todas las herramientas.</p></details>
+<details id="crop"><summary>Recortar</summary><p>Con la herramienta Recortar, arrastre un marco sobre la imagen. El bot&#243;n Aplicar recorte aparece solo mientras existe un marco. Enter hace lo mismo; Esc quita el marco sin recortar. La imagen se corta solo cuando aplica el recorte.</p></details>
+<details id="rotate-flip"><summary>Girar y voltear</summary><p>Girar a la izquierda (Ctrl+[) y Girar a la derecha (Ctrl+]) giran los p&#237;xeles. Las teclas H y V voltean la imagen horizontal y verticalmente. Esto cambia la propia imagen, a diferencia de R en el visor, que solo gira la visualizaci&#243;n.</p></details>
+<details id="undo-redo"><summary>Deshacer y Rehacer</summary><p>Deshacer (Ctrl+Z) y Rehacer (Ctrl+Y o Ctrl+Shift+Z) recorren un historial de hasta 20 pasos dentro de un l&#237;mite de memoria. La l&#237;nea de estado muestra el tama&#241;o y, tras un cambio, modificado con Paso N de M; cuando el l&#237;mite descarta los pasos m&#225;s antiguos dice Se descartaron los pasos antiguos: l&#237;mite de memoria.</p></details>
+<details id="save"><summary>Guardar</summary><p>Guardar (Ctrl+S) escribe sobre el original y solo se activa tras un cambio; antes, su indicaci&#243;n dice Nada que guardar: la imagen no se ha modificado. Para un JPEG se le pregunta una vez por sesi&#243;n: El JPEG se volver&#225; a comprimir - es irreversible. La fecha de captura y el resto de los datos EXIF se conservan. El archivo se escribe con un nombre temporal y se intercambia; si falla el guardado, la ventana sigue abierta con el motivo.</p></details>
+<details id="save-as"><summary>Guardar como..</summary><p>Abre un cuadro de archivo con el nombre seguido de (editada). Los formatos son PNG, JPEG, BMP, TIFF y WebP; una imagen en cualquier otro formato se ofrece como PNG. Se rechaza la carpeta temporal de un archivo comprimido. Tras guardar sobre el original, el visor lo recarga; un archivo nuevo en la misma carpeta se abre; uno que est&#233; en otro lugar se nombra en la l&#237;nea de estado.</p></details>
+<details id="save-refused"><summary>Cuando Guardar est&#225; desactivado</summary><p>La l&#237;nea de estado dice No se puede sobrescribir el original, con el motivo: este formato no se escribe, el archivo es de solo lectura, no hay permisos de escritura, otro programa est&#225; usando el archivo, el archivo tiene varias p&#225;ginas o fotogramas (solo se edita el primero), est&#225; dentro de un archivo comprimido o no existe. Guardar como.. sigue disponible.</p></details>
+<details id="close"><summary>Cierre</summary><p>Cerrar o Esc cierra la ventana; Esc primero cancela un trazo en curso y despu&#233;s quita el marco de recorte. Con cambios sin guardar la pregunta dice: Los cambios no est&#225;n guardados - &#191;Cerrar el editor y perder los cambios no guardados? Guardar guarda primero, No guardar descarta, Cancelar (la respuesta predeterminada, tambi&#233;n Esc) permanece en el editor. Esta pregunta se hace incluso cuando las confirmaciones est&#225;n desactivadas.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

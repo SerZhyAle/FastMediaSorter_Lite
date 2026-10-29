@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>Digitalizando c&#243;digo QR com a c&#226;mera - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">Digitalizando c&#243;digo QR com a c&#226;mera</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>L&#234; o c&#243;digo QR mostrado pela aplica&#231;&#227;o do telefone atrav&#233;s de uma c&#226;mera deste PC. Abre-se a partir de &#171;Escanear com c&#226;mera..&#187; na janela do c&#243;digo do telefone e a partir da caixa da cadeia de liga&#231;&#227;o da janela da conta de troca; a c&#226;mera arranca quando a janela &#233; mostrada.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>N&#227;o h&#225; captura desta janela: ao abrir, ela inicia um dispositivo, uma escuta de rede ou todo o visualizador, por isso n&#227;o &#233; capturada.</figcaption></figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Segure o c&#243;digo QR do telefone diante da c&#226;mera.</li><li>A janela digitaliza a imagem sozinha; quando encontra um c&#243;digo v&#225;lido, o estado diz &#171;C&#243;digo recebido&#187; e a janela fecha-se.</li><li>Clique em &#171;Cancelar&#187; (Esc) para fechar sem digitalizar.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>Pr&#233;-visualiza&#231;&#227;o e estado</summary><p>A &#225;rea preta mostra a imagem em direto. A linha abaixo diz &#171;Aponte a c&#226;mera para o c&#243;digo QR do telefone&#187; at&#233; um c&#243;digo ser lido.</p></details>
+<details id="camera"><summary>Qual c&#226;mera</summary><p>S&#243; &#233; usada a primeira c&#226;mera encontrada. Se n&#227;o existir nenhuma ou n&#227;o for poss&#237;vel inici&#225;-la, a linha diz &#171;A c&#226;mera n&#227;o est&#225; dispon&#237;vel&#187;, seguida do motivo quando existe.</p></details>
+<details id="result"><summary>Depois da digitaliza&#231;&#227;o</summary><p>O texto do primeiro c&#243;digo QR v&#225;lido &#233; devolvido &#224; janela que abriu o digitalizador e tratado a&#237; como se tivesse sido colado; na janela do c&#243;digo do telefone, preenche a caixa do c&#243;digo e &#233; entregue, e o Fast Media Sorter continua a fazer as suas perguntas habituais. As imagens ficam apenas na mem&#243;ria: esta janela n&#227;o guarda nem envia nada.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

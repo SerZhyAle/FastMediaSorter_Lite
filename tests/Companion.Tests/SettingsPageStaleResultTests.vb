@@ -96,7 +96,7 @@ Public Class SettingsPageStaleResultTests
     End Sub
 
     Private Shared Sub SelectPage(form As Share_Settings_Form, pageId As String)
-        GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {pageId})
+        GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {pageId, Nothing})
     End Sub
 
     ' ------------------------------------------------------------------ the hosting probe ----

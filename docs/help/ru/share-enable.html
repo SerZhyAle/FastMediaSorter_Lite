@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Enable Sharing - Fast Media Sorter</title>
+  <title>Включить общий доступ к папкам - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Enable Sharing</h1>
+  <h1 id="title">Включить общий доступ к папкам</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Enable Sharing.</p>
+    <p>Запрашивает разрешение установить серверную часть раздачи: небольшой фоновый SFTP-сервер и одно исключение брандмауэра Windows. Окно открывается кнопкой &#171;Включить функции сервера..&#187; главного окна и из мастеров; права администратора нужны один раз.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-enable-light.png" alt="Enable Sharing">
-    <img class="shot dark" src="share-enable-dark.png" alt="Enable Sharing">
+    <img class="shot light" src="share-enable-light.png" alt="Включить общий доступ к папкам">
+    <img class="shot dark" src="share-enable-dark.png" alt="Включить общий доступ к папкам">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте пояснение.</li><li>Нажмите &#171;Установить функции сервера..&#187;.</li><li>Подтвердите запрос прав администратора Windows.</li><li>Дождитесь строки с результатом; при успехе окно сообщает, что общий доступ включён.</li><li>&#171;Отмена&#187; закрывает окно без изменений.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-it-does"><summary>Что оно делает</summary><p>Для раздачи папок на телефон с Android нужны небольшой фоновый SFTP-сервер и разрешение брандмауэра Windows. Пока раздача включена, выбранные папки можно читать по сети, а открытые на запись - ещё и изменять. Если не отмечен режим &#171;только локальная сеть&#187;, программа дополнительно просит роутер открыть порт (UPnP/NAT-PMP) и проверяет адрес через внешний сервис.</p></details>
+<details id="install-button"><summary>Установить функции сервера..</summary><p>Запускает установку и запрос прав администратора Windows. В строке состояния сначала &#171;Настройка.. подтвердите запрос прав администратора&#187;, затем итог. Кнопка доступна, только когда серверный компонент лежит рядом с программой; иначе окно просит переустановить приложение.</p></details>
+<details id="outcomes"><summary>Результаты</summary><p>&#171;Готово. Общий доступ включён.&#187;; &#171;Общий доступ не включён - не получены права администратора.&#187;, если запрос отклонён (ничего не меняется, можно повторить); либо сбой настройки брандмауэра - тогда окно просит повторить и отправить журнал из меню значка в трее.</p></details>
+<details id="admin-rights"><summary>Права администратора и как их забрать</summary><p>Ссылка &#171;Зачем нужны права администратора и как их забрать обратно&#187; объясняет, для чего права нужны. Отменить действие можно пунктом &#171;Выключить функции сервера..&#187; в настройках менеджера: раздача останавливается, подключённые телефоны отключаются, разрешение брандмауэра снимается. Список папок и пароль сохраняются, всё можно включить снова.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>Password di invito condivisa - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">Password di invito condivisa</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>Questa finestra permette agli utenti di registrarsi sul server con una password condivisa invece di un codice di invito monouso. Si apre selezionando &#171;Password di invito condivisa&#187; nel gruppo &#171;Inviti&#187; delle impostazioni del server di scambio, oppure con &#171;Imposta password condivisa..&#187; accanto.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Password di invito condivisa">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Password di invito condivisa">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Scegli il tipo di account.</li><li>Scegli se la password viene generata dal programma o se la digiti tu.</li><li>Premi &#171;Imposta&#187;.</li><li>Se la password &#232; stata generata, copiala dalla finestra che la mostra una sola volta.</li><li>Per smettere di accettarla, deseleziona &#171;Password di invito condivisa&#187; e conferma.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>Tipo di account</summary><p>&#171;Tipo di account da creare:&#187; offre &#171;Dispositivo proprio o famiglia&#187; e &#171;Ospite&#187;. &#171;Ospite&#187; &#232; disattivato e la riga sotto ne indica il motivo: il file server del programma non pu&#242; limitare un login a una sola cartella. Se una password condivisa &#232; gi&#224; attiva, il suo tipo attuale &#232; preselezionato. Se quel tipo esistente &#232; Ospite, &#171;Imposta&#187; &#232; disattivato; la password condivisa pu&#242; comunque essere disattivata.</p></details>
+<details id="password"><summary>Password</summary><p>&#171;Password:&#187; offre &#171;Genera una password sicura casuale&#187; (selezionato per impostazione predefinita) e &#171;Inserisci password manualmente&#187;. Dopo &#171;Imposta&#187;, una password digitata viene richiesta in una finestra della password che verifica i criteri: almeno 10 caratteri con una lettera latina maiuscola, una lettera latina minuscola e una cifra. Annullando quella finestra torni qui.</p></details>
+<details id="set"><summary>Imposta</summary><p>&#171;Imposta&#187; invia al server la password e il tipo di account e attiva la password condivisa; la pagina mostra &#171;Password condivisa salvata e attivata.&#187; e la riga di stato sotto la casella dice &#171;Password condivisa attivata (tipo di account: ..).&#187; Una password generata viene mostrata una sola volta in una finestra a parte: copiala l&#236;, non si pu&#242; leggere di nuovo. Chiunque conosca la password pu&#242; registrare un account del tipo scelto, quindi passala solo alle persone che vuoi ammettere.</p></details>
+<details id="switch-off"><summary>Disattivazione</summary><p>Deselezionando la casella viene chiesto &#171;Disattivare la password di invito condivisa? Le nuove registrazioni con essa non saranno pi&#249; possibili.&#187; La risposta predefinita &#232; No. Dopo S&#236; la pagina mostra &#171;Password condivisa disattivata.&#187; e la riga di stato dice &#171;Password condivisa disattivata.&#187;</p></details>
+<details id="cancel"><summary>Annulla</summary><p>&#171;Annulla&#187; o Esc chiude la finestra e non modifica nulla. Se l&#39;hai aperta selezionando la casella, la casella torna allo stato precedente.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

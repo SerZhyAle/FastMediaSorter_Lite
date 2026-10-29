@@ -148,3 +148,5 @@
 {"path": "docs/contracts/WORKER-LAUNCH.md", "topic": "WORKER-LAUNCH", "area": "contracts", "triggers": ["Adoption, version, state-directory resolution, launch flags or conformance changes for WORKER-LAUNCH"], "role": "source"}
 {"path": "docs/contracts/MEDIA-VIEWER.md", "topic": "MEDIA-VIEWER", "area": "contracts", "triggers": ["Adoption, version, sorting, selection, zoom, slideshow or conformance changes for MEDIA-VIEWER"], "role": "source"}
 {"path": "docs/guides/PORTAL_HONEST_TEXT_234.md", "topic": "Exchange privacy portal hand-off", "area": "sharing", "triggers": ["Changes to sealed exchange content, operator visibility or the portal privacy disclosure"], "role": "source"}
+{"role":"source","triggers":["Changes to document reader controls, preferences, history, bookmarks, permissions, speech or local snapshots"],"topic":"PDF reading and Documents settings","path":"docs/guides/DOCUMENT_READING.md","area":"viewer"}
+{"path": "docs/guides/HTML_PAGE_VIEWER.md", "topic": "HTML page viewer", "area": "viewer", "triggers": ["Changes to the HTML page viewer, its WebView2 host, sanitizer, online pages, HTML settings or stored HTML state"], "role": "source"}

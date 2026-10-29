@@ -14,7 +14,7 @@
   <h1 id="title">Connection Diagnosis</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>ব্যাখ্যা করে কেন একটি সার্ভার বা ডিভাইসে পৌঁছানো যাচ্ছে না এবং ধাপে ধাপে কী চেষ্টা করা যায় তা বলে। এটি কম্পিউটারের বা Windows-এর কোনো সেটিং বদলায় না। এটি রিসোর্স তালিকার আরও মেনুর (নির্বাচিত সারির জন্য) Why doesn&#39;t it connect?.. থেকে খোলে, আমার ডিভাইসের এমন সার্ভার এন্ট্রি থেকে যা আবার সাইন-ইন করছে, বদলে যাওয়া সার্টিফিকেট দেখাচ্ছে বা সংযুক্ত হতে পারছে না, এবং রিসোর্স খোলা ব্যর্থ হলে নিজে থেকেই।</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
@@ -22,13 +22,16 @@
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>What happened পড়ুন।</li><li>What to try-এ যা বলা আছে তা চেষ্টা করুন।</li><li>কারণ তা না হলে Next step চাপুন।</li><li>কেউ কোড চাইলে Details চাপুন, আর সেগুলো দিতে Copy।</li><li>উইন্ডো বন্ধ করুন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>What happened</summary><p>ব্যর্থতা নিয়ে একটি বাক্য, যেমন Cannot reach the server. বা The login or the password is wrong. বা This server does not look like the one you connected to before. এটি সেই ব্যর্থতার ধরন অনুসরণ করে যা উইন্ডোটি খুলেছে।</p></details>
+<details id="what-to-try"><summary>What to try</summary><p>উইন্ডো শুরু হয় পরীক্ষায় যে প্রথম ধাপ ব্যর্থ হয়েছে সেখান থেকে, আর কোনোটি ব্যর্থ না হলে প্রথম ধাপ থেকে। সাধারণ ধাপ: যে ডিভাইসে সার্ভার চলে সেটিকে জাগানো; দুটি ডিভাইসই একই নেটওয়ার্কে আছে কি না দেখা; গেস্ট Wi-Fi ছাড়া; VPN কিছুক্ষণের জন্য বন্ধ করা; Windows নেটওয়ার্ককে ব্যক্তিগত করা; অন্য নেটওয়ার্ক থেকে সার্ভার পরীক্ষা করা; সঠিক তারিখ ও সময় ঠিক করা; নতুন ফিঙ্গারপ্রিন্ট নিশ্চিত করা; লগইন ও পাসওয়ার্ড আবার টাইপ করা। শেষ ধাপ বলে যে এটি শুধু সার্ভারের অপারেটরই ঠিক করতে পারেন।</p></details>
+<details id="next-step"><summary>Next step and Windows Settings</summary><p>Next step ধাপগুলোর মধ্যে এগিয়ে যায় এবং শেষ ধাপে অদৃশ্য হয়। যে দুটি ধাপ Windows সেটিংসে ঠিক করা যায়, নেটওয়ার্ক প্রোফাইল ও ঘড়ি, তাদের জন্য Open Windows Settings বোতাম Windows-এর সংশ্লিষ্ট পাতা খোলে; প্রোগ্রাম নিজে কিছু বদলায় না।</p></details>
+<details id="details-copy"><summary>Details and Copy</summary><p>Details নির্ণয় কোডসহ একটি শুধু-পড়ার বাক্স দেখায় বা লুকায়: ব্যর্থতার ধরন, লক্ষ্য, পথ, ব্যর্থ ধাপ এবং পার হওয়া ধাপগুলো। এতে কখনও ঠিকানা, লগইন, পাসওয়ার্ড বা ফিঙ্গারপ্রিন্ট থাকে না। Copy সেই লাইনটি ক্লিপবোর্ডে রাখে এবং উইন্ডো বলে: Diagnosis codes copied to clipboard.</p></details>
+<details id="how-it-checks"><summary>পরীক্ষা কীভাবে কাজ করে</summary><p>পরীক্ষা শুধু আপনার চেষ্টা করা সংযোগের জন্য চলে এবং শুধু পড়ে: এটি হোস্ট ও পোর্টে পৌঁছানোর চেষ্টা করে এবং নেটওয়ার্কের অবস্থা, VPN অ্যাডাপ্টার, Windows নেটওয়ার্ক প্রোফাইল, ঠিকানার ধরন, ঘড়ি ও সার্টিফিকেট দেখে। এটি প্রথম ব্যর্থ ধাপে থামে, আর যে পরীক্ষা করাই যায়নি তাকে কখনও পাস বা ফেল গণ্য করা হয় না।</p></details>
+    <p><a href="settings.html">সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

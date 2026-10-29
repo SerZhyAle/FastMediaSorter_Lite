@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>Расшарь свою первую папку - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">Расшарь свою первую папку</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>Мастер из шести шагов: от пустого менеджера до папки, которая раздаётся на телефон. Он включает сервер, помогает выбрать первую папку, задать порт и основные параметры и заканчивается проверкой состояния. Мастер открывается при первом запуске Share Manager и его можно повторить из настроек.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="Расшарь свою первую папку">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="Расшарь свою первую папку">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте вступление и нажмите &#171;Далее&#187;.</li><li>На шаге &#171;Включить сервер&#187; нажмите кнопку один раз и подтвердите запрос прав администратора.</li><li>Выберите первую папку и её параметры.</li><li>Оставьте порт или задайте свой.</li><li>Задайте язык, запуск и режим локальной сети.</li><li>На последней странице проверьте состояние, откройте QR-код и нажмите &#171;Готово&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>Шаги и кнопки</summary><p>В нижней строке написано &#171;Шаг N из 6&#187;. &#171;Назад&#187; и &#171;Далее&#187; переходят между страницами, на последней странице &#171;Далее&#187; становится &#171;Готово&#187;; &#171;Позже&#187; закрывает мастер и сохраняет уже подтверждённое, &#171;Не настраивать&#187; закрывает его насовсем. На каждой странице четыре коротких блока: &#171;Что это&#187;, &#171;Зачем&#187;, &#171;Как это будет работать&#187; и &#171;Где это менять&#187;.</p></details>
+<details id="enable-step"><summary>Включить сервер</summary><p>До этого шага сервер выключен. Кнопка &#171;Включить сервер&#187; один раз запрашивает права администратора и добавляет одно правило брандмауэра Windows для программы. Если отменить запрос, сервер остаётся выключенным, и можно попробовать снова; если сервер уже включён, страница сообщает, что дополнительный запрос прав не нужен.</p></details>
+<details id="folder-step"><summary>Первая папка</summary><p>Выберите папку, затем её имя, профиль и доступ. Кнопка &#171;Добавить первый ресурс сейчас..&#187; открывает мастер ресурса. Чтобы продолжить, нужна хотя бы одна папка. Параметры передаются серверу, а папки по-прежнему меняются в списке главного окна.</p></details>
+<details id="port-step"><summary>Порт</summary><p>&#171;Выбирает система&#187; назначает порт один раз и больше не меняет; &#171;Фиксированный порт:&#187; позволяет ввести свой номер, например для проброса порта на роутере. Номер записан в каждый QR-код и файл .fmscfg, поэтому его смена делает уже выданные коды негодными. Правило брандмауэра относится к программе, а не к порту.</p></details>
+<details id="basics-step"><summary>Основные настройки</summary><p>&#171;Язык интерфейса&#187;, &#171;Запускать при входе в Windows&#187;, &#171;Открывать окно менеджера при запуске&#187; и &#171;Только локальная сеть (без доступа из интернета)&#187;. Режим локальной сети отключает проброс порта и адрес из интернета. Автозапуск версии из Store управляется в настройках Windows.</p></details>
+<details id="finish-step"><summary>Готово</summary><p>Последняя страница проверяет сервер и выбранные папки и показывает итог; зелёный статус означает, что раздача действительно работает и папки доступны. &#171;QR-код для телефона&#187; открывает код, &#171;Обновить&#187; повторяет проверку. Если статус требует внимания, исправьте причину в главном окне или вернитесь к шагу с папкой.</p></details>
+<details id="replay"><summary>Повтор мастера</summary><p>Настройки - Общие - &#171;Приветствие..&#187; открывает меню с пунктом &#171;Повторить настройку папок&#187;, который снова запускает этот мастер.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

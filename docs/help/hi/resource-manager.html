@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>संसाधन - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">संसाधन</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>सर्वरों और नेटवर्क फ़ोल्डरों की वह सूची जिन्हें व्यूअर खोल सकता है: SFTP सर्वर, Windows नेटवर्क फ़ोल्डर (SMB) और वे फ़ोल्डर जिन्हें Share Manager इस कंप्यूटर से साझा करता है। यह फ़ोल्डर मेनू में संसाधन प्रबंधित करें.. कमांड से खुलती है; यही सूची सेटिंग विंडो के सर्वर और संसाधन पृष्ठ पर भी है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="संसाधन">
+    <img class="shot dark" src="resource-manager-dark.png" alt="संसाधन">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>जोड़ें.. बटन दबाकर सर्वर की जानकारी भरें, या और बटन से सेटिंग फ़ाइल लाएँ।</li><li>नई पंक्ति चुनें और जाँचें दबाएँ।</li><li>खोलें दबाएँ, या पंक्ति पर डबल-क्लिक करें: व्यूअर कनेक्ट होकर सर्वर का फ़ोल्डर दिखाता है।</li><li>पता या पासवर्ड बदलने के लिए संपादित करें.. और किसी संसाधन को भुला देने के लिए हटाएँ का उपयोग करें।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>सूची</summary><p>कॉलम: नाम, प्रकार, पता, पहुँच और आख़िरी बार खोला। प्रकार SFTP सर्वर, नेटवर्क फ़ोल्डर (SMB) या साझा फ़ोल्डर (Share Manager) होता है; पहुँच में केवल पढ़ने के लिए या पढ़ना और लिखना लिखा होता है। सूची के नीचे की एक पंक्ति संसाधनों की गिनती बताती है, और कोई संसाधन न होने पर विंडो एक संकेत और जोड़ें.. बटन दिखाती है। संपादित करें.., हटाएँ और जाँचें (तथा संसाधन विंडो की निचली पंक्ति में खोलें) के लिए चुनी हुई पंक्ति ज़रूरी है; तब तक उनके टूलटिप में लिखा होता है: पहले सूची से एक संसाधन चुनें</p></details>
+<details id="add-edit"><summary>जोड़ें.. और संपादित करें..</summary><p>जोड़ें.. नए संसाधन का फ़ॉर्म खोलता है और संपादित करें.. चुने हुए संसाधन का फ़ॉर्म। वहाँ लिखा गया पासवर्ड आपके Windows खाते के लिए एन्क्रिप्ट करके सहेजा जाता है, सूची में कभी नहीं।</p></details>
+<details id="remove"><summary>हटाएँ</summary><p>हटाएँ पहले पूछता है, और डिफ़ॉल्ट उत्तर नहीं है। सवाल में संसाधन का नाम होता है और यह बताया जाता है कि उसके लिए सहेजा गया पासवर्ड भी हट जाएगा, जबकि सर्वर पर मौजूद फ़ाइलें प्रभावित नहीं होतीं।</p></details>
+<details id="check"><summary>जाँचें</summary><p>जाँचें चुनी हुई पंक्ति को खोले बिना परखता है। SFTP सर्वर के लिए यह संसाधन के हर ज्ञात पते को आज़माता है और हर एक की रिपोर्ट host:port के रूप में एक निष्कर्ष के साथ देता है: एक भी जीवित SSH उत्तर जाँच को सफल बना देता है, खुला पोर्ट जो SSH नहीं है चेतावनी है, और चुप्पी विफलता है। कोई पासवर्ड नहीं भेजा जाता। नेटवर्क फ़ोल्डर के लिए यह सहेजे गए पासवर्ड से शेयर खोलता है और उसका शीर्ष फ़ोल्डर पढ़ता है; यदि कोई पासवर्ड सहेजा नहीं है तो यह आपसे उसे संपादित करें.. के ज़रिए दर्ज करने को कहता है। Share Manager पंक्ति के लिए यह केवल देखता है कि फ़ोल्डर इस कंप्यूटर पर मौजूद है या नहीं।</p></details>
+<details id="open"><summary>खोलें</summary><p>खोलें, या किसी पंक्ति पर डबल-क्लिक, संसाधन को व्यूअर को सौंप देता है, जो कनेक्ट होकर उसका फ़ोल्डर दिखाता है। यदि पासवर्ड सहेजा नहीं है, या सहेजा हुआ अस्वीकार हो गया, तो पहले एक छोटी विंडो उसे माँगती है।</p></details>
+<details id="more-menu"><summary>और बटन</summary><p>बिंदुओं वाले बटन में ये हैं: निर्यात.. (चुना हुआ संसाधन ज़रूरी); फ़ाइल से आयात.. (.fmscfg, .json या .txt फ़ाइल, या QR कोड की तस्वीर; फ़ाइल को सूची पर छोड़ा भी जा सकता है); क्लिपबोर्ड से आयात; कैमरे से स्कैन करें.. (केवल तब जब Share Manager स्थापित हो और कैमरा मिले); फ़ोन के लिए कोड दिखाएं..; और चुनी हुई पंक्ति के लिए Why doesn&#39;t it connect?.., जो कनेक्शन निदान खोलता है।</p></details>
+<details id="share-manager-rows"><summary>Share Manager पंक्तियाँ और मेरे डिवाइस</summary><p>जो फ़ोल्डर Share Manager इस कंप्यूटर से साझा करता है, उसे वहीं प्रबंधित किया जाता है: उसके टूलटिप में लिखा है: इस साझा फ़ोल्डर को Share Manager में प्रबंधित किया जाता है; उसकी पंक्ति पर संपादित करें.. और हटाएँ यहाँ कुछ बदलने के बजाय Share Manager खोलते हैं, और निर्यात.. अक्षम रहता है। जब एक्सचेंज क्लाइंट उपलब्ध हो, तो सूची के नीचे मेरे डिवाइस अनुभाग एक्सचेंज सर्वर पर आपके अन्य डिवाइस के फ़ोल्डर दिखाता है।</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

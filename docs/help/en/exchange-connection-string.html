@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection String - Fast Media Sorter</title>
+  <title>Exchange server connection string - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection String</h1>
+  <h1 id="title">Exchange server connection string</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection String.</p>
+    <p>This window makes the connection string that other devices use to find this exchange server and to check its certificate. Open it with &#171;Connection string and QR code..&#187; in Exchange server settings or in the server&#39;s first-run welcome. The window changes no setting.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connection-string-light.png" alt="Connection String">
-    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Connection String">
+    <img class="shot light" src="exchange-connection-string-light.png" alt="Exchange server connection string">
+    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Exchange server connection string">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Make sure the server has a certificate and the address for clients is set.</li><li>Open the window: the string appears at once.</li><li>If you want, type a server name and a login; the string is rebuilt a moment after you stop typing.</li><li>Copy the string, save it to a file, show its QR code or copy the sign-in link.</li><li>Give it to the other person and pass the account password separately.</li><li>Press &#171;Close&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>When the button works</summary><p>&#171;Connection string and QR code..&#187; is enabled only when the server has a certificate and the address for clients is set. With the address empty the button stays disabled and the hint under it says &#171;Set the address for clients first: the connection string cannot be made without it.&#187; Inside the window the buttons stay disabled while there is no string.</p></details>
+<details id="name-and-login"><summary>Server name and login</summary><p>&#171;Server name (optional):&#187; takes up to 64 characters and is stored in the string as the server&#39;s name. &#171;For this login (optional):&#187; takes 3 to 64 characters (a-z, 0-9, dot, underscore, hyphen) and is filled into the sign-in form of the device that uses the string. A password never goes into the string.</p></details>
+<details id="connection-string"><summary>Connection string</summary><p>The read-only box &#171;Connection string:&#187; shows the result: the address for clients, the certificate fingerprint and the optional name and login. The device that receives it trusts the fingerprint from the string, so nobody compares it by hand.</p></details>
+<details id="copy-and-save"><summary>Copy and save</summary><p>&#171;Copy the string&#187; puts it on the clipboard as ordinary text, because it is not a secret, and the line below says &#171;The string is copied.&#187; &#171;Save to file..&#187; writes a .fmsexch text file (suggested name exchange-server.fmsexch) and shows its path; the other device reads it with &#171;Open file..&#187; in its exchange account window. If the clipboard is busy or the file cannot be written, a line says so.</p></details>
+<details id="qr-and-link"><summary>QR code and sign-in link</summary><p>&#171;Show the QR code&#187; opens a picture of the same string for scanning; it names a server and grants no access to anything. &#171;Copy sign-in link&#187; appears only when this server serves a web client; it copies a browser link that carries the same string.</p></details>
+<details id="refusals"><summary>If the string cannot be made</summary><p>A line in the warning colour names the cause: the name or login is outside the limits; the server has no certificate (start the server once); or the exchange server did not answer. Correct the cause and the string is rebuilt. &#171;Close&#187; ends the window; the name and login are not saved.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

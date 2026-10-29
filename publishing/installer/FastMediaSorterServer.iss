@@ -164,13 +164,13 @@ ukrainian.CompServer=Сервер роздачі тек - Менеджер сп�
 english.CompFileDO=FileDO virtual disk host - optional extra (disk sharing stays off until you enable it)
 russian.CompFileDO=Хост виртуальных дисков FileDO - необязательное дополнение (общий доступ к дискам включается отдельно)
 ukrainian.CompFileDO=Хост віртуальних дисків FileDO - необов’язкове доповнення (спільний доступ до дисків вмикається окремо)
-english.CompViewer=Media viewer and sorter - optional extra, not installed unless ticked (codecs and OCR models download on demand)
-russian.CompViewer=Просмотрщик и сортировщик медиа - необязательное дополнение, не ставится, пока вы его не отметите (кодеки и модели OCR скачаются по мере надобности)
-ukrainian.CompViewer=Переглядач і сортувальник медіа - необов’язкове доповнення, не ставиться, доки ви його не позначите (кодеки та моделі OCR завантажаться за потреби)
+english.CompViewer=Media and file manager - optional extra, not installed unless ticked (codecs and OCR models download on demand)
+russian.CompViewer=Медиа- и файловый менеджер - необязательное дополнение, не ставится, пока вы его не отметите (кодеки и модели OCR скачаются по мере надобности)
+ukrainian.CompViewer=Медіа- та файловий менеджер - необов’язкове доповнення, не ставиться, доки ви його не позначите (кодеки та моделі OCR завантажаться за потреби)
 #ifndef NoExchange
-english.CompExchange={#ExchangeServerName} - optional extra; a relay that lets share servers and clients reach each other (not installed unless ticked; the Windows service is a separate choice on the tasks page)
-russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер обмена, через который серверы раздачи и клиенты находят друг друга (не ставится, пока вы его не отметите; служба Windows - отдельный выбор на странице задач)
-ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер обміну, через який сервери роздачі та клієнти знаходять одне одного (не ставиться, доки ви його не позначите; служба Windows - окремий вибір на сторінці завдань)
+english.CompExchange={#ExchangeServerName} - optional extra: a server you run yourself, through which your devices reach each other (not installed unless ticked; the Windows service is a separate choice on the tasks page)
+russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер, который вы запускаете сами и через который ваши устройства связываются друг с другом (не ставится, пока вы его не отметите; служба Windows - отдельный выбор на странице задач)
+ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер, який ви запускаєте самі і через який ваші пристрої зв’язуються між собою (не ставиться, доки ви його не позначите; служба Windows - окремий вибір на сторінці завдань)
 english.ExchangeServiceTask=Run the {#ExchangeServerName} as a Windows service (starts at boot; adds one program-scoped firewall rule)
 russian.ExchangeServiceTask=Запускать {#ExchangeServerName} как службу Windows (стартует при загрузке; добавляет одно правило брандмауэра для этой программы)
 ukrainian.ExchangeServiceTask=Запускати {#ExchangeServerName} як службу Windows (стартує під час завантаження; додає одне правило брандмауера для цієї програми)
@@ -191,12 +191,12 @@ ukrainian.OpenManagerTask=Відкрити Менеджер спільного �
 ; The wizard's first screen and the components page lead with the server role and name the
 ; two secondary roles once, as optional and off until chosen. [name/ver] is Inno's own token.
 [Messages]
-english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The next page offers two optional extras: FileDO virtual disk hosting (ticked - clear it if you do not need it) and the media viewer and sorter (unticked - tick it to add it).%n%nIt is recommended that you close all other applications before continuing.
-russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. На следующей странице два необязательных дополнения: хостинг виртуальных дисков FileDO (отмечено - снимите галочку, если он не нужен) и просмотрщик и сортировщик медиа (не отмечено - отметьте, чтобы добавить).%n%nРекомендуется закрыть все остальные приложения перед продолжением.
-ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. На наступній сторінці два необов’язкові доповнення: хостинг віртуальних дисків FileDO (позначено - зніміть позначку, якщо він не потрібен) і переглядач та сортувальник медіа (не позначено - позначте, щоб додати).%n%nРекомендовано закрити всі інші програми перед продовженням.
-english.SelectComponentsLabel2=The Folder Share Server is always installed. FileDO virtual disk hosting (ticked) and the media viewer and sorter (unticked) are optional extras; sharing stays off until you choose folders. Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Хостинг виртуальных дисков FileDO (отмечен) и просмотрщик и сортировщик медиа (не отмечен) - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки. Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Хостинг віртуальних дисків FileDO (позначено) і переглядач та сортувальник медіа (не позначено) - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки. Натисніть "Далі", коли будете готові продовжити.
+english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The next page offers two optional extras: FileDO virtual disk hosting (ticked - clear it if you do not need it) and the media and file manager (unticked - tick it to add it).%n%nIt is recommended that you close all other applications before continuing.
+russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. На следующей странице два необязательных дополнения: хостинг виртуальных дисков FileDO (отмечено - снимите галочку, если он не нужен) и медиа- и файловый менеджер (не отмечено - отметьте, чтобы добавить).%n%nРекомендуется закрыть все остальные приложения перед продолжением.
+ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. На наступній сторінці два необов’язкові доповнення: хостинг віртуальних дисків FileDO (позначено - зніміть позначку, якщо він не потрібен) і медіа- та файловий менеджер (не позначено - позначте, щоб додати).%n%nРекомендовано закрити всі інші програми перед продовженням.
+english.SelectComponentsLabel2=The Folder Share Server is always installed. FileDO virtual disk hosting (ticked) and the media and file manager (unticked) are optional extras; sharing stays off until you choose folders. Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Хостинг виртуальных дисков FileDO (отмечен) и медиа- и файловый менеджер (не отмечен) - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки. Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Хостинг віртуальних дисків FileDO (позначено) і медіа- та файловий менеджер (не позначено) - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки. Натисніть "Далі", коли будете готові продовжити.
 
 [Types]
 Name: "custom"; Description: "{cm:TypeServerCustom}"; Flags: iscustom
@@ -370,17 +370,17 @@ begin
   if IsLanguage('russian') then
     Result := 'На этом компьютере уже установлена пользовательская редакция {#UserEditionName}.' + #13#10#13#10 +
               'Серверная редакция не работает рядом с ней: обе редакции используют один и тот же канал управления, порт и ключ узла. Установка ПЕРЕНЕСЁТ текущее состояние (ключ узла, пароль, список папок, порт) в машинное хранилище и передаст раздачу службе Windows.' + #13#10#13#10 +
-              'Отпечаток ключа узла сохранится - привязанные телефоны продолжат подключаться без повторной привязки. Просмотрщик останется установленным и продолжит работать.' + #13#10#13#10 +
+              'Отпечаток ключа узла сохранится - привязанные телефоны продолжат подключаться без повторной привязки. Медиа- и файловый менеджер останется установленным и продолжит работать.' + #13#10#13#10 +
               'Продолжить?'
   else if IsLanguage('ukrainian') then
     Result := 'На цьому комп''ютері вже встановлено користувацьку редакцію {#UserEditionName}.' + #13#10#13#10 +
               'Серверна редакція не працює поруч із нею: обидві редакції використовують один канал керування, порт і ключ вузла. Встановлення ПЕРЕНЕСЕ поточний стан (ключ вузла, пароль, список тек, порт) у машинне сховище й передасть роздачу службі Windows.' + #13#10#13#10 +
-              'Відбиток ключа вузла збережеться - прив''язані телефони продовжать підключатися без повторної прив''язки. Переглядач залишиться встановленим і працюватиме далі.' + #13#10#13#10 +
+              'Відбиток ключа вузла збережеться - прив''язані телефони продовжать підключатися без повторної прив''язки. Медіа- та файловий менеджер залишиться встановленим і працюватиме далі.' + #13#10#13#10 +
               'Продовжити?'
   else
     Result := 'A User edition of {#UserEditionName} is already installed on this computer.' + #13#10#13#10 +
               'The Server edition cannot run alongside it: both editions use the same control channel, the same port and the same host key. Setup will MIGRATE the current state (host key, password, folder list, port) into the machine store and hand the sharing over to a Windows service.' + #13#10#13#10 +
-              'The host-key fingerprint is preserved, so paired phones keep connecting without re-pairing. The viewer stays installed and keeps working.' + #13#10#13#10 +
+              'The host-key fingerprint is preserved, so paired phones keep connecting without re-pairing. The media and file manager stays installed and keeps working.' + #13#10#13#10 +
               'Continue?';
 end;
 

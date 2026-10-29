@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect Phone Code Intake - Fast Media Sorter</title>
+  <title>Le code du t&#233;l&#233;phone - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Connect Phone Code Intake</h1>
+  <h1 id="title">Le code du t&#233;l&#233;phone</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect Phone Code Intake.</p>
+    <p>Re&#231;oit un code de connexion g&#233;n&#233;r&#233; par l&#39;application du t&#233;l&#233;phone et le transmet &#224; Fast Media Sorter, qui ajoute le dossier du t&#233;l&#233;phone &#224; sa liste de ressources sur cet ordinateur. Elle s&#39;ouvre depuis le bouton &#171;Code de t&#233;l&#233;phone..&#187; de la fen&#234;tre principale de Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="phone-code-intake-light.png" alt="Connect Phone Code Intake">
-    <img class="shot dark" src="phone-code-intake-dark.png" alt="Connect Phone Code Intake">
+    <img class="shot light" src="phone-code-intake-light.png" alt="Le code du t&#233;l&#233;phone">
+    <img class="shot dark" src="phone-code-intake-dark.png" alt="Le code du t&#233;l&#233;phone">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Amenez le code dans la fen&#234;tre de l&#39;une des quatre fa&#231;ons : saisissez-le ou collez-le dans la zone, cliquez sur &#171;Ouvrir un fichier..&#187;, cliquez sur &#171;Depuis le presse-papiers..&#187; ou cliquez sur &#171;Scanner avec la cam&#233;ra..&#187;.</li><li>Cliquez sur &#171;Transmettre&#187;.</li><li>Confirmez l&#39;ajout du dossier dans la fen&#234;tre de Fast Media Sorter qui appara&#238;t.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="code-field"><summary>Code de connexion</summary><p>Une zone d&#39;une seule ligne qui affiche des points &#224; la place des caract&#232;res, car le code est un secret ; il n&#39;est jamais &#233;crit dans un journal. Si vous cliquez sur &#171;Transmettre&#187; avec la zone vide, on vous demande de saisir le code, de le coller ou d&#39;ouvrir un fichier ou une capture d&#39;&#233;cran.</p></details>
+<details id="doors"><summary>Fichier, presse-papiers et cam&#233;ra</summary><p>&#171;Ouvrir un fichier..&#187; lit les fichiers .fmscfg, .json et .txt ainsi que les images QR (.png, .jpg, .jpeg, .bmp, .webp) ; un fichier peut aussi &#234;tre gliss&#233; sur la fen&#234;tre. &#171;Depuis le presse-papiers..&#187; lit le code dans le presse-papiers. &#171;Scanner avec la cam&#233;ra..&#187; ouvre la fen&#234;tre de la cam&#233;ra, et le texte scann&#233; est trait&#233; comme s&#39;il avait &#233;t&#233; coll&#233;.</p></details>
+<details id="hand-over"><summary>Transmettre</summary><p>Le code est v&#233;rifi&#233;, puis envoy&#233; au Fast Media Sorter en cours d&#39;ex&#233;cution, dont la propre bo&#238;te d&#39;importation pose toujours ses questions habituelles. En cas de succ&#232;s, l&#39;&#233;tat indique &#171;Le code a &#233;t&#233; transmis : confirmez l&#39;ajout dans la fen&#234;tre de Fast Media Sorter.&#187; et cette fen&#234;tre se ferme. Si Fast Media Sorter est introuvable, s&#39;il s&#39;agit d&#39;une version plus ancienne ou s&#39;il ne r&#233;pond pas, le code est plac&#233; dans le presse-papiers avec des marqueurs de confidentialit&#233;, et la ligne d&#39;&#233;tat indique de le coller avec &#171;Importer du presse-papiers&#187; dans le panneau des ressources.</p></details>
+<details id="problems"><summary>Messages de la ligne d&#39;&#233;tat</summary><p>Un document qui n&#39;est ni un code de connexion ni un fichier de r&#233;glages de ressources est signal&#233; comme illisible. Un fichier cr&#233;&#233; par une version plus r&#233;cente demande de mettre &#224; jour Fast Media Sorter. Si un autre programme occupe le presse-papiers, l&#39;&#233;tat l&#39;indique.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

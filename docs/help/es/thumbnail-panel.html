@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Administrador de archivos - Fast Media Sorter</title>
+  <title>Panel de im&#225;genes - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Administrador de archivos</h1>
+  <h1 id="title">Panel de im&#225;genes</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Administrador de archivos: doble clic o Intro en una carpeta para abrirla; explorar, seleccionar y cerrar el panel no cambia lo que muestra la ventana principal</p>
+    <p>El panel de im&#225;genes se abre con F3 desde el visor y funciona en dos modos que se eligen en el cuadro &#171;Modo del panel&#187;: Clasificaci&#243;n, una cuadr&#237;cula de miniaturas de la carpeta actual, y Administrador de archivos, un explorador con ubicaciones, carpetas y comandos de archivo. Ver los archivos, seleccionarlos y cerrar el panel no cambian lo que muestra la ventana principal.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="thumbnail-panel-light.png" alt="Administrador de archivos">
-    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Administrador de archivos">
+    <img class="shot light" src="thumbnail-panel-light.png" alt="Panel de im&#225;genes">
+    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Panel de im&#225;genes">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Crear ZIP: incluye todas las carpetas y archivos seleccionados; eliminar originales est&#225; desactivado y requiere publicar el archivo verificado Extraer aqu&#237;: selecciona un archivo; conserva carpetas, archivos normales y el original, sin ejecutar programas extra&#237;dos; Esc cancela la operaci&#243;n</p>
+    <ol class="order"><li>Pulse F3 en el visor.</li><li>Elija el modo en &#171;Modo del panel&#187;.</li><li>Seleccione archivos: clic, Shift+clic para un intervalo, Ctrl+clic para alternar uno o arrastre un marco.</li><li>En el modo Clasificaci&#243;n pulse 0-9 para mover la selecci&#243;n a una carpeta de destino, o Shift con un d&#237;gito de la fila superior para copiarla; Ctrl+Z deshace la &#250;ltima operaci&#243;n.</li><li>Haga doble clic en un archivo o pulse Enter para abrirlo en la ventana principal.</li><li>Pulse Esc para cancelar una operaci&#243;n en curso y de nuevo Esc para cerrar el panel.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-<details id="zip"><summary>Crear ZIP</summary><p>Crear ZIP: incluye todas las carpetas y archivos seleccionados; eliminar originales est&#225; desactivado y requiere publicar el archivo verificado</p></details>
-<details id="extract"><summary>Extraer aqu&#237;</summary><p>Extraer aqu&#237;: selecciona un archivo; conserva carpetas, archivos normales y el original, sin ejecutar programas extra&#237;dos; Esc cancela la operaci&#243;n</p></details>
-    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
+<details id="mode"><summary>Modo del panel</summary><p>&#171;Modo del panel&#187; cambia entre Clasificaci&#243;n y Administrador de archivos. El modo Clasificaci&#243;n muestra miniaturas de la carpeta actual para mover y copiar r&#225;pidamente; el administrador de archivos explora cualquier carpeta y ofrece comandos de archivo.</p></details>
+<details id="toolbar"><summary>Tama&#241;o, disposici&#243;n y selecci&#243;n</summary><p>El control deslizante (Tama&#241;o:) fija el tama&#241;o de las miniaturas, &#171;Mosaicos&#187; y &#171;Lista&#187; cambian la disposici&#243;n (Ctrl+L), y el contador de selecci&#243;n muestra cu&#225;ntos archivos est&#225;n seleccionados del total.</p></details>
+<details id="sorting"><summary>Selecci&#243;n y clasificaci&#243;n</summary><p>El clic selecciona, Shift+clic selecciona un intervalo, Ctrl+clic alterna un archivo y arrastrar dibuja un marco de selecci&#243;n. Ctrl+A selecciona todo, Ctrl+Shift+A borra la selecci&#243;n, Ctrl+I la invierte, la barra espaciadora marca un archivo, y las flechas, Home, End, PgUp y PgDn permiten desplazarse. Los d&#237;gitos 0-9 mueven la selecci&#243;n a la carpeta de destino de esa tecla, Shift con un d&#237;gito de la fila superior la copia, Del la elimina y Ctrl+Z deshace la &#250;ltima operaci&#243;n.</p></details>
+<details id="navigation"><summary>Direcci&#243;n y ubicaciones</summary><p>En el administrador de archivos la barra de direcciones (Alt+D) acepta una ruta: Enter va a ella y Esc restaura la actual. Atr&#225;s, Adelante, Subir y Actualizar tienen Alt+Left, Alt+Right, Alt+Up y F5. La lista Ubicaciones de la izquierda da acceso r&#225;pido a carpetas, recursos y dispositivos.</p></details>
+<details id="filter"><summary>Filtro y archivos ocultos</summary><p>El filtro de contenido elige Archivos multimedia, Multimedia y documentos o Todos los archivos, y &#171;Ocultos&#187; muestra u oculta los archivos ocultos. &#171;Ajustes..&#187; abre la ventana Configuraci&#243;n en la p&#225;gina Administrador de archivos, donde se fijan el modo de visualizaci&#243;n, el filtro, las ubicaciones y el orden recordado.</p></details>
+<details id="files"><summary>Comandos de archivo</summary><p>Ctrl+C, Ctrl+X y Ctrl+V copian, cortan y pegan, F2 cambia el nombre, Ctrl+Shift+N crea una carpeta, Del y Shift+Del eliminan los elementos seleccionados y Alt+Enter muestra las propiedades. Copiar o mover entre recursos pasa por este equipo.</p></details>
+<details id="zip"><summary>Crear ZIP</summary><p>&#171;Crear ZIP&#187; empaqueta todas las carpetas y archivos seleccionados en un solo archivo comprimido. Eliminar los originales est&#225; desactivado de forma predeterminada y solo se permite despu&#233;s de verificar y publicar el archivo comprimido.</p></details>
+<details id="extract"><summary>Extraer aqu&#237;</summary><p>&#171;Extraer aqu&#237;&#187; act&#250;a sobre un archivo comprimido seleccionado: las carpetas y los archivos normales se conservan, el archivo comprimido original se queda en su sitio y los programas extra&#237;dos no se ejecutan nunca. Esc cancela la operaci&#243;n.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

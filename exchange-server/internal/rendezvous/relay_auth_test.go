@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/rendezvous"
 	"fms/exchange-server/internal/testkit"
 	"fms/exchange-server/internal/wire"
@@ -62,6 +63,39 @@ const (
 	ownPassword  = "s3cret-own-pair-7QxL"
 	linkPassword = "s3cret-link-pair-Zp42"
 )
+
+func TestAnEndedProtectedBroadcastNeedsNoCredentialsAndRefundsTheUnknownIDBucket(t *testing.T) {
+	o := looseOpts("alice")
+	o.WithRelay = true
+	o.RelayConfig = func(rc *rendezvous.RelayConfig) { rc.CheckIterations = authRounds }
+	o.Limits.Rates[limits.UnknownID] = limits.Rate{PerMinute: 1, Burst: 1}
+	env := testkit.StartServer(t, o)
+	p, id, _ := startProtected(t, env, verifierList(authPair(env, "own", ownPassword)))
+	if err := p.EndBroadcast(id); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, "the protected broadcast to end", func() bool { return env.Dir.Counts().Broadcasts == 0 && env.Relay.EndedIDs() == 1 })
+	for _, headers := range [][]string{nil, {basicLine(env, "own", "wrong")}, nil, nil} {
+		code, h := statusWith(t, env, id, headers...)
+		if code != http.StatusGone || h.Get("WWW-Authenticate") != "" || h.Get("Retry-After") != "" {
+			t.Fatalf("an ended protected id must answer 410 without a challenge or retry: %d %v", code, h)
+		}
+	}
+	if env.Relay.Checks() != 0 {
+		t.Fatal("an ended broadcast must not hash credentials")
+	}
+	// The ended-id requests above refunded the single token. A genuinely unknown id spends it;
+	// after that the address gets 404 before any lookup, just as it does for a known live id.
+	if code, _ := statusWith(t, env, env.NewID()); code != http.StatusNotFound {
+		t.Fatalf("an unknown id must remain 404: %d", code)
+	}
+	if env.Limiter.Has("127.0.0.1", limits.UnknownID) {
+		t.Fatal("an unknown id must spend the token")
+	}
+	if code, _ := statusWith(t, env, id); code != http.StatusNotFound {
+		t.Fatalf("an exhausted address must get 404 before lookup: %d", code)
+	}
+}
 
 // startProtected enrolls a broadcaster, starts a broadcast with the given `verifiers` member (nil: none) and attaches
 // its upload with one joinable chunk, so that a listener that passes the check is served.

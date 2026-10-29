@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>الموارد - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">الموارد</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>قائمة الخوادم والمجلدات الشبكية التي يستطيع العارض فتحها: خوادم SFTP ومجلدات شبكة Windows (SMB) والمجلدات التي يشاركها Share Manager من هذا الكمبيوتر. تُفتح من الأمر إدارة الموارد.. في قائمة المجلد؛ وتوجد القائمة نفسها في صفحة الخادم والموارد من نافذة الإعدادات.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="الموارد">
+    <img class="shot dark" src="resource-manager-dark.png" alt="الموارد">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اضغط الزر إضافة.. واملأ بيانات الخادم، أو أحضر ملف إعدادات عبر الزر المزيد.</li><li>حدّد الصف الجديد واضغط الزر فحص.</li><li>اضغط الزر فتح، أو انقر الصف نقرًا مزدوجًا: يتصل العارض ويعرض مجلد الخادم.</li><li>استخدم الزر تعديل.. لتغيير عنوان أو كلمة مرور، والزر حذف لنسيان مورد.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>القائمة</summary><p>الأعمدة: الاسم، النوع، العنوان، الوصول، آخر فتح. النوع هو خادم SFTP أو مجلد شبكة (SMB) أو مجلد مشترك (Share Manager)؛ ويذكر الوصول للقراءة فقط أو للقراءة والكتابة. يعدّ سطر تحت القائمة الموارد، وعند عدم وجود أي مورد تعرض النافذة تلميحًا وزرًا (إضافة..). تحتاج الأزرار تعديل.. وحذف وفحص (وفتح في الصف السفلي من نافذة الموارد) إلى صف محدد؛ وقبل ذلك يقول تلميحها: حدد موردًا في القائمة أولاً</p></details>
+<details id="add-edit"><summary>إضافة.. وتعديل..</summary><p>الزر إضافة.. يفتح نموذج مورد جديد، والزر تعديل.. يفتح نموذج المورد المحدد. كلمة المرور المكتوبة هناك تُخزَّن مشفّرة لحساب Windows الخاص بك، ولا تُحفظ أبدًا في القائمة نفسها.</p></details>
+<details id="remove"><summary>حذف</summary><p>يسأل الزر حذف أولاً، والجواب الافتراضي هو لا. يذكر السؤال اسم المورد ويقول إن كلمة المرور المحفوظة له تُحذف أيضًا، بينما لا تتأثر الملفات الموجودة على الخادم.</p></details>
+<details id="check"><summary>فحص</summary><p>يختبر الزر فحص الصف المحدد دون فتحه. بالنسبة إلى خادم SFTP يجرّب كل عنوان معروف للمورد ويبلّغ عن كل عنوان بصيغة host:port مع حكم: ردّ SSH حي واحد يجعل الفحص ناجحًا، ومنفذ مفتوح ليس SSH تحذير، والصمت فشل. لا تُرسَل أي كلمة مرور. بالنسبة إلى مجلد شبكة يفتح المشاركة بكلمة المرور المحفوظة ويقرأ مجلدها الأعلى؛ وإذا لم تكن كلمة مرور محفوظة فإنه يطلب منك إدخال واحدة عبر الزر (تعديل..). وبالنسبة إلى صف Share Manager فإنه ينظر فقط هل المجلد موجود على هذا الكمبيوتر.</p></details>
+<details id="open"><summary>فتح</summary><p>الزر فتح، أو النقر المزدوج على صف، يسلّم المورد إلى العارض الذي يتصل ويعرض مجلده. إذا لم تكن كلمة مرور محفوظة، أو رُفضت المحفوظة، تطلبها نافذة صغيرة أولاً.</p></details>
+<details id="more-menu"><summary>الزر المزيد</summary><p>يضم الزر ذو النقاط ما يلي: تصدير.. (يتطلب موردًا محددًا)؛ استيراد من ملف.. (ملف .fmscfg أو .json أو .txt، أو صورة رمز QR؛ ويمكن أيضًا إسقاط ملف على القائمة)؛ استيراد من الحافظة؛ مسح بالكاميرا.. (يظهر فقط عند تثبيت Share Manager والعثور على كاميرا)؛ إظهار الرمز للهاتف..؛ وللصف المحدد الأمر Why doesn&#39;t it connect?.. الذي يفتح تشخيص الاتصال.</p></details>
+<details id="share-manager-rows"><summary>صفوف Share Manager وأجهزتي</summary><p>المجلد الذي يشاركه Share Manager من هذا الكمبيوتر يُدار هناك: يقول تلميحه هذا المجلد المشترك يُدار في Share Manager، ويفتح تعديل.. وحذف في صفه Share Manager بدلاً من تغيير أي شيء هنا، ويكون تصدير.. معطّلاً. عندما يتوفر عميل التبادل يعرض القسم أجهزتي أسفل القائمة مجلدات أجهزتك الأخرى على خادم تبادل.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

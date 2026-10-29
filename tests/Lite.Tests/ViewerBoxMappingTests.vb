@@ -510,10 +510,11 @@ Public Class ViewerBoxMappingTests
         Assert.Contains("AskDialogs", outside(0))
     End Sub
 
-    ''' <summary>Where a question deliberately stays a system box it says so in the source and is listed here, so the
-    ''' list of exceptions is one a person can read: the close-time prompt ("No" closes the program).</summary>
+    ''' <summary>No question stays a system box any more: the close-time prompt, the one exception, moved onto the
+    ''' product-owned window with named answers (ticket 243 Q-8). A new caller of <c>ShowSystem</c> is a decision to
+    ''' list here with its reason, not a drive-by.</summary>
     <Fact>
-    Public Sub The_questions_that_stay_system_boxes_are_exactly_the_listed_ones()
+    Public Sub No_question_asks_for_the_system_box_directly()
         Dim callers As New List(Of String)()
         For Each path As String In ViewerSourceFiles()
             Dim name As String = System.IO.Path.GetFileName(path)
@@ -524,9 +525,34 @@ Public Class ViewerBoxMappingTests
                 If lines(i).Contains("ViewerBox.ShowSystem(") Then callers.Add(name)
             Next
         Next
-        Assert.Equal(New String() {"Main_Form.Lifecycle.vb"}, callers.Distinct().OrderBy(Function(n) n, StringComparer.Ordinal).ToArray())
+        Assert.Empty(callers)
+    End Sub
+
+    ''' <summary>The close-time prompt names its answers and Escape keeps the program open: the safe answer is the
+    ''' default, the answer of Escape and the close box, and the acting one is destructive and last in the list, so the
+    ''' question window reads it cancel-first like every other (ticket 243 Q-8).</summary>
+    <Fact>
+    Public Sub The_close_prompt_keeps_the_program_open_on_escape()
+        Dim spec As AskSpec = AskSpecs.CloseWithUnfinishedFileOperations(3)
+        Assert.Empty(AskRules.Problems(spec))
+        Assert.Equal(2, spec.Buttons.Count)
+        Assert.Equal(AskSpecs.CloseKeepWaiting, spec.DefaultIndex)
+        Assert.Equal(AskSpecs.CloseKeepWaiting, spec.CancelIndex)
+        Assert.Equal(AskSpecs.CloseKeepWaiting, AskRules.ClosingAnswer(spec))
+        Assert.True(spec.Buttons(AskSpecs.CloseAnyway).Destructive)
+        Assert.False(spec.Buttons(AskSpecs.CloseKeepWaiting).Destructive)
+        Assert.True(AskRules.DefaultIsSafe(spec))
+        Assert.Contains("3", spec.Body)
+    End Sub
+
+    ''' <summary>The viewer asks it through the product-owned window and takes "wait longer" as the answer that keeps
+    ''' the drain going; the system box is not used there.</summary>
+    <Fact>
+    Public Sub The_lifecycle_close_prompt_goes_through_the_question_window()
         Dim lifecycle As String = SourceText("Main_Form.Lifecycle.vb")
-        Assert.Contains("stays the SYSTEM box on purpose", lifecycle)
+        Assert.Contains("AskSpecs.CloseWithUnfinishedFileOperations(outstanding)", lifecycle)
+        Assert.Contains("= AskSpecs.CloseKeepWaiting", lifecycle)
+        Assert.DoesNotContain("ShowSystem", lifecycle)
     End Sub
 
 End Class

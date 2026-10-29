@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>Compartir: c&#243;digo de acceso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">Compartir: c&#243;digo de acceso</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>Crea el c&#243;digo de acceso para un tel&#233;fono: un c&#243;digo QR y un archivo .fmscfg que contienen la direcci&#243;n, el usuario y las carpetas elegidas. Se abre desde el bot&#243;n &#171;Compartir&#187; de la ventana principal mientras el uso compartido est&#225; activado y, antes de entregar el c&#243;digo, comprueba que el tel&#233;fono pueda llegar de verdad al PC.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="Compartir: c&#243;digo de acceso">
+    <img class="shot dark" src="package-wizard-dark.png" alt="Compartir: c&#243;digo de acceso">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Marca las carpetas que ir&#225;n en el c&#243;digo.</li><li>Edita cualquier celda de la tabla que deba ser distinta para este c&#243;digo.</li><li>Si hace falta, marca &#171;No incluir la direcci&#243;n de internet en este c&#243;digo&#187; o &#171;No incluir la contrase&#241;a en el archivo/QR&#187;.</li><li>Espera a la comprobaci&#243;n de acceso.</li><li>Muestra el c&#243;digo QR, guarda el archivo .fmscfg, env&#237;alo por correo o copia el usuario y la contrase&#241;a.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>Carpetas y ajustes para este c&#243;digo de acceso</summary><p>Una fila por carpeta compartida, con las columnas S&#237;, Carpeta, Nombre en el tel&#233;fono, Tipo, Tipos de medios, Escanear subcarpetas, Subcarpetas como elementos, Ocultos, Solo lectura, Indicaci&#243;n RO, Destino, Comentario y Pase de diapositivas, s. Haz clic en una celda para cambiarla. Los valores parten de los ajustes propios de cada carpeta y las ediciones solo valen para este c&#243;digo. &#171;Solo lectura&#187; es un bloqueo real en el servidor; &#171;Indicaci&#243;n RO&#187; solo oculta los botones de edici&#243;n en la aplicaci&#243;n. Una carpeta de destino siempre admite escritura, as&#237; que &#171;Solo lectura&#187; no se aplica a ella.</p></details>
+<details id="common-settings"><summary>Ajustes de transferencia comunes</summary><p>&#171;No incluir la direcci&#243;n de internet en este c&#243;digo&#187; hace que el tel&#233;fono se conecte solo por la red local; no apaga el servidor, y el acceso desde internet para todo lo compartido se cierra en los ajustes del gestor. &#171;No incluir la contrase&#241;a en el archivo/QR&#187; quita la contrase&#241;a del c&#243;digo; entr&#233;gala por separado. Que el tel&#233;fono acepte un c&#243;digo sin contrase&#241;a depende de la versi&#243;n de la aplicaci&#243;n.</p></details>
+<details id="access-check"><summary>Comprobaci&#243;n de acceso</summary><p>Mientras se obtiene el estado, la ventana lo indica. Si el servidor no est&#225; en marcha, no hay ninguna carpeta marcada o no hay una direcci&#243;n utilizable, una sugerencia dice qu&#233; falta. Cuando la comprobaci&#243;n no termina, no se entregan ni el c&#243;digo ni el archivo: pulsa &#171;Comprobar el acceso de nuevo&#187;.</p></details>
+<details id="qr-code"><summary>Mostrar el c&#243;digo QR</summary><p>El c&#243;digo QR y el archivo .fmscfg abren el acceso a las carpetas y contienen la contrase&#241;a y el PIN, si se defini&#243;: gu&#225;rdalos y entr&#233;galos como una llave. Si los ajustes son demasiado grandes para un c&#243;digo QR, guarda el archivo y env&#237;alo en su lugar.</p></details>
+<details id="file-and-mail"><summary>Archivo, correo y usuario</summary><p>&#171;Guardar un archivo .fmscfg..&#187; escribe el archivo; en un sistema de archivos que no puede restringir el acceso, o en una carpeta que otros pueden modificar, la ventana lo rechaza porque el archivo contiene una clave de acceso. &#171;Enviar por correo..&#187; adjunta el archivo con una nota para importarlo en la aplicaci&#243;n Android y borrarlo despu&#233;s. &#171;Copiar usuario/contrase&#241;a&#187; pone ambos en el portapapeles.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Lien pour un dossier - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Lien pour un dossier</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Remet un dossier publi&#233; &#224; une personne qui n&#39;a pas de compte sur le serveur d&#39;&#233;change : sous forme de code QR, de texte du lien et de fichier .fmscfg. La fen&#234;tre s&#39;ouvre apr&#232;s &#171; Cr&#233;er un lien.. &#187; ou &#171; Nouveau lien.. &#187; dans le groupe &#171; Mes dossiers partag&#233;s dans le compte d&#39;&#233;change &#187;, ainsi que par &#171; Afficher QR / Code.. &#187; dans la fen&#234;tre &#171; Donner l&#39;acc&#232;s ext&#233;rieur.. &#187; d&#39;un dossier. Dans le programme actuel, les deux commandes sont d&#233;sactiv&#233;es, car l&#39;acc&#232;s pour les personnes ext&#233;rieures au compte n&#39;est pas propos&#233; ; cette page d&#233;crit ce que la fen&#234;tre affiche lorsqu&#39;un lien existe.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Lien pour un dossier">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Lien pour un dossier">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>S&#233;lectionnez un dossier publi&#233; et cliquez sur &#171; Cr&#233;er un lien.. &#187; (ou sur &#171; Nouveau lien.. &#187; pour remplacer un ancien lien).</li><li>Lisez la note en haut de la fen&#234;tre.</li><li>Remettez le lien avec &#171; Afficher le code QR &#187;, &#171; Copier le texte du lien &#187; ou &#171; Enregistrer un fichier .fmscfg.. &#187;.</li><li>Cliquez sur &#171; Fermer &#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Quand la fen&#234;tre est disponible</summary><p>La fen&#234;tre n&#39;existe que pour un lien qui vient d&#39;&#234;tre cr&#233;&#233; ou qui existe d&#233;j&#224;. Tant que l&#39;acc&#232;s pour les personnes ext&#233;rieures au compte n&#39;est pas propos&#233;, &#171; Cr&#233;er un lien.. &#187; et &#171; Nouveau lien.. &#187; sont d&#233;sactiv&#233;s, une note plac&#233;e dessous en donne la raison et la fen&#234;tre ne s&#39;ouvre pas ; &#171; Afficher QR / Code.. &#187; est d&#233;sactiv&#233; lui aussi. &#171; Supprimer le lien &#187; reste disponible.</p></details>
+<details id="note"><summary>La note en haut</summary><p>&#171; Remettez &#224; la personne le code ou le fichier. Ils donnent acc&#232;s au dossier : ne les publiez pas. &#187; Quiconque d&#233;tient le code QR, le texte du lien ou le fichier peut ouvrir ce dossier. Le texte du lien n&#39;est jamais affich&#233; &#224; l&#39;&#233;cran.</p></details>
+<details id="qr-code"><summary>Afficher le code QR</summary><p>Ouvre l&#39;image du code QR dans une fen&#234;tre d&#39;agrandissement. Le bouton n&#39;est pr&#233;sent que si un code QR a pu &#234;tre cr&#233;&#233; ; &#224; un texte du lien trop volumineux pour un code QR, la fen&#234;tre r&#233;pond &#171; Le code est trop volumineux pour un code QR - utilisez le fichier. &#187;.</p></details>
+<details id="copy-text"><summary>Copier le texte du lien</summary><p>Place le texte du lien (il commence par FMSSFTP2:) dans le presse-papiers par une voie prot&#233;g&#233;e qui le tient &#224; l&#39;&#233;cart de l&#39;historique du presse-papiers Windows et du presse-papiers cloud, et r&#233;pond &#171; Texte du lien copi&#233;. &#187;. Pr&#233;sent uniquement si le lien a un texte.</p></details>
+<details id="save-file"><summary>Enregistrer un fichier .fmscfg..</summary><p>Enregistre un fichier de param&#232;tres pour ce seul dossier, lisible uniquement par son propri&#233;taire. La fen&#234;tre indique &#171; Fichier enregistr&#233; : &#187; suivi du chemin, ou &#171; Impossible d&#39;enregistrer le fichier. &#187;. Pr&#233;sent uniquement si le fichier a pu &#234;tre cr&#233;&#233;.</p></details>
+<details id="renew-or-remove"><summary>Nouveau lien et Supprimer le lien</summary><p>Les deux appartiennent au groupe, pas &#224; cette fen&#234;tre, et les deux demandent d&#39;abord confirmation, avec &#171; Non &#187; comme r&#233;ponse par d&#233;faut : &#171; Nouveau lien.. &#187; pr&#233;vient que tous les codes QR et fichiers pr&#233;c&#233;dents cesseront de fonctionner, &#171; Supprimer le lien &#187; que tous les codes QR et fichiers distribu&#233;s avec lui cesseront de fonctionner.</p></details>
+<details id="close"><summary>Fermer</summary><p>Ferme la fen&#234;tre et en efface le texte du lien, le contenu du fichier et l&#39;image du code QR.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

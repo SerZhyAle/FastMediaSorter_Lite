@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>文件夹链接 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">文件夹链接</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>把一个已发布的文件夹交给在交换服务器上没有账户的人：以 QR 码、链接文本和 .fmscfg 文件的形式。在「交换账户中的我的共享文件夹」组中点击「创建链接..」或「新建链接..」后会打开此窗口；在文件夹的「提供外部访问..」窗口中点击「显示二维码 / 代码..」也会打开。在当前程序中这两个命令都处于禁用状态，因为不提供面向账户之外人员的访问；本页描述的是链接存在时窗口所显示的内容。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="文件夹链接">
+    <img class="shot dark" src="exchange-link-dark.png" alt="文件夹链接">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>选择一个已发布的文件夹，点击「创建链接..」（要替换旧链接则点击「新建链接..」）。</li><li>阅读窗口顶部的说明。</li><li>用下列方式之一交出链接：「显示二维码」、「复制链接文本」或「保存 .fmscfg 文件..」。</li><li>点击「关闭」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>窗口何时可用</summary><p>只有刚创建或已存在的链接才会有此窗口。在不提供面向账户之外人员的访问期间，「创建链接..」和「新建链接..」处于禁用状态，其下方的说明给出原因，窗口不会打开；「显示二维码 / 代码..」同样禁用。「删除链接」仍然可用。</p></details>
+<details id="note"><summary>顶部的说明</summary><p>说明写道：请把代码或文件交给对方。它们包含该文件夹的访问权限：请勿公开发布。谁持有 QR 码、链接文本或文件，谁就能打开该文件夹。链接文本不会显示在屏幕上。</p></details>
+<details id="qr-code"><summary>显示二维码</summary><p>在放大窗口中打开 QR 码图片。只有成功生成 QR 码时才会出现该按钮；若链接文本过大、无法放入 QR 码，则提示：代码过大，无法生成 QR 码 - 请使用文件。</p></details>
+<details id="copy-text"><summary>复制链接文本</summary><p>通过受保护的途径把链接文本（以 FMSSFTP2: 开头）放入剪贴板，使其不进入 Windows 剪贴板历史记录和云剪贴板，并提示：链接文本已复制。只有链接带有文本时才会出现该按钮。</p></details>
+<details id="save-file"><summary>保存 .fmscfg 文件..</summary><p>为这一个文件夹保存一个设置文件，仅其所有者可以读取。窗口会报告「文件已保存：」并附上路径，或报告「无法保存文件。」只有成功生成文件时才会出现该按钮。</p></details>
+<details id="renew-or-remove"><summary>新建链接与删除链接</summary><p>这两个命令都属于该组，而不属于此窗口，并且都会先询问，默认答案为「否」：「新建链接..」警告之前所有的 QR 码和文件都将失效，「删除链接」警告随该链接发出的所有 QR 码和文件都将失效。</p></details>
+<details id="close"><summary>关闭</summary><p>关闭窗口，并清除其中的链接文本、文件内容和 QR 码图片。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

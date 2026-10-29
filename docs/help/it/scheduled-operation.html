@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled File Operation - Fast Media Sorter</title>
+  <title>Operazione pianificata - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled File Operation</h1>
+  <h1 id="title">Operazione pianificata</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled File Operation.</p>
+    <p>Modifica una singola operazione sui file pianificata: copiare, spostare, eliminare o archiviare file da un&#39;origine a una destinazione con una pianificazione ripetuta. Si apre da &#171;Nuova..&#187; o &#171;Modifica..&#187; nella pagina &#171;Operazioni sui file pianificate&#187; delle impostazioni di Share Manager e dalla voce del menu cartella del visualizzatore &#171;Pianifica un&#39;operazione per questa cartella..&#187;, che inserisce quella cartella come origine.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled File Operation">
-    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled File Operation">
+    <img class="shot light" src="scheduled-operation-light.png" alt="Operazione pianificata">
+    <img class="shot dark" src="scheduled-operation-dark.png" alt="Operazione pianificata">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Inserisci un Nome e scegli l&#39;Azione.</li><li>Imposta l&#39;Origine e, per copia, spostamento e archiviazione, la Destinazione, con &#171;Scegli..&#187;, &#171;Risorsa..&#187; o &#171;Tramite Google Drive&#187;.</li><li>Per copia e spostamento scegli cosa succede &#171;Se il nome &#232; gi&#224; in uso&#187;.</li><li>Apri &#171;Condizioni di selezione dei file&#187; per restringere i file.</li><li>Imposta &#171;Inizio alle&#187; e &#171;Ripeti ogni&#187; e lascia selezionata &#171;Esegui in base a una pianificazione&#187;.</li><li>Controlla &#171;Cosa verrebbe eseguito ora..&#187; e premi &#171;Salva&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="action"><summary>Azione e conflitti di nome</summary><p>L&#39;Azione &#232; Copia, Sposta, Elimina o Archivia e la finestra mostra solo le righe necessarie a quell&#39;azione: Elimina non ha Destinazione; &#171;Se il nome &#232; gi&#224; in uso&#187; (Salta, Sovrascrivi, Mantieni entrambe le copie) compare solo per Copia e Sposta; &#171;Elimina i file originali dopo la verifica dell&#39;archivio&#187; compare solo per Archivia e rimuove gli originali soltanto dopo che l&#39;archivio &#232; stato riletto e verificato.</p></details>
+<details id="places"><summary>Origine e destinazione</summary><p>Digita un percorso completo oppure premi &#171;Scegli..&#187;. &#171;Risorsa..&#187; sceglie un server SFTP o una cartella di rete dall&#39;elenco delle risorse del visualizzatore e non &#232; offerta per Archivia, che accetta solo cartelle normali e Google Drive. &#171;Tramite Google Drive&#187; compare solo se hai effettuato l&#39;accesso a Drive o se quel lato lo usa gi&#224;. Quando &#171;Includi sottocartelle&#187; &#232; disattivata, vengono elaborati solo i file della cartella di origine stessa. &#171;Salva&#187; rifiuta le cartelle di sistema e dei programmi e una destinazione uguale all&#39;origine o contenuta in essa, e dice cosa non va.</p></details>
+<details id="delete-verdict"><summary>Eliminazione dei file</summary><p>Quando dei file verranno rimossi (Elimina, oppure Archivia con l&#39;opzione degli originali), una riga &#171;Elimina: ..&#187; indica dove vanno: nel Cestino, oppure in modo permanente con il motivo, per esempio un disco di rete o rimovibile non ha il Cestino. Per un&#39;operazione di questo tipo Invio non salva; premi &#171;Salva&#187; di proposito. Un&#39;esecuzione pianificata non fa mai domande e registra dove sono finiti i file eliminati.</p></details>
+<details id="conditions"><summary>Condizioni di selezione dei file</summary><p>Il pannello si apre da solo quando le condizioni differiscono da quelle predefinite. Tipi di file: Tutti i file, Immagini, Audio, Video, Documenti (&#171;Tutti i file&#187; disattiva gli altri quattro). Modificato: Tutto il periodo, Nuovi dall&#39;ultima esecuzione, Ultima ora, Ultime 24 ore. &#171;Maschera del nome&#187; e &#171;Escludi per maschera&#187; accettano pi&#249; maschere separate da un punto e virgola, per esempio *.jpg;IMG_??.png, confrontate con il nome del file. &#171;Pi&#249; vecchio di&#187; e &#171;Pi&#249; recente di&#187; sono in giorni e ore, &#171;Pi&#249; grande di&#187; e &#171;Pi&#249; piccolo di&#187; in MB. &#171;Includi file nascosti e di sistema&#187; &#232; disattivata per impostazione predefinita.</p></details>
+<details id="schedule"><summary>Pianificazione</summary><p>&#171;Inizio alle&#187; imposta l&#39;ora del giorno e &#171;Ripeti ogni&#187; l&#39;intervallo in ore e minuti; un numero intero di giorni si ripete alla stessa ora. La riga sotto mostra &#171;Prossima esecuzione: ora (regola)&#187; oppure &#171;La pianificazione &#232; disattivata: l&#39;operazione viene eseguita solo manualmente.&#187; &#171;Esegui una volta l&#39;avvio mancato all&#39;apertura del programma&#187; e &#171;Mostra una notifica in caso di errore&#187; sono scelte separate. Un&#39;altra riga indica che la pianificazione funziona solo mentre Share Manager &#232; in esecuzione e se si avvia all&#39;accesso a Windows; nulla in questa finestra cambia l&#39;avvio automatico.</p></details>
+<details id="preview"><summary>Anteprima e Salva</summary><p>&#171;Cosa verrebbe eseguito ora..&#187; elenca i file che l&#39;operazione elaborerebbe e non cambia nulla; un&#39;esecuzione non ne ha bisogno. &#171;Salva&#187; memorizza l&#39;operazione oppure elenca ci&#242; che va corretto. &#171;Annulla&#187; scarta le tue modifiche.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

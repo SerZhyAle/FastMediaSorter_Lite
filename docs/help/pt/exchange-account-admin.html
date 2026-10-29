@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>Nova conta - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">Nova conta</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>Uma janela com dois modos. &#171;Nova conta&#187; adiciona uma conta ao Media Exchange Server que gere; &#171;Redefinir palavra-passe: &lt;login&gt;&#187; d&#225; uma nova palavra-passe a uma conta existente. Abrem-se a partir de &#171;Adicionar uma conta..&#187; e &#171;Redefinir palavra-passe..&#187; por baixo da lista de contas na p&#225;gina Media Exchange Server das defini&#231;&#245;es do Share Manager; para redefinir &#233; preciso ter uma conta selecionada.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="Nova conta">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Nova conta">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>No modo de adi&#231;&#227;o, escreva o utilizador.</li><li>Escolha como a palavra-passe &#233; criada.</li><li>No modo de redefini&#231;&#227;o, decida se todos os dispositivos da conta s&#227;o desligados.</li><li>Clique em &#171;Criar&#187; ou &#171;Redefinir&#187;.</li><li>Copie a palavra-passe gerada da janela seguinte ou escreva a sua.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>Declara&#231;&#227;o para a primeira conta</summary><p>Na primeir&#237;ssima conta, a janela come&#231;a com &#171;Antes de criar a primeira conta, leia o que o operador do servidor pode ver:&#187; e uma caixa s&#243; de leitura com a declara&#231;&#227;o. As contas seguintes e as redefini&#231;&#245;es n&#227;o a mostram.</p></details>
+<details id="login"><summary>Utilizador</summary><p>Apenas no modo de adi&#231;&#227;o. De 3 a 64 caracteres: letras latinas min&#250;sculas, d&#237;gitos, ponto, sublinhado e h&#237;fen; as mai&#250;sculas s&#227;o convertidas em min&#250;sculas. A indica&#231;&#227;o passa &#224; cor de aviso enquanto o texto n&#227;o puder ser um utilizador, e &#171;Criar&#187; n&#227;o avan&#231;a at&#233; que o possa ser.</p></details>
+<details id="password-choice"><summary>Como a palavra-passe &#233; criada</summary><p>&#171;Gerar uma palavra-passe (&#233; mostrada uma s&#243; vez)&#187; &#233; a op&#231;&#227;o predefinida: o programa cria uma palavra-passe aleat&#243;ria que cumpre as regras e a janela seguinte mostra-a uma &#250;nica vez. &#171;Escrever eu a palavra-passe&#187; abre a janela &#171;Palavra-passe da conta&#187;, onde uma linha em direto indica o que falta: pelo menos 10 caracteres com uma letra latina mai&#250;scula, uma min&#250;scula e um algarismo.</p></details>
+<details id="sign-out"><summary>Desligar todos os dispositivos</summary><p>Apenas no modo de redefini&#231;&#227;o. &#171;Desligar tamb&#233;m de imediato todos os dispositivos desta conta&#187; vem marcada por predefini&#231;&#227;o. A linha de resultado indica ent&#227;o que a palavra-passe foi alterada e que todos os dispositivos da conta foram desligados; sem a marca, indica apenas que a palavra-passe foi alterada.</p></details>
+<details id="after"><summary>Depois de o servidor aceitar</summary><p>A linha de resultado indica que a conta foi criada. Uma palavra-passe gerada aparece uma s&#243; vez na sua pr&#243;pria janela com &#171;Copiar palavra-passe&#187; e &#171;Definir a minha pr&#243;pria palavra-passe..&#187;, que volta &#224; redefini&#231;&#227;o com a op&#231;&#227;o &#171;Escrever eu a palavra-passe&#187;. Com &#171;Guardar as palavras-passe das contas neste PC&#187; ativado, a palavra-passe tamb&#233;m fica guardada neste PC e a conta ganha &#171;Mostrar palavra-passe..&#187;. Se esta compila&#231;&#227;o oferecer as fun&#231;&#245;es de cliente da troca e este PC n&#227;o tiver conta pr&#243;pria, inicia sess&#227;o como primeiro dispositivo da conta com esta palavra-passe.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

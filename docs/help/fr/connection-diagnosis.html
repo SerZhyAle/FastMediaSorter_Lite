@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection Diagnosis - Fast Media Sorter</title>
+  <title>Diagnostic de connexion - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection Diagnosis</h1>
+  <h1 id="title">Diagnostic de connexion</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Explique pourquoi un serveur ou un appareil est injoignable et propose ce qu&#39;on peut essayer, une &#233;tape &#224; la fois. Il ne modifie aucun param&#232;tre de l&#39;ordinateur ni de Windows. La fen&#234;tre s&#39;ouvre depuis &#171;Pourquoi la connexion &#233;choue-t-elle ?..&#187; dans le menu &#171;Plus&#187; de la liste des ressources (pour une ligne s&#233;lectionn&#233;e), depuis une entr&#233;e de serveur de &#171;Mes appareils&#187; qui se reconnecte, pr&#233;sente un certificat modifi&#233; ou ne peut pas se connecter, et d&#39;elle-m&#234;me lorsque l&#39;ouverture d&#39;une ressource &#233;choue.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
-    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Connection Diagnosis">
+    <img class="shot light" src="connection-diagnosis-light.png" alt="Diagnostic de connexion">
+    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Diagnostic de connexion">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez &#171;Que s&#39;est-il pass&#233; :&#187;.</li><li>Essayez ce que dit &#171;Que tenter :&#187;.</li><li>Si ce n&#39;est pas la cause, appuyez sur &#171;&#201;tape suivante&#187;.</li><li>Appuyez sur &#171;D&#233;tails&#187; si quelqu&#39;un demande les codes, et sur &#171;Copier&#187; pour les transmettre.</li><li>Fermez la fen&#234;tre.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>Ce qui s&#39;est pass&#233;</summary><p>Une phrase sur l&#39;&#233;chec, par exemple &#171;Impossible de joindre le serveur.&#187;, &#171;L&#39;identifiant ou le mot de passe est incorrect.&#187; ou &#171;Ce serveur ne correspond pas &#224; celui pr&#233;c&#233;demment connect&#233;.&#187;. Elle suit le type d&#39;&#233;chec qui a ouvert la fen&#234;tre.</p></details>
+<details id="what-to-try"><summary>Que tenter</summary><p>La fen&#234;tre commence &#224; la premi&#232;re &#233;tape qui a &#233;chou&#233; lors de la v&#233;rification, ou &#224; la premi&#232;re &#233;tape si aucune n&#39;a &#233;chou&#233;. &#201;tapes typiques : r&#233;veiller l&#39;appareil qui ex&#233;cute le serveur, v&#233;rifier que les deux appareils sont sur le m&#234;me r&#233;seau, quitter un Wi-Fi invit&#233;, d&#233;sactiver un instant un VPN, r&#233;gler le r&#233;seau Windows sur priv&#233;, v&#233;rifier le serveur depuis un autre r&#233;seau, r&#233;gler correctement la date et l&#39;heure, confirmer une nouvelle empreinte, ressaisir l&#39;identifiant et le mot de passe. La derni&#232;re &#233;tape dit que seul l&#39;administrateur du serveur peut y rem&#233;dier.</p></details>
+<details id="next-step"><summary>&#201;tape suivante et Param&#232;tres Windows</summary><p>&#171;&#201;tape suivante&#187; fait avancer dans les &#233;tapes et dispara&#238;t &#224; la derni&#232;re. Pour les deux &#233;tapes que les param&#232;tres Windows peuvent corriger, le profil r&#233;seau et l&#39;horloge, un bouton &#171;Ouvrir les param&#232;tres Windows&#187; ouvre la page Windows correspondante ; le programme ne change rien lui-m&#234;me.</p></details>
+<details id="details-copy"><summary>D&#233;tails et Copier</summary><p>&#171;D&#233;tails&#187; affiche ou masque une zone en lecture seule contenant les codes du diagnostic : le type d&#39;&#233;chec, la cible, la route, l&#39;&#233;tape en &#233;chec et les &#233;tapes parcourues. Elle ne contient jamais d&#39;adresse, d&#39;identifiant, de mot de passe ni d&#39;empreinte. &#171;Copier&#187; place cette ligne dans le presse-papiers et la fen&#234;tre indique &#171;Codes de diagnostic copi&#233;s dans le presse-papiers.&#187;</p></details>
+<details id="how-it-checks"><summary>Comment fonctionne la v&#233;rification</summary><p>La v&#233;rification ne porte que sur la connexion que vous avez tent&#233;e et ne fait que lire : elle essaie de joindre l&#39;h&#244;te et le port et examine l&#39;&#233;tat du r&#233;seau, les adaptateurs VPN, le profil r&#233;seau Windows, la famille d&#39;adresses, l&#39;horloge et le certificat. Elle s&#39;arr&#234;te &#224; la premi&#232;re &#233;tape en &#233;chec, et une v&#233;rification qui n&#39;a pas pu &#234;tre faite n&#39;est jamais compt&#233;e comme r&#233;ussie ni comme &#233;chou&#233;e.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

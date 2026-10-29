@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>फ़ोल्डर के लिए लिंक - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">फ़ोल्डर के लिए लिंक</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>किसी एक प्रकाशित फ़ोल्डर को ऐसे व्यक्ति तक पहुँचाता है जिसका एक्सचेंज सर्वर पर कोई खाता नहीं है: QR कोड, लिंक के टेक्स्ट और .fmscfg फ़ाइल के रूप में। यह विंडो एक्सचेंज खाते में मेरे साझा फ़ोल्डर समूह में लिंक बनाएँ.. या नया लिंक.. दबाने के बाद खुलती है, और फ़ोल्डर की बाहरी पहुंच दें.. विंडो में QR / कोड दिखाएँ.. से भी। मौजूदा प्रोग्राम में ये दोनों कमांड बंद हैं, क्योंकि खाते से बाहर के लोगों के लिए पहुँच उपलब्ध नहीं कराई जाती; यह पृष्ठ बताता है कि लिंक होने पर विंडो क्या दिखाती है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="फ़ोल्डर के लिए लिंक">
+    <img class="shot dark" src="exchange-link-dark.png" alt="फ़ोल्डर के लिए लिंक">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>कोई प्रकाशित फ़ोल्डर चुनें और लिंक बनाएँ.. दबाएँ (पुराने लिंक को बदलने के लिए नया लिंक.. दबाएँ)।</li><li>विंडो के ऊपर लिखा नोट पढ़ें।</li><li>लिंक को इन बटनों में से किसी एक से दें: .fmscfg फ़ाइल सहेजें.., लिंक का टेक्स्ट कॉपी करें या QR कोड दिखाएँ।</li><li>बंद करें दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>विंडो कब उपलब्ध है</summary><p>विंडो केवल उस लिंक के लिए होती है जो अभी बनाया गया है या पहले से मौजूद है। जब तक खाते से बाहर के लोगों के लिए पहुँच उपलब्ध नहीं कराई जाती, लिंक बनाएँ.. और नया लिंक.. बंद रहते हैं, उनके नीचे का नोट कारण बताता है और विंडो नहीं खुलती; QR / कोड दिखाएँ.. भी बंद है। लिंक हटाएँ उपलब्ध रहता है।</p></details>
+<details id="note"><summary>ऊपर का नोट</summary><p>नोट कहता है: व्यक्ति को कोड या फ़ाइल दें। इनमें फ़ोल्डर तक पहुँच शामिल है: इन्हें सार्वजनिक न करें। जिसके पास QR कोड, लिंक का टेक्स्ट या फ़ाइल है, वह उस फ़ोल्डर को खोल सकता है। लिंक का टेक्स्ट स्क्रीन पर कभी नहीं दिखाया जाता।</p></details>
+<details id="qr-code"><summary>QR कोड दिखाएँ</summary><p>QR कोड की तस्वीर को बड़ा करने वाली विंडो में खोलता है। बटन तभी दिखता है जब QR कोड बन सका हो; अगर लिंक का टेक्स्ट QR कोड के लिए बहुत बड़ा हो, तो जवाब मिलता है: कोड QR कोड के लिए बहुत बड़ा है - फ़ाइल का उपयोग करें।</p></details>
+<details id="copy-text"><summary>लिंक का टेक्स्ट कॉपी करें</summary><p>लिंक का टेक्स्ट (वह FMSSFTP2: से शुरू होता है) एक सुरक्षित रास्ते से क्लिपबोर्ड पर रखता है, जो उसे Windows की क्लिपबोर्ड हिस्ट्री और क्लाउड क्लिपबोर्ड से बाहर रखता है, और जवाब देता है: लिंक का टेक्स्ट कॉपी हो गया। बटन तभी दिखता है जब लिंक का टेक्स्ट मौजूद हो।</p></details>
+<details id="save-file"><summary>.fmscfg फ़ाइल सहेजें..</summary><p>सिर्फ़ इसी एक फ़ोल्डर के लिए सेटिंग फ़ाइल सहेजता है, जिसे केवल उसका मालिक पढ़ सकता है। विंडो या तो पथ के साथ फ़ाइल सहेजी गई: बताती है, या फ़ाइल सहेजी नहीं जा सकी। बटन तभी दिखता है जब फ़ाइल बन सकी हो।</p></details>
+<details id="renew-or-remove"><summary>नया लिंक और लिंक हटाएँ</summary><p>दोनों इस विंडो के नहीं, समूह के हैं, और दोनों पहले पूछते हैं (डिफ़ॉल्ट जवाब: नहीं): नया लिंक.. चेतावनी देता है कि पहले के सभी QR कोड और फ़ाइलें काम करना बंद कर देंगी, और लिंक हटाएँ चेतावनी देता है कि उसके साथ दिए गए सभी QR कोड और फ़ाइलें काम करना बंद कर देंगी।</p></details>
+<details id="close"><summary>बंद करें</summary><p>विंडो बंद करता है और उससे लिंक का टेक्स्ट, फ़ाइल की सामग्री और QR की तस्वीर हटा देता है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

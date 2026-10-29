@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Dateimanager - Fast Media Sorter</title>
+  <title>Bildleiste - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Dateimanager</h1>
+  <h1 id="title">Bildleiste</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Dateimanager: Doppelklick oder Enter auf einem Ordner &#246;ffnet ihn; Durchsuchen, Ausw&#228;hlen und Schlie&#223;en des Panels &#228;ndern nichts an der Anzeige im Hauptfenster</p>
+    <p>Die Bildleiste &#246;ffnet sich im Viewer mit F3 und arbeitet in zwei Modi, die im Feld &#171;Panelmodus&#187; gew&#228;hlt werden: Sortieren, ein Raster aus Vorschaubildern des aktuellen Ordners, und Dateimanager, ein Browser mit Orten, Ordnern und Dateibefehlen. Dateien ansehen, ausw&#228;hlen und die Leiste schlie&#223;en &#228;ndern nicht, was das Hauptfenster zeigt.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="thumbnail-panel-light.png" alt="Dateimanager">
-    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Dateimanager">
+    <img class="shot light" src="thumbnail-panel-light.png" alt="Bildleiste">
+    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Bildleiste">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>ZIP erstellen: Das Archiv enth&#228;lt alle gew&#228;hlten Ordner und Dateien; Originale werden standardm&#228;&#223;ig behalten und erst nach gepr&#252;fter Archivver&#246;ffentlichung gel&#246;scht Hier entpacken: Ein Archiv w&#228;hlen; Ordner und normale Dateien bleiben erhalten, das Archiv bleibt bestehen, Programme werden nie gestartet; Esc bricht ab</p>
+    <ol class="order"><li>Dr&#252;cken Sie im Viewer F3.</li><li>W&#228;hlen Sie den Modus in &#171;Panelmodus&#187;.</li><li>W&#228;hlen Sie Dateien aus: Klick, Shift+Klick f&#252;r einen Bereich, Ctrl+Klick f&#252;r eine einzelne Datei oder einen Rahmen aufziehen.</li><li>Dr&#252;cken Sie im Sortiermodus 0-9, um die Auswahl in einen Zielordner zu verschieben, oder Shift mit einer Ziffer der oberen Tastenreihe, um sie zu kopieren; Ctrl+Z macht den letzten Vorgang r&#252;ckg&#228;ngig.</li><li>Doppelklicken Sie eine Datei oder dr&#252;cken Sie Enter, um sie im Hauptfenster zu &#246;ffnen.</li><li>Esc bricht einen laufenden Vorgang ab, ein weiteres Esc schlie&#223;t die Leiste.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-<details id="zip"><summary>ZIP erstellen</summary><p>ZIP erstellen: Das Archiv enth&#228;lt alle gew&#228;hlten Ordner und Dateien; Originale werden standardm&#228;&#223;ig behalten und erst nach gepr&#252;fter Archivver&#246;ffentlichung gel&#246;scht</p></details>
-<details id="extract"><summary>Hier entpacken</summary><p>Hier entpacken: Ein Archiv w&#228;hlen; Ordner und normale Dateien bleiben erhalten, das Archiv bleibt bestehen, Programme werden nie gestartet; Esc bricht ab</p></details>
-    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
+<details id="mode"><summary>Panelmodus</summary><p>&#171;Panelmodus&#187; schaltet zwischen Sortieren und Dateimanager um. Der Sortiermodus zeigt Vorschaubilder des aktuellen Ordners zum schnellen Verschieben und Kopieren; der Dateimanager durchsucht jeden Ordner und bietet Dateibefehle.</p></details>
+<details id="toolbar"><summary>Gr&#246;&#223;e, Ansicht und Auswahl</summary><p>Der Schieberegler (Gr&#246;&#223;e:) legt die Gr&#246;&#223;e der Vorschaubilder fest, &#171;Kacheln&#187; und &#171;Liste&#187; schalten die Ansicht um (Ctrl+L), und der Auswahlz&#228;hler zeigt, wie viele Dateien von der Gesamtzahl ausgew&#228;hlt sind.</p></details>
+<details id="sorting"><summary>Ausw&#228;hlen und Sortieren</summary><p>Klick w&#228;hlt aus, Shift+Klick w&#228;hlt einen Bereich, Ctrl+Klick schaltet eine einzelne Datei um, und Ziehen zeichnet einen Auswahlrahmen. Ctrl+A w&#228;hlt alles aus, Ctrl+Shift+A hebt die Auswahl auf, Ctrl+I kehrt sie um, die Leertaste markiert eine Datei, und die Pfeiltasten, Home, End, PgUp und PgDn bewegen sich durch die Liste. Die Ziffern 0-9 verschieben die Auswahl in den Zielordner der jeweiligen Taste, Shift mit einer Ziffer der oberen Tastenreihe kopiert sie, Del l&#246;scht sie und Ctrl+Z macht den letzten Vorgang r&#252;ckg&#228;ngig.</p></details>
+<details id="navigation"><summary>Adresse und Orte</summary><p>Im Dateimanager nimmt die Adressleiste (Alt+D) einen Pfad entgegen: Enter springt dorthin, Esc stellt den aktuellen wieder her. Zur&#252;ck, Vorw&#228;rts, Nach oben und Aktualisieren haben Alt+Left, Alt+Right, Alt+Up und F5. Die Liste Orte links bietet schnellen Zugriff auf Ordner, Ressourcen und Ger&#228;te.</p></details>
+<details id="filter"><summary>Filter und ausgeblendete Dateien</summary><p>Der Inhaltsfilter w&#228;hlt Mediendateien, Medien und Dokumente oder Alle Dateien, und &#171;Ausgeblendet&#187; zeigt oder verbirgt ausgeblendete Dateien. &#171;Einstellungen..&#187; &#246;ffnet das Fenster Einstellungen auf der Seite Dateimanager, wo Anzeigemodus, Filter, Orte und die gemerkte Sortierung festgelegt werden.</p></details>
+<details id="files"><summary>Dateibefehle</summary><p>Ctrl+C, Ctrl+X und Ctrl+V kopieren, schneiden aus und f&#252;gen ein, F2 benennt um, Ctrl+Shift+N legt einen Ordner an, Del und Shift+Del l&#246;schen die ausgew&#228;hlten Elemente, und Alt+Enter zeigt die Eigenschaften. Kopieren oder Verschieben zwischen Ressourcen l&#228;uft &#252;ber diesen PC.</p></details>
+<details id="zip"><summary>ZIP erstellen</summary><p>&#171;ZIP erstellen&#187; packt alle ausgew&#228;hlten Ordner und Dateien in ein Archiv. Das L&#246;schen der Originale ist standardm&#228;&#223;ig aus und wird erst erlaubt, nachdem das Archiv gepr&#252;ft und ver&#246;ffentlicht wurde.</p></details>
+<details id="extract"><summary>Hier entpacken</summary><p>&#171;Hier entpacken&#187; arbeitet mit einem ausgew&#228;hlten Archiv: Ordner und gew&#246;hnliche Dateien bleiben erhalten, das urspr&#252;ngliche Archiv bleibt an seinem Platz, und entpackte Programme werden nie ausgef&#252;hrt. Esc bricht den Vorgang ab.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

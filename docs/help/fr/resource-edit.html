@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>Modifier la ressource - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">Modifier la ressource</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>Le formulaire d&#39;un serveur ou d&#39;un dossier r&#233;seau enregistr&#233;. &#171;Ajouter..&#187; dans la liste des ressources l&#39;ouvre vide avec le titre &#171;Nouvelle ressource&#187;, &#171;Modifier..&#187; l&#39;ouvre rempli sous le titre &#171;Modifier la ressource&#187;, et une adresse sftp:// saisie dans la zone de dossier l&#39;ouvre pr&#233;remplie.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="Modifier la ressource">
+    <img class="shot dark" src="resource-edit-dark.png" alt="Modifier la ressource">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Choisissez le type : serveur SFTP ou dossier r&#233;seau (SMB).</li><li>Donnez un nom &#224; la ressource et saisissez l&#39;adresse du serveur et le port, ou le chemin r&#233;seau.</li><li>Saisissez l&#39;utilisateur et le mot de passe.</li><li>Indiquez le dossier sur le serveur et activez la lecture seule si rien ne doit y changer.</li><li>Appuyez sur &#171;Enregistrer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>Type</summary><p>&#171;Type :&#187; se choisit &#224; la cr&#233;ation de la ressource : &#171;Serveur SFTP&#187; (port 22, dossier /) ou &#171;Dossier r&#233;seau (SMB)&#187;. Pour une ressource enregistr&#233;e, la liste est d&#233;sactiv&#233;e, parce que le mot de passe enregistr&#233; et la cl&#233; du serveur appartiennent &#224; un seul type. Pour SMB, le champ d&#39;adresse s&#39;intitule &#171;Dossier r&#233;seau :&#187; et accepte un chemin comme \\server\folder ; les champs du port et du dossier ne concernent que SFTP.</p></details>
+<details id="address"><summary>Nom, serveur et port</summary><p>&#171;Nom :&#187; est ce que montre la liste ; s&#39;il est vide, l&#39;adresse du serveur est utilis&#233;e. &#171;Serveur :&#187; est un nom ou une adresse IP et &#171;Port :&#187; un nombre de 1 &#224; 65535. Changer le serveur ou le port supprime les autres adresses venues avec une ressource import&#233;e, de sorte qu&#39;un mot de passe enregistr&#233; n&#39;aille jamais vers une adresse que vous n&#39;avez pas saisie.</p></details>
+<details id="credentials"><summary>Utilisateur et mot de passe</summary><p>&#171;Utilisateur :&#187; et &#171;Mot de passe :&#187;. Le mot de passe est enregistr&#233; chiffr&#233; pour votre compte Windows ; la liste ne contient qu&#39;une r&#233;f&#233;rence vers lui. Pour une ressource enregistr&#233;e, la zone est vide avec l&#39;indication &#171;Vide - conserver le mot de passe enregistr&#233;&#187; : ne tapez quelque chose que pour le remplacer. &#171;Afficher le mot de passe&#187; est d&#233;sactiv&#233; au d&#233;part. Une nouvelle ressource demande un mot de passe.</p></details>
+<details id="folder-readonly"><summary>Dossier et lecture seule</summary><p>&#171;Dossier sur le serveur :&#187; est le dossier que le programme ouvre en premier, un chemin commen&#231;ant par /. &#171;Lecture seule (ne rien modifier sur le serveur)&#187; fait que le programme traite la ressource comme &#233;tant en lecture seule : ni d&#233;placement ni copie vers elle, ni suppression ni renommage dans elle.</p></details>
+<details id="server-key"><summary>Cl&#233; du serveur</summary><p>&#171;Cl&#233; du serveur :&#187; affiche l&#39;empreinte m&#233;moris&#233;e pour ce serveur, ou indique qu&#39;elle appara&#238;tra &#224; la premi&#232;re connexion, o&#249; vous la confirmez. &#171;Oublier la cl&#233; du serveur..&#187; n&#39;appara&#238;t que lorsqu&#39;une cl&#233; est m&#233;moris&#233;e. Le bouton demande d&#39;abord confirmation (la r&#233;ponse par d&#233;faut est Non) et explique : si le serveur a &#233;t&#233; r&#233;install&#233;, c&#39;est normal ; sinon, quelqu&#39;un se fait peut-&#234;tre passer pour lui. Il n&#39;efface que la cl&#233; : la connexion suivante affiche la nouvelle empreinte et redemande.</p></details>
+<details id="save-errors"><summary>Enregistrer</summary><p>&#171;Enregistrer&#187; v&#233;rifie les champs et nomme le premier probl&#232;me en rouge sous eux : adresse, port, dossier, nom d&#39;utilisateur ou mot de passe manquant. &#171;Annuler&#187; ferme le formulaire sans changement.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

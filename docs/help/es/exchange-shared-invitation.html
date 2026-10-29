@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>Contrase&#241;a de invitaci&#243;n compartida - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">Contrase&#241;a de invitaci&#243;n compartida</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>Esta ventana permite a los usuarios registrarse en el servidor con una contrase&#241;a compartida en lugar de un c&#243;digo de invitaci&#243;n de un solo uso. Se abre al marcar &#171;Contrase&#241;a de invitaci&#243;n compartida&#187; en el grupo &#171;Invitaciones&#187; de los ajustes del servidor de intercambio, o con &#171;Establecer contrase&#241;a compartida..&#187; junto a ella.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Contrase&#241;a de invitaci&#243;n compartida">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Contrase&#241;a de invitaci&#243;n compartida">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Elige el tipo de cuenta.</li><li>Elige si el programa genera la contrase&#241;a o si la escribes t&#250;.</li><li>Pulsa &#171;Establecer&#187;.</li><li>Si la contrase&#241;a se gener&#243;, c&#243;piala de la ventana que la muestra una sola vez.</li><li>Para dejar de aceptarla, desmarca &#171;Contrase&#241;a de invitaci&#243;n compartida&#187; y confirma.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>Tipo de cuenta</summary><p>&#171;Tipo de cuenta que crear:&#187; ofrece &#171;Dispositivo propio o familia&#187; e &#171;Invitado&#187;. &#171;Invitado&#187; est&#225; desactivado y la l&#237;nea de debajo da el motivo: el servidor de archivos del programa no puede limitar un usuario a una sola carpeta. Si ya hay una contrase&#241;a compartida activada, su tipo actual aparece preseleccionado. Si ese tipo existente es Invitado, &#171;Establecer&#187; est&#225; desactivado; la contrase&#241;a compartida s&#237; se puede desactivar.</p></details>
+<details id="password"><summary>Contrase&#241;a</summary><p>&#171;Contrase&#241;a:&#187; ofrece &#171;Generar una contrase&#241;a segura aleatoria&#187; (seleccionado de forma predeterminada) e &#171;Introducir contrase&#241;a manualmente&#187;. Despu&#233;s de &#171;Establecer&#187;, la contrase&#241;a escrita se pide en una ventana de contrase&#241;a que comprueba la pol&#237;tica: al menos 10 caracteres con una letra latina may&#250;scula, una letra latina min&#250;scula y un d&#237;gito. Si cancelas esa ventana, vuelves aqu&#237;.</p></details>
+<details id="set"><summary>Establecer</summary><p>&#171;Establecer&#187; env&#237;a al servidor la contrase&#241;a y el tipo de cuenta y activa la contrase&#241;a compartida; la p&#225;gina muestra &#171;Contrase&#241;a compartida guardada y activada.&#187; y la l&#237;nea de estado bajo la casilla dice &#171;Contrase&#241;a compartida activada (tipo de cuenta: ..).&#187; Una contrase&#241;a generada se muestra una sola vez en una ventana propia: c&#243;piala all&#237;, no se puede volver a leer. Cualquiera que conozca la contrase&#241;a puede registrar una cuenta del tipo elegido, as&#237; que p&#225;sala solo a las personas que quieras admitir.</p></details>
+<details id="switch-off"><summary>Desactivar</summary><p>Al desmarcar la casilla se pregunta &#171;&#191;Desactivar la contrase&#241;a de invitaci&#243;n compartida? Los nuevos registros con ella dejar&#225;n de ser posibles.&#187; La respuesta predeterminada es No. Tras pulsar S&#237;, la p&#225;gina muestra &#171;Contrase&#241;a compartida desactivada.&#187; y la l&#237;nea de estado dice &#171;Contrase&#241;a compartida desactivada.&#187;</p></details>
+<details id="cancel"><summary>Cancelar</summary><p>&#171;Cancelar&#187; o Esc cierra la ventana y no cambia nada. Si la abriste al marcar la casilla, la casilla vuelve a su estado anterior.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

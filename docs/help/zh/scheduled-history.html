@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled Operations History - Fast Media Sorter</title>
+  <title>计划操作历史记录 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled Operations History</h1>
+  <h1 id="title">计划操作历史记录</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled Operations History.</p>
+    <p>显示日志中记录的计划文件操作的近期运行和备注。它从 Share Manager 设置的「计划文件操作」页面上的「历史记录..」打开。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled Operations History">
-    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled Operations History">
+    <img class="shot light" src="scheduled-history-light.png" alt="计划操作历史记录">
+    <img class="shot dark" src="scheduled-history-dark.png" alt="计划操作历史记录">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>阅读列表：时间、操作、启动和结果。</li><li>如果结果较长，请加宽窗口。</li><li>点击「刷新」重新读取日志。</li><li>点击「清除历史记录」并确认以清空它。</li><li>点击「关闭」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="columns"><summary>列</summary><p>时间、操作（其名称）、启动和结果。启动为按计划、手动、全部运行或延迟，对备注则为空。窗口在打开时和点击「刷新」时读取最近 200 条日志记录；它不会自动更新。</p></details>
+<details id="results"><summary>运行结果</summary><p>「已完成：N 个文件」，如有文件被略过则追加「，已跳过：M」，删除时追加「（放入回收站）」。「有错误：N；已完成：M 个文件」，后面跟第一个原因，例如文件正被使用、无法访问、文件未找到或已更改，或磁盘已满。「已停止：..」表示某道障碍使运行终止，例如无法访问的文件夹、没有保存密码或服务器密钥未确认的资源，或离线的设备。「未启动：..」表示定义被拒绝，另有「已跳过：..」和「已中断」。日志保存的是代码而不是原始错误文本，因此措辞会跟随当前语言。</p></details>
+<details id="notes"><summary>备注</summary><p>没有启动值的行是备注：「已跳过：运行时间（..）在管理器关闭期间已过」、「延迟运行：原定于 .. 运行」、「已拒绝：此操作已在运行或正在排队等待」以及「已恢复：停止原因已消除」。</p></details>
+<details id="clear"><summary>清除历史记录</summary><p>询问：要清除计划操作的历史记录吗？操作及其计划不会改变。默认答案为「否」。它只清空此日志；操作及其计划保留。历史记录为空时，该按钮不可用。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

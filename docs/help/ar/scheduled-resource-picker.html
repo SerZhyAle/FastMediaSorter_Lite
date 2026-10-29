@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>اختيار مورد - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">اختيار مورد</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>يختار موردًا من قائمة موارد العارض ليكون مصدر عملية مجدولة أو وجهتها. يُفتح من الزر المورد.. بجانب المصدر أو الوجهة في نافذة العملية المجدولة.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="اختيار مورد">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="اختيار مورد">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اختر المورد في القائمة المورد.</li><li>تحقق من مجلد داخل المورد أو غيّره؛ ويبدأ بالمجلد الجذر للمورد.</li><li>اضغط اختيار. ويُبقي إلغاء المكان السابق.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>قائمة الموارد</summary><p>تُعرض خوادم SFTP ومجلدات الشبكة فقط من قائمة العارض، مرتبة بالاسم؛ ولا تظهر الموارد من الأنواع الأخرى. وإن لم يوجد أي منها تقول النافذة: لا توجد موارد مناسبة في قائمة الموارد. أضف خادم SFTP أو مجلد شبكة في العارض. ويبقى الزر اختيار معطّلًا. تتم إضافة مورد أو إعادة الوثوق به في العارض؛ ولا تُجري هذه النافذة أي اتصال.</p></details>
+<details id="folder"><summary>مجلد داخل المورد</summary><p>يجب أن يقع المجلد داخل جذر المورد المختار، وإلا رفضه حفظ في نافذة العملية. واختيار مورد آخر يعيد ملء الحقل بجذر ذلك المورد.</p></details>
+<details id="unattended"><summary>تشغيل بلا أسئلة</summary><p>تؤخذ كلمة المرور ومفتاح الخادم من قائمة موارد العارض. ولا يسأل التشغيل شيئًا: إذا لم تكن كلمة المرور محفوظة أو لم يتم تأكيد مفتاح الخادم تتوقف العملية ويذكر السجل السبب. لا يمكن أن يكون المورد المخصص للقراءة فقط هدفًا لنقل أو حذف، ويُرفض المورد الذي يحمي PIN جذره، وتقبل الأرشفة المجلدات العادية فقط.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

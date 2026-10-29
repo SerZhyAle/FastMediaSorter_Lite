@@ -1,12 +1,12 @@
-﻿# Ways to connect your devices - where each is explained
+# Ways to connect your devices - where each is explained
 
 Developer-facing index for **Fast Media Sorter & Sharing for Windows**. It answers three questions for anyone
 who changes, documents or supports the connection features: which ways of connecting exist, what state each
 is in on the Windows side, and which page or contract owns the explanation. It does not explain the ways to
 readers - the shared portal does - and it never restates a contract.
 
-Status is written as of 2026-10-10. The latest release is v26.9.20.1206 (2026-09-20); everything under
-`[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md) is in the development tree only.
+Status was written as of 2026-10-10 and corrected on 2026-10-26 for release v26.10.25.1830 (2026-10-25), which carries the items marked with it below; everything under
+`[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md) is in the source tree and in no published release yet.
 
 ## 1. The three ways at a glance
 
@@ -21,7 +21,7 @@ The portal start page, which puts the ways side by side, is
 Windows-site pages and READMEs link only the start page, the home network page, the Windows servers page and,
 where it fits, the live broadcast, clouds and editions pages; the exchange server page is linked from
 developer-facing files like this one and from program UI that sits behind the exchange component, because
-specification 249 (2026-10-20) lets the public site name the exchange server as the third component, always marked as in development and never linked to a download.
+specifications 249 and 273 let the public site name the Media Exchange Server as the third component - in the present tense, as what it does, with no promise marker, and never linked to a download (its shipping gate is shut).
 
 The contracts are cited by id. Their local pointers - what this repository holds and owes - are
 [ANYWHERE-ACCESS](../contracts/ANYWHERE-ACCESS.md), [DEVICE-EXCHANGE](../contracts/DEVICE-EXCHANGE.md),
@@ -65,7 +65,7 @@ This is the way the public guide [publish-folders-android.html](../../publish-fo
   login, password and the host-key fingerprint with copy buttons.
 - **Floor.** Sharing needs the 64-bit mainline (Windows 10 1607+); the 32-bit fallback viewer cannot share.
 
-In the development tree only: the viewer opens SFTP servers (a NAS, another PC's Share Manager, a phone's
+Since v26.10.25.1830: the viewer opens SFTP servers (a NAS, another PC's Share Manager, a phone's
 built-in SFTP server) from the Resources list and exports a saved server as `.fmscfg`; the Share Manager shares
 FileDO `.fdd` virtual disks as SFTP folders.
 
@@ -80,7 +80,7 @@ flowchart LR
     router -- "the one port you forward" --> pc
 ```
 
-## 3. Exchange server and device agent - development tree only
+## 3. Exchange server and device agent - built, shipping gate shut
 
 All of this is behind the shipping gate (`INCLUDE_EXCHANGE`, off) and an unchecked installer component, and
 nothing from it is in any released installer, ZIP or package until rung 2 freezes the wire. The first real run on
@@ -99,11 +99,12 @@ a physical test host has not happened.
   clients reaching a published folder through a per-resource port; a fan-out relay (one upload, many
   listeners, a window of two seconds, a slow listener skips ahead); Cast as offer and answer, where the receiver
   asks before it plays; a user log with hashed identifiers and no secrets; a statement of what the operator can
-  see. Use "in the development version" or "arrives with a later release" for anything else.
+  see. Anything else is not said on a surface at all (canon invariant 17: a surface describes only what works);
+  in a developer document write "not built" or "gated".
 
 ## 4. Live broadcast
 
-- **Consumer, development tree.** The viewer listens live to an audio broadcast of the Android app from a phone or
+- **Consumer (since v26.10.25.1830).** The viewer listens live to an audio broadcast of the Android app from a phone or
   a watch on the same network ("Open live broadcast.."; a `FMSBCAST1:` code, a link or a `.fmsbcast` file; one
   connection per listener). Real-device acceptance has not run, so no delay is promised.
 - **Producer and receiver, implemented.** Share Manager captures a screen, one selected window, camera,
@@ -134,9 +135,9 @@ README, listing, UI string or picture.
   use documentation ranges (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`) and `example.net`.
 - Generated JPG "slides" with invented lettering, fake footers or third-party marks.
 - "Server edition" and "Media Exchange Server" as one thing. The Server edition is the always-on Windows service
-  hosting the same share worker (shipped); the Media Exchange Server is the Go exchange program (development
-  tree). Windows-site text names the exchange server as the third component, marked as in development, with no
-  link to a download (specification 249; `tools/site-facts.json` `development` block).
+  hosting the same share worker (shipped); the Media Exchange Server is the Go exchange program (built, its shipping
+  gate shut). Windows-site text names the exchange server as the third component, in the present tense, with no
+  promise marker and no link to a download (specifications 249 and 273; `tools/site-facts.json` `gated` block).
 
 ## 6. Pictures
 

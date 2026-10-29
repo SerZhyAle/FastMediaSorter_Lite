@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>دليل إعادة توجيه المنافذ - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">دليل إعادة توجيه المنافذ</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>يساعد على جعل المشاركة قابلة للوصول من خارج شبكتك المنزلية. يعرض العنوان الخارجي وهل فُتح المنفذ تلقائياً أم يحتاج إلى توجيه في الموجّه، ويقدّم اختباراً ودليلاً مفصّلاً. يُفتح من زر كيفية إعداد الوصول من الإنترنت في النافذة الرئيسية.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="دليل إعادة توجيه المنافذ">
+    <img class="shot dark" src="internet-access-dark.png" alt="دليل إعادة توجيه المنافذ">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>ابدأ المشاركة أولاً؛ وإلا تطلب النافذة ذلك.</li><li>اقرأ أسطر الحالة: يمكن الوصول إليه، أو خلف CGNAT، أو يحتاج إلى إعادة توجيه المنفذ.</li><li>إذا لزم التوجيه فافتح الدليل المفصّل وأنشئ القاعدة في الموجّه.</li><li>اضغط اختبار لفحص العنوان من هذا الكمبيوتر.</li><li>تأكد من الهاتف عبر بيانات الجوال مع إيقاف Wi-Fi فيه.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>الحالة</summary><p>تكتشف النافذة العنوان الخارجي وتقول أحد الأمور التالية: يمكن الوصول إليه من الإنترنت، أو العنوان الخارجي: .. (يحتاج إعادة توجيه المنفذ)، أو العنوان الخارجي غير معروف - راجع الموجّه.، أو خلف CGNAT - غير قابل للوصول من الخارج.. عند فتح المنفذ تلقائياً (UPnP) لا حاجة إلى إعداد الموجّه، ومع ذلك لا يؤكد أنه يعمل إلا الهاتف على بيانات الجوال. تحديث يكرر الاكتشاف.</p></details>
+<details id="guide"><summary>الموجّه والأدلة</summary><p>يعرض سطر الموجّه عنوانه، أو جارٍ التعرّف على الموجّه.. أثناء البحث عنه. الرابط افتح الدليل المفصّل (HTML، معبّأ بقيمك وطراز الموجّه).. يفتح دليل HTML محلياً؛ وإذا تعذّر فتحه تذكر النافذة ذلك. الرابط الوصول من المنزل ومن شبكات أخرى (البوابة) يفتح صفحة المساعدة المناسبة في بوابة المساعدة في المتصفح.</p></details>
+<details id="test"><summary>اختبار</summary><p>يفحص العنوان الخارجي من هذا الكمبيوتر ويُبلغ عن: خادم SFTP متاح، أو المنفذ مفتوح لكن لا استجابة من SFTP، أو اتصال مغلق (ربما بسبب حد الاتصالات)، أو عدم وجود جواب. النتيجة غير حاسمة: كثير من الموجّهات ترفض طلباً إلى عنوانها الخارجي من الداخل، لذا فالفحص الموثوق هو الهاتف على بيانات الجوال.</p></details>
+<details id="safety"><summary>السلامة</summary><p>فتح SFTP للإنترنت يمنح كل مجلد مشترك لأي شخص يعرف العنوان واسم المستخدم وكلمة المرور. لا تنشر رمز QR ولا ملف .fmscfg وأوقف المشاركة عند الانتهاء. إغلاق يغادر النافذة.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

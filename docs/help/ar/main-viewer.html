@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Fast Media Sorter &amp; Sharing Viewer - Fast Media Sorter</title>
+  <title>نافذة العرض - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Fast Media Sorter &amp; Sharing Viewer</h1>
+  <h1 id="title">نافذة العرض</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Fast Media Sorter &amp; Sharing Viewer.</p>
+    <p>نافذة العرض هي النافذة الرئيسية لمدير الوسائط والملفات. تعرض صورة أو مقطع فيديو واحدًا في كل مرة من مجلد، وتوزّع الملفات على المجلدات بمفتاح واحد. في الإصدار 64 بت تنضم المستندات والملفات الأخرى إلى القائمة نفسها وتظهر كمعاينات عند تحديد &#171;فرز المستندات&#187; أو &#171;فرز الملفات الأخرى&#187; في صفحة الملفات من الإعدادات؛ ويفتح F3 لوحة الصور، وهي تعمل أيضًا كمدير ملفات للمجلدات المحلية والخوادم والأجهزة المتصلة. تُفتح النافذة عند تشغيل البرنامج أو عند فتح ملف وسائط به.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="main-viewer-light.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-    <img class="shot dark" src="main-viewer-dark.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>لا توجد لقطة شاشة لهذه النافذة: عند فتحها تشغّل جهازًا أو استماعًا على الشبكة أو العارض كله، لذلك لا تُلتقط.</figcaption></figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اضغط F4، أو اكتب مسارًا في الحقل المجلد: ثم اضغط Enter.</li><li>تصفّح الملفات بمفاتيح الأسهم وSpace وP.</li><li>اضغط رقمًا لنقل الملف إلى مجلده، أو Shift مع رقم من الصف العلوي لنسخه.</li><li>اضغط Del لحذف الملف.</li><li>اضغط F2 لفتح الإعدادات.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="open-folder"><summary>فتح مجلد</summary><p>يفتح F4 نافذة اختيار ملف؛ يُعرض الملف الذي تختاره ويصبح مجلده كله قائمة التصفح. يقبل الحقل المجلد: مسار مجلد - ثم اضغط Enter. وعندما لا يكون أي شيء مفتوحًا، تسرد بطاقة مساعدة المفاتيح الرئيسية: يُظهرها F1 أو يُخفيها. وفي الشاشة الفارغة أيضًا الزر الإعداد الأولي، وهو يبدأ خطوات الترحيب.</p></details>
+<details id="floating-chrome"><summary>اللوحات العائمة وشريط الحالة</summary><p>يطفو فوق الصورة صفّان من أزرار شريط الأدوات وشريط الحالة، وتتلاشى جميعها ما دامت الفأرة ساكنة. يثبّت الدبوس الموجود في زاوية اللوحة تلك اللوحة في مكانها؛ ويُبقي الخيار إبقاء اللوحات العائمة ظاهرة في صفحة عام من الإعدادات جميع اللوحات ظاهرة. يعرض شريط الحالة الأخبار، مثل نتيجة عملية على الملفات.</p></details>
+<details id="navigation"><summary>تصفّح الملفات</summary><p>يعرض Space وPgDn الملف التالي، ويعرض P وPgUp الملف السابق؛ ويقفز السهمان لأعلى ولأسفل عشرة ملفات، وينتقل Home وEnd إلى الملف الأول والأخير. وتتنقل عجلة الفأرة أيضًا بين الملفات ما لم تُضبط على التكبير.</p></details>
+<details id="sorting"><summary>النقل والنسخ والحذف</summary><p>ينقل الرقم 1..9 أو 0 الملف الحالي إلى المجلد المرتبط بذلك المفتاح؛ وينسخه Shift مع رقم من الصف العلوي (وليس من لوحة الأرقام NumPad). تُربط المجلدات في صفحة الوجهات من الإعدادات. يعيد U آخر ملف جرى نقله. يرسل Del الملف إلى سلة المحذوفات (الخيار الحذف إلى سلة المحذوفات في صفحة الملفات)، ويحذفه Shift+Del نهائيًا؛ وليست للأقراص الشبكية وأقراص الفلاش سلة محذوفات، ويخبرك البرنامج بذلك مسبقًا. يفتح F3 لوحة الصور.</p></details>
+<details id="slideshow"><summary>عرض الشرائح وطريقة العرض</summary><p>يبدأ S عرض الشرائح، ويبدأ I أو F5 عرض شرائح عشوائيًا، وينتقل Y إلى ملف عشوائي؛ والفاصل الزمني والترتيب في صفحة الصور من الإعدادات. يدوّر R الصورة ويبدّل F7 وضع ملء الشاشة.</p></details>
+<details id="zoom"><summary>التكبير وقائمة الصورة</summary><p>في الإصدار 64 بت يتحكم في التكبير القسم الرمادي من لوحة الأرقام NumPad: المفتاحان + و- يكبّران ويصغّران عند مؤشر الفأرة، والمفتاح / يلائم الصورة مع النافذة، والمفتاح * يعرضها بنسبة 100 %. ويتيح الخيار التكبير بعجلة الفأرة في صفحة الصور أن تغيّر العجلة التكبير.</p></details>
+<details id="video"><summary>الفيديو</summary><p>تؤدي النقرة إلى إيقاف الفيديو مؤقتًا أو استئنافه، ويفتح زر الفأرة الأيمن قائمة الفيديو. في الإصدار 64 بت يبدّل A المسار الصوتي ويبدّل V الترجمات؛ ويظهر الزر المسارات في شريط الأدوات فقط عندما يتيح الملف الاختيار بين أكثر من مسار.</p></details>
+<details id="settings-keys"><summary>الإعدادات وقائمة المفاتيح</summary><p>يفتح F2 أو زر الإعدادات في شريط الأدوات نافذة الإعدادات. القائمة الكاملة للمفاتيح: صفحة الملفات، المجموعة المفاتيح والارتباطات، الزر اختصارات لوحة المفاتيح.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

@@ -33,6 +33,11 @@ const (
 	DefaultRelayRateWindow = 5 * time.Second
 	DefaultRelayPerBcast   = broadcastTunnelCeiling // listeners (relay and tunnels) of one broadcast
 	DefaultRelayTotal      = 1000                   // relay listeners of the whole deployment
+
+	// An ended broadcast id is answered 410 for this long (DEVICE-EXCHANGE item DX: at least one hour while the
+	// process runs), at most DefaultRelayEndedMax ids at once, the oldest forgotten first; a forgotten id is 404.
+	DefaultRelayEndedMemory = 2 * time.Hour
+	DefaultRelayEndedMax    = 16384
 )
 
 // RelayConfig is everything the relay needs; a zero number keeps its default.
@@ -53,6 +58,10 @@ type RelayConfig struct {
 	RateWindow          time.Duration
 	ListenersPerBcast   int
 	ListenersTotal      int
+
+	// EndedMemory and EndedMax bound the ended ids answered 410 (item DX); zero keeps the defaults.
+	EndedMemory time.Duration
+	EndedMax    int
 
 	// CheckConcurrency bounds how many listener credential checks (one PBKDF2 each, item BF) run at once;
 	// the default is 2, the engine's own bound for a password hash. The relay keeps its own pool so a flood of
@@ -82,6 +91,7 @@ type Relay struct {
 	bc     map[string]*bcast
 	total  int
 	closed bool
+	ended  map[string]time.Time // ended broadcast ids and when they ended (item DX), in memory only
 }
 
 // bcast is the relay's state of one broadcast.
@@ -123,6 +133,12 @@ func NewRelay(cfg RelayConfig) *Relay {
 	if cfg.ListenersTotal <= 0 {
 		cfg.ListenersTotal = DefaultRelayTotal
 	}
+	if cfg.EndedMemory <= 0 {
+		cfg.EndedMemory = DefaultRelayEndedMemory
+	}
+	if cfg.EndedMax <= 0 {
+		cfg.EndedMax = DefaultRelayEndedMax
+	}
 	if cfg.CheckConcurrency <= 0 {
 		cfg.CheckConcurrency = 2
 	}
@@ -131,7 +147,7 @@ func NewRelay(cfg RelayConfig) *Relay {
 	}
 	lc := limits.Config{MaxAddrs: 4096}
 	lc.Rates[limits.ListenCheck] = limits.ListenCheckRate()
-	r := &Relay{cfg: cfg, bc: map[string]*bcast{},
+	r := &Relay{cfg: cfg, bc: map[string]*bcast{}, ended: map[string]time.Time{},
 		checks:     limits.NewLimiter(lc, cfg.Now),
 		pool:       limits.NewVerifier(nil, cfg.CheckConcurrency, 2*time.Second),
 		iterations: cfg.CheckIterations,
@@ -217,7 +233,8 @@ func (r *Relay) Upload(st *Stream, sess *Session, m *wire.Upload) {
 		case err == wire.ErrChunkEnd:
 			// a zero length ends the broadcast cleanly: the record leaves the directory, the hook of
 			// the directory tears the relay and the tunnels down
-			r.cfg.Dir.BroadcastEnd(sess.Account, sess.DeviceID, m.BroadcastID)
+			r.cfg.Log.State("upload-ended", logx.Broadcast(m.BroadcastID), logx.Device(sess.DeviceID), logx.Text("why", "zero-chunk"))
+			r.cfg.Dir.BroadcastEndWhy(sess.Account, sess.DeviceID, m.BroadcastID, directory.EndUploadEnd)
 			r.End(m.BroadcastID)
 			return
 		case err != nil:
@@ -309,6 +326,7 @@ func (r *Relay) graceExpired(b *bcast, gen int) {
 // reason (broadcast-end, the loss of the control stream, a revoke, a zero-length chunk).
 func (r *Relay) End(broadcastID string) {
 	r.mu.Lock()
+	r.rememberEndedLocked(broadcastID) // also a broadcast that never uploaded: its listen URL answers 410 now
 	b := r.bc[broadcastID]
 	if b == nil || b.ended {
 		r.mu.Unlock()
@@ -328,6 +346,50 @@ func (r *Relay) End(broadcastID string) {
 		up.Abort()
 	}
 	r.logEnd(b, "ended")
+}
+
+// rememberEndedLocked records an ended id for the 410 of item DX. At the cap it forgets what is past the memory
+// first, then the oldest.
+func (r *Relay) rememberEndedLocked(id string) {
+	now := r.cfg.Now()
+	if _, held := r.ended[id]; !held && len(r.ended) >= r.cfg.EndedMax {
+		oldest, at := "", now
+		for k, t := range r.ended {
+			if now.Sub(t) >= r.cfg.EndedMemory {
+				delete(r.ended, k)
+				continue
+			}
+			if !t.After(at) {
+				oldest, at = k, t
+			}
+		}
+		if len(r.ended) >= r.cfg.EndedMax {
+			delete(r.ended, oldest)
+		}
+	}
+	r.ended[id] = now
+}
+
+// endedRecently reports whether a broadcast with this id ended within the memory of item DX.
+func (r *Relay) endedRecently(id string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	t, ok := r.ended[id]
+	if !ok {
+		return false
+	}
+	if r.cfg.Now().Sub(t) >= r.cfg.EndedMemory {
+		delete(r.ended, id)
+		return false
+	}
+	return true
+}
+
+// EndedIDs is how many ended ids the relay remembers (a count for the tests that prove the bound).
+func (r *Relay) EndedIDs() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.ended)
 }
 
 func (r *Relay) logEnd(b *bcast, why string) {
@@ -376,14 +438,21 @@ func (r *Relay) Listen(st *Stream, id string) {
 	t0, addr := st.T0(), st.Addr()
 
 	// an address that has used up its unknown-id attempts is answered 404 without a lookup, so
-	// guessing ids is bounded by the bucket; an unknown, ended or never-started id is 404 after the
-	// same minimum delay as 164's `unavailable`
+	// guessing ids is bounded by the bucket; an unknown or never-started id is 404 after the same
+	// minimum delay as 164's `unavailable`, an id whose broadcast ended and is still remembered 410
+	// (item DX) after the same delay, and costs nothing: it was a real broadcast
 	if !r.cfg.Limiter.Allow(addr, limits.UnknownID) {
 		e.notFound(st, t0)
 		return
 	}
 	t, ok := r.cfg.Dir.ResolveBroadcast(id)
 	if !ok {
+		if r.endedRecently(id) {
+			r.cfg.Limiter.Refund(addr, limits.UnknownID)
+			r.cfg.Log.Info("listen-ended", logx.Broadcast(id), logx.Addr(addr))
+			e.gone(st, t0)
+			return
+		}
 		r.cfg.Log.Info("listen-unavailable", logx.Addr(addr))
 		e.notFound(st, t0)
 		return

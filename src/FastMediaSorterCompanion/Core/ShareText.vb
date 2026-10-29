@@ -340,7 +340,7 @@ Public Module ShareText
     ''' <summary>Shorter intro for the Settings tab's enablement panel (the primary,
     ''' always-discoverable opt-in home).</summary>
     Public Function ServerEnablePanelIntro() As String
-        Return Localization.T("Общий доступ к папкам для телефона Android пока не включён. Он добавляет небольшой фоновый SFTP-сервер и одно разрешение в брандмауэре Windows (нужны права администратора один раз). Пока он выключен, программа работает как просмотрщик и сортировщик медиафайлов.")
+        Return Localization.T("Общий доступ к папкам для телефона Android не включён. Он добавляет небольшой фоновый SFTP-сервер и одно разрешение в брандмауэре Windows (нужны права администратора один раз).")
     End Function
 
     ''' <summary>The primary action button label (both dialog and panel).</summary>

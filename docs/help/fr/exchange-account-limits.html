@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>Limites du compte - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">Limites du compte</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>D&#233;finit des limites individuelles pour un compte du Media Exchange Server que vous exploitez ; une valeur laiss&#233;e &#224; 0 suit la valeur par d&#233;faut du serveur. La fen&#234;tre s&#39;ouvre depuis le bouton &#171;Limites..&#187; sous la liste des comptes de la page Media Exchange Server des param&#232;tres de Share Manager, qui appara&#238;t d&#232;s qu&#39;un compte est s&#233;lectionn&#233;. Le titre nomme le compte : &#171;Limites du compte : &lt;login&gt;&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="Limites du compte">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Limites du compte">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>S&#233;lectionnez le compte et cliquez sur &#171;Limites..&#187;.</li><li>Saisissez un nombre pour chaque limite &#224; modifier et laissez 0 pour la valeur par d&#233;faut du serveur.</li><li>Cliquez sur &#171;Enregistrer&#187;.</li><li>Lisez la ligne de r&#233;sultat : &#171;Limites du compte &lt;login&gt; enregistr&#233;es.&#187;</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>Appareils et ressources</summary><p>&#171;Appareils maximum (0 = par d&#233;faut) :&#187; plafonne les appareils qui peuvent &#234;tre connect&#233;s au compte. &#171;Ressources publi&#233;es maximum (0 = par d&#233;faut) :&#187; plafonne les dossiers partag&#233;s et autres ressources que le compte peut publier sur le serveur.</p></details>
+<details id="broadcasts"><summary>Diffusions</summary><p>&#171;Diffusions maximum (0 = par d&#233;faut) :&#187; plafonne les diffusions de l&#39;ensemble du compte, et &#171;Diffusions maximum par appareil (0 = par d&#233;faut) :&#187; plafonne ce qu&#39;un seul appareil du compte peut lancer.</p></details>
+<details id="clipboard"><summary>Limite du presse-papiers</summary><p>&#171;Limite du presse-papiers, Mo (0 = 5 Go par d&#233;faut) :&#187; fixe la plus grande valeur que le compte peut envoyer vers son presse-papiers sur le serveur, en m&#233;gaoctets entiers. Une limite stock&#233;e dans des unit&#233;s plus petites, par exemple 512 Ko, s&#39;affiche comme 0 et garde sa taille exacte tant que vous ne touchez pas &#224; ce champ.</p></details>
+<details id="save"><summary>Enregistrer et annuler</summary><p>&#171;Enregistrer&#187; remplace d&#39;un bloc les limites propres du compte : chaque nombre sup&#233;rieur &#224; 0 devient une limite, chaque 0 signifie la valeur par d&#233;faut du serveur, et cinq z&#233;ros suppriment les d&#233;rogations du compte. &#171;Annuler&#187; ne change rien. Si le serveur refuse une valeur, la ligne de r&#233;sultat en donne la raison, par exemple &#171;Limite non autoris&#233;e : il doit s&#39;agir d&#39;un entier dans la plage accept&#233;e par le serveur.&#187;</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

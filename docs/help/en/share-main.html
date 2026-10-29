@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Main Window - Fast Media Sorter</title>
+  <title>Share Manager - Fast Media Sorter &amp; Sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Main Window</h1>
+  <h1 id="title">Share Manager - Fast Media Sorter &amp; Sharing</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Main Window.</p>
+    <p>The main window of the Share Manager, the local sharing and scheduling service. It lists the folders this PC shares with a phone over SFTP, starts and stops the sharing, hands out the access code and shows how the phone can reach the PC. Scheduled file operations and the exchange account have their pages in the Manager settings. It opens from the viewer or from the tray icon; closing the window leaves the app in the tray.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-main-light.png" alt="Share Manager Main Window">
-    <img class="shot dark" src="share-main-dark.png" alt="Share Manager Main Window">
+    <img class="shot light" src="share-main-light.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
+    <img class="shot dark" src="share-main-dark.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Press &#39;Add..&#39; and choose &#39;Folder..&#39; to put a folder in the list.</li><li>Tick the folder: ticked folders are the ones that are served.</li><li>Press &#39;Start sharing&#39; (it needs at least one ticked folder).</li><li>Press &#39;Share&#39; to get the QR code or the .fmscfg file for the phone.</li><li>For access from outside your home network open the &#39;Internet access&#39; group and use its two buttons.</li><li>Press &#39;Stop sharing&#39; when you are done.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="top-row"><summary>Top row</summary><p>&#39;Settings&#39; opens the manager settings. &#39;Start sharing&#39; turns into &#39;Stop sharing&#39; while the server runs. &#39;Share&#39; opens the access-code wizard and works only while sharing is on; otherwise the hint says to start the server first. &#39;Expand all&#39; and &#39;Collapse all&#39; open or close the groups below.</p></details>
+<details id="add-menu"><summary>Add.. menu</summary><p>&#39;Folder..&#39; adds a folder through the usual picker; &#39;+ Current&#39; (with the folder name) appears only when the manager was opened from a viewer folder and adds that folder. &#39;.fdd disks..&#39; opens the list of FileDO disks and &#39;Resource addition wizard..&#39; walks through a new resource step by step.</p></details>
+<details id="list-buttons"><summary>Edit, Remove, Phone code and Clipboard</summary><p>&#39;Edit&#39; opens the options of the selected folder. &#39;Remove&#39; deletes the selected row after a question: the folder&#39;s own settings (PIN, filters, destination) go with it and cannot be brought back. &#39;Phone code..&#39; opens the window that takes a connection code from the phone. The &#39;Clipboard&#39; menu (&#39;Send the clipboard to the server&#39;, &#39;Get the clipboard from the server&#39;) is shown only when the clipboard exchange is available.</p></details>
+<details id="folder-list"><summary>Shared resources</summary><p>One row per resource with a check box and the columns Name, Type and Folder. A ticked row is served to phones; an empty list shows &#39;Add your first resource..&#39;. Unticking the last ticked folder asks whether to stop sharing, because connected phones are disconnected. Start sharing with nothing ticked only shows the hint &#39;Add a folder and tick it first.&#39;.</p></details>
+<details id="phone-access"><summary>Phone access</summary><p>The connection data a phone or any SFTP client needs: the address over the internet and at home (Wi-Fi), IPv6, the host key, the login and the password. &#39;Show password&#39; reveals it and &#39;Hide password&#39; covers it again. The text under the group explains whether the phone reaches the PC at home only or also from outside.</p></details>
+<details id="internet-access"><summary>Internet access</summary><p>&#39;Test internet access&#39; opens the Internet access test window. &#39;How to set up internet access&#39; opens the router guide. The &#39;Router: ..&#39; link opens the router&#39;s own page; it reads &#39;Router: unknown&#39; when none was found. The group carries a warning: anyone who learns the address, login and password can reach every shared folder, so do not publish the QR code or the .fmscfg file and switch sharing off when finished.</p></details>
+<details id="statistics"><summary>Statistics</summary><p>Under the groups a &#39;Statistics&#39; link sits next to a short summary such as &#39;N connections, M files&#39;. The link opens the Sharing status window with the full counters.</p></details>
+<details id="server-features-off"><summary>When server features are off</summary><p>Until the server component is enabled the window shows &#39;Server features are off&#39; and the button &#39;Enable server features..&#39;, which opens the Enable folder sharing window. If the sharing component is missing from the installation, the window says so and asks to reinstall the app.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

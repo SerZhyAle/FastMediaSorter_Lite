@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>Bild bearbeiten - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">Bild bearbeiten</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>Ein kleiner Editor f&#252;r ein einzelnes Standbild: Formen zeichnen, zuschneiden, drehen und spiegeln, dann &#252;ber das Original speichern oder als neue Datei. Er &#246;ffnet sich, mit dem Dateinamen des Bildes im Titel, &#252;ber die Schaltfl&#228;che Bearbeiten der Symbolleiste oder den ersten Eintrag des Bildmen&#252;s, und nur f&#252;r ein Standbild (nicht f&#252;r eine Animation). Der Editor liest die Datei neu ein und arbeitet an einer eigenen Kopie.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="Bild bearbeiten">
+    <img class="shot dark" src="image-editor-dark.png" alt="Bild bearbeiten">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Dr&#252;cken Sie im Viewer auf Bearbeiten.</li><li>W&#228;hlen Sie ein Werkzeug, eine Farbe und eine St&#228;rke.</li><li>Zeichnen Sie auf das Bild oder schneiden, drehen oder spiegeln Sie es; R&#252;ckg&#228;ngig geht einen Schritt zur&#252;ck.</li><li>Dr&#252;cken Sie Speichern, um das Original zu &#252;berschreiben, oder Speichern unter.. f&#252;r eine neue Datei.</li><li>Schlie&#223;en Sie das Fenster; bei ungespeicherten &#196;nderungen beantworten Sie die Frage.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>Werkzeuge</summary><p>In der Leiste: Zuschneiden, Pinsel, Rechteck, Gef&#252;lltes Rechteck, Ellipse und Gef&#252;llte Ellipse. Die Tasten sind C, B, R und O (die gef&#252;llten haben keine). Halten Sie beim Zeichnen eines Rechtecks oder einer Ellipse Shift gedr&#252;ckt, um ein Quadrat oder einen Kreis zu erhalten. Wenn Sie mit der Maus &#252;ber einem Werkzeug verweilen, erscheinen sein Name und seine Taste.</p></details>
+<details id="colour-thickness"><summary>Farbe und St&#228;rke</summary><p>Die Farbschaltfl&#228;che &#246;ffnet den Farbdialog, und daneben liegen acht Schnellfarben (Schwarz, Wei&#223;, Rot, Gelb, Hellgr&#252;n, Blau, Magenta, Grau). Die St&#228;rke reicht von 1 bis 64 Bildpixeln (Standard 4); die Tasten [ und ] &#228;ndern sie um eins. Farbe und St&#228;rke gelten f&#252;r alle Werkzeuge gemeinsam.</p></details>
+<details id="crop"><summary>Zuschneiden</summary><p>Ziehen Sie mit dem Werkzeug Zuschneiden einen Rahmen auf das Bild. Die Schaltfl&#228;che Zuschnitt anwenden erscheint nur, solange ein Rahmen existiert. Enter tut dasselbe; Esc entfernt den Rahmen, ohne zuzuschneiden. Das Bild wird erst beschnitten, wenn Sie den Zuschnitt anwenden.</p></details>
+<details id="rotate-flip"><summary>Drehen und Spiegeln</summary><p>Nach links drehen (Ctrl+[) und Nach rechts drehen (Ctrl+]) drehen die Pixel. Die Tasten H und V spiegeln das Bild horizontal und vertikal. Das ver&#228;ndert das Bild selbst, anders als R im Viewer, das nur die Anzeige dreht.</p></details>
+<details id="undo-redo"><summary>R&#252;ckg&#228;ngig und Wiederherstellen</summary><p>R&#252;ckg&#228;ngig (Ctrl+Z) und Wiederherstellen (Ctrl+Y oder Ctrl+Shift+Z) gehen den Verlauf von bis zu 20 Schritten durch, begrenzt durch den Speicher. Die Statuszeile zeigt die Gr&#246;&#223;e und nach einer &#196;nderung ge&#228;ndert mit Schritt N von M; verwirft die Speichergrenze die &#228;ltesten Schritte, steht dort Alte Schritte wurden verworfen: Speichergrenze.</p></details>
+<details id="save"><summary>Speichern</summary><p>Speichern (Ctrl+S) &#252;berschreibt das Original und ist erst nach einer &#196;nderung aktiv; davor lautet sein Tooltip Nichts zu speichern: Das Bild wurde nicht ge&#228;ndert. Bei einem JPEG werden Sie einmal pro Sitzung gefragt: Das JPEG wird neu komprimiert - das l&#228;sst sich nicht r&#252;ckg&#228;ngig machen. Das Aufnahmedatum und die &#252;brigen EXIF-Daten bleiben erhalten. Die Datei wird unter einem tempor&#228;ren Namen geschrieben und ausgetauscht; schl&#228;gt das Speichern fehl, bleibt das Fenster mit dem Grund offen.</p></details>
+<details id="save-as"><summary>Speichern unter..</summary><p>&#214;ffnet einen Dateidialog mit dem um (bearbeitet) erg&#228;nzten Namen. Die Formate sind PNG, JPEG, BMP, TIFF und WebP; ein Bild in einem anderen Format wird als PNG angeboten. Ein tempor&#228;rer Ordner eines Archivs wird abgelehnt. Nach dem &#220;berschreiben des Originals l&#228;dt der Viewer es neu; eine neue Datei im selben Ordner wird ge&#246;ffnet; eine an anderer Stelle wird in der Statuszeile genannt.</p></details>
+<details id="save-refused"><summary>Wenn Speichern aus ist</summary><p>Die Statuszeile sagt Das Original kann nicht &#252;berschrieben werden, mit dem Grund: dieses Format wird nicht geschrieben, die Datei ist schreibgesch&#252;tzt, keine Schreibrechte, eine andere Anwendung h&#228;lt die Datei, die Datei hat mehrere Seiten oder Einzelbilder (bearbeitet wird nur das erste), sie liegt in einem Archiv oder sie fehlt. Speichern unter.. bleibt m&#246;glich.</p></details>
+<details id="close"><summary>Schlie&#223;en</summary><p>Schlie&#223;en oder Esc schlie&#223;t das Fenster; Esc bricht zuerst einen laufenden Strich ab und entfernt dann den Zuschnittsrahmen. Bei ungespeicherten &#196;nderungen lautet die Frage: Die &#196;nderungen sind nicht gespeichert - Den Editor schlie&#223;en und die nicht gespeicherten &#196;nderungen verlieren? Speichern speichert zuerst, Nicht speichern verwirft, Abbrechen (die Standardantwort, auch Esc) bleibt im Editor. Diese Frage wird auch gestellt, wenn Best&#228;tigungen ausgeschaltet sind.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

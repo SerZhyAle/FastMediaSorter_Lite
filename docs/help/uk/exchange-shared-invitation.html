@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>Спільний пароль запрошення - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">Спільний пароль запрошення</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>У цьому вікні задається один спільний пароль, із яким користувачі реєструються на сервері замість одноразового коду запрошення. Вікно відкривається, коли ви позначаєте &#171;Спільний пароль запрошення&#187; в групі &#171;Запрошення&#187; налаштувань сервера обміну, або кнопкою &#171;Задати спільний пароль..&#187; поруч.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Спільний пароль запрошення">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Спільний пароль запрошення">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Виберіть тип облікового запису.</li><li>Виберіть, чи згенерує пароль програма, чи ви введете його самі.</li><li>Натисніть &#171;Встановити&#187;.</li><li>Якщо пароль згенеровано, скопіюйте його у вікні, яке показує його один раз.</li><li>Щоб припинити приймати цей пароль, зніміть позначку &#171;Спільний пароль запрошення&#187; і підтвердьте.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>Тип облікового запису</summary><p>&#171;Тип створюваного облікового запису:&#187; пропонує &#171;Свій пристрій або сім&#39;я&#187; та &#171;Гість&#187;. &#171;Гість&#187; вимкнений, а рядок під ним називає причину: файловий сервер програми не може обмежити вхід однією текою. Якщо спільний пароль уже ввімкнено, його поточний тип вибрано заздалегідь. Якщо цей наявний тип - &#171;Гість&#187;, кнопка &#171;Встановити&#187; вимкнена; спільний пароль за цього можна вимкнути.</p></details>
+<details id="password"><summary>Пароль</summary><p>&#171;Пароль:&#187; пропонує &#171;Згенерувати випадковий безпечний пароль&#187; (вибрано за замовчуванням) і &#171;Ввести пароль вручну&#187;. Після &#171;Встановити&#187; введений вручну пароль запитується у вікні пароля, яке перевіряє правила: не коротше за 10 символів, із великою та малою латинською літерою і цифрою. Скасування в цьому вікні повертає сюди.</p></details>
+<details id="set"><summary>Встановити</summary><p>&#171;Встановити&#187; надсилає серверу пароль і тип облікового запису та вмикає спільний пароль; на сторінці з&#39;являється &#171;Спільний пароль запрошення збережено й активовано.&#187;, а рядок під прапорцем показує &#171;Спільний пароль увімкнено (тип облікового запису: ..).&#187; Згенерований пароль показується один раз в окремому вікні: скопіюйте його там, прочитати його знову не можна. Будь-хто, хто знає пароль, може зареєструвати обліковий запис вибраного типу, тому передавайте його лише тим, кого хочете допустити.</p></details>
+<details id="switch-off"><summary>Вимкнення</summary><p>Зняття позначки запитує: &#171;Вимкнути спільний пароль запрошення? Нові реєстрації за ним стануть неможливими.&#187; Відповідь за замовчуванням - &#171;Ні&#187;. Після &#171;Так&#187; на сторінці з&#39;являється &#171;Спільний пароль запрошення вимкнено.&#187;, а рядок під прапорцем показує &#171;Спільний пароль вимкнено.&#187;</p></details>
+<details id="cancel"><summary>Скасування</summary><p>&#171;Скасувати&#187; або Esc закривають вікно, нічого не змінюючи. Якщо ви відкрили його, позначивши прапорець, прапорець повертається в попередній стан.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account - Fast Media Sorter</title>
+  <title>Exchange account - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account</h1>
+  <h1 id="title">Exchange account</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account.</p>
+    <p>Signs this PC in as a device of an account on a Media Exchange Server. It opens from the &#39;Sign in..&#39; button on the Exchange account page of the Share Manager settings, and from &#39;Publish through an exchange server..&#39;, which opens it with the publishing option already ticked.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-light.png" alt="Exchange Account">
-    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange Account">
+    <img class="shot light" src="exchange-account-light.png" alt="Exchange account">
+    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange account">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Optionally paste, open or scan a connection string; it fills the server and the login.</li><li>Press &#39;Check the certificate&#39; and, unless the system trusts it or the string carried it, compare the fingerprint with the operator&#39;s and press &#39;Trust this certificate&#39;.</li><li>Enter the login and the password or pairing code.</li><li>Set the device name and the options.</li><li>Press &#39;Sign in&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Connection string</summary><p>&#39;Connection string (optional):&#39; takes a string you paste with &#39;Paste&#39;, load from a .fmsexch file or a QR image with &#39;Open file..&#39;, or read with &#39;Scan with camera..&#39;. It only fills in the server and the login; nothing connects until you press &#39;Sign in&#39;. A string with a fingerprint pins that certificate, so there is nothing to compare by hand. A string with an invitation switches the window to registration. An unusable string gets a one-line refusal.</p></details>
+<details id="certificate"><summary>Server and certificate</summary><p>&#39;Check the certificate&#39; connects to &#39;Server (host:port):&#39; and shows &#39;Fingerprint of the server&#39;s certificate:&#39;. If the system trusts the certificate, nothing needs pinning. Otherwise compare the fingerprint with the one the server operator gave you and press &#39;Trust this certificate&#39;; only that button accepts a certificate the system does not know. Changing the server text forgets the check. Enter does nothing until a certificate is trusted, so no password goes to a server nobody vouched for.</p></details>
+<details id="login-and-secret"><summary>Login, password and pairing code</summary><p>Enter &#39;Login:&#39; and choose &#39;Sign in with a password&#39; (&#39;Password:&#39;, with &#39;Show password&#39;) or &#39;Sign in with a code from another device&#39; (&#39;Pairing code:&#39;, issued by another device of the same account). The field is cleared the moment its value is sent, whatever the result; the device keeps only a token, never the password.</p></details>
+<details id="registration"><summary>Registration by invitation</summary><p>When the string carries an invitation, the two sign-in choices give way to registration: &#39;The account&#39;s password:&#39; and &#39;Password once more:&#39; set the new password, which must meet the policy shown (at least 10 characters with an upper-case and a lower-case Latin letter and a digit), and the button reads &#39;Create the account&#39;.</p></details>
+<details id="device-options"><summary>Device name and options</summary><p>&#39;Name of this device:&#39; (up to 64 characters) starts as the computer name. &#39;Publish my shared folders on this server right away&#39; is off unless you came through &#39;Publish through an exchange server..&#39;; once on, every device of your account can open all your shared folders, because the sharing has one login. The last option starts the Share Manager when you sign in to Windows (off by default), so other devices can cast to this PC.</p></details>
+<details id="one-server"><summary>One server at a time</summary><p>A device belongs to one server. Signing in to another asks whether to leave the current one, and publishing on the old server stops. After a failed contact the button &#39;Why doesn&#39;t it connect?..&#39; opens the connection test.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

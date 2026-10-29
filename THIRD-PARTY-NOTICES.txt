@@ -169,6 +169,25 @@ SSH.NET (Renci.SshNet, 64-bit viewer only)
   (007_SPECIFICATION_REMOTE_RESOURCES_SFTP_SMB_DOTNET10.md). Fully managed - no
   native library ships with it.
 
+Microsoft Edge WebView2 SDK (64-bit viewer only)
+  Version 1.0.4314.35, https://aka.ms/webview2
+  License: BSD 3-Clause
+  Copyright (C) Microsoft Corporation. All rights reserved.
+
+  Microsoft.Web.WebView2.Core and Microsoft.Web.WebView2.WinForms inside the exe,
+  and the x64 WebView2Loader.dll in webview2\win-x64 beside it. Hosts the optional
+  EPUB reader and HTML page viewer. The browser engine itself is the Microsoft Edge
+  WebView2 Runtime already installed on Windows; this product does not bundle,
+  download or install it.
+
+AngleSharp (64-bit viewer only)
+  Version 1.8.5, https://github.com/AngleSharp/AngleSharp
+  License: MIT
+  Copyright (c) 2013 - 2025 AngleSharp
+
+  HTML parser behind the HTML page viewer's content filter. Fully managed - no
+  native library ships with it.
+
 Microsoft Edge WebView2 SDK loader (WebView2Loader.dll, 32-bit build only)
   Version 1.0.3240.44, https://aka.ms/webview2
   License: BSD 3-Clause

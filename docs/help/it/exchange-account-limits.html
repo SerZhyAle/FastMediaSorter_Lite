@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>Limiti dell&#39;account - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">Limiti dell&#39;account</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>Imposta limiti individuali per un account del Media Exchange Server che gestisci; un valore lasciato a 0 segue l&#39;impostazione predefinita del server. Si apre dal pulsante &#171;Limiti..&#187; sotto l&#39;elenco degli account nella pagina Media Exchange Server delle impostazioni di Share Manager, che compare quando &#232; selezionato un account. Il titolo indica l&#39;account: &#171;Limiti dell&#39;account: &lt;login&gt;&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="Limiti dell&#39;account">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Limiti dell&#39;account">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Seleziona l&#39;account e premi &#171;Limiti..&#187;.</li><li>Imposta un numero per ogni limite che vuoi cambiare e lascia 0 per il valore predefinito del server.</li><li>Premi &#171;Salva&#187;.</li><li>Leggi la riga del risultato: &#171;Limiti per l&#39;account &lt;login&gt; salvati.&#187;</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>Dispositivi e risorse</summary><p>&#171;Dispositivi massimi (0 = predefinito):&#187; limita i dispositivi che possono accedere all&#39;account. &#171;Risorse pubblicate massime (0 = predefinito):&#187; limita le cartelle condivise e le altre risorse che l&#39;account pu&#242; pubblicare sul server.</p></details>
+<details id="broadcasts"><summary>Trasmissioni</summary><p>&#171;Trasmissioni massime (0 = predefinito):&#187; limita le trasmissioni dell&#39;intero account, e &#171;Trasmissioni massime per dispositivo (0 = predefinito):&#187; limita quelle che pu&#242; avviare un singolo dispositivo.</p></details>
+<details id="clipboard"><summary>Limite degli appunti</summary><p>&#171;Limite appunti, MB (0 = 5 GB predefinito):&#187; imposta il valore massimo che l&#39;account pu&#242; inviare ai propri appunti sul server, in megabyte interi. Un limite memorizzato in unit&#224; pi&#249; piccole, per esempio 512 KB, appare come 0 e mantiene la sua dimensione esatta finch&#233; non tocchi questo campo.</p></details>
+<details id="save"><summary>Salva e annulla</summary><p>&#171;Salva&#187; sostituisce nel suo insieme i limiti propri dell&#39;account: ogni numero maggiore di 0 diventa un limite, ogni 0 indica il valore predefinito del server e cinque zeri eliminano le deroghe dell&#39;account. &#171;Annulla&#187; non cambia nulla. Se il server rifiuta un valore, la riga del risultato ne indica il motivo, per esempio &#171;Limite non consentito: deve essere un numero intero compreso nell&#39;intervallo accettato dal server.&#187;</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

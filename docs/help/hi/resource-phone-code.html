@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>फ़ोन कनेक्शन - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">फ़ोन कनेक्शन</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>एक QR कोड दिखाता है जिसे फ़ोन स्कैन करके किसी फ़ोल्डर की सेटिंग इस कंप्यूटर पर भेजता है। यह संसाधन सूची के और मेनू में फ़ोन के लिए कोड दिखाएं.. कमांड से खुलता है।</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>इस विंडो का स्क्रीनशॉट नहीं है: खुलते ही यह कोई डिवाइस, नेटवर्क लिसनर या पूरा व्यूअर शुरू कर देती है, इसलिए इसे कैप्चर नहीं किया जाता।</figcaption></figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>फ़ोन के लिए कोड दिखाएं.. खोलें।</li><li>फ़ोन से QR कोड स्कैन करें; फ़ोन को स्थानीय नेटवर्क पर इस कंप्यूटर तक पहुँचना होगा।</li><li>फ़ोन अपना कोड भेजता है, विंडो संदेश दिखाती है: कोड प्राप्त हुआ, फिर बंद हो जाती है, और आयात शुरू होता है।</li><li>यदि फ़ोन कंप्यूटर तक नहीं पहुँच सकता, तो उसका कोड, टेक्स्ट के रूप में या QR कोड के स्क्रीनशॉट के रूप में, इस कंप्यूटर के क्लिपबोर्ड पर रखें और क्लिपबोर्ड से चिपकाएं.. दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>QR कोड</summary><p>कोड आपके स्थानीय नेटवर्क के एक बार वाले पते और एक बार काम आने वाले टोकन का प्रतिनिधित्व करता है। विंडो उस पते पर तभी तक सुनती है जब तक वह खुली है और बंद होते ही रुक जाती है; केवल उसी एक पते पर सुना जाता है, हर नेटवर्क एडेप्टर पर नहीं। यदि सुनने वाला शुरू नहीं हो पाता, तो स्थिति पंक्ति कहती है: स्थानीय श्रोता प्रारंभ करने में विफल।</p></details>
+<details id="address"><summary>पता बॉक्स और कॉपी</summary><p>कोड के नीचे का केवल-पढ़ने वाला बॉक्स वही पता टेक्स्ट के रूप में दिखाता है। कॉपी करें उसे गोपनीयता चिह्नों के साथ क्लिपबोर्ड पर रखता है (क्लिपबोर्ड इतिहास नहीं, क्लाउड सिंक नहीं), क्योंकि उसमें मौजूद टोकन उसके धारक को इस विंडो में कोड सौंपने देता है। जो इस पते को ब्राउज़र में खोलता है उसे केवल एक छोटा पृष्ठ दिखता है जो बताता है कि यह एक बार वाला पता है।</p></details>
+<details id="paste"><summary>क्लिपबोर्ड से चिपकाएं</summary><p>क्लिपबोर्ड से चिपकाएं.. क्लिपबोर्ड से टेक्स्ट, या फ़ोन के QR कोड का स्क्रीनशॉट पढ़ता है और उसे टाइप किए टेक्स्ट वाले ही रीडर से जाँचता है। यदि वह कोड नहीं है, तो स्थिति पंक्ति कारण बताती है और विंडो फ़ोन के लिए खुली रहती है।</p></details>
+<details id="result"><summary>कोड के साथ क्या होता है</summary><p>जो पहला कोड पहुँचता है, फ़ोन से या क्लिपबोर्ड से, वह विंडो ले लेता है; दूसरा छोड़ दिया जाता है। विंडो बंद हो जाती है और वही आयात चलता है जो फ़ाइल से आयात.. चलाता है: पुष्टि के लिए सारांश, यदि कोड को पासवर्ड चाहिए तो पासवर्ड का सवाल, फिर स्थिति पंक्ति में गिनती के साथ जोड़े या अपडेट किए गए संसाधन।</p></details>
+<details id="close"><summary>प्रतीक्षा और बंद करें</summary><p>बंद करें केवल प्रतीक्षा समाप्त करता है; Enter और Esc दोनों इसी को चुनते हैं, ताकि कोई कुंजी फ़ोन का कोड कभी स्वीकार न करे। प्रतीक्षा के दौरान स्थिति पंक्ति कहती है: फ़ोन कनेक्शन की प्रतीक्षा की जा रही है..</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

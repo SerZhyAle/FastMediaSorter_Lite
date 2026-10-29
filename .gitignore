@@ -40,6 +40,8 @@ src/My Project/VersionInfo.vb
 # Locally downloaded build tools
 tools/nuget.exe
 tools/ocr-cache/
+# Machine-local sibling repository paths for tools/Get-ProductMentions.ps1
+tools/product-mention-roots.local.json
 
 # Local runtime diagnostics
 current.log

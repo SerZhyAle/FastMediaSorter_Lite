@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>Сканирование QR-кода камерой - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">Сканирование QR-кода камерой</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>Считывает QR-код с экрана телефона камерой этого ПК. Окно открывается кнопкой &#171;Сканировать камерой..&#187; в окне кода телефона и из поля строки подключения в окне учётной записи обмена; камера включается сразу после показа окна.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>Снимка этого окна нет: при открытии оно запускает устройство, сетевое подключение или весь просмотрщик, поэтому его не снимают.</figcaption></figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Поднесите QR-код телефона к камере.</li><li>Окно сканирует изображение само; когда найден верный код, строка состояния сообщает &#171;Код получен&#187;, и окно закрывается.</li><li>&#171;Отмена&#187; (Escape) закрывает окно без сканирования.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>Изображение и состояние</summary><p>Чёрная область показывает живое изображение. Строка под ней сообщает &#171;Наведите камеру на QR-код телефона&#187;, пока код не считан.</p></details>
+<details id="camera"><summary>Какая камера</summary><p>Используется только первая найденная камера. Если камеры нет или она не запускается, строка сообщает &#171;Камера недоступна&#187;, а затем причину, если она известна.</p></details>
+<details id="result"><summary>После сканирования</summary><p>Текст первого верного QR-кода возвращается окну, которое открыло сканер, и обрабатывается там так, будто его вставили; в окне кода телефона он попадает в поле кода и передаётся, а Fast Media Sorter всё равно задаёт свои обычные вопросы. Кадры остаются только в памяти: это окно ничего не сохраняет и не отправляет.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

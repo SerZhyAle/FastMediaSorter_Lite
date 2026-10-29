@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Outside Folder Access - Fast Media Sorter</title>
+  <title>Donner l&#39;acc&#232;s ext&#233;rieur - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Outside Folder Access</h1>
+  <h1 id="title">Donner l&#39;acc&#232;s ext&#233;rieur</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Outside Folder Access.</p>
+    <p>Contr&#244;le l&#39;acc&#232;s &#224; un dossier partag&#233; pour des personnes ext&#233;rieures &#224; vos propres appareils : une invitation d&#39;invit&#233;, ou un lien avec mot de passe qui n&#39;exige pas de compte. Elle s&#39;ouvre depuis le bouton &#171;Donner l&#39;acc&#232;s ext&#233;rieur..&#187; de la fen&#234;tre principale de Share Manager pour le dossier s&#233;lectionn&#233;. Dans cette version, les commandes qui cr&#233;ent un nouvel acc&#232;s sont d&#233;sactiv&#233;es et la fen&#234;tre en indique la raison, tandis qu&#39;un acc&#232;s existant peut toujours &#234;tre retir&#233;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Outside Folder Access">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Outside Folder Access">
+    <img class="shot light" src="folder-outside-access-light.png" alt="Donner l&#39;acc&#232;s ext&#233;rieur">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="Donner l&#39;acc&#232;s ext&#233;rieur">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez la ligne d&#39;en-t&#234;te avec le nom et le chemin du dossier.</li><li>Dans chaque groupe, lisez la ligne de raison ; tant qu&#39;elle est affich&#233;e, rien de nouveau ne peut &#234;tre cr&#233;&#233;.</li><li>Pour retirer un acc&#232;s, s&#233;lectionnez une invitation et cliquez sur &#171;Retirer la s&#233;lection&#187;, ou cliquez sur &#171;Retirer le lien&#187;.</li><li>Cliquez sur &#171;Fermer&#187; (&#201;chap) pour quitter.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="header"><summary>Dossier et &#233;tat</summary><p>La ligne en gras indique le dossier et son chemin. La ligne d&#39;&#233;tat en bas signale le dernier r&#233;sultat. Quand le service de publication ne fonctionne pas, la fen&#234;tre indique &#171;Service de publication indisponible.&#187; et ses boutons sont d&#233;sactiv&#233;s.</p></details>
+<details id="guest-invitation"><summary>Invitation d&#39;invit&#233;</summary><p>Le groupe comporte &#171;Cr&#233;er une invitation d&#39;invit&#233;..&#187;, &#171;Retirer la s&#233;lection&#187; et une liste avec Type, Cr&#233;&#233; et Utilis&#233; pour les invitations d&#39;invit&#233; de ce dossier. Retirer supprime l&#39;invitation ; le dossier et ses fichiers ne sont pas supprim&#233;s.</p></details>
+<details id="password-link"><summary>Lien avec mot de passe (sans compte)</summary><p>L&#39;&#233;tat indique &#171;Lien non cr&#233;&#233;.&#187; ou &#171;Le lien est actif.&#187; La zone &#171;Mot de passe du lien :&#187; est masqu&#233;e et &#171;G&#233;n&#233;rer&#187; la remplit. &#171;Cr&#233;er un lien&#187; devient &#171;Mettre &#224; jour le lien&#187; tant qu&#39;un lien est actif. &#171;Retirer le lien&#187; demande d&#39;abord, car toutes les sessions actives sur le lien prennent fin. &#171;Afficher QR / Code..&#187; affiche le lien sous forme de code.</p></details>
+<details id="availability"><summary>Pourquoi la cr&#233;ation est d&#233;sactiv&#233;e</summary><p>Chaque groupe affiche une ligne de raison : le serveur de fichiers du programme ne peut pas limiter une connexion &#224; un seul dossier. Tant qu&#39;elle est affich&#233;e, toutes les commandes qui cr&#233;ent des invitations ou des liens sont d&#233;sactiv&#233;es. Le retrait d&#39;un acc&#232;s existant d&#233;pend uniquement de ce qui existe.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

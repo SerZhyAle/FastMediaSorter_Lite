@@ -384,8 +384,9 @@ function Render([string]$code) {
         $portalFooter = "`n" + ('    <a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a>' -f $portal.url, (Esc $portal.footer), (ExtName $e.externalLabel))
     }
 
-    # The three doors (ticket 132 section 3.2): viewer, share to Android, and the reserved exchange-server slot.
-    # Door 3 is future-tense text only - no link, no download, no capability claim.
+    # The three doors (ticket 132 section 3.2, specification 273): the manager, sharing and scheduling, and the exchange
+    # server. Door 3 describes the gated server in the present tense and carries no link and no download (POSITIONING.md
+    # section 2: no package carries it while its shipping gate is shut).
     $doorHrefs = @('#get', "$BaseUrl/server.html", '')
     $doorCards = (0..2 | ForEach-Object {
         $d = $e.doors[$_]
@@ -1040,13 +1041,13 @@ function RenderSupport {
 }
 
 # The latest released sections of CHANGELOG.md as plain data: version, date, categories, entries. [Unreleased] and anything
-# older than the 'count'-th release is never read. A top-level entry (with its sub-entries) that names the component in
-# development (site-facts.json development.mentionPattern) is left out - this page lists what a release shipped, and that
-# component is in no package (docs/guides/POSITIONING.md section 2, specification 249).
+# older than the 'count'-th release is never read. A top-level entry (with its sub-entries) that names the gated
+# component (site-facts.json gated.mentionPattern) is left out - this page lists what a release shipped, and that
+# component is in no package (docs/guides/POSITIONING.md section 2, specifications 249 and 273).
 function ReadReleases([int]$count) {
     $path = Join-Path $Root 'CHANGELOG.md'
     if (-not (Test-Path -LiteralPath $path)) { throw "Missing release notes: $path" }
-    $reserved = @([string]$facts.development.mentionPattern | Where-Object { $_ })
+    $reserved = @([string]$facts.gated.mentionPattern | Where-Object { $_ })
     $releases = [Collections.Generic.List[object]]::new()
     $cur = $null; $cat = $null; $item = $null
     foreach ($raw in [IO.File]::ReadAllLines($path, [Text.UTF8Encoding]::new($false))) {

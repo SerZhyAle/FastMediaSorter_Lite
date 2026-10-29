@@ -491,19 +491,19 @@ Partial Public NotInheritable Class Localization
             "Android فون کے ساتھ فولڈرز شیئر کرنے کے لیے ایک چھوٹا پس منظر SFTP سرور اور Windows فائر وال میں ایک استثنا درکار ہے۔ اس کے لیے ایک بار ایڈمنسٹریٹر حقوق مانگے جائیں گے۔ فعال ہونے کے بعد آپ کے منتخب فولڈرز نیٹ ورک پر پڑھے جا سکیں گے۔ جاری رکھیں؟",
             "要与 Android 手机共享文件夹，需要一个小型后台 SFTP 服务器和一条 Windows 防火墙例外规则。这需要一次管理员权限。启用后，您选择的文件夹将可通过网络读取。是否继续？")
 
-        Add("Общий доступ к папкам для телефона Android пока не включён. Он добавляет небольшой фоновый SFTP-сервер и одно разрешение в брандмауэре Windows (нужны права администратора один раз). Пока он выключен, программа работает как просмотрщик и сортировщик медиафайлов.",
-            "Folder sharing for an Android phone is not enabled yet. It adds a small background SFTP server and one Windows Firewall exception (administrator rights are needed once). While it is off, the app works as a plain image/video viewer and sorter.",
-            "Спільний доступ до папок для телефона Android поки не ввімкнено. Він додає невеликий фоновий SFTP-сервер і один дозвіл у брандмауері Windows (права адміністратора потрібні один раз). Поки він вимкнений, програма працює як переглядач і сортувальник медіафайлів.",
-            "Die Ordnerfreigabe für ein Android-Telefon ist noch nicht aktiviert. Sie ergänzt einen kleinen SFTP-Server im Hintergrund und eine Windows-Firewall-Ausnahme (einmalig Administratorrechte). Solange sie aus ist, arbeitet das Programm als reiner Bild- und Videobetrachter mit Sortierung.",
-            "La condivisione delle cartelle con un telefono Android non è ancora attiva. Aggiunge un piccolo server SFTP in background e un'eccezione nel Windows Firewall (i diritti di amministratore servono una volta). Finché è disattivata, il programma funziona come visualizzatore e ordinatore di file multimediali.",
-            "El uso compartido de carpetas para un teléfono Android aún no está activado. Añade un pequeño servidor SFTP en segundo plano y una excepción en el Firewall de Windows (los permisos de administrador se piden una vez). Mientras esté desactivado, el programa funciona como visor y clasificador de medios.",
-            "Le partage de dossiers pour un téléphone Android n'est pas encore activé. Il ajoute un petit serveur SFTP en arrière-plan et une exception dans le pare-feu Windows (droits administrateur une seule fois). Tant qu'il est désactivé, le programme reste une visionneuse et un trieur de médias.",
-            "A partilha de pastas para um telemóvel Android ainda não está ativada. Acrescenta um pequeno servidor SFTP em segundo plano e uma exceção na Firewall do Windows (direitos de administrador uma vez). Enquanto estiver desativada, o programa funciona como visualizador e organizador de multimédia.",
-            "لم يتم بعد تفعيل مشاركة المجلدات مع هاتف Android. تضيف خادم SFTP صغيرًا في الخلفية واستثناءً واحدًا في جدار حماية Windows (تلزم صلاحيات المسؤول مرة واحدة). وطالما ظلت متوقفة، يعمل البرنامج كعارض ومنظّم للوسائط فقط.",
-            "Android फ़ोन के लिए फ़ोल्डर साझाकरण अभी सक्षम नहीं है। यह एक छोटा पृष्ठभूमि SFTP सर्वर और Windows फ़ायरवॉल में एक अपवाद जोड़ता है (व्यवस्थापक अधिकार एक बार चाहिए)। बंद रहने तक कार्यक्रम केवल मीडिया दर्शक और छँटाई उपकरण के रूप में काम करता है।",
-            "Android ফোনের জন্য ফোল্ডার শেয়ারিং এখনও চালু নয়। এটি একটি ছোট ব্যাকগ্রাউন্ড SFTP সার্ভার ও Windows ফায়ারওয়ালে একটি ব্যতিক্রম যোগ করে (একবার প্রশাসক অধিকার লাগে)। বন্ধ থাকা অবস্থায় প্রোগ্রামটি কেবল মিডিয়া দর্শক ও সাজানোর সরঞ্জাম হিসেবে চলে।",
-            "Android فون کے لیے فولڈر شیئرنگ ابھی فعال نہیں۔ یہ ایک چھوٹا پس منظر SFTP سرور اور Windows فائر وال میں ایک استثنا شامل کرتی ہے (ایڈمنسٹریٹر حقوق ایک بار درکار)۔ بند رہنے تک پروگرام صرف میڈیا ویوَر اور ترتیب دینے والے کے طور پر کام کرتا ہے۔",
-            "尚未启用面向 Android 手机的文件夹共享。它会添加一个小型后台 SFTP 服务器和一条 Windows 防火墙例外（仅需一次管理员权限）。未启用时，本程序仅作为图片/视频查看与整理工具运行。")
+        Add("Общий доступ к папкам для телефона Android не включён. Он добавляет небольшой фоновый SFTP-сервер и одно разрешение в брандмауэре Windows (нужны права администратора один раз).",
+            "Folder sharing for an Android phone is not enabled. It adds a small background SFTP server and one Windows Firewall exception (administrator rights are needed once).",
+            "Спільний доступ до папок для телефона Android не ввімкнено. Він додає невеликий фоновий SFTP-сервер і один дозвіл у брандмауері Windows (права адміністратора потрібні один раз).",
+            "Die Ordnerfreigabe für ein Android-Telefon ist nicht aktiviert. Sie ergänzt einen kleinen SFTP-Server im Hintergrund und eine Windows-Firewall-Ausnahme (einmalig Administratorrechte).",
+            "La condivisione delle cartelle con un telefono Android non è attiva. Aggiunge un piccolo server SFTP in background e un'eccezione nel Windows Firewall (i diritti di amministratore servono una volta).",
+            "El uso compartido de carpetas para un teléfono Android no está activado. Añade un pequeño servidor SFTP en segundo plano y una excepción en el Firewall de Windows (los permisos de administrador se piden una vez).",
+            "Le partage de dossiers pour un téléphone Android n'est pas activé. Il ajoute un petit serveur SFTP en arrière-plan et une exception dans le pare-feu Windows (droits administrateur une seule fois).",
+            "A partilha de pastas para um telemóvel Android não está ativada. Acrescenta um pequeno servidor SFTP em segundo plano e uma exceção na Firewall do Windows (direitos de administrador uma vez).",
+            "مشاركة المجلدات مع هاتف Android غير مفعّلة. تضيف خادم SFTP صغيرًا في الخلفية واستثناءً واحدًا في جدار حماية Windows (تلزم صلاحيات المسؤول مرة واحدة).",
+            "Android फ़ोन के लिए फ़ोल्डर साझाकरण सक्षम नहीं है। यह एक छोटा पृष्ठभूमि SFTP सर्वर और Windows फ़ायरवॉल में एक अपवाद जोड़ता है (व्यवस्थापक अधिकार एक बार चाहिए)।",
+            "Android ফোনের জন্য ফোল্ডার শেয়ারিং চালু নয়। এটি একটি ছোট ব্যাকগ্রাউন্ড SFTP সার্ভার ও Windows ফায়ারওয়ালে একটি ব্যতিক্রম যোগ করে (একবার প্রশাসক অধিকার লাগে)।",
+            "Android فون کے لیے فولڈر شیئرنگ فعال نہیں۔ یہ ایک چھوٹا پس منظر SFTP سرور اور Windows فائر وال میں ایک استثنا شامل کرتی ہے (ایڈمنسٹریٹر حقوق ایک بار درکار)۔",
+            "未启用面向 Android 手机的文件夹共享。它会添加一个小型后台 SFTP 服务器和一条 Windows 防火墙例外（仅需一次管理员权限）。")
 
         Add("Установить функции сервера..",
             "Install server features..", "Встановити функції сервера..", "Serverfunktionen installieren..",

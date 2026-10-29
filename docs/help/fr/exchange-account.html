@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account - Fast Media Sorter</title>
+  <title>Compte d&#39;&#233;change - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account</h1>
+  <h1 id="title">Compte d&#39;&#233;change</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account.</p>
+    <p>Connecte ce PC comme appareil d&#39;un compte sur un Media Exchange Server. La fen&#234;tre s&#39;ouvre depuis le bouton &#171;Se connecter..&#187; de la page Compte d&#39;&#233;change des param&#232;tres de Share Manager, et depuis &#171;Publier via un serveur d&#39;&#233;change..&#187;, qui l&#39;ouvre avec l&#39;option de publication d&#233;j&#224; coch&#233;e.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-light.png" alt="Exchange Account">
-    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange Account">
+    <img class="shot light" src="exchange-account-light.png" alt="Compte d&#39;&#233;change">
+    <img class="shot dark" src="exchange-account-dark.png" alt="Compte d&#39;&#233;change">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Si vous le souhaitez, collez, ouvrez ou scannez une cha&#238;ne de connexion ; elle renseigne le serveur et l&#39;identifiant.</li><li>Cliquez sur &#171;V&#233;rifier le certificat&#187; et, sauf si le syst&#232;me lui fait confiance ou si la cha&#238;ne le contenait, comparez l&#39;empreinte avec celle de l&#39;op&#233;rateur, puis cliquez sur &#171;Faire confiance &#224; ce certificat&#187;.</li><li>Saisissez l&#39;identifiant et le mot de passe ou le code d&#39;appairage.</li><li>D&#233;finissez le nom de l&#39;appareil et les options.</li><li>Cliquez sur &#171;Se connecter&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Cha&#238;ne de connexion</summary><p>&#171;Cha&#238;ne de connexion (facultatif) :&#187; accepte une cha&#238;ne que vous collez avec &#171;Coller&#187;, chargez depuis un fichier .fmsexch ou une image QR avec &#171;Ouvrir un fichier..&#187;, ou lisez avec &#171;Scanner avec la cam&#233;ra..&#187;. Elle renseigne seulement le serveur et l&#39;identifiant ; rien ne se connecte avant que vous cliquiez sur &#171;Se connecter&#187;. Une cha&#238;ne contenant une empreinte &#233;pingle ce certificat, il n&#39;y a donc rien &#224; comparer &#224; la main. Une cha&#238;ne contenant une invitation fait passer la fen&#234;tre en mode inscription. Une cha&#238;ne inutilisable re&#231;oit un refus d&#39;une ligne.</p></details>
+<details id="certificate"><summary>Serveur et certificat</summary><p>&#171;V&#233;rifier le certificat&#187; se connecte &#224; &#171;Serveur (h&#244;te:port) :&#187; et affiche &#171;Empreinte du certificat du serveur :&#187;. Si le syst&#232;me fait confiance au certificat, il n&#39;y a rien &#224; &#233;pingler. Sinon, comparez l&#39;empreinte avec celle que l&#39;op&#233;rateur du serveur vous a donn&#233;e et cliquez sur &#171;Faire confiance &#224; ce certificat&#187; ; seul ce bouton accepte un certificat que le syst&#232;me ne conna&#238;t pas. Modifier le texte du serveur fait oublier la v&#233;rification. La touche Entr&#233;e ne fait rien tant qu&#39;aucun certificat n&#39;est approuv&#233;, de sorte qu&#39;aucun mot de passe ne part vers un serveur dont personne ne se porte garant.</p></details>
+<details id="login-and-secret"><summary>Identifiant, mot de passe et code d&#39;appairage</summary><p>Saisissez &#171;Identifiant :&#187; et choisissez &#171;Se connecter avec un mot de passe&#187; (&#171;Mot de passe :&#187;, avec &#171;Afficher le mot de passe&#187;) ou &#171;Se connecter avec un code d&#39;un autre appareil&#187; (&#171;Code d&#39;appairage :&#187;, &#233;mis par un autre appareil du m&#234;me compte). Le champ est vid&#233; &#224; l&#39;instant o&#249; sa valeur est envoy&#233;e, quel que soit le r&#233;sultat ; l&#39;appareil ne garde qu&#39;un jeton, jamais le mot de passe.</p></details>
+<details id="registration"><summary>Inscription sur invitation</summary><p>Quand la cha&#238;ne contient une invitation, les deux choix de connexion c&#232;dent la place &#224; l&#39;inscription : &#171;Le mot de passe du compte :&#187; et &#171;Mot de passe encore une fois :&#187; d&#233;finissent le nouveau mot de passe, qui doit respecter la r&#232;gle affich&#233;e (au moins 10 caract&#232;res avec une lettre latine majuscule, une minuscule et un chiffre), et le bouton devient &#171;Cr&#233;er le compte&#187;.</p></details>
+<details id="device-options"><summary>Nom de l&#39;appareil et options</summary><p>&#171;Nom de cet appareil :&#187; (jusqu&#39;&#224; 64 caract&#232;res) commence par le nom de l&#39;ordinateur. &#171;Publier tout de suite mes dossiers partag&#233;s sur ce serveur&#187; est d&#233;sactiv&#233;e, sauf si vous &#234;tes pass&#233; par &#171;Publier via un serveur d&#39;&#233;change..&#187; ; une fois activ&#233;e, chaque appareil de votre compte peut ouvrir tous vos dossiers partag&#233;s, car le partage n&#39;a qu&#39;un seul identifiant. La derni&#232;re option lance Share Manager &#224; l&#39;ouverture de session Windows (d&#233;sactiv&#233;e par d&#233;faut), afin que d&#39;autres appareils puissent diffuser vers ce PC.</p></details>
+<details id="one-server"><summary>Un serveur &#224; la fois</summary><p>Un appareil appartient &#224; un seul serveur. Se connecter &#224; un autre serveur demande s&#39;il faut quitter l&#39;actuel, et la publication sur l&#39;ancien serveur s&#39;arr&#234;te. Apr&#232;s un contact &#233;chou&#233;, le bouton &#171;Pourquoi la connexion &#233;choue-t-elle ?..&#187; ouvre le test de connexion.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

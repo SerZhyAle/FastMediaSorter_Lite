@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Add Shared Resource - Fast Media Sorter</title>
+  <title>Добавление ресурса - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Add Shared Resource</h1>
+  <h1 id="title">Добавление ресурса</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Add Shared Resource.</p>
+    <p>Короткий мастер, который добавляет один общий ресурс: папку или уже открытый диск FileDO. Он открывается пунктом &#171;Мастер добавления ресурса..&#187; меню &#171;Добавить..&#187; и из мастера первого запуска, а заканчивается добавлением ресурса в список раздачи.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-resource-add-light.png" alt="Add Shared Resource">
-    <img class="shot dark" src="share-resource-add-dark.png" alt="Add Shared Resource">
+    <img class="shot light" src="share-resource-add-light.png" alt="Добавление ресурса">
+    <img class="shot dark" src="share-resource-add-dark.png" alt="Добавление ресурса">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте, что такое ресурс, и нажмите &#171;Далее&#187;.</li><li>Нажмите &#171;Выбрать папку..&#187; и укажите папку.</li><li>На странице &#171;Параметры ресурса&#187; задайте имя, тип и доступ.</li><li>Проверьте сводку и нажмите &#171;Готово&#187;.</li><li>Кнопки последней страницы покажут QR-код или откроют настройки.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-a-resource-is"><summary>Что такое ресурс</summary><p>Ресурс - это папка или открытый виртуальный диск FileDO, доступный просмотрщику через этот компьютер. Файлы остаются на ПК; телефон просматривает и копирует их по соединению, а галочка в списке папок означает раздачу.</p></details>
+<details id="choose-folder"><summary>Выбор папки</summary><p>&#171;Выбрать папку..&#187; открывает обычный выбор папки, &#171;Диски FileDO..&#187; показывает открытые диски. Повторная папка отклоняется сообщением &#171;Эта папка уже в списке.&#187;. Диски FileDO выбирайте уже открытыми: мастер не создаёт и не монтирует их.</p></details>
+<details id="resource-settings"><summary>Параметры ресурса</summary><p>Название на телефоне, тип, точный набор типов, условия сканирования и доступ. &#171;Только чтение&#187; запрещает изменения, папка-приёмник разрешает копирование и перенос в неё. &#171;Дополнительные параметры&#187; содержат комментарий, PIN и интервал слайд-шоу. Цвет приёмника выбирает телефон.</p></details>
+<details id="finish"><summary>Ресурс и дальнейшие действия</summary><p>&#171;Готово&#187; сохраняет параметры и добавляет ресурс; до этого отмена ничего не меняет. Последняя страница сообщает, раздаётся ли ресурс. Если сервер выключен, телефон его не увидит; если раздача не подтверждена, проверьте настройки. &#171;Показать QR-код&#187; открывает код доступа, &#171;Настройки..&#187; - настройки менеджера, &#171;Закрыть&#187; выходит из мастера.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

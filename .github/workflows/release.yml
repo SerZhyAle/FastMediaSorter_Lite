@@ -200,6 +200,12 @@ jobs:
           Get-ChildItem "modern-publish" -File |
             Where-Object { $_.Extension -notin '.pdb','.xml' } |
             ForEach-Object { Copy-Item $_.FullName (Join-Path $stage $_.Name) -Force }
+          # Specification 275 section 9.2: the WebView2 loader sits in its own subfolder, not beside
+          # the exe, so the wildcard above does not carry it; the preflight judges the local mirror.
+          $loader = "modern-publish/webview2/win-x64/WebView2Loader.dll"
+          if (-not (Test-Path $loader)) { throw "The modern publish output has no webview2/win-x64/WebView2Loader.dll" }
+          New-Item -ItemType Directory -Path (Join-Path $stage 'webview2\win-x64') -Force | Out-Null
+          Copy-Item $loader (Join-Path $stage 'webview2\win-x64') -Force
 
           # Android Folder Share payload: the Companion exe (published above) next
           # to the viewer exe, and the committed Go worker under companion\. Both are
@@ -389,7 +395,7 @@ jobs:
             dist/${{ steps.serversetup.outputs.name }}
             dist/${{ steps.serversetup.outputs.name }}.sha256
           body: |
-            Fast Media Sorter & Sharing for Windows ${{ steps.ver.outputs.version }} - sort, view and share your images and videos.
+            Fast Media Sorter & Sharing for Windows ${{ steps.ver.outputs.version }} - a media and file manager: sort and view your photos and videos with one key, manage files on this PC and on servers, and share folders to your phone.
 
             ## Install
 
@@ -423,7 +429,7 @@ jobs:
             winget install --id SerZhyAle.FastMediaSorter.Server
             ```
 
-            **Companion app for books/documents:**
+            **A separate program of the same author, for converting and translating books and documents (DocHtmlTranslate):**
             ```
             winget install SerZhyAle.DocHtmlTranslate
             ```

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>Экспорт ресурса - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">Экспорт ресурса</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>Готовит настройки одного SFTP-сервера, чтобы другой компьютер или телефон мог их импортировать. Окно открывается пунктом &#171;Экспорт..&#187; в меню &#171;Ещё&#187; списка ресурсов и требует выбранного ресурса; общую папку Share Manager экспортируют из самого Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="Экспорт ресурса">
+    <img class="shot dark" src="resource-export-dark.png" alt="Экспорт ресурса">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте предупреждение под названием ресурса.</li><li>Выберите &#171;Без пароля&#187; (по умолчанию) или &#171;С паролем&#187;.</li><li>Нажмите &#171;Сохранить в файл..&#187; либо скопируйте настройки текстом или коротким кодом.</li><li>Передайте результат только его владельцу.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>Предупреждение</summary><p>Строка под названием предупреждает, что файл содержит ключ доступа к серверу: передавайте его только владельцу и не оставляйте на общих дисках. Это относится и к файлу, и к скопированному тексту, и к коду.</p></details>
+<details id="password-choice"><summary>Без пароля или с паролем</summary><p>Вначале выбрано &#171;Без пароля&#187;. &#171;С паролем&#187; доступно, только если сохранённый пароль удаётся прочитать; иначе показывается подсказка &#171;Пароль не сохранён - файл будет без пароля.&#187; Пароль расшифровывается в памяти на время экспорта и больше никуда не попадает.</p></details>
+<details id="save-copy"><summary>Сохранить, копировать текст, копировать код</summary><p>&#171;Сохранить в файл..&#187; записывает файл .fmscfg через диалог сохранения; запись отказывает на дисках FAT и exFAT, на сетевых дисках и в папках, которые могут менять другие пользователи, и никогда не оставляет наполовину записанный файл. &#171;Копировать текст&#187; кладёт в буфер документ настроек, &#171;Копировать код&#187; - короткий код с тем же содержимым. Оба копируются с пометками приватности (без истории буфера обмена и облачной синхронизации). Результат виден в строке состояния.</p></details>
+<details id="requirements"><summary>Что можно экспортировать</summary><p>Только SFTP-сервер, ключ которого просмотрщик уже запомнил. Окно открывается в любом случае, а отказ появляется в строке состояния при нажатии кнопки: сетевую папку (SMB) этот файл описать не может; ключ сервера не запомнен (откройте ресурс один раз и подтвердите ключ); у ресурса нет адреса, который можно передать; папка записана так, что файл её не принимает (исправьте через &#171;Изменить..&#187;).</p></details>
+    <p><a href="settings.html">Настройки</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

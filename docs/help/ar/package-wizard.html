@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>مشاركة - رمز الوصول - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">مشاركة - رمز الوصول</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>ينشئ رمز الوصول للهاتف: رمز QR وملف .fmscfg يحملان العنوان واسم المستخدم والمجلدات المختارة. يُفتح من زر مشاركة في النافذة الرئيسية أثناء تشغيل المشاركة، ويتحقق من أن الهاتف يستطيع فعلاً الوصول إلى الكمبيوتر قبل تسليم الرمز.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="مشاركة - رمز الوصول">
+    <img class="shot dark" src="package-wizard-dark.png" alt="مشاركة - رمز الوصول">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>ضع علامة على المجلدات التي تُضمَّن في الرمز.</li><li>عدّل أي خلية في الجدول يجب أن تختلف في هذا الرمز.</li><li>حدّد عدم تضمين عنوان الإنترنت في هذا الرمز أو عدم تضمين كلمة المرور في الملف/رمز QR عند الحاجة.</li><li>انتظر فحص الوصول.</li><li>اعرض رمز QR أو احفظ ملف .fmscfg أو أرسله بالبريد أو انسخ اسم المستخدم وكلمة المرور.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>المجلدات وإعدادات رمز الوصول هذا</summary><p>صف واحد لكل مجلد مشترك مع الأعمدة: مفعّل، المجلد، الاسم على الهاتف، النوع، أنواع الوسائط، فحص المجلدات الفرعية، المجلدات الفرعية كعناصر، المخفية، للقراءة فقط، تلميح للقراءة فقط، الوجهة، تعليق، عرض الشرائح، ثانية. انقر على خلية لتغييرها. تبدأ القيم من إعدادات كل مجلد، وتسري التعديلات على هذا الرمز فقط. للقراءة فقط قفل حقيقي على الخادم؛ أما تلميح للقراءة فقط فيُخفي أزرار التعديل في التطبيق فحسب. المجلد الوجهة قابل للكتابة دائماً، لذلك لا ينطبق عليه للقراءة فقط.</p></details>
+<details id="common-settings"><summary>إعدادات النقل المشتركة</summary><p>عدم تضمين عنوان الإنترنت في هذا الرمز يجعل الهاتف يتصل عبر الشبكة المحلية فقط؛ ولا يوقف الخادم، ويُغلق الوصول عبر الإنترنت للمشاركة كلها من إعدادات المدير. عدم تضمين كلمة المرور في الملف/رمز QR يزيل كلمة المرور من الرمز؛ فسلّمها بشكل منفصل. قبول الهاتف لرمز بلا كلمة مرور يتوقف على إصدار التطبيق.</p></details>
+<details id="access-check"><summary>فحص الوصول</summary><p>أثناء جلب الحالة تذكر النافذة ذلك. إذا لم يكن الخادم يعمل، أو لم يُحدَّد أي مجلد، أو لم يوجد عنوان صالح، يذكر تلميح ما ينقص. وعندما لا ينتهي الفحص لا يُسلَّم الرمز ولا الملف: اضغط إعادة فحص الوصول.</p></details>
+<details id="qr-code"><summary>عرض رمز QR</summary><p>رمز QR وملف .fmscfg يفتحان الوصول إلى المجلدات ويحتويان على كلمة المرور وعلى PIN إن وُجد - احتفظ بهما وسلّمهما كما تفعل بالمفتاح. إذا كانت الإعدادات أكبر من أن يحملها رمز QR، فاحفظ الملف وأرسله بدلاً منه.</p></details>
+<details id="file-and-mail"><summary>الملف والبريد واسم المستخدم</summary><p>حفظ ملف .fmscfg.. يكتب الملف؛ وعلى نظام ملفات لا يستطيع تقييد الوصول، أو في مجلد يستطيع غيرك تغييره، ترفض النافذة لأن الملف يحوي مفتاح وصول. إرسال بالبريد الإلكتروني.. يرفق الملف مع ملاحظة باستيراده في تطبيق Android وحذفه بعد ذلك. نسخ اسم المستخدم/كلمة المرور يضع الاثنين في الحافظة.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

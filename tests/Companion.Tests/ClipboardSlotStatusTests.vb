@@ -72,6 +72,8 @@ Public Class ClipboardSlotStatusTests
                     Next
                     Dim refresh = DirectCast(GetType(Share_Settings_Form).GetField("_clipRefresh", flags).GetValue(form), Button)
                     Dim size = DirectCast(GetType(Share_Settings_Form).GetField("_clipSize", flags).GetValue(form), Label)
+                    ' The page shows one group card at a time: select the one that holds the button, as its rail item does.
+                    ExchangeTestSupport.ShowSettingsCardOf(form, refresh)
                     refresh.PerformClick()
                     Dim deadline As DateTime = DateTime.UtcNow.AddSeconds(15)
                     While DateTime.UtcNow < deadline AndAlso Not size.Text.Contains("Test account", StringComparison.Ordinal)

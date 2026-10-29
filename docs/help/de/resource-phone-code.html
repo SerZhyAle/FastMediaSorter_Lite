@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>Telefonverbindung - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">Telefonverbindung</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>Zeigt einen QR-Code, den ein Telefon scannt, um die Einstellungen eines Ordners an diesen Computer zu senden. Das Fenster &#246;ffnet sich &#252;ber &#171;Code f&#252;r Telefon anzeigen..&#187; im Men&#252; &#171;Mehr&#187; der Ressourcenliste.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>F&#252;r dieses Fenster gibt es keinen Screenshot: Beim &#214;ffnen startet es ein Ger&#228;t, einen Netzwerkempfang oder den ganzen Betrachter, daher wird es nicht aufgenommen.</figcaption></figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>&#214;ffnen Sie &#171;Code f&#252;r Telefon anzeigen..&#187;.</li><li>Scannen Sie den QR-Code mit dem Telefon; das Telefon muss diesen Computer im lokalen Netzwerk erreichen.</li><li>Das Telefon sendet seinen Code, das Fenster meldet &#171;Code empfangen&#187; und schlie&#223;t sich, und der Import beginnt.</li><li>Erreicht das Telefon den Computer nicht, legen Sie seinen Code in die Zwischenablage dieses Computers, als Text oder als Screenshot des QR-Codes, und dr&#252;cken Sie &#171;Aus Zwischenablage einf&#252;gen..&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>Der QR-Code</summary><p>Der Code steht f&#252;r eine einmalige Adresse in Ihrem lokalen Netzwerk mit einem Token f&#252;r den einmaligen Gebrauch. Das Fenster lauscht an dieser Adresse nur, solange es offen ist, und h&#246;rt beim Schlie&#223;en auf; gelauscht wird nur an dieser einen Adresse, nicht an jedem Netzwerkadapter. Kann der Empfang nicht starten, steht in der Statuszeile &#171;Lokaler Empfang konnte nicht gestartet werden&#187;.</p></details>
+<details id="address"><summary>Das Adressfeld und Kopieren</summary><p>Das schreibgesch&#252;tzte Feld unter dem Code zeigt dieselbe Adresse als Text. &#171;Kopieren&#187; legt sie mit den Datenschutzmarkierungen in die Zwischenablage (kein Zwischenablageverlauf, keine Cloud-Synchronisierung), denn das darin enthaltene Token erlaubt jedem, der es besitzt, diesem Fenster einen Code zu &#252;bergeben. Wer die Adresse in einem Browser &#246;ffnet, sieht nur eine kurze Seite, die sagt, dass es sich um eine einmalige Adresse handelt.</p></details>
+<details id="paste"><summary>Aus Zwischenablage einf&#252;gen</summary><p>&#171;Aus Zwischenablage einf&#252;gen..&#187; liest Text oder einen Screenshot des QR-Codes des Telefons aus der Zwischenablage und pr&#252;ft ihn mit demselben Leser wie getippten Text. Ist es kein Code, nennt die Statuszeile den Grund, und das Fenster bleibt f&#252;r das Telefon offen.</p></details>
+<details id="result"><summary>Was mit dem Code geschieht</summary><p>Der erste Code, der eintrifft, vom Telefon oder aus der Zwischenablage, belegt das Fenster; ein zweiter wird verworfen. Das Fenster schlie&#223;t sich, und derselbe Import wie bei &#171;Aus Datei importieren..&#187; l&#228;uft: eine Zusammenfassung zur Best&#228;tigung, bei Bedarf eine Frage nach dem Kennwort, dann &#171;Hinzugef&#252;gte oder aktualisierte Ressourcen&#187; mit einer Zahl in der Statuszeile.</p></details>
+<details id="close"><summary>Warten und Schlie&#223;en</summary><p>W&#228;hrend des Wartens steht in der Statuszeile &#171;Warten auf Telefonverbindung..&#187;. &#171;Schlie&#223;en&#187; beendet nur das Warten; Eingabetaste und Esc w&#228;hlen beide diese Schaltfl&#228;che, sodass ein Tastendruck den Code des Telefons nie &#252;bernimmt.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

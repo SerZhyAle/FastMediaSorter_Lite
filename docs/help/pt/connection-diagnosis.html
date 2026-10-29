@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection Diagnosis - Fast Media Sorter</title>
+  <title>Diagn&#243;stico de conex&#227;o - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection Diagnosis</h1>
+  <h1 id="title">Diagn&#243;stico de conex&#227;o</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Explica por que um servidor ou um dispositivo n&#227;o pode ser alcan&#231;ado e oferece o que tentar, um passo de cada vez. N&#227;o altera nenhuma configura&#231;&#227;o do computador nem do Windows. Abre-se em &#171;Por que n&#227;o conecta?..&#187; no menu &#171;Mais&#187; da lista de recursos (para uma linha selecionada), a partir de uma entrada de servidor em &#171;Os meus dispositivos&#187; que est&#225; entrando de novo, mostra um certificado alterado ou n&#227;o consegue conectar, e sozinho quando a abertura de um recurso falha.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
-    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Connection Diagnosis">
+    <img class="shot light" src="connection-diagnosis-light.png" alt="Diagn&#243;stico de conex&#227;o">
+    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Diagn&#243;stico de conex&#227;o">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Leia &#171;O que aconteceu:&#187;.</li><li>Tente o que diz &#171;O que tentar:&#187;.</li><li>Se essa n&#227;o for a causa, pressione &#171;Pr&#243;ximo passo&#187;.</li><li>Pressione &#171;Detalhes&#187; se algu&#233;m pedir os c&#243;digos e &#171;Copiar&#187; para entreg&#225;-los.</li><li>Feche a janela.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>O que aconteceu</summary><p>Uma frase sobre a falha, por exemplo &#171;N&#227;o foi poss&#237;vel conectar ao servidor.&#187;, &#171;Usu&#225;rio ou senha incorretos.&#187; ou &#171;Este servidor n&#227;o coincide com o conectado anteriormente.&#187;. Segue o tipo de falha que abriu a janela.</p></details>
+<details id="what-to-try"><summary>O que tentar</summary><p>A janela come&#231;a no primeiro passo que falhou na verifica&#231;&#227;o, ou no primeiro passo quando nenhum falhou. Passos t&#237;picos: acordar o dispositivo que executa o servidor, conferir que os dois dispositivos est&#227;o na mesma rede, sair de um Wi-Fi de convidados, desligar um instante a VPN, definir a rede do Windows como privada, verificar o servidor a partir de outra rede, acertar a data e a hora, confirmar uma nova impress&#227;o digital, digitar de novo o usu&#225;rio e a senha. O &#250;ltimo passo diz que s&#243; o administrador do servidor pode resolver.</p></details>
+<details id="next-step"><summary>Pr&#243;ximo passo e Configura&#231;&#245;es do Windows</summary><p>&#171;Pr&#243;ximo passo&#187; avan&#231;a pelos passos e desaparece no &#250;ltimo. Para os dois passos que as configura&#231;&#245;es do Windows podem resolver, o perfil de rede e o rel&#243;gio, um bot&#227;o &#171;Abrir configura&#231;&#245;es do Windows&#187; abre a p&#225;gina correspondente do Windows; o programa n&#227;o altera nada sozinho.</p></details>
+<details id="details-copy"><summary>Detalhes e Copiar</summary><p>&#171;Detalhes&#187; mostra ou oculta uma caixa somente leitura com os c&#243;digos do diagn&#243;stico: o tipo de falha, o alvo, a rota, o passo que falhou e os passos percorridos. Nunca cont&#233;m um endere&#231;o, um usu&#225;rio, uma senha nem uma impress&#227;o digital. &#171;Copiar&#187; coloca essa linha na &#225;rea de transfer&#234;ncia e a janela diz &#171;C&#243;digos de diagn&#243;stico copiados para a &#225;rea de transfer&#234;ncia.&#187;</p></details>
+<details id="how-it-checks"><summary>Como a verifica&#231;&#227;o funciona</summary><p>A verifica&#231;&#227;o roda s&#243; para a conex&#227;o que voc&#234; tentou e apenas l&#234;: tenta alcan&#231;ar o host e a porta e examina o estado da rede, os adaptadores VPN, o perfil de rede do Windows, a fam&#237;lia de endere&#231;os, o rel&#243;gio e o certificado. Para no primeiro passo que falha, e uma verifica&#231;&#227;o que n&#227;o p&#244;de ser feita nunca conta como aprovada nem como reprovada.</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

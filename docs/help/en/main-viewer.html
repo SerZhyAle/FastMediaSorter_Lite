@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Fast Media Sorter &amp; Sharing Viewer - Fast Media Sorter</title>
+  <title>Viewer window - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Fast Media Sorter &amp; Sharing Viewer</h1>
+  <h1 id="title">Viewer window</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Fast Media Sorter &amp; Sharing Viewer.</p>
+    <p>The viewer window is the main window of the media and file manager. It shows one picture or video at a time from a folder and sorts files into folders with a single key. In the 64-bit version, documents and other files join the same list as previews when &#39;Sort documents&#39; or &#39;Sort other files&#39; is ticked on the &#39;Files&#39; page of Settings, and F3 opens the image panel, which also works as a file manager for local folders, servers and connected devices. The window opens when you start the program or open a media file with it.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="main-viewer-light.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-    <img class="shot dark" src="main-viewer-dark.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>There is no screenshot of this window: opening it starts a device, a network listener or the whole viewer, so it is not captured.</figcaption></figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Press F4, or type a path into the &#39;Folder:&#39; box and press Enter.</li><li>Browse with the arrow keys, Space and P.</li><li>Press a digit to move the file to its folder, or Shift plus a top-row digit to copy it.</li><li>Press Del to delete the file.</li><li>Press F2 for Settings.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="open-folder"><summary>Opening a folder</summary><p>F4 opens a file chooser; the file you pick is shown and its whole folder becomes the list to browse. The &#39;Folder:&#39; box takes a folder path - press Enter. With nothing open, a help card lists the main keys: F1 shows or hides it. The empty screen also has the button &#39;Welcome setup&#39;, which starts the welcome steps.</p></details>
+<details id="floating-chrome"><summary>Floating panels and status line</summary><p>Two rows of toolbar buttons and a status strip float over the picture and fade out while the mouse is idle. A pin in the corner of a panel keeps it in place; &#39;Keep floating panels visible&#39; on the &#39;General&#39; page of Settings keeps all of them. The status line shows news, for example the result of a file operation.</p></details>
+<details id="navigation"><summary>Browsing files</summary><p>Space and PgDn show the next file, P and PgUp the previous one; Up and Down jump ten files, Home and End go to the first and the last. The mouse wheel also steps through the files unless it is set to zoom.</p></details>
+<details id="sorting"><summary>Moving, copying and deleting</summary><p>A digit 1..9 or 0 moves the current file to the folder bound to that key; Shift plus a top-row digit (not the NumPad) copies it. The folders are bound on the &#39;Destinations&#39; page of Settings. U brings the last moved file back. Del sends a file to the Recycle Bin (option &#39;Delete to the Recycle Bin&#39; on the &#39;Files&#39; page), Shift+Del deletes it for good; network and flash drives have no Recycle Bin, and the program says so beforehand. F3 opens the &#39;Image panel&#39;.</p></details>
+<details id="slideshow"><summary>Slideshow and view</summary><p>S starts a slideshow, I or F5 a random one, and Y jumps to a random file; the interval and order are on the &#39;Images&#39; page of Settings. R rotates the picture and F7 switches full screen.</p></details>
+<details id="zoom"><summary>Zoom and the picture menu</summary><p>In the 64-bit version the grey NumPad block zooms: + and - at the mouse cursor, / fits the picture to the window, * shows it at 100 %. The option &#39;Zoom with the mouse wheel&#39; on the &#39;Images&#39; page lets the wheel zoom.</p></details>
+<details id="video"><summary>Video</summary><p>A click pauses or resumes a video, the right button opens the video menu. In the 64-bit version A switches the audio track and V the subtitles; the &#39;Tracks&#39; button appears on the toolbar only when the file offers a choice.</p></details>
+<details id="settings-keys"><summary>Settings and the list of keys</summary><p>F2 or the toolbar button &#39;Settings&#39; opens Settings. The full list of keys: the &#39;Files&#39; page, the group &#39;Keys and associations&#39;, the button &#39;Keyboard shortcuts&#39;.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

@@ -199,7 +199,22 @@ Public Class ImportedSettingsLimitsTests
             New ChoiceSpec("FileManagerViewMode", "grid", "grid", "list"),
             New ChoiceSpec("FileManagerContentMode", "media", "media", "documents", "all"),
             New ChoiceSpec("FileManagerNonMediaOpenAction", "default", "default", "openWith"),
-            New ChoiceSpec("ChromeSize", "medium", "medium", "small", "large", "adaptive", "touch")
+            New ChoiceSpec("ChromeSize", "medium", "medium", "small", "large", "adaptive", "touch"),
+            New ChoiceSpec("DocumentFullscreenChrome", "auto", "auto", "visible"),
+            New ChoiceSpec("PdfLayout", "single", "single", "continuous", "spread"),
+            New ChoiceSpec("PdfSpreadDirection", "document", "document", "ltr", "rtl"),
+            New ChoiceSpec("PdfZoom", "fitPage", "fitPage", "fitWidth", "actual", "manual"),
+            New ChoiceSpec("PdfColorMode", "original", "original", "night", "sepia"),
+            New ChoiceSpec("PdfSearchScope", "whole", "whole", "page"),
+            New ChoiceSpec("PdfRenderQuality", "automatic", "automatic", "fast", "high"),
+            New ChoiceSpec("EpubLayout", "continuous", "continuous", "paginated"),
+            New ChoiceSpec("EpubTheme", "system", "system", "light", "dark", "sepia", "black"),
+            New ChoiceSpec("EpubAlignment", "book", "book", "left", "justify"),
+            New ChoiceSpec("EpubHyphenation", "book", "book", "on", "off"),
+            New ChoiceSpec("EpubSearchScope", "whole", "whole", "chapter"),
+            New ChoiceSpec("HtmlPresentation", "original", "original", "reader"),
+            New ChoiceSpec("HtmlTheme", "system", "system", "light", "dark", "sepia", "black"),
+            New ChoiceSpec("HtmlExternalLinks", "ask", "ask", "block")
         }
     End Function
 
@@ -270,7 +285,21 @@ Public Class ImportedSettingsLimitsTests
             New NumericSpec("ArchiveMaxEntries", 100, 100000),
             New NumericSpec("RemoteCacheMaxMb", 100, 16384),
             New NumericSpec("SecureRememberMinutes", 0, 480),
-            New NumericSpec("TextPreviewMaxKb", 64, 65536)
+            New NumericSpec("TextPreviewMaxKb", 64, 65536),
+            New NumericSpec("PdfZoomPercent", 25, 800),
+            New NumericSpec("PdfPanelWidth", 120, 640),
+            New NumericSpec("PdfRenderCacheMb", 32, 512),
+            New NumericSpec("PdfPrefetchPages", 0, 3),
+            New NumericSpec("EpubFontSize", 10, 48),
+            New NumericSpec("EpubHorizontalMargin", 0, 96),
+            New NumericSpec("EpubTocDepth", 1, 32),
+            New NumericSpec("DocumentMemoryCacheMb", 64, 1024),
+            New NumericSpec("DocumentDiskCacheMb", 0, 4096),
+            New NumericSpec("HtmlFontSize", 10, 48),
+            New NumericSpec("HtmlMargin", 0, 96),
+            New NumericSpec("HtmlZoom", 25, 500),
+            New NumericSpec("HtmlHistoryLimit", 0, 2000),
+            New NumericSpec("HtmlSnapshotCacheMb", 32, 256)
         }
     End Function
 
@@ -448,7 +477,7 @@ Public Class ImportedSettingsLimitsTests
 
     <Fact>
     Public Sub The_numeric_inventory_covers_every_integer_property_including_the_two_specials()
-        Dim listed As New HashSet(Of String)(NumericSpecs().Select(Function(spec) spec.Name)) From {"InterfaceScalePercent", "InterfaceScaleRelativePercent", "PanelThumbnailSize"}
+        Dim listed As New HashSet(Of String)(NumericSpecs().Select(Function(spec) spec.Name)) From {"InterfaceScalePercent", "InterfaceScaleRelativePercent", "PanelThumbnailSize", "EpubColumnWidth", "HtmlColumnWidth"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Integer)).
                                              Select(Function(prop) prop.Name))
@@ -461,7 +490,8 @@ Public Class ImportedSettingsLimitsTests
         Dim choiceNames As New HashSet(Of String)(ChoiceSpecs().Select(Function(spec) spec.Name))
         Dim freeNames As New HashSet(Of String) From {
             "IncludedExtensions", "DocumentExtensions", "OtherExtensions", "PreferredAudioLanguage", "PreferredSubtitleLanguage",
-            "CustomHotkeysJson", "FolderZoomHistory", "VideoPositionHistory", "DocumentPageHistory", "FileManagerPlaceSorts"}
+            "CustomHotkeysJson", "FolderZoomHistory", "VideoPositionHistory", "DocumentPageHistory", "FileManagerPlaceSorts",
+            "DocumentBookmarks", "DocumentAppearanceHistory", "DocumentTtsVoice", "EpubFontFamily", "HtmlFontFamily"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(String)).
                                              Select(Function(prop) prop.Name))
@@ -499,7 +529,9 @@ Public Class ImportedSettingsLimitsTests
             "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
             "SecureShowTrueName", "ShowVideoControlsWhenPaused", "StopSlideshowOnManualNavigation",
-            "VideoAutoplay", "RecipientsOverlayHasCustomPosition"}
+            "VideoAutoplay", "RecipientsOverlayHasCustomPosition", "FullPdfReader", "FullEpubReader", "RememberDocumentPosition", "RememberDocumentAppearance",
+            "DocumentBoundaryNavigation", "DocumentTtsEnabled", "PdfFirstPageAlone", "PdfThumbnailPanel", "PdfOutlinePanel", "PdfSearchCase", "EpubUseBookStyles", "EpubUseEmbeddedFonts",
+            "HtmlViewerEnabled", "HtmlOnlinePagesEnabled", "HtmlWrapWideContent", "HtmlRememberPosition", "HtmlRememberAppearance", "HtmlFindCase", "HtmlFindWholeWord"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Boolean)).
                                              Select(Function(prop) prop.Name))
@@ -547,7 +579,26 @@ Public Class ImportedSettingsLimitsTests
             .CustomHotkeysJson = "{""a"":""b""}",
             .FolderZoomHistory = "[{""Path"":""C:\\z"",""Factor"":1.5}]",
             .VideoPositionHistory = "[{""Path"":""C:\\a.mp4"",""LastWriteUtcTicks"":5,""Length"":6,""Position"":0.5}]",
-            .DocumentPageHistory = "[{""Path"":""C:\\doc.pdf"",""LastWriteUtcTicks"":5,""Length"":6,""PageNumber"":2}]"}
+            .DocumentPageHistory = "[{""Path"":""C:\\doc.pdf"",""LastWriteUtcTicks"":5,""Length"":6,""PageNumber"":2}]",
+            .FullPdfReader = True, .FullEpubReader = True, .RememberDocumentPosition = False, .RememberDocumentAppearance = False,
+            .DocumentBoundaryNavigation = True, .DocumentFullscreenChrome = "visible", .DocumentTtsEnabled = True,
+            .DocumentTtsVoice = "Installed voice", .DocumentTtsRate = 1.5,
+            .PdfLayout = "spread", .PdfFirstPageAlone = False, .PdfSpreadDirection = "rtl", .PdfZoom = "manual", .PdfZoomPercent = 175,
+            .PdfColorMode = "sepia", .PdfThumbnailPanel = True, .PdfOutlinePanel = True, .PdfPanelWidth = 300,
+            .PdfSearchScope = "page", .PdfSearchCase = True, .PdfRenderQuality = "high", .PdfRenderCacheMb = 96, .PdfPrefetchPages = 2,
+            .EpubLayout = "paginated", .EpubTheme = "dark", .EpubFontFamily = "serif", .EpubFontSize = 20,
+            .EpubLineHeight = 2, .EpubParagraphSpacing = 1, .EpubHorizontalMargin = 24, .EpubColumnWidth = 100,
+            .EpubAlignment = "left", .EpubHyphenation = "off", .EpubUseBookStyles = False, .EpubUseEmbeddedFonts = False,
+            .EpubTocDepth = 8, .EpubSearchScope = "chapter", .DocumentMemoryCacheMb = 128, .DocumentDiskCacheMb = 256,
+            .HtmlViewerEnabled = True, .HtmlOnlinePagesEnabled = True, .HtmlPresentation = "reader", .HtmlTheme = "sepia",
+            .HtmlFontFamily = "serif", .HtmlFontSize = 22, .HtmlLineHeight = 2, .HtmlColumnWidth = 100, .HtmlMargin = 24,
+            .HtmlZoom = 150, .HtmlWrapWideContent = True, .HtmlRememberPosition = False, .HtmlRememberAppearance = False,
+            .HtmlFindCase = True, .HtmlFindWholeWord = True, .HtmlExternalLinks = "block", .HtmlHistoryLimit = 1000,
+            .HtmlSnapshotCacheMb = 64}
+        p.DocumentBookmarks = System.Text.Json.JsonSerializer.Serialize(New DocumentBookmark() {
+            New DocumentBookmark With {.Identity = New DocumentIdentity With {.Path = "book.pdf", .Length = 1}, .Position = New DocumentReadingPosition With {.PageNumber = 4}, .Label = "chapter"}})
+        p.DocumentAppearanceHistory = System.Text.Json.JsonSerializer.Serialize(New ModernViewerPreferences.DocumentAppearanceEntry() {
+            New ModernViewerPreferences.DocumentAppearanceEntry With {.Identity = New DocumentIdentity With {.Path = "book.pdf", .Length = 1}, .Values = New Dictionary(Of String, String) From {{"PdfColorMode", "night"}}}})
         p.Normalize()
         Dim defaults As New ModernViewerPreferences()
         For Each prop As Reflection.PropertyInfo In ModernViewerPreferences.WritableProperties()

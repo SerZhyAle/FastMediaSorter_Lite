@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>Export resource - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">Export resource</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>Prepares the settings of one SFTP server so that another computer or a phone can import them. It opens from &#171;Export..&#187; in the &#171;More&#187; menu of the resources list and needs a selected resource; a folder shared by Share Manager is exported from Share Manager instead.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="Export resource">
+    <img class="shot dark" src="resource-export-dark.png" alt="Export resource">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read the warning under the resource name.</li><li>Choose &#171;Without the password&#187; (the default) or &#171;With the password&#187;.</li><li>Press &#171;Save to file..&#187;, or copy the settings as text or as a short code.</li><li>Hand the result only to its owner.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>The warning</summary><p>The line under the name says that the file carries the access key to the server: hand it only to its owner and never leave it on shared disks. It applies to the file, the copied text and the code alike.</p></details>
+<details id="password-choice"><summary>Without or with the password</summary><p>&#171;Without the password&#187; is selected at the start. &#171;With the password&#187; is enabled only when the saved password can be read back; otherwise the hint &#171;The password is not saved - the file will be without one.&#187; is shown. The password is decrypted in memory for the export and goes nowhere else.</p></details>
+<details id="save-copy"><summary>Save, copy text, copy code</summary><p>&#171;Save to file..&#187; writes a .fmscfg file through a save dialog; the writer refuses FAT or exFAT disks, network disks and folders that other users can change, and never leaves a half-written file. &#171;Copy text&#187; puts the settings document on the clipboard and &#171;Copy code&#187; a short code with the same content. Both are copied with the privacy markers (no clipboard history, no cloud sync). The status line shows the result.</p></details>
+<details id="requirements"><summary>What can be exported</summary><p>Only an SFTP server whose key the viewer already remembers. The window opens in any case, and a refusal appears in the status line when you press a button: a network folder (SMB) cannot be described by this file; the server key is not remembered (open the resource once and confirm the key); the resource has no address to hand over; the folder is written in a way the file does not accept (fix it through &#171;Edit..&#187;).</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

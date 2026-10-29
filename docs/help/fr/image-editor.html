@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>Modifier l&#39;image - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">Modifier l&#39;image</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>Un petit &#233;diteur pour une seule image fixe : dessiner des formes, rogner, pivoter et retourner, puis enregistrer par-dessus l&#39;original ou sous forme de nouveau fichier. Il s&#39;ouvre, avec le nom de fichier de l&#39;image dans le titre, depuis le bouton Modifier de la barre d&#39;outils ou le premier &#233;l&#233;ment du menu de l&#39;image, et uniquement pour une image fixe (pas pour une animation). L&#39;&#233;diteur relit le fichier et travaille sur sa propre copie.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="Modifier l&#39;image">
+    <img class="shot dark" src="image-editor-dark.png" alt="Modifier l&#39;image">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Appuyez sur Modifier dans la visionneuse.</li><li>Choisissez un outil, une couleur et une &#233;paisseur.</li><li>Dessinez sur l&#39;image, ou rognez-la, pivotez-la ou retournez-la ; Annuler revient d&#39;une &#233;tape en arri&#232;re.</li><li>Appuyez sur Enregistrer pour &#233;crire par-dessus l&#39;original, ou sur Enregistrer sous.. pour un nouveau fichier.</li><li>Fermez la fen&#234;tre ; s&#39;il y a des modifications non enregistr&#233;es, r&#233;pondez &#224; la question.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>Outils</summary><p>Dans la barre : Rogner, Pinceau, Rectangle, Rectangle plein, Ellipse et Ellipse pleine. Les touches sont C, B, R et O (les formes pleines n&#39;en ont pas). Maintenez Shift en dessinant un rectangle ou une ellipse pour obtenir un carr&#233; ou un cercle. Survoler un outil affiche son nom et sa touche.</p></details>
+<details id="colour-thickness"><summary>Couleur et &#233;paisseur</summary><p>Le bouton de couleur ouvre la bo&#238;te de dialogue des couleurs, et huit pastilles rapides se trouvent &#224; c&#244;t&#233; (noir, blanc, rouge, jaune, vert citron, bleu, magenta, gris). L&#39;&#233;paisseur va de 1 &#224; 64 pixels de l&#39;image (4 par d&#233;faut) ; les touches [ et ] la modifient d&#39;une unit&#233;. La couleur et l&#39;&#233;paisseur sont communes &#224; tous les outils.</p></details>
+<details id="crop"><summary>Rogner</summary><p>Avec l&#39;outil Rogner, tracez un cadre sur l&#39;image. Le bouton Appliquer le rognage n&#39;appara&#238;t que tant qu&#39;un cadre existe. Enter fait la m&#234;me chose ; Esc retire le cadre sans rogner. L&#39;image n&#39;est coup&#233;e que lorsque vous appliquez le rognage.</p></details>
+<details id="rotate-flip"><summary>Pivoter et retourner</summary><p>Pivoter vers la gauche (Ctrl+[) et Pivoter vers la droite (Ctrl+]) font tourner les pixels. Les touches H et V retournent l&#39;image horizontalement et verticalement. Cela modifie l&#39;image elle-m&#234;me, contrairement &#224; R dans la visionneuse, qui ne fait tourner que l&#39;affichage.</p></details>
+<details id="undo-redo"><summary>Annuler et R&#233;tablir</summary><p>Annuler (Ctrl+Z) et R&#233;tablir (Ctrl+Y ou Ctrl+Shift+Z) parcourent un historique de 20 &#233;tapes au plus, dans une limite de m&#233;moire. La ligne d&#39;&#233;tat affiche la taille et, apr&#232;s une modification, modifi&#233; avec &#201;tape N sur M ; lorsque la limite supprime les plus anciennes &#233;tapes, elle indique Les anciennes &#233;tapes ont &#233;t&#233; abandonn&#233;es : limite de m&#233;moire.</p></details>
+<details id="save"><summary>Enregistrer</summary><p>Enregistrer (Ctrl+S) &#233;crit par-dessus l&#39;original et n&#39;est actif qu&#39;apr&#232;s une modification ; avant cela, son info-bulle indique Rien &#224; enregistrer : l&#39;image n&#39;a pas &#233;t&#233; modifi&#233;e. Pour un JPEG, on vous le demande une fois par session : Le JPEG sera recompress&#233; - c&#39;est irr&#233;versible. La date de prise de vue et les autres donn&#233;es EXIF sont conserv&#233;es. Le fichier est &#233;crit sous un nom temporaire puis substitu&#233; ; si l&#39;enregistrement &#233;choue, la fen&#234;tre reste ouverte avec la raison.</p></details>
+<details id="save-as"><summary>Enregistrer sous..</summary><p>Ouvre une bo&#238;te de dialogue de fichier avec le nom suivi de (modifi&#233;e). Les formats sont PNG, JPEG, BMP, TIFF et WebP ; une image dans tout autre format est propos&#233;e en PNG. Le dossier temporaire d&#39;une archive est refus&#233;. Apr&#232;s l&#39;enregistrement par-dessus l&#39;original, la visionneuse le recharge ; un nouveau fichier dans le m&#234;me dossier est ouvert ; un fichier ailleurs est nomm&#233; dans la ligne d&#39;&#233;tat.</p></details>
+<details id="save-refused"><summary>Quand Enregistrer est d&#233;sactiv&#233;</summary><p>La ligne d&#39;&#233;tat indique Impossible d&#39;&#233;craser l&#39;original, avec la raison : ce format n&#39;est pas &#233;crit, le fichier est en lecture seule, les droits d&#39;&#233;criture manquent, un autre programme utilise le fichier, le fichier a plusieurs pages ou images (seule la premi&#232;re est modifi&#233;e), il se trouve dans une archive, ou il est introuvable. Enregistrer sous.. reste disponible.</p></details>
+<details id="close"><summary>Fermeture</summary><p>Fermer ou Esc ferme la fen&#234;tre ; Esc annule d&#39;abord un trac&#233; en cours, puis retire le cadre de rognage. En cas de modifications non enregistr&#233;es, la question est : Les modifications ne sont pas enregistr&#233;es - Fermer l&#39;&#233;diteur et perdre les modifications non enregistr&#233;es ? Enregistrer enregistre d&#39;abord, Ne pas enregistrer abandonne, Annuler (la r&#233;ponse par d&#233;faut, ainsi qu&#39;Esc) reste dans l&#39;&#233;diteur. Cette question est pos&#233;e m&#234;me lorsque les confirmations sont d&#233;sactiv&#233;es.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection Diagnosis - Fast Media Sorter</title>
+  <title>Diagnosi di connessione - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection Diagnosis</h1>
+  <h1 id="title">Diagnosi di connessione</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Spiega perch&#233; un server o un dispositivo non si raggiunge e propone che cosa provare, un passaggio alla volta. Non cambia nessuna impostazione del computer o di Windows. Si apre da &#171;Perch&#233; non si connette?..&#187; nel menu &#171;Altro&#187; dell&#39;elenco delle risorse (per una riga selezionata), da una voce di server in &#171;I miei dispositivi&#187; che sta accedendo di nuovo, mostra un certificato cambiato o non riesce a connettersi, e da sola quando l&#39;apertura di una risorsa fallisce.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
-    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Connection Diagnosis">
+    <img class="shot light" src="connection-diagnosis-light.png" alt="Diagnosi di connessione">
+    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Diagnosi di connessione">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Leggi &#171;Cosa &#232; successo:&#187;.</li><li>Prova ci&#242; che dice &#171;Cosa provare:&#187;.</li><li>Se non &#232; quella la causa, premi &#171;Passaggio successivo&#187;.</li><li>Premi &#171;Dettagli&#187; se qualcuno chiede i codici e &#171;Copia&#187; per consegnarli.</li><li>Chiudi la finestra.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>Cosa &#232; successo</summary><p>Una frase sul fallimento, ad esempio &#171;Impossibile raggiungere il server.&#187;, &#171;Nome utente o password non corretti.&#187; o &#171;Questo server non corrisponde a quello a cui ti eri connesso prima.&#187;. Dipende dal tipo di fallimento che ha aperto la finestra.</p></details>
+<details id="what-to-try"><summary>Cosa provare</summary><p>La finestra parte dal primo passaggio che nel controllo &#232; fallito, oppure dal primo passaggio se nessuno &#232; fallito. Passaggi tipici: svegliare il dispositivo su cui gira il server, verificare che i due dispositivi siano sulla stessa rete, lasciare un Wi-Fi ospiti, spegnere per un momento una VPN, impostare la rete di Windows come privata, controllare il server da un&#39;altra rete, impostare data e ora corrette, confermare una nuova impronta, riscrivere il login e la password. L&#39;ultimo passaggio dice che solo l&#39;amministratore del server pu&#242; risolvere il problema.</p></details>
+<details id="next-step"><summary>Passaggio successivo e Impostazioni di Windows</summary><p>&#171;Passaggio successivo&#187; scorre i passaggi e scompare all&#39;ultimo. Per i due passaggi che le impostazioni di Windows possono risolvere, il profilo di rete e l&#39;orologio, un pulsante &#171;Apri impostazioni di Windows&#187; apre la pagina corrispondente di Windows; il programma non cambia nulla da s&#233;.</p></details>
+<details id="details-copy"><summary>Dettagli e Copia</summary><p>&#171;Dettagli&#187; mostra o nasconde un campo di sola lettura con i codici della diagnosi: il tipo di fallimento, la destinazione, il percorso, il passaggio fallito e i passaggi percorsi. Non contiene mai un indirizzo, un login, una password o un&#39;impronta. &#171;Copia&#187; mette quella riga negli appunti e la finestra dice &#171;Codici di diagnosi copiati negli appunti.&#187;</p></details>
+<details id="how-it-checks"><summary>Come funziona il controllo</summary><p>Il controllo vale solo per la connessione che hai provato e si limita a leggere: prova a raggiungere l&#39;host e la porta ed esamina lo stato della rete, gli adattatori VPN, il profilo di rete di Windows, la famiglia di indirizzi, l&#39;orologio e il certificato. Si ferma al primo passaggio fallito, e un controllo che non &#232; stato possibile eseguire non viene mai contato come superato o fallito.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

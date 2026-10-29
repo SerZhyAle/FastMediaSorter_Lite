@@ -167,7 +167,7 @@ ID when asked for a "Global Rating ID" / "IARC Certificate ID" instead of re-doi
 **When a re-rating is required:** the rating is bound to the questionnaire answers, so ordinary version
 bumps do NOT need re-rating. You must re-run the IARC questionnaire only if a change would alter those
 answers - e.g. adding in-app purchases, ad networks, or user-to-user sharing/social features. The
-current app (local media viewer/sorter, optional user-configured translation, no ads/accounts/UGC
+current app (local media and file manager, optional user-configured translation, no ads/accounts/UGC
 sharing) keeps the General rating across normal updates.
 
 If a rating ever looks wrong, request a rating check via the link in the IARC "Live Rating Notice"
@@ -233,11 +233,15 @@ email (1-3 business days).
 ### Description (EN)
 > First sentence must be a short, self-contained hook - the Store card truncates the description to
 > its opening. Do NOT start with the "(published as ..)" parenthetical; it buries the lead. The
-> text leads with sorting AND sharing, since that is what the product now says it is.
+> text leads with the media and file manager, then sharing, since that is what the product says it is
+> (specification 273); the Store package carries the viewer with its file manager mode and the Share
+> Manager, so it says nothing about a Windows service or a server of its own.
 ```
-Sort thousands of photos and videos in minutes - and share them with your phone. Fast Media Sorter &
-Sharing is a fast, keyboard-driven viewer and sorter for images and video, with a bundled
-Share Manager that can also share the folders you pick - optional, off until you switch it on.
+Sort thousands of photos and videos in minutes with one key per file - and manage your files on this PC
+and on servers. Fast Media Sorter & Sharing is a media and file manager for Windows: it views and sorts
+images and video from the keyboard, opens local folders and SFTP and SMB servers in a file manager mode,
+and comes with a bundled Share Manager that can also share the folders you pick - optional, off until
+you switch it on.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
 Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press - or turn on
@@ -255,6 +259,13 @@ retired Internet Explorer component is no longer present, now with a full contro
 audio track and subtitle picking) and "Open URL.." to play straight off a network address. Zoom at the
 mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture
 or video.
+
+A file manager is built in: the Image panel (F3) switches from sorting to a file manager mode with an
+address bar and history, a list of places - local drives and the SFTP and SMB servers you add - and
+queued file operations between them. A folder can also hold documents: with two opt-in switches a text
+file shows as text, a PDF shows its pages, an EPUB shows its cover and any other file shows a card with
+its name, size and date, so a mixed folder sorts in one pass. A password-protected .fd-sec container
+made by FileDO opens like any picture or video, decoded from memory with nothing written to disk.
 
 Sorting is not only about moving files. Del sends a file to the Recycle Bin where one exists and says
 plainly when there is none - a network drive or a memory stick - instead of pretending; U walks back
@@ -274,7 +285,8 @@ Share folders with your phone: the bundled Share Manager turns this PC
 into a private SFTP server for folders you pick, so the Android app can browse them -
 on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
 stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are
-signed in. The same program family also has an always-on Server edition, which hosts the same sharing
+signed in. The Share Manager can also run file operations on a schedule - copy, move, delete or archive
+the files of a folder at a set time - while it runs in your session. The same program family also has an always-on Server edition, which hosts the same sharing
 as a Windows service, and FileDO virtual-disk hosting, a capability of sharing; these are not part of
 the Store version - they are available from the project website and winget.
 
@@ -289,9 +301,11 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 
 ### Description (RU - optional Russian-market listing)
 ```
-Разберите тысячи фото и видео за минуты - и делитесь ими с телефоном. Fast Media Sorter & Sharing - быстрый просмотрщик и сортировщик изображений и видео, управляемый с клавиатуры, со
-встроенным Share Manager, который может ещё и раздавать выбранные вами папки - по желанию,
-выключено, пока вы не включите.
+Разберите тысячи фото и видео за минуты одной клавишей на файл - и управляйте файлами на этом ПК и на
+серверах. Fast Media Sorter & Sharing - медиа- и файловый менеджер для Windows: он показывает и
+сортирует изображения и видео с клавиатуры, открывает локальные папки и серверы SFTP и SMB в режиме
+файлового менеджера и идёт со встроенным Share Manager, который может ещё и раздавать выбранные вами
+папки - по желанию, выключено, пока вы не включите.
 
 Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
 перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие
@@ -313,6 +327,14 @@ Internet Explorer больше нет, и теперь с полноценной
 сетевому пути. Масштабирование под курсором мыши с перетаскиванием, а меню по правому/среднему
 клику выносят все действия прямо на изображение или видео.
 
+Файловый менеджер встроен: «Панель изображений» (F3) переключается из сортировки в режим файлового
+менеджера - с адресной строкой и историей, списком мест из локальных дисков и добавленных вами серверов
+SFTP и SMB и очередью файловых операций между ними. В папке могут лежать и документы: два
+необязательных переключателя показывают текстовый файл как текст, PDF - страницами, EPUB - обложкой, а
+любой другой файл - карточкой с именем, размером и датой, так что смешанная папка сортируется за один
+проход. Защищённый паролем контейнер .fd-sec, созданный FileDO, открывается как обычная картинка или
+видео: содержимое декодируется из памяти, и ничего не пишется на диск.
+
 Сортировка - это не только перемещение файлов. Del отправляет файл в Корзину там, где она есть, и
 честно предупреждает, когда её нет - на сетевом диске или флешке, - вместо того чтобы делать вид; U
 отменяет последние 50 операций, включая переименования и удаления, и каждый файл возвращается в свою
@@ -332,7 +354,9 @@ Internet Explorer больше нет, и теперь с полноценной
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение
 открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
 Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
-ничего не выгружается. Раздача работает, пока вы вошли в систему. У того же семейства программ есть
+ничего не выгружается. Раздача работает, пока вы вошли в систему. Share Manager может также выполнять
+файловые операции по расписанию - копировать, переносить, удалять или архивировать файлы папки в
+заданное время, - пока он работает в вашем сеансе. У того же семейства программ есть
 ещё серверная редакция, которая поднимает ту же раздачу как службу Windows, и хостинг виртуальных
 дисков FileDO - возможность раздачи; в версию из Store не входит ни то ни другое - всё это доступно
 на сайте проекта и через winget.
@@ -349,7 +373,7 @@ https://github.com/SerZhyAle/FastMediaSorter_Lite
 
 ### Product features (one per line, ≤200 chars each)
 ```
-Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-assigned folders
+Media and file manager: sort with one key per file (Move / Copy / Rename / Delete to hotkey folders) and manage files on disks and SFTP/SMB servers
 Optional recipients panel over the media: click destination folders on the image to sort one-handed with the mouse
 Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections
 Plays video through a built-in VLC engine: H.264/MP4, AVI, MKV, VP9, ZMBV and more, with no extra codec packs
@@ -360,7 +384,7 @@ Zoom at the mouse cursor with drag-to-pan, plus audio-track and subtitle picking
 A video control bar (seek, time, mute, volume) and "Open URL.." to play straight off a network address
 Right-click/middle-click menus put every action - rotate, translate, move, delete, and more - right on the picture or video
 "Ambilight" perspective background fills letterbox/pillarbox bars to match the image
-Share folders with your phone: the bundled Share Manager runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)
+Share folders with your phone: the bundled Share Manager runs a private, opt-in SFTP server paired by QR, and can run file operations on a schedule
 Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate)
 Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF and SVG
 Del uses the Recycle Bin where there is one and says so when there is not; U undoes the last 50 operations, renames included
@@ -376,7 +400,7 @@ Open source, no account, no ads, no telemetry
 
 ### Product features (RU - one per line, same order, ≤200 chars each)
 ```
-Быстрая сортировка с клавиатуры: перемещение / копирование / переименование / удаление одной клавишей с папками на горячих клавишах
+Медиа- и файловый менеджер: сортировка одной клавишей на файл (перенос, копирование, переименование, удаление) и управление файлами на дисках и серверах SFTP/SMB
 Панель получателей поверх медиа: кликайте по папкам назначения прямо на изображении и сортируйте одной рукой мышью
 Полноэкранное слайд-шоу и быстрая навигация по панели миниатюр для больших коллекций фото и видео
 Видео идёт через встроенный движок VLC: H.264/MP4, AVI, MKV, VP9, ZMBV и другие, без дополнительных кодек-паков
@@ -387,7 +411,7 @@ Open source, no account, no ads, no telemetry
 Панель управления видео (перемотка, время, звук, громкость) и "Открыть по адресу.." для воспроизведения по сетевому пути
 Меню по правому и среднему клику выносят все действия - поворот, перевод, перемещение, удаление и другое - прямо на картинку или видео
 Фон-перспектива в стиле "ambilight" заполняет поля по краям кадра под цвет изображения
-Раздача папок на телефон: программа Share Manager поднимает частный SFTP-сервер по вашему желанию, подключение по QR-коду (Wi-Fi или интернет)
+Раздача папок на телефон: программа Share Manager поднимает частный SFTP-сервер по вашему желанию, подключение по QR-коду, и выполняет файловые операции по расписанию
 Необязательный перевод текста на картинке: офлайн-распознавание Tesseract и переводчик по вашему выбору (Ollama / LibreTranslate)
 Назначьте программу просмотрщиком по умолчанию для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF и SVG
 Del использует Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования

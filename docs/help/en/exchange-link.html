@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Link for a folder - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Link for a folder</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Hands one published folder over to a person with no account on the exchange server: as a QR code, as link text and as a .fmscfg file. It opens after &#39;Create a link..&#39; or &#39;New link..&#39; in the group &#39;My shares in the exchange account&#39;, and from &#39;Show QR / Code..&#39; in the &#39;Give access outside..&#39; window of a folder. In the current program both commands are disabled, because access for people outside the account is not offered; this page describes what the window shows once a link exists.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Link for a folder">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Link for a folder">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Select a published folder and press &#39;Create a link..&#39; (or &#39;New link..&#39; to replace an old one).</li><li>Read the note at the top.</li><li>Hand the link over with &#39;Show the QR code&#39;, &#39;Copy the link text&#39; or &#39;Save a .fmscfg file..&#39;.</li><li>Press &#39;Close&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>When the window is available</summary><p>The window exists only for a link that was just made or already exists. While access for people outside the account is not offered, &#39;Create a link..&#39; and &#39;New link..&#39; are disabled, a note under them gives the reason and the window does not open; &#39;Show QR / Code..&#39; is disabled too. &#39;Remove the link&#39; stays available.</p></details>
+<details id="note"><summary>The note at the top</summary><p>&#39;Give the person the code or the file. They carry access to the folder: do not publish them.&#39; Whoever holds the QR code, the link text or the file can open that folder. The link text is never shown on screen.</p></details>
+<details id="qr-code"><summary>Show the QR code</summary><p>Opens the QR picture in a zoom window. The button is present only when a QR code could be made; a link text too large for a QR code is answered with &#39;The code is too large for a QR code - use the file.&#39;.</p></details>
+<details id="copy-text"><summary>Copy the link text</summary><p>Puts the link text (it begins with FMSSFTP2:) on the clipboard through a protected route that keeps it out of the Windows clipboard history and the cloud clipboard, and answers &#39;The link text was copied.&#39;. Present only when the link has a text.</p></details>
+<details id="save-file"><summary>Save a .fmscfg file..</summary><p>Saves a settings file for this one folder, readable by its owner only. The window reports &#39;File saved:&#39; with the path, or &#39;The file could not be saved.&#39;. Present only when the file could be built.</p></details>
+<details id="renew-or-remove"><summary>New link and Remove the link</summary><p>Both belong to the group, not to this window, and both ask first with No as the default answer: &#39;New link..&#39; warns that every earlier QR code and file will stop working, &#39;Remove the link&#39; that every QR code and file handed out with it will stop working.</p></details>
+<details id="close"><summary>Close</summary><p>Closes the window and drops the link text, the file contents and the QR picture from it.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

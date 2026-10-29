@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>Вибір ресурсу - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">Вибір ресурсу</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>Вибирає ресурс зі списку ресурсів переглядача як джерело або призначення операції за розкладом. Вікно відкривається кнопкою &#171;Ресурс..&#187; поруч із Джерелом або Призначенням у вікні запланованої операції.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Вибір ресурсу">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Вибір ресурсу">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Виберіть ресурс у списку &#171;Ресурс&#187;.</li><li>Перевірте або змініть &#171;Папка всередині ресурсу&#187;; спершу це коренева папка ресурсу.</li><li>Натисніть &#171;Вибрати&#187;. &#171;Скасувати&#187; залишає попереднє місце.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>Список ресурсів</summary><p>Пропонуються лише SFTP-сервери та мережеві папки зі списку переглядача, за абеткою; ресурси інших видів не показуються. Якщо відповідних немає, вікно повідомляє: &#171;У списку ресурсів немає відповідних ресурсів. Додайте SFTP-сервер або мережеву папку в переглядачі.&#187;, а кнопка &#171;Вибрати&#187; лишається недоступною. Додавати ресурс і наново підтверджувати його ключ потрібно в переглядачі; це вікно з&#39;єднань не встановлює.</p></details>
+<details id="folder"><summary>Папка всередині ресурсу</summary><p>Папка має лежати всередині кореня вибраного ресурсу, інакше &#171;Зберегти&#187; у вікні операції її відхилить. Під час вибору іншого ресурсу поле заповнюється коренем цього ресурсу.</p></details>
+<details id="unattended"><summary>Запуск без запитань</summary><p>Пароль і ключ сервера беруться зі списку ресурсів переглядача. Запуск нічого не питає: якщо пароль не збережено або ключ сервера не підтверджено, операція зупиняється, а журнал пояснює причину. Ресурс лише для читання не можна використовувати для переміщення й видалення, ресурс із коренем під PIN-кодом відхиляється, а архів приймає лише звичайні папки.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

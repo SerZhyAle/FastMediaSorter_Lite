@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>छवि संपादन - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">छवि संपादन</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>एक स्थिर चित्र के लिए छोटा संपादक: आकृतियाँ बनाएँ, काटें, घुमाएँ और पलटें, फिर मूल फ़ाइल पर या नई फ़ाइल के रूप में सहेजें। यह टूलबार के संपादित करें बटन या चित्र मेनू के पहले आइटम से खुलता है, शीर्षक में चित्र की फ़ाइल का नाम होता है, और केवल स्थिर चित्र के लिए (एनिमेशन के लिए नहीं)। संपादक फ़ाइल को फिर से पढ़ता है और अपनी ही प्रति पर काम करता है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="छवि संपादन">
+    <img class="shot dark" src="image-editor-dark.png" alt="छवि संपादन">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>व्यूअर में संपादित करें दबाएँ।</li><li>कोई टूल, रंग और मोटाई चुनें।</li><li>चित्र पर बनाएँ, या काटें, घुमाएँ या पलटें; पूर्ववत करें एक कदम पीछे ले जाता है।</li><li>मूल फ़ाइल पर लिखने के लिए सहेजें दबाएँ, या नई फ़ाइल के लिए इस रूप में सहेजें.. दबाएँ।</li><li>विंडो बंद करें; अगर बिना सहेजे बदलाव हों तो सवाल का जवाब दें।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>टूल</summary><p>पट्टी में: काट-छाँट, ब्रश, आयत, भरा आयत, अंडाकार और भरा अंडाकार। कुंजियाँ C, B, R और O हैं (भरे हुए वालों की कोई नहीं)। आयत या अंडाकार बनाते समय Shift दबाए रखें तो वर्ग या वृत्त बनता है। किसी टूल पर माउस ले जाने पर उसका नाम और कुंजी दिखती है।</p></details>
+<details id="colour-thickness"><summary>रंग और मोटाई</summary><p>रंग का बटन रंग संवाद खोलता है, और उसके पास आठ त्वरित रंग-नमूने हैं (काला, सफ़ेद, लाल, पीला, नींबू-हरा, नीला, मैजेंटा, स्लेटी)। मोटाई चित्र के 1 से 64 पिक्सेल तक चलती है (डिफ़ॉल्ट 4); कुंजियाँ [ और ] इसे एक-एक से बदलती हैं। रंग और मोटाई सभी टूल में साझा हैं।</p></details>
+<details id="crop"><summary>काट-छाँट</summary><p>काट-छाँट टूल से चित्र पर एक फ़्रेम खींचें। काट-छाँट लागू करें बटन केवल तभी दिखता है जब फ़्रेम मौजूद हो। Enter वही करता है; Esc फ़्रेम को बिना काटे हटा देता है। चित्र तभी कटता है जब आप उसे लागू करें।</p></details>
+<details id="rotate-flip"><summary>घुमाना और पलटना</summary><p>बाएँ घुमाएँ (Ctrl+[) और दाएँ घुमाएँ (Ctrl+]) पिक्सेल घुमाते हैं। कुंजियाँ H और V चित्र को क्षैतिज और ऊर्ध्वाधर पलटती हैं। इससे चित्र खुद बदलता है, व्यूअर के R से अलग, जो केवल प्रदर्शन घुमाता है।</p></details>
+<details id="undo-redo"><summary>पूर्ववत करें और फिर करें</summary><p>पूर्ववत करें (Ctrl+Z) और फिर करें (Ctrl+Y या Ctrl+Shift+Z) मेमोरी सीमा के भीतर अधिकतम 20 चरणों का इतिहास पार करते हैं। स्टेटस बार आकार दिखाता है और बदलाव के बाद बदला गया के साथ चरण N / M; जब सीमा के कारण सबसे पुराने चरण हटते हैं तो लिखता है पुराने चरण हटा दिए गए: मेमोरी सीमा।</p></details>
+<details id="save"><summary>सहेजना</summary><p>सहेजें (Ctrl+S) मूल फ़ाइल पर लिखता है और केवल बदलाव के बाद सक्षम होता है; उससे पहले उसका टूलटिप कहता है सहेजने के लिए कुछ नहीं: छवि बदली नहीं गई है। JPEG के लिए हर सत्र में एक बार पूछा जाता है: JPEG दोबारा संपीड़ित होगा - यह वापस नहीं किया जा सकता। खींचने की तिथि और बाकी EXIF डेटा बना रहता है। फ़ाइल अस्थायी नाम से लिखी जाती है और फिर बदली जाती है; सहेजना विफल हो तो विंडो कारण के साथ खुली रहती है।</p></details>
+<details id="save-as"><summary>इस रूप में सहेजें..</summary><p>नाम में (संपादित) जोड़कर फ़ाइल संवाद खोलता है। प्रारूप PNG, JPEG, BMP, TIFF और WebP हैं; किसी और प्रारूप का चित्र PNG के रूप में प्रस्तावित होता है। संग्रह का अस्थायी फ़ोल्डर अस्वीकार किया जाता है। मूल फ़ाइल पर सहेजने के बाद व्यूअर उसे फिर लोड करता है; उसी फ़ोल्डर की नई फ़ाइल खोली जाती है; कहीं और की फ़ाइल का नाम स्टेटस बार में बताया जाता है।</p></details>
+<details id="save-refused"><summary>जब सहेजें बंद हो</summary><p>स्टेटस बार कारण के साथ मूल फ़ाइल पर नहीं लिखा जा सकता कहता है: यह प्रारूप लिखा नहीं जाता, फ़ाइल केवल पढ़ने योग्य है, लिखने की अनुमति नहीं है, कोई और प्रोग्राम फ़ाइल को रोके हुए है, फ़ाइल में कई पृष्ठ या फ़्रेम हैं (केवल पहला संपादित होता है), वह संग्रह के भीतर है, या मौजूद नहीं है। इस रूप में सहेजें.. उपलब्ध रहता है।</p></details>
+<details id="close"><summary>बंद करना</summary><p>बंद करें या Esc विंडो बंद करता है; Esc पहले चल रहे स्ट्रोक को रद्द करता है, फिर काट-छाँट का फ़्रेम हटाता है। बिना सहेजे संपादन हों तो सवाल यह होता है: बदलाव सहेजे नहीं गए हैं - संपादक बंद करें और न सहेजे गए बदलाव खो दें? सहेजें पहले सहेजता है, सहेजें नहीं बदलाव छोड़ देता है, रद्द करें (डिफ़ॉल्ट, Esc भी) संपादक में रखता है। यह सवाल तब भी पूछा जाता है जब पुष्टियाँ बंद हों।</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

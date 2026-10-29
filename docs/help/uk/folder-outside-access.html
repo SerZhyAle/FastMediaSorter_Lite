@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Outside Folder Access - Fast Media Sorter</title>
+  <title>Дати доступ назовні - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Outside Folder Access</h1>
+  <h1 id="title">Дати доступ назовні</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Outside Folder Access.</p>
+    <p>Керує доступом до однієї папки в роздачі для людей поза вашими пристроями: гостьовим запрошенням або посиланням із паролем, що не потребує акаунта. Вікно відкривається кнопкою &#171;Дати доступ назовні..&#187; у головному вікні Share Manager для вибраної папки. У цій версії елементи створення нового доступу вимкнено, і вікно показує причину, а вже виданий доступ, як і раніше, можна відкликати.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Outside Folder Access">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Outside Folder Access">
+    <img class="shot light" src="folder-outside-access-light.png" alt="Дати доступ назовні">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="Дати доступ назовні">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте заголовок з іменем і шляхом папки.</li><li>У кожній групі прочитайте рядок із причиною; поки він показаний, нічого нового створити не можна.</li><li>Щоб прибрати доступ, виберіть запрошення й натисніть &#171;Відкликати вибране&#187; або натисніть &#171;Відкликати посилання&#187;.</li><li>&#171;Закрити&#187; (Escape) закриває вікно.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="header"><summary>Папка та стан</summary><p>Жирний рядок називає папку й показує її шлях. Рядок стану внизу повідомляє останній результат. Якщо служба публікацій не запущена, вікно пише &#171;Служба публікацій недоступна.&#187;, а його кнопки вимкнено.</p></details>
+<details id="guest-invitation"><summary>Гостьове запрошення</summary><p>У групі є &#171;Створити гостьове запрошення..&#187;, &#171;Відкликати вибране&#187; і список із колонками Тип, Створено та Використано для гостьових запрошень цієї папки. Відкликання прибирає запрошення; папка та її файли не видаляються.</p></details>
+<details id="password-link"><summary>Посилання з паролем (без акаунта)</summary><p>Стан - &#171;Посилання не створено.&#187; або &#171;Посилання активне.&#187; Поле &#171;Пароль посилання:&#187; приховано крапками, а &#171;Згенерувати&#187; заповнює його. &#171;Створити посилання&#187; перетворюється на &#171;Оновити посилання&#187;, поки посилання активне. &#171;Відкликати посилання&#187; спершу питає, бо всі активні сесії за посиланням завершуються. &#171;Показати QR / Код..&#187; показує посилання у вигляді коду.</p></details>
+<details id="availability"><summary>Чому створення вимкнено</summary><p>У кожній групі показано рядок із причиною: файловий сервер програми не вміє обмежити вхід однією папкою. Поки він видимий, усі елементи, що створюють запрошення й посилання, вимкнено. Відкликання вже виданого доступу залежить лише від того, що існує.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

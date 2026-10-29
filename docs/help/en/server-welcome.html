@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>First run of the server - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">First run of the server</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>A first-run guide for the exchange server group of the Share Manager. It explains what the computer becomes, shows the operator statement, sets the ports, the client address and the first account and ends on the server status. It opens only when the exchange server is present and enabled.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="First run of the server">
+    <img class="shot dark" src="server-welcome-dark.png" alt="First run of the server">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read the operator statement on the first page.</li><li>Review the ports and the firewall rule.</li><li>On a server edition without a service, decide about the Windows service.</li><li>Fill in the address for clients.</li><li>Create the first account.</li><li>Check the certificate fingerprint and press &#39;Finish&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>Pages and buttons</summary><p>The footer shows &#39;Step N of M&#39;; &#39;Back&#39;, &#39;Next&#39; and &#39;Later&#39; work as in any wizard, and &#39;Finish&#39; on the last page opens the exchange server group of the manager. A page can be skipped without changes: the server then stays off or as it was.</p></details>
+<details id="operator-statement"><summary>Operator statement</summary><p>The full statement of who sees what on the server. It cannot be skipped. The server connects the devices of one account and reports which of them are online.</p></details>
+<details id="ports"><summary>Ports and firewall</summary><p>A meeting port for devices and a port range for third-party clients. Devices must know the server port, so changes apply to new codes only. The firewall rule belongs to the program, so a port change does not need a new rule. These values live in the exchange server group.</p></details>
+<details id="service"><summary>Windows service</summary><p>Shown only on a server edition where the service does not exist yet. A service keeps the server available when nobody is signed in. The check box only remembers your consent: the service is registered after the first account exists, with one elevation prompt, and nothing is installed before. &#39;Register as a service..&#39; in the exchange group does the same later.</p></details>
+<details id="client-address"><summary>Address for clients</summary><p>&#39;Address for clients (host:port):&#39; is what other devices use to reach this computer. &#39;Suggest a local address&#39; fills the field only when pressed. An empty address keeps a purely local first start valid, but hides broadcasts and folder connections from other devices.</p></details>
+<details id="first-account"><summary>First account</summary><p>The account the first device signs in with. Choose &#39;Generate a password&#39; or &#39;Enter your own password&#39;; &#39;Connect this PC to the account&#39; joins this computer to it. &#39;Next&#39; creates the account, starts the server and checks the certificate. The password is shown once, in the existing dialog, and is not stored on this PC. A failure after the account was created does not remove it.</p></details>
+<details id="server-ready"><summary>Server is ready</summary><p>The last page names where the address, the login and the certificate fingerprint are recorded and offers &#39;Copy fingerprint&#39; and &#39;Connection string and QR code..&#39;. A device trusts the server after it checks the fingerprint on its first connection. The links &#39;Connect a phone (help)&#39; and &#39;Publish the first folder (help)&#39; lead to the matching help pages.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

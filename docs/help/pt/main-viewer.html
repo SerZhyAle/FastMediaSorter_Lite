@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Fast Media Sorter &amp; Sharing Viewer - Fast Media Sorter</title>
+  <title>Janela do visualizador - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Fast Media Sorter &amp; Sharing Viewer</h1>
+  <h1 id="title">Janela do visualizador</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Fast Media Sorter &amp; Sharing Viewer.</p>
+    <p>A janela do visualizador &#233; a janela principal do gestor de m&#233;dia e ficheiros. Mostra uma imagem ou um v&#237;deo de cada vez a partir de uma pasta e organiza os arquivos em pastas com uma &#250;nica tecla. Na vers&#227;o de 64 bits, documentos e outros arquivos entram na mesma lista como pr&#233;-visualiza&#231;&#245;es quando &#171;Ordenar documentos&#187; ou &#171;Ordenar outros arquivos&#187; est&#225; marcado na p&#225;gina &#171;Arquivos&#187; das Configura&#231;&#245;es; F3 abre o &#171;Painel de imagens&#187;, que tamb&#233;m funciona como gestor de arquivos para pastas locais, servidores e dispositivos conectados. A janela &#233; aberta ao iniciar o programa ou ao abrir um arquivo de m&#237;dia com ele.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="main-viewer-light.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-    <img class="shot dark" src="main-viewer-dark.png" alt="Fast Media Sorter &amp; Sharing Viewer">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>N&#227;o h&#225; captura desta janela: ao abrir, ela inicia um dispositivo, uma escuta de rede ou todo o visualizador, por isso n&#227;o &#233; capturada.</figcaption></figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Pressione F4 ou digite um caminho na caixa &#171;Pasta:&#187; e pressione Enter.</li><li>Navegue com as teclas de seta, a barra de espa&#231;o e P.</li><li>Pressione um d&#237;gito para mover o arquivo para a pasta dele, ou Shift mais um d&#237;gito da fileira superior para copi&#225;-lo.</li><li>Pressione Del para eliminar o arquivo.</li><li>Pressione F2 para abrir as Configura&#231;&#245;es.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="open-folder"><summary>Abrir uma pasta</summary><p>F4 abre um seletor de arquivos; o arquivo escolhido &#233; exibido e toda a pasta dele passa a ser a lista de navega&#231;&#227;o. A caixa &#171;Pasta:&#187; aceita o caminho de uma pasta - pressione Enter. Enquanto nada estiver aberto, um cart&#227;o de ajuda lista as teclas principais: F1 o mostra ou oculta. A tela vazia tamb&#233;m tem o bot&#227;o &#171;Configura&#231;&#227;o inicial&#187;, que inicia os passos de boas-vindas.</p></details>
+<details id="floating-chrome"><summary>Pain&#233;is flutuantes e linha de estado</summary><p>Duas fileiras de bot&#245;es da barra de ferramentas e uma faixa de estado flutuam sobre a imagem e desaparecem gradualmente enquanto o mouse est&#225; parado. Um alfinete no canto de um painel o mant&#233;m no lugar; a op&#231;&#227;o &#171;N&#227;o ocultar os pain&#233;is flutuantes&#187; na p&#225;gina &#171;Geral&#187; das Configura&#231;&#245;es mant&#233;m todos vis&#237;veis. A linha de estado mostra mensagens, por exemplo o resultado de uma opera&#231;&#227;o com arquivos.</p></details>
+<details id="navigation"><summary>Navegar pelos arquivos</summary><p>A barra de espa&#231;o e PgDn mostram o arquivo seguinte, P e PgUp o anterior; as setas para cima e para baixo saltam dez arquivos, Home e End v&#227;o para o primeiro e o &#250;ltimo. A roda do mouse tamb&#233;m percorre os arquivos, a menos que esteja configurada para o zoom.</p></details>
+<details id="sorting"><summary>Mover, copiar e eliminar</summary><p>Um d&#237;gito de 1..9 ou 0 move o arquivo atual para a pasta associada a essa tecla; Shift mais um d&#237;gito da fileira superior (n&#227;o do NumPad) o copia. As pastas s&#227;o associadas na p&#225;gina &#171;Destinos&#187; das Configura&#231;&#245;es. U traz de volta o &#250;ltimo arquivo movido. Del envia um arquivo para a Reciclagem (op&#231;&#227;o &#171;Eliminar para a Reciclagem&#187; na p&#225;gina &#171;Arquivos&#187;), Shift+Del o elimina definitivamente; unidades de rede e pen drives n&#227;o t&#234;m Reciclagem, e o programa avisa isso antes. F3 abre o &#171;Painel de imagens&#187;.</p></details>
+<details id="slideshow"><summary>Apresenta&#231;&#227;o de slides e visualiza&#231;&#227;o</summary><p>S inicia uma apresenta&#231;&#227;o de slides, I ou F5 uma apresenta&#231;&#227;o aleat&#243;ria, e Y salta para um arquivo aleat&#243;rio; o intervalo e a ordem ficam na p&#225;gina &#171;Imagens&#187; das Configura&#231;&#245;es. R gira a imagem e F7 alterna a tela inteira.</p></details>
+<details id="zoom"><summary>Zoom e menu da imagem</summary><p>Na vers&#227;o de 64 bits, o bloco cinza do NumPad controla o zoom: + e - no cursor do mouse, / ajusta a imagem &#224; janela, * a mostra em 100 %. A op&#231;&#227;o &#171;Zoom com a roda do mouse&#187; na p&#225;gina &#171;Imagens&#187; permite que a roda fa&#231;a zoom.</p></details>
+<details id="video"><summary>V&#237;deo</summary><p>Um clique pausa ou retoma um v&#237;deo, e o bot&#227;o direito abre o menu do v&#237;deo. Na vers&#227;o de 64 bits, A alterna a faixa de &#225;udio e V as legendas; o bot&#227;o &#171;Faixas&#187; aparece na barra de ferramentas somente quando o arquivo oferece uma escolha.</p></details>
+<details id="settings-keys"><summary>Configura&#231;&#245;es e lista de teclas</summary><p>F2 ou o bot&#227;o &#171;Configura&#231;&#245;es&#187; da barra de ferramentas abre as Configura&#231;&#245;es. A lista completa de teclas: p&#225;gina &#171;Arquivos&#187;, grupo &#171;Teclas e associa&#231;&#245;es&#187;, bot&#227;o &#171;Atalhos de teclado&#187;.</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Main Window - Fast Media Sorter</title>
+  <title>Share Manager - Fast Media Sorter &amp; Sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Main Window</h1>
+  <h1 id="title">Share Manager - Fast Media Sorter &amp; Sharing</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Main Window.</p>
+    <p>A janela principal do Share Manager, o servi&#231;o local de partilha e agendamento. Lista as pastas que este PC partilha com um telem&#243;vel por SFTP, inicia e para a partilha, fornece o c&#243;digo de acesso e mostra como o telem&#243;vel pode chegar ao PC. As opera&#231;&#245;es agendadas e a conta de troca t&#234;m as suas p&#225;ginas nas defini&#231;&#245;es do gestor. Abre-se a partir do visualizador ou do &#237;cone na &#225;rea de notifica&#231;&#227;o; ao fechar a janela, a aplica&#231;&#227;o fica na &#225;rea de notifica&#231;&#227;o.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-main-light.png" alt="Share Manager Main Window">
-    <img class="shot dark" src="share-main-dark.png" alt="Share Manager Main Window">
+    <img class="shot light" src="share-main-light.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
+    <img class="shot dark" src="share-main-dark.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Prima &#171;Adicionar..&#187; e escolha &#171;Pasta..&#187; para colocar uma pasta na lista.</li><li>Marque a pasta: s&#243; as pastas marcadas s&#227;o servidas.</li><li>Prima &#171;Iniciar a partilha&#187; (&#233; preciso pelo menos uma pasta marcada).</li><li>Prima &#171;Partilhar&#187; para obter o c&#243;digo QR ou o ficheiro .fmscfg para o telem&#243;vel.</li><li>Para aceder a partir de fora da sua rede dom&#233;stica, abra o grupo &#171;Acesso pela internet&#187; e use os seus dois bot&#245;es.</li><li>Prima &#171;Parar a partilha&#187; quando terminar.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="top-row"><summary>Linha superior</summary><p>&#171;Defini&#231;&#245;es&#187; abre as defini&#231;&#245;es do gestor. &#171;Iniciar a partilha&#187; passa a &#171;Parar a partilha&#187; enquanto o servidor est&#225; a funcionar. &#171;Partilhar&#187; abre o assistente do c&#243;digo de acesso e s&#243; funciona enquanto a partilha est&#225; ativa; caso contr&#225;rio, a sugest&#227;o pede para iniciar primeiro o servidor. &#171;Expandir tudo&#187; e &#171;Recolher tudo&#187; abrem ou fecham os grupos abaixo.</p></details>
+<details id="add-menu"><summary>Menu Adicionar..</summary><p>&#171;Pasta..&#187; adiciona uma pasta atrav&#233;s do seletor habitual; &#171;+ Atual&#187; (com o nome da pasta) s&#243; aparece quando o gestor foi aberto a partir de uma pasta do visualizador e adiciona precisamente essa pasta. &#171;Discos .fdd..&#187; abre a lista de discos FileDO e &#171;Assistente de adi&#231;&#227;o de recursos..&#187; guia passo a passo a adi&#231;&#227;o de um novo recurso.</p></details>
+<details id="list-buttons"><summary>Editar, Remover, C&#243;digo do telefone.. e &#193;rea de transfer&#234;ncia</summary><p>&#171;Editar&#187; abre as op&#231;&#245;es da pasta selecionada. &#171;Remover&#187; elimina a linha selecionada depois de uma pergunta: as defini&#231;&#245;es pr&#243;prias da pasta (PIN, filtros, destino) desaparecem com ela e n&#227;o podem ser recuperadas. &#171;C&#243;digo do telefone..&#187; abre a janela que recebe um c&#243;digo de liga&#231;&#227;o do telem&#243;vel. O menu &#171;&#193;rea de transfer&#234;ncia&#187; (&#171;Enviar a &#225;rea de transfer&#234;ncia ao servidor&#187;, &#171;Obter a &#225;rea de transfer&#234;ncia do servidor&#187;) s&#243; &#233; mostrado quando a troca da &#225;rea de transfer&#234;ncia est&#225; dispon&#237;vel.</p></details>
+<details id="folder-list"><summary>Recursos partilhados</summary><p>Uma linha por recurso, com uma caixa de verifica&#231;&#227;o e as colunas Nome, Tipo e Pasta. Uma linha marcada &#233; servida aos telem&#243;veis; uma lista vazia mostra &#171;Adicione o primeiro recurso..&#187;. Se desmarcar a &#250;ltima pasta marcada, a janela pergunta se deve parar a partilha, porque os telem&#243;veis ligados ser&#227;o desligados. Iniciar a partilha sem nenhuma pasta marcada s&#243; mostra a sugest&#227;o &#171;Adicione primeiro uma pasta e assinale-a.&#187;</p></details>
+<details id="phone-access"><summary>Acesso do telem&#243;vel</summary><p>Os dados de liga&#231;&#227;o de que um telem&#243;vel ou qualquer cliente SFTP precisa: o endere&#231;o pela internet e em casa (Wi-Fi), IPv6, a chave do anfitri&#227;o, o utilizador e a palavra-passe. &#171;Mostrar a palavra-passe&#187; revela-a e &#171;Ocultar a palavra-passe&#187; volta a escond&#234;-la. O texto por baixo do grupo explica se o telem&#243;vel chega ao PC apenas em casa ou tamb&#233;m a partir de fora.</p></details>
+<details id="internet-access"><summary>Acesso pela internet</summary><p>&#171;Testar o acesso pela internet&#187; abre a janela do teste de acesso pela internet. &#171;Como configurar o acesso pela internet&#187; abre o guia do router. A liga&#231;&#227;o &#171;Router: ..&#187; abre a p&#225;gina do pr&#243;prio router; se nenhum foi encontrado, l&#234;-se &#171;Router: desconhecido&#187;. O grupo traz um aviso: quem souber o endere&#231;o, o utilizador e a palavra-passe pode chegar a todas as pastas partilhadas; por isso, n&#227;o publique o c&#243;digo QR nem o ficheiro .fmscfg e desative a partilha quando terminar.</p></details>
+<details id="statistics"><summary>Estat&#237;sticas</summary><p>Por baixo dos grupos, uma liga&#231;&#227;o &#171;Estat&#237;sticas&#187; fica junto a um resumo curto como &#171;N liga&#231;&#245;es, M ficheiros&#187;. A liga&#231;&#227;o abre a janela Estado da partilha com os contadores completos.</p></details>
+<details id="server-features-off"><summary>Quando as fun&#231;&#245;es de servidor est&#227;o desativadas</summary><p>Enquanto o componente de servidor n&#227;o estiver ativado, a janela mostra &#171;As fun&#231;&#245;es de servidor est&#227;o desativadas&#187; e o bot&#227;o &#171;Ativar as fun&#231;&#245;es de servidor..&#187;, que abre a janela &#171;Ativar a partilha de pastas&#187;. Se o componente de partilha faltar na instala&#231;&#227;o, a janela indica-o e pede para reinstalar a aplica&#231;&#227;o.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

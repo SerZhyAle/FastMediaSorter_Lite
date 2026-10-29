@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>StreamsPlayer এর জন্য সম্প্রচার - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">StreamsPlayer এর জন্য সম্প্রচার</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>মিডিয়া ফাইল ও ফোল্ডারের যে HTTP সম্প্রচার এই পিসি StreamsPlayer অ্যাপকে দেয়, সেগুলো পরিচালনা করে। এটি Share Manager-এর মূল উইন্ডোর সম্প্রচার.. বোতাম বা যোগ করুন মেনু আইটেম থেকে খোলে; সেগুলো তখনই দেখা যায় যখন শেয়ারিং সার্ভিস সম্প্রচারের সমর্থন জানায়। পথসহ চালু করলে এটি খোলে এবং সরাসরি ওই পথের জন্য সম্প্রচার তৈরি করুন ডায়ালগে যায়।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="StreamsPlayer এর জন্য সম্প্রচার">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="StreamsPlayer এর জন্য সম্প্রচার">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>HTTP সম্প্রচার গেটওয়ে সক্ষম করুন-এ টিক দিন, অথবা শুধু একটি সম্প্রচার তৈরি করুন, তাতে গেটওয়ে চালু হয়ে যায়।</li><li>সম্প্রচার তৈরি করুন.. চাপুন, মিডিয়া ফাইল বেছে নিন, শিরোনাম, মেয়াদ ও ইন্টারনেট বিকল্প ঠিক করুন এবং সম্প্রচার করুন চাপুন।</li><li>লিঙ্কটি ক্লিপবোর্ডে কপি হয়।</li><li>একটি সারি নির্বাচন করে সম্প্রচারটি কোনো ডিভাইসকে দিতে লিঙ্ক কপি করুন, .spres সংরক্ষণ করুন.. বা QR দেখান ব্যবহার করুন।</li><li>আর দরকার না হলে সম্প্রচারটিতে প্রত্যাহার করুন চাপুন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>গেটওয়ে সুইচ</summary><p>চেকবক্স HTTP গেটওয়ে চালু বা বন্ধ করে। তার নিচের লাইনে সম্প্রচার গেটওয়ে বন্ধ বা সম্প্রচার গেটওয়ে চলছে (পোর্ট N) লেখা থাকে। গেটওয়ে চলার সময় এই পিসি সম্প্রচার ফাইলের HTTP অনুরোধের উত্তর দেয়। গেটওয়ে চালু না হলে (পোর্ট, ফায়ারওয়াল) চেকবক্স তার আসল অবস্থায় ফিরে যায় এবং কারণ তার নিচে একটি লাল লাইনে দেখা যায়; প্রত্যাখ্যান কখনো ডায়ালগ খোলে না।</p></details>
+<details id="broadcast-list"><summary>সম্প্রচার তালিকা</summary><p>কলাম: নাম, ধরন (ফাইল, বা উপাদানের সংখ্যাসহ ফোল্ডার), তৈরি হয়েছে, মেয়াদ শেষ (একটি তারিখ, প্রত্যাহার না হওয়া পর্যন্ত বা মেয়াদ শেষ), অনুরোধ এবং টোকেন, যার শুধু প্রথম ছয়টি অক্ষর দেখায়। তালিকা প্রতি 5 সেকেন্ডে নিজেকে আবার পড়ে। সারিতে ডাবল ক্লিক করলে তার লিঙ্ক কপি হয়।</p></details>
+<details id="create"><summary>সম্প্রচার তৈরি করুন..</summary><p>একটি মিডিয়া ফাইল চায় এবং সম্প্রচার তৈরি করুন ডায়ালগ খোলে। আপনি তা গ্রহণ করলে দরকারে গেটওয়ে চালু হয়, সম্প্রচার তৈরি হয় এবং তার লিঙ্ক গোপনীয়তার চিহ্নসহ ক্লিপবোর্ডে কপি হয়; একটি বার্তা কপির নিশ্চিতকরণ দেয়।</p></details>
+<details id="share-link"><summary>লিঙ্ক কপি করুন, .spres সংরক্ষণ করুন.. এবং QR দেখান</summary><p>এই তিনটি নির্বাচিত সারিতে কাজ করে এবং এগুলোর জন্য পোর্টসহ চলমান গেটওয়ে লাগে। এগুলো এই পিসির বর্তমান ঠিকানা থেকে লিঙ্ক বানায়; তৈরির সময় করা ইন্টারনেটের পছন্দ প্রতিটি সম্প্রচারের জন্য মনে রাখা হয়। .spres সংরক্ষণ করুন.. StreamsPlayer-এর একটি রিসোর্স ফাইল লেখে, আর QR দেখান স্ক্যান করার জন্য একটি কোড খোলে।</p></details>
+<details id="refresh-revoke"><summary>রিফ্রেশ ও প্রত্যাহার করুন</summary><p>রিফ্রেশ শুধু ফোল্ডার সম্প্রচারের জন্য পাওয়া যায় এবং সার্ভিসকে সেটি রিফ্রেশ করতে বলে; একটি বার্তা তা নিশ্চিত করে। প্রত্যাহার করুন যেকোনো সারিতে কাজ করে এবং আগে জিজ্ঞাসা করে: সম্প্রচার X প্রত্যাহার করবেন? লিঙ্কটি অবিলম্বে কাজ করা বন্ধ করবে। প্রত্যাহার করা সম্প্রচার ফেরানো যায় না; নতুন একটি তৈরি করুন।</p></details>
+<details id="problems"><summary>পৃষ্ঠা বন্ধ থাকলে</summary><p>শেয়ারিং সার্ভিস উত্তর না দিলে বা সম্প্রচারের সমর্থন না থাকলে পৃষ্ঠাটি নিজের জায়গাতেই বন্ধ হয়ে যায় এবং লাল লাইন কারণ জানায়, যেমন সম্প্রচার সার্ভিসের এই সংস্করণ পুরনো, বা কাজটি সম্পূর্ণ হয়নি এবং বিবরণ লগে আছে।</p></details>
+    <p><a href="share-settings.html">ম্যানেজার সেটিংস</a> · <a href="sftp-settings.html">SFTP শেয়ারিং সেটিংস</a> · <a href="exchange-server-settings.html">এক্সচেঞ্জ সার্ভার সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

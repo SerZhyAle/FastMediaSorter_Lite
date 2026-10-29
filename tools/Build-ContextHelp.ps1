@@ -58,8 +58,65 @@ $relatedHeadings = @{
     'fr' = 'Sujets associés'; 'pt' = 'Tópicos relacionados'; 'ar' = 'موضوعات ذات صلة'; 'hi' = 'संबंधित'; 'bn' = 'সম্পর্কিত'; 'ur' = 'متعلقہ'; 'zh' = '相关主题'
 }
 
+$indexIntros = @{
+    'en' = 'Offline help for the windows of Fast Media Sorter &amp; Sharing for Windows: the media and file manager, the local sharing and scheduling service and the Media Exchange Server.'
+    'ru' = 'Встроенная справка по окнам Fast Media Sorter &amp; Sharing for Windows: медиа- и файлового менеджера, локальной службы раздачи и расписаний и Media Exchange Server.'
+    'uk' = 'Вбудована довідка з вікон Fast Media Sorter &amp; Sharing for Windows: медіа- та файлового менеджера, локальної служби роздачі та розкладів і Media Exchange Server.'
+    'de' = 'Offline-Hilfe zu den Fenstern von Fast Media Sorter &amp; Sharing for Windows: Medien- und Dateimanager, lokaler Dienst für Freigabe und Zeitplanung und Media Exchange Server.'
+    'it' = 'Guida offline per le finestre di Fast Media Sorter &amp; Sharing for Windows: il gestore di media e file, il servizio locale di condivisione e pianificazione e Media Exchange Server.'
+    'es' = 'Ayuda sin conexión para las ventanas de Fast Media Sorter &amp; Sharing for Windows: el gestor de medios y archivos, el servicio local de uso compartido y programación y Media Exchange Server.'
+    'fr' = 'Aide hors ligne pour les fenêtres de Fast Media Sorter &amp; Sharing for Windows : le gestionnaire de médias et fichiers, le service local de partage et de planification et Media Exchange Server.'
+    'pt' = 'Ajuda offline para as janelas do Fast Media Sorter &amp; Sharing for Windows: o gestor de média e ficheiros, o serviço local de partilha e agendamento e o Media Exchange Server.'
+    'ar' = 'مساعدة دون اتصال لنوافذ Fast Media Sorter &amp; Sharing for Windows: مدير الوسائط والملفات، خدمة المشاركة والجدولة المحلية، Media Exchange Server.'
+    'hi' = 'Fast Media Sorter &amp; Sharing for Windows की विंडो के लिए ऑफ़लाइन सहायता: मीडिया और फ़ाइल मैनेजर, स्थानीय साझाकरण और शेड्यूलिंग सेवा तथा Media Exchange Server।'
+    'bn' = 'Fast Media Sorter &amp; Sharing for Windows-এর উইন্ডোগুলোর অফলাইন সহায়তা: মিডিয়া ও ফাইল ম্যানেজার, স্থানীয় শেয়ারিং ও সময়সূচি পরিষেবা এবং Media Exchange Server।'
+    'ur' = 'Fast Media Sorter &amp; Sharing for Windows کی ونڈوز کے لیے آف لائن مدد: میڈیا اور فائل مینیجر، مقامی شیئرنگ اور شیڈولنگ سروس اور Media Exchange Server۔'
+    'zh' = 'Fast Media Sorter &amp; Sharing for Windows 各窗口的离线帮助：媒体与文件管理器、本地共享与计划服务以及 Media Exchange Server。'
+}
+
+# "1. .. 2. .." becomes the numbered order list; a number that does not continue the sequence stays text.
+function ConvertTo-OrderHtml([string]$text) {
+    $markers = [regex]::Matches($text, '(?<=^|\s)(\d{1,2})[.)]\s+')
+    $steps = [Collections.Generic.List[string]]::new()
+    $expected = 1; $start = -1; $bodyStart = 0
+    foreach ($m in $markers) {
+        # \d also matches Arabic-Indic, Devanagari and Bengali digits; read the value of any of them.
+        $value = 0
+        foreach ($c in $m.Groups[1].Value.ToCharArray()) { $value = $value * 10 + [int][char]::GetNumericValue($c) }
+        if ($value -ne $expected) { continue }
+        if ($start -ge 0) { $steps.Add($text.Substring($bodyStart, $m.Index - $bodyStart).Trim()) }
+        elseif ($m.Index -ne 0) { break }
+        $start = $m.Index; $bodyStart = $m.Index + $m.Length; $expected++
+    }
+    if ($steps.Count -lt 1) { return '<p>' + [Net.WebUtility]::HtmlEncode($text) + '</p>' }
+    $steps.Add($text.Substring($bodyStart).Trim())
+    '<ol class="order">' + (($steps | ForEach-Object { '<li>' + [Net.WebUtility]::HtmlEncode($_) + '</li>' }) -join '') + '</ol>'
+}
+
 # Screenshots are inputs captured from real windows, never drawings manufactured by this renderer.
-# Specification 267: existing placeholder debt remains visible in the readiness evidence.
+# Specification 267: a window that cannot be captured without a side effect is declared in the capture evidence
+# (capture 'none', with its reason) and its page says so in place of the picture - missing stays visibly missing.
+$noShotNotes = @{
+    'en' = 'There is no screenshot of this window: opening it starts a device, a network listener or the whole viewer, so it is not captured.'
+    'ru' = 'Снимка этого окна нет: при открытии оно запускает устройство, сетевое подключение или весь просмотрщик, поэтому его не снимают.'
+    'uk' = 'Знімка цього вікна немає: під час відкриття воно запускає пристрій, мережеве підключення або весь переглядач, тому його не знімають.'
+    'de' = 'Für dieses Fenster gibt es keinen Screenshot: Beim Öffnen startet es ein Gerät, einen Netzwerkempfang oder den ganzen Betrachter, daher wird es nicht aufgenommen.'
+    'it' = 'Non c''è uno screenshot di questa finestra: all''apertura avvia un dispositivo, un ascolto di rete o l''intero visualizzatore, quindi non viene acquisita.'
+    'es' = 'No hay captura de esta ventana: al abrirse pone en marcha un dispositivo, una escucha de red o todo el visor, por eso no se captura.'
+    'fr' = 'Cette fenêtre n''a pas de capture : à l''ouverture, elle démarre un appareil, une écoute réseau ou toute la visionneuse, elle n''est donc pas capturée.'
+    'pt' = 'Não há captura desta janela: ao abrir, ela inicia um dispositivo, uma escuta de rede ou todo o visualizador, por isso não é capturada.'
+    'ar' = 'لا توجد لقطة شاشة لهذه النافذة: عند فتحها تشغّل جهازًا أو استماعًا على الشبكة أو العارض كله، لذلك لا تُلتقط.'
+    'hi' = 'इस विंडो का स्क्रीनशॉट नहीं है: खुलते ही यह कोई डिवाइस, नेटवर्क लिसनर या पूरा व्यूअर शुरू कर देती है, इसलिए इसे कैप्चर नहीं किया जाता।'
+    'bn' = 'এই উইন্ডোর কোনো স্ক্রিনশট নেই: খোলার সময় এটি একটি ডিভাইস, নেটওয়ার্ক লিসেনার বা পুরো ভিউয়ার চালু করে, তাই এটি ক্যাপচার করা হয় না।'
+    'ur' = 'اس ونڈو کا کوئی اسکرین شاٹ نہیں: کھلتے ہی یہ کوئی ڈیوائس، نیٹ ورک لسنر یا پورا ویور شروع کر دیتی ہے، اس لیے اسے کیپچر نہیں کیا جاتا۔'
+    'zh' = '此窗口没有截图：它一打开就会启动设备、网络监听或整个查看器，因此不截取。'
+}
+$evidenceFile = Join-Path $helpRoot 'context-help-capture-evidence.json'
+$uncaptured = @()
+if (Test-Path -LiteralPath $evidenceFile) {
+    $uncaptured = @((Get-Content -LiteralPath $evidenceFile -Raw -Encoding UTF8 | ConvertFrom-Json).declared |
+        Where-Object { $_.capture -eq 'none' } | ForEach-Object { $_.topic })
+}
 
 # Collect surfaces with form in ('page', 'both')
 $helpPages = [Collections.Generic.Dictionary[string, object]]::new()
@@ -88,30 +145,16 @@ foreach ($locale in $locales) {
     foreach ($entry in $helpPages.GetEnumerator()) {
         $pageKey = $entry.Key
         if ($Topics.Count -gt 0 -and $pageKey -notin $Topics) { continue }
+        if ($pageKey -eq 'index') { continue }   # written below as the list of topics; it has no window to capture
         $surface = $entry.Value
-        $title = [System.Net.WebUtility]::HtmlEncode($surface.name)
         $settingsContent = $settingsHelp.$pageKey.$locale
-        if ($settingsContent) { $title = [System.Net.WebUtility]::HtmlEncode($settingsContent.title) }
-
-        # Build elements details
-        $elementsBuilder = [System.Text.StringBuilder]::new()
-        if ($surface.pages -and $surface.pages.Count -gt 0) {
-            foreach ($sub in $surface.pages) {
-                $subName = [System.Net.WebUtility]::HtmlEncode($sub.name)
-                $anchor = if ($sub.anchor) { $sub.anchor } else { "element-$($sub.id)" }
-                $elementsBuilder.AppendLine("      <details id=`"$anchor`"><summary>$subName</summary><p>$subName section in Fast Media Sorter.</p></details>") | Out-Null
-            }
-        } else {
-            $elementsBuilder.AppendLine("      <details id=`"element-1`"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>") | Out-Null
-            $elementsBuilder.AppendLine("      <details id=`"element-2`"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>") | Out-Null
-        }
-        $elementDetails = $elementsBuilder.ToString().TrimEnd()
-        $purposeText = "Fast Media Sorter &amp; Sharing for Windows: $title."
-        $orderText = 'Review the options on screen, adjust values as needed, and confirm.'
+        # Specification 267: no generic page. A topic without authored copy in this language stops the build.
+        if (-not $settingsContent) { throw "Authored help copy is required: $locale/$pageKey in tools/settings-help-copy.json." }
+        $title = [System.Net.WebUtility]::HtmlEncode($settingsContent.title)
         $relatedSettings = ''
         if ($settingsContent) {
             $purposeText = [System.Net.WebUtility]::HtmlEncode($settingsContent.purpose)
-            $orderText = [System.Net.WebUtility]::HtmlEncode($settingsContent.order)
+            $orderHtml = ConvertTo-OrderHtml $settingsContent.order
             $elementDetails = ($settingsContent.sections | ForEach-Object {
                 $detail = '<details id="{0}"><summary>{1}</summary><p>{2}</p>' -f $_.id,
                     [System.Net.WebUtility]::HtmlEncode($_.title), [System.Net.WebUtility]::HtmlEncode($_.text)
@@ -120,13 +163,25 @@ foreach ($locale in $locales) {
                 }
                 $detail + '</details>'
             }) -join "`n"
-            $relatedSettings = '<p><a href="share-settings.html">{0}</a> · <a href="sftp-settings.html">{1}</a> · <a href="exchange-server-settings.html">{2}</a></p>' -f 
-                [System.Net.WebUtility]::HtmlEncode($settingsHelp.'share-settings'.$locale.title),
-                [System.Net.WebUtility]::HtmlEncode($settingsHelp.'sftp-settings'.$locale.title),
-                [System.Net.WebUtility]::HtmlEncode($settingsHelp.'exchange-server-settings'.$locale.title)
+            # A Manager window points at the Manager's settings; a viewer window at the viewer's own Settings.
+            if ($surface.type -like 'FastMediaSorterCompanion.*' -or $pageKey -eq 'live-broadcast') {
+                $relatedSettings = '<p><a href="share-settings.html">{0}</a> · <a href="sftp-settings.html">{1}</a> · <a href="exchange-server-settings.html">{2}</a></p>' -f
+                    [System.Net.WebUtility]::HtmlEncode($settingsHelp.'share-settings'.$locale.title),
+                    [System.Net.WebUtility]::HtmlEncode($settingsHelp.'sftp-settings'.$locale.title),
+                    [System.Net.WebUtility]::HtmlEncode($settingsHelp.'exchange-server-settings'.$locale.title)
+            } elseif ($pageKey -ne 'settings') {
+                $viewerSettings = if ($settingsHelp.'settings'.$locale) { $settingsHelp.'settings'.$locale.title } else { 'Settings' }
+                $relatedSettings = '<p><a href="settings.html">{0}</a></p>' -f [System.Net.WebUtility]::HtmlEncode($viewerSettings)
+            }
             if ($pageKey -eq 'share-settings') {
                 $elementDetails += '<p id="network"><a href="sftp-settings.html#network">SFTP</a></p><p id="hosting"><a href="sftp-settings.html#hosting">SFTP</a></p><p id="exchange"><a href="exchange-server-settings.html#exchange">{0}</a></p>' -f [System.Net.WebUtility]::HtmlEncode($settingsHelp.'exchange-server-settings'.$locale.title)
             }
+        }
+
+        $figureHtml = if ($pageKey -in $uncaptured) {
+            '<figure id="capture" class="no-shot"><figcaption>' + [Net.WebUtility]::HtmlEncode($noShotNotes[$locale]) + '</figcaption></figure>'
+        } else {
+            "<figure id=`"capture`">`n    <img class=`"shot light`" src=`"$pageKey-light.png`" alt=`"$title`">`n    <img class=`"shot dark`" src=`"$pageKey-dark.png`" alt=`"$title`">`n  </figure>"
         }
 
         $markHtml = ''
@@ -155,13 +210,10 @@ foreach ($locale in $locales) {
     <h2>$purposeHead</h2>
     <p>$purposeText</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="$pageKey-light.png" alt="$title">
-    <img class="shot dark" src="$pageKey-dark.png" alt="$title">
-  </figure>
+  $figureHtml
   <section id="order">
     <h2>$orderHead</h2>
-    <p>$orderText</p>
+    $orderHtml
   </section>
   <section id="elements">
     <h2>$elementsHead</h2>
@@ -186,17 +238,22 @@ $elementDetails
         # Captures
         $lightCap = Join-Path $localeDir "$pageKey-light.png"
         $darkCap = Join-Path $localeDir "$pageKey-dark.png"
-        if (!(Test-Path -LiteralPath $lightCap) -or !(Test-Path -LiteralPath $darkCap)) {
+        if ($pageKey -notin $uncaptured -and (!(Test-Path -LiteralPath $lightCap) -or !(Test-Path -LiteralPath $darkCap))) {
             throw "Real captures are required: $locale/$pageKey. Run the applicable opt-in capture harness."
         }
     }
 
     # Generate index.html
     $indexList = [System.Text.StringBuilder]::new()
-    foreach ($entry in ($helpPages.GetEnumerator() | Sort-Object { $_.Value.name })) {
-        $pageKey = $entry.Key
-        $name = [System.Net.WebUtility]::HtmlEncode($entry.Value.name)
-        $indexList.AppendLine("    <li><a href=`"$pageKey.html`">$name</a></li>") | Out-Null
+    $culture = [Globalization.CultureInfo]::GetCultureInfo($locale)
+    $indexEntries = foreach ($entry in $helpPages.GetEnumerator()) {
+        if ($entry.Key -eq 'index') { continue }
+        $localized = $settingsHelp.($entry.Key).$locale
+        [pscustomobject]@{ Key = $entry.Key; Name = $(if ($localized) { $localized.title } else { $entry.Value.name }) }
+    }
+    foreach ($entry in ($indexEntries | Sort-Object Name -Culture $culture.Name)) {
+        $name = [System.Net.WebUtility]::HtmlEncode($entry.Name)
+        $indexList.AppendLine("    <li><a href=`"$($entry.Key).html`">$name</a></li>") | Out-Null
     }
 
     $indexHtml = @"
@@ -213,7 +270,7 @@ $elementDetails
 <body>
 <main>
   <h1 id="title">$helpWord</h1>
-  <p>Offline context help for Fast Media Sorter &amp; Sharing for Windows.</p>
+  <p>$($indexIntros[$locale])</p>
   <ul>
 $($indexList.ToString().TrimEnd())
   </ul>

@@ -96,7 +96,8 @@ Public Class DesktopUxConformanceTests
     <Fact>
     Public Sub Every_file_with_a_glyph_caption_sets_an_accessible_name()
         Dim srcDir = FindSourceDir()
-        Dim glyph As New Text.RegularExpressions.Regex("ChrW\(&H[EF][0-9A-Fa-f]{3}\)|""[-]")
+        ' U+FFFD is replacement text, outside the U+E000..U+F8FF private-use range.
+        Dim glyph As New Text.RegularExpressions.Regex("ChrW\(&H(?:E[0-9A-Fa-f]{3}|F[0-8][0-9A-Fa-f]{2})\)|""[-]")
         Dim unnamed As New List(Of String)()
         Dim withGlyphs = 0
         For Each srcPath In Directory.GetFiles(srcDir, "*.vb", SearchOption.AllDirectories)

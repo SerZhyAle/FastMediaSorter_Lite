@@ -121,32 +121,38 @@ Partial Public NotInheritable Class Localization
             "Chiusura dell'app", "Cierre de la aplicación", "Fermeture de l'application",
             "Fechando o app", "إغلاق التطبيق", "ऐप बंद करना", "অ্যাপ বন্ধ করা",
             "ایپ بند کرنا", "关闭程序")
-        Add("Файловые операции ещё выполняются: {0}." & vbCrLf &
-            "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
-            "File operations are still running: {0}." & vbCrLf &
-            "Wait longer? «No» closes the app, and the unfinished operations will not run.",
-            "Файлові операції ще виконуються: {0}." & vbCrLf &
-            "Почекати ще? «Ні» закриє програму, і незавершені операції не виконаються.",
-            "Dateivorgänge laufen noch: {0}." & vbCrLf &
-            "Länger warten? «Nein» schließt die App, und die offenen Vorgänge werden nicht ausgeführt.",
-            "Operazioni sui file ancora in corso: {0}." & vbCrLf &
-            "Attendere ancora? «No» chiude l'app e le operazioni non concluse non verranno eseguite.",
-            "Las operaciones de archivo siguen en curso: {0}." & vbCrLf &
-            "¿Esperar más? «No» cierra la aplicación y las operaciones pendientes no se ejecutarán.",
-            "Des opérations sur les fichiers sont encore en cours : {0}." & vbCrLf &
-            "Attendre encore ? «Non» ferme l'application et les opérations inachevées ne seront pas exécutées.",
-            "As operações de arquivo ainda estão em andamento: {0}." & vbCrLf &
-            "Aguardar mais? «Não» fecha o app e as operações inacabadas não serão executadas.",
-            "لا تزال عمليات الملفات جارية: {0}." & vbCrLf &
-            "الانتظار أكثر؟ «لا» يغلق التطبيق ولن تُنفَّذ العمليات غير المكتملة.",
-            "फ़ाइल कार्रवाइयाँ अभी चल रही हैं: {0}." & vbCrLf &
-            "और प्रतीक्षा करें? «नहीं» ऐप बंद कर देगा, और अपूर्ण कार्रवाइयाँ नहीं चलेंगी।",
-            "ফাইল অপারেশন এখনও চলছে: {0}." & vbCrLf &
-            "আরও অপেক্ষা করবেন? «না» অ্যাপ বন্ধ করবে, এবং অসমাপ্ত অপারেশনগুলি চলবে না।",
-            "فائل آپریشنز ابھی بھی جاری ہیں: {0}." & vbCrLf &
-            "مزید انتظار کریں؟ «نہیں» ایپ بند کر دے گا، اور نامکمل آپریشنز نہیں چلیں گے۔",
-            "文件操作仍在进行：{0}。" & vbCrLf &
-            "继续等待吗？选择「否」将关闭程序，未完成的操作不会执行。")
+        Add("Файловые операции ещё выполняются: {0}.",
+            "File operations are still running: {0}.",
+            "Файлові операції ще виконуються: {0}.",
+            "Dateivorgänge laufen noch: {0}.",
+            "Operazioni sui file ancora in corso: {0}.",
+            "Las operaciones de archivo siguen en curso: {0}.",
+            "Des opérations sur les fichiers sont encore en cours : {0}.",
+            "As operações de arquivo ainda estão em andamento: {0}.",
+            "لا تزال عمليات الملفات جارية: {0}.",
+            "फ़ाइल कार्रवाइयाँ अभी चल रही हैं: {0}.",
+            "ফাইল অপারেশন এখনও চলছে: {0}.",
+            "فائل آپریشنز ابھی بھی جاری ہیں: {0}.",
+            "文件操作仍在进行：{0}。")
+        Add("Если закрыть программу сейчас, незавершённые операции не выполнятся.",
+            "If you close the app now, the unfinished operations will not run.",
+            "Якщо закрити програму зараз, незавершені операції не виконаються.",
+            "Wenn Sie die App jetzt schließen, werden die offenen Vorgänge nicht ausgeführt.",
+            "Se chiudi l'app ora, le operazioni non concluse non verranno eseguite.",
+            "Si cierras la aplicación ahora, las operaciones pendientes no se ejecutarán.",
+            "Si vous fermez l'application maintenant, les opérations inachevées ne seront pas exécutées.",
+            "Se você fechar o app agora, as operações inacabadas não serão executadas.",
+            "إذا أغلقت التطبيق الآن، فلن تُنفَّذ العمليات غير المكتملة.",
+            "यदि आप अभी ऐप बंद करते हैं, तो अपूर्ण कार्रवाइयाँ नहीं चलेंगी।",
+            "আপনি এখন অ্যাপ বন্ধ করলে অসমাপ্ত অপারেশনগুলি চলবে না।",
+            "اگر آپ ابھی ایپ بند کریں گے تو نامکمل آپریشنز نہیں چلیں گے۔",
+            "如果现在关闭程序，未完成的操作将不会执行。")
+        Add("Подождать ещё", "Wait longer", "Почекати ще", "Weiter warten", "Attendi ancora",
+            "Esperar más", "Attendre encore", "Aguardar mais", "الانتظار أكثر", "और प्रतीक्षा करें",
+            "আরও অপেক্ষা করুন", "مزید انتظار کریں", "继续等待")
+        Add("Закрыть всё равно", "Close anyway", "Усе одно закрити", "Trotzdem schließen", "Chiudi comunque",
+            "Cerrar de todos modos", "Fermer quand même", "Fechar mesmo assim", "إغلاق على أي حال", "फिर भी बंद करें",
+            "তবুও বন্ধ করুন", "پھر بھی بند کریں", "仍然关闭")
 
         ' --- file / media loading ------------------------------------------------
         Add("Файл не найден: {0}", "File not found: {0}", "Файл не знайдено: {0}",

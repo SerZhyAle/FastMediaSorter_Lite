@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Adicionar a partir de um servidor de troca - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Adicionar a partir de um servidor de troca</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Liga este computador a uma conta num servidor de troca, para que as pastas de todos os dispositivos dessa conta apare&#231;am na lista de recursos. Abre-se no bot&#227;o &#171;Adicionar a partir de um servidor de troca..&#187; da se&#231;&#227;o &#171;Os meus dispositivos&#187; da lista de recursos, e quando voc&#234; solta uma cadeia ou um ficheiro de liga&#231;&#227;o sobre o programa ou digita uma na caixa de pasta.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Adicionar a partir de um servidor de troca">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Adicionar a partir de um servidor de troca">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Cole a cadeia de liga&#231;&#227;o do operador do servidor, digite o endere&#231;o como host:porta ou pressione &#171;Abrir ficheiro..&#187;.</li><li>Confira a linha &#171;A palavra-passe ser&#225; enviada para: ..&#187;: esse endere&#231;o &#233; o &#250;nico lugar para onde vai a palavra-passe.</li><li>Informe o login e a palavra-passe.</li><li>Pressione &#171;Conectar&#187;.</li><li>Se o programa perguntar pelo certificado do servidor, compare a impress&#227;o digital com a que o operador indicou.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Cadeia de liga&#231;&#227;o ou endere&#231;o</summary><p>A primeira caixa aceita uma cadeia de liga&#231;&#227;o (come&#231;a por FMSEXCH1:) ou um endere&#231;o como host:porta. &#171;Colar&#187; preenche-a a partir da &#225;rea de transfer&#234;ncia, de um texto ou de uma imagem de um c&#243;digo QR, e &#171;Abrir ficheiro..&#187; l&#234; um ficheiro .fmsexch ou uma imagem QR. Colar s&#243; preenche o formul&#225;rio: nada &#233; enviado at&#233; voc&#234; pressionar &#171;Conectar&#187;. A linha abaixo da caixa mostra para onde ir&#225; a palavra-passe; um endere&#231;o da web, um c&#243;digo de pasta ou uma cadeia danificada s&#227;o recusados ali em palavras simples.</p></details>
+<details id="account"><summary>Login e palavra-passe</summary><p>&#171;Utilizador:&#187; &#233; preenchido a partir da cadeia quando ela traz um. &#171;Senha:&#187; fica oculta; &#171;Mostrar a senha&#187; a revela. Ao pressionar &#171;Conectar&#187;, as caixas da palavra-passe s&#227;o limpas antes de o primeiro byte sair do computador. A linha de estado mostra o andamento e, em caso de falha, o motivo: um login ou uma palavra-passe que n&#227;o serviram, demasiadas tentativas, um servidor que n&#227;o responde.</p></details>
+<details id="register"><summary>Uma cadeia de convite</summary><p>Uma cadeia que &#233; um convite j&#225; nomeia o servidor e muda a janela para a cria&#231;&#227;o de uma conta: aparecem &#171;Palavra-passe mais uma vez:&#187; e uma nota sobre a regra da palavra-passe (pelo menos 10 caracteres, com uma letra latina mai&#250;scula, uma min&#250;scula e um algarismo), e o bot&#227;o passa a dizer &#171;Criar a conta&#187;. A &#250;ltima palavra sobre a regra &#233; do servidor.</p></details>
+<details id="trust"><summary>O certificado do servidor</summary><p>Se o certificado &#233; desconhecido, uma pergunta mostra a sua impress&#227;o digital e pergunta se se deve confiar no servidor e lembr&#225;-lo; a resposta padr&#227;o &#233; N&#227;o. Se a cadeia indica uma impress&#227;o digital e o servidor apresenta outra, ambas s&#227;o mostradas, nada &#233; lembrado e nenhuma palavra-passe &#233; enviada.</p></details>
+<details id="sign-in-again"><summary>Iniciar sess&#227;o de novo</summary><p>Quando a janela &#233; aberta para uma entrada de servidor existente a fim de iniciar sess&#227;o de novo, mostra o endere&#231;o e o login s&#243; para leitura, e a impress&#227;o digital que essa entrada lembra &#233; a &#226;ncora de confian&#231;a.</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

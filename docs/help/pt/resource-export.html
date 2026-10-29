@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>Exportar recurso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">Exportar recurso</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>Prepara as configura&#231;&#245;es de um servidor SFTP para que outro computador ou um telefone possa import&#225;-las. Abre-se em &#171;Exportar..&#187; no menu &#171;Mais&#187; da lista de recursos e precisa de um recurso selecionado; uma pasta compartilhada pelo Share Manager &#233; exportada a partir do Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="Exportar recurso">
+    <img class="shot dark" src="resource-export-dark.png" alt="Exportar recurso">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Leia o aviso abaixo do nome do recurso.</li><li>Escolha &#171;Sem a senha&#187; (padr&#227;o) ou &#171;Com a senha&#187;.</li><li>Pressione &#171;Salvar em arquivo..&#187;, ou copie as configura&#231;&#245;es como texto ou como um c&#243;digo curto.</li><li>Entregue o resultado apenas ao seu dono.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>O aviso</summary><p>A linha abaixo do nome diz que o arquivo leva a chave de acesso ao servidor: entregue-o s&#243; ao seu dono e nunca o deixe em discos compartilhados. Vale para o arquivo, para o texto copiado e para o c&#243;digo igualmente.</p></details>
+<details id="password-choice"><summary>Sem ou com a senha</summary><p>&#171;Sem a senha&#187; vem selecionado no in&#237;cio. &#171;Com a senha&#187; s&#243; fica ativo quando a senha salva pode ser lida de volta; caso contr&#225;rio aparece a dica &#171;A senha n&#227;o est&#225; salva - o arquivo ficar&#225; sem ela.&#187;. A senha &#233; decifrada na mem&#243;ria para a exporta&#231;&#227;o e n&#227;o vai a nenhum outro lugar.</p></details>
+<details id="save-copy"><summary>Salvar, copiar texto, copiar c&#243;digo</summary><p>&#171;Salvar em arquivo..&#187; grava um arquivo .fmscfg por meio de uma caixa de di&#225;logo de salvamento; a grava&#231;&#227;o recusa discos FAT ou exFAT, discos de rede e pastas que outros usu&#225;rios podem alterar, e nunca deixa um arquivo escrito pela metade. &#171;Copiar texto&#187; coloca o documento de configura&#231;&#245;es na &#225;rea de transfer&#234;ncia e &#171;Copiar c&#243;digo&#187; um c&#243;digo curto com o mesmo conte&#250;do. Ambos s&#227;o copiados com as marcas de privacidade (sem hist&#243;rico da &#225;rea de transfer&#234;ncia, sem sincroniza&#231;&#227;o na nuvem). A linha de estado mostra o resultado.</p></details>
+<details id="requirements"><summary>O que pode ser exportado</summary><p>Apenas um servidor SFTP cuja chave o programa j&#225; lembre. A janela se abre em qualquer caso, e uma recusa aparece na linha de estado quando voc&#234; pressiona um bot&#227;o: uma pasta de rede (SMB) n&#227;o pode ser descrita por este arquivo; a chave do servidor n&#227;o est&#225; lembrada (abra o recurso uma vez e confirme a chave); o recurso n&#227;o tem um endere&#231;o para entregar; a pasta est&#225; escrita de um modo que o arquivo n&#227;o aceita (corrija-a em &#171;Editar..&#187;).</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>Rapport de l&#39;op&#233;ration - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">Rapport de l&#39;op&#233;ration</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>&#201;num&#232;re ce qui s&#39;est pass&#233; pour chaque fichier de la derni&#232;re op&#233;ration group&#233;e (d&#233;placement, copie, suppression ou annulation) et pourquoi quelque chose a &#233;t&#233; ignor&#233; ou a &#233;chou&#233;. La fen&#234;tre ne s&#39;ouvre jamais d&#39;elle-m&#234;me : cliquez sur la ligne du rapport au bas du panneau de miniatures (F3) apr&#232;s une ex&#233;cution. Si l&#39;ex&#233;cution n&#39;a pas &#233;t&#233; propre, la ligne se termine par &#171;cliquez pour voir les d&#233;tails&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="Rapport de l&#39;op&#233;ration">
+    <img class="shot dark" src="batch-report-dark.png" alt="Rapport de l&#39;op&#233;ration">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lancez une op&#233;ration sur plusieurs fichiers dans le panneau de miniatures.</li><li>Lisez la ligne de synth&#232;se au bas du panneau.</li><li>Cliquez sur la ligne pour ouvrir cette fen&#234;tre.</li><li>Regardez le haut de la liste : les &#233;checs viennent en premier.</li><li>S&#233;lectionnez des lignes, puis utilisez &#171;Copier&#187; pour prendre leurs chemins ou &#171;Afficher dans l&#39;Explorateur de fichiers&#187; pour retrouver un fichier.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>La ligne de synth&#232;se</summary><p>La ligne commence par le r&#233;sultat : &#171;Fichiers d&#233;plac&#233;s : 5&#187;, &#171;Fichiers copi&#233;s : 5&#187;, &#171;Fichiers supprim&#233;s : 5&#187;, &#171;Fichiers restaur&#233;s : 5&#187; ou &#171;Op&#233;rations termin&#233;es : 5&#187;. D&#39;autres parties, chacune avec son nombre, n&#39;apparaissent que lorsque le nombre n&#39;est pas nul : &#171;ignor&#233;s&#187;, &#171;erreurs&#187;, &#171;op&#233;rations sans annulation&#187;, &#171;supprim&#233;s d&#233;finitivement, restauration impossible&#187; et, lorsque l&#39;ex&#233;cution s&#39;arr&#234;te plus t&#244;t, &#171;interrompu, pas de connexion au dossier - non d&#233;marr&#233;&#187; (trois connexions &#233;chou&#233;es de suite l&#39;arr&#234;tent) ou &#171;annul&#233; - non d&#233;marr&#233;&#187;.</p></details>
+<details id="list"><summary>La liste</summary><p>Colonnes : Fichier, &#201;tat et D&#233;tails. Les pires lignes viennent en premier : &#233;chou&#233;es, puis non d&#233;marr&#233;es, puis ignor&#233;es, puis termin&#233;es ; au sein d&#39;un groupe, les fichiers gardent l&#39;ordre de l&#39;ex&#233;cution. L&#39;info-bulle d&#39;une ligne montre le chemin complet. Les d&#233;tails donnent une raison claire pour un &#233;chec, le dossier de destination pour un fichier termin&#233;, &#171;enregistr&#233; sous&#187; et le nouveau nom lorsque l&#39;ancien &#233;tait pris, et &#171;Supprim&#233; d&#233;finitivement - annulation indisponible&#187; pour une suppression qui a contourn&#233; la Corbeille.</p></details>
+<details id="states"><summary>&#201;tats et raisons d&#39;un saut</summary><p>&#201;tats : &#171;pr&#234;t&#187;, &#171;Erreur&#187;, &#171;ignor&#233;&#187;, &#171;non d&#233;marr&#233;&#187;. Un fichier ignor&#233; dit pourquoi : &#171;d&#233;j&#224; dans ce dossier&#187;, &#171;le fichier n&#39;est plus sur le disque&#187;, &#171;les fichiers dans l&#39;archive ne sont pas modifi&#233;s&#187;, &#171;le m&#234;me nom existe d&#233;j&#224; parmi les fichiers s&#233;lectionn&#233;s&#187;, &#171;la ressource est en lecture seule&#187;, &#171;c&#39;est le m&#234;me fichier&#187; ou &#171;nom d&#233;j&#224; pris dans le dossier de destination&#187;. Un fichier non d&#233;marr&#233; indique &#171;lancement non effectu&#233; : op&#233;ration interrompue&#187;.</p></details>
+<details id="copy-show"><summary>Afficher dans l&#39;Explorateur de fichiers, Copier, Fermer</summary><p>&#171;Afficher dans l&#39;Explorateur de fichiers&#187; est actif lorsqu&#39;une ligne est s&#233;lectionn&#233;e ; il ouvre une fen&#234;tre de dossier avec le premier fichier s&#233;lectionn&#233; mis en &#233;vidence, ou le dossier si le fichier a &#233;t&#233; d&#233;plac&#233;. &#171;Copier&#187; (aussi Ctrl+C) place dans le presse-papiers les chemins complets des lignes s&#233;lectionn&#233;es, un par ligne, ou de toutes les lignes si aucune n&#39;est s&#233;lectionn&#233;e : un moyen rapide de transmettre la liste des fichiers probl&#233;matiques. &#171;Fermer&#187; termine le rapport.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

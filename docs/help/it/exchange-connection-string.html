@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection String - Fast Media Sorter</title>
+  <title>Stringa di connessione al server di scambio - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection String</h1>
+  <h1 id="title">Stringa di connessione al server di scambio</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection String.</p>
+    <p>Questa finestra crea la stringa di connessione con cui gli altri dispositivi trovano questo server di scambio e ne verificano il certificato. Si apre con &#171;Stringa di connessione e codice QR..&#187; nelle impostazioni del server di scambio o nel benvenuto del server al primo avvio. La finestra non modifica alcuna impostazione.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connection-string-light.png" alt="Connection String">
-    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Connection String">
+    <img class="shot light" src="exchange-connection-string-light.png" alt="Stringa di connessione al server di scambio">
+    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Stringa di connessione al server di scambio">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Controlla che il server abbia un certificato e che sia impostato l&#39;indirizzo per i client.</li><li>Apri la finestra: la stringa compare subito.</li><li>Se vuoi, digita il nome del server e un login; la stringa viene ricreata un attimo dopo che hai smesso di digitare.</li><li>Copia la stringa, salvala in un file, mostra il suo codice QR oppure copia il link di accesso.</li><li>Consegna il risultato all&#39;altra persona e passa la password dell&#39;account separatamente.</li><li>Premi &#171;Chiudi&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Quando il pulsante &#232; attivo</summary><p>Il pulsante &#171;Stringa di connessione e codice QR..&#187; &#232; attivo solo quando il server ha un certificato ed &#232; impostato l&#39;indirizzo per i client. Con l&#39;indirizzo vuoto il pulsante resta disattivato e il suggerimento sotto di esso dice &#171;Imposta prima l&#39;indirizzo per i client: senza non si pu&#242; creare la stringa di connessione.&#187; Dentro la finestra i pulsanti restano disattivati finch&#233; non c&#39;&#232; una stringa.</p></details>
+<details id="name-and-login"><summary>Nome del server e login</summary><p>&#171;Nome del server (facoltativo):&#187; accetta fino a 64 caratteri e viene salvato nella stringa come nome del server. &#171;Per questo login (facoltativo):&#187; accetta da 3 a 64 caratteri (a-z, 0-9, punto, trattino basso, trattino) e viene inserito nel modulo di accesso del dispositivo che usa la stringa. Una password non entra mai nella stringa.</p></details>
+<details id="connection-string"><summary>Stringa di connessione</summary><p>Il campo di sola lettura &#171;Stringa di connessione:&#187; mostra il risultato: l&#39;indirizzo per i client, l&#39;impronta del certificato e il nome e il login facoltativi. Il dispositivo che riceve la stringa si fida dell&#39;impronta in essa contenuta, quindi nessuno deve confrontarla a mano.</p></details>
+<details id="copy-and-save"><summary>Copia e salvataggio</summary><p>&#171;Copia la stringa&#187; la mette negli appunti come testo normale, perch&#233; non &#232; un segreto, e la riga sotto dice &#171;La stringa &#232; stata copiata.&#187; &#171;Salva in un file..&#187; scrive un file di testo .fmsexch (nome suggerito exchange-server.fmsexch) e mostra il suo percorso; l&#39;altro dispositivo lo legge con &#171;Apri file..&#187; nella sua finestra dell&#39;account di scambio. Se gli appunti sono occupati o il file non pu&#242; essere scritto, una riga lo segnala.</p></details>
+<details id="qr-and-link"><summary>Codice QR e link di accesso</summary><p>&#171;Mostra il codice QR&#187; apre un&#39;immagine della stessa stringa da scansionare; indica un server e non d&#224; accesso a nulla. &#171;Copia il link di accesso&#187; compare solo quando questo server offre un client web; copia un link per il browser che contiene la stessa stringa.</p></details>
+<details id="refusals"><summary>Se la stringa non pu&#242; essere creata</summary><p>Una riga nel colore di avviso indica la causa: il nome o il login &#232; fuori dai limiti; il server non ha un certificato (avvia il server una volta); oppure il server di scambio non ha risposto. Correggi la causa e la stringa viene ricreata. &#171;Chiudi&#187; termina la finestra; il nome e il login non vengono salvati.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

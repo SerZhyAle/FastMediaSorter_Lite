@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Ссылка для папки - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Ссылка для папки</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Передаёт одну опубликованную папку человеку, у которого нет учётной записи на сервере обмена: в виде QR-кода, текста ссылки и файла .fmscfg. Окно открывается после &#171;Создать ссылку..&#187; или &#171;Новая ссылка..&#187; в группе &#171;Мои папки в учётной записи обмена&#187;, а также кнопкой &#171;Показать QR / Код..&#187; в окне &#171;Дать доступ наружу..&#187; у папки. В текущей программе обе команды отключены, потому что доступ для людей вне учётной записи не предлагается; на этой странице описано, что показывает окно, когда ссылка есть.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Ссылка для папки">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Ссылка для папки">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Выберите опубликованную папку и нажмите &#171;Создать ссылку..&#187; (или &#171;Новая ссылка..&#187;, чтобы заменить прежнюю).</li><li>Прочтите примечание вверху окна.</li><li>Передайте ссылку одним из способов: &#171;Показать QR-код&#187;, &#171;Копировать текст ссылки&#187; или &#171;Сохранить файл .fmscfg..&#187;.</li><li>Нажмите &#171;Закрыть&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Когда окно доступно</summary><p>Окно есть только у ссылки, которую только что сделали или которая уже существует. Если программа не предлагает доступ людям вне учётной записи, &#171;Создать ссылку..&#187; и &#171;Новая ссылка..&#187; отключены, примечание под ними называет причину, а окно не открывается; &#171;Показать QR / Код..&#187; тоже отключена. &#171;Удалить ссылку&#187; остаётся доступной.</p></details>
+<details id="note"><summary>Примечание вверху</summary><p>&#171;Передайте человеку код или файл. В них есть доступ к папке: не публикуйте их.&#187; Кто держит QR-код, текст ссылки или файл, тот может открыть эту папку. Текст ссылки на экране не показывается.</p></details>
+<details id="qr-code"><summary>Показать QR-код</summary><p>Открывает картинку с QR-кодом в окне увеличения. Кнопка есть, только если QR-код удалось построить; если текст ссылки слишком велик для QR-кода, менеджер отвечает: &#171;Код слишком велик для QR - используйте файл.&#187;.</p></details>
+<details id="copy-text"><summary>Копировать текст ссылки</summary><p>Кладёт текст ссылки (он начинается с FMSSFTP2:) в буфер обмена защищённым способом: в историю буфера Windows и в облачный буфер он не попадает. Окно отвечает: &#171;Текст ссылки скопирован.&#187;. Кнопка есть, только если у ссылки есть текст.</p></details>
+<details id="save-file"><summary>Сохранить файл .fmscfg..</summary><p>Сохраняет файл настроек для этой одной папки; прочитать его может только владелец. Окно сообщает &#171;Файл сохранён:&#187; с путём или &#171;Не удалось сохранить файл.&#187;. Кнопка есть, только если файл удалось построить.</p></details>
+<details id="renew-or-remove"><summary>Новая ссылка и &#171;Удалить ссылку&#187;</summary><p>Обе команды находятся в группе, а не в этом окне, и обе сначала спрашивают, причём по умолчанию выбрано &#171;Нет&#187;: &#171;Новая ссылка..&#187; предупреждает, что все прежние QR-коды и файлы перестанут работать, &#171;Удалить ссылку&#187; - что перестанут работать все выданные QR-коды и файлы.</p></details>
+<details id="close"><summary>Закрыть</summary><p>Закрывает окно; текст ссылки, содержимое файла и картинка QR из него убираются.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

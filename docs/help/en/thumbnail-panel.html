@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File manager - Fast Media Sorter</title>
+  <title>Image panel - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File manager</h1>
+  <h1 id="title">Image panel</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>File manager: double-click or Enter on a folder opens it; browsing, selecting and closing the panel do not change what the main window shows</p>
+    <p>The image panel opens with F3 from the viewer and works in two modes chosen in the &#39;Panel mode&#39; box: Sorting, a thumbnail grid of the current folder, and File manager, a browser with places, folders and file commands. Looking at files, selecting them and closing the panel do not change what the main window shows.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="thumbnail-panel-light.png" alt="File manager">
-    <img class="shot dark" src="thumbnail-panel-dark.png" alt="File manager">
+    <img class="shot light" src="thumbnail-panel-light.png" alt="Image panel">
+    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Image panel">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Create ZIP: the archive includes all selected folders and files; deleting originals is off by default and requires verified archive publication Extract here: select one archive; folders and ordinary files are preserved, the archive is kept, extracted programs never run; Esc cancels the operation</p>
+    <ol class="order"><li>Press F3 in the viewer.</li><li>Choose the mode in &#39;Panel mode&#39;.</li><li>Select files: click, Shift+click for a range, Ctrl+click to toggle one, or drag a frame.</li><li>In the sorting mode press 0-9 to move the selection to a destination folder, or Shift with a top-row digit to copy it; Ctrl+Z undoes the last operation.</li><li>Double-click a file or press Enter to open it in the main window.</li><li>Press Esc to cancel a running operation, then Esc again to close the panel.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-<details id="zip"><summary>Create ZIP</summary><p>Create ZIP: the archive includes all selected folders and files; deleting originals is off by default and requires verified archive publication</p></details>
-<details id="extract"><summary>Extract here</summary><p>Extract here: select one archive; folders and ordinary files are preserved, the archive is kept, extracted programs never run; Esc cancels the operation</p></details>
-    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
+<details id="mode"><summary>Panel mode</summary><p>&#39;Panel mode&#39; switches between Sorting and File manager. The sorting mode shows thumbnails of the current folder for quick moving and copying; the file manager browses any folder and offers file commands.</p></details>
+<details id="toolbar"><summary>Size, layout and selection</summary><p>The slider (Size:) sets the size of the thumbnails, &#39;Tiles&#39; and &#39;List&#39; switch the layout (Ctrl+L), and the selection counter shows how many files are selected out of the total.</p></details>
+<details id="sorting"><summary>Selecting and sorting</summary><p>Click selects, Shift+click selects a range, Ctrl+click toggles one file and dragging draws a selection frame. Ctrl+A selects all, Ctrl+Shift+A clears the selection, Ctrl+I inverts it, Space marks a file, and the arrows, Home, End, PgUp and PgDn move around. The digits 0-9 move the selection to the destination folder of that key, Shift with a top-row digit copies it, Del deletes it and Ctrl+Z undoes the last operation.</p></details>
+<details id="navigation"><summary>Address and places</summary><p>In the file manager the address bar (Alt+D) takes a path: Enter goes there and Esc restores the current one. Back, Forward, Up and Refresh have Alt+Left, Alt+Right, Alt+Up and F5. The list Places on the left gives quick access to folders, resources and devices.</p></details>
+<details id="filter"><summary>Filter and hidden files</summary><p>The content filter chooses Media files, Media and documents or All files, and &#39;Hidden&#39; shows or hides hidden files. &#39;Settings..&#39; opens the Settings window on the File manager page, where the display mode, the filter, the places and the remembered sort order are set.</p></details>
+<details id="files"><summary>File commands</summary><p>Ctrl+C, Ctrl+X and Ctrl+V copy, cut and paste, F2 renames, Ctrl+Shift+N creates a folder, Del and Shift+Del delete the selected items and Alt+Enter shows the properties. Copying or moving between resources goes through this PC.</p></details>
+<details id="zip"><summary>Create ZIP</summary><p>&#39;Create ZIP&#39; packs all selected folders and files into one archive. Deleting the originals is off by default and is allowed only after the archive is verified and published.</p></details>
+<details id="extract"><summary>Extract here</summary><p>&#39;Extract here&#39; works on one selected archive: folders and ordinary files are kept, the original archive stays in place and extracted programs are never run. Esc cancels the operation.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

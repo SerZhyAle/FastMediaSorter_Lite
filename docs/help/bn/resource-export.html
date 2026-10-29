@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>রিসোর্স রপ্তানি - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">রিসোর্স রপ্তানি</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>একটি SFTP সার্ভারের সেটিংস এমনভাবে তৈরি করে যাতে অন্য কম্পিউটার বা ফোন সেগুলো আমদানি করতে পারে। এটি রিসোর্স তালিকার আরও মেনুর এক্সপোর্ট.. কমান্ড থেকে খোলে এবং এর জন্য একটি নির্বাচিত রিসোর্স লাগে; Share Manager-এর শেয়ার করা ফোল্ডার এর বদলে Share Manager থেকে এক্সপোর্ট করা হয়।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="রিসোর্স রপ্তানি">
+    <img class="shot dark" src="resource-export-dark.png" alt="রিসোর্স রপ্তানি">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>রিসোর্সের নামের নিচের সতর্কবার্তা পড়ুন।</li><li>পাসওয়ার্ড ছাড়া (ডিফল্ট) বা পাসওয়ার্ডসহ বেছে নিন।</li><li>ফাইলে সংরক্ষণ করুন.. বোতাম চাপুন, অথবা সেটিংস টেক্সট বা ছোট কোড হিসেবে কপি করুন।</li><li>ফলটি শুধু তার মালিককে দিন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>সতর্কবার্তা</summary><p>নামের নিচের লাইনটি বলে যে ফাইলে সার্ভারের অ্যাক্সেস কী আছে: এটি শুধু তার মালিককে দিন এবং কখনও শেয়ার করা ডিস্কে রেখে দেবেন না। এটি ফাইল, কপি করা টেক্সট ও কোড, তিনটির ক্ষেত্রেই প্রযোজ্য।</p></details>
+<details id="password-choice"><summary>পাসওয়ার্ড ছাড়া বা সহ</summary><p>পাসওয়ার্ড ছাড়া শুরুতে নির্বাচিত থাকে। পাসওয়ার্ডসহ কেবল তখনই সক্রিয় হয় যখন সংরক্ষিত পাসওয়ার্ড ফেরত পড়া যায়; নইলে এই ইঙ্গিত দেখায়: পাসওয়ার্ড সংরক্ষিত নেই - ফাইলটি এমনি ছাড়া হবে। পাসওয়ার্ডটি এক্সপোর্টের জন্য শুধু মেমরিতে ডিক্রিপ্ট হয় এবং আর কোথাও যায় না।</p></details>
+<details id="save-copy"><summary>সংরক্ষণ, টেক্সট কপি, কোড কপি</summary><p>ফাইলে সংরক্ষণ করুন.. সেভ ডায়ালগের মাধ্যমে একটি .fmscfg ফাইল লেখে; লেখক FAT বা exFAT ডিস্ক, নেটওয়ার্ক ডিস্ক এবং যেসব ফোল্ডার অন্য ব্যবহারকারীরা বদলাতে পারে সেগুলো প্রত্যাখ্যান করে, এবং কখনও অর্ধেক লেখা ফাইল রেখে যায় না। টেক্সট কপি করুন সেটিংস নথি ক্লিপবোর্ডে রাখে আর কোড কপি করুন একই বিষয়বস্তুর একটি ছোট কোড। দুটোই গোপনীয়তা চিহ্নসহ কপি হয় (ক্লিপবোর্ড ইতিহাস নেই, ক্লাউড সিঙ্ক নেই)। অবস্থা লাইন ফল দেখায়।</p></details>
+<details id="requirements"><summary>কী এক্সপোর্ট করা যায়</summary><p>শুধু সেই SFTP সার্ভার যার কী ভিউয়ার আগে থেকেই মনে রেখেছে। উইন্ডো সব ক্ষেত্রেই খোলে, আর বোতাম চাপলে অবস্থা লাইনে প্রত্যাখ্যান দেখা যায়: নেটওয়ার্ক ফোল্ডার (SMB) এই ফাইল দিয়ে বর্ণনা করা যায় না; সার্ভারের কী মনে রাখা হয়নি (রিসোর্সটি একবার খুলে কী নিশ্চিত করুন); রিসোর্সের হস্তান্তর করার মতো কোনো ঠিকানা নেই; ফোল্ডারটি এমনভাবে লেখা যা ফাইল গ্রহণ করে না (এটি সম্পাদনা করুন.. দিয়ে ঠিক করুন)।</p></details>
+    <p><a href="settings.html">সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

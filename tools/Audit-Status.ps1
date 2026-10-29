@@ -67,6 +67,15 @@ if ($manifest.baseline.commit -and $manifest.baseline.commit -ne 'none') {
 
 $problems = [System.Collections.Generic.List[string]]::new()
 
+function Test-InlineEvidence([string]$audit) {
+    $build = $audit -match 'build\.ps1[^\n]*exit\s*(code\s*)?0\b'
+    $tests = $audit -match 'Run-AllTests\.ps1[^\n]*exit\s*(code\s*)?0\b'
+    $releaseBuild = $audit -match '(?im)^\s*[-*]?\s*RELEASE\s*:[^\r\n]*tools[/\\]Release\.ps1[^\r\n]*Build-OfflineRelease\.ps1'
+    $releaseTests = $audit -match '(?im)^\s*[-*]?\s*RELEASE\s*:[^\r\n]*tools[/\\]Release\.ps1[^\r\n]*Run-AllTests\.ps1'
+    $static = $audit -match '(?im)^\s*[-*]?\s*(FAST|STATIC)\s*:[^\r\n]+exit\s*(code\s*)?0\b'
+    return ($build -or $releaseBuild) -and ($tests -or $releaseTests) -and (($build -and $tests) -or $static)
+}
+
 # --- coverage ------------------------------------------------------------------
 $map = Read-ConcernMap (Join-Path $Root $manifest.concernMap)
 $files = @(Get-AuditFiles $Root $map -IncludeClassB:([bool]$manifest.includeClassB))
@@ -119,11 +128,8 @@ foreach ($s in $manifest.slices) {
         }
     }
     if ($hasInline) {
-        $la = $r.LastAudit
-        $build = $la -match 'build\.ps1[^\n]*exit\s*(code\s*)?0\b'
-        $tests = $la -match 'Run-AllTests\.ps1[^\n]*exit\s*(code\s*)?0\b'
-        if ($state -eq 'Done' -and -not ($build -and $tests)) {
-            $problems.Add("$($s.name): inline fixes without quoted evidence - '## Last Audit' must quote build.ps1 and Run-AllTests.ps1 with exit 0")
+        if ($state -eq 'Done' -and -not (Test-InlineEvidence $r.LastAudit)) {
+            $problems.Add("$($s.name): inline fixes need build and test exit 0, or FAST/STATIC exit 0 plus RELEASE entries naming tools/Release.ps1 and each deferred build and test")
         }
     }
     $rows.Add([pscustomobject]@{ Slice = $s.name; State = $state; Files = $s.fileCount; Lines = $s.lines; Risk = $s.risk; Findings = $r.Findings.Count })

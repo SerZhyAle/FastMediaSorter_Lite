@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect Phone Code Intake - Fast Media Sorter</title>
+  <title>Il codice del telefono - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Connect Phone Code Intake</h1>
+  <h1 id="title">Il codice del telefono</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect Phone Code Intake.</p>
+    <p>Riceve un codice di connessione generato dall&#39;app del telefono e lo passa a Fast Media Sorter, che aggiunge la cartella del telefono al proprio elenco delle risorse su questo computer. Si apre dal pulsante &#171;Codice telefono..&#187; della finestra principale di Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="phone-code-intake-light.png" alt="Connect Phone Code Intake">
-    <img class="shot dark" src="phone-code-intake-dark.png" alt="Connect Phone Code Intake">
+    <img class="shot light" src="phone-code-intake-light.png" alt="Il codice del telefono">
+    <img class="shot dark" src="phone-code-intake-dark.png" alt="Il codice del telefono">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Porta il codice nella finestra in uno di quattro modi: digitalo o incollalo nella casella, premi &#171;Apri file..&#187;, premi &#171;Dagli appunti..&#187; oppure premi &#171;Scansiona con la fotocamera..&#187;.</li><li>Premi &#171;Trasferisci&#187;.</li><li>Conferma l&#39;aggiunta della cartella nella finestra di Fast Media Sorter che compare.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="code-field"><summary>Codice di connessione</summary><p>Una casella a riga singola che mostra dei puntini al posto dei caratteri, perch&#233; il codice &#232; un segreto; non viene mai scritto in un registro. Se premi &#171;Trasferisci&#187; con la casella vuota, ti viene chiesto di digitare il codice, incollarlo oppure aprire un file o uno screenshot.</p></details>
+<details id="doors"><summary>File, appunti e fotocamera</summary><p>&#171;Apri file..&#187; legge file .fmscfg, .json e .txt e immagini QR (.png, .jpg, .jpeg, .bmp, .webp); un file si pu&#242; anche trascinare sulla finestra. &#171;Dagli appunti..&#187; legge il codice dagli appunti. &#171;Scansiona con la fotocamera..&#187; apre la finestra della fotocamera e il testo scansionato viene trattato come se fosse stato incollato.</p></details>
+<details id="hand-over"><summary>Trasferisci</summary><p>Il codice viene controllato e poi inviato a Fast Media Sorter in esecuzione, la cui finestra di importazione pone comunque le sue consuete domande. In caso di successo lo stato riporta &#171;Il codice &#232; stato trasferito: confermare l&#39;aggiunta nella finestra di Fast Media Sorter.&#187; e questa finestra si chiude. Se Fast Media Sorter non viene trovato, &#232; una versione precedente o non risponde, il codice viene messo negli appunti con i marcatori di riservatezza e la riga di stato invita a incollarlo con &#171;Importa dagli appunti&#187; nel pannello delle risorse.</p></details>
+<details id="problems"><summary>Messaggi nella riga di stato</summary><p>Un documento che non &#232; un codice di connessione n&#233; un file di impostazioni delle risorse viene segnalato come illeggibile. Un file creato da una versione pi&#249; recente chiede di aggiornare Fast Media Sorter. Se un altro programma tiene occupati gli appunti, lo stato lo dice.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Main Window - Fast Media Sorter</title>
+  <title>Share Manager - Fast Media Sorter &amp; Sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Main Window</h1>
+  <h1 id="title">Share Manager - Fast Media Sorter &amp; Sharing</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Main Window.</p>
+    <p>La fen&#234;tre principale de Share Manager, le service local de partage et de planification. Elle liste les dossiers que ce PC partage avec un t&#233;l&#233;phone par SFTP, d&#233;marre et arr&#234;te le partage, fournit le code d&#39;acc&#232;s et montre comment le t&#233;l&#233;phone peut joindre le PC. Les op&#233;rations planifi&#233;es et le compte d&#39;&#233;change ont leurs pages dans les param&#232;tres du gestionnaire. Elle s&#39;ouvre depuis la visionneuse ou depuis l&#39;ic&#244;ne de la zone de notification ; fermer la fen&#234;tre laisse l&#39;application dans la zone de notification.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-main-light.png" alt="Share Manager Main Window">
-    <img class="shot dark" src="share-main-dark.png" alt="Share Manager Main Window">
+    <img class="shot light" src="share-main-light.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
+    <img class="shot dark" src="share-main-dark.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Appuyez sur &#171;Ajouter..&#187; et choisissez &#171;Dossier..&#187; pour mettre un dossier dans la liste.</li><li>Cochez le dossier : seuls les dossiers coch&#233;s sont servis.</li><li>Appuyez sur &#171;D&#233;marrer le partage&#187; (il faut au moins un dossier coch&#233;).</li><li>Appuyez sur &#171;Partager&#187; pour obtenir le code QR ou le fichier .fmscfg destin&#233; au t&#233;l&#233;phone.</li><li>Pour un acc&#232;s depuis l&#39;ext&#233;rieur de votre r&#233;seau domestique, ouvrez le groupe &#171;Acc&#232;s depuis internet&#187; et utilisez ses deux boutons.</li><li>Appuyez sur &#171;Arr&#234;ter le partage&#187; quand vous avez termin&#233;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="top-row"><summary>Rang&#233;e du haut</summary><p>&#171;Param&#232;tres&#187; ouvre les param&#232;tres du gestionnaire. &#171;D&#233;marrer le partage&#187; devient &#171;Arr&#234;ter le partage&#187; tant que le serveur fonctionne. &#171;Partager&#187; ouvre l&#39;assistant du code d&#39;acc&#232;s et ne fonctionne que lorsque le partage est actif ; sinon l&#39;indication demande de d&#233;marrer d&#39;abord le serveur. &#171;Tout d&#233;velopper&#187; et &#171;Tout r&#233;duire&#187; ouvrent ou ferment les groupes en dessous.</p></details>
+<details id="add-menu"><summary>Menu Ajouter..</summary><p>&#171;Dossier..&#187; ajoute un dossier par le s&#233;lecteur habituel ; &#171;+ Actuel&#187; (avec le nom du dossier) n&#39;appara&#238;t que si le gestionnaire a &#233;t&#233; ouvert depuis un dossier de la visionneuse, et ajoute pr&#233;cis&#233;ment ce dossier. &#171;Disques .fdd..&#187; ouvre la liste des disques FileDO et &#171;Assistant d&#39;ajout de ressource..&#187; guide pas &#224; pas l&#39;ajout d&#39;une nouvelle ressource.</p></details>
+<details id="list-buttons"><summary>Modifier, Retirer, Code de t&#233;l&#233;phone.. et Presse-papiers</summary><p>&#171;Modifier&#187; ouvre les options du dossier s&#233;lectionn&#233;. &#171;Retirer&#187; supprime la ligne s&#233;lectionn&#233;e apr&#232;s une question : les r&#233;glages propres au dossier (code PIN, filtres, destination) disparaissent avec elle et ne peuvent pas &#234;tre r&#233;tablis. &#171;Code de t&#233;l&#233;phone..&#187; ouvre la fen&#234;tre qui re&#231;oit un code de connexion du t&#233;l&#233;phone. Le menu &#171;Presse-papiers&#187; (&#171;Envoyer le presse-papiers au serveur&#187;, &#171;R&#233;cup&#233;rer le presse-papiers du serveur&#187;) n&#39;est affich&#233; que lorsque l&#39;&#233;change du presse-papiers est disponible.</p></details>
+<details id="folder-list"><summary>Ressources partag&#233;es</summary><p>Une ligne par ressource, avec une case &#224; cocher et les colonnes Nom, Type et Dossier. Une ligne coch&#233;e est servie aux t&#233;l&#233;phones ; une liste vide affiche &#171;Ajoutez votre premi&#232;re ressource..&#187;. Si vous d&#233;cochez le dernier dossier coch&#233;, la fen&#234;tre demande s&#39;il faut arr&#234;ter le partage, car les t&#233;l&#233;phones connect&#233;s seront d&#233;connect&#233;s. D&#233;marrer le partage sans aucun dossier coch&#233; affiche seulement l&#39;indication &#171;Ajoutez d&#39;abord un dossier et cochez-le.&#187;</p></details>
+<details id="phone-access"><summary>Acc&#232;s du t&#233;l&#233;phone</summary><p>Les donn&#233;es de connexion dont a besoin un t&#233;l&#233;phone ou n&#39;importe quel client SFTP : l&#39;adresse par internet et &#224; la maison (Wi-Fi), IPv6, la cl&#233; de l&#39;h&#244;te, l&#39;identifiant et le mot de passe. &#171;Afficher le mot de passe&#187; le r&#233;v&#232;le et &#171;Masquer le mot de passe&#187; le masque de nouveau. Le texte sous le groupe explique si le t&#233;l&#233;phone joint le PC seulement &#224; la maison ou aussi de l&#39;ext&#233;rieur.</p></details>
+<details id="internet-access"><summary>Acc&#232;s depuis internet</summary><p>&#171;Tester l&#39;acc&#232;s depuis internet&#187; ouvre la fen&#234;tre du test d&#39;acc&#232;s depuis internet. &#171;Comment configurer l&#39;acc&#232;s internet&#187; ouvre le guide du routeur. Le lien &#171;Routeur : ..&#187; ouvre la page propre du routeur ; si aucun n&#39;a &#233;t&#233; trouv&#233;, il indique &#171;Routeur : inconnu&#187;. Le groupe comporte un avertissement : quiconque conna&#238;t l&#39;adresse, l&#39;identifiant et le mot de passe peut atteindre tous les dossiers partag&#233;s ; ne publiez donc ni le code QR ni le fichier .fmscfg, et d&#233;sactivez le partage quand vous avez termin&#233;.</p></details>
+<details id="statistics"><summary>Statistiques</summary><p>Sous les groupes, un lien &#171;Statistiques&#187; se trouve &#224; c&#244;t&#233; d&#39;un court r&#233;sum&#233; tel que &#171;N connexions, M fichiers&#187;. Le lien ouvre la fen&#234;tre &#201;tat du partage avec les compteurs complets.</p></details>
+<details id="server-features-off"><summary>Quand les fonctions serveur sont d&#233;sactiv&#233;es</summary><p>Tant que le composant serveur n&#39;est pas activ&#233;, la fen&#234;tre affiche &#171;Les fonctions serveur sont d&#233;sactiv&#233;es&#187; et le bouton &#171;Activer les fonctions serveur..&#187;, qui ouvre la fen&#234;tre &#171;Activer le partage de dossiers&#187;. Si le composant de partage manque dans l&#39;installation, la fen&#234;tre le signale et demande de r&#233;installer l&#39;application.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

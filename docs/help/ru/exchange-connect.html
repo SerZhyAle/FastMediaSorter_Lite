@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Добавить с сервера обмена - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Добавить с сервера обмена</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Подключает этот компьютер к учётной записи на сервере обмена, чтобы в списке ресурсов появились папки всех устройств этой учётной записи. Окно открывается кнопкой &#171;Добавить с сервера обмена..&#187; в разделе &#171;Мои устройства&#187; списка ресурсов, а также когда вы перетаскиваете на просмотрщик строку подключения или файл либо набираете строку в поле папки.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Добавить с сервера обмена">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Добавить с сервера обмена">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Вставьте строку подключения, которую передал оператор сервера, введите адрес в виде хост:порт или нажмите &#171;Открыть файл..&#187;.</li><li>Проверьте строку &#171;Пароль будет отправлен на: ..&#187;: только на этот адрес уйдёт пароль.</li><li>Введите логин и пароль.</li><li>Нажмите &#171;Подключиться&#187;.</li><li>Если программа спросит о сертификате сервера, сверьте отпечаток с тем, который назвал оператор.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Строка подключения или адрес</summary><p>Верхнее поле принимает строку подключения (она начинается с FMSEXCH1:) или адрес вида хост:порт. &#171;Вставить&#187; заполняет его из буфера обмена - из текста или из картинки с QR-кодом, а &#171;Открыть файл..&#187; читает файл .fmsexch или картинку с QR-кодом. Вставка лишь заполняет форму: ничего не отправляется, пока вы не нажмёте &#171;Подключиться&#187;. Строка под полем показывает, куда уйдёт пароль; веб-адрес, код общей папки или повреждённая строка отклоняются там понятными словами.</p></details>
+<details id="account"><summary>Логин и пароль</summary><p>&#171;Логин:&#187; заполняется из строки, если он в ней есть. &#171;Пароль:&#187; скрыт, &#171;Показать пароль&#187; его показывает. При нажатии &#171;Подключиться&#187; поля пароля очищаются раньше, чем с компьютера уйдёт первый байт. Строка состояния показывает ход подключения и при неудаче причину: логин или пароль не подошли, слишком много попыток, сервер не отвечает.</p></details>
+<details id="register"><summary>Строка-приглашение</summary><p>Строка-приглашение уже называет сервер и переключает окно на создание учётной записи: появляются &#171;Пароль ещё раз:&#187; и пояснение о правиле для пароля (не короче 10 символов, с заглавной и строчной латинскими буквами и цифрой), а кнопка называется &#171;Создать учётную запись&#187;. Последнее слово по правилу за сервером.</p></details>
+<details id="trust"><summary>Сертификат сервера</summary><p>Если сертификат неизвестен, вопрос показывает его отпечаток и спрашивает, доверять ли серверу и запомнить ли его; ответ по умолчанию &#171;Нет&#187;. Если строка называет один отпечаток, а сервер предъявляет другой, показываются оба, ничего не запоминается и пароль не отправляется.</p></details>
+<details id="sign-in-again"><summary>Повторный вход</summary><p>Когда окно открыто для существующей записи сервера, чтобы войти заново, адрес и логин показываются только для чтения, а опорой доверия служит отпечаток, который эта запись уже помнит.</p></details>
+    <p><a href="settings.html">Настройки</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

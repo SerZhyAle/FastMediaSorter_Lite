@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Enable Sharing - Fast Media Sorter</title>
+  <title>Activar el uso compartido de carpetas - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Enable Sharing</h1>
+  <h1 id="title">Activar el uso compartido de carpetas</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Enable Sharing.</p>
+    <p>Pide permiso para instalar la parte de servidor del uso compartido: un peque&#241;o servidor SFTP en segundo plano y una excepci&#243;n del Firewall de Windows. Se abre desde el bot&#243;n &#171;Activar las funciones de servidor..&#187; de la ventana principal y desde los asistentes, y necesita permisos de administrador una sola vez.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-enable-light.png" alt="Enable Sharing">
-    <img class="shot dark" src="share-enable-dark.png" alt="Enable Sharing">
+    <img class="shot light" src="share-enable-light.png" alt="Activar el uso compartido de carpetas">
+    <img class="shot dark" src="share-enable-dark.png" alt="Activar el uso compartido de carpetas">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lee la explicaci&#243;n.</li><li>Pulsa &#171;Instalar las funciones de servidor..&#187;.</li><li>Confirma la solicitud de administrador de Windows.</li><li>Espera a la l&#237;nea de resultado; si todo va bien, la ventana indica que el uso compartido de carpetas est&#225; activado.</li><li>Pulsa &#171;Cancelar&#187; para salir sin cambios.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-it-does"><summary>Qu&#233; hace</summary><p>Compartir carpetas con un tel&#233;fono Android requiere un peque&#241;o servidor SFTP en segundo plano y un permiso del Firewall de Windows. Mientras el uso compartido est&#225; activado, las carpetas elegidas se pueden leer por la red, y las abiertas para escritura tambi&#233;n se pueden escribir. Si no est&#225; marcada la opci&#243;n de solo red local, el programa tambi&#233;n pide al router que abra un puerto (UPnP/NAT-PMP) y comprueba la direcci&#243;n mediante un servicio externo.</p></details>
+<details id="install-button"><summary>Instalar las funciones de servidor..</summary><p>Inicia la configuraci&#243;n y la solicitud de administrador de Windows. La l&#237;nea de estado muestra &#171;Configurando.. confirma la solicitud de administrador.&#187; y despu&#233;s el resultado. El bot&#243;n solo est&#225; disponible cuando el componente de servidor est&#225; junto a la aplicaci&#243;n; si no, la ventana pide reinstalarla.</p></details>
+<details id="outcomes"><summary>Resultados</summary><p>&#171;Listo. El uso compartido de carpetas est&#225; activado.&#187;; &#171;Uso compartido no activado: no se concedieron permisos de administrador.&#187; cuando se rechaza la solicitud (no cambia nada y puedes reintentarlo); o un fallo del firewall, ante el cual la ventana pide volver a intentarlo y enviar el registro desde el men&#250; del icono de la bandeja.</p></details>
+<details id="admin-rights"><summary>Permisos de administrador y c&#243;mo retirarlos</summary><p>El enlace explica para qu&#233; se usan los permisos. Para deshacerlo, usa &#171;Desactivar las funciones de servidor..&#187; en los ajustes del gestor: el uso compartido se detiene, los tel&#233;fonos conectados se desconectan y se elimina el permiso del firewall. La lista de carpetas y la contrase&#241;a se conservan, y todo se puede volver a activar.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

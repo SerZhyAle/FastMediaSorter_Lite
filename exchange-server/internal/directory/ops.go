@@ -130,7 +130,7 @@ func (d *Dir) offlineLocked(t *tx, h *hub, s *devState) {
 		if b.device != s.info.ID {
 			continue
 		}
-		d.endBroadcastLocked(t, h, b)
+		d.endBroadcastLocked(t, h, b, EndOffline)
 	}
 }
 
@@ -151,11 +151,12 @@ func (d *Dir) dropLiveLocked(h *hub, r *resState) {
 	r.updated = d.now()
 }
 
-func (d *Dir) endBroadcastLocked(t *tx, h *hub, b *broState) {
+func (d *Dir) endBroadcastLocked(t *tx, h *hub, b *broState, why string) {
 	d.dropGrantPayloadsLocked(h.login, b.id)
 	delete(h.broadcasts, b.id)
 	delete(d.broIdx, b.id)
 	t.removeBroadcast(b.id)
+	t.ended = append(t.ended, endedBro{b.id, b.device, why})
 	id, dev := b.id, b.device
 	t.afterUnlock(func() {
 		if t.hooks.BroadcastGone != nil {
@@ -618,6 +619,12 @@ func (d *Dir) BroadcastUpdateWith(account, deviceID string, raw json.RawMessage,
 
 // BroadcastEnd ends a live broadcast of the calling device; anything else is ignored.
 func (d *Dir) BroadcastEnd(account, deviceID, broadcastID string) {
+	d.BroadcastEndWhy(account, deviceID, broadcastID, EndBroadcastEnd)
+}
+
+// BroadcastEndWhy is BroadcastEnd with the reason the log records (ticket 271): EndBroadcastEnd for the
+// envelope, EndUploadEnd for the relay upload's zero-length chunk.
+func (d *Dir) BroadcastEndWhy(account, deviceID, broadcastID, why string) {
 	d.mu.Lock()
 	h := d.hubs[account]
 	var b *broState
@@ -629,7 +636,7 @@ func (d *Dir) BroadcastEnd(account, deviceID, broadcastID string) {
 		return
 	}
 	t := d.begin(h)
-	d.endBroadcastLocked(t, h, b)
+	d.endBroadcastLocked(t, h, b, why)
 	t.finish()
 }
 
@@ -666,7 +673,7 @@ func (d *Dir) removeDeviceLocked(t *tx, h *hub, s *devState) {
 	}
 	for _, b := range sortedBro(h) {
 		if b.device == s.info.ID {
-			d.endBroadcastLocked(t, h, b)
+			d.endBroadcastLocked(t, h, b, EndRevoked)
 		}
 	}
 	delete(h.devices, s.info.ID)
@@ -1045,7 +1052,7 @@ func (d *Dir) EndBroadcast(account, broadcastID string) error {
 		return ErrNotFound
 	}
 	t := d.begin(h)
-	d.endBroadcastLocked(t, h, b)
+	d.endBroadcastLocked(t, h, b, EndAdmin)
 	t.finish()
 	return nil
 }
@@ -1103,4 +1110,3 @@ func (d *Dir) UnpublishResource(account, resourceID string) error {
 	t.finish()
 	return nil
 }
-

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>Трансляції для StreamsPlayer - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">Трансляції для StreamsPlayer</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>Керує HTTP-трансляціями медіафайлів і папок, які цей ПК пропонує застосунку StreamsPlayer. Вікно відкривається кнопкою або пунктом меню додавання &#171;Трансляції..&#187; у головному вікні Share Manager; вони з&#39;являються лише тоді, коли служба роздачі повідомляє про підтримку трансляцій. Запуск зі шляхом до файла чи папки відкриває вікно й одразу показує діалог &#171;Створити трансляцію&#187; для цього шляху.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="Трансляції для StreamsPlayer">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="Трансляції для StreamsPlayer">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Увімкніть &#171;Увімкнути HTTP-шлюз для трансляцій&#187; або просто створіть трансляцію - шлюз увімкнеться сам.</li><li>Натисніть &#171;Створити трансляцію..&#187;, виберіть медіафайл, задайте назву, термін дії та варіант &#171;Також через інтернет&#187; і натисніть &#171;Транслювати&#187;.</li><li>Посилання копіюється в буфер обміну.</li><li>Виберіть рядок і натисніть &#171;Копіювати посилання&#187;, &#171;Зберегти .spres..&#187; або &#171;Показати QR&#187;, щоб передати трансляцію на пристрій.</li><li>Коли трансляція більше не потрібна, натисніть &#171;Відкликати&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>Перемикач шлюзу</summary><p>Прапорець вмикає й вимикає HTTP-шлюз. Рядок під ним повідомляє &#171;Шлюз трансляцій вимкнено&#187; або &#171;Шлюз трансляцій увімкнено (порт N)&#187;. Поки шлюз працює, цей ПК відповідає на HTTP-запити до файлів трансляцій. Якщо шлюз не запускається (порт, брандмауер), прапорець повертається до справжнього стану, а причина з&#39;являється в одному червоному рядку під ним; відмова ніколи не відкриває діалог.</p></details>
+<details id="broadcast-list"><summary>Список трансляцій</summary><p>Колонки: Назва, Тип (Файл або Папка з кількістю елементів), Створено, Термін дії (дата, &#171;До відкликання&#187; або &#171;Термін минув&#187;), Запитів і Токен, де видно лише перші шість символів. Список оновлюється сам кожні 5 секунд. Подвійний клік по рядку копіює його посилання.</p></details>
+<details id="create"><summary>Створити трансляцію..</summary><p>Запитує медіафайл і відкриває діалог &#171;Створити трансляцію&#187;. Після підтвердження шлюз за потреби вмикається, трансляція створюється, а її посилання копіюється в буфер обміну з позначками конфіденційності; повідомлення підтверджує копіювання.</p></details>
+<details id="share-link"><summary>Копіювати посилання, Зберегти .spres.. і Показати QR</summary><p>Ці три кнопки працюють із вибраним рядком і потребують, щоб шлюз працював і мав порт. Посилання будується з поточних адрес цього ПК; вибір &#171;Також через інтернет&#187;, зроблений під час створення, запам&#39;ятовується для кожної трансляції. &#171;Зберегти .spres..&#187; записує файл ресурсу StreamsPlayer, а &#171;Показати QR&#187; відкриває код для сканування.</p></details>
+<details id="refresh-revoke"><summary>Оновити й Відкликати</summary><p>&#171;Оновити&#187; доступне лише для трансляції папки й просить службу оновити її; повідомлення підтверджує результат. &#171;Відкликати&#187; працює з будь-яким рядком і спершу питає: &#171;Відкликати трансляцію X? Посилання перестане працювати негайно.&#187; Відкликану трансляцію відновити не можна - створіть нову.</p></details>
+<details id="problems"><summary>Коли сторінку вимкнено</summary><p>Якщо служба роздачі не відповідає або не підтримує трансляції, сторінка сама вимикається на місці, а червоний рядок пояснює причину: наприклад, ця версія служби трансляцій застаріла, або дію не вдалося виконати й подробиці записано в журнал.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

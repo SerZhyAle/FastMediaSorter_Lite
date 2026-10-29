@@ -1,5 +1,8 @@
 # Автоматическое тестирование (три программы пакета)
 
+Between releases, only measured checks of at most 5 seconds run; see `.claude/rules/build-release.md`.
+The full multi-targeted suite runs in the release preflight or when the owner explicitly requests it.
+
 Дата аудита: 2026-07-13. Обновлено и **перезапущено 2026-07-16** под раскладку «два
 exe»: набор вьювера теперь **мультитаргетный** и гоняется под ОБОИМИ рантаймами
 пакета. Все наборы зелёные, `Run-AllTests.ps1` exit 0:
@@ -33,8 +36,8 @@ exe»: набор вьювера теперь **мультитаргетный**
 > `Common_Module`, пакет ImageSharp 2.1.8) и **`DefineConstants=NETFRAMEWORK=True`**:
 > SDK-проект под net48 эту константу сам не определяет - ровно та же грабля, что и в
 > `src/FastMediaSorter.vbproj` (см. CLAUDE.md «Two builds, one source tree»).
-> **Вывод: `Run-AllTests.ps1` надо гонять после правки любого шва** - линкующие
-> проекты ломаются молча, обычная сборка приложения при этом зелёная.
+> **Release evidence:** `Run-AllTests.ps1` covers both targets after a seam change; a regular application
+> build alone does not prove that linked test projects compile.
 
 Пакет Fast Media Sorter & Sharing for Windows состоит из трёх отдельных программ, у каждой свой рантайм
 и своя тестовая система. Один оркестратор запускает всё сразу:

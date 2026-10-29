@@ -99,7 +99,33 @@ type Hooks struct {
 	// GrantTargetGone: a resource was withdrawn or a broadcast ended. The grants of that target end with
 	// it (20 item BD); the host takes them back. Not called when a producer merely goes offline.
 	GrantTargetGone func(account, target string, broadcast bool)
+	// BroadcastRemoved: a broadcast left the directory, with why and how its removal was fanned out
+	// (ticket 271). Called once per broadcast, after the lock, after BroadcastGone; it is for the log.
+	BroadcastRemoved func(account string, r BroadcastRemoval)
 }
+
+// Why a broadcast left the directory (ticket 271): the reason the log carries next to the removal.
+const (
+	EndBroadcastEnd = "broadcast-end" // the producer sent `broadcast-end`
+	EndUploadEnd    = "upload-end"    // the relay upload sent its zero-length chunk
+	EndOffline      = "offline"       // the producer's control stream ended (drop, missed keepalive window, bye)
+	EndRevoked      = "revoked"       // the producing device was revoked or removed
+	EndAdmin        = "admin"         // the operator ended it (spec 246)
+	EndWithdrawn    = "withdrawn"     // the account became a guest (19 item AO)
+)
+
+// BroadcastRemoval is one broadcast's removal as the transaction that carried it pushed it. The counts are
+// of control streams: Subscribers of the owner account when the `changed` was built, Queued of them that
+// took it, Dropped that could not (closed, or a full queue: they relist on reconnect); GuestQueued the
+// subscribers of guest accounts that were handed this broadcast's removal in the same commit.
+type BroadcastRemoval struct {
+	BroadcastID, DeviceID, Why   string
+	Revision                     int64
+	Subscribers, Queued, Dropped int
+	GuestQueued                  int
+}
+
+type endedBro struct{ id, device, why string }
 
 // Caps are the directory's working numbers until rung 2 freezes them (ticket 163 question 2).
 type Caps struct {
@@ -336,20 +362,23 @@ func stored(r *wire.Record) *wire.Record {
 // --- a transaction: what one handler call changed, pushed as ONE changed with ONE revision ---
 
 type tx struct {
-	d       *Dir
-	h       *hub
-	upDev   map[string]json.RawMessage
-	upRes   map[string]json.RawMessage
-	upBro   map[string]json.RawMessage
-	rmDev   map[string]bool
-	rmRes   map[string]bool
-	rmBro   map[string]bool
-	upGrant map[string]json.RawMessage // a member's grants added or changed (20 item BD, 27 item DJ)
-	rmGrant map[string]bool            // a member's grants taken back
-	devSet  bool                       // the set of devices changed (enrolled or removed): the givers of a guest are told
-	after   []func()                   // run after the lock is released, in order
-	hooks   Hooks                      // the hooks as they were when the transaction began
-	resDirt bool
+	d           *Dir
+	h           *hub
+	upDev       map[string]json.RawMessage
+	upRes       map[string]json.RawMessage
+	upBro       map[string]json.RawMessage
+	rmDev       map[string]bool
+	rmRes       map[string]bool
+	rmBro       map[string]bool
+	upGrant     map[string]json.RawMessage // a member's grants added or changed (20 item BD, 27 item DJ)
+	rmGrant     map[string]bool            // a member's grants taken back
+	devSet      bool                       // the set of devices changed (enrolled or removed): the givers of a guest are told
+	after       []func()                   // run after the lock is released, in order
+	hooks       Hooks                      // the hooks as they were when the transaction began
+	resDirt     bool
+	ended       []endedBro       // the broadcasts this transaction ended, in order, for BroadcastRemoved
+	fan         BroadcastRemoval // the owner fan-out counts of the commit (ticket 271)
+	guestQueued map[string]int   // guest control streams handed each broadcast's removal
 }
 
 func (d *Dir) begin(h *hub) *tx {
@@ -436,10 +465,12 @@ func (t *tx) commit() {
 		Upserts:  wire.Upserts{Devices: sortedRaw(t.upDev), Resources: sortedRaw(t.upRes), Broadcasts: sortedRaw(t.upBro), Grants: sortedRaw(t.upGrant)},
 		Removals: wire.Removals{DeviceIDs: sortedIDs(t.rmDev), ResourceIDs: sortedIDs(t.rmRes), BroadcastIDs: sortedIDs(t.rmBro), GrantIDs: sortedIDs(t.rmGrant)},
 	}
-	t.d.fanOutToGuestsLocked(h.login, t) // what changed in what a guest was given
+	t.fan.Revision = h.revision
+	t.guestQueued = t.d.fanOutToGuestsLocked(h.login, t) // what changed in what a guest was given
 	if t.devSet {
 		t.d.pushGrantDevicesLocked(h.login) // the devices of a guest changed: whoever gave to it is told
 	}
+	t.fan.Subscribers = len(h.subs)
 	if len(h.subs) == 0 {
 		return
 	}
@@ -450,11 +481,15 @@ func (t *tx) commit() {
 		if err != nil {
 			go sink.Close() // never under the lock: closing a TLS stream may wait on a slow peer
 			delete(h.subs, id)
+			t.fan.Dropped++
 			continue
 		}
 		if sink.SendFrame(frame) != nil {
 			delete(h.subs, id)
+			t.fan.Dropped++
+			continue
 		}
+		t.fan.Queued++
 	}
 }
 
@@ -466,6 +501,14 @@ func (t *tx) finish() {
 	t.d.mu.Unlock()
 	for _, f := range t.after {
 		f()
+	}
+	if t.hooks.BroadcastRemoved != nil {
+		for _, b := range t.ended {
+			r := t.fan
+			r.BroadcastID, r.DeviceID, r.Why = b.id, b.device, b.why
+			r.GuestQueued = t.guestQueued[b.id]
+			t.hooks.BroadcastRemoved(t.h.login, r)
+		}
 	}
 }
 

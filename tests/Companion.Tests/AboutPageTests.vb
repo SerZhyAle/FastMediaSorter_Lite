@@ -116,7 +116,7 @@ Public Class AboutPageTests
                         Assert.Empty(started)
 
                         Assert.IsType(Of Button)(FindByName(help, AboutItems.ManagerControl(AboutItems.Diagnostics)))
-                        Assert.Equal(Localization.T("Отправить журнал автору.."), FindByName(help, "managerSupportBundle").Text)
+                        Assert.Equal(Localization.T("Экспорт журналов для анализа"), FindByName(help, "managerSupportBundle").Text)
                         Assert.Contains("MIT License", FindByName(help, AboutItems.ManagerControl(AboutItems.Licence)).Text)
                         Assert.Contains(Application.ProductVersion.Split("+"c)(0), FindByName(help, AboutItems.ManagerControl(AboutItems.Version)).Text)
                         Assert.False(String.IsNullOrWhiteSpace(FindByName(help, AboutItems.ManagerControl(AboutItems.Description)).Text))

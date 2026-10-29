@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>Поділитися - код доступу - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">Поділитися - код доступу</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>Створює код доступу для телефона: QR-код і файл .fmscfg, які містять адресу, логін і вибрані папки. Відкривається кнопкою &#171;Поділитися&#187; головного вікна, коли роздачу ввімкнено, і перш ніж видати код, перевіряє, що телефон справді може дістатися до ПК.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="Поділитися - код доступу">
+    <img class="shot dark" src="package-wizard-dark.png" alt="Поділитися - код доступу">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Позначте папки, які потрібно включити до коду.</li><li>Змініть будь-яку клітинку таблиці, яка для цього коду має відрізнятися.</li><li>За потреби позначте &#171;Не включати адресу з інтернету в цей код&#187; або &#171;Не включати пароль до файлу/QR&#187;.</li><li>Дочекайтеся перевірки доступу.</li><li>Покажіть QR-код, збережіть файл .fmscfg, надішліть його поштою або скопіюйте логін і пароль.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>Папки та параметри цього коду доступу</summary><p>По одному рядку на спільну папку зі стовпцями Увімк, Папка, Ім&#39;я на телефоні, Тип, Типи медіа, Скан підпапок, Підпапки як елементи, Приховані, Лише читання, RO-підказка, Приймач, Коментар та Слайд-шоу, сек. Клацніть клітинку, щоб змінити значення. Значення беруться з власних параметрів кожної папки, а зміни діють лише для цього коду. &#171;Лише читання&#187; - справжнє блокування на сервері; &#171;RO-підказка&#187; лише ховає кнопки редагування в застосунку. Папка-приймач завжди доступна для запису, тому &#171;Лише читання&#187; до неї не застосовується.</p></details>
+<details id="common-settings"><summary>Загальні налаштування передачі</summary><p>&#171;Не включати адресу з інтернету в цей код&#187; змушує телефон підключатися лише через локальну мережу; сервер при цьому не вимикається, а доступ з інтернету для всієї роздачі закривається в налаштуваннях менеджера. &#171;Не включати пароль до файлу/QR&#187; прибирає пароль із коду; передайте його окремо. Чи приймає телефон код без пароля, залежить від версії застосунку.</p></details>
+<details id="access-check"><summary>Перевірка доступу</summary><p>Поки стан отримується, вікно повідомляє про це. Якщо сервер не запущено, не позначено жодної папки або немає придатної адреси, підказка вказує, чого бракує. Якщо перевірка не завершується, код і файл не видаються: натисніть &#171;Перевірити доступ знову&#187;.</p></details>
+<details id="qr-code"><summary>Показати QR-код</summary><p>QR-код і файл .fmscfg відкривають доступ до папок і містять пароль та PIN, якщо його задано - зберігайте й передавайте їх як ключ. Якщо налаштування завеликі для QR-коду, збережіть файл і надішліть його.</p></details>
+<details id="file-and-mail"><summary>Файл, пошта та логін</summary><p>&#171;Зберегти файл .fmscfg..&#187; записує файл; у файловій системі, яка не може обмежити доступ, або в папці, яку можуть змінювати інші, вікно відмовляє, бо файл містить ключ доступу. &#171;Надіслати поштою..&#187; додає файл як вкладення з приміткою імпортувати його в застосунку для Android і потім видалити. &#171;Скопіювати логін/пароль&#187; поміщає обидва значення в буфер обміну.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

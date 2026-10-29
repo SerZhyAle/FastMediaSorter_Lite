@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Gerenciador de arquivos - Fast Media Sorter</title>
+  <title>Painel de imagens - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Gerenciador de arquivos</h1>
+  <h1 id="title">Painel de imagens</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Gerenciador de arquivos: clique duplo ou Enter em uma pasta para abri-la; navegar, selecionar e fechar o painel n&#227;o altera o que a janela principal mostra</p>
+    <p>O painel de imagens abre com F3 no visualizador e funciona em dois modos escolhidos na caixa &#171;Modo do painel&#187;: Classifica&#231;&#227;o, uma grade de miniaturas da pasta atual, e Gerenciador de arquivos, um navegador com locais, pastas e comandos de arquivo. Ver os arquivos, selecion&#225;-los e fechar o painel n&#227;o mudam o que a janela principal mostra.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="thumbnail-panel-light.png" alt="Gerenciador de arquivos">
-    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Gerenciador de arquivos">
+    <img class="shot light" src="thumbnail-panel-light.png" alt="Painel de imagens">
+    <img class="shot dark" src="thumbnail-panel-dark.png" alt="Painel de imagens">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Criar ZIP: inclui todas as pastas e arquivos selecionados; excluir originais fica desativado e exige a publica&#231;&#227;o verificada do arquivo Extrair aqui: selecione um arquivo; pastas, arquivos comuns e o original s&#227;o preservados, programas extra&#237;dos n&#227;o s&#227;o executados; Esc cancela a opera&#231;&#227;o</p>
+    <ol class="order"><li>Pressione F3 no visualizador.</li><li>Escolha o modo em &#171;Modo do painel&#187;.</li><li>Selecione arquivos: clique, Shift+clique para um intervalo, Ctrl+clique para alternar um ou arraste um quadro.</li><li>No modo Classifica&#231;&#227;o, pressione 0-9 para mover a sele&#231;&#227;o para uma pasta de destino, ou Shift com um d&#237;gito da fileira superior para copi&#225;-la; Ctrl+Z desfaz a &#250;ltima opera&#231;&#227;o.</li><li>Clique duas vezes em um arquivo ou pressione Enter para abri-lo na janela principal.</li><li>Pressione Esc para cancelar uma opera&#231;&#227;o em andamento e Esc de novo para fechar o painel.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-<details id="zip"><summary>Criar ZIP</summary><p>Criar ZIP: inclui todas as pastas e arquivos selecionados; excluir originais fica desativado e exige a publica&#231;&#227;o verificada do arquivo</p></details>
-<details id="extract"><summary>Extrair aqui</summary><p>Extrair aqui: selecione um arquivo; pastas, arquivos comuns e o original s&#227;o preservados, programas extra&#237;dos n&#227;o s&#227;o executados; Esc cancela a opera&#231;&#227;o</p></details>
-    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
+<details id="mode"><summary>Modo do painel</summary><p>&#171;Modo do painel&#187; alterna entre Classifica&#231;&#227;o e Gerenciador de arquivos. O modo Classifica&#231;&#227;o mostra miniaturas da pasta atual para mover e copiar rapidamente; o gerenciador de arquivos navega por qualquer pasta e oferece comandos de arquivo.</p></details>
+<details id="toolbar"><summary>Tamanho, layout e sele&#231;&#227;o</summary><p>O controle deslizante (Tamanho:) define o tamanho das miniaturas, &#171;Blocos&#187; e &#171;Lista&#187; alternam o layout (Ctrl+L), e o contador de sele&#231;&#227;o mostra quantos arquivos est&#227;o selecionados do total.</p></details>
+<details id="sorting"><summary>Sele&#231;&#227;o e classifica&#231;&#227;o</summary><p>O clique seleciona, Shift+clique seleciona um intervalo, Ctrl+clique alterna um arquivo e arrastar desenha um quadro de sele&#231;&#227;o. Ctrl+A seleciona tudo, Ctrl+Shift+A limpa a sele&#231;&#227;o, Ctrl+I a inverte, a barra de espa&#231;o marca um arquivo, e as setas, Home, End, PgUp e PgDn permitem se mover. Os d&#237;gitos 0-9 movem a sele&#231;&#227;o para a pasta de destino dessa tecla, Shift com um d&#237;gito da fileira superior a copia, Del a exclui e Ctrl+Z desfaz a &#250;ltima opera&#231;&#227;o.</p></details>
+<details id="navigation"><summary>Endere&#231;o e locais</summary><p>No gerenciador de arquivos, a barra de endere&#231;o (Alt+D) aceita um caminho: Enter vai at&#233; ele e Esc restaura o atual. Voltar, Avan&#231;ar, Subir e Atualizar t&#234;m Alt+Left, Alt+Right, Alt+Up e F5. A lista Locais, &#224; esquerda, d&#225; acesso r&#225;pido a pastas, recursos e dispositivos.</p></details>
+<details id="filter"><summary>Filtro e arquivos ocultos</summary><p>O filtro de conte&#250;do escolhe Arquivos de m&#237;dia, M&#237;dia e documentos ou Todos os arquivos, e &#171;Ocultos&#187; mostra ou esconde os arquivos ocultos. &#171;Defini&#231;&#245;es..&#187; abre a janela Configura&#231;&#245;es na p&#225;gina Gerenciador de arquivos, onde se definem o modo de exibi&#231;&#227;o, o filtro, os locais e a ordena&#231;&#227;o lembrada.</p></details>
+<details id="files"><summary>Comandos de arquivo</summary><p>Ctrl+C, Ctrl+X e Ctrl+V copiam, recortam e colam, F2 renomeia, Ctrl+Shift+N cria uma pasta, Del e Shift+Del excluem os itens selecionados e Alt+Enter mostra as propriedades. Copiar ou mover entre recursos passa por este computador.</p></details>
+<details id="zip"><summary>Criar ZIP</summary><p>&#171;Criar ZIP&#187; empacota todas as pastas e arquivos selecionados em um &#250;nico arquivo compactado. A exclus&#227;o dos originais vem desativada por padr&#227;o e s&#243; &#233; permitida depois que o arquivo compactado for verificado e publicado.</p></details>
+<details id="extract"><summary>Extrair aqui</summary><p>&#171;Extrair aqui&#187; atua sobre um &#250;nico arquivo compactado selecionado: pastas e arquivos comuns s&#227;o mantidos, o arquivo compactado original permanece no lugar e os programas extra&#237;dos nunca s&#227;o executados. Esc cancela a opera&#231;&#227;o.</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

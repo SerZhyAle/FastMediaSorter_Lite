@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>कैमरे से QR कोड स्कैन करना - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">कैमरे से QR कोड स्कैन करना</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>फ़ोन ऐप में दिखाया गया QR कोड इस पीसी के कैमरे से पढ़ती है। यह फ़ोन कोड विंडो में कैमरे से स्कैन करें.. से और एक्सचेंज खाता विंडो के कनेक्शन स्ट्रिंग फ़ील्ड से खुलती है, और विंडो दिखते ही कैमरा चालू हो जाता है।</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>इस विंडो का स्क्रीनशॉट नहीं है: खुलते ही यह कोई डिवाइस, नेटवर्क लिसनर या पूरा व्यूअर शुरू कर देती है, इसलिए इसे कैप्चर नहीं किया जाता।</figcaption></figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>फ़ोन का QR कोड कैमरे के सामने रखें।</li><li>विंडो तस्वीर को अपने आप स्कैन करती है; वैध कोड मिलने पर स्थिति में कोड प्राप्त हुआ लिखा आता है और विंडो बंद हो जाती है।</li><li>बिना स्कैन किए बंद करने के लिए रद्द करें (Escape) दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>पूर्वावलोकन और स्थिति</summary><p>काला क्षेत्र कैमरे का लाइव चित्र दिखाता है। कोड पढ़े जाने तक उसके नीचे की पंक्ति में कैमरे को फ़ोन के QR कोड पर इंगित करें लिखा रहता है।</p></details>
+<details id="camera"><summary>कौन-सा कैमरा</summary><p>केवल पहला मिला हुआ कैमरा इस्तेमाल होता है। यदि कोई नहीं है, या वह शुरू नहीं हो पाता, तो पंक्ति में कैमरा अनुपलब्ध है लिखा आता है, और कारण हो तो उसके बाद वह।</p></details>
+<details id="result"><summary>स्कैन के बाद</summary><p>पहले वैध QR कोड का पाठ उस विंडो को लौटा दिया जाता है जिसने स्कैनर खोला था, और वहाँ ऐसे संभाला जाता है जैसे उसे पेस्ट किया गया हो; फ़ोन कोड विंडो में वह कोड फ़ील्ड भरता है और भेज दिया जाता है, और Fast Media Sorter फिर भी अपने सामान्य प्रश्न पूछता है। फ़्रेम केवल मेमोरी में रहते हैं: यह विंडो न कुछ सहेजती है और न भेजती है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

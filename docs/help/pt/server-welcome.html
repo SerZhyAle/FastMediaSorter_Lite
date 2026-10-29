@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>Primeiro arranque do servidor - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">Primeiro arranque do servidor</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Um guia de primeiro arranque para o grupo do servidor de troca do Share Manager. Explica em que se transforma o computador, mostra a declara&#231;&#227;o do operador, define as portas, o endere&#231;o para os clientes e a primeira conta, e termina no estado do servidor. S&#243; se abre quando o servidor de troca est&#225; presente e ativado.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="Primeiro arranque do servidor">
+    <img class="shot dark" src="server-welcome-dark.png" alt="Primeiro arranque do servidor">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Leia a declara&#231;&#227;o do operador na primeira p&#225;gina.</li><li>Reveja as portas e a regra da firewall.</li><li>Numa edi&#231;&#227;o de servidor sem servi&#231;o, decida sobre o servi&#231;o do Windows.</li><li>Preencha o endere&#231;o para os clientes.</li><li>Crie a primeira conta.</li><li>Verifique a impress&#227;o digital do certificado e prima &#171;Concluir&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>P&#225;ginas e bot&#245;es</summary><p>O rodap&#233; mostra &#171;Passo N de M&#187;; &#171;Voltar&#187;, &#171;Avan&#231;ar&#187; e &#171;Mais tarde&#187; funcionam como em qualquer assistente, e &#171;Concluir&#187; na &#250;ltima p&#225;gina abre o grupo do servidor de troca do gestor. &#201; poss&#237;vel saltar uma p&#225;gina sem altera&#231;&#245;es: o servidor fica ent&#227;o desligado ou como estava.</p></details>
+<details id="operator-statement"><summary>Declara&#231;&#227;o do operador</summary><p>A declara&#231;&#227;o completa de quem v&#234; o qu&#234; no servidor. N&#227;o pode ser saltada. O servidor liga os dispositivos de uma conta e indica quais est&#227;o em linha.</p></details>
+<details id="ports"><summary>Portas e firewall</summary><p>Uma porta de encontro para os dispositivos e um intervalo de portas para clientes de terceiros. Os dispositivos t&#234;m de conhecer a porta do servidor, por isso as altera&#231;&#245;es s&#243; se aplicam aos c&#243;digos novos. A regra da firewall pertence ao programa, pelo que uma mudan&#231;a de porta n&#227;o precisa de uma regra nova. Estes valores ficam no grupo do servidor de troca.</p></details>
+<details id="service"><summary>Servi&#231;o do Windows</summary><p>S&#243; &#233; mostrado numa edi&#231;&#227;o de servidor em que o servi&#231;o ainda n&#227;o existe. Um servi&#231;o mant&#233;m o servidor dispon&#237;vel quando ningu&#233;m tem sess&#227;o iniciada. A caixa de verifica&#231;&#227;o apenas regista o seu consentimento: o servi&#231;o &#233; registado depois de existir a primeira conta, com um &#250;nico pedido de eleva&#231;&#227;o, e nada &#233; instalado antes. &#171;Registar como servi&#231;o..&#187; no grupo de troca faz o mesmo mais tarde.</p></details>
+<details id="client-address"><summary>Endere&#231;o para os clientes</summary><p>&#171;Endere&#231;o para os clientes (anfitri&#227;o:porta):&#187; &#233; o que os outros dispositivos usam para chegar a este computador. &#171;Sugerir um endere&#231;o local&#187; s&#243; preenche o campo quando o prime. Um endere&#231;o vazio mant&#233;m v&#225;lido um primeiro arranque puramente local, mas esconde as emiss&#245;es e as liga&#231;&#245;es de pastas dos outros dispositivos.</p></details>
+<details id="first-account"><summary>Primeira conta</summary><p>A conta com que o primeiro dispositivo inicia sess&#227;o. Escolha &#171;Gerar uma palavra-passe&#187; ou &#171;Introduzir a sua palavra-passe&#187;; &#171;Ligar este PC &#224; conta&#187; liga este computador &#224; conta. &#171;Avan&#231;ar&#187; cria a conta, inicia o servidor e verifica o certificado. A palavra-passe &#233; mostrada uma &#250;nica vez, na caixa de di&#225;logo existente, e n&#227;o &#233; guardada neste PC. Uma falha depois de a conta ser criada n&#227;o a remove.</p></details>
+<details id="server-ready"><summary>O servidor est&#225; pronto</summary><p>A &#250;ltima p&#225;gina indica onde ficam registados o endere&#231;o, o utilizador e a impress&#227;o digital do certificado e oferece &#171;Copiar impress&#227;o digital&#187; e &#171;Cadeia de liga&#231;&#227;o e c&#243;digo QR..&#187;. Um dispositivo confia no servidor depois de verificar a impress&#227;o digital na primeira liga&#231;&#227;o. As liga&#231;&#245;es &#171;Ligar um telefone (ajuda)&#187; e &#171;Publicar a primeira pasta (ajuda)&#187; levam &#224;s p&#225;ginas de ajuda correspondentes.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

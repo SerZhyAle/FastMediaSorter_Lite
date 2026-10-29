@@ -14,7 +14,7 @@
   <h1 id="title">Connection Diagnosis</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Explains why a server or a device cannot be reached and offers what to try, one step at a time. It changes no setting of the computer or of Windows. It opens from &#171;Why doesn&#39;t it connect?..&#187; in the &#171;More&#187; menu of the resources list (for a selected row), from a server entry in &#171;My devices&#187; that is signing in again, shows a changed certificate or cannot connect, and by itself when opening a resource fails.</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
@@ -22,13 +22,16 @@
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read &#171;What happened:&#187;.</li><li>Try what &#171;What to try:&#187; says.</li><li>If that is not the cause, press &#171;Next step&#187;.</li><li>Press &#171;Details&#187; if someone asks for the codes, and &#171;Copy&#187; to hand them over.</li><li>Close the window.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>What happened</summary><p>One sentence about the failure, for example &#171;Cannot reach the server.&#187;, &#171;The login or the password is wrong.&#187; or &#171;This server does not look like the one you connected to before.&#187;. It follows the kind of failure that opened the window.</p></details>
+<details id="what-to-try"><summary>What to try</summary><p>The window starts at the first step that failed in the check, or at the first step when none did. Typical steps: wake the device that runs the server, check that both devices are on the same network, leave a guest Wi-Fi, turn a VPN off for a moment, set the Windows network to private, check the server from another network, set the right date and time, confirm a new fingerprint, retype the login and the password. The last step says that only the server&#39;s operator can fix it.</p></details>
+<details id="next-step"><summary>Next step and Windows Settings</summary><p>&#171;Next step&#187; moves along the steps and disappears on the last one. For the two steps that Windows settings can fix, the network profile and the clock, an &#171;Open Windows Settings&#187; button opens the matching Windows page; the program changes nothing itself.</p></details>
+<details id="details-copy"><summary>Details and Copy</summary><p>&#171;Details&#187; shows or hides a read-only box with the diagnosis codes: the kind of failure, the target, the route, the failed step and the steps walked. It never holds an address, a login, a password or a fingerprint. &#171;Copy&#187; puts that line on the clipboard and the window says &#171;Diagnosis codes copied to clipboard.&#187;</p></details>
+<details id="how-it-checks"><summary>How the check works</summary><p>The check runs only for the connection you tried and only reads: it tries to reach the host and port and looks at the network state, VPN adapters, the Windows network profile, the address family, the clock and the certificate. It stops at the first failed step, and a check that could not be made is never counted as passed or failed.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

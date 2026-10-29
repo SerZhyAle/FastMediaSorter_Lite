@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Outside Folder Access - Fast Media Sorter</title>
+  <title>提供外部访问 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Outside Folder Access</h1>
+  <h1 id="title">提供外部访问</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Outside Folder Access.</p>
+    <p>控制你自己设备之外的人对某个共享文件夹的访问：访客邀请，或无需账户的带密码链接。它从 Share Manager 主窗口针对所选文件夹的「提供外部访问..」按钮打开。在此版本中，创建新访问的控件处于关闭状态，窗口会显示原因，而已存在的访问仍可撤回。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Outside Folder Access">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Outside Folder Access">
+    <img class="shot light" src="folder-outside-access-light.png" alt="提供外部访问">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="提供外部访问">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>阅读带有文件夹名称和路径的标题行。</li><li>在每个分组中阅读原因行；只要它显示，就无法创建任何新内容。</li><li>要移除访问，请选中一个邀请并点击「撤回所选项」，或点击「撤回链接」。</li><li>点击「关闭」（Escape）离开。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="header"><summary>文件夹和状态</summary><p>粗体行给出文件夹名称及其路径。底部的状态行报告最近一次的结果。当发布服务未运行时，窗口显示「发布服务不可用。」，其按钮处于关闭状态。</p></details>
+<details id="guest-invitation"><summary>访客邀请</summary><p>该分组包含「创建访客邀请..」、「撤回所选项」，以及一个列出此文件夹访客邀请的列表，列有类型、创建时间和已使用。撤回会移除邀请；不会删除文件夹或其文件。</p></details>
+<details id="password-link"><summary>带密码的链接（无需账户）</summary><p>状态显示「未创建链接。」或「链接有效。」。「链接密码：」文本框是遮蔽的，「生成」会填入它。链接有效时，「创建链接」变为「更新链接」。「撤回链接」会先询问，因为该链接上的每个活动会话都会结束。「显示二维码 / 代码..」把链接显示为代码。</p></details>
+<details id="availability"><summary>为何无法创建</summary><p>每个分组都会显示一行原因，说明程序的文件服务器无法将登录限制在一个文件夹内。只要它显示，所有创建邀请或链接的控件都不可用。撤回现有访问只取决于已有的内容。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

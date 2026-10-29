@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>文件管理器 - Fast Media Sorter</title>
+  <title>图片面板 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">文件管理器</h1>
+  <h1 id="title">图片面板</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>文件管理器：双击文件夹或按 Enter 进入；浏览、选择和关闭面板都不会改变主窗口显示的内容</p>
+    <p>图片面板在查看器中按 F3 打开，有两种模式，在「面板模式」框中选择：「整理」是当前文件夹的缩略图网格；「文件管理器」是带有位置、文件夹和文件命令的浏览器。查看文件、选择文件和关闭面板都不会改变主窗口显示的内容。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="thumbnail-panel-light.png" alt="文件管理器">
-    <img class="shot dark" src="thumbnail-panel-dark.png" alt="文件管理器">
+    <img class="shot light" src="thumbnail-panel-light.png" alt="图片面板">
+    <img class="shot dark" src="thumbnail-panel-dark.png" alt="图片面板">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>创建 ZIP：包含所选文件夹及所有文件；默认保留原文件，仅在验证并发布压缩包后才允许删除 解压到此处：选择一个压缩包；保留文件夹结构、普通文件和原压缩包，不运行解压出的程序；Esc 取消操作</p>
+    <ol class="order"><li>在查看器中按 F3。</li><li>在「面板模式」中选择模式。</li><li>选择文件：单击，Shift+单击选择范围，Ctrl+单击切换单个文件，或拖动选框。</li><li>在整理模式下按 0-9 把所选内容移动到目标文件夹，或按 Shift 加主键盘区数字键复制；Ctrl+Z 撤销上一次操作。</li><li>双击文件或按 Enter，在主窗口中打开它。</li><li>按 Esc 取消正在进行的操作，再按一次 Esc 关闭面板。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-<details id="zip"><summary>创建 ZIP</summary><p>创建 ZIP：包含所选文件夹及所有文件；默认保留原文件，仅在验证并发布压缩包后才允许删除</p></details>
-<details id="extract"><summary>解压到此处</summary><p>解压到此处：选择一个压缩包；保留文件夹结构、普通文件和原压缩包，不运行解压出的程序；Esc 取消操作</p></details>
-    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
+<details id="mode"><summary>面板模式</summary><p>「面板模式」在「整理」和「文件管理器」之间切换。整理模式显示当前文件夹的缩略图，便于快速移动和复制；文件管理器可浏览任意文件夹并提供文件命令。</p></details>
+<details id="toolbar"><summary>大小、布局和选择</summary><p>滑块（「大小：」）设置缩略图大小，「平铺」和「列表」按钮切换布局（Ctrl+L），选择计数器显示总数中已选了多少个文件。</p></details>
+<details id="sorting"><summary>选择与整理</summary><p>单击选择，Shift+单击选择范围，Ctrl+单击切换单个文件，拖动则画出选框。Ctrl+A 全选，Ctrl+Shift+A 清除选择，Ctrl+I 反选，空格键标记文件，方向键、Home、End、PgUp 和 PgDn 用于移动。数字键 0-9 把所选内容移动到该键对应的目标文件夹，Shift 加主键盘区数字键复制，Del 删除，Ctrl+Z 撤销上一次操作。</p></details>
+<details id="navigation"><summary>地址和位置</summary><p>在文件管理器中，地址栏（Alt+D）接受路径：Enter 跳转到该路径，Esc 恢复当前路径。「后退」、「前进」、「上一级」和「刷新」的快捷键分别是 Alt+Left、Alt+Right、Alt+Up 和 F5。左侧的「位置」列表可快速访问文件夹、资源和设备。</p></details>
+<details id="filter"><summary>筛选器和隐藏文件</summary><p>内容筛选器可选择「媒体文件」、「媒体与文档」或「所有文件」，「隐藏」按钮用于显示或隐藏被隐藏的文件。「设置..」会打开设置窗口的「文件管理器」页，在那里设置显示模式、筛选器、位置和记住的排序方式。</p></details>
+<details id="files"><summary>文件命令</summary><p>Ctrl+C、Ctrl+X 和 Ctrl+V 分别是复制、剪切和粘贴，F2 重命名，Ctrl+Shift+N 新建文件夹，Del 和 Shift+Del 删除所选项目，Alt+Enter 显示属性。在不同资源之间复制或移动要经过这台电脑。</p></details>
+<details id="zip"><summary>创建 ZIP</summary><p>「创建 ZIP」把所有选中的文件夹和文件打包成一个压缩包。删除原文件默认关闭，只有在压缩包经过验证并发布之后才允许。</p></details>
+<details id="extract"><summary>解压到此处</summary><p>「解压到此处」只处理一个选中的压缩包：文件夹和普通文件会保留，原压缩包留在原处，解压出的程序绝不会被运行。按 Esc 取消操作。</p></details>
+    <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

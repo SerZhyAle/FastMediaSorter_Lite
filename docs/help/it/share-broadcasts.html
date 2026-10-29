@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>Trasmissioni per StreamsPlayer - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">Trasmissioni per StreamsPlayer</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>Gestisce le trasmissioni HTTP di file multimediali e cartelle che questo PC offre all&#39;app StreamsPlayer. Si apre dal pulsante &#171;Trasmissioni..&#187; o dalla voce del menu di aggiunta nella finestra principale di Share Manager, che compaiono solo quando il servizio di condivisione segnala il supporto delle trasmissioni. Un avvio con un percorso apre la finestra e passa subito alla finestra &#171;Crea trasmissione&#187; per quel percorso.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="Trasmissioni per StreamsPlayer">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="Trasmissioni per StreamsPlayer">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Seleziona &#171;Abilita gateway di trasmissione HTTP&#187; oppure crea semplicemente una trasmissione, che attiva il gateway.</li><li>Premi &#171;Crea trasmissione..&#187;, scegli il file multimediale, imposta titolo, durata e opzione internet e premi &#171;Trasmetti&#187;.</li><li>Il link viene copiato negli appunti.</li><li>Seleziona una riga e usa &#171;Copia link&#187;, &#171;Salva .spres..&#187; o &#171;Mostra QR&#187; per consegnare la trasmissione a un dispositivo.</li><li>&#171;Revoca&#187; una trasmissione quando non serve pi&#249;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>Interruttore del gateway</summary><p>La casella attiva o disattiva il gateway HTTP. La riga sotto riporta &#171;Il gateway di trasmissione &#232; disattivato&#187; oppure &#171;Gateway di trasmissione attivo (porta N)&#187;. Finch&#233; il gateway &#232; attivo, questo PC risponde alle richieste HTTP per i file della trasmissione. Se il gateway non riesce ad avviarsi (porta, firewall), la casella torna al suo stato reale e il motivo compare in una riga rossa sotto; un rifiuto non apre mai una finestra di dialogo.</p></details>
+<details id="broadcast-list"><summary>Elenco delle trasmissioni</summary><p>Colonne: Nome, Tipo (File, oppure Cartella con il numero dei suoi elementi), Creato, Scadenza (una data, &#171;Fino a revoca&#187; o &#171;Scaduta&#187;), Richieste e Token, che mostra solo i primi sei caratteri. L&#39;elenco si rilegge da solo ogni 5 secondi. Un doppio clic su una riga ne copia il link.</p></details>
+<details id="create"><summary>Crea trasmissione..</summary><p>Chiede un file multimediale e apre la finestra &#171;Crea trasmissione&#187;. Dopo che l&#39;hai accettata, il gateway viene attivato se serve, la trasmissione viene creata e il suo link viene copiato negli appunti con i marcatori di riservatezza; un messaggio conferma la copia.</p></details>
+<details id="share-link"><summary>Copia link, Salva .spres.. e Mostra QR</summary><p>Questi tre agiscono sulla riga selezionata e richiedono il gateway attivo con una porta. Costruiscono il link a partire dagli indirizzi attuali di questo PC; la scelta su internet fatta alla creazione viene ricordata per ogni trasmissione. &#171;Salva .spres..&#187; scrive un file di risorse di StreamsPlayer e &#171;Mostra QR&#187; apre un codice da scansionare.</p></details>
+<details id="refresh-revoke"><summary>Aggiorna e Revoca</summary><p>&#171;Aggiorna&#187; &#232; disponibile solo per la trasmissione di una cartella e chiede al servizio di aggiornarla; un messaggio lo conferma. &#171;Revoca&#187; funziona su qualsiasi riga e chiede prima: &#171;Revocare la trasmissione X? Il link smetter&#224; di funzionare immediatamente.&#187; Una trasmissione revocata non si pu&#242; ripristinare; creane una nuova.</p></details>
+<details id="problems"><summary>Quando la pagina &#232; disattivata</summary><p>Se il servizio di condivisione non risponde o non supporta le trasmissioni, la pagina si disattiva da sola sul posto e la riga rossa ne indica il motivo, per esempio che questa versione del servizio di trasmissione &#232; obsoleta oppure che non &#232; stato possibile completare l&#39;azione, con i dettagli nel registro.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

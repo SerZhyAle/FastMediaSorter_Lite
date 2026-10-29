@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>Edit resource - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">Edit resource</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>The form of one saved server or network folder. &#171;Add..&#187; in the resources list opens it empty with the caption &#171;New resource&#187;, &#171;Edit..&#187; opens it filled in as &#171;Edit resource&#187;, and an sftp:// address typed in the folder box opens it pre-filled.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="Edit resource">
+    <img class="shot dark" src="resource-edit-dark.png" alt="Edit resource">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Choose the type: SFTP server or network folder (SMB).</li><li>Give the resource a name and enter the server address and port, or the network path.</li><li>Enter the user name and the password.</li><li>Set the folder on the server and tick read-only if nothing may change there.</li><li>Press &#171;Save&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>Type</summary><p>&#171;Type:&#187; is chosen when the resource is created: &#171;SFTP server&#187; (port 22, folder /) or &#171;Network folder (SMB)&#187;. For a saved resource the list is disabled, because the stored password and server key belong to one kind. For SMB the address field is captioned &#171;Network folder:&#187; and takes a path like \\server\folder; the port and folder fields are for SFTP only.</p></details>
+<details id="address"><summary>Name, server and port</summary><p>&#171;Name:&#187; is what the list shows; when empty, the server address is used. &#171;Server:&#187; is a name or an IP address and &#171;Port:&#187; a number from 1 to 65535. Changing the server or the port drops the other addresses that came with an imported resource, so a saved password never goes to an address you did not enter.</p></details>
+<details id="credentials"><summary>User and password</summary><p>&#171;User:&#187; and &#171;Password:&#187;. The password is stored encrypted for your Windows account; the list holds only a reference to it. For a saved resource the box is empty with the hint &#171;Empty - keep the saved password&#187;: type something only to replace it. &#171;Show the password&#187; is off at the start. A new resource needs a password.</p></details>
+<details id="folder-readonly"><summary>Folder and read-only</summary><p>&#171;Folder on the server:&#187; is the folder the viewer opens first, a path starting with /. &#171;Read-only (change nothing on the server)&#187; makes the viewer treat the resource as read-only: no moves or copies into it, no deletes or renames in it.</p></details>
+<details id="server-key"><summary>Server key</summary><p>&#171;Server key:&#187; shows the fingerprint remembered for this server, or says that it appears at the first connection, where you confirm it. &#171;Forget the server key..&#187; is shown only when a key is remembered. It asks first (the default answer is No) and explains: if the server was reinstalled this is normal, otherwise someone may be impersonating it. It clears only the key: the next connection shows the new fingerprint and asks again.</p></details>
+<details id="save-errors"><summary>Save</summary><p>&#171;Save&#187; checks the fields and names the first problem in red under them: address, port, folder, user name or a missing password. &#171;Cancel&#187; closes the form without changes.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>Guida all&#39;inoltro delle porte - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">Guida all&#39;inoltro delle porte</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>Aiuta a rendere la condivisione raggiungibile dall&#39;esterno della rete domestica. Mostra l&#39;indirizzo esterno e se la porta &#232; stata aperta automaticamente o richiede l&#39;inoltro sul router, e offre un test e una guida dettagliata. Si apre dal pulsante &#171;Come configurare l&#39;accesso da internet&#187; della finestra principale.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="Guida all&#39;inoltro delle porte">
+    <img class="shot dark" src="internet-access-dark.png" alt="Guida all&#39;inoltro delle porte">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Avvia prima la condivisione; altrimenti la finestra ti chiede di farlo.</li><li>Leggi le righe di stato: raggiungibile, dietro CGNAT oppure serve l&#39;inoltro della porta.</li><li>Se serve l&#39;inoltro, apri la guida dettagliata e crea la regola sul router.</li><li>Premi &#171;Prova&#187; per verificare l&#39;indirizzo da questo PC.</li><li>Conferma dal telefono con i dati mobili e il Wi-Fi spento.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>Stato</summary><p>La finestra rileva l&#39;indirizzo esterno e riporta una di queste voci: &#171;Raggiungibile da internet&#187;, &#171;Indirizzo esterno: .. (serve l&#39;inoltro della porta)&#187;, &#171;Indirizzo esterno sconosciuto: controlla il router.&#187; oppure &#171;Dietro CGNAT: non raggiungibile dall&#39;esterno.&#187;. Quando la porta &#232; stata aperta automaticamente (UPnP) non serve configurare il router, ma solo il telefono con i dati mobili pu&#242; confermare che funziona. &#171;Aggiorna&#187; ripete il rilevamento.</p></details>
+<details id="guide"><summary>Router e guide</summary><p>La riga del router mostra il suo indirizzo, oppure &#171;Rilevamento del router..&#187; mentre lo si cerca. Il collegamento &#171;Apri la guida dettagliata (HTML, precompilata con i tuoi valori e il modello di router)..&#187; apre una guida HTML locale; se non si pu&#242; aprire, la finestra lo segnala. Il collegamento &#171;Accesso da casa e da altre reti (portale)&#187; apre nel browser la pagina corrispondente del portale della guida.</p></details>
+<details id="test"><summary>Test</summary><p>Verifica l&#39;indirizzo esterno da questo PC e riporta &#171;Server SFTP raggiungibile&#187;, &#171;Porta aperta, ma nessuna risposta SFTP&#187;, una connessione chiusa (forse il limite di connessioni) oppure nessuna risposta. Non &#232; conclusivo: molti router rifiutano dall&#39;interno una richiesta al proprio indirizzo esterno, perci&#242; la verifica affidabile &#232; il telefono con i dati mobili.</p></details>
+<details id="safety"><summary>Sicurezza</summary><p>Aprire SFTP a internet consegna tutte le cartelle condivise a chiunque venga a conoscenza di indirizzo, utente e password. Non pubblicare il codice QR n&#233; il file .fmscfg e disattiva la condivisione quando hai finito. &#171;Chiudi&#187; esce dalla finestra.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

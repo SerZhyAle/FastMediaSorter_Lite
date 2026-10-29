@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>Kontogrenzen - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">Kontogrenzen</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>Legt individuelle Grenzen f&#252;r ein Konto des von Ihnen betriebenen Media Exchange Server fest; ein auf 0 belassener Wert folgt dem Serverstandard. Das Fenster &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Grenzen..&#187; unter der Kontoliste auf der Seite Media Exchange Server der Einstellungen von Share Manager, die erscheint, sobald ein Konto ausgew&#228;hlt ist. Der Titel nennt das Konto: &#171;Kontogrenzen: &lt;login&gt;&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="Kontogrenzen">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Kontogrenzen">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>W&#228;hlen Sie das Konto aus und klicken Sie auf &#171;Grenzen..&#187;.</li><li>Tragen Sie f&#252;r jede Grenze, die Sie &#228;ndern wollen, eine Zahl ein und lassen Sie 0 f&#252;r den Serverstandard.</li><li>Klicken Sie auf &#171;Speichern&#187;.</li><li>Lesen Sie die Ergebniszeile: &#171;Grenzen f&#252;r Konto &lt;login&gt; gespeichert.&#187;</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>Ger&#228;te und Ressourcen</summary><p>&#171;Maximale Ger&#228;te (0 = Standard):&#187; begrenzt die Ger&#228;te, die am Konto angemeldet sein d&#252;rfen. &#171;Maximale ver&#246;ffentlichte Ressourcen (0 = Standard):&#187; begrenzt die freigegebenen Ordner und sonstigen Ressourcen, die das Konto auf dem Server ver&#246;ffentlichen darf.</p></details>
+<details id="broadcasts"><summary>&#220;bertragungen</summary><p>&#171;Maximale &#220;bertragungen (0 = Standard):&#187; begrenzt die &#220;bertragungen des gesamten Kontos, und &#171;Maximale &#220;bertragungen pro Ger&#228;t (0 = Standard):&#187; begrenzt, was ein einzelnes Ger&#228;t davon starten darf.</p></details>
+<details id="clipboard"><summary>Zwischenablagelimit</summary><p>&#171;Zwischenablagelimit, MB (0 = Standard 5 GB):&#187; legt den gr&#246;&#223;ten Wert fest, den das Konto an seine Zwischenablage auf dem Server senden kann, in ganzen Megabyte. Ein Limit, das in kleineren Einheiten gespeichert ist, zum Beispiel 512 KB, wird als 0 angezeigt und beh&#228;lt seine genaue Gr&#246;&#223;e, solange Sie dieses Feld nicht &#228;ndern.</p></details>
+<details id="save"><summary>Speichern und Abbrechen</summary><p>&#171;Speichern&#187; ersetzt die eigenen Grenzen des Kontos als Ganzes: Jede Zahl &#252;ber 0 wird zu einer Grenze, jede 0 bedeutet den Serverstandard, und f&#252;nf Nullen entfernen die Abweichungen des Kontos. &#171;Abbrechen&#187; &#228;ndert nichts. Lehnt der Server einen Wert ab, nennt die Ergebniszeile den Grund, zum Beispiel &#171;Limit nicht zul&#228;ssig: Es muss eine ganze Zahl innerhalb des vom Server akzeptierten Bereichs sein.&#187;</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

@@ -40,19 +40,20 @@ Tests live in `tests/Lite.Tests` (multi-targeted viewer logic), `tests/Companion
 
 ## Build, Test, and Development Commands
 
-Run from the repository root in PowerShell:
+Between releases, run only measured checks of at most 5 seconds and a direct check of the change
+(canon `TESTING_AND_QA` section 2). The measured list is in `.claude/rules/build-release.md`.
+For engineering placement changes, run from the repository root:
 
 ```powershell
-.\tools\Run-AllTests.ps1 -SkipGo  # Run both .NET test suites
-.\tools\Run-AllTests.ps1           # Also test the Go worker in ..\fms_companion (-WorkerRepo to override)
-.\tools\Run-AllTests.ps1 -Integration # Optional read-only live worker IPC check
-.\tools\Run-AllTests.ps1 -OcrScenes   # Optional OCR overlay scenes on the built viewer (on screen, slow)
-.\build.ps1 -SkipInstaller          # Build the three Windows applications
+pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Fast -Area engineering
 ```
 
 Every check ends in one verdict line and exits 0 (pass), 1 (defect) or 2 (could not verify - never a pass); `-SkipGo` is reported as skipped. Which runner owns which check is `tools/check-placement.jsonl`.
 
-`build.ps1` packages installers and deploys to configured local destinations unless skipped; read its parameters before a release build. For focused work, use `.\tools\Invoke-Tests.ps1 -Suite lite -Filter <TestName>` (or `-Suite companion`, `-Build modern`): it prints a bounded digest and keeps the full log under `%TEMP%\fms-tests`.
+Other areas have no measured fast selector and report COULD NOT VERIFY. At a release, `tools/Release.ps1`
+runs the full suite and package build; the owner may explicitly request a particular slower run. Record
+each deferred rung as a `RELEASE` audit item naming its command, and report "not built, not tested until
+the release". `build.ps1` packages and deploys unless skipped; read its parameters before an explicit build.
 
 ## Coding Style & Naming Conventions
 
@@ -60,7 +61,7 @@ Write VB.NET with `Option Explicit On`, `Option Strict On`, `Option Infer On`, a
 
 ## Testing Guidelines
 
-Use xUnit and name test files `*Tests.vb`; use focused, behavior-based test method names. Add unit coverage for pure logic and contract changes, especially serializer, localization, and platform-seam behavior. `Lite.Tests` compiles linked production files for both `net48` and `net10.0-windows`, so run the full suite after changing a linked source. There is no stated coverage threshold; passing relevant suites is required.
+Use xUnit and name test files `*Tests.vb`; use focused, behavior-based test method names. Add unit coverage for pure logic and contract changes, especially serializer, localization, and platform-seam behavior. `Lite.Tests` compiles linked production files for both `net48` and `net10.0-windows`; record both targets as release evidence for shared changes. There is no stated coverage threshold.
 
 ## Commits and Pull Requests
 

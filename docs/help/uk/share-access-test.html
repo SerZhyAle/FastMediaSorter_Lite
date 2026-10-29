@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Перевірка доступу з інтернету - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Перевірка доступу з інтернету</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>З цього ПК перевіряє, чи відповідає спільна адреса як SFTP-сервер. Відкривається кнопкою &#171;Перевірити доступ з інтернету&#187; головного вікна й показує адресу, що перевіряється, висновок і пояснення.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Перевірка доступу з інтернету">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Перевірка доступу з інтернету">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Відкрийте вікно: воно показує адресу й одразу починає перевірку.</li><li>Дочекайтеся заголовка результату.</li><li>Прочитайте рядок із подробицями під ним.</li><li>Якщо результат не остаточний, повторіть перевірку з телефона при вимкненому Wi-Fi і ввімкненому мобільному інтернеті.</li><li>Натисніть &#171;Закрити&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Адреса, що перевіряється</summary><p>&#171;Адреса, що перевіряється: ..&#187; показує хост і порт. Поки триває перевірка, вікно пише &#171;Перевірка ..&#187;. Якщо адреса невідома, результат - &#171;Адресу з інтернету ще не визначено.&#187;; некоректна адреса дає &#171;Адреса некоректна.&#187;.</p></details>
+<details id="verdicts"><summary>Висновки</summary><p>&#171;SFTP-сервер доступний&#187; - порт відповів банером SFTP. &#171;Порт відкрито, але SFTP не відповів&#187; - на порту щось прослуховується, але це не наша програма; перевірте, що правило на роутері веде на цей ПК і на порт роздачі. З&#39;єднання, закрите до відповіді, може означати ліміт підключень; спробуйте ще раз. Відсутність відповіді від цього ПК означає, що роутер, можливо, блокує власну адресу зсередини.</p></details>
+<details id="inconclusive"><summary>Чому результат може бути не остаточним</summary><p>Запит залишає цей ПК, іде на зовнішню адресу роутера й одразу повертається всередину, тому він перевіряє правило пробросу, а не те, чи провайдер пропускає вхідні підключення. Остаточно це визначить лише телефон: вимкніть на ньому Wi-Fi, залиште мобільний інтернет і відкрийте QR-код. Якщо підключитися все одно не вдається, налаштуйте проброс порту кнопкою &#171;Як налаштувати доступ через інтернет&#187;.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Test de l&#39;acc&#232;s depuis internet - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Test de l&#39;acc&#232;s depuis internet</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>V&#233;rifie depuis ce PC si l&#39;adresse partag&#233;e r&#233;pond comme un serveur SFTP. Elle s&#39;ouvre depuis le bouton &#171;Tester l&#39;acc&#232;s depuis internet&#187; de la fen&#234;tre principale et affiche l&#39;adresse test&#233;e, un verdict et une explication.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Test de l&#39;acc&#232;s depuis internet">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Test de l&#39;acc&#232;s depuis internet">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Ouvrez la fen&#234;tre ; elle affiche l&#39;adresse et lance aussit&#244;t la v&#233;rification.</li><li>Attendez le titre du r&#233;sultat.</li><li>Lisez la ligne de d&#233;tail en dessous.</li><li>Si le r&#233;sultat n&#39;est pas concluant, r&#233;p&#233;tez la v&#233;rification depuis le t&#233;l&#233;phone, Wi-Fi coup&#233; et donn&#233;es mobiles activ&#233;es.</li><li>Appuyez sur &#171;Fermer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Adresse test&#233;e</summary><p>&#171;Adresse test&#233;e : ..&#187; affiche l&#39;h&#244;te et le port. Pendant la v&#233;rification, la fen&#234;tre indique &#171;Test de ..&#187;. Si aucune adresse n&#39;est connue, le r&#233;sultat est &#171;Pas encore d&#39;adresse internet.&#187; ; une adresse mal form&#233;e donne &#171;Adresse invalide.&#187;</p></details>
+<details id="verdicts"><summary>Verdicts</summary><p>&#171;Serveur SFTP joignable&#187; - le port a r&#233;pondu par une banni&#232;re SFTP. &#171;Port ouvert, mais aucune r&#233;ponse SFTP&#187; - quelque chose &#233;coute sur le port, mais ce n&#39;est pas notre programme ; v&#233;rifiez que la r&#232;gle du routeur m&#232;ne &#224; ce PC et au port du partage. Une connexion ferm&#233;e avant la r&#233;ponse peut indiquer la limite de connexions ; r&#233;essayez. L&#39;absence de r&#233;ponse depuis ce PC signifie que le routeur bloque peut-&#234;tre, depuis l&#39;int&#233;rieur, sa propre adresse.</p></details>
+<details id="inconclusive"><summary>Pourquoi un r&#233;sultat peut ne pas &#234;tre concluant</summary><p>La requ&#234;te quitte ce PC vers l&#39;adresse externe du routeur et revient directement &#224; l&#39;int&#233;rieur ; elle teste donc la r&#232;gle de redirection et non la question de savoir si le fournisseur laisse entrer les connexions de l&#39;ext&#233;rieur. Seul le t&#233;l&#233;phone peut trancher : coupez son Wi-Fi, laissez les donn&#233;es mobiles activ&#233;es et ouvrez le code QR. S&#39;il ne peut toujours pas se connecter, configurez la redirection de port avec le bouton &#171;Comment configurer l&#39;acc&#232;s internet&#187;.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

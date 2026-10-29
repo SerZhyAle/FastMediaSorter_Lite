@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection String - Fast Media Sorter</title>
+  <title>交换服务器连接字符串 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection String</h1>
+  <h1 id="title">交换服务器连接字符串</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection String.</p>
+    <p>此窗口生成连接字符串，其他设备凭它找到这台交换服务器并核对其证书。可在交换服务器设置中点击「连接字符串和二维码..」打开，也可在服务器首次运行的欢迎窗口中打开。该窗口不会更改任何设置。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connection-string-light.png" alt="Connection String">
-    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Connection String">
+    <img class="shot light" src="exchange-connection-string-light.png" alt="交换服务器连接字符串">
+    <img class="shot dark" src="exchange-connection-string-dark.png" alt="交换服务器连接字符串">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>确认服务器已有证书，并且已设置客户端使用的地址。</li><li>打开窗口：字符串立即出现。</li><li>如有需要，输入服务器名称和登录名；停止输入片刻后，字符串会重新生成。</li><li>复制字符串、将其保存到文件、显示它的二维码，或复制登录链接。</li><li>把结果交给对方，并把账户密码另行告知。</li><li>点击「关闭」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>按钮何时可用</summary><p>「连接字符串和二维码..」仅在服务器已有证书且已设置客户端使用的地址时可用。地址为空时按钮保持禁用，其下方的提示写着：「请先设置客户端使用的地址：没有它就无法生成连接字符串。」窗口内部，在没有字符串时按钮保持禁用。</p></details>
+<details id="name-and-login"><summary>服务器名称和登录名</summary><p>「服务器名称（可选）：」最多接受 64 个字符，作为服务器名称存入字符串。「针对此登录名（可选）：」接受 3 到 64 个字符（a-z、0-9、点、下划线、连字符），并会填入使用该字符串的设备的登录表单。密码绝不会进入字符串。</p></details>
+<details id="connection-string"><summary>连接字符串</summary><p>只读框「连接字符串：」显示结果：客户端使用的地址、证书指纹，以及可选的名称和登录名。收到字符串的设备信任其中的指纹，因此无需任何人手动比对。</p></details>
+<details id="copy-and-save"><summary>复制与保存</summary><p>「复制字符串」会把字符串作为普通文本放入剪贴板，因为它并非机密，下方一行会显示「字符串已复制。」「保存到文件..」会写入一个 .fmsexch 文本文件（建议名称 exchange-server.fmsexch）并显示其路径；另一台设备在其交换账户窗口中用「打开文件..」读取它。如果剪贴板正忙或文件无法写入，会有一行文字说明。</p></details>
+<details id="qr-and-link"><summary>二维码和登录链接</summary><p>「显示二维码」会打开同一字符串的图片供扫描；它只指明一个服务器，不授予对任何内容的访问权限。「复制登录链接」仅在此服务器提供 Web 客户端时出现；它会复制一个携带同一字符串的浏览器链接。</p></details>
+<details id="refusals"><summary>无法生成字符串时</summary><p>警告色的一行会指出原因：名称或登录名超出限制；服务器没有证书（请先启动一次服务器）；或交换服务器没有响应。排除原因后，字符串会重新生成。「关闭」会结束窗口；名称和登录名不会被保存。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

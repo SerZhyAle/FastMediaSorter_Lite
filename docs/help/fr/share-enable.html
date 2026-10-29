@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Enable Sharing - Fast Media Sorter</title>
+  <title>Activer le partage de dossiers - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Enable Sharing</h1>
+  <h1 id="title">Activer le partage de dossiers</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Enable Sharing.</p>
+    <p>Demande l&#39;autorisation d&#39;installer le c&#244;t&#233; serveur du partage : un petit serveur SFTP en arri&#232;re-plan et une exception du Pare-feu Windows. Elle s&#39;ouvre depuis le bouton &#171;Activer les fonctions serveur..&#187; de la fen&#234;tre principale et depuis les assistants, et exige une seule fois les droits d&#39;administrateur.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-enable-light.png" alt="Enable Sharing">
-    <img class="shot dark" src="share-enable-dark.png" alt="Enable Sharing">
+    <img class="shot light" src="share-enable-light.png" alt="Activer le partage de dossiers">
+    <img class="shot dark" src="share-enable-dark.png" alt="Activer le partage de dossiers">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez l&#39;explication.</li><li>Appuyez sur &#171;Installer les fonctions serveur..&#187;.</li><li>Confirmez la demande d&#39;administrateur de Windows.</li><li>Attendez la ligne de r&#233;sultat ; en cas de succ&#232;s, la fen&#234;tre indique que le partage de dossiers est activ&#233;.</li><li>Appuyez sur &#171;Annuler&#187; pour quitter sans modification.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-it-does"><summary>Ce que cela fait</summary><p>Partager des dossiers avec un t&#233;l&#233;phone Android demande un petit serveur SFTP en arri&#232;re-plan et une autorisation du Pare-feu Windows. Tant que le partage est actif, les dossiers choisis peuvent &#234;tre lus par le r&#233;seau, et ceux ouverts en &#233;criture peuvent aussi &#234;tre modifi&#233;s. Si l&#39;option r&#233;seau local uniquement n&#39;est pas coch&#233;e, le programme demande aussi au routeur d&#39;ouvrir un port (UPnP/NAT-PMP) et v&#233;rifie l&#39;adresse via un service externe.</p></details>
+<details id="install-button"><summary>Installer les fonctions serveur..</summary><p>Lance la configuration et la demande d&#39;administrateur de Windows. La ligne d&#39;&#233;tat affiche &#171;Configuration.. confirmez la demande d&#39;administrateur.&#187; puis le r&#233;sultat. Le bouton n&#39;est disponible que si le composant serveur se trouve &#224; c&#244;t&#233; de l&#39;application ; sinon la fen&#234;tre demande de r&#233;installer l&#39;application.</p></details>
+<details id="outcomes"><summary>R&#233;sultats</summary><p>&#171;Termin&#233;. Le partage de dossiers est activ&#233;.&#187; ; &#171;Partage non activ&#233; - les droits administrateur n&#39;ont pas &#233;t&#233; accord&#233;s.&#187; lorsque la demande est refus&#233;e (rien ne change et vous pouvez r&#233;essayer) ; ou un &#233;chec du pare-feu, pour lequel la fen&#234;tre demande de r&#233;essayer et d&#39;envoyer le journal depuis le menu de l&#39;ic&#244;ne de la zone de notification.</p></details>
+<details id="admin-rights"><summary>Droits d&#39;administrateur et comment les retirer</summary><p>Le lien explique &#224; quoi servent les droits. Pour annuler, utilisez &#171;D&#233;sactiver les fonctions serveur..&#187; dans les param&#232;tres du gestionnaire : le partage s&#39;arr&#234;te, les t&#233;l&#233;phones connect&#233;s sont d&#233;connect&#233;s et l&#39;autorisation du pare-feu est retir&#233;e. La liste des dossiers et le mot de passe sont conserv&#233;s, et tout peut &#234;tre r&#233;activ&#233;.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

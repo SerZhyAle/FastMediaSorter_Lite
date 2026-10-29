@@ -72,7 +72,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         section.AddBodyRow(_aboutStart)
 
         Dim description As New Label With {.AutoSize = True, .Dock = DockStyle.Top, .Name = "managerDescription"}
-        BindAboutText(description, Function() Localization.T("Раздаёт папки этого компьютера Android-телефону, подключается к серверу обмена медиа и по расписанию выполняет операции с файлами."))
+        BindAboutText(description, Function() Localization.T("Локальная служба раздачи и расписаний: раздаёт папки этого компьютера телефонам и SFTP-клиентам, выполняет операции по расписанию и подключает компьютер к учётной записи обмена."))
         section.AddBodyRow(description)
 
         Dim version As New Label With {.AutoSize = True, .Dock = DockStyle.Top, .Name = "managerVersion"}
@@ -87,11 +87,14 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         ' The diagnostic export is the Manager's one support command (owner decision): Forms/SendLogsFlow.vb packs the
         ' same archive the viewer packs. It stays the only in-settings support-bundle button.
-        Dim support As New Button With {.Text = Localization.T("Отправить журнал автору.."), .AutoSize = True,
+        Dim support As New Button With {.Text = Localization.T("Экспорт журналов для анализа"), .AutoSize = True,
             .Name = "managerSupportBundle", .Margin = New Padding(0, 8, 0, 0)}
         ButtonGlyphs.Apply(support, "action.email")
-        AddHandler support.Click, Async Sub() Await SendLogsFlow.RunAsync(Me)
+        AddHandler support.Click, Async Sub() Await SendLogsFlow.RunAsync(Me, support)
         section.AddBodyRow(support)
+        Dim supportNote As New Label With {.AutoSize = True, .Dock = DockStyle.Top, .Name = "managerSupportBundlePurpose"}
+        BindAboutText(supportNote, Function() Localization.T("Собрать локальные серверные журналы для анализа, отправить автору или скопировать ZIP через Проводник."))
+        section.AddBodyRow(supportNote)
 
         section.AddBodyRow(NewAboutLinkRow("managerHelp", ProductLinks.Help, AboutHelpSurface,
             Function() Localization.T("Справка по программе"),

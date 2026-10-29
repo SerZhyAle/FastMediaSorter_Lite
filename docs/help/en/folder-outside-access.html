@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Outside Folder Access - Fast Media Sorter</title>
+  <title>Give access outside - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Outside Folder Access</h1>
+  <h1 id="title">Give access outside</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Outside Folder Access.</p>
+    <p>Controls access to one shared folder for people outside your own devices: a guest invitation, or a link with a password that needs no account. It opens from the &#39;Give access outside..&#39; button of the Share Manager main window for the selected folder. In this version the controls that create new access are off and the window shows the reason, while access that already exists can still be withdrawn.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Outside Folder Access">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Outside Folder Access">
+    <img class="shot light" src="folder-outside-access-light.png" alt="Give access outside">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="Give access outside">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read the header line with the folder name and path.</li><li>In each group read the reason line; while it is shown nothing new can be created.</li><li>To remove access, select an invitation and press &#39;Withdraw selected&#39;, or press &#39;Withdraw link&#39;.</li><li>Press &#39;Close&#39; (Escape) to leave.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="header"><summary>Folder and status</summary><p>The bold line names the folder and its path. The status line at the bottom reports the last result. When the publishing service is not running, the window says &#39;Publishing service unavailable.&#39; and its buttons are off.</p></details>
+<details id="guest-invitation"><summary>Guest invitation</summary><p>The group has &#39;Create guest invitation..&#39;, &#39;Withdraw selected&#39; and a list with Type, Created and Used for the guest invitations of this folder. Withdrawing removes the invitation; it does not delete the folder or its files.</p></details>
+<details id="password-link"><summary>Link with a password (no account)</summary><p>The status reads &#39;Link not created.&#39; or &#39;Link is active.&#39; The &#39;Link password:&#39; box is masked and &#39;Generate&#39; fills it. &#39;Create link&#39; becomes &#39;Update link&#39; while a link is active. &#39;Withdraw link&#39; asks first, because every active session on the link ends. &#39;Show QR / Code..&#39; shows the link as a code.</p></details>
+<details id="availability"><summary>Why creating is off</summary><p>Each group shows a reason line saying that the program&#39;s file server cannot limit a login to one folder. While it is shown, all controls that create invitations or links are disabled. Withdrawing existing access depends only on what exists.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

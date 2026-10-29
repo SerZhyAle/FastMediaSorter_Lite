@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Main Window - Fast Media Sorter</title>
+  <title>Share Manager - Fast Media Sorter &amp; Sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Main Window</h1>
+  <h1 id="title">Share Manager - Fast Media Sorter &amp; Sharing</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Main Window.</p>
+    <p>La finestra principale di Share Manager, il servizio locale di condivisione e pianificazione. Elenca le cartelle che questo PC condivide con un telefono tramite SFTP, avvia e ferma la condivisione, fornisce il codice di accesso e mostra come il telefono pu&#242; raggiungere il PC. Le operazioni pianificate e l&#39;account di scambio hanno le loro pagine nelle impostazioni del gestore. Si apre dal visualizzatore o dall&#39;icona nell&#39;area di notifica; chiudendo la finestra l&#39;app resta nell&#39;area di notifica.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-main-light.png" alt="Share Manager Main Window">
-    <img class="shot dark" src="share-main-dark.png" alt="Share Manager Main Window">
+    <img class="shot light" src="share-main-light.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
+    <img class="shot dark" src="share-main-dark.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Premi &#171;Aggiungi..&#187; e scegli &#171;Cartella..&#187; per inserire una cartella nell&#39;elenco.</li><li>Spunta la cartella: vengono servite solo le cartelle spuntate.</li><li>Premi &#171;Avvia la condivisione&#187; (serve almeno una cartella spuntata).</li><li>Premi &#171;Condividi&#187; per ottenere il codice QR o il file .fmscfg per il telefono.</li><li>Per l&#39;accesso dall&#39;esterno della rete domestica apri il gruppo &#171;Accesso da internet&#187; e usa i suoi due pulsanti.</li><li>Premi &#171;Ferma la condivisione&#187; quando hai finito.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="top-row"><summary>Riga superiore</summary><p>&#171;Impostazioni&#187; apre le impostazioni del gestore. &#171;Avvia la condivisione&#187; diventa &#171;Ferma la condivisione&#187; finch&#233; il server &#232; in funzione. &#171;Condividi&#187; apre la procedura guidata del codice di accesso e funziona solo mentre la condivisione &#232; attiva; altrimenti il suggerimento invita ad avviare prima il server. &#171;Espandi tutto&#187; e &#171;Comprimi tutto&#187; aprono o chiudono i gruppi sottostanti.</p></details>
+<details id="add-menu"><summary>Menu Aggiungi..</summary><p>&#171;Cartella..&#187; aggiunge una cartella con la consueta finestra di selezione; &#171;+ Corrente&#187; (con il nome della cartella) compare solo quando il gestore &#232; stato aperto da una cartella del visualizzatore e aggiunge proprio quella cartella. &#171;Dischi .fdd..&#187; apre l&#39;elenco dei dischi FileDO e &#171;Creazione guidata aggiunta risorsa..&#187; guida passo dopo passo nell&#39;aggiunta di una nuova risorsa.</p></details>
+<details id="list-buttons"><summary>Modifica, Rimuovi, Codice telefono.. e Appunti</summary><p>&#171;Modifica&#187; apre le opzioni della cartella selezionata. &#171;Rimuovi&#187; elimina la riga selezionata dopo una domanda: le impostazioni proprie della cartella (PIN, filtri, destinazione) vanno via con essa e non si possono ripristinare. &#171;Codice telefono..&#187; apre la finestra che riceve un codice di connessione dal telefono. Il menu &#171;Appunti&#187; (&#171;Invia gli appunti al server&#187;, &#171;Ottieni gli appunti dal server&#187;) &#232; mostrato solo quando lo scambio degli appunti &#232; disponibile.</p></details>
+<details id="folder-list"><summary>Risorse condivise</summary><p>Una riga per risorsa, con una casella di controllo e le colonne Nome, Tipo e Cartella. Una riga spuntata viene servita ai telefoni; un elenco vuoto mostra &#171;Aggiungi la prima risorsa..&#187;. Se togli la spunta all&#39;ultima cartella spuntata, la finestra chiede se fermare la condivisione, perch&#233; i telefoni connessi vengono disconnessi. Avviare la condivisione senza nessuna cartella spuntata mostra soltanto il suggerimento &#171;Aggiungi prima una cartella e spuntala.&#187;.</p></details>
+<details id="phone-access"><summary>Accesso dal telefono</summary><p>I dati di connessione che servono a un telefono o a qualsiasi client SFTP: l&#39;indirizzo via internet e a casa (Wi-Fi), IPv6, la chiave host, l&#39;utente e la password. &#171;Mostra la password&#187; mostra la password e &#171;Nascondi la password&#187; la nasconde di nuovo. Il testo sotto il gruppo spiega se il telefono raggiunge il PC solo da casa o anche dall&#39;esterno.</p></details>
+<details id="internet-access"><summary>Accesso da internet</summary><p>&#171;Verifica l&#39;accesso da internet&#187; apre la finestra del test di accesso da internet. &#171;Come configurare l&#39;accesso da internet&#187; apre la guida al router. Il collegamento &#171;Router: ..&#187; apre la pagina del router stesso; se non &#232; stato trovato nessun router, riporta &#171;Router: sconosciuto&#187;. Il gruppo contiene un avviso: chiunque venga a conoscenza di indirizzo, utente e password pu&#242; raggiungere tutte le cartelle condivise, quindi non pubblicare il codice QR n&#233; il file .fmscfg e disattiva la condivisione quando hai finito.</p></details>
+<details id="statistics"><summary>Statistiche</summary><p>Sotto i gruppi, accanto a un breve riepilogo come &#171;N connessioni, M file&#187;, c&#39;&#232; il collegamento &#171;Statistiche&#187;. Il collegamento apre la finestra Stato della condivisione con i contatori completi.</p></details>
+<details id="server-features-off"><summary>Quando le funzioni server sono disattivate</summary><p>Finch&#233; il componente server non &#232; attivato, la finestra mostra &#171;Le funzioni server sono disattivate&#187; e il pulsante &#171;Attiva le funzioni server..&#187;, che apre la finestra &#171;Attiva la condivisione delle cartelle&#187;. Se nell&#39;installazione manca il componente di condivisione, la finestra lo segnala e chiede di reinstallare l&#39;app.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

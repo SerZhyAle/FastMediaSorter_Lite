@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>Ressourcen - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">Ressourcen</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>Die Liste der Server und Netzwerkordner, die das Programm &#246;ffnen kann: SFTP-Server, Windows-Netzwerkordner (SMB) und Ordner, die Share Manager von diesem Computer aus freigibt. Sie &#246;ffnet sich &#252;ber &#171;Ressourcen verwalten..&#187; im Ordnermen&#252;; dieselbe Liste steht auf der Seite &#171;Server und Ressourcen&#187; im Einstellungsfenster.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="Ressourcen">
+    <img class="shot dark" src="resource-manager-dark.png" alt="Ressourcen">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Dr&#252;cken Sie &#171;Hinzuf&#252;gen..&#187; und tragen Sie den Server ein, oder holen Sie &#252;ber die Schaltfl&#228;che &#171;Mehr&#187; eine Einstellungsdatei herein.</li><li>W&#228;hlen Sie die neue Zeile aus und dr&#252;cken Sie &#171;Pr&#252;fen&#187;.</li><li>Dr&#252;cken Sie &#171;&#214;ffnen&#187; oder klicken Sie doppelt auf die Zeile: Das Programm verbindet sich und zeigt den Ordner des Servers.</li><li>Mit &#171;Bearbeiten..&#187; &#228;ndern Sie eine Adresse oder ein Kennwort, mit &#171;L&#246;schen&#187; vergessen Sie eine Ressource.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>Die Liste</summary><p>Spalten: Name, Typ, Adresse, Zugriff und Zuletzt ge&#246;ffnet. Der Typ ist &#171;SFTP-Server&#187;, &#171;Netzwerkordner (SMB)&#187; oder &#171;Freigegebener Ordner (Share Manager)&#187;; unter Zugriff steht &#171;Schreibgesch&#252;tzt&#187; oder &#171;Lesen und Schreiben&#187;. Eine Zeile unter der Liste z&#228;hlt die Ressourcen; ist die Liste leer, zeigt das Fenster einen Hinweis und die Schaltfl&#228;che &#171;Hinzuf&#252;gen..&#187;. Bearbeiten, L&#246;schen und Pr&#252;fen (und &#214;ffnen in der unteren Reihe des Ressourcen-Fensters) brauchen eine ausgew&#228;hlte Zeile; bis dahin lautet ihr Tooltip &#171;W&#228;hlen Sie zuerst eine Ressource in der Liste aus&#187;.</p></details>
+<details id="add-edit"><summary>Hinzuf&#252;gen.. und Bearbeiten..</summary><p>&#171;Hinzuf&#252;gen..&#187; &#246;ffnet das Formular einer neuen Ressource und &#171;Bearbeiten..&#187; das Formular der ausgew&#228;hlten. Ein dort eingegebenes Kennwort wird f&#252;r Ihr Windows-Konto verschl&#252;sselt gespeichert, nie in der Liste selbst.</p></details>
+<details id="remove"><summary>L&#246;schen</summary><p>&#171;L&#246;schen&#187; fragt vorher nach, und die Standardantwort ist Nein. Die Frage nennt die Ressource und sagt, dass auch das daf&#252;r gespeicherte Kennwort entf&#228;llt, w&#228;hrend die Dateien auf dem Server unber&#252;hrt bleiben.</p></details>
+<details id="check"><summary>Pr&#252;fen</summary><p>&#171;Pr&#252;fen&#187; testet die ausgew&#228;hlte Zeile, ohne sie zu &#246;ffnen. Bei einem SFTP-Server probiert es jede bekannte Adresse der Ressource aus und meldet jede als Host:Port mit einem Urteil: Eine lebendige SSH-Antwort macht die Pr&#252;fung zu einem Erfolg, ein offener Port ohne SSH ist eine Warnung, Schweigen ist ein Fehlschlag. Es wird kein Kennwort gesendet. Bei einem Netzwerkordner &#246;ffnet es die Freigabe mit dem gespeicherten Kennwort und liest ihren obersten Ordner; ist kein Kennwort gespeichert, werden Sie gebeten, eines &#252;ber &#171;Bearbeiten..&#187; einzugeben. Bei einer Share-Manager-Zeile wird nur gepr&#252;ft, ob der Ordner auf diesem Computer existiert.</p></details>
+<details id="open"><summary>&#214;ffnen</summary><p>&#171;&#214;ffnen&#187; oder ein Doppelklick auf eine Zeile &#252;bergibt die Ressource an das Programm, das sich verbindet und ihren Ordner zeigt. Ist kein Kennwort gespeichert oder wird das gespeicherte abgelehnt, fragt zuerst ein kleines Fenster danach.</p></details>
+<details id="more-menu"><summary>Die Schaltfl&#228;che Mehr</summary><p>Die Schaltfl&#228;che mit den Punkten enth&#228;lt: &#171;Exportieren..&#187; (braucht eine ausgew&#228;hlte Ressource), &#171;Aus Datei importieren..&#187; (eine .fmscfg-, .json- oder .txt-Datei oder ein Bild eines QR-Codes; eine Datei l&#228;sst sich auch auf die Liste ziehen), &#171;Aus Zwischenablage importieren&#187;, &#171;Mit Kamera scannen..&#187; (nur vorhanden, wenn Share Manager installiert und eine Kamera gefunden ist), &#171;Code f&#252;r Telefon anzeigen..&#187; und f&#252;r eine ausgew&#228;hlte Zeile &#171;Warum verbindet es nicht?..&#187;, das die Verbindungsdiagnose &#246;ffnet.</p></details>
+<details id="share-manager-rows"><summary>Share-Manager-Zeilen und Meine Ger&#228;te</summary><p>Ein Ordner, den Share Manager von diesem Computer aus freigibt, wird dort verwaltet: Sein Tooltip lautet &#171;Dieser freigegebene Ordner wird im Share Manager verwaltet&#187;, Bearbeiten und L&#246;schen in seiner Zeile &#246;ffnen stattdessen Share Manager und &#228;ndern hier nichts, und Exportieren ist deaktiviert. Ist der Austausch-Client verf&#252;gbar, zeigt ein Abschnitt &#171;Meine Ger&#228;te&#187; unter der Liste die Ordner Ihrer anderen Ger&#228;te auf einem Austauschserver.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

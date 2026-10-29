@@ -14,7 +14,7 @@
   <h1 id="title">Connection Diagnosis</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>समझाता है कि किसी सर्वर या डिवाइस तक क्यों नहीं पहुँचा जा सकता, और एक-एक कदम करके सुझाता है कि क्या आज़माएँ। यह कंप्यूटर या Windows की कोई सेटिंग नहीं बदलता। यह संसाधन सूची के और मेनू में (चुनी हुई पंक्ति के लिए) Why doesn&#39;t it connect?.. से खुलता है, मेरे डिवाइस की उस सर्वर प्रविष्टि से जो फिर से साइन-इन कर रही है, बदला हुआ प्रमाणपत्र दिखा रही है या कनेक्ट नहीं हो पा रही, और संसाधन खोलना विफल होने पर अपने आप।</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
@@ -22,13 +22,16 @@
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>What happened पढ़ें।</li><li>What to try में जो लिखा है वह आज़माएँ।</li><li>यदि कारण यह नहीं है, तो Next step दबाएँ।</li><li>यदि किसी को कोड चाहिए तो Details दबाएँ, और उन्हें सौंपने के लिए Copy।</li><li>विंडो बंद करें।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>What happened</summary><p>विफलता के बारे में एक वाक्य, जैसे Cannot reach the server. या The login or the password is wrong. या This server does not look like the one you connected to before. यह उस विफलता के प्रकार पर निर्भर है जिसने विंडो खोली।</p></details>
+<details id="what-to-try"><summary>What to try</summary><p>विंडो उस पहले कदम से शुरू होती है जो जाँच में विफल हुआ, या पहले कदम से यदि कोई विफल नहीं हुआ। सामान्य कदम: जिस डिवाइस पर सर्वर चलता है उसे जगाना; जाँचना कि दोनों डिवाइस एक ही नेटवर्क पर हैं; गेस्ट Wi-Fi छोड़ना; VPN को कुछ देर के लिए बंद करना; Windows नेटवर्क को निजी पर सेट करना; सर्वर को किसी दूसरे नेटवर्क से जाँचना; सही तारीख और समय सेट करना; नए फ़िंगरप्रिंट की पुष्टि करना; लॉगिन और पासवर्ड दोबारा टाइप करना। आख़िरी कदम बताता है कि इसे केवल सर्वर का संचालक ठीक कर सकता है।</p></details>
+<details id="next-step"><summary>Next step and Windows Settings</summary><p>Next step कदमों में आगे बढ़ता है और आख़िरी कदम पर गायब हो जाता है। उन दो कदमों के लिए जिन्हें Windows की सेटिंग ठीक कर सकती है, नेटवर्क प्रोफ़ाइल और घड़ी, Open Windows Settings बटन Windows का संबंधित पृष्ठ खोलता है; प्रोग्राम खुद कुछ नहीं बदलता।</p></details>
+<details id="details-copy"><summary>Details and Copy</summary><p>Details निदान कोड वाला केवल-पढ़ने का बॉक्स दिखाता या छिपाता है: विफलता का प्रकार, लक्ष्य, मार्ग, विफल कदम और तय किए गए कदम। इसमें कभी कोई पता, लॉगिन, पासवर्ड या फ़िंगरप्रिंट नहीं होता। Copy वह पंक्ति क्लिपबोर्ड पर रखता है और विंडो कहती है: Diagnosis codes copied to clipboard.</p></details>
+<details id="how-it-checks"><summary>जाँच कैसे काम करती है</summary><p>जाँच केवल उसी कनेक्शन के लिए चलती है जो आपने आज़माया और केवल पढ़ती है: वह होस्ट और पोर्ट तक पहुँचने की कोशिश करती है और नेटवर्क की स्थिति, VPN एडेप्टर, Windows नेटवर्क प्रोफ़ाइल, पते का प्रकार, घड़ी और प्रमाणपत्र देखती है। वह पहले विफल कदम पर रुक जाती है, और जो जाँच की ही नहीं जा सकी उसे कभी सफल या विफल नहीं गिना जाता।</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

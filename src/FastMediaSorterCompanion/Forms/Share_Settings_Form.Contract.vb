@@ -169,8 +169,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                     nextId = If(onDevice, "device", "account")
                     caption = If(onDevice, Function() DriveChannelText.DeviceGroupTitle(), Function() DriveChannelText.AccountGroupTitle())
                 Case "scheduled"
-                    ' The list and its commands, then what applies to this PC (4.4).
-                    Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, PlacedControl(_schedFeature))
+                    ' This PC's schedule switch and autostart come before the operations list.
+                    Dim machine = row Is PlacedControl(_schedFeature) OrElse
+                        row Is _schedAutostart OrElse row Is _schedAutostartLink
                     nextId = If(machine, "machine", "operations")
                     caption = If(machine, Function() Localization.T("Для этого компьютера"), Function() Localization.T("Операции"))
                 Case "help"

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>Ressource bearbeiten - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">Ressource bearbeiten</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>Das Formular einer gespeicherten Ressource, also eines Servers oder Netzwerkordners. &#171;Hinzuf&#252;gen..&#187; in der Ressourcenliste &#246;ffnet es leer mit der &#220;berschrift &#171;Neue Ressource&#187;, &#171;Bearbeiten..&#187; &#246;ffnet es ausgef&#252;llt als &#171;Ressource bearbeiten&#187;, und eine im Ordnerfeld eingegebene sftp://-Adresse &#246;ffnet es vorausgef&#252;llt.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="Ressource bearbeiten">
+    <img class="shot dark" src="resource-edit-dark.png" alt="Ressource bearbeiten">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>W&#228;hlen Sie den Typ: SFTP-Server oder Netzwerkordner (SMB).</li><li>Geben Sie der Ressource einen Namen und tragen Sie Serveradresse und Port bzw. den Netzwerkpfad ein.</li><li>Geben Sie Benutzer und Kennwort ein.</li><li>Legen Sie den Ordner auf dem Server fest und aktivieren Sie die Option Nur lesen, wenn dort nichts ge&#228;ndert werden darf.</li><li>Dr&#252;cken Sie &#171;Speichern&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>Typ</summary><p>&#171;Typ:&#187; wird beim Anlegen der Ressource gew&#228;hlt: &#171;SFTP-Server&#187; (Port 22, Ordner /) oder &#171;Netzwerkordner (SMB)&#187;. Bei einer gespeicherten Ressource ist die Liste deaktiviert, weil das gespeicherte Kennwort und der Serverschl&#252;ssel zu genau einer Art geh&#246;ren. Bei SMB hei&#223;t das Adressfeld &#171;Netzwerkordner:&#187; und nimmt einen Pfad wie \\server\folder an; die Felder f&#252;r Port und Ordner gelten nur f&#252;r SFTP.</p></details>
+<details id="address"><summary>Name, Server und Port</summary><p>&#171;Name:&#187; ist das, was die Liste zeigt; bleibt es leer, wird die Serveradresse verwendet. &#171;Server:&#187; ist ein Name oder eine IP-Adresse und &#171;Port:&#187; eine Zahl von 1 bis 65535. Wer den Server oder den Port &#228;ndert, verwirft die anderen Adressen, die mit einer importierten Ressource kamen, damit ein gespeichertes Kennwort nie an eine Adresse geht, die Sie nicht eingegeben haben.</p></details>
+<details id="credentials"><summary>Benutzer und Kennwort</summary><p>&#171;Benutzer:&#187; und &#171;Kennwort:&#187;. Das Kennwort wird f&#252;r Ihr Windows-Konto verschl&#252;sselt gespeichert; die Liste enth&#228;lt nur einen Verweis darauf. Bei einer gespeicherten Ressource ist das Feld leer und zeigt den Hinweis &#171;Leer - gespeichertes Kennwort behalten&#187;: Tippen Sie nur etwas ein, um es zu ersetzen. &#171;Kennwort anzeigen&#187; ist am Anfang ausgeschaltet. Eine neue Ressource braucht ein Kennwort.</p></details>
+<details id="folder-readonly"><summary>Ordner und Nur lesen</summary><p>&#171;Ordner auf dem Server:&#187; ist der Ordner, den das Programm zuerst &#246;ffnet, ein Pfad, der mit / beginnt. &#171;Nur lesen (auf dem Server nichts &#228;ndern)&#187; bewirkt, dass das Programm die Ressource als schreibgesch&#252;tzt behandelt: kein Verschieben oder Kopieren hinein, kein L&#246;schen oder Umbenennen darin.</p></details>
+<details id="server-key"><summary>Serverschl&#252;ssel</summary><p>&#171;Serverschl&#252;ssel:&#187; zeigt den f&#252;r diesen Server gemerkten Fingerabdruck oder sagt, dass er bei der ersten Verbindung erscheint, wo Sie ihn best&#228;tigen. &#171;Serverschl&#252;ssel vergessen..&#187; erscheint nur, wenn ein Schl&#252;ssel gemerkt ist. Die Schaltfl&#228;che fragt zuerst nach (die Standardantwort ist Nein) und erkl&#228;rt: Wurde der Server neu installiert, ist das normal, sonst gibt sich wom&#246;glich jemand als der Server aus. Sie l&#246;scht nur den Schl&#252;ssel: Die n&#228;chste Verbindung zeigt den neuen Fingerabdruck und fragt erneut.</p></details>
+<details id="save-errors"><summary>Speichern</summary><p>&#171;Speichern&#187; pr&#252;ft die Felder und nennt das erste Problem in Rot unter ihnen: Adresse, Port, Ordner, Benutzername oder ein fehlendes Kennwort. &#171;Abbrechen&#187; schlie&#223;t das Formular ohne &#196;nderungen.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

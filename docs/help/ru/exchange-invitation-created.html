@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Invitation Created - Fast Media Sorter</title>
+  <title>Приглашение создано - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Invitation Created</h1>
+  <h1 id="title">Приглашение создано</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Invitation Created.</p>
+    <p>Окно показывает новое приглашение один раз - сразу после &#171;Создать&#187; в окне &#171;Создать приглашение&#187;. В нём одноразовый код и строка подключения, уже содержащая код, если программа сервера обмена смогла её составить.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-invitation-created-light.png" alt="Invitation Created">
-    <img class="shot dark" src="exchange-invitation-created-dark.png" alt="Invitation Created">
+    <img class="shot light" src="exchange-invitation-created-light.png" alt="Приглашение создано">
+    <img class="shot dark" src="exchange-invitation-created-dark.png" alt="Приглашение создано">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Проверьте строку &#171;Тип приглашения: ..&#187;.</li><li>Нажмите &#171;Копировать код&#187;, либо &#171;Копировать строку&#187; для строки с приглашением, либо &#171;Показать QR-код&#187;.</li><li>Передайте результат человеку по надёжному каналу.</li><li>Нажмите &#171;Закрыть&#187;. Тот же код повторно не показывается.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="type-and-warning"><summary>Тип и предупреждение</summary><p>Жирная строка &#171;Тип приглашения: Своё устройство или семья&#187; называет выбранный тип. Строка предупреждающего цвета сообщает: &#171;Приглашение показывается один раз. Сохраните код или передайте строку подключения пользователю.&#187; Когда окно закрывается, код и строка стираются из него. Если один из них потерян, отзовите приглашение в списке и создайте новое.</p></details>
+<details id="code"><summary>Код приглашения</summary><p>В поле &#171;Код приглашения:&#187; (только чтение) показан код. &#171;Копировать код&#187; копирует его как секрет - в обход истории буфера обмена Windows (Win+V) и облачного буфера; строка ниже сообщает &#171;Код приглашения скопирован в буфер обмена.&#187; или &#171;Не удалось скопировать код в буфер обмена.&#187;</p></details>
+<details id="connection-string"><summary>Строка подключения с приглашением</summary><p>&#171;Строка подключения с приглашением:&#187; есть, только если строку удалось составить. Она называет сервер и несёт код, поэтому обращайтесь с ней как с кодом: &#171;Копировать строку&#187; тоже копирует её как секрет. Пароля вашей учётной записи в ней нет.</p></details>
+<details id="qr-code"><summary>QR-код</summary><p>&#171;Показать QR-код&#187; открывает картинку со строкой приглашения. Любой, кто её увидит, сможет воспользоваться приглашением, поэтому показывайте её только тому, кому она предназначена. Если картинку составить не удалось, строка сообщает &#171;QR-код сейчас недоступен.&#187;</p></details>
+<details id="other-person"><summary>Что делает другой человек</summary><p>В окне учётной записи обмена (&#171;Войти..&#187;) человек вставляет строку кнопкой &#171;Вставить&#187; или открывает сохранённый файл. Строка с приглашением переключает окно на регистрацию: он выбирает логин, дважды вводит пароль и нажимает &#171;Создать учётную запись&#187;. Неверное или уже использованное приглашение и занятый логин отклоняются с сообщением.</p></details>
+<details id="close"><summary>Закрыть</summary><p>&#171;Закрыть&#187; завершает работу окна и стирает из него код и строку. Больше здесь ничего не сохраняется.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>পোর্ট ফরওয়ার্ডিং নির্দেশিকা - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">পোর্ট ফরওয়ার্ডিং নির্দেশিকা</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>শেয়ারকে আপনার বাড়ির নেটওয়ার্কের বাইরে থেকে পৌঁছানোর যোগ্য করতে সাহায্য করে। এটি বাহ্যিক ঠিকানা দেখায় এবং পোর্ট নিজে থেকে খুলেছে নাকি রাউটারে ফরওয়ার্ড করতে হবে তাও জানায়, এবং একটি পরীক্ষা ও বিস্তারিত নির্দেশিকা দেয়। এটি মূল উইন্ডোর কীভাবে ইন্টারনেট অ্যাক্সেস সেট করবেন বোতাম থেকে খোলে।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="পোর্ট ফরওয়ার্ডিং নির্দেশিকা">
+    <img class="shot dark" src="internet-access-dark.png" alt="পোর্ট ফরওয়ার্ডিং নির্দেশিকা">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>আগে শেয়ারিং শুরু করুন; নইলে উইন্ডো তা করতে বলে।</li><li>অবস্থার লাইনগুলো পড়ুন: পৌঁছানো যায়, CGNAT-এর পিছনে, বা পোর্ট ফরওয়ার্ডিং দরকার।</li><li>ফরওয়ার্ডিং দরকার হলে বিস্তারিত নির্দেশিকা খুলুন এবং রাউটারে নিয়ম তৈরি করুন।</li><li>এই পিসি থেকে ঠিকানা পরখ করতে পরীক্ষা চাপুন।</li><li>ফোনের Wi-Fi বন্ধ রেখে মোবাইল ডেটায় ফোন থেকে নিশ্চিত করুন।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>অবস্থা</summary><p>উইন্ডো বাহ্যিক ঠিকানা শনাক্ত করে এবং এগুলোর একটি বলে: ইন্টারনেট থেকে পৌঁছানো যায়, বাহ্যিক ঠিকানা: .. (পোর্ট ফরওয়ার্ডিং দরকার), বাহ্যিক ঠিকানা অজানা - রাউটারে দেখুন। অথবা CGNAT-এর পিছনে - বাইরে থেকে পৌঁছানো যায় না। পোর্ট নিজে থেকে (UPnP) খুললে রাউটার সেটআপ লাগে না, তবু এটি কাজ করছে কি না তা নিশ্চিত করতে পারে কেবল মোবাইল ডেটায় থাকা ফোন। রিফ্রেশ শনাক্তকরণ আবার চালায়।</p></details>
+<details id="guide"><summary>রাউটার ও নির্দেশিকা</summary><p>রাউটারের লাইন তার ঠিকানা দেখায়, বা খোঁজার সময় রাউটার শনাক্ত করা হচ্ছে.. দেখায়। বিস্তারিত নির্দেশিকা খুলুন (HTML, আপনার মান ও রাউটার মডেল সহ).. লিংকটি একটি স্থানীয় HTML নির্দেশিকা খোলে; খোলা না গেলে উইন্ডো তা জানায়। বাড়ি ও অন্য নেটওয়ার্ক থেকে অ্যাক্সেস (পোর্টাল) লিংকটি ব্রাউজারে সহায়তা পোর্টালের সংশ্লিষ্ট পৃষ্ঠা খোলে।</p></details>
+<details id="test"><summary>পরীক্ষা</summary><p>এই পিসি থেকে বাহ্যিক ঠিকানা পরখ করে এবং জানায়: SFTP সার্ভার উপলব্ধ, পোর্ট খোলা, কিন্তু SFTP সাড়া দেয়নি, বন্ধ সংযোগ (সম্ভবত সংযোগের সীমা), অথবা কোনো উত্তর নেই। এটি চূড়ান্ত নয়: অনেক রাউটার ভিতর থেকে নিজের বাহ্যিক ঠিকানায় অনুরোধ প্রত্যাখ্যান করে, তাই নির্ভরযোগ্য যাচাই হলো মোবাইল ডেটায় ফোন।</p></details>
+<details id="safety"><summary>নিরাপত্তা</summary><p>ইন্টারনেটে SFTP খুলে দিলে ঠিকানা, লগইন ও পাসওয়ার্ড যে জানবে সে-ই প্রতিটি শেয়ার করা ফোল্ডার পাবে। QR কোড বা .fmscfg ফাইল প্রকাশ করবেন না এবং কাজ শেষ হলে শেয়ারিং বন্ধ করে দিন। বন্ধ করুন উইন্ডো ছেড়ে যায়।</p></details>
+    <p><a href="share-settings.html">ম্যানেজার সেটিংস</a> · <a href="sftp-settings.html">SFTP শেয়ারিং সেটিংস</a> · <a href="exchange-server-settings.html">এক্সচেঞ্জ সার্ভার সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

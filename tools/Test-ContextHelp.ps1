@@ -10,7 +10,8 @@
       5. Offline help corpus: all 13 locales contain index.html and all topic pages.
       6. Rule 8 anatomy: purpose, capture, order, elements, related sections present.
       7. Rule 9 privacy & offline: no scripts, no-referrer meta, no external requests, no external CSS imports.
-      8. Light and dark capture images exist for every topic.
+      8. Every topic is accounted for (spec 267): real-window captures with hash evidence, settings-test captures,
+         or declared not capturable with a reason and a visible note; no generic text, placeholder or stray picture.
     Ends in CHECK-VERDICT (tools/lib/Verdict.ps1).
 #>
 [CmdletBinding()]
@@ -217,17 +218,9 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
 
             # Rule 8 anatomy
             if ($topic -ne 'index') {
-                foreach ($section in @('purpose', 'order', 'elements', 'related')) {
+                foreach ($section in @('purpose', 'capture', 'order', 'elements', 'related')) {
                     if ($html -notmatch "id=`"$section`"") {
                         Problem "Page docs/help/$locale/$topic.html lacks section id='$section'"
-                    }
-                }
-
-                # Check capture images
-                foreach ($theme in @('light', 'dark')) {
-                    $capPath = Join-Path $localeDir "$topic-$theme.png"
-                    if (-not (Test-Path -LiteralPath $capPath)) {
-                        Problem "Missing capture image: docs/help/$locale/$topic-$theme.png"
                     }
                 }
             }
@@ -252,36 +245,97 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
     }
 }
 
-# Specification 267: these repaired surfaces carry proof from the real-window capture harness.
-# The remaining corpus still has separately recorded placeholder debt; file existence is not authenticity.
+# Specification 267: every topic is accounted for. A topic is captured by the real-window harness (one evidence
+# record per locale and theme), captured by the Share Manager settings test (declared 'settings-test'), or declared
+# not capturable (declared 'none', with a reason): its page says so and no picture of it exists. File existence is
+# not authenticity, and no topic keeps the generic text or the 64x48 placeholders of the first corpus.
+$allLocales = @('en', 'ru', 'uk', 'de', 'it', 'es', 'fr', 'pt', 'ar', 'hi', 'bn', 'ur', 'zh')
+function Get-PngSize([string]$path) {
+    $bytes = [IO.File]::ReadAllBytes($path)
+    if ($bytes.Length -lt 24 -or [BitConverter]::ToString($bytes, 0, 8) -ne '89-50-4E-47-0D-0A-1A-0A') { return $null }
+    # PNG dimensions are big-endian.
+    $width = [uint32]$bytes[16] * 16777216L + [uint32]$bytes[17] * 65536L + [uint32]$bytes[18] * 256L + $bytes[19]
+    $height = [uint32]$bytes[20] * 16777216L + [uint32]$bytes[21] * 65536L + [uint32]$bytes[22] * 256L + $bytes[23]
+    [pscustomobject]@{ Width = $width; Height = $height }
+}
 $captureEvidencePath = Join-Path $Root 'docs/help/context-help-capture-evidence.json'
+$gapCount = 0
 if (!(Test-Path -LiteralPath $captureEvidencePath)) {
-    Problem 'Missing real-window capture evidence for the live-broadcast and Drive topics'
+    Problem 'Missing real-window capture evidence: docs/help/context-help-capture-evidence.json'
 } else {
-    $captureEvidence = Get-Content -LiteralPath $captureEvidencePath -Raw | ConvertFrom-Json
+    $captureEvidence = Get-Content -LiteralPath $captureEvidencePath -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($captureEvidence.schema -ne 1) { Problem 'Unsupported context-help capture evidence schema' }
-    foreach ($locale in @('en', 'ru', 'uk', 'de', 'it', 'es', 'fr', 'pt', 'ar', 'hi', 'bn', 'ur', 'zh')) {
-        foreach ($topic in @('live-broadcast', 'share-live-broadcast', 'share-settings-drive')) {
+    $declared = @{}
+    foreach ($entry in @($captureEvidence.declared)) {
+        if (!$entry) { continue }
+        if ($entry.capture -notin @('none', 'settings-test') -or [string]::IsNullOrWhiteSpace($entry.reason)) {
+            Problem "Declared capture '$($entry.topic)' needs capture 'none' or 'settings-test' and a reason"
+        }
+        if ($entry.topic -notin $helpTopics) { Problem "Declared capture names an unknown topic: $($entry.topic)" }
+        $declared[$entry.topic] = $entry
+    }
+    $byPath = @{}
+    foreach ($record in @($captureEvidence.screenshots)) {
+        if ($byPath.ContainsKey($record.path)) { Problem "Duplicate capture evidence: $($record.path)" }
+        $byPath[$record.path] = $record
+        if ($declared.ContainsKey($record.topic)) { Problem "Capture evidence for a declared topic: $($record.path)" }
+    }
+    foreach ($topic in $helpTopics) {
+        if ($topic -eq 'index') { continue }
+        $kind = if ($declared.ContainsKey($topic)) { $declared[$topic].capture } else { 'harness' }
+        if ($kind -eq 'none') { $gapCount++ }
+        foreach ($locale in $allLocales) {
+            $page = Join-Path $helpRoot "$locale/$topic.html"
+            if (Test-Path -LiteralPath $page) {
+                $html = [IO.File]::ReadAllText($page)
+                if ($html -match 'Review the options on screen|section in Fast Media Sorter\.|id="element-1"') {
+                    Problem "Generic help text instead of authored copy: $locale/$topic.html"
+                }
+                if ($kind -eq 'none' -and $html -notmatch '<figure id="capture" class="no-shot">') {
+                    Problem "Declared uncaptured topic must say so in place of the picture: $locale/$topic.html"
+                }
+            }
             foreach ($theme in @('light', 'dark')) {
                 $relative = "$locale/$topic-$theme.png"
-                $records = @($captureEvidence.screenshots | Where-Object { $_.path -ceq $relative })
-                if ($records.Count -ne 1) { Problem "Missing or duplicate capture evidence: $relative"; continue }
-                $record = $records[0]
-                $path = Join-Path $Root "docs/help/$relative"
-                if (!(Test-Path -LiteralPath $path)) { Problem "Missing real capture: $relative"; continue }
-                $bytes = [IO.File]::ReadAllBytes($path)
-                if ($bytes.Length -lt 24 -or [BitConverter]::ToString($bytes, 0, 8) -ne '89-50-4E-47-0D-0A-1A-0A') {
-                    Problem "Invalid capture PNG: $relative"; continue
+                $path = Join-Path $helpRoot $relative
+                if ($kind -eq 'none') {
+                    if (Test-Path -LiteralPath $path) { Problem "Picture of a topic declared not capturable: $relative" }
+                    continue
                 }
-                # PNG dimensions are big-endian; the historical generated placeholders were 64x48.
-                $width = [uint32]$bytes[16] * 16777216L + [uint32]$bytes[17] * 65536L + [uint32]$bytes[18] * 256L + $bytes[19]
-                $height = [uint32]$bytes[20] * 16777216L + [uint32]$bytes[21] * 65536L + [uint32]$bytes[22] * 256L + $bytes[23]
-                if ($width -lt 256 -or $height -lt 150) { Problem "Placeholder-sized real capture: $relative" }
+                if (!(Test-Path -LiteralPath $path)) { Problem "Missing real capture: $relative"; continue }
+                $size = Get-PngSize $path
+                if (!$size) { Problem "Invalid capture PNG: $relative"; continue }
+                if ($size.Width -lt 256 -or $size.Height -lt 150) { Problem "Placeholder-sized capture: $relative" }
+                if ($kind -ne 'harness') { continue }
+                $record = $byPath[$relative]
+                if (!$record) { Problem "Missing capture evidence: $relative"; continue }
                 if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $record.sha256) { Problem "Capture hash drift: $relative" }
                 if ($record.locale -cne $locale -or $record.theme -cne $theme -or $record.topic -cne $topic -or
-                    $record.method -cne 'Shown WinForms window; PrintWindow by process-owned HWND' -or !$record.capturedUtc) {
+                    $record.method -cne 'Shown WinForms window; PrintWindow by process-owned HWND' -or !$record.capturedUtc -or !$record.state) {
                     Problem "Incomplete real-window provenance: $relative"
                 }
+            }
+        }
+    }
+    # A harness picture that is not a topic of its own is embedded in a page (the Drive page in share-settings):
+    # it carries the same evidence. Anything else - an index picture, a retired topic - is a leftover placeholder.
+    $embedded = @($captureEvidence.screenshots | ForEach-Object topic | Sort-Object -Unique | Where-Object { $_ -notin $helpTopics })
+    foreach ($locale in $allLocales) {
+        $localeDir = Join-Path $helpRoot $locale
+        if (!(Test-Path -LiteralPath $localeDir)) { continue }
+        foreach ($topic in $embedded) {
+            foreach ($theme in @('light', 'dark')) {
+                $relative = "$locale/$topic-$theme.png"
+                $path = Join-Path $helpRoot $relative
+                $record = $byPath[$relative]
+                if (!$record -or !(Test-Path -LiteralPath $path)) { Problem "Missing embedded capture or its evidence: $relative"; continue }
+                if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $record.sha256) { Problem "Capture hash drift: $relative" }
+            }
+        }
+        foreach ($png in Get-ChildItem -LiteralPath $localeDir -Filter '*.png') {
+            $owner = $png.BaseName -replace '-(light|dark)$', ''
+            if (($owner -notin $helpTopics -and $owner -notin $embedded) -or $owner -eq 'index') {
+                Problem "Picture that belongs to no topic: $locale/$($png.Name)"
             }
         }
     }
@@ -295,4 +349,4 @@ if ($problems.Count -gt 0) {
 }
 
 $formCount = @($discoveredTypes | Sort-Object -Unique).Count
-Exit-Verdict 'Test-ContextHelp' 0 "$formCount concrete forms, $($helpTopics.Count) topics across 13 locales verified"
+Exit-Verdict 'Test-ContextHelp' 0 "$formCount concrete forms, $($helpTopics.Count) topics across 13 locales verified; $gapCount topics declared without a capture"

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account - Fast Media Sorter</title>
+  <title>حساب التبادل - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account</h1>
+  <h1 id="title">حساب التبادل</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account.</p>
+    <p>يسجّل دخول هذا الكمبيوتر بوصفه جهازًا تابعًا لحساب على Media Exchange Server. تُفتح النافذة من الزر تسجيل الدخول.. في صفحة حساب التبادل ضمن إعدادات Share Manager، ومن الزر النشر عبر خادم تبادل.. الذي يفتحها وخيار النشر محدَّد مسبقًا.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-light.png" alt="Exchange Account">
-    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange Account">
+    <img class="shot light" src="exchange-account-light.png" alt="حساب التبادل">
+    <img class="shot dark" src="exchange-account-dark.png" alt="حساب التبادل">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اختياريًا، الصق سلسلة اتصال أو افتحها أو امسحها ضوئيًا؛ فهي تملأ الخادم واسم المستخدم.</li><li>اضغط فحص الشهادة، وما لم يكن النظام يثق بها أو تحملها السلسلة، فقارن البصمة ببصمة المشغّل ثم اضغط الوثوق بهذه الشهادة.</li><li>أدخل اسم المستخدم وكلمة المرور أو رمز الاقتران.</li><li>اضبط اسم الجهاز والخيارات.</li><li>اضغط تسجيل الدخول.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>سلسلة الاتصال</summary><p>يقبل الحقل سلسلة الاتصال (اختياري) سلسلة تلصقها بالزر لصق، أو تقرؤها بالزر مسح بالكاميرا.. أو تحمّلها من ملف .fmsexch أو من صورة رمز QR بالزر فتح ملف.. وهي تملأ الخادم واسم المستخدم فقط؛ ولا يتصل شيء إلى أن تضغط تسجيل الدخول. السلسلة التي تحمل بصمة تثبّت تلك الشهادة، فلا حاجة إلى مقارنة يدوية. والسلسلة التي تحمل دعوة تحوّل النافذة إلى التسجيل. أما السلسلة غير الصالحة فيُرفض استخدامها برسالة من سطر واحد.</p></details>
+<details id="certificate"><summary>الخادم والشهادة</summary><p>يتصل الزر فحص الشهادة بالخادم المكتوب في الحقل الخادم (المضيف:المنفذ) ويعرض بصمة شهادة الخادم. إن كان النظام يثق بالشهادة فلا حاجة إلى تثبيتها. وإلا فقارن البصمة بتلك التي أعطاك إياها مشغّل الخادم ثم اضغط الوثوق بهذه الشهادة؛ هذا الزر وحده يقبل شهادة لا يعرفها النظام. وتغيير نص الخادم يُلغي نتيجة الفحص السابق. ولا يفعل Enter شيئًا ما دامت لا توجد شهادة موثوقة، فلا تذهب كلمة مرور إلى خادم لم يتحقق منه أحد.</p></details>
+<details id="login-and-secret"><summary>اسم المستخدم وكلمة المرور ورمز الاقتران</summary><p>أدخل اسم المستخدم ثم اختر تسجيل الدخول بكلمة مرور (كلمة المرور، مع إظهار كلمة المرور) أو تسجيل الدخول برمز من جهاز آخر (رمز الاقتران، ويصدره جهاز آخر تابع للحساب نفسه). يُمسح الحقل لحظة إرسال قيمته، أيًّا كانت النتيجة؛ ولا يحتفظ الجهاز إلا برمز وصول، ولا يحتفظ بكلمة المرور أبدًا.</p></details>
+<details id="registration"><summary>التسجيل بدعوة</summary><p>حين تحمل السلسلة دعوة يحل التسجيل محل خياري تسجيل الدخول: يضبط الحقلان كلمة مرور الحساب وكلمة المرور مرة أخرى كلمة المرور الجديدة، ويجب أن تستوفي السياسة المعروضة (10 أحرف على الأقل مع حرف لاتيني كبير وآخر صغير ورقم)، ويصبح نص الزر إنشاء الحساب.</p></details>
+<details id="device-options"><summary>اسم الجهاز والخيارات</summary><p>يبدأ الحقل اسم هذا الجهاز (حتى 64 حرفًا) باسم الكمبيوتر. والخيار انشر مجلداتي المشاركة على هذا الخادم فورًا غير مفعّل إلا إذا جئت عبر النشر عبر خادم تبادل..؛ وعند تفعيله يستطيع كل جهاز في حسابك فتح جميع مجلداتك المشاركة، لأن المشاركة لها اسم دخول واحد. ويشغّل الخيار الأخير Share Manager عند تسجيل دخولك إلى Windows (معطّل افتراضيًا)، لتتمكن الأجهزة الأخرى من البث إلى هذا الكمبيوتر.</p></details>
+<details id="one-server"><summary>خادم واحد في كل مرة</summary><p>ينتمي الجهاز إلى خادم واحد. وعند تسجيل الدخول إلى خادم آخر يُسأل هل تغادر الخادم الحالي، ويتوقف النشر على الخادم القديم. وبعد فشل الاتصال يفتح الزر Why doesn&#39;t it connect?.. اختبار الاتصال.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

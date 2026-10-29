@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled Operations History - Fast Media Sorter</title>
+  <title>शेड्यूल किए गए ऑपरेशनों का इतिहास - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled Operations History</h1>
+  <h1 id="title">शेड्यूल किए गए ऑपरेशनों का इतिहास</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled Operations History.</p>
+    <p>जर्नल में दर्ज शेड्यूल किए गए फ़ाइल ऑपरेशनों के हाल के रन और नोट दिखाती है। यह Share Manager की सेटिंग्स के शेड्यूल किए गए फ़ाइल ऑपरेशन पृष्ठ पर इतिहास.. से खुलती है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled Operations History">
-    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled Operations History">
+    <img class="shot light" src="scheduled-history-light.png" alt="शेड्यूल किए गए ऑपरेशनों का इतिहास">
+    <img class="shot dark" src="scheduled-history-dark.png" alt="शेड्यूल किए गए ऑपरेशनों का इतिहास">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>सूची पढ़ें: समय, ऑपरेशन, स्टार्टअप और परिणाम।</li><li>परिणाम लंबा हो तो विंडो चौड़ी करें।</li><li>जर्नल दोबारा पढ़ने के लिए ताज़ा करें दबाएँ।</li><li>इसे खाली करने के लिए इतिहास साफ़ करें दबाएँ और पुष्टि करें।</li><li>बंद करें दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="columns"><summary>कॉलम</summary><p>समय, ऑपरेशन (उसका नाम), स्टार्टअप और परिणाम। स्टार्टअप शेड्यूल के अनुसार, मैन्युअल, सभी चलाएँ या देरी से होता है, और नोट के लिए खाली रहता है। विंडो खुलने पर और ताज़ा करें पर जर्नल की ताज़ा 200 प्रविष्टियाँ पढ़ती है; वह अपने आप अपडेट नहीं होती।</p></details>
+<details id="results"><summary>रन के परिणाम</summary><p>पूरा हुआ: N फ़ाइल(ें), और जब कुछ छोड़ी गई हों तो उसमें , छोड़ी गईं: M जुड़ता है, तथा हटाने पर (रीसायकल बिन में)। त्रुटियों के साथ: N; पूरा हुआ: M फ़ाइल(ें), जिसके बाद पहला कारण आता है, जैसे फ़ाइल उपयोग में है, पहुँच नहीं है, फ़ाइल नहीं मिली या बदल गई, या डिस्क भरी है। रोका गया: .. जब कोई बाधा रन रोक दे, उदाहरण के लिए पहुँच से बाहर फ़ोल्डर, बिना सहेजे पासवर्ड वाला या बिना पुष्ट सर्वर कुंजी वाला संसाधन, या ऑफ़लाइन डिवाइस। शुरू नहीं हुआ: .. जब परिभाषा अस्वीकार हो, छोड़ा गया: .. और बाधित। जर्नल कोड रखता है, कच्चा त्रुटि पाठ नहीं, इसलिए शब्दावली वर्तमान भाषा के अनुसार होती है।</p></details>
+<details id="notes"><summary>नोट</summary><p>जिस पंक्ति में स्टार्टअप नहीं है वह नोट है: छोड़ा गया: रन का समय (..) तब बीत गया जब प्रबंधक बंद था; देरी से चल रहा है: रन .. के लिए निर्धारित था; अस्वीकृत: यह ऑपरेशन पहले से चल रहा है या कतार में प्रतीक्षा कर रहा है; और फिर शुरू हुआ: रुकने का कारण दूर हो गया।</p></details>
+<details id="clear"><summary>इतिहास साफ़ करें</summary><p>पूछता है: शेड्यूल किए गए ऑपरेशनों का इतिहास साफ़ करें? ऑपरेशन और उनके शेड्यूल नहीं बदलेंगे. डिफ़ॉल्ट उत्तर नहीं है। यह केवल इस जर्नल को खाली करता है; ऑपरेशन और उनके शेड्यूल बने रहते हैं। इतिहास खाली होने पर बटन अक्षम रहता है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

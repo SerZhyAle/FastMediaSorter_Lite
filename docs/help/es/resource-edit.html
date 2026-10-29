@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>Editar recurso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">Editar recurso</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>El formulario de un servidor o una carpeta de red guardados. &#171;A&#241;adir..&#187; en la lista de recursos lo abre vac&#237;o con el t&#237;tulo &#171;Nuevo recurso&#187;, &#171;Editar..&#187; lo abre relleno como &#171;Editar recurso&#187;, y una direcci&#243;n sftp:// escrita en el cuadro de carpeta lo abre con los datos ya rellenados.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="Editar recurso">
+    <img class="shot dark" src="resource-edit-dark.png" alt="Editar recurso">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Elija el tipo: servidor SFTP o carpeta de red (SMB).</li><li>D&#233; un nombre al recurso e introduzca la direcci&#243;n del servidor y el puerto, o la ruta de red.</li><li>Introduzca el usuario y la contrase&#241;a.</li><li>Indique la carpeta del servidor y active solo lectura si all&#237; no debe cambiar nada.</li><li>Pulse &#171;Guardar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>Tipo</summary><p>&#171;Tipo:&#187; se elige al crear el recurso: &#171;Servidor SFTP&#187; (puerto 22, carpeta /) o &#171;Carpeta de red (SMB)&#187;. En un recurso guardado la lista est&#225; desactivada, porque la contrase&#241;a guardada y la clave del servidor pertenecen a un solo tipo. En SMB el campo de la direcci&#243;n se titula &#171;Carpeta de red:&#187; y admite una ruta como \\server\folder; los campos de puerto y carpeta son solo para SFTP.</p></details>
+<details id="address"><summary>Nombre, servidor y puerto</summary><p>&#171;Nombre:&#187; es lo que muestra la lista; si est&#225; vac&#237;o, se usa la direcci&#243;n del servidor. &#171;Servidor:&#187; es un nombre o una direcci&#243;n IP y &#171;Puerto:&#187; un n&#250;mero del 1 al 65535. Cambiar el servidor o el puerto elimina las dem&#225;s direcciones que llegaron con un recurso importado, de modo que una contrase&#241;a guardada nunca va a una direcci&#243;n que usted no ha escrito.</p></details>
+<details id="credentials"><summary>Usuario y contrase&#241;a</summary><p>&#171;Usuario:&#187; y &#171;Contrase&#241;a:&#187;. La contrase&#241;a se guarda cifrada para su cuenta de Windows; la lista solo contiene una referencia a ella. En un recurso guardado el cuadro est&#225; vac&#237;o con la sugerencia &#171;Vac&#237;o - conservar la contrase&#241;a guardada&#187;: escriba algo solo para sustituirla. &#171;Mostrar la contrase&#241;a&#187; est&#225; desactivado al principio. Un recurso nuevo necesita una contrase&#241;a.</p></details>
+<details id="folder-readonly"><summary>Carpeta y solo lectura</summary><p>&#171;Carpeta en el servidor:&#187; es la carpeta que el programa abre primero, una ruta que empieza por /. &#171;Solo lectura (no cambiar nada en el servidor)&#187; hace que el programa trate el recurso como de solo lectura: no se mueve ni se copia nada en &#233;l, ni se elimina ni se renombra nada dentro.</p></details>
+<details id="server-key"><summary>Clave del servidor</summary><p>&#171;Clave del servidor:&#187; muestra la huella digital recordada para este servidor, o dice que aparecer&#225; en la primera conexi&#243;n, donde usted la confirma. &#171;Olvidar la clave del servidor..&#187; se muestra solo cuando hay una clave recordada. Pregunta primero (la respuesta predeterminada es No) y explica: si el servidor se reinstal&#243; es normal; en caso contrario, alguien puede estar suplant&#225;ndolo. Borra solo la clave: la siguiente conexi&#243;n muestra la nueva huella digital y vuelve a preguntar.</p></details>
+<details id="save-errors"><summary>Guardar</summary><p>&#171;Guardar&#187; comprueba los campos e indica el primer problema en rojo debajo de ellos: direcci&#243;n, puerto, carpeta, nombre de usuario o una contrase&#241;a que falta. &#171;Cancelar&#187; cierra el formulario sin cambios.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

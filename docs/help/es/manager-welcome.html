@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>Comparte tu primera carpeta - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">Comparte tu primera carpeta</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>Un asistente de seis pasos que lleva de cero a una carpeta servida a tu tel&#233;fono: activa el servidor, elige la primera carpeta, fija el puerto y las opciones b&#225;sicas y termina con una comprobaci&#243;n del estado. Se abre en el primer inicio de Share Manager y se puede repetir desde los ajustes.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="Comparte tu primera carpeta">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="Comparte tu primera carpeta">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lee la introducci&#243;n y pulsa &#171;Siguiente&#187;.</li><li>En el paso &#171;Activar el servidor&#187; pulsa el bot&#243;n una vez y confirma la solicitud de administrador.</li><li>Elige la primera carpeta y sus opciones.</li><li>Conserva el puerto o c&#225;mbialo.</li><li>Fija el idioma, el inicio y las opciones de la red local.</li><li>En la &#250;ltima p&#225;gina comprueba el estado, abre el c&#243;digo QR y pulsa &#171;Finalizar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>Pasos y botones</summary><p>El pie muestra &#171;Paso N de 6&#187;. &#171;Atr&#225;s&#187; y &#171;Siguiente&#187; cambian de p&#225;gina, &#171;Siguiente&#187; pasa a ser &#171;Finalizar&#187; en la &#250;ltima p&#225;gina, &#171;M&#225;s tarde&#187; cierra el asistente y conserva lo que ya confirmaste, y &#171;Rechazar configuraci&#243;n&#187; lo cierra para siempre. Cada p&#225;gina tiene cuatro bloques breves: &#171;Qu&#233; es&#187;, &#171;Para qu&#233;&#187;, &#171;C&#243;mo funcionar&#225;&#187; y &#171;D&#243;nde cambiarlo&#187;.</p></details>
+<details id="enable-step"><summary>Activar el servidor</summary><p>Hasta este paso el servidor est&#225; apagado. El bot&#243;n de activaci&#243;n pide permisos de administrador una vez y a&#241;ade una regla del Firewall de Windows para el programa. Si cancelas la solicitud, el servidor sigue apagado y puedes intentarlo de nuevo; si ya est&#225; encendido, la p&#225;gina indica que no hace falta m&#225;s elevaci&#243;n.</p></details>
+<details id="folder-step"><summary>Primera carpeta</summary><p>Elige una carpeta y despu&#233;s su nombre, perfil y acceso. &#171;A&#241;adir el primer recurso ahora..&#187; abre el asistente de recursos. Para continuar hace falta al menos una carpeta. Los ajustes se env&#237;an al servidor y las carpetas siguen siendo editables en la lista de la ventana principal.</p></details>
+<details id="port-step"><summary>Puerto</summary><p>&#171;Elige el sistema&#187; asigna un puerto una sola vez y lo conserva; &#171;Puerto fijo:&#187; te deja escribir un n&#250;mero propio, por ejemplo para la redirecci&#243;n de puertos del router. El n&#250;mero se escribe en cada c&#243;digo QR y en cada archivo .fmscfg, as&#237; que cambiarlo despu&#233;s deja inservibles los c&#243;digos ya entregados. La regla del firewall pertenece al programa, no al puerto.</p></details>
+<details id="basics-step"><summary>Ajustes b&#225;sicos</summary><p>&#171;Idioma de la interfaz&#187;, &#171;Iniciar al iniciar sesi&#243;n en Windows&#187;, &#171;Abrir la ventana del gestor al iniciar&#187; y &#171;Solo red local (sin acceso desde Internet)&#187;. El modo de red local desactiva la redirecci&#243;n de puertos y la direcci&#243;n de internet. La opci&#243;n de inicio de la versi&#243;n de la Store se gestiona en los ajustes de Windows.</p></details>
+<details id="finish-step"><summary>Finalizar</summary><p>La &#250;ltima p&#225;gina comprueba el servidor y las carpetas elegidas y muestra el resultado; un estado verde significa que hay un recurso compartido realmente en marcha con acceso a las carpetas. &#171;C&#243;digo QR para el tel&#233;fono&#187; abre el c&#243;digo y &#171;Actualizar&#187; repite la comprobaci&#243;n. Si el estado requiere atenci&#243;n, corrige la causa en la ventana principal o vuelve al paso de la carpeta.</p></details>
+<details id="replay"><summary>Repetir el asistente</summary><p>Configuraci&#243;n - General - &#171;Bienvenida..&#187; abre un men&#250; con &#171;Repetir configuraci&#243;n de carpetas&#187;, que vuelve a iniciar este asistente.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

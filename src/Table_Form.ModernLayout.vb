@@ -522,7 +522,7 @@ Partial Public Class Table_Form
     Private Shared ReadOnly ModernNavControlNames As String() = {
         "settingsNavGeneral", "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
         "settingsNavFileManager", "settingsNavResources",
-        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavAbout"}
+        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavAbout", "settingsNavDocuments"}
 
     Private ReadOnly modernNavTips As New ToolTip()
 
@@ -533,7 +533,7 @@ Partial Public Class Table_Form
         Dim top As Integer = 0
         Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
                                      "File manager", "Server and resources",
-                                     "OCR", "Translation", "Storage", "About"}
+                                     "OCR", "Translation", "Storage", "About", "Documents"}
         ' The list: accessible role List, one selected row, one tab stop (rule 7).
         Dim navigation As New SettingsRailList With {.Dock = DockStyle.Fill}
         modernSettingsRail = navigation
@@ -724,6 +724,7 @@ Partial Public Class Table_Form
         modernFileManagerPage = New TabPage With {.Name = "Tab_Page_FileManager", .Text = "File manager"}
         modernAboutPage = New TabPage With {.Name = "Tab_Page_About", .Text = "About"}
         modernResourcesPage = New TabPage With {.Name = "Tab_Page_Resources", .Text = "Server and resources"}
+        modernDocumentsPage = New TabPage With {.Name = "Tab_Page_Documents", .Text = "Documents"}
         Tab_Control.TabPages.Insert(3, modernAudioPage)
         Tab_Control.TabPages.Insert(5, modernFileManagerPage)
         Tab_Control.TabPages.Insert(6, modernResourcesPage)
@@ -731,6 +732,7 @@ Partial Public Class Table_Form
         Tab_Control.TabPages.Add(modernAboutPage)
         Tab_Control.TabPages.Insert(0, modernGeneralPage)
         Tab_Control.TabPages.Insert(Tab_Control.TabPages.IndexOf(modernAboutPage), modernStoragePage)
+        Tab_Control.TabPages.Add(modernDocumentsPage)
     End Sub
 
     Private Sub ModernSettingsNavClicked(sender As Object, e As EventArgs)
@@ -913,7 +915,7 @@ Partial Public Class Table_Form
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
              Localization.T("Хранилище"),
-             Localization.T("О программе")}
+             Localization.T("О программе"), Localization.T("Документы")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
             Tab_Control.TabPages(index).Text = navLabels(index)
@@ -949,7 +951,8 @@ Partial Public Class Table_Form
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
              Localization.T("Управление кэшем"),
-             Localization.T("Версия приложения, документация и ссылки проекта.")}
+             Localization.T("Версия приложения, документация и ссылки проекта."),
+             Localization.T("Настройки чтения не изменяют исходный файл. Сброс оформления сохраняет закладки.")}
 
         If index >= modernSettingsNavButtons.Length Then index = 0
         modernSettingsTitle.Text = modernSettingsNavButtons(index).Text
@@ -1135,6 +1138,8 @@ Partial Public Class Table_Form
     End Sub
 
     Private Function ModernSettingTitle(key As String) As String
+        If key.StartsWith("doc_", StringComparison.Ordinal) Then Return DocumentSettingTitle(key)
+        If key.StartsWith("html_", StringComparison.Ordinal) Then Return HtmlSettingTitle(key)
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Таблица получателей поверх изображения")
             Case "section_overlay_layout" : Return Localization.T("Вид таблицы получателей")
@@ -1306,6 +1311,9 @@ Partial Public Class Table_Form
     End Function
 
     Private Function ModernSettingDescription(key As String) As String
+        If key = "doc_FullEpubReader" AndAlso Not Main_Form.EpubReaderHostAvailable Then Return Localization.T("Чтение EPUB недоступно")
+        If key.StartsWith("doc_", StringComparison.Ordinal) Then Return Localization.T("Настройки чтения не изменяют исходный файл. Сброс оформления сохраняет закладки.")
+        If key.StartsWith("html_", StringComparison.Ordinal) Then Return HtmlSettingDescription(key)
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок поверх изображения; закрепляется и открепляется своей булавкой, как панели.")
             Case "recipients_position" : Return Localization.T("Угол области просмотра; панель можно перетащить за заголовок.")
@@ -1426,7 +1434,7 @@ Partial Public Class Table_Form
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения клиента Android.")
             Case "android_app" : Return Localization.T("Страница приложения для Android.")
             Case "exchange_portal" : Return Localization.T("Как открыть папки ПК и телефона на других устройствах: домашняя сеть, проброс порта, постоянный сервер.")
-            Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
+            Case "about_intro" : Return Localization.TF("Медиа- и файловый менеджер: просмотр и сортировка фото и видео одной клавишей, работа с файлами в папках, на серверах и устройствах." & vbCrLf & "Версия {0}", ShortSettingsVersion())
             Case "support_send_logs" : Return Localization.T("Соберёт журналы работы программы в архив и создаст письмо автору. Ничего не отправляется без вашего подтверждения.")
             Case "profile_reset_all" : Return Localization.T("Вернёт настройки просмотрщика к значениям по умолчанию. Язык, тема, пароли и история останутся. Прежние значения сохранятся в файл.")
             Case "doc_html_intro" : Return Localization.T("Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.")
@@ -1893,8 +1901,10 @@ Partial Public Class Table_Form
                 Return "MB"
             Case "text_preview_max_kb"
                 Return "KB"
-            Case "recipients_width", "chrome_corners"
+            Case "recipients_width", "chrome_corners", "html_font_size", "html_margin"
                 Return "px"
+            Case "html_snapshot_cache"
+                Return "MB"
             Case Else
                 Return String.Empty
         End Select
@@ -2008,8 +2018,14 @@ Partial Public Class Table_Form
                 Return "action.export"
             Case "settings_import"
                 Return "action.import"
-            Case "settings_defaults", "profile_reset_all", "recipients_position_reset"
+            Case "settings_defaults", "profile_reset_all", "recipients_position_reset", "html_reset_appearance"
                 Return "action.reset"
+            Case "html_clear_history", "html_clear_runtime"
+                Return "action.clear-all"
+            Case "html_runtime_status"
+                Return "action.refresh"
+            Case "html_runtime_repair"
+                Return "nav.open-external"
             Case "welcome_replay"
                 Return "app.help"
             Case "sftp_manager"
@@ -2996,24 +3012,27 @@ Partial Public Class Table_Form
         flow.PerformLayout()
     End Sub
 
-    ''' <summary>The active settings section id for in-app context help (CONTEXT-HELP rule 3).</summary>
+    ''' <summary>The active settings section id for in-app context help (CONTEXT-HELP rule 3).
+    ''' Matched by page, not by index: the modern shell inserts its pages between the Designer ones,
+    ''' and an index table drifted once already (File manager and the five after it opened the wrong anchor).</summary>
     Public ReadOnly Property ActiveHelpPageId As String
         Get
             If Tab_Control Is Nothing Then Return "general"
-            Select Case Tab_Control.SelectedIndex
-                Case 0 : Return "general"
-                Case 1 : Return "destinations"
-                Case 2 : Return "images"
-                Case 3 : Return "video"
-                Case 4 : Return "audio"
-                Case 5 : Return "files"
-                Case 6 : Return "server"
-                Case 7 : Return "ocr"
-                Case 8 : Return "translation"
-                Case 9 : Return "storage"
-                Case 10 : Return "about"
-                Case Else : Return "general"
-            End Select
+            Dim page = Tab_Control.SelectedTab
+            If page Is Nothing Then Return "general"
+            If page Is Tab_Page_1 Then Return "destinations"
+            If page Is Tab_Page_2 Then Return "images"
+            If page Is Tab_Page_3 Then Return "video"
+            If page Is Tab_Page_4 Then Return "files"
+            If page Is Tab_Page_5 Then Return "ocr"
+            If page Is modernAudioPage Then Return "audio"
+            If page Is modernFileManagerPage Then Return "filemanager"
+            If page Is modernResourcesPage Then Return "server"
+            If page Is modernTranslationPage Then Return "translation"
+            If page Is modernStoragePage Then Return "storage"
+            If page Is modernAboutPage Then Return "about"
+            If page Is modernDocumentsPage Then Return "documents"
+            Return "general"
         End Get
     End Property
 

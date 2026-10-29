@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>حول الملف - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">حول الملف</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>لقطة للقراءة فقط لما يعرفه البرنامج عن الملف المعروض على الشاشة: الملف نفسه، والصورة مع بيانات الكاميرا، والمستند، ومسارات الصوت والفيديو. تُفتح من العنصر i في اللوحة الأولى، أو من حول الملف في كتلة الملف بقوائم العارض، وتصف الملف كما كان لحظة النقر.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="حول الملف">
+    <img class="shot dark" src="file-details-dark.png" alt="حول الملف">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اعرض ملفًا في العارض.</li><li>انقر على العنصر i في اللوحة الأولى، أو اختر حول الملف من القائمة.</li><li>انتظر لحظة: يقول شريط الحالة جارٍ قراءة بيانات الملف.. وتمتلئ الصفوف.</li><li>اقرأ الكتل، وحدّد ما تحتاجه، واضغط نسخ لوضع النص كاملًا في الحافظة.</li><li>اضغط إغلاق أو Esc.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>الملف</summary><p>لكل ملف هذه الكتلة: الاسم والمجلد والنوع والحجم وبايت وتاريخ الإنشاء وتاريخ التعديل وآخر وصول والخصائص. يُحذف الصف الذي لا يوجد ما يُعرض فيه. إذا لم يكن هناك ملف مفتوح يقول شريط الحالة لم يتم تحديد ملف؛ أما النسخة المؤقتة من أرشيف أو العنوان البعيد أو الملف الذي اختفى فيظهر معها الملف غير متاح ولا تُفتح أي نافذة.</p></details>
+<details id="image-block"><summary>الصورة</summary><p>للصورة: الدقة كما تُعرض (فالصورة المخزنة على جانبها من الهاتف تظهر دقتها وهي معتدلة) وعمق اللون وكثافة البكسل، إن سجّلها الملف.</p></details>
+<details id="camera-block"><summary>الكاميرا</summary><p>تُقرأ من بيانات EXIF للصورة: الكاميرا والبرنامج وتاريخ التصوير ومدة التعريض وفتحة العدسة وISO والبعد البؤري والمؤلف. لا تظهر الإحداثيات إلا إذا كانت الصورة تحمل بيانات GPS، وينسخها زر نسخ أيضًا، فراجع النص قبل مشاركته.</p></details>
+<details id="document-block"><summary>المستند</summary><p>لملف نصي: الأسطر والكلمات والأحرف والترميز، إضافة إلى تمت قراءة جزء من الملف فقط عندما يكون أكبر من أن يُقرأ كاملًا. للكتاب الإلكتروني: الاسم والمؤلف. لملف PDF: الصفحات.</p></details>
+<details id="media-block"><summary>الوسائط والفيديو والصوت</summary><p>لملفات الصوت والفيديو تُضاف العلامات (الاسم والفنان والألبوم والسنة والمقطوعة والنوع والمخرج والمسلسل والموسم والحلقة والمدة) وأول مسار من كل نوع (الفيديو: الدقة وإطار في الثانية وبرنامج الترميز ومعدل البت؛ الصوت: برنامج الترميز والقنوات ومعدل العينة ومعدل البت) بعد لحظة من بقية البيانات، عندما ينتهي محرك الوسائط من القراءة. ولا تنتظر النافذة ذلك أبدًا. أما التدفقات الشبكية فلا تحصل على صفوف مسارات.</p></details>
+<details id="related-files"><summary>الملفات المرتبطة</summary><p>تُعرض بالاسم الملفات المخزنة بجوار هذا الملف والتابعة له: الترجمات وكلمات الأغنية والغلاف والبيانات الوصفية. تغيب الكتلة عندما لا توجد ملفات كهذه.</p></details>
+<details id="copy-close"><summary>نسخ وإغلاق</summary><p>يضع نسخ النص كاملًا في الحافظة، ويقول شريط الحالة تم النسخ إلى الحافظة؛ وإذا كان برنامج آخر يحتفظ بالحافظة فإنه يخبرك بذلك ويمكنك الضغط على نسخ مرة أخرى. ويعمل أيضًا نسخ التحديد بـ Ctrl+C. وإذا تعذّرت قراءة أي شيء يقول المربع تعذّرت قراءة معلومات الملف. وبجوار الأزرار يعرض شريط الحالة اسم الملف. والانتقال إلى ملف آخر لا يغيّر هذه النافذة: انقر على i مرة أخرى للملف الجديد.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

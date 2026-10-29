@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>Premier d&#233;marrage du serveur - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">Premier d&#233;marrage du serveur</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Un guide de premier d&#233;marrage pour le groupe du serveur d&#39;&#233;change de Share Manager. Il explique ce que devient l&#39;ordinateur, pr&#233;sente la d&#233;claration de l&#39;op&#233;rateur, r&#232;gle les ports, l&#39;adresse pour les clients et le premier compte, et se termine sur l&#39;&#233;tat du serveur. Il ne s&#39;ouvre que lorsque le serveur d&#39;&#233;change est pr&#233;sent et activ&#233;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="Premier d&#233;marrage du serveur">
+    <img class="shot dark" src="server-welcome-dark.png" alt="Premier d&#233;marrage du serveur">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez la d&#233;claration de l&#39;op&#233;rateur sur la premi&#232;re page.</li><li>V&#233;rifiez les ports et la r&#232;gle du pare-feu.</li><li>Sur une &#233;dition serveur sans service, d&#233;cidez du service Windows.</li><li>Renseignez l&#39;adresse pour les clients.</li><li>Cr&#233;ez le premier compte.</li><li>V&#233;rifiez l&#39;empreinte du certificat et appuyez sur &#171;Terminer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>Pages et boutons</summary><p>Le pied de page affiche &#171;&#201;tape N sur M&#187; ; &#171;Pr&#233;c&#233;dent&#187;, &#171;Suivant&#187; et &#171;Plus tard&#187; fonctionnent comme dans n&#39;importe quel assistant, et &#171;Terminer&#187; sur la derni&#232;re page ouvre le groupe du serveur d&#39;&#233;change du gestionnaire. On peut passer une page sans rien changer : le serveur reste alors arr&#234;t&#233; ou tel qu&#39;il &#233;tait.</p></details>
+<details id="operator-statement"><summary>D&#233;claration de l&#39;op&#233;rateur</summary><p>La d&#233;claration compl&#232;te de qui voit quoi sur le serveur. On ne peut pas la passer. Le serveur relie les appareils d&#39;un compte et indique lesquels sont en ligne.</p></details>
+<details id="ports"><summary>Ports et pare-feu</summary><p>Un port de rencontre pour les appareils et une plage de ports pour les clients tiers. Les appareils doivent conna&#238;tre le port du serveur, donc les modifications ne s&#39;appliquent qu&#39;aux nouveaux codes. La r&#232;gle du pare-feu appartient au programme, si bien qu&#39;un changement de port n&#39;exige pas de nouvelle r&#232;gle. Ces valeurs se trouvent dans le groupe du serveur d&#39;&#233;change.</p></details>
+<details id="service"><summary>Service Windows</summary><p>Affich&#233; uniquement sur une &#233;dition serveur o&#249; le service n&#39;existe pas encore. Un service garde le serveur disponible quand personne n&#39;est connect&#233;. La case &#224; cocher ne fait que retenir votre accord : le service est enregistr&#233; apr&#232;s la cr&#233;ation du premier compte, avec une seule demande d&#39;&#233;l&#233;vation, et rien n&#39;est install&#233; avant. &#171;Enregistrer comme service..&#187; dans le groupe d&#39;&#233;change fait la m&#234;me chose plus tard.</p></details>
+<details id="client-address"><summary>Adresse pour les clients</summary><p>&#171;Adresse pour les clients (h&#244;te:port) :&#187; est ce que les autres appareils utilisent pour joindre cet ordinateur. &#171;Proposer une adresse locale&#187; ne remplit le champ que lorsque vous appuyez dessus. Une adresse vide garde valide un premier d&#233;marrage purement local, mais cache les diffusions et les connexions de dossiers aux autres appareils.</p></details>
+<details id="first-account"><summary>Premier compte</summary><p>Le compte avec lequel se connecte le premier appareil. Choisissez &#171;G&#233;n&#233;rer un mot de passe&#187; ou &#171;Saisir votre mot de passe&#187; ; &#171;Connecter ce PC au compte&#187; relie cet ordinateur au compte. &#171;Suivant&#187; cr&#233;e le compte, d&#233;marre le serveur et v&#233;rifie le certificat. Le mot de passe est affich&#233; une seule fois, dans la bo&#238;te de dialogue existante, et n&#39;est pas conserv&#233; sur ce PC. Un &#233;chec survenu apr&#232;s la cr&#233;ation du compte ne le supprime pas.</p></details>
+<details id="server-ready"><summary>Le serveur est pr&#234;t</summary><p>La derni&#232;re page indique o&#249; sont consign&#233;s l&#39;adresse, l&#39;identifiant et l&#39;empreinte du certificat, et propose &#171;Copier l&#39;empreinte&#187; et &#171;Cha&#238;ne de connexion et code QR..&#187;. Un appareil fait confiance au serveur apr&#232;s avoir v&#233;rifi&#233; l&#39;empreinte lors de sa premi&#232;re connexion. Les liens &#171;Connecter un t&#233;l&#233;phone (aide)&#187; et &#171;Publier le premier dossier (aide)&#187; m&#232;nent aux pages d&#39;aide correspondantes.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

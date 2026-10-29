@@ -66,6 +66,92 @@
         "ru": ["Шифт", "НумПад"],
         "uk": ["Шифт", "НумПад"]
       }
+    },
+    {
+      "id": "media-file-manager",
+      "scope": "lang",
+      "stems": {
+        "en": ["media and file manager"],
+        "ru": ["медиа- и файловый менеджер"],
+        "uk": ["медіа- та файловий менеджер"],
+        "de": ["Medien- und Dateimanager"],
+        "it": ["gestore di media e file"],
+        "es": ["gestor de medios y archivos"],
+        "fr": ["gestionnaire de médias et de fichiers"],
+        "pt": ["gestor de média e ficheiros"],
+        "ar": ["مدير وسائط وملفات"],
+        "hi": ["मीडिया और फ़ाइल मैनेजर"],
+        "bn": ["মিডিয়া ও ফাইল ম্যানেজার"],
+        "ur": ["میڈیا اور فائل مینیجر"],
+        "zh": ["媒体与文件管理器"]
+      },
+      "forbidden": {
+        "ru": ["просмотрщик и сортировщик"],
+        "uk": ["переглядач і сортувальник"]
+      }
+    },
+    {
+      "id": "local-sharing-scheduling",
+      "scope": "lang",
+      "stems": {
+        "en": ["local sharing and scheduling"],
+        "ru": ["раздачи и расписаний", "раздача и расписания"],
+        "uk": ["роздачі та розкладів", "роздача та розклади"],
+        "de": ["Freigabe- und Zeitplan"],
+        "it": ["condivisione e pianificazione"],
+        "es": ["uso compartido y tareas programadas"],
+        "fr": ["partage et de planification", "partage local et la planification"],
+        "pt": ["partilha e agendamento"],
+        "ar": ["المشاركة والجدولة"],
+        "hi": ["साझाकरण और शेड्यूलिंग"],
+        "bn": ["শেয়ারিং ও সময়সূচি"],
+        "ur": ["شیئرنگ اور شیڈولنگ"],
+        "zh": ["共享与计划"]
+      },
+      "forbidden": {
+        "ru": ["служба раздачи папок по SFTP"],
+        "uk": ["служба роздачі тек по SFTP"]
+      }
+    },
+    {
+      "id": "scheduled-operation",
+      "scope": "lang",
+      "stems": {
+        "en": ["on a schedule"],
+        "ru": ["по расписанию"],
+        "uk": ["за розкладом"],
+        "de": ["nach Zeitplan"],
+        "it": ["secondo una pianificazione"],
+        "es": ["según un horario"],
+        "fr": ["selon un calendrier"],
+        "pt": ["segundo um agendamento"],
+        "ar": ["حسب جدول زمني"],
+        "hi": ["शेड्यूल पर"],
+        "bn": ["সময়সূচি অনুযায়ী"],
+        "ur": ["شیڈول کے مطابق"],
+        "zh": ["按计划"]
+      },
+      "forbidden": {}
+    },
+    {
+      "id": "exchange-account",
+      "scope": "lang",
+      "stems": {
+        "en": ["exchange account"],
+        "ru": ["учётной записи обмена", "учётная запись обмена"],
+        "uk": ["облікового запису обміну", "обліковий запис обміну"],
+        "de": ["Austauschkonto"],
+        "it": ["account di scambio"],
+        "es": ["cuenta de intercambio"],
+        "fr": ["compte d'échange"],
+        "pt": ["conta de intercâmbio"],
+        "ar": ["حساب تبادل"],
+        "hi": ["एक्सचेंज खाते"],
+        "bn": ["এক্সচেঞ্জ অ্যাকাউন্ট"],
+        "ur": ["ایکسچینج اکاؤنٹ"],
+        "zh": ["交换账户"]
+      },
+      "forbidden": {}
     }
   ],
 

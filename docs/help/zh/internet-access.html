@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>端口转发指南 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">端口转发指南</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>帮助让共享能从家庭网络之外访问。它显示外部地址，以及端口是自动开放的还是需要在路由器上转发，并提供测试和详细指南。它从主窗口的「如何设置互联网访问」按钮打开。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="端口转发指南">
+    <img class="shot dark" src="internet-access-dark.png" alt="端口转发指南">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>先开始共享；否则窗口会提示您这样做。</li><li>阅读状态行：可访问、位于 CGNAT 之后，或需要端口转发。</li><li>如果需要转发，打开详细指南并在路由器上创建规则。</li><li>点击「测试」，从这台电脑探测该地址。</li><li>让手机关闭 Wi-Fi、使用移动数据来确认。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>状态</summary><p>窗口会检测外部地址，并显示下列之一：「可从互联网访问」、「外部地址：..（需要端口转发）」、「外部地址未知 - 请在路由器中查看。」或「位于 CGNAT 之后 - 外网无法访问。」。端口被自动开放（UPnP）时无需设置路由器，但只有使用移动数据的手机才能确认它确实可用。「刷新」重新检测。</p></details>
+<details id="guide"><summary>路由器和指南</summary><p>路由器一行显示其地址，搜索期间则显示「正在检测路由器..」。链接「打开详细指南（HTML，已填入您的数值和路由器型号）..」打开本地 HTML 指南；若无法打开，窗口会说明。链接「从家中和其他网络访问（门户）」在浏览器中打开帮助门户的对应页面。</p></details>
+<details id="test"><summary>测试</summary><p>从这台电脑探测外部地址，并报告：「SFTP 服务器可访问」、「端口已开放，但 SFTP 无响应」、连接被关闭（可能是连接数上限）或无应答。该结果并非定论：许多路由器会拒绝从内部发往其自身外部地址的请求，所以可靠的检查方式是使用移动数据的手机。</p></details>
+<details id="safety"><summary>安全</summary><p>把 SFTP 开放到互联网，意味着任何得知地址、登录名和密码的人都能获得每个共享文件夹。不要公开二维码或 .fmscfg 文件，用完后请关闭共享。「关闭」离开窗口。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

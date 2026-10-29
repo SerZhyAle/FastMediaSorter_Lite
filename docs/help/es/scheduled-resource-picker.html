@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>Elegir un recurso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">Elegir un recurso</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>Elige un recurso de la lista de recursos del visor como origen o destino de una operaci&#243;n programada. Se abre desde &#171;Recurso..&#187; junto a Origen o Destino en la ventana de la operaci&#243;n programada.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Elegir un recurso">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Elegir un recurso">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Elige el recurso en la lista &#171;Recurso&#187;.</li><li>Comprueba o cambia &#171;Carpeta dentro del recurso&#187;; empieza en la carpeta ra&#237;z del recurso.</li><li>Pulsa &#171;Elegir&#187;. &#171;Cancelar&#187; conserva el lugar anterior.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>Lista de recursos</summary><p>Solo se ofrecen los servidores SFTP y las carpetas de red de la lista del visor, ordenados por nombre; los recursos de otros tipos no aparecen. Si no hay ninguno, la ventana dice: &#171;En la lista de recursos no hay recursos adecuados. A&#241;ada un servidor SFTP o una carpeta de red en el visor.&#187; y &#171;Elegir&#187; sigue desactivado. A&#241;adir un recurso o volver a confiar en &#233;l se hace en el visor; esta ventana no establece ninguna conexi&#243;n.</p></details>
+<details id="folder"><summary>Carpeta dentro del recurso</summary><p>La carpeta debe estar dentro de la ra&#237;z del recurso elegido; de lo contrario, &#171;Guardar&#187; en la ventana de la operaci&#243;n la rechaza. Al elegir otro recurso, el cuadro se rellena de nuevo con la ra&#237;z de ese recurso.</p></details>
+<details id="unattended"><summary>Se ejecuta sin preguntas</summary><p>La contrase&#241;a y la clave del servidor proceden de la lista de recursos del visor. Una ejecuci&#243;n no pregunta nada: si la contrase&#241;a no est&#225; guardada o la clave del servidor no est&#225; confirmada, la operaci&#243;n se detiene y el historial explica el motivo. Un recurso de solo lectura no puede ser el destino de un movimiento o una eliminaci&#243;n, se rechaza un recurso cuya ra&#237;z est&#225; protegida con un PIN, y un archivo comprimido admite solo carpetas normales.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

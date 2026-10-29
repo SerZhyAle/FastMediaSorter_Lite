@@ -8,6 +8,11 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- **A media and file manager, said the same way everywhere (specification 273):** the site, the READMEs, the Store and winget descriptions, the installers, the About page, the welcome screens and the help now describe the product as three optional parts - a media and file manager (photos and videos sorted with one key, files managed in local folders, on SFTP and SMB servers and on the devices of an exchange account), a local sharing and scheduling service (folders shared over SFTP, file operations on a schedule, this PC joined to an exchange account) and the Media Exchange Server. Every page states what works, in the present tense; the Media Exchange Server is not in any package while its shipping gate is shut, and the pages say exactly that. The product name, the Store and winget names, the installer identity and every frozen identifier are unchanged.
+- **One register of what the product can do:** `tools/site-facts.json` now lists each capability with its component, its state, the release that brought it and its evidence; `tools/Test-SitePositioning.ps1` fails when a released capability is missing from the READMEs or the landing, when a retired phrase or a promise marker appears on any scanned surface in any language, or when something that is only planned is named.
+
 ## [26.10.25.1830] - 2026-10-25
 
 ### Added

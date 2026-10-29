@@ -17,79 +17,79 @@
 
   "en": {
     "store": "en-us", "font": "Segoe UI", "rtl": false,
-    "title": "Fast media viewer and sorter for Windows",
+    "title": "Media and file manager for Windows",
     "line1": "Slideshow  ·  Panel navigation  ·  One key to Move / Copy / Rename / Delete",
     "line2": "LibVLC video playback  ·  Ambilight background  ·  Offline OCR translation"
   },
   "ru": {
     "store": "ru", "font": "Segoe UI", "rtl": false,
-    "title": "Быстрый просмотр и сортировка медиафайлов",
+    "title": "Медиа- и файловый менеджер для Windows",
     "line1": "Слайд-шоу  ·  Панель навигации  ·  Одна клавиша: переместить / копировать / удалить",
     "line2": "Воспроизведение видео LibVLC  ·  Фон Ambilight  ·  OCR-перевод офлайн"
   },
   "uk": {
     "store": "uk", "font": "Segoe UI", "rtl": false,
-    "title": "Швидкий перегляд і сортування медіафайлів",
+    "title": "Медіа- та файловий менеджер для Windows",
     "line1": "Слайд-шоу  ·  Панель навігації  ·  Одна клавіша: перемістити / копіювати / видалити",
     "line2": "Відтворення відео LibVLC  ·  Фон Ambilight  ·  OCR-переклад офлайн"
   },
   "de": {
     "store": "de", "font": "Segoe UI", "rtl": false,
-    "title": "Schneller Medienbetrachter und Sortierer für Windows",
+    "title": "Medien- und Dateimanager für Windows",
     "line1": "Diashow  ·  Panel-Navigation  ·  Eine Taste: Verschieben / Kopieren / Löschen",
     "line2": "LibVLC-Videowiedergabe  ·  Ambilight-Hintergrund  ·  OCR-Übersetzung offline"
   },
   "it": {
     "store": "it", "font": "Segoe UI", "rtl": false,
-    "title": "Visualizzatore e ordinatore multimediale veloce per Windows",
+    "title": "Gestore di media e file per Windows",
     "line1": "Presentazione  ·  Navigazione a pannello  ·  Un tasto: sposta / copia / elimina",
     "line2": "Riproduzione video LibVLC  ·  Sfondo Ambilight  ·  Traduzione OCR offline"
   },
   "es": {
     "store": "es", "font": "Segoe UI", "rtl": false,
-    "title": "Visor y organizador multimedia rápido para Windows",
+    "title": "Gestor de medios y archivos para Windows",
     "line1": "Pase de diapositivas  ·  Navegación por panel  ·  Una tecla: mover / copiar / eliminar",
     "line2": "Reproducción de vídeo LibVLC  ·  Fondo Ambilight  ·  Traducción OCR sin conexión"
   },
   "fr": {
     "store": "fr", "font": "Segoe UI", "rtl": false,
-    "title": "Visionneuse et trieuse multimédia rapide pour Windows",
+    "title": "Gestionnaire de médias et fichiers pour Windows",
     "line1": "Diaporama  ·  Navigation par panneau  ·  Une touche : déplacer / copier / supprimer",
     "line2": "Lecture vidéo LibVLC  ·  Fond Ambilight  ·  Traduction OCR hors ligne"
   },
   "pt": {
     "store": "pt-br", "font": "Segoe UI", "rtl": false,
-    "title": "Visualizador e organizador de mídia rápido para Windows",
+    "title": "Gerenciador de mídia e arquivos para Windows",
     "line1": "Apresentação de slides  ·  Navegação por painel  ·  Uma tecla: mover / copiar / excluir",
     "line2": "Reprodução de vídeo LibVLC  ·  Fundo Ambilight  ·  Tradução OCR off-line"
   },
   "ar": {
     "store": "ar", "font": "Segoe UI", "rtl": true,
-    "title": "عارض ومنظّم وسائط سريع لنظام ويندوز",
+    "title": "مدير وسائط وملفات لنظام Windows",
     "line1": "عرض شرائح  ·  تنقّل باللوحة  ·  مفتاح واحد: نقل / نسخ / حذف",
     "line2": "تشغيل الفيديو عبر LibVLC  ·  خلفية Ambilight  ·  ترجمة OCR دون اتصال"
   },
   "hi": {
     "store": "hi", "font": "Nirmala UI", "rtl": false,
-    "title": "विंडोज़ के लिए तेज़ मीडिया व्यूअर और सॉर्टर",
+    "title": "Windows के लिए मीडिया और फ़ाइल मैनेजर",
     "line1": "स्लाइडशो  ·  पैनल नेविगेशन  ·  एक कुंजी: ले जाएँ / कॉपी / हटाएँ",
     "line2": "LibVLC वीडियो प्लेबैक  ·  Ambilight पृष्ठभूमि  ·  ऑफ़लाइन OCR अनुवाद"
   },
   "bn": {
     "store": "bn", "font": "Nirmala UI", "rtl": false,
-    "title": "উইন্ডোজের জন্য দ্রুত মিডিয়া ভিউয়ার ও সর্টার",
+    "title": "Windows-এর জন্য মিডিয়া ও ফাইল ম্যানেজার",
     "line1": "স্লাইডশো  ·  প্যানেল নেভিগেশন  ·  এক কী: সরান / কপি / মুছুন",
     "line2": "LibVLC ভিডিও প্লেব্যাক  ·  Ambilight পটভূমি  ·  অফলাইন OCR অনুবাদ"
   },
   "ur": {
     "store": "ur", "font": "Segoe UI", "rtl": true,
-    "title": "ونڈوز کے لیے تیز میڈیا ویور اور سارٹر",
+    "title": "Windows کے لیے میڈیا اور فائل مینیجر",
     "line1": "سلائیڈ شو  ·  پینل نیویگیشن  ·  ایک کلید: منتقل / نقل / حذف",
     "line2": "LibVLC ویڈیو پلے بیک  ·  Ambilight پس منظر  ·  آف لائن OCR ترجمہ"
   },
   "zh": {
     "store": "zh-hans", "font": "Microsoft YaHei UI", "rtl": false,
-    "title": "Windows 上的快速媒体查看与整理工具",
+    "title": "Windows 媒体与文件管理器",
     "line1": "幻灯片  ·  面板导航  ·  一键移动 / 复制 / 重命名 / 删除",
     "line2": "LibVLC 视频播放  ·  Ambilight 背景  ·  离线 OCR 翻译"
   }

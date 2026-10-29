@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Welcome Wizard - Fast Media Sorter</title>
+  <title>स्वागत है - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="एक्सचेंज सर्वर"></span> Welcome Wizard</h1>
+  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="एक्सचेंज सर्वर"></span> स्वागत है</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Welcome Wizard.</p>
+    <p>स्वागत के चरण कुछ ही मिनटों में बुनियादी चीज़ें सेट करते हैं: भाषा, रूप-रंग, कुंजी 1 का फ़ोल्डर, हटाना और फ़ाइल संबंध। ये पहली बार चलाने पर, खाली व्यूअर स्क्रीन के प्रारंभिक सेटअप बटन से, और सेटिंग्स के सामान्य पृष्ठ के स्वागत के चरण फिर से दिखाएँ विकल्प से खुलते हैं। ये केवल 64-बिट संस्करण में हैं।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="welcome-light.png" alt="Welcome Wizard">
-    <img class="shot dark" src="welcome-dark.png" alt="Welcome Wizard">
+    <img class="shot light" src="welcome-light.png" alt="स्वागत है">
+    <img class="shot dark" src="welcome-dark.png" alt="स्वागत है">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>भाषा चुनें।</li><li>पृष्ठभूमि योजना और व्हील की कार्रवाई चुनें।</li><li>कुंजी 1 का फ़ोल्डर चुनें।</li><li>पढ़ें कि हटाना कैसे काम करता है।</li><li>फ़ाइल संबंध सेट करें।</li><li>सार देखें और समाप्त दबाएँ। आगे बटन आगे बढ़ाता है, पीछे बटन वापस लाता है, सेटअप छोड़ें बटन अंतिम चरण पर पहुँचा देता है।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="step-language"><summary>इंटरफ़ेस की भाषा</summary><p>विंडो की भाषा तुरंत पूर्वावलोकन के रूप में बदल जाती है; प्रोग्राम उसे केवल आगे दबाने पर अपनाता है। आगे दबाए बिना विंडो बंद करने पर प्रोग्राम की भाषा पहले जैसी ही रहती है।</p></details>
+<details id="step-appearance"><summary>रूप-रंग</summary><p>तस्वीर वाले क्षेत्र की पृष्ठभूमि योजना चुनें (कोने से, काला, सफ़ेद, किनारे से, ऊपर से, नीचे से) और व्हील की कार्रवाई: या तो वह कर्सर पर ज़ूम करता है और तीर कुंजियाँ फ़ाइलें बदलती हैं, या वह फ़ाइलें बदलता है और Ctrl के साथ व्हील ज़ूम करता है। दोनों को बाद में सेटिंग्स के छवियाँ पृष्ठ पर बदला जा सकता है।</p></details>
+<details id="step-sorting"><summary>छँटाई कैसे काम करती है</summary><p>अंक 0-9 मौजूदा फ़ाइल को एक फ़ोल्डर में ले जाते हैं; ऊपरी पंक्ति के अंक के साथ Shift उसे कॉपी करता है। कुंजी 1 का फ़ोल्डर फ़ोल्डर चुनें.. बटन से चुनें; बाक़ी नौ बाद में सेटिंग्स के गंतव्य पृष्ठ पर तय होते हैं। गायब हो गए फ़ोल्डर के बारे में यह संदेश आता है: यह फ़ोल्डर अब उपलब्ध नहीं है। कोई और चुनें।</p></details>
+<details id="step-delete"><summary>सुरक्षित हटाना</summary><p>दिखाता है कि Del (रीसायकल बिन में) और Shift+Del (हमेशा के लिए) कैसे काम करते हैं। हटाने के विकल्प सेटिंग्स के फ़ाइलें पृष्ठ पर हैं।</p></details>
+<details id="step-associations"><summary>यहाँ तस्वीरें खोलें</summary><p>इस प्रोग्राम को फ़ाइल एक्सप्लोरर से तस्वीरें और वीडियो खोलने देता है। यह चरण तभी दिखता है जब प्रोग्राम Microsoft Store पैकेज के रूप में इंस्टॉल न हो; यह आपके उपयोगकर्ता खाते पर लागू होता है और इसके लिए व्यवस्थापक अधिकार नहीं चाहिए।</p></details>
+<details id="step-finish"><summary>सब तैयार है</summary><p>सार में हर सेटिंग, उसका मान और उसे बदलने की जगह दी जाती है। अगर इस पीसी पर सर्वर घटक इंस्टॉल हैं, तो इस पीसी पर सर्वर ब्लॉक हर एक को उसकी स्थिति और प्रबंधक खोलें बटन के साथ दिखाता है; कुछ भी इंस्टॉल न हो तो ब्लॉक छिपा रहता है।</p></details>
+<details id="step-parts"><summary>चरण के हिस्से</summary><p>हर चरण के चार हिस्से होते हैं: यह क्या है, यह क्यों है, यह कैसे काम करेगा और इसे कहाँ बदलें।</p></details>
+<details id="buttons"><summary>बटन और बंद करना</summary><p>सेटअप छोड़ें अंतिम चरण पर ले जाता है और भाषा का पूर्वावलोकन हटा देता है। आगे केवल वही लागू करता है जो मौजूदा चरण में बदला गया है। समाप्त विंडो बंद करता है, और Esc भी (जब तक कोई ड्रॉप-डाउन सूची खुली न हो)। बंद करने पर दर्ज हो जाता है कि चरण पूरे हो चुके हैं; उन्हें फिर से देखने के लिए सेटिंग्स के सामान्य पृष्ठ का विकल्प उपयोग करें।</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

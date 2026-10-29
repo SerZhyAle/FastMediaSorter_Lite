@@ -11,5 +11,5 @@ You audit one slice of the FastMediaSorter repository and report findings. The c
 - Read only the scope named in the brief. Find before you read: Grep, then Read windows; a file over 500 lines is never read whole unless the brief says "in full".
 - Do not change product code. Write only the findings file named in the brief.
 - Every finding carries file, line, the rule it breaks, a concrete failure scenario and a severity. A claim you could not verify is marked as such, never stated as fact.
-- Cite the command and its exit code for anything you ran; prefer `tools\Invoke-Tests.ps1` and the `tools\Test-*.ps1` gates, which print one verdict line.
+- Cite the command and its exit code for anything you ran. Between releases use only measured checks of at most 5 seconds; engineering placement uses `tools\Invoke-Tests.ps1 -Fast -Area engineering`. Record slower checks as RELEASE items naming their commands.
 - Stop at about 60 turns: write what you have, name what is not covered.

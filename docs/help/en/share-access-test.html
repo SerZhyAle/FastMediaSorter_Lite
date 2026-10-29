@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Internet access test - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Internet access test</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>Checks from this PC whether the shared address answers like an SFTP server. It opens from the &#39;Test internet access&#39; button of the main window and shows the address it tests, a verdict and an explanation.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Internet access test">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Internet access test">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Open the window; it shows the address and starts the check at once.</li><li>Wait for the headline.</li><li>Read the detail line under it.</li><li>If the result is not conclusive, repeat the check from the phone with Wi-Fi off and mobile data on.</li><li>Press &#39;Close&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Address tested</summary><p>&#39;Address tested: ..&#39; shows the host and port. While the check runs the window says &#39;Testing .. &#39;. If no address is known the result is &#39;No internet address yet.&#39;; a malformed one gives &#39;Invalid address.&#39;.</p></details>
+<details id="verdicts"><summary>Verdicts</summary><p>&#39;SFTP server reachable&#39; - the port answered with an SFTP banner. &#39;Port open, but no SFTP reply&#39; - something is listening on the port, but it is not our program; check that the router rule leads to this PC and to the share port. A connection closed before the answer may mean the connection limit; try again. No answer from this PC means the router may block its own address from inside.</p></details>
+<details id="inconclusive"><summary>Why a result may not be conclusive</summary><p>The request leaves this PC for the router&#39;s external address and comes straight back inside, so it tests the forwarding rule and not whether the provider lets inbound connections in. Only the phone can settle it: turn its Wi-Fi off, leave mobile data on and open the QR code. If it still cannot connect, set up port forwarding with the &#39;How to set up internet access&#39; button.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

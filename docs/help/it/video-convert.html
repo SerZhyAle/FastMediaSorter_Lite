@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Convert to Video - Fast Media Sorter</title>
+  <title>Conversione in video - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Convert to Video</h1>
+  <h1 id="title">Conversione in video</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Convert to Video.</p>
+    <p>La finestra di avanzamento di Converti in video: trasforma una GIF, un WebP o un APNG animati in un MP4 e poi elimina l&#39;originale. Si apre dopo che hai confermato la conversione, resta sopra il visualizzatore finch&#233; il lavoro non termina e ha un solo pulsante, Annulla.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="video-convert-light.png" alt="Convert to Video">
-    <img class="shot dark" src="video-convert-dark.png" alt="Convert to Video">
+    <img class="shot light" src="video-convert-light.png" alt="Conversione in video">
+    <img class="shot dark" src="video-convert-dark.png" alt="Conversione in video">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Mostra un&#39;immagine animata.</li><li>Scegli Converti in video.. nel menu dell&#39;immagine, oppure premi il pulsante Converti in video della barra degli strumenti; entrambi esistono solo mentre &#232; sullo schermo un&#39;animazione, e non c&#39;&#232; alcuna scorciatoia da tastiera.</li><li>Leggi la conferma e premi Converti.</li><li>Se ti viene chiesto di scaricare FFmpeg, rispondi S&#236;.</li><li>Osserva la barra, oppure premi Annulla.</li><li>Il visualizzatore apre il nuovo MP4.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="start"><summary>Avvio della conversione</summary><p>Il comando viene offerto solo per le animazioni, mai per un&#39;immagine fissa o un video, e il visualizzatore lo rifiuta per un contenitore protetto o per un posto in cui accanto al file non si pu&#242; scrivere nulla. La riproduzione si ferma quando il lavoro inizia.</p></details>
+<details id="confirm"><summary>La conferma</summary><p>Dice in sostanza: l&#39;originale verr&#224; convertito nel nuovo MP4 e viene eliminato definitivamente, senza passare dal Cestino. Se l&#39;animazione ha trasparenza aggiunge: La trasparenza verr&#224; riempita di nero. Annulla &#232; la risposta predefinita. La casella Non chiedere pi&#249; fino alla chiusura del programma dura solo fino alla chiusura del visualizzatore; non viene mai salvata.</p></details>
+<details id="ffmpeg"><summary>FFmpeg</summary><p>La conversione usa FFmpeg, che non fa parte del programma. Se manca, ti viene chiesto una sola volta del download (la domanda mostra la dimensione; il file arriva dal sito del progetto, viene salvato localmente ed &#232; software libero con licenza GPL). Rispondendo No ci si ferma qui e non viene creato n&#233; eliminato nulla.</p></details>
+<details id="progress"><summary>La finestra di avanzamento</summary><p>Il titolo dice Creazione del video.. con una percentuale, e la barra la segue. Quando la durata dell&#39;animazione non &#232; nota, la barra si muove soltanto avanti e indietro, senza numero. Annulla, il tasto Esc e il pulsante di chiusura significano la stessa cosa: la finestra resta un momento finch&#233; l&#39;encoder non si &#232; davvero fermato, poi si chiude e il visualizzatore segnala Conversione annullata. Nel frattempo il visualizzatore non &#232; utilizzabile.</p></details>
+<details id="result"><summary>Cosa ottieni</summary><p>Un MP4 nella stessa cartella con lo stesso nome (se il nome &#232; occupato viene aggiunto un numero tra parentesi), con la frequenza di fotogrammi dell&#39;animazione, tra 1 e 50 fotogrammi al secondo. Viene scritto con un nome temporaneo e rinominato quando &#232; pronto. L&#39;originale viene eliminato solo dopo che l&#39;MP4 esiste con il nome definitivo ed &#232; stato verificato che contenga l&#39;intera animazione. La riga di stato dice Fatto e il visualizzatore mostra il video.</p></details>
+<details id="safety"><summary>Quando qualcosa va storto</summary><p>L&#39;originale resta e la riga di stato ne dice il motivo: Impossibile creare il video, con la causa; il video &#232; stato creato ma l&#39;originale non &#232; stato eliminato; oppure non &#232; stato possibile verificare la completezza del video e l&#39;originale &#232; stato conservato. Un&#39;esecuzione fallita lascia l&#39;originale intatto, rimuove il file temporaneo e scrive i dettagli nel registro.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

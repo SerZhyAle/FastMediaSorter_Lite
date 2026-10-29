@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Convert to Video - Fast Media Sorter</title>
+  <title>Conversion en vid&#233;o - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Convert to Video</h1>
+  <h1 id="title">Conversion en vid&#233;o</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Convert to Video.</p>
+    <p>La fen&#234;tre de progression de Convertir en vid&#233;o : elle transforme un GIF, un WebP ou un APNG anim&#233; en MP4, puis supprime l&#39;original. Elle s&#39;ouvre apr&#232;s que vous avez confirm&#233; la conversion, reste au-dessus de la visionneuse jusqu&#39;&#224; la fin du travail, et n&#39;a qu&#39;un seul bouton, Annuler.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="video-convert-light.png" alt="Convert to Video">
-    <img class="shot dark" src="video-convert-dark.png" alt="Convert to Video">
+    <img class="shot light" src="video-convert-light.png" alt="Conversion en vid&#233;o">
+    <img class="shot dark" src="video-convert-dark.png" alt="Conversion en vid&#233;o">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Affichez une image anim&#233;e.</li><li>Choisissez Convertir en vid&#233;o.. dans le menu de l&#39;image, ou appuyez sur le bouton Convertir en vid&#233;o de la barre d&#39;outils ; les deux n&#39;existent que lorsqu&#39;une animation est &#224; l&#39;&#233;cran, et il n&#39;y a aucun raccourci clavier.</li><li>Lisez la confirmation et appuyez sur Convertir.</li><li>Si on vous propose de t&#233;l&#233;charger FFmpeg, r&#233;pondez Oui.</li><li>Suivez la barre, ou appuyez sur Annuler.</li><li>La visionneuse ouvre le nouveau MP4.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="start"><summary>Lancement de la conversion</summary><p>La commande n&#39;est propos&#233;e que pour les animations, jamais pour une image fixe ou une vid&#233;o, et la visionneuse la refuse pour un conteneur prot&#233;g&#233; ou un endroit o&#249; rien ne peut &#234;tre &#233;crit &#224; c&#244;t&#233; du fichier. La lecture s&#39;arr&#234;te d&#232;s que le travail commence.</p></details>
+<details id="confirm"><summary>La confirmation</summary><p>Elle indique en substance : l&#39;original sera converti en nouveau MP4, et l&#39;original est supprim&#233; d&#233;finitivement, sans passer par la Corbeille. Lorsque l&#39;animation a de la transparence, elle ajoute : La transparence sera remplie de noir. Annuler est la r&#233;ponse par d&#233;faut. La case Ne plus demander jusqu&#39;&#224; la fermeture du programme ne dure que jusqu&#39;&#224; la fermeture de la visionneuse ; elle n&#39;est jamais enregistr&#233;e.</p></details>
+<details id="ffmpeg"><summary>FFmpeg</summary><p>La conversion utilise FFmpeg, qui ne fait pas partie du programme. S&#39;il manque, on vous interroge une seule fois sur le t&#233;l&#233;chargement (la question indique la taille ; le fichier vient du site du projet, est enregistr&#233; localement et constitue un logiciel libre sous licence GPL). R&#233;pondre Non arr&#234;te tout ici et rien n&#39;est cr&#233;&#233; ni supprim&#233;.</p></details>
+<details id="progress"><summary>La fen&#234;tre de progression</summary><p>Le titre indique Cr&#233;ation de la vid&#233;o.. avec un pourcentage, et la barre le suit. Lorsque la dur&#233;e de l&#39;animation est inconnue, la barre va simplement d&#39;un c&#244;t&#233; &#224; l&#39;autre, sans nombre. Annuler, la touche Esc et la case de fermeture signifient la m&#234;me chose : la fen&#234;tre reste un instant, jusqu&#39;&#224; ce que l&#39;encodeur se soit vraiment arr&#234;t&#233;, puis se ferme, et la visionneuse signale Conversion annul&#233;e. La visionneuse n&#39;est pas utilisable pendant ce temps.</p></details>
+<details id="result"><summary>Ce que vous obtenez</summary><p>Un MP4 dans le m&#234;me dossier, sous le m&#234;me nom (un nombre entre parenth&#232;ses est ajout&#233; si le nom est pris), &#224; la cadence d&#39;images de l&#39;animation, entre 1 et 50 images par seconde. Il est &#233;crit sous un nom temporaire puis renomm&#233; une fois pr&#234;t. L&#39;original n&#39;est supprim&#233; qu&#39;apr&#232;s que le MP4 existe sous son nom d&#233;finitif et qu&#39;on a v&#233;rifi&#233; qu&#39;il contient toute l&#39;animation. La ligne d&#39;&#233;tat indique Termin&#233; et la visionneuse affiche la vid&#233;o.</p></details>
+<details id="safety"><summary>Quand quelque chose ne va pas</summary><p>L&#39;original reste, et la ligne d&#39;&#233;tat en donne la raison : Impossible de cr&#233;er la vid&#233;o, avec la cause ; la vid&#233;o a &#233;t&#233; cr&#233;&#233;e mais l&#39;original n&#39;a pas pu &#234;tre supprim&#233; ; ou la compl&#233;tude de la vid&#233;o n&#39;a pas pu &#234;tre v&#233;rifi&#233;e et l&#39;original a &#233;t&#233; conserv&#233;. Un &#233;chec laisse l&#39;original intact, supprime le fichier temporaire et &#233;crit les d&#233;tails dans le journal.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

@@ -12,7 +12,7 @@ Imports System.Linq
 ''' only additive .NET 10 preferences and deliberately uses simple invariant
 ''' strings so a profile is still inspectable with the legacy VB registry tools.
 ''' </summary>
-Public NotInheritable Class ModernViewerPreferences
+Partial Public NotInheritable Class ModernViewerPreferences
 
     ' One range per limit, shared by Load() (registry) and Normalize() (import).
     Public Const ArchiveCacheMaxMbMin As Integer = 100
@@ -330,6 +330,8 @@ Public NotInheritable Class ModernViewerPreferences
         Public Property LastWriteUtcTicks As Long
         Public Property Length As Long
         Public Property PageNumber As Integer
+        Public Property Position As DocumentReadingPosition
+        Public Property Provenance As String = ""
     End Class
 
     Public NotInheritable Class VideoPositionEntry
@@ -514,6 +516,8 @@ Public NotInheritable Class ModernViewerPreferences
         p.FolderZoomHistory = NormalizeArrayJson(ReadString("FolderZoomHistory", p.FolderZoomHistory))
         p.VideoPositionHistory = NormalizeArrayJson(ReadString("VideoPositionHistory", p.VideoPositionHistory))
         p.DocumentPageHistory = NormalizeArrayJson(ReadString("DocumentPageHistory", p.DocumentPageHistory))
+        p.LoadDocumentPreferences()
+        p.LoadHtmlPreferences()
         Return p
     End Function
 
@@ -619,6 +623,8 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("FolderZoomHistory", NormalizeArrayJson(FolderZoomHistory))
         WriteString("VideoPositionHistory", NormalizeArrayJson(VideoPositionHistory))
         WriteString("DocumentPageHistory", NormalizeArrayJson(DocumentPageHistory))
+        SaveDocumentPreferences()
+        SaveHtmlPreferences()
     End Sub
 
     Public Function ExportJson(Optional includePersonalData As Boolean = False) As String
@@ -630,6 +636,8 @@ Public NotInheritable Class ModernViewerPreferences
             exported.FolderZoomHistory = "[]"
             exported.VideoPositionHistory = "[]"
             exported.DocumentPageHistory = "[]"
+            exported.DocumentBookmarks = "[]"
+            exported.DocumentAppearanceHistory = "[]"
             exported.FileManagerPlaceSorts = "{}"
         End If
         Return JsonSerializer.Serialize(New SettingsExport With {.SchemaVersion = 1, .Preferences = exported},
@@ -681,7 +689,7 @@ Public NotInheritable Class ModernViewerPreferences
             Return
         End If
         entries.Add(New VideoPositionEntry With {.Path = path, .LastWriteUtcTicks = lastWriteUtcTicks, .Length = length, .Position = position})
-        If entries.Count > 200 Then entries.RemoveRange(0, entries.Count - 200)
+        If entries.Count > DocumentReadingState.HistoryLimit Then entries.RemoveRange(0, entries.Count - DocumentReadingState.HistoryLimit)
         VideoPositionHistory = JsonSerializer.Serialize(entries)
     End Sub
 
@@ -741,10 +749,14 @@ Public NotInheritable Class ModernViewerPreferences
 
     Private Function ReadDocumentPages() As List(Of DocumentPageEntry)
         Try
+            If DocumentPageHistory Is Nothing OrElse DocumentPageHistory.Length > 8 * 1024 * 1024 Then Return New List(Of DocumentPageEntry)()
             Dim list As List(Of DocumentPageEntry) = JsonSerializer.Deserialize(Of List(Of DocumentPageEntry))(NormalizeArrayJson(DocumentPageHistory))
             If list IsNot Nothing Then
                 list.RemoveAll(Function(item) item Is Nothing OrElse String.IsNullOrWhiteSpace(item.Path) OrElse item.PageNumber < 1 OrElse item.Length < 0)
-                If list.Count > 200 Then list.RemoveRange(0, list.Count - 200)
+                For Each item In list
+                    item.Position?.Normalize()
+                Next
+                If list.Count > DocumentReadingState.HistoryLimit Then list.RemoveRange(0, list.Count - DocumentReadingState.HistoryLimit)
                 Return list
             End If
         Catch
@@ -859,6 +871,8 @@ Public NotInheritable Class ModernViewerPreferences
         FolderZoomHistory = NormalizeArrayJson(FolderZoomHistory)
         VideoPositionHistory = NormalizeArrayJson(VideoPositionHistory)
         DocumentPageHistory = NormalizeArrayJson(DocumentPageHistory)
+        NormalizeDocumentPreferences()
+        NormalizeHtmlPreferences()
     End Sub
 
     Private Shared Function ReadString(key As String, defaultValue As String) As String

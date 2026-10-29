@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>StreamsPlayer के लिए प्रसारण - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">StreamsPlayer के लिए प्रसारण</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>मीडिया फ़ाइलों और फ़ोल्डरों के उन HTTP प्रसारणों को प्रबंधित करती है जो यह पीसी StreamsPlayer ऐप को देता है। यह Share Manager की मुख्य विंडो के प्रसारण.. बटन या जोड़ें मेनू आइटम से खुलती है, जो तभी दिखते हैं जब साझा करने वाली सेवा प्रसारण का समर्थन बताती है। पथ के साथ किया गया लॉन्च इसे खोलकर सीधे उस पथ के लिए प्रसारण बनाएँ संवाद पर पहुँचा देता है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="StreamsPlayer के लिए प्रसारण">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="StreamsPlayer के लिए प्रसारण">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>HTTP प्रसारण गेटवे सक्षम करें पर निशान लगाएँ, या सीधे प्रसारण बनाएँ, जिससे गेटवे चालू हो जाता है।</li><li>प्रसारण बनाएँ.. दबाएँ, मीडिया फ़ाइल चुनें, शीर्षक, अवधि और इंटरनेट विकल्प तय करें, और प्रसारित करें दबाएँ।</li><li>लिंक क्लिपबोर्ड पर कॉपी हो जाता है।</li><li>कोई पंक्ति चुनें और प्रसारण को किसी डिवाइस को देने के लिए लिंक कॉपी करें, .spres सहेजें.. या QR दिखाएँ का उपयोग करें।</li><li>जब प्रसारण की ज़रूरत न रहे, तो उस पर रद्द करें दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>गेटवे स्विच</summary><p>चेकबॉक्स HTTP गेटवे को चालू या बंद करता है। उसके नीचे की पंक्ति में प्रसारण गेटवे बंद है या प्रसारण गेटवे चल रहा है (पोर्ट N) लिखा होता है। गेटवे चलने के दौरान यह पीसी प्रसारण फ़ाइलों के लिए HTTP अनुरोधों का उत्तर देता है। यदि गेटवे शुरू नहीं हो पाता (पोर्ट, फ़ायरवॉल), तो चेकबॉक्स अपनी असली स्थिति में लौट आता है और कारण उसके नीचे एक लाल पंक्ति में दिखता है; इनकार कभी संवाद नहीं खोलता।</p></details>
+<details id="broadcast-list"><summary>प्रसारण सूची</summary><p>कॉलम: नाम, प्रकार (फ़ाइल, या तत्वों की संख्या के साथ फ़ोल्डर), बनाया गया, समाप्ति (तारीख, रद्द होने तक या समय समाप्त), अनुरोध और टोकन, जिसके केवल पहले छह अक्षर दिखते हैं। सूची हर 5 सेकंड में खुद को दोबारा पढ़ती है। पंक्ति पर डबल क्लिक उसका लिंक कॉपी करता है।</p></details>
+<details id="create"><summary>प्रसारण बनाएँ..</summary><p>मीडिया फ़ाइल माँगता है और प्रसारण बनाएँ संवाद खोलता है। उसे स्वीकार करने के बाद, ज़रूरत हो तो गेटवे चालू होता है, प्रसारण बनता है और उसका लिंक गोपनीयता चिह्नों के साथ क्लिपबोर्ड पर कॉपी हो जाता है; एक संदेश कॉपी की पुष्टि करता है।</p></details>
+<details id="share-link"><summary>लिंक कॉपी करें, .spres सहेजें.. और QR दिखाएँ</summary><p>ये तीनों चुनी हुई पंक्ति पर काम करते हैं और इनके लिए पोर्ट के साथ चलता हुआ गेटवे चाहिए। ये लिंक को इस पीसी के वर्तमान पतों से बनाते हैं; बनाते समय किया गया इंटरनेट का चुनाव हर प्रसारण के लिए याद रखा जाता है। .spres सहेजें.. StreamsPlayer की संसाधन फ़ाइल लिखता है, और QR दिखाएँ स्कैन करने के लिए एक कोड खोलता है।</p></details>
+<details id="refresh-revoke"><summary>ताज़ा करें और रद्द करें</summary><p>ताज़ा करें केवल फ़ोल्डर प्रसारण के लिए उपलब्ध है और सेवा से उसे ताज़ा करने को कहता है; एक संदेश पुष्टि करता है। रद्द करें किसी भी पंक्ति पर काम करता है और पहले पूछता है: क्या प्रसारण X को रद्द करना चाहते हैं? लिंक तुरंत काम करना बंद कर देगा। रद्द किया हुआ प्रसारण वापस नहीं आ सकता; नया प्रसारण बनाएँ।</p></details>
+<details id="problems"><summary>जब पृष्ठ बंद हो</summary><p>यदि साझा करने वाली सेवा उत्तर नहीं देती या उसमें प्रसारण का समर्थन नहीं है, तो पृष्ठ अपनी जगह पर खुद को बंद कर लेता है और लाल पंक्ति कारण बताती है, उदाहरण के लिए कि प्रसारण सेवा का यह संस्करण पुराना है, या कि कार्रवाई पूरी नहीं हो सकी और ब्योरा लॉग में है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

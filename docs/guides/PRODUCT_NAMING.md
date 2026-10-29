@@ -25,7 +25,7 @@ technical anchors stays frozen (section 2).
 | **Alias FMS** | `FMS` | only where the platform is obvious from context; a bare `FMS` is ambiguous between the Windows, Android and web products, so it is never the only name on a page |
 | **Share Manager** | `Share Manager - Fast Media Sorter & Sharing` | the separate sharing program's window, tray, shortcuts and message captions (component first, product as suffix) |
 | **Server edition** | `Fast Media Sorter & Sharing: Folder Share Server` | the Server installer's wizard and shortcut text |
-| **Exchange server** | `Media Exchange Server` | the connect service between share servers and clients (tickets 132 door 3, 133): described as an "exchange server". Never shortened to "Exchange Server", which reads as Microsoft's product (`tools/Test-ProductNaming.ps1` rejects a bare "Exchange Server" not preceded by "Media"); not translated and Latin in all 13 languages, only the role description translates ("сервер обмена"). Surfaces: the site's third door (text), the Share Manager entry (the settings group and the tray item, ticket 142), the installer component, the deployment guide. In code it is `ProductNames.ExchangeServer`, cited as a constant or a `TF` placeholder |
+| **Exchange server** | `Media Exchange Server` | the connect service between share servers and clients (tickets 132 door 3, 133): described as an "exchange server". Never shortened to "Exchange Server", which reads as Microsoft's product (`tools/Test-ProductNaming.ps1` rejects a bare "Exchange Server" not preceded by "Media"); not translated and Latin in all 13 languages, only the role description translates ("сервер обмена"). Surfaces: the site's third door (text, present tense, no call to action and no promise marker - [POSITIONING](POSITIONING.md) section 2.1), the Share Manager entry (the settings group and the tray item, ticket 142), the installer component, the deployment guide. In code it is `ProductNames.ExchangeServer`, cited as a constant or a `TF` placeholder |
 
 The word **"Lite" is not part of the name any more.** The product does far more than the name promised.
 "Lite" survives only as a frozen identifier (section 2), and every survivor is on the allow-list of
@@ -128,3 +128,25 @@ relay, shared-clipboard wording and mobile product descriptors in visible copy; 
 mobile data remain valid. Internal identifiers, wire values and engineering text retain their meaning.
 The older vocabulary rules above still apply. Microsoft Store descriptions use the compact product
 name without the platform suffix; the listing title and MSIX DisplayName remain frozen (section 2).
+
+## 7. The descriptive vocabulary - what the product is and does
+
+Specification 273. The name (section 1) says who the product is; these words say what it is and does. The
+component titles and their order are owned by [POSITIONING](POSITIONING.md) section 2, the category by its
+section 6.5; this table owns the running-text words. Russian and Ukrainian follow the localization table wherever
+a window already names the concept, so a surface and a window say the same thing.
+
+| Concept | EN | RU | UK | Never, as a definition |
+| --- | --- | --- | --- | --- |
+| What the product is (the category) | **media and file manager** | медиа- и файловый менеджер | медіа- та файловий менеджер | "photo and video sorter", "media viewer and sorter", "image viewer" - these stay search keywords only (topics, tags, Store search terms) |
+| The first part's file side | **file manager** (the Grid panel's file manager mode, F3), its local drives, resources and devices called **places** | файловый менеджер, места | файловий менеджер, місця | "explorer", "browser" |
+| A remote folder the manager opens | **remote resource** (an SFTP server, an SMB share with a login) | ресурс, сетевые ресурсы | ресурс, мережеві ресурси | "sharing" (section 1: sharing is giving, not consuming) |
+| The second part in running text | **local sharing and scheduling service** | служба раздачи и расписаний | служба роздачі та розкладів | "local SFTP folder-sharing service" (retired: it does more than share) |
+| A file operation on a timetable | **scheduled operation**; the timetable is the **schedule** | операция по расписанию; расписание | запланована операція; розклад | "task", "job", "cron", "backup" |
+| This PC's membership of an exchange server | **exchange account** (section 6) | учётная запись обмена | обліковий запис обміну | "cloud", "sync", "login" |
+| Running a Media Exchange Server | **administration**; from another machine **remote administration**; the operator's secret is the **administrator password** | администрирование, удалённое администрирование, пароль администратора | адміністрування, віддалене адміністрування, пароль адміністратора | "admin panel", "control panel" |
+| A document shown in the sorting loop | **preview** (text as text, PDF pages, an EPUB cover, a card) | предпросмотр | попередній перегляд | "reader", "reading" - reading is planned, and a planned capability is named on no surface ([POSITIONING](POSITIONING.md) section 2.2) |
+
+No promise marker belongs to this vocabulary in any language: a surface states what works, in the present tense
+(canon invariant 17). The words that were used for that, and the definitions the product outgrew, are the
+`retiredPhrases` of `tools/site-facts.json`, held by `tools/Test-SitePositioning.ps1`.

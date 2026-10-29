@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Посилання для папки - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Посилання для папки</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Передає одну опубліковану папку людині, яка не має облікового запису на сервері обміну: у вигляді QR-коду, тексту посилання та файлу .fmscfg. Вікно відкривається після &#171;Створити посилання..&#187; або &#171;Нове посилання..&#187; у групі &#171;Мої спільні папки в обліковому записі обміну&#187;, а також кнопкою &#171;Показати QR / Код..&#187; у вікні &#171;Дати доступ назовні..&#187; біля папки. У поточній програмі обидві команди вимкнені, бо доступ для людей поза обліковим записом не пропонується; на цій сторінці описано, що показує вікно, коли посилання є.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Посилання для папки">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Посилання для папки">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Виберіть опубліковану папку й натисніть &#171;Створити посилання..&#187; (або &#171;Нове посилання..&#187;, щоб замінити попереднє).</li><li>Прочитайте примітку вгорі вікна.</li><li>Передайте посилання одним зі способів: &#171;Показати QR-код&#187;, &#171;Копіювати текст посилання&#187; або &#171;Зберегти файл .fmscfg..&#187;.</li><li>Натисніть &#171;Закрити&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Коли вікно доступне</summary><p>Вікно є лише в посилання, яке щойно зробили або яке вже існує. Якщо програма не пропонує доступ людям поза обліковим записом, &#171;Створити посилання..&#187; і &#171;Нове посилання..&#187; вимкнені, примітка під ними називає причину, а вікно не відкривається; &#171;Показати QR / Код..&#187; теж вимкнена. &#171;Видалити посилання&#187; залишається доступною.</p></details>
+<details id="note"><summary>Примітка вгорі</summary><p>&#171;Передайте людині код або файл. У них є доступ до папки: не публікуйте їх.&#187; Хто тримає QR-код, текст посилання або файл, той може відкрити цю папку. Текст посилання на екрані не показується.</p></details>
+<details id="qr-code"><summary>Показати QR-код</summary><p>Відкриває картинку з QR-кодом у вікні збільшення. Кнопка є, лише якщо QR-код вдалося побудувати; якщо текст посилання завеликий для QR-коду, менеджер відповідає: &#171;Код завеликий для QR-коду - використайте файл.&#187;.</p></details>
+<details id="copy-text"><summary>Копіювати текст посилання</summary><p>Кладе текст посилання (він починається з FMSSFTP2:) у буфер обміну захищеним способом: до історії буфера Windows і до хмарного буфера він не потрапляє. Вікно відповідає: &#171;Текст посилання скопійовано.&#187;. Кнопка є, лише якщо в посилання є текст.</p></details>
+<details id="save-file"><summary>Зберегти файл .fmscfg..</summary><p>Зберігає файл налаштувань для цієї однієї папки; прочитати його може лише власник. Вікно повідомляє &#171;Файл збережено:&#187; зі шляхом або &#171;Не вдалося зберегти файл.&#187;. Кнопка є, лише якщо файл вдалося побудувати.</p></details>
+<details id="renew-or-remove"><summary>Нове посилання та &#171;Видалити посилання&#187;</summary><p>Обидві команди містяться в групі, а не в цьому вікні, і обидві спершу запитують, причому за замовчуванням вибрано &#171;Ні&#187;: &#171;Нове посилання..&#187; попереджає, що всі попередні QR-коди й файли перестануть працювати, &#171;Видалити посилання&#187; - що перестануть працювати всі видані QR-коди й файли.</p></details>
+<details id="close"><summary>Закрити</summary><p>Закриває вікно; текст посилання, вміст файлу та картинка QR із нього прибираються.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

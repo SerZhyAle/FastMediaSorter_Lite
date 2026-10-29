@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>服务器首次运行 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">服务器首次运行</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Share Manager 中交换服务器设置组的首次运行向导。它说明这台电脑将变成什么，显示运营方声明，设置端口、客户端使用的地址和第一个账户，最后停在服务器状态上。只有在交换服务器存在并已启用时才会打开。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="服务器首次运行">
+    <img class="shot dark" src="server-welcome-dark.png" alt="服务器首次运行">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>阅读第一页上的运营方声明。</li><li>查看端口和防火墙规则。</li><li>在尚无服务的服务器版本上，决定是否使用 Windows 服务。</li><li>填写客户端使用的地址。</li><li>创建第一个账户。</li><li>核对证书指纹，然后点击「完成」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>页面和按钮</summary><p>页脚显示「第 N 步，共 M 步」；「返回」「下一步」和「稍后」与任何向导中的用法相同，最后一页上的「完成」会打开管理器的交换服务器设置组。任何一页都可以不作更改直接跳过：此时服务器保持关闭，或保持原状。</p></details>
+<details id="operator-statement"><summary>运营方声明</summary><p>关于谁能在服务器上看到什么的完整声明。不能跳过。服务器把同一个账户的设备连接起来，并报告其中哪些在线。</p></details>
+<details id="ports"><summary>端口和防火墙</summary><p>一个供设备会合的端口，以及一段供第三方客户端使用的端口范围。设备必须知道服务器端口，所以更改只对新代码生效。防火墙规则属于程序本身，因此更改端口不需要新规则。这些值保存在交换服务器设置组中。</p></details>
+<details id="service"><summary>Windows 服务</summary><p>仅在尚不存在该服务的服务器版本上显示。服务可以让服务器在没人登录时仍然可用。复选框只记录您的同意：服务会在第一个账户创建之后注册，只出现一次权限提升提示，在此之前不会安装任何东西。交换设置组中的「注册为服务..」稍后可完成同样的操作。</p></details>
+<details id="client-address"><summary>客户端使用的地址</summary><p>「客户端使用的地址（主机:端口）：」是其他设备用来访问这台电脑的地址。「建议本地地址」只在点击后才填入该栏。地址留空时，纯本地的首次启动仍然有效，但会对其他设备隐藏广播和文件夹连接。</p></details>
+<details id="first-account"><summary>第一个账户</summary><p>第一台设备登录所用的账户。选择「自动生成密码」或「输入自己的密码」；「将此电脑连接到账号」会把这台电脑加入该账户。「下一步」会创建账户、启动服务器并检查证书。密码只在现有的对话框中显示一次，不会保存在这台电脑上。账户创建之后若出现失败，账户不会被删除。</p></details>
+<details id="server-ready"><summary>服务器已就绪</summary><p>最后一页指出地址、登录名和证书指纹记录在哪里，并提供「复制指纹」和「连接字符串和二维码..」。设备在首次连接时核对指纹之后，才会信任该服务器。「连接手机（帮助）」和「发布第一个文件夹（帮助）」两个链接会打开对应的帮助页面。</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

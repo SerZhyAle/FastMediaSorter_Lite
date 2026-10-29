@@ -27,12 +27,12 @@ $Langs = @{
     EN = @{
         Line1 = 'Slideshow  ·  Panel navigation  ·  One-key Move / Copy / Rename / Delete'
         Line2 = 'H.264 + LibVLC playback  ·  Ambilight background  ·  Offline OCR translation'
-        Title = 'Fast media viewer and sorter for Windows'
+        Title = 'Media and file manager for Windows'
     }
     RU = @{
         Line1 = 'Слайдшоу  ·  Панель навигации  ·  Одна клавиша: Переместить / Скопировать / Удалить'
         Line2 = 'Воспроизведение H.264 + LibVLC  ·  Фон Ambilight  ·  OCR-перевод офлайн'
-        Title = 'Быстрый просмотр и сортировка медиафайлов'
+        Title = 'Медиа- и файловый менеджер для Windows'
     }
 }
 

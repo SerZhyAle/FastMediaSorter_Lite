@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scan QR Code - Fast Media Sorter</title>
+  <title>مسح رمز QR بالكاميرا - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scan QR Code</h1>
+  <h1 id="title">مسح رمز QR بالكاميرا</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scan QR Code.</p>
+    <p>تقرأ رمز QR الذي يعرضه تطبيق الهاتف عبر كاميرا هذا الكمبيوتر. تُفتح من الزر مسح بالكاميرا.. في نافذة رمز الهاتف ومن حقل سلسلة الاتصال في نافذة حساب التبادل، وتبدأ الكاميرا عند إظهار النافذة.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="camera-scan-light.png" alt="Scan QR Code">
-    <img class="shot dark" src="camera-scan-dark.png" alt="Scan QR Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>لا توجد لقطة شاشة لهذه النافذة: عند فتحها تشغّل جهازًا أو استماعًا على الشبكة أو العارض كله، لذلك لا تُلتقط.</figcaption></figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>ضع رمز QR الخاص بالهاتف أمام الكاميرا.</li><li>تمسح النافذة الصورة بنفسها؛ وعند العثور على رمز صالح تعرض الحالة تم استلام الرمز وتُغلق النافذة.</li><li>اضغط إلغاء (Escape) للإغلاق دون مسح.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="preview"><summary>المعاينة والحالة</summary><p>تعرض المنطقة السوداء الصورة الحية. ويقول السطر تحتها وجّه الكاميرا نحو رمز QR للهاتف إلى أن يُقرأ رمز.</p></details>
+<details id="camera"><summary>أي كاميرا</summary><p>تُستخدم أول كاميرا يُعثر عليها فقط. وإن لم توجد أو تعذّر تشغيلها يقول السطر الكاميرا غير متاحة، يليه السبب إن وُجد.</p></details>
+<details id="result"><summary>بعد المسح</summary><p>يُعاد نص أول رمز QR صالح إلى النافذة التي فتحت الماسح وتعالجه كأنه ملصوق؛ وفي نافذة رمز الهاتف يملأ حقل الرمز ويُرسل، ويظل Fast Media Sorter يطرح أسئلته المعتادة. تبقى الإطارات في الذاكرة فقط: لا تحفظ هذه النافذة شيئًا ولا ترسله.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

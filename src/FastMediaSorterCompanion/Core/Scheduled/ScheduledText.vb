@@ -183,7 +183,7 @@ Friend Module ScheduledText
             Case ScheduledIssueCode.SizeBoundsContradict
                 Return Localization.T("Размер «меньше» должен быть больше размера «больше».")
             Case ScheduledIssueCode.ArchiveNeedsPaths
-                Return Localization.T("Архив пока принимает только обычные папки, не ресурсы.")
+                Return Localization.T("Архив принимает только обычные папки, не ресурсы.")
             Case ScheduledIssueCode.NegativeBound : Return Localization.T("Значения условий не могут быть отрицательными.")
             Case ScheduledIssueCode.ResourceReadOnly
                 Return Localization.T("Ресурс только для чтения: перенос и удаление в нём недоступны.")
@@ -197,7 +197,7 @@ Friend Module ScheduledText
                 Dim fragment As String = Localization.T("определение не читается этой версией менеджера")
                 Return If(fragment.Length > 0, Char.ToUpperInvariant(fragment(0)) & fragment.Substring(1) & ".", fragment)
             Case ScheduledIssueCode.ResourceUnsupported
-                Return Localization.T("Этот вид ресурса (ссылка обмена) пока нельзя использовать в операциях по расписанию.")
+                Return Localization.T("Этот вид ресурса (ссылка обмена) нельзя использовать в операциях по расписанию.")
             Case ScheduledIssueCode.DriveBothSides
                 Return Localization.T("Google Диск нельзя выбрать одновременно как источник и как назначение.")
             Case ScheduledIssueCode.DriveDeleteUnsupported

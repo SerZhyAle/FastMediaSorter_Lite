@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Exchange Invitation - Fast Media Sorter</title>
+  <title>Crea invito - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Create Exchange Invitation</h1>
+  <h1 id="title">Crea invito</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Exchange Invitation.</p>
+    <p>Questa piccola finestra chiede quale tipo di account creer&#224; il nuovo invito. Si apre con &#171;Crea invito..&#187; nel gruppo &#171;Inviti&#187; delle impostazioni del server di scambio; il gruppo compare quando il manager raggiunge il server.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-invitation-create-light.png" alt="Create Exchange Invitation">
-    <img class="shot dark" src="exchange-invitation-create-dark.png" alt="Create Exchange Invitation">
+    <img class="shot light" src="exchange-invitation-create-light.png" alt="Crea invito">
+    <img class="shot dark" src="exchange-invitation-create-dark.png" alt="Crea invito">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Nelle impostazioni del server di scambio trova il gruppo &#171;Inviti&#187; e premi &#171;Crea invito..&#187;.</li><li>Lascia selezionato &#171;Dispositivo proprio o famiglia&#187;.</li><li>Premi &#171;Crea&#187;.</li><li>Si apre la finestra &#171;Invito creato&#187; e mostra il codice una sola volta: copialo l&#236;. &#171;Annulla&#187; o Esc chiude la finestra senza creare nulla.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="invitation-type"><summary>Tipo di invito</summary><p>La domanda &#171;Seleziona il tipo di invito da creare per la registrazione dell&#39;utente:&#187; offre due pulsanti di opzione. &#171;Dispositivo proprio o famiglia&#187; &#232; selezionato per impostazione predefinita, e la riga sotto dice &#171;Crea un account completo con la possibilit&#224; di pubblicare risorse.&#187; Chi usa l&#39;invito registra un login e una password propri.</p></details>
+<details id="guest-unavailable"><summary>Opzione Ospite</summary><p>&#171;Ospite&#187; &#232; disattivato e non pu&#242; essere selezionato. La riga sotto ne indica il motivo: il file server del programma non pu&#242; limitare un login a una sola cartella. Per questo si possono creare solo inviti del primo tipo. Gli inviti per ospiti e le password condivise gi&#224; esistenti restano negli elenchi e possono ancora essere revocati o disattivati.</p></details>
+<details id="create"><summary>Crea</summary><p>&#171;Crea&#187; chiede al server un invito monouso. In caso di successo, nella pagina delle impostazioni compare la riga &#171;Invito creato con successo.&#187; e si apre la finestra con il codice. Se il server rifiuta, il motivo compare nella pagina e la finestra del codice non si apre. L&#39;elenco mostra ogni invito con tipo, ora di creazione, stato e un hash, mai con il suo codice.</p></details>
+<details id="withdraw"><summary>Revocare un invito</summary><p>Per annullare un invito gi&#224; creato, selezionalo nell&#39;elenco e premi &#171;Revoca&#187;. Dopo la tua conferma il suo codice smette di funzionare.</p></details>
+<details id="cancel"><summary>Annulla</summary><p>&#171;Annulla&#187; o Esc chiude la finestra e non crea nulla.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

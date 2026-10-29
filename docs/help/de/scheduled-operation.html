@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled File Operation - Fast Media Sorter</title>
+  <title>Geplanter Vorgang - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled File Operation</h1>
+  <h1 id="title">Geplanter Vorgang</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled File Operation.</p>
+    <p>Bearbeitet einen geplanten Dateivorgang: Dateien nach einem wiederkehrenden Zeitplan von einer Quelle in ein Ziel kopieren, verschieben, l&#246;schen oder archivieren. Er &#246;ffnet sich &#252;ber &#171;Neu..&#187; oder &#171;Bearbeiten..&#187; auf der Seite &#171;Geplante Dateivorg&#228;nge&#187; der Einstellungen von Share Manager und &#252;ber den Ordnermen&#252;eintrag des Viewers &#171;Vorgang f&#252;r diesen Ordner planen..&#187;, der diesen Ordner als Quelle eintr&#228;gt.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled File Operation">
-    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled File Operation">
+    <img class="shot light" src="scheduled-operation-light.png" alt="Geplanter Vorgang">
+    <img class="shot dark" src="scheduled-operation-dark.png" alt="Geplanter Vorgang">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Geben Sie einen Namen ein und w&#228;hlen Sie die Aktion.</li><li>Legen Sie die Quelle fest, bei Kopieren, Verschieben und Archivieren auch das Ziel, mit &#171;Ausw&#228;hlen..&#187;, &#171;Ressource..&#187; oder &#171;&#220;ber Google Drive&#187;.</li><li>W&#228;hlen Sie bei Kopieren und Verschieben, was geschieht, &#171;Wenn der Name bereits vergeben ist&#187;.</li><li>&#214;ffnen Sie &#171;Bedingungen f&#252;r die Dateiauswahl&#187;, um die Dateien einzugrenzen.</li><li>Legen Sie &#171;Beginn um&#187; und &#171;Wiederholen alle&#187; fest und lassen Sie &#171;Nach Zeitplan ausf&#252;hren&#187; angehakt.</li><li>Pr&#252;fen Sie &#171;Was jetzt ausgef&#252;hrt w&#252;rde..&#187; und klicken Sie auf &#171;Speichern&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="action"><summary>Aktion und Namenskonflikte</summary><p>Die Aktion ist Kopieren, Verschieben, L&#246;schen oder Archivieren, und das Fenster zeigt nur die Zeilen, die diese Aktion braucht: L&#246;schen hat kein Ziel; &#171;Wenn der Name bereits vergeben ist&#187; (&#220;berspringen, &#220;berschreiben, Beide Kopien behalten) erscheint nur bei Kopieren und Verschieben; &#171;Originaldateien nach Pr&#252;fung des Archivs l&#246;schen&#187; erscheint nur bei Archivieren und entfernt die Originale erst, nachdem das Archiv zur&#252;ckgelesen und gepr&#252;ft wurde.</p></details>
+<details id="places"><summary>Quelle und Ziel</summary><p>Geben Sie einen vollst&#228;ndigen Pfad ein oder klicken Sie auf &#171;Ausw&#228;hlen..&#187;. &#171;Ressource..&#187; w&#228;hlt einen SFTP-Server oder Netzwerkordner aus der Ressourcenliste des Viewers und wird f&#252;r Archivieren nicht angeboten, das nur gew&#246;hnliche Ordner und Google Drive annimmt. &#171;&#220;ber Google Drive&#187; erscheint nur, wenn Sie bei Drive angemeldet sind oder diese Seite es bereits nutzt. Ist &#171;Unterordner einschlie&#223;en&#187; aus, werden nur die Dateien des Quellordners selbst verarbeitet. &#171;Speichern&#187; lehnt System- und Programmordner sowie ein Ziel ab, das mit der Quelle identisch ist oder in ihr liegt, und sagt, was nicht stimmt.</p></details>
+<details id="delete-verdict"><summary>Dateien l&#246;schen</summary><p>Wenn Dateien entfernt werden (L&#246;schen oder Archivieren mit der Option f&#252;r die Originale), sagt die Zeile &#171;L&#246;schen: ..&#187;, wohin sie gehen: in den Papierkorb oder endg&#252;ltig mit dem Grund, zum Beispiel dass ein Netzwerk- oder Wechseldatentr&#228;ger keinen Papierkorb hat. Bei einem solchen Vorgang speichert Enter nicht; klicken Sie bewusst auf &#171;Speichern&#187;. Ein geplanter Lauf stellt nie Fragen und protokolliert, wohin gel&#246;schte Dateien gegangen sind.</p></details>
+<details id="conditions"><summary>Bedingungen f&#252;r die Dateiauswahl</summary><p>Das Feld &#246;ffnet sich von selbst, wenn die Bedingungen von den Standardwerten abweichen. Dateitypen: Alle Dateien, Bilder, Audio, Video, Dokumente (&#171;Alle Dateien&#187; schaltet die anderen vier aus). Ge&#228;ndert: Gesamter Zeitraum, Neu seit der letzten Ausf&#252;hrung, Letzte Stunde, Letzte 24 Stunden. &#171;Namensmaske&#187; und &#171;Nach Maske ausschlie&#223;en&#187; nehmen mehrere Masken getrennt durch ein Semikolon an, zum Beispiel *.jpg;IMG_??.png, verglichen mit dem Dateinamen. &#171;&#196;lter als&#187; und &#171;J&#252;nger als&#187; werden in Tagen und Stunden angegeben, &#171;Gr&#246;&#223;er als&#187; und &#171;Kleiner als&#187; in MB. &#171;Versteckte Dateien und Systemdateien einschlie&#223;en&#187; ist standardm&#228;&#223;ig aus.</p></details>
+<details id="schedule"><summary>Zeitplan</summary><p>&#171;Beginn um&#187; legt die Tageszeit fest und &#171;Wiederholen alle&#187; das Intervall in Stunden und Minuten; eine ganze Zahl von Tagen wiederholt sich zur selben Uhrzeit. Die Zeile darunter zeigt &#171;N&#228;chste Ausf&#252;hrung: Zeit (Regel)&#187; oder &#171;Der Zeitplan ist ausgeschaltet: Der Vorgang wird nur manuell ausgef&#252;hrt.&#187; &#171;Verpasste Ausf&#252;hrung beim Programmstart einmal nachholen&#187; und &#171;Benachrichtigung bei Fehler anzeigen&#187; sind getrennte Optionen. Eine weitere Zeile gibt an, dass der Zeitplan nur funktioniert, solange Share Manager l&#228;uft, und ob er bei der Windows-Anmeldung startet; nichts in diesem Fenster &#228;ndert den Autostart.</p></details>
+<details id="preview"><summary>Vorschau und Speichern</summary><p>&#171;Was jetzt ausgef&#252;hrt w&#252;rde..&#187; listet die Dateien auf, die der Vorgang verarbeiten w&#252;rde, und &#228;ndert nichts; ein Lauf braucht sie nicht. &#171;Speichern&#187; sichert den Vorgang oder listet auf, was korrigiert werden muss. &#171;Abbrechen&#187; verwirft Ihre &#196;nderungen.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

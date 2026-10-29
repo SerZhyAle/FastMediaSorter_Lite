@@ -30,7 +30,10 @@
                                              version being tagged (BUILD-EVIDENCE rule 2);
       9. tools\Test-ImageBackendArtifacts.ps1 - no ImageSharp in any staged program, bundle or
                                              embedded payload, and the image backend's natives are
-                                             present (specification 270).
+                                             present (specification 270);
+     10. tools\Test-HtmlHostArtifacts.ps1    - one x64 WebView2 loader from the pinned SDK in
+                                             webview2\win-x64 beside each staged viewer, none in the
+                                             Manager-only Server root (specification 275).
     Steps 1-6 all run whatever the one before returned. The build runs only when they all passed:
     a release that is already blocked does not need the slowest step to say so.
 
@@ -172,11 +175,13 @@ if ($SkipLocalCheck) {
     Add-Step 'Build-OfflineRelease' $null 'skipped' 'skipped by -SkipLocalCheck'
     Add-Step 'Test-ArtifactVersion' $null 'skipped' 'skipped with the build'
     Add-Step 'Test-ImageBackendArtifacts' $null 'skipped' 'skipped with the build'
+    Add-Step 'Test-HtmlHostArtifacts' $null 'skipped' 'skipped with the build'
 } elseif ($blocked.Count -gt 0) {
     Say "`nThe package build is not run: $(($blocked | ForEach-Object Name) -join ', ') did not pass." "Yellow"
     Add-Step 'Build-OfflineRelease' $null 'not run' 'not run - an earlier step did not pass'
     Add-Step 'Test-ArtifactVersion' $null 'not run' 'not run - nothing was built'
     Add-Step 'Test-ImageBackendArtifacts' $null 'not run' 'not run - nothing was built'
+    Add-Step 'Test-HtmlHostArtifacts' $null 'not run' 'not run - nothing was built'
 } else {
     Say "`nBuilds everything release.yml builds: the ZIP, the User installer and the Server installer." "Gray"
     Invoke-Step "Local package build (as on CI) - so a failing GitHub job is not paid for" 'Build-OfflineRelease.ps1' @('-Version', $Version)
@@ -195,9 +200,13 @@ if ($SkipLocalCheck) {
         # Specification 270: no ImageSharp in any staged program, bundle or embedded payload; natives present.
         $imageStages = @($stage, "$stage-server", (Join-Path "$stage-server" 'viewer')) | Where-Object { Test-Path -LiteralPath $_ }
         Invoke-Step "The staged packages carry the image backend of specification 270" 'Test-ImageBackendArtifacts.ps1' @('-Path', ($imageStages -join ','))
+        # Specification 275 section 9.2: one x64 WebView2 loader beside each staged viewer, none in the
+        # Manager-only Server root.
+        Invoke-Step "The staged packages carry the WebView2 host of specification 275" 'Test-HtmlHostArtifacts.ps1' @('-Path', ($imageStages -join ','))
     } else {
         Add-Step 'Test-ArtifactVersion' $null 'not run' 'not run - the build failed'
         Add-Step 'Test-ImageBackendArtifacts' $null 'not run' 'not run - the build failed'
+        Add-Step 'Test-HtmlHostArtifacts' $null 'not run' 'not run - the build failed'
     }
 }
 

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Додати із сервера обміну - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Додати із сервера обміну</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Підключає цей комп&#39;ютер до облікового запису на сервері обміну, щоб у списку ресурсів з&#39;явилися теки всіх пристроїв цього облікового запису. Вікно відкривається кнопкою &#171;Додати із сервера обміну..&#187; у розділі &#171;Мої пристрої&#187; списку ресурсів, а також коли ви перетягуєте на переглядач рядок підключення чи файл або набираєте рядок у полі теки.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Додати із сервера обміну">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Додати із сервера обміну">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Вставте рядок підключення, який передав оператор сервера, введіть адресу у вигляді хост:порт або натисніть &#171;Відкрити файл..&#187;.</li><li>Перевірте рядок &#171;Пароль буде надіслано на: ..&#187;: лише на цю адресу піде пароль.</li><li>Введіть логін і пароль.</li><li>Натисніть &#171;Підключитися&#187;.</li><li>Якщо програма спитає про сертифікат сервера, звірте відбиток із тим, який назвав оператор.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Рядок підключення або адреса</summary><p>Верхнє поле приймає рядок підключення (він починається з FMSEXCH1:) або адресу виду хост:порт. &#171;Вставити&#187; заповнює його з буфера обміну - з тексту або з картинки з QR-кодом, а &#171;Відкрити файл..&#187; читає файл .fmsexch або картинку з QR-кодом. Вставка лише заповнює форму: нічого не надсилається, доки ви не натиснете &#171;Підключитися&#187;. Рядок під полем показує, куди піде пароль; веб-адреса, код спільної папки чи пошкоджений рядок відхиляються там зрозумілими словами.</p></details>
+<details id="account"><summary>Логін і пароль</summary><p>&#171;Логін:&#187; заповнюється з рядка, якщо він у ньому є. &#171;Пароль:&#187; схований, &#171;Показати пароль&#187; його показує. Під час натискання &#171;Підключитися&#187; поля пароля очищаються раніше, ніж з комп&#39;ютера піде перший байт. Рядок стану показує перебіг підключення й у разі невдачі причину: логін чи пароль не підійшли, забагато спроб, сервер не відповідає.</p></details>
+<details id="register"><summary>Рядок-запрошення</summary><p>Рядок-запрошення вже називає сервер і перемикає вікно на створення облікового запису: з&#39;являються &#171;Пароль ще раз:&#187; і пояснення про правило для пароля (не коротше за 10 символів, з великою та малою латинськими літерами й цифрою), а кнопка називається &#171;Створити обліковий запис&#187;. Останнє слово за правилом лишається за сервером.</p></details>
+<details id="trust"><summary>Сертифікат сервера</summary><p>Якщо сертифікат невідомий, питання показує його відбиток і питає, чи довіряти серверу та чи запам&#39;ятати його; відповідь за замовчуванням &#171;Ні&#187;. Якщо рядок називає один відбиток, а сервер пред&#39;являє інший, показуються обидва, нічого не запам&#39;ятовується і пароль не надсилається.</p></details>
+<details id="sign-in-again"><summary>Повторний вхід</summary><p>Коли вікно відкрито для наявного запису сервера, щоб увійти заново, адреса й логін показуються лише для читання, а опорою довіри править відбиток, який цей запис уже пам&#39;ятає.</p></details>
+    <p><a href="settings.html">Налаштування</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

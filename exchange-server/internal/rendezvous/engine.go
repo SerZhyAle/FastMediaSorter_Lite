@@ -109,10 +109,11 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cfg.Dir.SetPorts(nil)
 	}
 	cfg.Dir.SetHooks(directory.Hooks{
-		ResourceGone:    e.resourceGone,
-		BroadcastGone:   e.broadcastGone,
-		CloseDevice:     e.closeDevice,
-		GrantTargetGone: e.grantTargetGone,
+		ResourceGone:     e.resourceGone,
+		BroadcastGone:    e.broadcastGone,
+		CloseDevice:      e.closeDevice,
+		GrantTargetGone:  e.grantTargetGone,
+		BroadcastRemoved: e.broadcastRemoved,
 	})
 	// what members gave to guests, and the limits of each account (19 items AO and AS): both are the
 	// accounts store's to say, and both are asked under the directory's lock, so neither calls back
@@ -220,6 +221,15 @@ func (e *Engine) broadcastGone(account, broadcastID, deviceID string) {
 	}
 	e.cast.DropBroadcast(broadcastID)
 	e.cfg.Log.State("broadcast-ended", logx.Login(account), logx.Broadcast(broadcastID), logx.Device(deviceID))
+}
+
+// broadcastRemoved logs how a broadcast's removal was fanned out (ticket 271): why it ended, the revision
+// of the `changed` that carried `removals.broadcastIds`, and how many control streams took it. Counts and
+// hashed ids only.
+func (e *Engine) broadcastRemoved(account string, r directory.BroadcastRemoval) {
+	e.cfg.Log.State("broadcast-removal-pushed", logx.Login(account), logx.Broadcast(r.BroadcastID), logx.Device(r.DeviceID),
+		logx.Text("why", r.Why), logx.Int("revision", int(r.Revision)), logx.Int("subscribers", r.Subscribers),
+		logx.Int("queued", r.Queued), logx.Int("dropped", r.Dropped), logx.Int("guest-queued", r.GuestQueued))
 }
 
 // closeDevice ends every stream of a device, its control stream and its data streams, and its

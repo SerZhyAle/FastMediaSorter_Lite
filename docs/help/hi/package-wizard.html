@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>साझा करें - एक्सेस कोड - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">साझा करें - एक्सेस कोड</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>फ़ोन के लिए एक्सेस कोड बनाता है: एक QR कोड और एक .fmscfg फ़ाइल, जिनमें पता, लॉगिन और चुने हुए फ़ोल्डर होते हैं। यह साझाकरण चालू रहने पर मुख्य विंडो के साझा करें बटन से खुलता है, और कोड देने से पहले जाँचता है कि फ़ोन सच में पीसी तक पहुँच सकता है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="साझा करें - एक्सेस कोड">
+    <img class="shot dark" src="package-wizard-dark.png" alt="साझा करें - एक्सेस कोड">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>जिन फ़ोल्डरों को कोड में रखना है उन पर निशान लगाएँ।</li><li>तालिका की जिस भी कोशिका को इस कोड के लिए अलग रखना है उसे बदलें।</li><li>ज़रूरत हो तो इस कोड में इंटरनेट पता शामिल न करें या पासवर्ड को फ़ाइल/QR में शामिल न करें पर निशान लगाएँ।</li><li>पहुँच की जाँच का इंतज़ार करें।</li><li>QR कोड दिखाएँ, .fmscfg फ़ाइल सहेजें, उसे ईमेल से भेजें या लॉगिन और पासवर्ड कॉपी करें।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>इस एक्सेस कोड के फ़ोल्डर और सेटिंग</summary><p>हर साझा फ़ोल्डर की एक पंक्ति, स्तंभ: चालू, फ़ोल्डर, फ़ोन पर नाम, प्रकार, मीडिया प्रकार, उप-फ़ोल्डर स्कैन करें, उप-फ़ोल्डर आइटम के रूप में, छिपे हुए, केवल पढ़ने योग्य, RO संकेत, गंतव्य, टिप्पणी और स्लाइडशो, सेकंड। बदलने के लिए कोशिका पर क्लिक करें। मान हर फ़ोल्डर की अपनी सेटिंग से शुरू होते हैं और बदलाव केवल इसी कोड पर लागू होते हैं। केवल पढ़ने योग्य सर्वर पर असली ताला है; RO संकेत केवल ऐप में संपादन के बटन छिपाता है। गंतव्य फ़ोल्डर पर हमेशा लिखा जा सकता है, इसलिए उस पर केवल पढ़ने योग्य लागू नहीं होता।</p></details>
+<details id="common-settings"><summary>साझा स्थानांतरण सेटिंग</summary><p>इस कोड में इंटरनेट पता शामिल न करें से फ़ोन केवल स्थानीय नेटवर्क से जुड़ता है; यह सर्वर को बंद नहीं करता, और पूरे साझाकरण के लिए इंटरनेट पहुँच प्रबंधक की सेटिंग्स में बंद की जाती है। पासवर्ड को फ़ाइल/QR में शामिल न करें कोड से पासवर्ड हटा देता है; उसे अलग से दें। पासवर्ड के बिना कोड फ़ोन स्वीकार करेगा या नहीं, यह ऐप के संस्करण पर निर्भर है।</p></details>
+<details id="access-check"><summary>पहुँच की जाँच</summary><p>जब तक स्थिति ली जाती है, विंडो यह बताती है। यदि सर्वर नहीं चल रहा, या कोई फ़ोल्डर चुना नहीं गया, या कोई काम का पता नहीं है, तो एक संकेत बताता है कि क्या कम है। जाँच पूरी न हो तो कोड और फ़ाइल नहीं दिए जाते: पहुँच दोबारा जाँचें दबाएँ।</p></details>
+<details id="qr-code"><summary>QR कोड दिखाएँ</summary><p>QR कोड और .fmscfg फ़ाइल फ़ोल्डरों तक पहुँच खोलते हैं और उनमें पासवर्ड तथा, यदि सेट हो, PIN होता है - उन्हें चाबी की तरह सँभालें और दें। यदि सेटिंग QR कोड के लिए बहुत बड़ी हों, तो फ़ाइल सहेजकर उसे भेजें।</p></details>
+<details id="file-and-mail"><summary>फ़ाइल, ईमेल और लॉगिन</summary><p>.fmscfg फ़ाइल सहेजें.. फ़ाइल लिखता है; जिस फ़ाइल सिस्टम में पहुँच सीमित नहीं की जा सकती, या ऐसे फ़ोल्डर में जिसे दूसरे बदल सकते हैं, वहाँ विंडो मना कर देती है क्योंकि फ़ाइल में एक्सेस की होती है। ईमेल से भेजें.. फ़ाइल को एक नोट के साथ जोड़ता है कि इसे Android ऐप में आयात करें और बाद में मिटा दें। लॉगिन/पासवर्ड कॉपी करें दोनों को क्लिपबोर्ड पर रखता है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

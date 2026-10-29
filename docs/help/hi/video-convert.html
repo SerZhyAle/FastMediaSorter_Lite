@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Convert to Video - Fast Media Sorter</title>
+  <title>वीडियो में बदलना - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Convert to Video</h1>
+  <h1 id="title">वीडियो में बदलना</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Convert to Video.</p>
+    <p>वीडियो में बदलना की प्रगति विंडो: यह एनिमेटेड GIF, WebP या APNG को MP4 में बदलती है और फिर मूल फ़ाइल हटा देती है। यह रूपांतरण की पुष्टि करने के बाद खुलती है, काम खत्म होने तक व्यूअर के ऊपर रहती है, और इसमें एक ही बटन है, रद्द करें।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="video-convert-light.png" alt="Convert to Video">
-    <img class="shot dark" src="video-convert-dark.png" alt="Convert to Video">
+    <img class="shot light" src="video-convert-light.png" alt="वीडियो में बदलना">
+    <img class="shot dark" src="video-convert-dark.png" alt="वीडियो में बदलना">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>कोई एनिमेटेड चित्र दिखाएँ।</li><li>चित्र मेनू में वीडियो में बदलें.. चुनें, या टूलबार का वीडियो में बदलें बटन दबाएँ; दोनों तभी होते हैं जब स्क्रीन पर कोई एनिमेशन हो, और कोई कीबोर्ड शॉर्टकट नहीं है।</li><li>पुष्टि पढ़ें और बदलें दबाएँ।</li><li>अगर FFmpeg डाउनलोड करने को कहा जाए तो हाँ कहें।</li><li>बार देखें, या रद्द करें दबाएँ।</li><li>व्यूअर नया MP4 खोल देता है।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="start"><summary>रूपांतरण शुरू करना</summary><p>यह कमांड केवल एनिमेशन के लिए दी जाती है, स्थिर चित्र या वीडियो के लिए कभी नहीं, और व्यूअर इसे सुरक्षित कंटेनर के लिए, या ऐसी जगह के लिए मना कर देता है जहाँ फ़ाइल के पास कुछ लिखा नहीं जा सकता। काम शुरू होते ही प्लेबैक रुक जाता है।</p></details>
+<details id="confirm"><summary>पुष्टि</summary><p>उसमें लिखा होता है: मूल फ़ाइल नए MP4 में बदली जाएगी, और मूल फ़ाइल रीसायकल बिन में गए बिना स्थायी रूप से हटा दी जाती है। अगर एनिमेशन में पारदर्शिता है तो वह जोड़ता है: पारदर्शिता को काले रंग से भर दिया जाएगा। डिफ़ॉल्ट उत्तर रद्द करें है। चेक बॉक्स प्रोग्राम बंद होने तक दोबारा न पूछें केवल व्यूअर बंद होने तक चलता है; वह कभी सहेजा नहीं जाता।</p></details>
+<details id="ffmpeg"><summary>FFmpeg</summary><p>रूपांतरण FFmpeg का उपयोग करता है, जो प्रोग्राम का हिस्सा नहीं है। अगर वह न हो तो डाउनलोड के बारे में एक बार पूछा जाता है (सवाल में आकार दिखता है; फ़ाइल प्रोजेक्ट की साइट से आती है, स्थानीय रूप से सहेजी जाती है और GPL के तहत मुक्त सॉफ़्टवेयर है)। नहीं कहने पर प्रक्रिया यहीं रुक जाती है और कुछ बनाया या हटाया नहीं जाता।</p></details>
+<details id="progress"><summary>प्रगति विंडो</summary><p>शीर्षक में वीडियो बन रहा है.. प्रतिशत के साथ लिखा होता है, और बार उसके साथ चलता है। जब एनिमेशन की लंबाई पता न हो, तो बार बिना किसी संख्या के बस आगे-पीछे चलता रहता है। रद्द करें, Esc कुंजी और बंद करने का बटन तीनों का मतलब एक ही है: विंडो थोड़ी देर रुकी रहती है जब तक एनकोडर सचमुच बंद नहीं हो जाता, फिर बंद हो जाती है और व्यूअर बताता है रूपांतरण रद्द किया गया। इस दौरान व्यूअर का उपयोग नहीं किया जा सकता।</p></details>
+<details id="result"><summary>आपको क्या मिलता है</summary><p>उसी फ़ोल्डर में उसी नाम का एक MP4 (नाम लिया हुआ हो तो कोष्ठक में संख्या जुड़ जाती है), एनिमेशन की फ़्रेम दर पर, 1 से 50 फ़्रेम प्रति सेकंड के बीच। वह अस्थायी नाम से लिखा जाता है और तैयार होने पर उसका नाम बदला जाता है। मूल फ़ाइल तभी हटाई जाती है जब MP4 अपने अंतिम नाम से मौजूद हो और जाँच लिया गया हो कि उसमें पूरा एनिमेशन है। स्टेटस बार में पूर्ण लिखा आता है और व्यूअर वीडियो दिखाता है।</p></details>
+<details id="safety"><summary>कुछ गड़बड़ होने पर</summary><p>मूल फ़ाइल बनी रहती है और स्टेटस बार कारण बताता है: वीडियो नहीं बनाया जा सका (कारण के साथ), वीडियो बन गया पर मूल फ़ाइल नहीं हटाई जा सकी, या वीडियो की पूर्णता जाँची नहीं जा सकी और मूल फ़ाइल रखी गई। असफल प्रयास मूल फ़ाइल को छुए बिना छोड़ता है, अस्थायी फ़ाइल हटा देता है और विवरण लॉग में लिखता है।</p></details>
+    <p><a href="settings.html">सेटिंग्स</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

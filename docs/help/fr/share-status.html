@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Sharing Status - Fast Media Sorter</title>
+  <title>&#201;tat du partage - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Sharing Status</h1>
+  <h1 id="title">&#201;tat du partage</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Sharing Status.</p>
+    <p>Affiche l&#39;&#233;tat actuel du partage et ses compteurs simples. Elle s&#39;ouvre depuis le lien &#171;Statistiques&#187; de la fen&#234;tre principale.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-status-light.png" alt="Sharing Status">
-    <img class="shot dark" src="share-status-dark.png" alt="Sharing Status">
+    <img class="shot light" src="share-status-light.png" alt="&#201;tat du partage">
+    <img class="shot dark" src="share-status-dark.png" alt="&#201;tat du partage">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez l&#39;&#233;tat en haut.</li><li>V&#233;rifiez la derni&#232;re connexion, le nombre de connexions et les fichiers servis.</li><li>Appuyez sur &#171;Actualiser&#187; pour de nouvelles valeurs.</li><li>Appuyez sur &#171;R&#233;initialiser les compteurs&#187; pour repartir de z&#233;ro.</li><li>Appuyez sur &#171;Fermer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="state"><summary>&#201;tat</summary><p>&#171;Partage :&#187; indique si le partage fonctionne et sur quel port, ou qu&#39;il est arr&#234;t&#233;, ou que le worker n&#39;est pas disponible. &#171;En service depuis :&#187; indique quand le partage a d&#233;marr&#233;.</p></details>
+<details id="counters"><summary>Compteurs</summary><p>&#171;Derni&#232;re connexion :&#187; indique l&#39;heure du dernier t&#233;l&#233;phone, ou &#171;jamais&#187;. &#171;Connexions :&#187; et &#171;Fichiers servis :&#187; indiquent le total et, entre parenth&#232;ses, le nombre depuis le dernier d&#233;marrage. Les compteurs sont conserv&#233;s uniquement sur ce PC et ne sont envoy&#233;s nulle part.</p></details>
+<details id="reset-refresh"><summary>Actualiser et r&#233;initialiser</summary><p>&#171;Actualiser&#187; relit les valeurs depuis le serveur. &#171;R&#233;initialiser les compteurs&#187; demande d&#39;abord confirmation : les valeurs pr&#233;c&#233;dentes ne peuvent pas &#234;tre r&#233;tablies. Si la r&#233;initialisation &#233;choue, le bouton affiche &#171;&#201;chec de la r&#233;initialisation&#187;. &#171;Fermer&#187; quitte la fen&#234;tre.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

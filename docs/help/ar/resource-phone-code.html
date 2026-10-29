@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>اتصال الهاتف - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">اتصال الهاتف</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>يعرض رمز QR يمسحه الهاتف لإرسال إعدادات مجلد إلى هذا الكمبيوتر. يُفتح من الأمر إظهار الرمز للهاتف.. في قائمة المزيد في قائمة الموارد.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>لا توجد لقطة شاشة لهذه النافذة: عند فتحها تشغّل جهازًا أو استماعًا على الشبكة أو العارض كله، لذلك لا تُلتقط.</figcaption></figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>افتح الأمر إظهار الرمز للهاتف..</li><li>امسح رمز QR بالهاتف؛ يجب أن يصل الهاتف إلى هذا الكمبيوتر عبر الشبكة المحلية.</li><li>يرسل الهاتف رمزه، فتعرض النافذة الرسالة: تم استلام الرمز، ثم تُغلق، ويبدأ الاستيراد.</li><li>إذا تعذّر على الهاتف الوصول إلى الكمبيوتر، فضع رمزه في حافظة هذا الكمبيوتر، كنص أو كلقطة شاشة لرمز QR، واضغط الزر لصق من الحافظة..</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>رمز QR</summary><p>يمثل الرمز عنوانًا لمرة واحدة على شبكتك المحلية مع رمز مميز يُستخدم مرة واحدة. تستمع النافذة على هذا العنوان فقط ما دامت مفتوحة، وتتوقف عند إغلاقها؛ ويُستمع على ذلك العنوان وحده، لا على كل مهايئ شبكة. إذا تعذّر بدء المستمع، يقول سطر الحالة: تعذر بدء الاستماع المحلي.</p></details>
+<details id="address"><summary>مربع العنوان والنسخ</summary><p>يعرض المربع للقراءة فقط تحت الرمز العنوان نفسه كنص. الزر نسخ يضعه في الحافظة مع علامات الخصوصية (دون سجل للحافظة ودون مزامنة سحابية)، لأن الرمز المميز فيه يتيح لمن يحمله أن يسلّم رمزًا إلى هذه النافذة. من يفتح العنوان في متصفح لا يرى سوى صفحة قصيرة تقول إنه عنوان لمرة واحدة.</p></details>
+<details id="paste"><summary>لصق من الحافظة</summary><p>الزر لصق من الحافظة.. يقرأ نصًا أو لقطة شاشة لرمز QR الخاص بالهاتف من الحافظة ويفحصه بالقارئ نفسه المستخدم للنص المكتوب. إذا لم يكن رمزًا، يذكر سطر الحالة السبب وتبقى النافذة مفتوحة للهاتف.</p></details>
+<details id="result"><summary>ما يحدث للرمز</summary><p>أول رمز يصل، من الهاتف أو من الحافظة، يستحوذ على النافذة؛ ويُهمَل الثاني. تُغلق النافذة ويُجرى ملخص للتأكيد، ثم سؤال عن كلمة المرور إن احتاجها الرمز، ثم يعرض سطر الحالة الموارد المضافة أو المحدَّثة مع العدد، تمامًا كما في الاستيراد عبر الأمر استيراد من ملف..</p></details>
+<details id="close"><summary>الانتظار وإغلاق</summary><p>الزر إغلاق ينهي الانتظار فقط؛ ويختاره Enter وEsc معًا، فلا يُقبَل رمز الهاتف أبدًا بضغطة مفتاح. وأثناء الانتظار يقول سطر الحالة: في انتظار اتصال الهاتف..</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

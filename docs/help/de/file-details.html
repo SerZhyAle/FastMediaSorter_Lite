@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>&#220;ber die Datei - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">&#220;ber die Datei</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>Ein schreibgesch&#252;tzter Schnappschuss dessen, was das Programm &#252;ber die Datei auf dem Bildschirm wei&#223;: die Datei selbst, ein Bild mit seinen Kameradaten, ein Dokument sowie die Audio- und Videospuren. Es &#246;ffnet sich &#252;ber das i-Element des ersten Panels oder &#252;ber &#220;ber die Datei im Dateiblock der Viewer-Men&#252;s und beschreibt die Datei so, wie sie im Moment des Klicks war.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="&#220;ber die Datei">
+    <img class="shot dark" src="file-details-dark.png" alt="&#220;ber die Datei">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Zeigen Sie eine Datei im Viewer an.</li><li>Klicken Sie auf das i-Element des ersten Panels oder w&#228;hlen Sie im Men&#252; &#220;ber die Datei.</li><li>Warten Sie einen Moment: Die Statuszeile zeigt Datei-Metadaten werden gelesen.., und die Zeilen f&#252;llen sich.</li><li>Lesen Sie die Bl&#246;cke, markieren Sie, was Sie brauchen, und dr&#252;cken Sie auf Kopieren, um den ganzen Text in die Zwischenablage zu legen.</li><li>Dr&#252;cken Sie auf Schlie&#223;en oder Esc.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>Datei</summary><p>Diesen Block hat jede Datei: Name, Ordner, Typ, Gr&#246;&#223;e, Bytes, Erstellt, Ge&#228;ndert, Letzter Zugriff und Attribute. Eine Zeile ohne anzuzeigenden Inhalt entf&#228;llt. Ist keine Datei ge&#246;ffnet, sagt die Statuszeile Keine Datei ausgew&#228;hlt; bei einer tempor&#228;ren Kopie aus einem Archiv, einer entfernten Adresse oder einer verschwundenen Datei erscheint Die Datei ist nicht verf&#252;gbar, und es &#246;ffnet sich kein Fenster.</p></details>
+<details id="image-block"><summary>Bild</summary><p>Bei einem Bild: Aufl&#246;sung wie angezeigt (ein seitlich gespeichertes Handyfoto wird in seiner aufrechten Gr&#246;&#223;e angegeben), Farbtiefe und Pixeldichte, sofern die Datei sie enth&#228;lt.</p></details>
+<details id="camera-block"><summary>Kamera</summary><p>Aus den EXIF-Daten des Fotos gelesen: Kamera, Software, Aufnahmedatum, Belichtung, Blende, ISO, Brennweite und Autor. Koordinaten erscheinen nur, wenn das Foto GPS-Daten enth&#228;lt, und Kopieren nimmt sie mit; pr&#252;fen Sie den Text also, bevor Sie ihn weitergeben.</p></details>
+<details id="document-block"><summary>Dokument</summary><p>Bei einer Textdatei: Zeilen, W&#246;rter, Zeichen und Kodierung, dazu Die Datei wurde nur teilweise gelesen, wenn sie zu gro&#223; ist, um ganz gelesen zu werden. Bei einem E-Book: Name und Autor. Bei einer PDF: Seiten.</p></details>
+<details id="media-block"><summary>Medien, Video und Audio</summary><p>Bei Audio- und Videodateien werden die Tags (Name, K&#252;nstler, Album, Jahr, Titelnummer, Genre, Regisseur, Serie, Staffel, Folge, Dauer) und die erste Spur jeder Art (Video: Aufl&#246;sung, Frames pro Sekunde, Codec, Bitrate; Audio: Codec, Kan&#228;le, Abtastrate, Bitrate) einen Moment nach dem Rest erg&#228;nzt, sobald die Medien-Engine das Lesen beendet hat. Das Fenster wartet nie darauf. Netzwerk-Streams erhalten keine Spurzeilen.</p></details>
+<details id="related-files"><summary>Zugeh&#246;rige Dateien</summary><p>Dateien, die neben dieser liegen und zu ihr geh&#246;ren, werden namentlich aufgelistet: Untertitel, Liedtext, Coverbild und Metadaten. Gibt es keine, fehlt der Block.</p></details>
+<details id="copy-close"><summary>Kopieren und Schlie&#223;en</summary><p>Kopieren legt den ganzen Text in die Zwischenablage, und die Statuszeile sagt In die Zwischenablage kopiert; h&#228;lt ein anderes Programm die Zwischenablage gerade belegt, sagt sie das, und Sie k&#246;nnen erneut auf Kopieren dr&#252;cken. Eine mit Ctrl+C kopierte Auswahl funktioniert ebenfalls. Konnte nichts gelesen werden, steht im Feld Die Dateiinformationen konnten nicht gelesen werden. Neben den Schaltfl&#228;chen zeigt die Statuszeile den Dateinamen. Das Bl&#228;ttern zu einer anderen Datei &#228;ndert dieses Fenster nicht: Klicken Sie f&#252;r die neue Datei erneut auf i.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Ajouter depuis un serveur d&#39;&#233;change - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Ajouter depuis un serveur d&#39;&#233;change</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Connecte cet ordinateur &#224; un compte sur un serveur d&#39;&#233;change, de sorte que les dossiers de tous les appareils de ce compte apparaissent dans la liste des ressources. La fen&#234;tre s&#39;ouvre depuis le bouton &#171;Ajouter depuis un serveur d&#39;&#233;change..&#187; de la section &#171;Mes appareils&#187; de la liste des ressources, et lorsque vous d&#233;posez une cha&#238;ne ou un fichier de connexion sur le programme ou en saisissez une dans la zone de dossier.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Ajouter depuis un serveur d&#39;&#233;change">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Ajouter depuis un serveur d&#39;&#233;change">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Collez la cha&#238;ne de connexion de l&#39;op&#233;rateur du serveur, saisissez l&#39;adresse sous la forme h&#244;te:port ou appuyez sur &#171;Ouvrir un fichier..&#187;.</li><li>V&#233;rifiez la ligne &#171;Le mot de passe sera envoy&#233; &#224; : ..&#187; : cette adresse est le seul endroit o&#249; va le mot de passe.</li><li>Saisissez l&#39;identifiant et le mot de passe.</li><li>Appuyez sur &#171;Se connecter&#187;.</li><li>Si le programme interroge sur le certificat du serveur, comparez l&#39;empreinte avec celle que l&#39;op&#233;rateur a indiqu&#233;e.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Cha&#238;ne de connexion ou adresse</summary><p>La premi&#232;re zone accepte une cha&#238;ne de connexion (elle commence par FMSEXCH1:) ou une adresse sous la forme h&#244;te:port. &#171;Coller&#187; la remplit depuis le presse-papiers, &#224; partir d&#39;un texte ou de l&#39;image d&#39;un code QR, et &#171;Ouvrir un fichier..&#187; lit un fichier .fmsexch ou une image QR. Coller ne fait que remplir le formulaire : rien n&#39;est envoy&#233; tant que vous n&#39;appuyez pas sur &#171;Se connecter&#187;. La ligne sous la zone montre o&#249; ira le mot de passe ; une adresse web, un code de dossier ou une cha&#238;ne endommag&#233;e y sont refus&#233;s en termes simples.</p></details>
+<details id="account"><summary>Identifiant et mot de passe</summary><p>&#171;Identifiant :&#187; est rempli &#224; partir de la cha&#238;ne lorsqu&#39;elle en contient un. &#171;Mot de passe :&#187; est masqu&#233; ; &#171;Afficher le mot de passe&#187; le r&#233;v&#232;le. Quand vous appuyez sur &#171;Se connecter&#187;, les zones de mot de passe sont vid&#233;es avant que le premier octet ne quitte l&#39;ordinateur. La ligne d&#39;&#233;tat montre la progression et, en cas d&#39;&#233;chec, la raison : un identifiant ou un mot de passe qui ne convenait pas, trop de tentatives, un serveur qui ne r&#233;pond pas.</p></details>
+<details id="register"><summary>Une cha&#238;ne d&#39;invitation</summary><p>Une cha&#238;ne qui est une invitation nomme d&#233;j&#224; le serveur et fait passer la fen&#234;tre &#224; la cr&#233;ation d&#39;un compte : &#171;Mot de passe encore une fois :&#187; et une note sur la r&#232;gle du mot de passe apparaissent (au moins 10 caract&#232;res, avec une lettre latine majuscule, une minuscule et un chiffre), et le bouton devient &#171;Cr&#233;er le compte&#187;. Le dernier mot sur la r&#232;gle revient au serveur.</p></details>
+<details id="trust"><summary>Le certificat du serveur</summary><p>Si le certificat est inconnu, une question affiche son empreinte et demande s&#39;il faut faire confiance au serveur et le m&#233;moriser ; la r&#233;ponse par d&#233;faut est Non. Si la cha&#238;ne indique une empreinte et que le serveur en pr&#233;sente une autre, les deux sont affich&#233;es, rien n&#39;est m&#233;moris&#233; et aucun mot de passe n&#39;est envoy&#233;.</p></details>
+<details id="sign-in-again"><summary>Se reconnecter</summary><p>Lorsque la fen&#234;tre est ouverte pour une entr&#233;e de serveur existante afin de se reconnecter, elle affiche l&#39;adresse et l&#39;identifiant en lecture seule, et l&#39;empreinte que cette entr&#233;e m&#233;morise est l&#39;ancre de confiance.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

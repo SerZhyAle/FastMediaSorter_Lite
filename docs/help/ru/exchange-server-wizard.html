@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>Мой сервер на этом ПК - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">Мой сервер на этом ПК</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Настраивает личный Media Exchange Server на этом ПК за один проход: создаёт первую учётную запись, запускает сервер и подключает к нему этот же ПК. Окно открывается кнопкой &#171;Использовать этот ПК как мой сервер..&#187; на странице Media Exchange Server в настройках Share Manager; кнопка видна только тогда, когда на этом ПК нет настроенного сервера.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="Мой сервер на этом ПК">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Мой сервер на этом ПК">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Проверьте предложенный логин, взятый из имени пользователя Windows, или введите свой.</li><li>Прочтите, что видит оператор сервера.</li><li>Нажмите &#171;Начать&#187; и дождитесь четырёх шагов.</li><li>Сразу скопируйте пароль, затем отпечаток или строку подключения для других устройств.</li><li>Нажмите &#171;Закрыть&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Логин</summary><p>Поле &#171;Логин вашей учётной записи:&#187; принимает от 3 до 64 символов: строчные латинские буквы, цифры, точку, подчёркивание и дефис; заглавные буквы приводятся к строчным. Подсказка под полем окрашивается цветом предупреждения, когда текст не может быть логином, а &#171;Начать&#187; ничего не делает, если он не подходит.</p></details>
+<details id="statement"><summary>Что видит оператор</summary><p>Нередактируемое поле под строкой &#171;Прежде чем создать первую учётную запись, прочтите, что видит оператор сервера:&#187; перечисляет, что оператор сервера видит об учётных записях, устройствах, папках, трансляциях и буфере обмена, чего сервер прочитать не может и сколько дней хранятся журналы. На своём сервере оператор - это вы.</p></details>
+<details id="steps"><summary>Шаги и сбои</summary><p>&#171;Начать&#187; выполняет четыре шага и называет текущий: &#171;Создаю учётную запись..&#187;, &#171;Запускаю сервер..&#187;, &#171;Проверяю сертификат..&#187; и &#171;Подключаю этот ПК..&#187;. В это время логин заблокирован, а окно не закрывается. Если учётная запись не создана, строка объясняет причину, например &#171;Такая учётная запись уже есть - выберите другой логин.&#187;; исправьте логин и нажмите &#171;Начать&#187; снова.</p></details>
+<details id="result"><summary>Итог и адреса</summary><p>При успехе окно сообщает &#171;Готово: сервер работает, учётная запись создана, этот ПК подключён к ней.&#187; и показывает &#171;Адрес для этого ПК:&#187;, &#171;Адрес для других устройств:&#187; (если адрес не задан, там написано &#171;не задан - укажите его в настройках сервера обмена&#187;), &#171;Логин:&#187;, &#171;Пароль (показан один раз):&#187; и &#171;Отпечаток сертификата:&#187;. Когда адрес для других устройств задан, добавляется &#171;Строка подключения:&#187;. Если сервер не запустился, учётная запись всё равно создана, а её пароль показан ниже один раз.</p></details>
+<details id="password-and-copying"><summary>Пароль и копирование</summary><p>Пароль скрыт. &#171;Показать пароль&#187; раскрывает его, &#171;Скопировать пароль&#187; кладёт его в буфер обмена защищённым путём: в историю буфера Windows и в облачный буфер он не попадает. Окно показывает пароль только один раз, если не включено &#171;Хранить пароли учётных записей на этом ПК&#187;. &#171;Скопировать отпечаток&#187; и &#171;Скопировать строку&#187; копируют обычным образом: пароля в них нет. Другим устройствам нужны адрес, логин, пароль и отпечаток, который они сверяют при первом подключении.</p></details>
+<details id="close-warning"><summary>Закрытие</summary><p>Если пароль не скопирован, не показан и не сохранён на этом ПК, &#171;Закрыть&#187; спрашивает &#171;Закрыть, не скопировав пароль?&#187; (по умолчанию выбрано &#171;Нет&#187;), потому что показать пароль снова нельзя - его можно только сбросить.</p></details>
+    <p><a href="share-settings.html">Настройки менеджера</a> · <a href="sftp-settings.html">Настройки общего доступа SFTP</a> · <a href="exchange-server-settings.html">Настройки сервера обмена</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

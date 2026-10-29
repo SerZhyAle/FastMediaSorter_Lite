@@ -107,6 +107,7 @@ Partial Public Class Main_Form
         If previous IsNot Nothing AndAlso previous.AnimatedViaVideo AndAlso Not modern_Preferences.AnimatedViaVideo Then
             PurgeAnimationVideoStore()
         End If
+        ApplyDocumentReaderPreferences(previous)
         last_Applied_Preferences = modern_Preferences.Snapshot()
         If Not persistImmediately Then
             MarkSettingsDirty()

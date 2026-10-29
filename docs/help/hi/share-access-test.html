@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>इंटरनेट पहुँच की जाँच - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">इंटरनेट पहुँच की जाँच</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>इस पीसी से जाँचती है कि साझा पता SFTP सर्वर की तरह जवाब देता है या नहीं। यह मुख्य विंडो के इंटरनेट पहुँच जाँचें बटन से खुलती है और जो पता परखती है, एक निर्णय और स्पष्टीकरण दिखाती है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="इंटरनेट पहुँच की जाँच">
+    <img class="shot dark" src="share-access-test-dark.png" alt="इंटरनेट पहुँच की जाँच">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>विंडो खोलें; वह पता दिखाती है और जाँच तुरंत शुरू करती है।</li><li>शीर्षक के आने का इंतज़ार करें।</li><li>उसके नीचे की ब्योरे वाली पंक्ति पढ़ें।</li><li>यदि नतीजा निर्णायक न हो, तो Wi-Fi बंद और मोबाइल डेटा चालू करके फ़ोन से जाँच दोहराएँ।</li><li>बंद करें दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>जाँचा गया पता</summary><p>जाँचा गया पता: .. होस्ट और पोर्ट दिखाता है। जाँच चलते समय विंडो कहती है: जाँच .. । यदि कोई पता मालूम न हो तो नतीजा है: अभी कोई इंटरनेट पता नहीं। टूटा हुआ पता देता है: पता अमान्य है।</p></details>
+<details id="verdicts"><summary>निर्णय</summary><p>SFTP सर्वर उपलब्ध - पोर्ट ने SFTP के अभिवादन के साथ जवाब दिया। पोर्ट खुला है, पर SFTP ने उत्तर नहीं दिया - पोर्ट पर कुछ सुन रहा है, पर वह हमारा प्रोग्राम नहीं है; देखें कि राउटर का नियम इस पीसी और साझाकरण के पोर्ट तक जाता है। जवाब से पहले कनेक्शन का बंद होना कनेक्शन की सीमा का संकेत हो सकता है; फिर कोशिश करें। इस पीसी से कोई उत्तर न आने का मतलब है कि राउटर अंदर से अपने ही पते को रोक सकता है।</p></details>
+<details id="inconclusive"><summary>नतीजा निर्णायक क्यों न हो सकता है</summary><p>अनुरोध इस पीसी से राउटर के बाहरी पते की ओर जाता है और सीधा अंदर लौट आता है, इसलिए वह फ़ॉरवर्डिंग नियम परखता है, यह नहीं कि प्रदाता बाहर से आने वाले कनेक्शन आने देता है या नहीं। इसे केवल फ़ोन तय कर सकता है: उसका Wi-Fi बंद करें, मोबाइल डेटा चालू रखें और QR कोड खोलें। फिर भी न जुड़े, तो इंटरनेट पहुँच कैसे सेट करें बटन से पोर्ट फ़ॉरवर्डिंग सेट करें।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

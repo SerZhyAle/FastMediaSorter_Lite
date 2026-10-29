@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>Diffusions pour StreamsPlayer - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">Diffusions pour StreamsPlayer</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>G&#232;re les diffusions HTTP de fichiers multim&#233;dias et de dossiers que ce PC propose &#224; l&#39;application StreamsPlayer. Elle s&#39;ouvre depuis le bouton &#171;Diffusions..&#187; ou l&#39;&#233;l&#233;ment du menu d&#39;ajout de la fen&#234;tre principale de Share Manager, qui n&#39;apparaissent que lorsque le service de partage signale la prise en charge des diffusions. Un lancement accompagn&#233; d&#39;un chemin ouvre la fen&#234;tre et passe directement &#224; la bo&#238;te &#171;Cr&#233;er une diffusion&#187; pour ce chemin.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="Diffusions pour StreamsPlayer">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="Diffusions pour StreamsPlayer">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Cochez &#171;Activer la passerelle de diffusion HTTP&#187;, ou cr&#233;ez simplement une diffusion, ce qui active la passerelle.</li><li>Cliquez sur &#171;Cr&#233;er une diffusion..&#187;, choisissez le fichier multim&#233;dia, r&#233;glez le titre, la dur&#233;e de validit&#233; et l&#39;option internet, puis cliquez sur &#171;Diffuser&#187;.</li><li>Le lien est copi&#233; dans le presse-papiers.</li><li>S&#233;lectionnez une ligne et utilisez &#171;Copier le lien&#187;, &#171;Enregistrer .spres..&#187; ou &#171;Afficher le QR&#187; pour remettre la diffusion &#224; un appareil.</li><li>&#171;R&#233;voquer&#187; une diffusion quand elle n&#39;est plus utile.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>Interrupteur de la passerelle</summary><p>La case active ou d&#233;sactive la passerelle HTTP. La ligne sous elle indique &#171;La passerelle de diffusion est d&#233;sactiv&#233;e&#187; ou &#171;Passerelle de diffusion active (port N)&#187;. Tant que la passerelle fonctionne, ce PC r&#233;pond aux requ&#234;tes HTTP pour les fichiers des diffusions. Si la passerelle ne peut pas d&#233;marrer (port, pare-feu), la case revient &#224; son &#233;tat r&#233;el et la raison s&#39;affiche sur une ligne rouge dessous ; un refus n&#39;ouvre jamais de bo&#238;te de dialogue.</p></details>
+<details id="broadcast-list"><summary>Liste des diffusions</summary><p>Colonnes : Nom, Type (Fichier, ou Dossier avec son nombre d&#39;&#233;l&#233;ments), Cr&#233;&#233; le, Expire (une date, &#171;Jusqu&#39;&#224; r&#233;vocation&#187; ou &#171;Expir&#233;e&#187;), Requ&#234;tes et Jeton, qui n&#39;affiche que les six premiers caract&#232;res. La liste se relit d&#39;elle-m&#234;me toutes les 5 secondes. Un double-clic sur une ligne copie son lien.</p></details>
+<details id="create"><summary>Cr&#233;er une diffusion..</summary><p>Demande un fichier multim&#233;dia et ouvre la bo&#238;te &#171;Cr&#233;er une diffusion&#187;. Apr&#232;s votre validation, la passerelle est activ&#233;e si n&#233;cessaire, la diffusion est cr&#233;&#233;e et son lien est copi&#233; dans le presse-papiers avec des marqueurs de confidentialit&#233; ; un message confirme la copie.</p></details>
+<details id="share-link"><summary>Copier le lien, Enregistrer .spres.. et Afficher le QR</summary><p>Ces trois commandes agissent sur la ligne s&#233;lectionn&#233;e et exigent que la passerelle fonctionne avec un port. Elles construisent le lien &#224; partir des adresses actuelles de ce PC ; le choix concernant internet fait &#224; la cr&#233;ation est m&#233;moris&#233; pour chaque diffusion. &#171;Enregistrer .spres..&#187; &#233;crit un fichier de ressources StreamsPlayer, et &#171;Afficher le QR&#187; ouvre un code &#224; scanner.</p></details>
+<details id="refresh-revoke"><summary>Actualiser et R&#233;voquer</summary><p>&#171;Actualiser&#187; n&#39;est disponible que pour une diffusion de dossier et demande au service de l&#39;actualiser ; un message le confirme. &#171;R&#233;voquer&#187; fonctionne sur n&#39;importe quelle ligne et demande d&#39;abord : &#171;R&#233;voquer la diffusion X ? Le lien cessera de fonctionner imm&#233;diatement.&#187; Une diffusion r&#233;voqu&#233;e ne peut pas &#234;tre r&#233;tablie ; cr&#233;ez-en une nouvelle.</p></details>
+<details id="problems"><summary>Quand la page est d&#233;sactiv&#233;e</summary><p>Si le service de partage ne r&#233;pond pas ou ne prend pas en charge les diffusions, la page se d&#233;sactive d&#39;elle-m&#234;me sur place et la ligne rouge en donne la raison, par exemple que cette version du service de diffusion est obsol&#232;te ou que l&#39;action n&#39;a pas pu &#234;tre men&#233;e &#224; bien, avec les d&#233;tails dans le journal.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

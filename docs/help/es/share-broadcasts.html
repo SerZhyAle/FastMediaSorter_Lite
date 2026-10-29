@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Active Broadcasts - Fast Media Sorter</title>
+  <title>Transmisiones para StreamsPlayer - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Active Broadcasts</h1>
+  <h1 id="title">Transmisiones para StreamsPlayer</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Active Broadcasts.</p>
+    <p>Gestiona las transmisiones HTTP de archivos multimedia y carpetas que este PC ofrece a la aplicaci&#243;n StreamsPlayer. Se abre desde el bot&#243;n &#171;Transmisiones..&#187; o el elemento del men&#250; de a&#241;adir de la ventana principal de Share Manager, que solo aparecen cuando el servicio de uso compartido informa de que admite transmisiones. Un inicio con una ruta abre la ventana y va directamente al cuadro &#171;Crear transmisi&#243;n&#187; para esa ruta.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcasts-light.png" alt="Active Broadcasts">
-    <img class="shot dark" src="share-broadcasts-dark.png" alt="Active Broadcasts">
+    <img class="shot light" src="share-broadcasts-light.png" alt="Transmisiones para StreamsPlayer">
+    <img class="shot dark" src="share-broadcasts-dark.png" alt="Transmisiones para StreamsPlayer">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Marca &#171;Habilitar puerta de enlace de transmisi&#243;n HTTP&#187; o, simplemente, crea una transmisi&#243;n, lo que enciende la puerta de enlace.</li><li>Pulsa &#171;Crear transmisi&#243;n..&#187;, elige el archivo multimedia, define el t&#237;tulo, la duraci&#243;n y la opci&#243;n de internet, y pulsa &#171;Transmitir&#187;.</li><li>El enlace se copia al portapapeles.</li><li>Selecciona una fila y usa &#171;Copiar enlace&#187;, &#171;Guardar .spres..&#187; o &#171;Mostrar QR&#187; para entregar la transmisi&#243;n a un dispositivo.</li><li>&#171;Revocar&#187; una transmisi&#243;n cuando ya no se necesite.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="gateway"><summary>Interruptor de la puerta de enlace</summary><p>La casilla activa o desactiva la puerta de enlace HTTP. La l&#237;nea bajo ella dice &#171;La puerta de enlace de transmisi&#243;n est&#225; desactivada&#187; o &#171;Puerta de enlace de transmisi&#243;n activa (puerto N)&#187;. Mientras la puerta de enlace est&#225; activa, este PC responde a las solicitudes HTTP de los archivos de las transmisiones. Si la puerta de enlace no puede iniciarse (puerto, cortafuegos), la casilla vuelve a su estado real y el motivo aparece en una l&#237;nea roja debajo; una negativa nunca abre un cuadro de di&#225;logo.</p></details>
+<details id="broadcast-list"><summary>Lista de transmisiones</summary><p>Columnas: Nombre, Tipo (Archivo, o Carpeta con su n&#250;mero de elementos), Creada, Expira (una fecha, &#171;Hasta revocaci&#243;n&#187; o &#171;Caducada&#187;), Peticiones y Token, que muestra solo los seis primeros caracteres. La lista se relee sola cada 5 segundos. Un doble clic en una fila copia su enlace.</p></details>
+<details id="create"><summary>Crear transmisi&#243;n..</summary><p>Pide un archivo multimedia y abre el cuadro &#171;Crear transmisi&#243;n&#187;. Cuando lo aceptas, la puerta de enlace se enciende si hace falta, se crea la transmisi&#243;n y su enlace se copia al portapapeles con marcadores de privacidad; un mensaje confirma la copia.</p></details>
+<details id="share-link"><summary>Copiar enlace, Guardar .spres.. y Mostrar QR</summary><p>Estos tres act&#250;an sobre la fila seleccionada y requieren que la puerta de enlace est&#233; activa con un puerto. Construyen el enlace con las direcciones actuales de este PC; la elecci&#243;n de internet hecha al crear se recuerda para cada transmisi&#243;n. &#171;Guardar .spres..&#187; escribe un archivo de recurso de StreamsPlayer y &#171;Mostrar QR&#187; abre un c&#243;digo para escanear.</p></details>
+<details id="refresh-revoke"><summary>Actualizar y Revocar</summary><p>&#171;Actualizar&#187; solo est&#225; disponible para la transmisi&#243;n de una carpeta y pide al servicio que la actualice; un mensaje lo confirma. &#171;Revocar&#187; funciona en cualquier fila y pregunta antes: &#171;&#191;Revocar la transmisi&#243;n X? El enlace dejar&#225; de funcionar inmediatamente.&#187; Una transmisi&#243;n revocada no se puede restaurar; crea una nueva.</p></details>
+<details id="problems"><summary>Cuando la p&#225;gina est&#225; desactivada</summary><p>Si el servicio de uso compartido no responde o no admite transmisiones, la p&#225;gina se desactiva sola en su sitio y la l&#237;nea roja explica el motivo, por ejemplo que esta versi&#243;n del servicio de transmisi&#243;n est&#225; obsoleta o que no se pudo completar la acci&#243;n, con los detalles en el registro.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

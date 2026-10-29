@@ -9,6 +9,7 @@ Imports Xunit
 ''' neither - and a share code or a URL is never mistaken for an address. The words for each refusal are one sentence per reason, all in the
 ''' language layer.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class ExchangeConnectInputTests
 
     <Fact>

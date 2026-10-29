@@ -714,6 +714,7 @@
     <Compile Include="..\..\src\Support\LogPackage.vb">
       <Link>Linked\Support\LogPackage.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Support\ServerLogSources.vb" Link="Linked\Support\ServerLogSources.vb" />
     <!-- The [hosting] block of that report and its live probes (ticket 182 L-4), whole-file the same way. -->
     <Compile Include="..\..\src\Support\HostingReport.vb">
       <Link>Linked\Support\HostingReport.vb</Link>
@@ -1178,6 +1179,26 @@
     <Compile Include="..\..\src\Documents\PdfDocumentSource.vb">
       <Link>Linked\Documents\PdfDocumentSource.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Documents\PdfReaderNative.vb" />
+    <Compile Include="..\..\src\Documents\DocumentContentPolicy.vb" />
+    <Compile Include="..\..\src\Documents\PdfReadingCanvas.vb" />
+    <Compile Include="..\..\src\Documents\EpubPackage.vb" />
+    <Compile Include="..\..\src\Documents\DocumentReadingState.vb" />
+    <Compile Include="..\..\src\Documents\DocumentSnapshot.vb" />
+    <Compile Include="..\..\src\Documents\HtmlReaderContent.vb" />
+    <Compile Include="..\..\src\ModernViewerPreferences.Documents.vb" />
+    <!-- Specification 275: models/policy compile on both legs (DOCUMENT_PREVIEW_TESTS); the
+         rest is modern-only and compiles to nothing on net48. No WebView2 host here. -->
+    <Compile Include="..\..\src\Documents\HtmlDocumentModels.vb" />
+    <Compile Include="..\..\src\Documents\HtmlDocumentPolicy.vb" />
+    <Compile Include="..\..\src\Documents\HtmlFileAccess.vb" />
+    <Compile Include="..\..\src\Documents\HtmlDocumentSource.vb" />
+    <Compile Include="..\..\src\Documents\HtmlDocumentSanitizer.vb" />
+    <Compile Include="..\..\src\Documents\HtmlReaderState.vb" />
+    <Compile Include="..\..\src\Documents\HtmlNetworkFetcher.vb" />
+    <Compile Include="..\..\src\Documents\HtmlDocumentAdapters.vb" />
+    <Compile Include="..\..\src\Documents\HtmlBrowserLauncher.vb" />
+    <Compile Include="..\..\src\ModernViewerPreferences.Html.vb" />
     <Compile Include="..\..\src\Documents\EpubMetadata.vb">
       <Link>Linked\Documents\EpubMetadata.vb</Link>
     </Compile>
@@ -1298,6 +1319,7 @@
          src/Secure compiles to nothing on net48. -->
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
     <PackageReference Include="Docnet.Core" Version="2.6.0" />
+    <PackageReference Include="AngleSharp" Version="1.8.5" Condition="'$(TargetFramework)' != 'net48'" />
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
     <!-- Managed half only (no VideoLAN.LibVLC.Windows: the natives are not copied here). Used by
          LiveVlcMedia and the hand-run latency measurement of specification 023 phase 1, which load the

@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>手机连接 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">手机连接</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>显示一个二维码，手机扫描后可把文件夹的设置发送到这台电脑。它从资源列表「更多」菜单中的「显示手机连接码..」打开。</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>此窗口没有截图：它一打开就会启动设备、网络监听或整个查看器，因此不截取。</figcaption></figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>打开「显示手机连接码..」。</li><li>用手机扫描二维码；手机必须能通过本地网络访问这台电脑。</li><li>手机发送它的连接码，窗口显示「已接收连接码」并关闭，随后开始导入。</li><li>如果手机无法访问这台电脑，请把它的连接码（文本或二维码截图）放到这台电脑的剪贴板上，然后点击「从剪贴板粘贴..」。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>二维码</summary><p>二维码代表本地网络上的一个一次性地址和一个一次性令牌。只有在窗口打开期间，窗口才会在该地址上监听，关闭时即停止；监听的只有这一个地址，而不是每个网络适配器。如果监听器无法启动，状态栏会显示「无法启动本地接收服务」。</p></details>
+<details id="address"><summary>地址框与复制</summary><p>二维码下方的只读框以文本形式显示同一个地址。「复制」会带着隐私标记（不进入剪贴板历史，不进行云同步）把它放到剪贴板，因为其中的令牌能让持有者向这个窗口交一个连接码。在浏览器中打开该地址的人只会看到一个简短的页面，说明这是一个一次性地址。</p></details>
+<details id="paste"><summary>从剪贴板粘贴</summary><p>「从剪贴板粘贴..」从剪贴板读取文本或手机二维码的截图，并用与键入文本相同的读取器检查。如果它不是连接码，状态栏会说明原因，窗口保持打开，等待手机。</p></details>
+<details id="result"><summary>连接码的处理</summary><p>最先到达的连接码（来自手机或剪贴板）会占用该窗口；第二个会被丢弃。窗口关闭，并运行与「从文件导入..」相同的导入：先是需要确认的摘要，如果连接码需要密码则询问密码，然后状态栏显示「已添加或更新的资源数」和数量。</p></details>
+<details id="close"><summary>等待与关闭</summary><p>等待时，状态栏显示「正在等待手机连接..」。「关闭」只是结束等待；Enter 和 Esc 都选择它，所以手机的连接码绝不会因按键而被接收。</p></details>
+    <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

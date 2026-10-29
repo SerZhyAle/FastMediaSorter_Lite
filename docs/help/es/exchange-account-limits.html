@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>L&#237;mites de la cuenta - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">L&#237;mites de la cuenta</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>Fija l&#237;mites individuales para una cuenta del Media Exchange Server que administras; un valor dejado en 0 sigue el valor predeterminado del servidor. Se abre desde el bot&#243;n &#171;L&#237;mites..&#187; bajo la lista de cuentas de la p&#225;gina Media Exchange Server de los ajustes de Share Manager, que aparece cuando hay una cuenta seleccionada. El t&#237;tulo nombra la cuenta: &#171;L&#237;mites de la cuenta: &lt;login&gt;&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="L&#237;mites de la cuenta">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="L&#237;mites de la cuenta">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Selecciona la cuenta y pulsa &#171;L&#237;mites..&#187;.</li><li>Escribe un n&#250;mero para cada l&#237;mite que quieras cambiar y deja 0 para el valor predeterminado del servidor.</li><li>Pulsa &#171;Guardar&#187;.</li><li>Lee la l&#237;nea de resultado: &#171;L&#237;mites de la cuenta &lt;login&gt; guardados.&#187;</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>Dispositivos y recursos</summary><p>&#171;Dispositivos m&#225;ximos (0 = predeterminado):&#187; limita los dispositivos que pueden iniciar sesi&#243;n en la cuenta. &#171;Recursos publicados m&#225;ximos (0 = predeterminado):&#187; limita las carpetas compartidas y otros recursos que la cuenta puede publicar en el servidor.</p></details>
+<details id="broadcasts"><summary>Retransmisiones</summary><p>&#171;Retransmisiones m&#225;ximas (0 = predeterminado):&#187; limita las retransmisiones de toda la cuenta, y &#171;Retransmisiones m&#225;ximas por dispositivo (0 = predeterminado):&#187; limita las que puede iniciar un solo dispositivo.</p></details>
+<details id="clipboard"><summary>L&#237;mite del portapapeles</summary><p>&#171;L&#237;mite del portapapeles, MB (0 = 5 GB predeterminado):&#187; fija el mayor valor que la cuenta puede enviar a su portapapeles en el servidor, en megabytes enteros. Un l&#237;mite guardado en unidades m&#225;s peque&#241;as, por ejemplo 512 KB, se muestra como 0 y conserva su tama&#241;o exacto mientras no toques este campo.</p></details>
+<details id="save"><summary>Guardar y cancelar</summary><p>&#171;Guardar&#187; sustituye en bloque los l&#237;mites propios de la cuenta: cada n&#250;mero mayor que 0 pasa a ser un l&#237;mite, cada 0 significa el valor predeterminado del servidor y cinco ceros eliminan las excepciones de la cuenta. &#171;Cancelar&#187; no cambia nada. Si el servidor rechaza un valor, la l&#237;nea de resultado da el motivo, por ejemplo &#171;L&#237;mite no permitido: debe ser un n&#250;mero entero dentro del rango aceptado por el servidor.&#187;</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

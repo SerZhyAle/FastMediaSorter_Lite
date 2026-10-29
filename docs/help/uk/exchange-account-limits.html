@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>Ліміти облікового запису - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">Ліміти облікового запису</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>Задає індивідуальні обмеження для одного облікового запису Media Exchange Server, яким ви керуєте; значення 0 означає налаштування сервера за замовчуванням. Вікно відкривається кнопкою &#171;Ліміти..&#187; під списком облікових записів на сторінці Media Exchange Server у налаштуваннях Share Manager; кнопка з&#39;являється, коли вибрано обліковий запис. У заголовку вікна вказано логін: &#171;Ліміти облікового запису: &lt;логін&gt;&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="Ліміти облікового запису">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Ліміти облікового запису">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Виберіть обліковий запис і натисніть &#171;Ліміти..&#187;.</li><li>Введіть число для кожного обмеження, яке хочете змінити, а для решти залиште 0 (значення сервера за замовчуванням).</li><li>Натисніть &#171;Зберегти&#187;.</li><li>Прочитайте рядок підсумку: &#171;Ліміти облікового запису &lt;логін&gt; збережено.&#187;</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>Пристрої та ресурси</summary><p>&#171;Максимум пристроїв (0 = за замовчуванням):&#187; обмежує кількість пристроїв, які можуть увійти в обліковий запис. &#171;Максимум опублікованих ресурсів (0 = за замовчуванням):&#187; обмежує кількість спільних папок та інших ресурсів, які обліковий запис може опублікувати на сервері.</p></details>
+<details id="broadcasts"><summary>Трансляції</summary><p>&#171;Максимум трансляцій (0 = за замовчуванням):&#187; обмежує трансляції всього облікового запису, а &#171;Максимум трансляцій на один пристрій (0 = за замовчуванням):&#187; - те, що може розпочати один його пристрій.</p></details>
+<details id="clipboard"><summary>Ліміт буфера</summary><p>&#171;Ліміт буфера, МБ (0 = за замовчуванням 5 ГБ):&#187; задає найбільший обсяг значення, яке обліковий запис може надіслати у свій буфер обміну на сервері, в цілих мегабайтах. Ліміт, що зберігається в менших одиницях, наприклад 512 КБ, показується як 0 і зберігає точний розмір, якщо ви не змінюєте це поле.</p></details>
+<details id="save"><summary>Зберегти та скасувати</summary><p>&#171;Зберегти&#187; замінює власні ліміти облікового запису цілком: кожне число більше за 0 стає лімітом, кожен 0 означає значення сервера за замовчуванням, а п&#39;ять нулів знімають усі індивідуальні обмеження. &#171;Скасувати&#187; нічого не змінює. Якщо сервер відхиляє значення, рядок підсумку називає причину, наприклад &#171;Ліміт не прийнято: потрібне ціле число в межах, які приймає сервер.&#187;</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

@@ -14,7 +14,7 @@
   <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="Exchange server"></span> Settings</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Settings.</p>
+    <p>The Settings window holds every option of the viewer. It opens with F2, with the &#39;Settings&#39; button of the toolbar, or from the file manager of the image panel with its &#39;Settings..&#39; button, which jumps straight to the File manager page. The pages are listed in a sidebar on the left, and the groups on a page can be folded.</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="settings-light.png" alt="Settings">
@@ -22,21 +22,23 @@
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Pick a page in the sidebar, or type a word into &#39;Search settings&#39; to find an option.</li><li>Use &#39;Expand all&#39; and &#39;Collapse all&#39; to open or fold every group of the page.</li><li>Change the options you need.</li><li>Press Esc to close the window.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="general"><summary>General</summary><p>General section in Fast Media Sorter.</p></details>
-      <details id="destinations"><summary>Destination folders</summary><p>Destination folders section in Fast Media Sorter.</p></details>
-      <details id="images"><summary>Images</summary><p>Images section in Fast Media Sorter.</p></details>
-      <details id="video"><summary>Video</summary><p>Video section in Fast Media Sorter.</p></details>
-      <details id="audio"><summary>Audio</summary><p>Audio section in Fast Media Sorter.</p></details>
-      <details id="files"><summary>Files and system</summary><p>Files and system section in Fast Media Sorter.</p></details>
-      <details id="server"><summary>Server and resources</summary><p>Server and resources section in Fast Media Sorter.</p></details>
-      <details id="ocr"><summary>OCR</summary><p>OCR section in Fast Media Sorter.</p></details>
-      <details id="translation"><summary>Translation</summary><p>Translation section in Fast Media Sorter.</p></details>
-      <details id="storage"><summary>Storage</summary><p>Storage section in Fast Media Sorter.</p></details>
-      <details id="about"><summary>About</summary><p>About section in Fast Media Sorter.</p></details>
+<details id="general"><summary>General</summary><p>Language and theme (Theme), then the look of the floating panels: interface scale, reduced motion, pinning, size, opacity, corners, the info overlay and hiding the mouse cursor. The group Startup decides what happens at start (open at start, resume the last file, allow new windows) and has &#39;Show the welcome steps again&#39;, which reopens the welcome wizard. The group Advanced settings exports and imports the extra settings and restores the defaults.</p></details>
+<details id="destinations"><summary>Destinations</summary><p>The ten folders that the keys 1-9 and 0 move a file to; Shift with a top-row digit copies into the same folder. The grid has one row per key: select a row, then use &#39;A folder on this PC..&#39;, &#39;Resources&#39; (an SFTP or SMB folder) or &#39;Clear&#39;, or drop a folder onto the row. The group Destination table appearance sets position, width, text size, opacity and visible rows of the table shown over the picture, and &#39;Destination table over the image&#39; turns that table on or off.</p></details>
+<details id="images"><summary>Images</summary><p>How pictures open and look: scale of a new image, automatic rotation by the EXIF tag, &#39;Zoom with the mouse wheel&#39;, animated graphics through the video player and the picture, file size and date info. Image background sets the colour around a picture, the Perspective background and the halo (dynamic, animated, speed). Slideshow behaviour sets the interval, random order, whether manual navigation stops the show and what the interface does during it. The advanced part has quality scaling and the thumbnail card size.</p></details>
+<details id="video"><summary>Video</summary><p>Whether video files take part in browsing, autoplay, the action at the end of a clip, remembering the position and &#39;Shared sound: audio and video&#39;. Further groups hold the preferred audio and subtitle languages and the playback control: what a single click does, the delay of the controls, controls while paused and three seek steps.</p></details>
+<details id="audio"><summary>Audio</summary><p>Whether audio files take part in browsing, the action at the end of a track, the default volume and start muted. The info and control group holds the always visible audio bar, the visualiser for files without a cover and the sleep timer.</p></details>
+<details id="files"><summary>Files</summary><p>File handling: advance after copy, what happens on a name collision and after a copy or move, the status line on file operations, creating a missing destination folder, &#39;Delete to the Recycle Bin&#39; and the delete confirmation. File types covers subfolders, extensions, documents, the text preview size and other files. Further groups set the recent files and folders, the archive limits and the secure .fd-sec files. Keys and associations has the &#39;Keyboard shortcuts&#39; button, which opens the hotkeys window, and the file associations for images and video.</p></details>
+<details id="filemanager"><summary>File manager</summary><p>Options of the file manager of the image panel: Display mode (tiles or list), Content filter, hidden files and the action for files that are not media. The group Places chooses which places are shown (local, resources, devices) and has &#39;Remember sort&#39;.</p></details>
+<details id="server"><summary>Server and resources</summary><p>The list Servers and network folders holds the SFTP and SMB resources the viewer can browse and use as destinations. The group Android / SFTP is for publishing folders of this PC over SFTP to the Android app; it has the connection guide and the &#39;Manage the SFTP server for the Android client..&#39; button.</p></details>
+<details id="ocr"><summary>OCR</summary><p>&#39;Enable OCR&#39; turns text recognition on, and &#39;Run automatically&#39; lets it run by itself. The group Text recognition sets the source language, the quality, the mode and the download of language data.</p></details>
+<details id="translation"><summary>Translation</summary><p>Choose the provider (&#39;Translation provider&#39;) and the target language (&#39;Translation language&#39;); further fields hold the service address, the local Ollama server, the model and the API key. The group Translation over the image sets the opacity and visibility of the translation panel over the picture.</p></details>
+<details id="storage"><summary>Storage</summary><p>Cache limits with a clear button for each cache: decoded images, thumbnails of the image panel, archives and network resources. The OCR disk cache has &#39;Cache results on disk&#39;, its own limit and a clear button.</p></details>
+<details id="about"><summary>About</summary><p>Product information and links: Updates, Reset settings, related projects, Program help, the site, GitHub, releases, the privacy page, the MIT licence and third-party notices. &#39;Send the logs to the author&#39; shows a consent dialog that lists what goes into the archive and then hands it to your mail client; the program opens no network connection for it.</p></details>
+<details id="documents"><summary>Documents</summary><p>Enable the PDF reader separately from sortable file filters. Choose single page, continuous scrolling or a spread, page colors, zoom, search scope and cache limits. Page buttons change pages; file buttons change files. Document text controls own B/N, digits and Delete. Escape returns to the canvas. Positions and named bookmarks are separate from appearance; resetting appearance preserves them. Read aloud uses installed Windows voices. Passwords stay in the open session. Reading is local and uses a temporary copy so the original can be moved. Ordinary settings export omits reading history, bookmarks and document overrides.</p></details>
     
   </section>
   <nav id="related">

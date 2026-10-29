@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>Exporter la ressource - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">Exporter la ressource</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>Pr&#233;pare les param&#232;tres d&#39;un serveur SFTP pour qu&#39;un autre ordinateur ou un t&#233;l&#233;phone puisse les importer. La fen&#234;tre s&#39;ouvre depuis &#171;Exporter..&#187; dans le menu &#171;Plus&#187; de la liste des ressources et demande une ressource s&#233;lectionn&#233;e ; un dossier partag&#233; par Share Manager s&#39;exporte plut&#244;t depuis Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="Exporter la ressource">
+    <img class="shot dark" src="resource-export-dark.png" alt="Exporter la ressource">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lisez l&#39;avertissement sous le nom de la ressource.</li><li>Choisissez &#171;Sans le mot de passe&#187; (par d&#233;faut) ou &#171;Avec le mot de passe&#187;.</li><li>Appuyez sur &#171;Enregistrer dans un fichier..&#187;, ou copiez les param&#232;tres sous forme de texte ou de code court.</li><li>Ne remettez le r&#233;sultat qu&#39;&#224; son propri&#233;taire.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>L&#39;avertissement</summary><p>La ligne sous le nom indique que le fichier contient la cl&#233; d&#39;acc&#232;s au serveur : ne le remettez qu&#39;&#224; son propri&#233;taire et ne le laissez jamais sur des disques partag&#233;s. Cela vaut pour le fichier, le texte copi&#233; et le code.</p></details>
+<details id="password-choice"><summary>Sans ou avec le mot de passe</summary><p>&#171;Sans le mot de passe&#187; est s&#233;lectionn&#233; au d&#233;part. &#171;Avec le mot de passe&#187; n&#39;est actif que lorsque le mot de passe enregistr&#233; peut &#234;tre relu ; sinon l&#39;indication &#171;Le mot de passe n&#39;est pas enregistr&#233; - le fichier n&#39;en contiendra pas.&#187; s&#39;affiche. Le mot de passe est d&#233;chiffr&#233; en m&#233;moire pour l&#39;export et ne va nulle part ailleurs.</p></details>
+<details id="save-copy"><summary>Enregistrer, copier le texte, copier le code</summary><p>&#171;Enregistrer dans un fichier..&#187; &#233;crit un fichier .fmscfg via une bo&#238;te de dialogue d&#39;enregistrement ; l&#39;&#233;criture refuse les disques FAT ou exFAT, les disques r&#233;seau et les dossiers que d&#39;autres utilisateurs peuvent modifier, et ne laisse jamais un fichier &#224; moiti&#233; &#233;crit. &#171;Copier le texte&#187; place le document de param&#232;tres dans le presse-papiers et &#171;Copier le code&#187; un code court au contenu identique. Les deux sont copi&#233;s avec les marqueurs de confidentialit&#233; (pas d&#39;historique du presse-papiers, pas de synchronisation cloud). La ligne d&#39;&#233;tat montre le r&#233;sultat.</p></details>
+<details id="requirements"><summary>Ce qui peut &#234;tre export&#233;</summary><p>Seulement un serveur SFTP dont le programme m&#233;morise d&#233;j&#224; la cl&#233;. La fen&#234;tre s&#39;ouvre dans tous les cas, et un refus appara&#238;t dans la ligne d&#39;&#233;tat lorsque vous appuyez sur un bouton : un dossier r&#233;seau (SMB) ne peut pas &#234;tre d&#233;crit par ce fichier ; la cl&#233; du serveur n&#39;est pas m&#233;moris&#233;e (ouvrez la ressource une fois et confirmez la cl&#233;) ; la ressource n&#39;a pas d&#39;adresse &#224; remettre ; le dossier est &#233;crit d&#39;une fa&#231;on que le fichier n&#39;accepte pas (corrigez-le avec &#171;Modifier..&#187;).</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>Modifica immagine - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">Modifica immagine</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>Un piccolo editor per una singola immagine fissa: disegnare forme, ritagliare, ruotare e specchiare, poi salvare sopra l&#39;originale o come nuovo file. Si apre, con il nome del file dell&#39;immagine nel titolo, dal pulsante Modifica della barra degli strumenti o dalla prima voce del menu dell&#39;immagine, e solo per un&#39;immagine fissa (non per un&#39;animazione). L&#39;editor rilegge il file e lavora su una propria copia.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="Modifica immagine">
+    <img class="shot dark" src="image-editor-dark.png" alt="Modifica immagine">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Premi Modifica nel visualizzatore.</li><li>Scegli uno strumento, un colore e uno spessore.</li><li>Disegna sull&#39;immagine, oppure ritagliala, ruotala o specchiala; Annulla torna indietro di un passo.</li><li>Premi Salva per scrivere sopra l&#39;originale, oppure Salva con nome.. per un nuovo file.</li><li>Chiudi la finestra; se ci sono modifiche non salvate, rispondi alla domanda.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>Strumenti</summary><p>Nella striscia: Ritaglio, Pennello, Rettangolo, Rettangolo pieno, Ovale e Ovale pieno. I tasti sono C, B, R e O (quelli pieni non ne hanno). Tieni premuto Shift mentre disegni un rettangolo o un ovale per ottenere un quadrato o un cerchio. Passando il mouse su uno strumento compaiono il suo nome e il suo tasto.</p></details>
+<details id="colour-thickness"><summary>Colore e spessore</summary><p>Il pulsante del colore apre la finestra dei colori, e accanto ci sono otto campioni rapidi (nero, bianco, rosso, giallo, verde lime, blu, magenta, grigio). Lo spessore va da 1 a 64 pixel dell&#39;immagine (predefinito 4); i tasti [ e ] lo cambiano di uno. Colore e spessore sono condivisi da tutti gli strumenti.</p></details>
+<details id="crop"><summary>Ritaglio</summary><p>Con lo strumento Ritaglio, trascina un riquadro sull&#39;immagine. Il pulsante Applica ritaglio compare solo finch&#233; esiste un riquadro. Enter fa lo stesso; Esc rimuove il riquadro senza ritagliare. L&#39;immagine viene tagliata solo quando applichi il ritaglio.</p></details>
+<details id="rotate-flip"><summary>Ruota e specchia</summary><p>Ruota a sinistra (Ctrl+[) e Ruota a destra (Ctrl+]) ruotano i pixel. I tasti H e V specchiano l&#39;immagine in orizzontale e in verticale. Questo cambia l&#39;immagine stessa, a differenza di R nel visualizzatore, che ruota solo la visualizzazione.</p></details>
+<details id="undo-redo"><summary>Annulla e Ripeti</summary><p>Annulla (Ctrl+Z) e Ripeti (Ctrl+Y o Ctrl+Shift+Z) percorrono la cronologia di al massimo 20 passi entro un limite di memoria. La riga di stato mostra la dimensione e, dopo una modifica, modificato con Passo N di M; quando il limite scarta i passi pi&#249; vecchi dice I passi pi&#249; vecchi sono stati scartati: limite di memoria.</p></details>
+<details id="save"><summary>Salva</summary><p>Salva (Ctrl+S) scrive sopra l&#39;originale ed &#232; attivo solo dopo una modifica; prima, il suo suggerimento dice Niente da salvare: l&#39;immagine non &#232; stata modificata. Per un JPEG ti viene chiesto una volta per sessione: Il JPEG verr&#224; ricompresso - l&#39;operazione &#232; irreversibile. La data di scatto e gli altri dati EXIF vengono mantenuti. Il file viene scritto con un nome temporaneo e scambiato; se il salvataggio fallisce, la finestra resta aperta con il motivo.</p></details>
+<details id="save-as"><summary>Salva con nome..</summary><p>Apre una finestra di file con il nome seguito da (modificata). I formati sono PNG, JPEG, BMP, TIFF e WebP; un&#39;immagine in qualsiasi altro formato viene proposta come PNG. La cartella temporanea di un archivio viene rifiutata. Dopo aver salvato sopra l&#39;originale il visualizzatore lo ricarica; un nuovo file nella stessa cartella viene aperto; uno altrove viene indicato nella riga di stato.</p></details>
+<details id="save-refused"><summary>Quando Salva &#232; disattivato</summary><p>La riga di stato dice Impossibile sovrascrivere l&#39;originale, con il motivo: questo formato non viene scritto, il file &#232; di sola lettura, mancano i permessi di scrittura, un altro programma sta usando il file, il file ha pi&#249; pagine o fotogrammi (viene modificato solo il primo), si trova dentro un archivio oppure non esiste. Salva con nome.. resta disponibile.</p></details>
+<details id="close"><summary>Chiusura</summary><p>Chiudi o Esc chiude la finestra; Esc prima annulla un tratto in corso, poi rimuove il riquadro di ritaglio. Con modifiche non salvate la domanda dice: Le modifiche non sono salvate - Chiudere l&#39;editor e perdere le modifiche non salvate? Salva salva prima, Non salvare scarta, Annulla (la risposta predefinita, anche Esc) resta nell&#39;editor. Questa domanda viene posta anche quando le conferme sono disattivate.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

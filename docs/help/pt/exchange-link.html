@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Link para uma pasta - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Link para uma pasta</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>Entrega uma pasta publicada a uma pessoa que n&#227;o tem conta no servidor de troca: sob a forma de c&#243;digo QR, de texto do link e de ficheiro .fmscfg. A janela abre-se depois de &#171;Criar um link..&#187; ou &#171;Novo link..&#187; no grupo &#171;As minhas pastas partilhadas na conta de troca&#187; e a partir de &#171;Mostrar QR / C&#243;digo..&#187; na janela &#171;Dar acceso externo..&#187; de uma pasta. No programa atual, os dois comandos est&#227;o desativados, porque o acesso para pessoas fora da conta n&#227;o &#233; oferecido; esta p&#225;gina descreve o que a janela mostra quando existe um link.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Link para uma pasta">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Link para uma pasta">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Selecione uma pasta publicada e clique em &#171;Criar um link..&#187; (ou em &#171;Novo link..&#187; para substituir um link antigo).</li><li>Leia a nota no topo da janela.</li><li>Entregue o link com &#171;Mostrar o c&#243;digo QR&#187;, &#171;Copiar o texto do link&#187; ou &#171;Guardar um ficheiro .fmscfg..&#187;.</li><li>Clique em &#171;Fechar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Quando a janela est&#225; dispon&#237;vel</summary><p>A janela s&#243; existe para um link que acabou de ser criado ou que j&#225; existe. Enquanto o acesso para pessoas fora da conta n&#227;o for oferecido, &#171;Criar um link..&#187; e &#171;Novo link..&#187; ficam desativados, uma nota por baixo indica o motivo e a janela n&#227;o se abre; &#171;Mostrar QR / C&#243;digo..&#187; tamb&#233;m fica desativado. &#171;Remover o link&#187; continua dispon&#237;vel.</p></details>
+<details id="note"><summary>A nota no topo</summary><p>&#171;Entregue &#224; pessoa o c&#243;digo ou o ficheiro. Cont&#234;m o acesso &#224; pasta: n&#227;o os publique.&#187; Quem tiver o c&#243;digo QR, o texto do link ou o ficheiro pode abrir essa pasta. O texto do link nunca &#233; mostrado no ecr&#227;.</p></details>
+<details id="qr-code"><summary>Mostrar o c&#243;digo QR</summary><p>Abre a imagem do c&#243;digo QR numa janela de amplia&#231;&#227;o. O bot&#227;o s&#243; existe se foi poss&#237;vel criar um c&#243;digo QR; a um texto do link demasiado grande para um c&#243;digo QR, a janela responde &#171;O c&#243;digo &#233; demasiado grande para um c&#243;digo QR - use o ficheiro.&#187;.</p></details>
+<details id="copy-text"><summary>Copiar o texto do link</summary><p>Coloca o texto do link (come&#231;a por FMSSFTP2:) na &#225;rea de transfer&#234;ncia por uma via protegida que o mant&#233;m fora do hist&#243;rico da &#225;rea de transfer&#234;ncia do Windows e da &#225;rea de transfer&#234;ncia na nuvem, e responde &#171;Texto do link copiado.&#187;. S&#243; existe se o link tiver um texto.</p></details>
+<details id="save-file"><summary>Guardar um ficheiro .fmscfg..</summary><p>Guarda um ficheiro de defini&#231;&#245;es para esta &#250;nica pasta, que s&#243; o propriet&#225;rio pode ler. A janela indica &#171;Ficheiro guardado:&#187; seguido do caminho, ou &#171;N&#227;o foi poss&#237;vel guardar o ficheiro.&#187;. S&#243; existe se foi poss&#237;vel criar o ficheiro.</p></details>
+<details id="renew-or-remove"><summary>Novo link e Remover o link</summary><p>Ambos pertencem ao grupo, n&#227;o a esta janela, e ambos perguntam primeiro, com &#171;N&#227;o&#187; como resposta predefinida: &#171;Novo link..&#187; avisa que todos os c&#243;digos QR e ficheiros anteriores deixar&#227;o de funcionar, &#171;Remover o link&#187; que deixar&#227;o de funcionar todos os c&#243;digos QR e ficheiros distribu&#237;dos com ele.</p></details>
+<details id="close"><summary>Fechar</summary><p>Fecha a janela e elimina dela o texto do link, o conte&#250;do do ficheiro e a imagem do c&#243;digo QR.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

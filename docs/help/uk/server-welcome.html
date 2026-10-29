@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>Перший запуск сервера - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">Перший запуск сервера</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Посібник першого запуску для групи сервера обміну в Share Manager. Він пояснює, чим стає комп&#39;ютер, показує заяву оператора, задає порти, адресу для клієнтів і перший обліковий запис та завершується станом сервера. Відкривається лише тоді, коли сервер обміну присутній і ввімкнений.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="Перший запуск сервера">
+    <img class="shot dark" src="server-welcome-dark.png" alt="Перший запуск сервера">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте заяву оператора на першій сторінці.</li><li>Перегляньте порти та правило брандмауера.</li><li>У серверній редакції без служби вирішіть, що робити зі службою Windows.</li><li>Заповніть адресу для клієнтів.</li><li>Створіть перший обліковий запис.</li><li>Перевірте відбиток сертифіката й натисніть &#171;Готово&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>Сторінки та кнопки</summary><p>У нижньому рядку показано &#171;Крок N з M&#187;; &#171;Назад&#187;, &#171;Далі&#187; та &#171;Пізніше&#187; працюють як у будь-якому майстрі, а &#171;Готово&#187; на останній сторінці відкриває групу сервера обміну в менеджері. Сторінку можна пропустити без змін: тоді сервер залишається вимкненим або таким, яким був.</p></details>
+<details id="operator-statement"><summary>Заява оператора</summary><p>Повна заява про те, хто що бачить на сервері. Її не можна пропустити. Сервер з&#39;єднує пристрої одного облікового запису й повідомляє, які з них у мережі.</p></details>
+<details id="ports"><summary>Порти та брандмауер</summary><p>Порт зустрічі пристроїв і діапазон портів для сторонніх клієнтів. Пристрої мають знати порт сервера, тому зміни діють лише для нових кодів. Правило брандмауера належить програмі, тож зміна порту не потребує нового правила. Ці значення зберігаються в групі сервера обміну.</p></details>
+<details id="service"><summary>Служба Windows</summary><p>Показується лише у серверній редакції, де служби ще немає. Служба тримає сервер доступним, коли ніхто не увійшов у систему. Прапорець лише запам&#39;ятовує вашу згоду: служба реєструється після появи першого облікового запису, з одним запитом прав адміністратора, а до того нічого не встановлюється. &#171;Зареєструвати як службу..&#187; у групі обміну робить те саме пізніше.</p></details>
+<details id="client-address"><summary>Адреса для клієнтів</summary><p>&#171;Адреса для клієнтів (хост:порт):&#187; - це адреса, за якою інші пристрої звертаються до цього комп&#39;ютера. &#171;Запропонувати локальну адресу&#187; заповнює поле лише тоді, коли її натиснути. Порожня адреса залишає чисто локальний перший запуск коректним, але приховує трансляції та підключення до папок від інших пристроїв.</p></details>
+<details id="first-account"><summary>Перший обліковий запис</summary><p>Обліковий запис, з яким входить перший пристрій. Виберіть &#171;Створити пароль автоматично&#187; або &#171;Ввести свій пароль&#187;; &#171;Підключити цей комп&#39;ютер до облікового запису&#187; приєднує до нього цей комп&#39;ютер. &#171;Далі&#187; створює обліковий запис, запускає сервер і перевіряє сертифікат. Пароль показується один раз, у наявному діалозі, і не зберігається на цьому ПК. Збій після створення облікового запису його не видаляє.</p></details>
+<details id="server-ready"><summary>Сервер готовий</summary><p>Остання сторінка вказує, де записано адресу, логін і відбиток сертифіката, та пропонує &#171;Скопіювати відбиток&#187; і &#171;Рядок підключення і QR-код..&#187;. Пристрій довіряє серверу після того, як під час першого підключення перевірить відбиток. Посилання &#171;Підключити телефон (довідка)&#187; та &#171;Опублікувати першу папку (довідка)&#187; ведуть на відповідні сторінки довідки.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

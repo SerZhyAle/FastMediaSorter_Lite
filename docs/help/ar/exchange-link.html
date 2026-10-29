@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>رابط لمجلد - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">رابط لمجلد</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>يسلّم مجلدًا منشورًا واحدًا إلى شخص ليس لديه حساب على خادم التبادل: على شكل رمز QR ونص رابط وملف .fmscfg. تُفتح النافذة بعد إنشاء رابط.. أو رابط جديد.. في مجموعة مجلداتي المشتركة في حساب التبادل، وكذلك من إظهار QR / الرمز.. في نافذة منح وصول خارجي.. الخاصة بالمجلد. في البرنامج الحالي الأمران معطّلان لأن الوصول للأشخاص من خارج الحساب غير متاح؛ وتصف هذه الصفحة ما تعرضه النافذة عندما يوجد رابط.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="رابط لمجلد">
+    <img class="shot dark" src="exchange-link-dark.png" alt="رابط لمجلد">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اختر مجلدًا منشورًا واضغط إنشاء رابط.. (أو رابط جديد.. لاستبدال رابط قديم).</li><li>اقرأ الملاحظة في أعلى النافذة.</li><li>سلّم الرابط بأحد الأزرار: حفظ ملف .fmscfg.. أو نسخ نص الرابط أو اعرض رمز الاستجابة السريعة.</li><li>اضغط إغلاق.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>متى تتوفر النافذة</summary><p>توجد النافذة فقط لرابط أُنشئ للتو أو موجود بالفعل. وما دام الوصول للأشخاص من خارج الحساب غير متاح، يكون الأمران إنشاء رابط.. ورابط جديد.. معطّلين، وتذكر ملاحظة أسفلهما السبب، ولا تُفتح النافذة؛ كما أن إظهار QR / الرمز.. معطّل أيضًا. أما حذف الرابط فيبقى متاحًا.</p></details>
+<details id="note"><summary>الملاحظة في الأعلى</summary><p>تقول الملاحظة: سلّم الشخص الرمز أو الملف. يحتويان على الوصول إلى المجلد: لا تنشرهما. من يملك رمز QR أو نص الرابط أو الملف يستطيع فتح ذلك المجلد. ولا يُعرض نص الرابط على الشاشة أبدًا.</p></details>
+<details id="qr-code"><summary>اعرض رمز الاستجابة السريعة</summary><p>يفتح صورة رمز QR في نافذة تكبير. لا يظهر الزر إلا إذا أمكن إنشاء رمز QR؛ وإذا كان نص الرابط أكبر من أن يتسع في رمز QR فالرد هو: الرمز كبير جدًا بحيث لا يتسع في رمز QR - استخدم الملف.</p></details>
+<details id="copy-text"><summary>نسخ نص الرابط</summary><p>يضع نص الرابط (يبدأ بـ FMSSFTP2:) في الحافظة عبر مسار محمي يُبقيه خارج سجل حافظة Windows والحافظة السحابية، ويردّ: تم نسخ نص الرابط. لا يظهر الزر إلا إذا كان للرابط نص.</p></details>
+<details id="save-file"><summary>حفظ ملف .fmscfg..</summary><p>يحفظ ملف إعدادات لهذا المجلد وحده، ولا يستطيع قراءته إلا مالكه. تُبلغ النافذة بإحدى رسالتين: تم حفظ الملف: يليها المسار، أو تعذّر حفظ الملف. لا يظهر الزر إلا إذا أمكن إنشاء الملف.</p></details>
+<details id="renew-or-remove"><summary>رابط جديد وحذف الرابط</summary><p>كلاهما يتبع المجموعة لا هذه النافذة، وكلاهما يسأل أولًا والجواب الافتراضي هو لا: رابط جديد.. يحذّر من أن كل رموز QR والملفات السابقة ستتوقف عن العمل، وحذف الرابط يحذّر من أن كل رموز QR والملفات الموزعة معه ستتوقف عن العمل.</p></details>
+<details id="close"><summary>إغلاق</summary><p>يغلق النافذة ويُسقط منها نص الرابط ومحتوى الملف وصورة رمز QR.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

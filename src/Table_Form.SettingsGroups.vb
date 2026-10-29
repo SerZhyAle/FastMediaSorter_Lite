@@ -47,10 +47,12 @@ Partial Public Class Table_Form
         pageIds.Add(modernFileManagerPage, "file-manager")
         pageIds.Add(modernAboutPage, "about")
         pageIds.Add(modernResourcesPage, "resources")
+        pageIds.Add(modernDocumentsPage, "documents")
         settingsContext.MergeSharingIntoResources()
         CreateModernPageFlow(modernGeneralPage)
         CreateModernPageFlow(modernStoragePage)
         CreateModernPageFlow(modernFileManagerPage)
+        CreateModernPageFlow(modernDocumentsPage)
         For Each page As TabPage In pageIds.Keys
             Dim capturedPage As TabPage = page
             AddHandler PageFlow(page).Scroll,
@@ -117,6 +119,7 @@ Partial Public Class Table_Form
         ' the section keeps its wiring through the panel, only the placement moves, and the fold -
         ' not the list panel's body - decides whether the entries' loop runs (rule 8).
         AddSettingsGroup("resources", "server", "Android / SFTP", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app", "exchange_portal")
+        RegisterDocumentSettings()
 
         contextTimer = New Timer()
         contextFlush = New SettingsFlushScheduler(AddressOf WriteSettingsContext,

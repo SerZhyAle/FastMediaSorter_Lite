@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Exchange Invitation - Fast Media Sorter</title>
+  <title>Create invitation - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Create Exchange Invitation</h1>
+  <h1 id="title">Create invitation</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Exchange Invitation.</p>
+    <p>This small window asks what kind of account the new invitation will create. Open it with &#171;Create invitation..&#187; in the Invitations group of Exchange server settings; the group is shown once the manager reaches the server.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-invitation-create-light.png" alt="Create Exchange Invitation">
-    <img class="shot dark" src="exchange-invitation-create-dark.png" alt="Create Exchange Invitation">
+    <img class="shot light" src="exchange-invitation-create-light.png" alt="Create invitation">
+    <img class="shot dark" src="exchange-invitation-create-dark.png" alt="Create invitation">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>In Exchange server settings find the Invitations group and press &#171;Create invitation..&#187;.</li><li>Keep &#171;Own device or family&#187; selected.</li><li>Press &#171;Create&#187;.</li><li>The window &#171;Invitation created&#187; opens and shows the code once: copy it there. Press &#171;Cancel&#187; or Escape to leave without creating anything.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="invitation-type"><summary>Type of invitation</summary><p>The question &#171;Select the type of invitation to create for user registration:&#187; offers two radio buttons. &#171;Own device or family&#187; is selected by default, and the line under it says &#171;Creates a full account with the ability to publish resources.&#187; The person who uses the invitation registers a login and a password of their own.</p></details>
+<details id="guest-unavailable"><summary>Guest option</summary><p>&#171;Guest&#187; is disabled and cannot be selected. The line under it gives the reason: the program&#39;s file server cannot limit a login to one folder. For that reason only invitations of the first type can be created. Guest invitations and shared passwords that already exist stay in the lists and can still be withdrawn or switched off.</p></details>
+<details id="create"><summary>Create</summary><p>&#171;Create&#187; asks the server for a single-use invitation. On success the line &#171;Invitation successfully created.&#187; appears on the settings page and the window with the code opens. If the server refuses, the reason appears on the page and no code window opens. The list shows each invitation by type, creation time, state and a hash, never by its code.</p></details>
+<details id="withdraw"><summary>Withdraw an invitation</summary><p>To cancel an invitation that was already created, select it in the list and press &#171;Revoke&#187;. After you confirm, its code stops working.</p></details>
+<details id="cancel"><summary>Cancel</summary><p>&#171;Cancel&#187; or Escape closes the window and creates nothing.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

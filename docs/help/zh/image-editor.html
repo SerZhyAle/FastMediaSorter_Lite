@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>编辑图片 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">编辑图片</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>针对单张静态图片的小型编辑器：绘制图形、裁剪、旋转和翻转，然后覆盖保存原文件或另存为新文件。它从工具栏的「编辑」按钮或图片菜单的第一项打开，标题中带有图片的文件名，仅适用于静态图片（不适用于动画）。编辑器会重新读取文件，并在自己的副本上工作。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="编辑图片">
+    <img class="shot dark" src="image-editor-dark.png" alt="编辑图片">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>在查看器中点击「编辑」。</li><li>选择工具、颜色和粗细。</li><li>在图片上绘制，或裁剪、旋转、翻转；「撤销」可后退一步。</li><li>点击「保存」覆盖原文件，或点击「另存为..」保存为新文件。</li><li>关闭窗口；如果有未保存的更改，请回答提示的问题。</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>工具</summary><p>工具条中有：「裁剪」、「画笔」、「矩形」、「实心矩形」、「椭圆」和「实心椭圆」。快捷键是 C、B、R 和 O（实心的没有快捷键）。绘制矩形或椭圆时按住 Shift 可得到正方形或圆。把鼠标停在工具上会显示它的名称和按键。</p></details>
+<details id="colour-thickness"><summary>颜色与粗细</summary><p>颜色按钮打开颜色对话框，旁边有八个快速色块（黑、白、红、黄、青柠绿、蓝、品红、灰）。粗细范围是 1 到 64 个图像像素（默认 4）；[ 和 ] 键每次调整 1。颜色和粗细对所有工具通用。</p></details>
+<details id="crop"><summary>裁剪</summary><p>使用「裁剪」工具，在图片上拖出一个框。只有存在裁剪框时才会出现「应用裁剪」按钮。Enter 的作用相同；Esc 会移除裁剪框而不裁剪。只有您应用之后，图片才会被裁切。</p></details>
+<details id="rotate-flip"><summary>旋转与翻转</summary><p>「向左旋转」（Ctrl+[）和「向右旋转」（Ctrl+]）会旋转像素。H 键和 V 键分别水平和垂直翻转图片。这会改变图片本身，不同于查看器中的 R 键，后者只旋转显示。</p></details>
+<details id="undo-redo"><summary>撤销与重做</summary><p>「撤销」（Ctrl+Z）和「重做」（Ctrl+Y 或 Ctrl+Shift+Z）在最多 20 步的历史中移动，并受内存限制。状态栏显示大小，更改之后显示「已修改」以及「第 N 步，共 M 步」；当限制使最早的步骤被丢弃时，显示「较早的步骤已丢弃：内存已达上限」。</p></details>
+<details id="save"><summary>保存</summary><p>「保存」（Ctrl+S）覆盖原文件，只有在有更改之后才可用；在此之前它的提示文字是「没有可保存的内容：图像未被修改」。对于 JPEG，每个会话会询问一次：「JPEG 将被重新压缩 - 此操作不可撤销。」拍摄日期和其余 EXIF 数据会保留。文件先以临时名称写入再替换；如果保存失败，窗口保持打开并给出原因。</p></details>
+<details id="save-as"><summary>另存为..</summary><p>打开文件对话框，名称后加上（已编辑）。可选格式有 PNG、JPEG、BMP、TIFF 和 WebP；其他格式的图片默认提供 PNG。压缩包的临时文件夹会被拒绝。覆盖保存原文件后，查看器会重新加载它；同一文件夹中的新文件会被打开；其他位置的文件会在状态栏中给出名称。</p></details>
+<details id="save-refused"><summary>「保存」不可用时</summary><p>状态栏显示「无法覆盖原文件」并附上原因：不支持写入这种格式、文件为只读、没有写入权限、另一个程序占用着文件、文件有多页或多帧（只编辑第一帧）、文件在压缩包内，或文件已丢失。「另存为..」仍然可用。</p></details>
+<details id="close"><summary>关闭</summary><p>「关闭」或 Esc 关闭窗口；Esc 先取消正在进行的笔画，再移除裁剪框。有未保存的编辑时，提示是：「修改尚未保存 - 关闭编辑器并丢失未保存的修改？」「保存」先保存，「不保存」放弃修改，「取消」（默认，Esc 同样）留在编辑器中。即使关闭了确认提示，也会询问这个问题。</p></details>
+    <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

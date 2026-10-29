@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>Port-forward guide - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">Port-forward guide</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>Helps to make the share reachable from outside your home network. It shows the external address and whether the port was opened automatically or needs forwarding on the router, and offers a test and a detailed guide. It opens from the &#39;How to set up internet access&#39; button of the main window.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="Port-forward guide">
+    <img class="shot dark" src="internet-access-dark.png" alt="Port-forward guide">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Start sharing first; otherwise the window asks you to.</li><li>Read the status lines: reachable, behind CGNAT, or needs port forwarding.</li><li>If forwarding is needed, open the detailed guide and create the rule on the router.</li><li>Press &#39;Test&#39; to probe the address from this PC.</li><li>Confirm from the phone on mobile data with its Wi-Fi off.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>Status</summary><p>The window detects the external address and says one of: &#39;Reachable from internet&#39;, &#39;External address: .. (needs port forwarding)&#39;, &#39;External address unknown - check the router.&#39; or &#39;Behind CGNAT - not reachable from outside.&#39;. When the port was opened automatically (UPnP) no router setup is needed, yet only the phone on mobile data can confirm that it works. &#39;Refresh&#39; repeats the detection.</p></details>
+<details id="guide"><summary>Router and guides</summary><p>The router line shows its address, or &#39;Detecting router..&#39; while it is searched. The link &#39;Open the detailed guide (HTML, prefilled with your values + router model)..&#39; opens a local HTML guide; if it cannot be opened the window says so. The link &#39;Access from home and other networks (portal)&#39; opens the matching page of the help portal in the browser.</p></details>
+<details id="test"><summary>Test</summary><p>Probes the external address from this PC and reports &#39;SFTP server reachable&#39;, &#39;Port open, but no SFTP reply&#39;, a closed connection (possibly the connection limit) or no answer. It is inconclusive: many routers refuse a request to their own external address from inside, so the reliable check is the phone on mobile data.</p></details>
+<details id="safety"><summary>Safety</summary><p>Opening SFTP to the internet gives every shared folder to anyone who learns the address, login and password. Do not publish the QR code or the .fmscfg file and switch sharing off when you are done. &#39;Close&#39; leaves the window.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

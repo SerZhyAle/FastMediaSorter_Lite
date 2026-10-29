@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Convert to Video - Fast Media Sorter</title>
+  <title>التحويل إلى فيديو - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Convert to Video</h1>
+  <h1 id="title">التحويل إلى فيديو</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Convert to Video.</p>
+    <p>نافذة التقدم الخاصة بالتحويل إلى فيديو: تحوّل صورة GIF أو WebP أو APNG متحركة إلى MP4 ثم تحذف الأصل. تُفتح بعد أن تؤكد التحويل، وتبقى فوق العارض حتى ينتهي العمل، وفيها زر واحد هو إلغاء.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="video-convert-light.png" alt="Convert to Video">
-    <img class="shot dark" src="video-convert-dark.png" alt="Convert to Video">
+    <img class="shot light" src="video-convert-light.png" alt="التحويل إلى فيديو">
+    <img class="shot dark" src="video-convert-dark.png" alt="التحويل إلى فيديو">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اعرض صورة متحركة.</li><li>اختر تحويل إلى فيديو.. من قائمة الصورة، أو اضغط زر تحويل إلى فيديو في شريط الأدوات؛ كلاهما موجود فقط ما دامت صورة متحركة على الشاشة، ولا يوجد اختصار لوحة مفاتيح.</li><li>اقرأ التأكيد واضغط تحويل.</li><li>إذا طُلب منك تنزيل FFmpeg فأجب نعم.</li><li>راقب الشريط، أو اضغط إلغاء.</li><li>يفتح العارض ملف MP4 الجديد.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="start"><summary>بدء التحويل</summary><p>يُعرض الأمر للصور المتحركة فقط، ولا يُعرض أبدًا لصورة ثابتة أو لفيديو، ويرفضه العارض إذا كانت الحاوية محمية أو كان المكان لا يسمح بالكتابة بجوار الملف. يتوقف التشغيل عند بدء العمل.</p></details>
+<details id="confirm"><summary>التأكيد</summary><p>نصه: سيتم تحويل الأصل إلى ملف MP4 الجديد، ويُحذف الأصل نهائيًا دون المرور بسلة المحذوفات. وعندما تحتوي الصورة المتحركة على شفافية يضيف: ستُملأ الشفافية باللون الأسود. الإجابة الافتراضية هي إلغاء. ومربع الاختيار لا تسأل مرة أخرى حتى إغلاق البرنامج يدوم فقط حتى يُغلق العارض؛ ولا يُحفظ أبدًا.</p></details>
+<details id="ffmpeg"><summary>FFmpeg</summary><p>يستخدم التحويل FFmpeg، وهو ليس جزءًا من البرنامج. إذا كان غير موجود فستُسأل مرة واحدة عن التنزيل (يعرض السؤال الحجم؛ ويأتي الملف من موقع المشروع ويُحفظ محليًا، وهو برنامج حر بموجب ترخيص GPL). والإجابة بـ لا توقف العملية هنا ولا يُنشأ أو يُحذف أي شيء.</p></details>
+<details id="progress"><summary>نافذة التقدم</summary><p>يقول العنوان جارٍ إنشاء الفيديو.. مع نسبة مئوية، ويتبعه الشريط. وعندما لا يكون طول الصورة المتحركة معروفًا يتحرك الشريط ذهابًا وإيابًا فقط دون رقم. إلغاء ومفتاح Esc وزر الإغلاق تعني كلها الشيء نفسه: تبقى النافذة لحظة حتى يتوقف المرمّز فعلًا، ثم تُغلق ويعلن العارض أُلغي التحويل. ولا يمكن استخدام العارض في هذه الأثناء.</p></details>
+<details id="result"><summary>ما تحصل عليه</summary><p>ملف MP4 في المجلد نفسه وبالاسم نفسه (يُضاف رقم بين قوسين إذا كان الاسم مستخدمًا)، وبمعدل إطارات الصورة المتحركة، بين 1 و50 إطارًا في الثانية. يُكتب باسم مؤقت ثم تُغيَّر تسميته عندما يجهز. ولا يُحذف الأصل إلا بعد أن يوجد ملف MP4 باسمه النهائي وبعد التحقق من أنه يحتوي الصورة المتحركة كاملة. يقول شريط الحالة تم ويعرض العارض الفيديو.</p></details>
+<details id="safety"><summary>عندما يحدث خطأ</summary><p>يبقى الأصل ويذكر شريط الحالة السبب: تعذّر إنشاء الفيديو مع السبب، أو تم إنشاء الفيديو لكن تعذّر حذف الأصل، أو تعذّر التحقق من اكتمال الفيديو فأُبقي على الأصل. التشغيل الفاشل يترك الأصل دون مساس، ويزيل الملف المؤقت، ويكتب التفاصيل في السجل.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

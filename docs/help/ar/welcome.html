@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Welcome Wizard - Fast Media Sorter</title>
+  <title>مرحباً بك - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="خادم التبادل"></span> Welcome Wizard</h1>
+  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="خادم التبادل"></span> مرحباً بك</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Welcome Wizard.</p>
+    <p>تضبط خطوات الترحيب الأساسيات في دقائق قليلة: اللغة والمظهر ومجلد المفتاح 1 والحذف وارتباطات الملفات. وهي تُفتح عند التشغيل الأول، ومن الزر الإعداد الأولي في شاشة العرض الفارغة، ومن الخيار إظهار خطوات الترحيب مجدداً في صفحة عام من الإعدادات. وهي موجودة في الإصدار 64 بت فقط.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="welcome-light.png" alt="Welcome Wizard">
-    <img class="shot dark" src="welcome-dark.png" alt="Welcome Wizard">
+    <img class="shot light" src="welcome-light.png" alt="مرحباً بك">
+    <img class="shot dark" src="welcome-dark.png" alt="مرحباً بك">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اختر اللغة.</li><li>اختر مخطط الخلفية وإجراء العجلة.</li><li>اختر مجلد المفتاح 1.</li><li>اقرأ كيف يعمل الحذف.</li><li>اضبط ارتباطات الملفات.</li><li>راجع الملخص واضغط إنهاء. الزر التالي ينتقل إلى الخطوة التالية، والزر رجوع يعود، والزر تخطّي الإعداد ينتقل إلى الخطوة الأخيرة.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="step-language"><summary>لغة الواجهة</summary><p>تتغير لغة النافذة فورًا كمعاينة؛ ولا يعتمدها البرنامج إلا عند الضغط على التالي. وإغلاق النافذة دون ذلك يعيد لغة البرنامج السابقة.</p></details>
+<details id="step-appearance"><summary>المظهر</summary><p>اختر مخطط خلفية منطقة الصورة (حسب الزاوية، أسود، أبيض، حسب الحافة، من الأعلى، من الأسفل) وإجراء العجلة: فإما أن تكبّر العجلة عند المؤشر وتتصفح مفاتيح الأسهم الملفات، وإما أن تتصفح العجلة الملفات ويكبّر Ctrl مع العجلة. ويمكن تغيير الاثنين لاحقًا في صفحة الصور من الإعدادات.</p></details>
+<details id="step-sorting"><summary>كيف يعمل الفرز</summary><p>تنقل الأرقام 0-9 الملف الحالي إلى مجلد؛ وينسخه Shift مع رقم من الصف العلوي. يُختار مجلد المفتاح 1 بالزر اختيار مجلد..، وتُضبط المجلدات التسعة الأخرى لاحقًا في صفحة الوجهات من الإعدادات. ويُبلَّغ عن المجلد الذي اختفى بالرسالة: لم يعد هذا المجلد متاحاً. اختر مجلداً آخر.</p></details>
+<details id="step-delete"><summary>حذف آمن</summary><p>يوضّح كيف يعمل Del (إلى سلة المحذوفات) وShift+Del (نهائيًا). وخيارات الحذف في صفحة الملفات من الإعدادات.</p></details>
+<details id="step-associations"><summary>افتح الصور هنا</summary><p>تتيح لهذا البرنامج فتح الصور ومقاطع الفيديو من مستكشف الملفات. لا تظهر هذه الخطوة إلا إذا لم يكن البرنامج مثبّتًا كحزمة Microsoft Store؛ وهي تُطبَّق على حساب المستخدم الخاص بك ولا تحتاج إلى صلاحيات المسؤول.</p></details>
+<details id="step-finish"><summary>كل شيء جاهز</summary><p>يسرد الملخص كل إعداد وقيمته والمكان الذي يمكن تغييره منه. إذا كانت مكوّنات الخوادم مثبّتة على هذا الكمبيوتر، تعرض الكتلة الخوادم على هذا الكمبيوتر كل مكوّن مع حالته والزر فتح المدير؛ وإذا لم يكن أي منها مثبّتًا فإن الكتلة تكون مخفية.</p></details>
+<details id="step-parts"><summary>أجزاء الخطوة</summary><p>لكل خطوة أربعة أجزاء: ما هو، لماذا، كيف سيعمل، أين تغيّره.</p></details>
+<details id="buttons"><summary>الأزرار والإغلاق</summary><p>ينتقل تخطّي الإعداد إلى الخطوة الأخيرة ويلغي معاينة اللغة. ولا يطبّق التالي إلا ما تغيّر في الخطوة الحالية. يغلق إنهاء النافذة، وكذلك يفعل Esc (إلا أثناء فتح قائمة منسدلة). يسجّل الإغلاق أن الخطوات قد تمّت؛ ولرؤيتها مجددًا استخدم الخيار الموجود في صفحة عام من الإعدادات.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

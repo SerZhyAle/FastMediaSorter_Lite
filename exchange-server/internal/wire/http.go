@@ -87,7 +87,7 @@ const BroadcastRealm = "fms-broadcast"
 // when positive, adds the Retry-After header of a 503 (7.6). A 401 carries the one challenge of item BF,
 // `WWW-Authenticate: Basic realm="fms-broadcast"`, whatever made it a 401.
 func HTTPResponse(status int, retryAfter int) []byte {
-	text := map[int]string{400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed",
+	text := map[int]string{400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 410: "Gone",
 		503: "Service Unavailable", 505: "HTTP Version Not Supported"}[status]
 	if text == "" {
 		text = "Error"

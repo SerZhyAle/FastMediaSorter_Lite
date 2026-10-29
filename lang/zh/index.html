@@ -96,7 +96,7 @@
       </div>
     </div>
     <h1>用一个按键整理每个照片和视频文件</h1>
-    <p class="lead lead-narrow">三个可选部分：用于媒体的查看与整理工具、通过 SFTP 共享文件夹的本地服务，以及 Media Exchange Server（开发中，尚未发布）——可以从查看器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。</p>
+    <p class="lead lead-narrow">三个可选部分：媒体与文件管理器，用一个按键查看并整理照片和视频，并管理本地文件夹、服务器和已连接设备上的文件；本地共享与计划服务，通过 SFTP 共享文件夹、按计划运行文件操作，并把这台电脑连接到交换账户；以及由您自己运行的 Media Exchange Server，您的设备通过它彼此互通 - 可以从管理器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。</p>
     <p class="lead lead-narrow">飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。</p>
     <p class="lead lead-narrow">名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。 <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
@@ -111,25 +111,25 @@
   <section class="section doors" id="doors" aria-labelledby="doors-title">
     <div class="sec-head">
       <h2 class="section-title" id="doors-title"><span class="hash">#</span>两种入口，三个可选部分</h2>
-      <p class="section-desc">从您所在之处开始：用查看器，或用文件夹共享服务器。每个部分都是可选的，而 Media Exchange Server 仍在开发中。</p>
+      <p class="section-desc">从您所在之处开始：用媒体与文件管理器，或用文件夹共享服务器。每个部分都是可选的，Media Exchange Server 由您自己运行。</p>
     </div>
     <div class="grid">
     <article class="card scenario-card" id="door-1">
-      <span class="pill">先用查看器</span>
-      <h3>我需要查看与整理工具</h3>
-      <p>每个文件一个按键，查看并整理照片和视频。完整安装包会安装查看器，并把基于 SFTP 的本地文件夹共享作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可不装共享。整理媒体不需要任何服务器。</p>
+      <span class="pill">先用管理器</span>
+      <h3>我需要媒体与文件管理器</h3>
+      <p>每个文件一个按键，查看并整理照片和视频，并管理本地文件夹、SFTP 与 SMB 服务器以及交换账户设备上的文件。完整安装包会安装管理器，并把本地共享与计划作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可不装它。整理媒体不需要任何服务器。</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="#get">下载完整安装包</a></div>
     </article>
     <article class="card scenario-card" id="door-2">
       <span class="pill">先用服务器</span>
       <h3>我想为我的文件夹配一台服务器</h3>
-      <p>在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹。服务器版（setup.exe 或 winget，需要管理员权限）把文件夹共享服务安装为 Windows 服务，无人登录时也能运行；查看器是可选的附加项，默认不勾选。它不会安装 Media Exchange Server（开发中）。</p>
+      <p>在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹，并按计划运行文件操作。服务器版（setup.exe 或 winget，需要管理员权限）把共享与计划服务 Folder Share Server 安装为 Windows 服务，无人登录时也能运行；管理器是可选的附加项，默认不勾选。</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">服务器版：无需登录的共享（英文）</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
-      <span class="pill gold">开发中</span>
+      <span class="pill gold">您自己的服务器</span>
       <h3><span class="exchange-picture"><img class="exchange-mark" src="../../assets/exchange-mark/svg/exchange-mark-small.svg" width="32" height="32" alt="交换服务器"></span> Media Exchange Server</h3>
-      <p>开发中，尚未包含在任何安装包里，因此没有可下载的内容。它是一台需要您自己运行的独立服务器，面向无法直接互相访问的设备。它不是文件夹共享，查看器和本地共享都不需要它。</p>
+      <p>一台由您自己运行的服务器：您的设备加入在它上面创建的账户，在无法直接互相访问时通过它互通。它不是文件夹共享，管理器和本地共享都不需要它。</p>
     </article>
     </div>
   </section>
@@ -179,7 +179,7 @@
         <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">服务器版：无需登录的共享（英文）</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
-      <p class="dl-meta">完整安装包内含：查看器，以及启用前保持关闭的可选部分——基于 SFTP 的本地文件夹共享（Share Manager 与 SFTP 工作进程；托管 FileDO .fdd 磁盘是共享的一项能力）、离线视频编解码器和 OCR 模型。选择「精简」类型即可不装共享。Media Exchange Server 仍在开发中，不在任何安装包里。</p>
+      <p class="dl-meta">完整安装包内含：媒体与文件管理器，以及启用前保持关闭的可选部分 - 本地共享与计划（Share Manager 与 SFTP 工作进程，含按计划运行的文件操作和到交换账户的连接；托管 FileDO .fdd 磁盘是共享的一项能力）、离线视频编解码器和 OCR 模型。选择「精简」类型即可不装共享。Media Exchange Server 不在此安装包中。</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html">为什么 Windows 会对这个下载发出警告</a>
       </p>

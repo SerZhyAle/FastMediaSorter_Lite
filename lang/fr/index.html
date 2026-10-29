@@ -96,7 +96,7 @@
       </div>
     </div>
     <h1>Triez photos et vidéos avec une touche par fichier</h1>
-    <p class="lead lead-narrow">Trois parties facultatives : une visionneuse et un outil de tri pour vos médias, un service local de partage de dossiers par SFTP et un Media Exchange Server (en développement, pas encore publié) - commencez par la visionneuse ou par le serveur de partage de dossiers, et n'ajoutez le reste que si vous le voulez.</p>
+    <p class="lead lead-narrow">Trois parties facultatives : un gestionnaire de médias et de fichiers qui affiche et trie photos et vidéos avec une touche et gère les fichiers dans les dossiers locaux, sur des serveurs et sur les appareils connectés ; un service local de partage et de planification qui partage des dossiers par SFTP, exécute des opérations sur fichiers selon un calendrier et relie ce PC à un compte d'échange ; et un Media Exchange Server que vous exploitez vous-même et par lequel vos appareils se joignent - commencez par le gestionnaire ou par le serveur de partage de dossiers, et n'ajoutez le reste que si vous le voulez.</p>
     <p class="lead lead-narrow">Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.</p>
     <p class="lead lead-narrow">«Sharing» dans le nom signifie donner vos médias à quelqu'un d'autre : votre téléphone Android, une autre copie du programme ou n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
@@ -111,25 +111,25 @@
   <section class="section doors" id="doors" aria-labelledby="doors-title">
     <div class="sec-head">
       <h2 class="section-title" id="doors-title"><span class="hash">#</span>Deux entrées, trois parties facultatives</h2>
-      <p class="section-desc">Commencez là où vous en êtes : par la visionneuse ou par le serveur de partage de dossiers. Chaque partie est facultative, et le Media Exchange Server est encore en développement.</p>
+      <p class="section-desc">Commencez là où vous en êtes : par le gestionnaire de médias et de fichiers ou par le serveur de partage de dossiers. Chaque partie est facultative, et le Media Exchange Server, vous l'exploitez vous-même.</p>
     </div>
     <div class="grid">
     <article class="card scenario-card" id="door-1">
-      <span class="pill">D'abord la visionneuse</span>
-      <h3>J'ai besoin d'une visionneuse et d'un outil de tri</h3>
-      <p>Affichez et triez photos et vidéos avec une touche par fichier. Le paquet complet installe la visionneuse et, en partie facultative qui reste désactivée tant que vous ne l'activez pas, le partage local de dossiers par SFTP ; choisissez le type « Compact » dans l'installation pour l'exclure. Pas besoin de serveur pour trier.</p>
+      <span class="pill">D'abord le gestionnaire</span>
+      <h3>J'ai besoin d'un gestionnaire de médias et de fichiers</h3>
+      <p>Affichez et triez photos et vidéos avec une touche par fichier, et gérez les fichiers dans des dossiers locaux, sur des serveurs SFTP et SMB et sur les appareils d'un compte d'échange. Le paquet complet installe le gestionnaire et, en partie facultative qui reste désactivée tant que vous ne l'activez pas, le partage local et la planification ; choisissez le type « Compact » dans l'installation pour l'exclure. Pas besoin de serveur pour trier.</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="#get">Télécharger le paquet complet</a></div>
     </article>
     <article class="card scenario-card" id="door-2">
       <span class="pill">D'abord le serveur</span>
       <h3>Je veux un serveur pour mes dossiers</h3>
-      <p>Ouvrez les dossiers de ce PC sur un téléphone Android, dans une autre copie du programme ou dans n'importe quel client SFTP. L'édition Serveur (setup.exe ou winget, droits d'administrateur requis) installe le service de partage de dossiers comme service Windows qui tourne sans qu'aucune session soit ouverte ; la visionneuse est un extra facultatif, non coché. Elle n'installe pas le Media Exchange Server (en développement).</p>
+      <p>Ouvrez les dossiers de ce PC sur un téléphone Android, dans une autre copie du programme ou dans n'importe quel client SFTP, et exécutez des opérations sur fichiers selon un calendrier. L'édition Serveur (setup.exe ou winget, droits d'administrateur requis) installe le Folder Share Server - le service de partage et de planification - comme service Windows qui tourne sans qu'aucune session soit ouverte ; le gestionnaire est un extra facultatif, non coché.</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Édition Serveur : partage sans session ouverte (en anglais)</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
-      <span class="pill gold">En développement</span>
+      <span class="pill gold">Votre propre serveur</span>
       <h3><span class="exchange-picture"><img class="exchange-mark" src="../../assets/exchange-mark/svg/exchange-mark-small.svg" width="32" height="32" alt="Serveur d’échange"></span> Media Exchange Server</h3>
-      <p>En développement et dans aucun paquet pour l'instant, donc rien à télécharger. C'est un serveur à part que vous exploitez vous-même, pour des appareils qui ne peuvent pas se joindre directement. Ce n'est pas du partage de dossiers, et ni la visionneuse ni le partage local n'en ont besoin.</p>
+      <p>Un serveur que vous exploitez vous-même : vos appareils s'inscrivent dans un compte créé sur lui et se joignent par son intermédiaire quand ils ne peuvent pas se joindre directement. Ce n'est pas du partage de dossiers, et ni le gestionnaire ni le partage local n'en ont besoin.</p>
     </article>
     </div>
   </section>
@@ -179,7 +179,7 @@
         <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Édition Serveur : partage sans session ouverte (en anglais)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
-      <p class="dl-meta">Dans le paquet complet : la visionneuse et, en parties facultatives qui restent désactivées tant que vous ne les activez pas, le partage local de dossiers par SFTP (Share Manager et worker SFTP ; l'hébergement de disques FileDO .fdd est une capacité du partage), les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour exclure le partage. Le Media Exchange Server est encore en développement et ne figure dans aucun paquet.</p>
+      <p class="dl-meta">Dans le paquet complet : le gestionnaire de médias et de fichiers et, en parties facultatives qui restent désactivées tant que vous ne les activez pas, le partage local et la planification (Share Manager et worker SFTP, avec les opérations planifiées et la connexion à un compte d'échange ; l'hébergement de disques FileDO .fdd est une capacité du partage), les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour exclure le partage. Le Media Exchange Server ne figure pas dans ce paquet.</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/trust.html">Pourquoi Windows met en garde à propos de ce téléchargement</a>
       </p>

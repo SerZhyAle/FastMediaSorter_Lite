@@ -168,6 +168,45 @@ Friend NotInheritable Class AskSpecs
             detail:=Localization.T("Программа закроется, а настройки вернутся к умолчаниям при следующем запуске. Получатели (клавиши 0-9 и Delete), вид, видео, OCR и положение окон будут сброшены. Язык, тема, пароли, список ресурсов и история останутся. Прежние значения сохранятся в файл."))
     End Function
 
+    Friend Const HtmlHistoryClearExecute As Integer = 0
+    Friend Const HtmlHistoryClearCancel As Integer = 1
+
+    ''' <summary>275: Clear HTML history on the Documents page. Names the scope (host-owned records only, never the
+    ''' documents), Clear is destructive and Cancel is the default.</summary>
+    Friend Shared Function HtmlHistoryClear() As AskSpec
+        Return New AskSpec(
+            Localization.T("Очистить историю HTML-страниц"),
+            Localization.T("Удалить позиции чтения и оформление отдельных HTML-страниц?"),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Очистить"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.delete"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=HtmlHistoryClearCancel, cancelIndex:=HtmlHistoryClearCancel,
+            detail:=Localization.T("Удаляются только записи программы. Сами документы и общие настройки не изменятся."))
+    End Function
+
+    ''' <summary>The index of "Close anyway" in <see cref="CloseWithUnfinishedFileOperations"/>.</summary>
+    Friend Const CloseAnyway As Integer = 0
+    ''' <summary>The index of "Wait longer" - also the default and the answer of Escape and the close box.</summary>
+    Friend Const CloseKeepWaiting As Integer = 1
+
+    ''' <summary>Closing the viewer while file operations are still running (ticket 243, Q-8, owner decision
+    ''' 2026-10-27: a product-owned window, because a system box can open behind a viewer pinned "on top").
+    ''' The old Yes/No box made "No" mean "close and drop the queue" and Escape could not be given a meaning; the
+    ''' answers are NAMED here, the safe one is the default and the answer of Escape and the close box, and the
+    ''' acting answer is a click or its accelerator away - so one stray Escape keeps the program open.</summary>
+    Friend Shared Function CloseWithUnfinishedFileOperations(outstanding As Integer) As AskSpec
+        Return New AskSpec(
+            Localization.T("Закрытие программы"),
+            Localization.TF("Файловые операции ещё выполняются: {0}.", outstanding),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Закрыть всё равно"), destructive:=True, role:=ButtonGlyphRole.Caution, glyphId:="nav.exit"),
+                New AskButton(Localization.T("Подождать ещё"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=CloseKeepWaiting, cancelIndex:=CloseKeepWaiting,
+            detail:=Localization.T("Если закрыть программу сейчас, незавершённые операции не выполнятся."))
+    End Function
+
     ' --- prompts ---------------------------------------------------------------------------
 
     ''' <summary>Rename. Every refusal that used to be a bare status line after the window had closed - and had
@@ -238,7 +277,9 @@ Friend NotInheritable Class AskSpecs
             HotkeyConflict("Ctrl+K", "Action"),
             ResetHotkeys(),
             ProfileResetConfirm(),
-            EditorUnsavedClose()}
+            EditorUnsavedClose(),
+            HtmlHistoryClear(),
+            CloseWithUnfinishedFileOperations(2)}
     End Function
 
 End Class

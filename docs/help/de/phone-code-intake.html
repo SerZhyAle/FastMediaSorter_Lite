@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect Phone Code Intake - Fast Media Sorter</title>
+  <title>Der Code des Telefons - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Connect Phone Code Intake</h1>
+  <h1 id="title">Der Code des Telefons</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect Phone Code Intake.</p>
+    <p>Empf&#228;ngt einen von der Telefon-App erzeugten Verbindungscode und gibt ihn an Fast Media Sorter weiter, das den Ordner des Telefons zu seiner Ressourcenliste auf diesem Computer hinzuf&#252;gt. Das Fenster &#246;ffnet sich &#252;ber die Schaltfl&#228;che &#171;Telefoncode..&#187; im Hauptfenster von Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="phone-code-intake-light.png" alt="Connect Phone Code Intake">
-    <img class="shot dark" src="phone-code-intake-dark.png" alt="Connect Phone Code Intake">
+    <img class="shot light" src="phone-code-intake-light.png" alt="Der Code des Telefons">
+    <img class="shot dark" src="phone-code-intake-dark.png" alt="Der Code des Telefons">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Bringen Sie den Code auf vier Wegen ins Fenster: Tippen oder f&#252;gen Sie ihn in das Feld ein, klicken Sie auf &#171;Datei &#246;ffnen..&#187;, auf &#171;Aus der Zwischenablage..&#187; oder auf &#171;Mit Kamera scannen..&#187;.</li><li>Klicken Sie auf &#171;&#220;bergeben&#187;.</li><li>Best&#228;tigen Sie das Hinzuf&#252;gen des Ordners im Fenster von Fast Media Sorter, das erscheint.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="code-field"><summary>Verbindungscode</summary><p>Ein einzeiliges Feld, das Punkte statt Zeichen zeigt, weil der Code ein Geheimnis ist; er wird nie in ein Protokoll geschrieben. Klicken Sie bei leerem Feld auf &#171;&#220;bergeben&#187;, werden Sie gebeten, den Code einzutippen, einzuf&#252;gen oder eine Datei oder einen Screenshot zu &#246;ffnen.</p></details>
+<details id="doors"><summary>Datei, Zwischenablage und Kamera</summary><p>&#171;Datei &#246;ffnen..&#187; liest .fmscfg-, .json- und .txt-Dateien sowie QR-Bilder (.png, .jpg, .jpeg, .bmp, .webp); eine Datei l&#228;sst sich auch auf das Fenster ziehen. &#171;Aus der Zwischenablage..&#187; liest den Code aus der Zwischenablage. &#171;Mit Kamera scannen..&#187; &#246;ffnet das Kamerafenster, und der gescannte Text wird behandelt, als w&#228;re er eingef&#252;gt worden.</p></details>
+<details id="hand-over"><summary>&#220;bergeben</summary><p>Der Code wird gepr&#252;ft und dann an das laufende Fast Media Sorter gesendet, dessen eigener Importdialog weiterhin seine &#252;blichen Fragen stellt. Bei Erfolg lautet der Status &#171;Der Code wurde &#252;bergeben: Best&#228;tigen Sie das Hinzuf&#252;gen im Fenster von Fast Media Sorter.&#187;, und dieses Fenster schlie&#223;t sich. Wird Fast Media Sorter nicht gefunden, ist es eine &#228;ltere Version oder antwortet es nicht, wird der Code mit Datenschutzmarkierungen in die Zwischenablage gelegt, und die Statuszeile sagt, ihn &#252;ber &#171;Aus Zwischenablage importieren&#187; im Ressourcenbereich einzuf&#252;gen.</p></details>
+<details id="problems"><summary>Meldungen in der Statuszeile</summary><p>Ein Dokument, das kein Verbindungscode und keine Ressourceneinstellungsdatei ist, wird als nicht lesbar gemeldet. Bei einer von einer neueren Version erstellten Datei werden Sie gebeten, Fast Media Sorter zu aktualisieren. H&#228;lt ein anderes Programm die Zwischenablage, sagt der Status das.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

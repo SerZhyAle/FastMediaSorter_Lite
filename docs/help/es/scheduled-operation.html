@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled File Operation - Fast Media Sorter</title>
+  <title>Operaci&#243;n programada - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled File Operation</h1>
+  <h1 id="title">Operaci&#243;n programada</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled File Operation.</p>
+    <p>Edita una operaci&#243;n de archivos programada: copiar, mover, eliminar o archivar archivos de un origen a un destino con una programaci&#243;n repetida. Se abre desde &#171;Nueva..&#187; o &#171;Modificar..&#187; en la p&#225;gina &#171;Operaciones de archivos programadas&#187; de los ajustes de Share Manager, y desde el elemento del men&#250; de carpeta del visor &#171;Programar una operaci&#243;n para esta carpeta..&#187;, que rellena esa carpeta como origen.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled File Operation">
-    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled File Operation">
+    <img class="shot light" src="scheduled-operation-light.png" alt="Operaci&#243;n programada">
+    <img class="shot dark" src="scheduled-operation-dark.png" alt="Operaci&#243;n programada">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Escribe un Nombre y elige la Acci&#243;n.</li><li>Define el Origen y, para copiar, mover y archivar, el Destino, con &#171;Elegir..&#187;, &#171;Recurso..&#187; o &#171;A trav&#233;s de Google Drive&#187;.</li><li>Para copiar y mover, elige qu&#233; ocurre &#171;Si el nombre ya est&#225; en uso&#187;.</li><li>Abre &#171;Condiciones de selecci&#243;n de archivos&#187; para acotar los archivos.</li><li>Define &#171;Inicio a las&#187; y &#171;Repetir cada&#187; y deja marcada &#171;Ejecutar seg&#250;n una programaci&#243;n&#187;.</li><li>Revisa &#171;Qu&#233; se ejecutar&#237;a ahora..&#187; y pulsa &#171;Guardar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="action"><summary>Acci&#243;n y conflictos de nombre</summary><p>La Acci&#243;n es Copiar, Mover, Eliminar o Archivar, y la ventana muestra solo las filas que esa acci&#243;n necesita: Eliminar no tiene Destino; &#171;Si el nombre ya est&#225; en uso&#187; (Omitir, Sobrescribir, Conservar ambas copias) aparece solo para Copiar y Mover; &#171;Eliminar los archivos originales tras verificar el archivo comprimido&#187; aparece solo para Archivar y quita los originales &#250;nicamente despu&#233;s de que el archivo comprimido se haya rele&#237;do y comprobado.</p></details>
+<details id="places"><summary>Origen y destino</summary><p>Escribe una ruta completa o pulsa &#171;Elegir..&#187;. &#171;Recurso..&#187; elige un servidor SFTP o una carpeta de red de la lista de recursos del visor y no se ofrece para Archivar, que solo admite carpetas normales y Google Drive. &#171;A trav&#233;s de Google Drive&#187; aparece solo cuando has iniciado sesi&#243;n en Drive o ese lado ya lo usa. Cuando &#171;Incluir subcarpetas&#187; est&#225; desactivada, solo se procesan los archivos de la propia carpeta de origen. &#171;Guardar&#187; rechaza las carpetas del sistema y de programas, y un destino igual al origen o situado dentro de &#233;l, e indica qu&#233; est&#225; mal.</p></details>
+<details id="delete-verdict"><summary>Eliminaci&#243;n de archivos</summary><p>Cuando se vayan a quitar archivos (Eliminar, o Archivar con la opci&#243;n de los originales), una l&#237;nea &#171;Eliminar: ..&#187; indica ad&#243;nde van: a la Papelera de reciclaje, o de forma permanente con el motivo, por ejemplo que un disco de red o extra&#237;ble no tiene Papelera. En una operaci&#243;n as&#237;, Intro no guarda; pulsa &#171;Guardar&#187; a prop&#243;sito. Una ejecuci&#243;n programada nunca hace preguntas y registra ad&#243;nde fueron los archivos eliminados.</p></details>
+<details id="conditions"><summary>Condiciones de selecci&#243;n de archivos</summary><p>El panel se abre solo cuando las condiciones difieren de las predeterminadas. Tipos de archivo: Todos los archivos, Im&#225;genes, Audio, V&#237;deo, Documentos (&#171;Todos los archivos&#187; desactiva los otros cuatro). Modificado: Todo el per&#237;odo, Nuevos desde la &#250;ltima ejecuci&#243;n, &#218;ltima hora, &#218;ltimas 24 horas. &#171;M&#225;scara de nombre&#187; y &#171;Excluir por m&#225;scara&#187; admiten varias m&#225;scaras separadas por punto y coma, por ejemplo *.jpg;IMG_??.png, comparadas con el nombre del archivo. &#171;M&#225;s antiguo que&#187; y &#171;M&#225;s reciente que&#187; se expresan en d&#237;as y horas, &#171;Mayor que&#187; y &#171;Menor que&#187; en MB. &#171;Incluir archivos ocultos y del sistema&#187; est&#225; desactivada de forma predeterminada.</p></details>
+<details id="schedule"><summary>Programaci&#243;n</summary><p>&#171;Inicio a las&#187; fija la hora del d&#237;a y &#171;Repetir cada&#187; el intervalo en horas y minutos; un n&#250;mero entero de d&#237;as se repite a la misma hora. La l&#237;nea bajo ellos muestra &#171;Pr&#243;xima ejecuci&#243;n: hora (regla)&#187; o &#171;La programaci&#243;n est&#225; desactivada: la operaci&#243;n se ejecuta solo manualmente.&#187; &#171;Ejecutar una vez el inicio omitido al abrir el programa&#187; y &#171;Mostrar una notificaci&#243;n en caso de error&#187; son opciones independientes. Otra l&#237;nea indica que la programaci&#243;n solo funciona mientras Share Manager est&#225; en ejecuci&#243;n y si se inicia al iniciar sesi&#243;n en Windows; nada de esta ventana cambia el inicio autom&#225;tico.</p></details>
+<details id="preview"><summary>Vista previa y Guardar</summary><p>&#171;Qu&#233; se ejecutar&#237;a ahora..&#187; enumera los archivos que procesar&#237;a la operaci&#243;n y no cambia nada; una ejecuci&#243;n no la necesita. &#171;Guardar&#187; almacena la operaci&#243;n o enumera lo que hay que corregir. &#171;Cancelar&#187; descarta tus cambios.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

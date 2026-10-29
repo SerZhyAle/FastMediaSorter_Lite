@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account - Fast Media Sorter</title>
+  <title>Cuenta de intercambio - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account</h1>
+  <h1 id="title">Cuenta de intercambio</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account.</p>
+    <p>Inicia sesi&#243;n en este PC como dispositivo de una cuenta de un Media Exchange Server. Se abre desde el bot&#243;n &#171;Iniciar sesi&#243;n..&#187; de la p&#225;gina Cuenta de intercambio de los ajustes de Share Manager y desde &#171;Publicar mediante un servidor de intercambio..&#187;, que la abre con la opci&#243;n de publicar ya marcada.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-light.png" alt="Exchange Account">
-    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange Account">
+    <img class="shot light" src="exchange-account-light.png" alt="Cuenta de intercambio">
+    <img class="shot dark" src="exchange-account-dark.png" alt="Cuenta de intercambio">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Si quieres, pega, abre o escanea una cadena de conexi&#243;n: rellena el servidor y el usuario.</li><li>Pulsa &#171;Comprobar el certificado&#187; y, si el sistema no conf&#237;a en &#233;l ni la cadena lo tra&#237;a, compara la huella con la del operador y pulsa &#171;Confiar en este certificado&#187;.</li><li>Escribe el usuario y la contrase&#241;a o el c&#243;digo de emparejamiento.</li><li>Define el nombre del dispositivo y las opciones.</li><li>Pulsa &#171;Iniciar sesi&#243;n&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Cadena de conexi&#243;n</summary><p>&#171;Cadena de conexi&#243;n (opcional):&#187; admite una cadena que pegas con &#171;Pegar&#187;, cargas desde un archivo .fmsexch o una imagen QR con &#171;Abrir archivo..&#187;, o lees con &#171;Escanear con c&#225;mara..&#187;. Solo rellena el servidor y el usuario; nada se conecta hasta que pulses &#171;Iniciar sesi&#243;n&#187;. Una cadena con huella fija ese certificado, as&#237; que no hay nada que comparar a mano. Una cadena con invitaci&#243;n cambia la ventana al registro. Una cadena inutilizable recibe un rechazo de una l&#237;nea.</p></details>
+<details id="certificate"><summary>Servidor y certificado</summary><p>&#171;Comprobar el certificado&#187; se conecta a &#171;Servidor (host:puerto):&#187; y muestra &#171;Huella del certificado del servidor:&#187;. Si el sistema conf&#237;a en el certificado, no hace falta fijar nada. En caso contrario, compara la huella con la que te dio el operador del servidor y pulsa &#171;Confiar en este certificado&#187;; solo ese bot&#243;n acepta un certificado que el sistema no conoce. Cambiar el texto del servidor hace olvidar la comprobaci&#243;n. Intro no hace nada hasta que se conf&#237;a en un certificado, de modo que ninguna contrase&#241;a llega a un servidor que nadie ha avalado.</p></details>
+<details id="login-and-secret"><summary>Usuario, contrase&#241;a y c&#243;digo de emparejamiento</summary><p>Escribe &#171;Usuario:&#187; y elige &#171;Iniciar sesi&#243;n con contrase&#241;a&#187; (&#171;Contrase&#241;a:&#187;, con &#171;Mostrar la contrase&#241;a&#187;) o &#171;Iniciar sesi&#243;n con un c&#243;digo de otro dispositivo&#187; (&#171;C&#243;digo de emparejamiento:&#187;, emitido por otro dispositivo de la misma cuenta). El campo se vac&#237;a en el momento en que se env&#237;a su valor, sea cual sea el resultado; el dispositivo conserva solo un token, nunca la contrase&#241;a.</p></details>
+<details id="registration"><summary>Registro por invitaci&#243;n</summary><p>Cuando la cadena trae una invitaci&#243;n, las dos opciones de inicio de sesi&#243;n dejan paso al registro: &#171;La contrase&#241;a de la cuenta:&#187; y &#171;Contrase&#241;a una vez m&#225;s:&#187; fijan la nueva contrase&#241;a, que debe cumplir la regla mostrada (al menos 10 caracteres con una letra latina may&#250;scula, una min&#250;scula y un d&#237;gito), y el bot&#243;n pasa a decir &#171;Crear la cuenta&#187;.</p></details>
+<details id="device-options"><summary>Nombre del dispositivo y opciones</summary><p>&#171;Nombre de este dispositivo:&#187; (hasta 64 caracteres) empieza con el nombre del equipo. &#171;Publicar mis carpetas compartidas en este servidor ahora mismo&#187; est&#225; desactivada salvo que hayas llegado por &#171;Publicar mediante un servidor de intercambio..&#187;; una vez activada, todos los dispositivos de tu cuenta pueden abrir todas tus carpetas compartidas, porque el uso compartido tiene un solo usuario. La &#250;ltima opci&#243;n inicia Share Manager cuando inicias sesi&#243;n en Windows (desactivada de forma predeterminada), para que otros dispositivos puedan retransmitir a este PC.</p></details>
+<details id="one-server"><summary>Un servidor a la vez</summary><p>Un dispositivo pertenece a un solo servidor. Al iniciar sesi&#243;n en otro se pregunta si se abandona el actual, y la publicaci&#243;n en el servidor anterior se detiene. Tras un contacto fallido, el bot&#243;n &#171;&#191;Por qu&#233; no conecta?..&#187; abre la prueba de conexi&#243;n.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Live Broadcast - Fast Media Sorter</title>
+  <title>प्रसारण बनाएँ - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Create Live Broadcast</h1>
+  <h1 id="title">प्रसारण बनाएँ</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Live Broadcast.</p>
+    <p>एक प्रसारण को बनाने से पहले तय करती है: उसका शीर्षक, वह कितने समय तक रहेगा और क्या वह स्थानीय नेटवर्क से बाहर तक पहुँचेगा। यह प्रसारण विंडो में चुनी गई फ़ाइल या फ़ोल्डर के लिए प्रसारण बनाएँ.. से खुलती है। जब तक आप प्रसारित करें नहीं दबाते, कुछ बनाया या भेजा नहीं जाता।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcast-create-light.png" alt="Create Live Broadcast">
-    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Create Live Broadcast">
+    <img class="shot light" src="share-broadcast-create-light.png" alt="प्रसारण बनाएँ">
+    <img class="shot dark" src="share-broadcast-create-dark.png" alt="प्रसारण बनाएँ">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>पहली पंक्ति में पथ जाँचें (फ़ोल्डर: या फ़ाइल:)।</li><li>चैनल का शीर्षक: बदलें; यह फ़ोल्डर या फ़ाइल के नाम से शुरू होता है।</li><li>अवधि: चुनें।</li><li>फ़ोल्डर के लिए, ज़रूरत हो तो सबफ़ोल्डर शामिल करें पर निशान लगाएँ।</li><li>इंटरनेट के ज़रिए भी को रखें या हटा दें।</li><li>प्रसारित करें (Enter) या रद्द करें (Escape) दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="title-lifetime"><summary>शीर्षक और अवधि</summary><p>चैनल का शीर्षक वही है जो प्रसारण सूची दिखाती है। अवधि में 24 घंटे (डिफ़ॉल्ट), 1 घंटा, 7 दिन और रद्द होने तक मिलते हैं; रद्द होने तक की कोई अंतिम तारीख नहीं होती और वह तब तक रहता है जब तक आप उसे प्रसारण विंडो में रद्द नहीं कर देते।</p></details>
+<details id="subfolders"><summary>सबफ़ोल्डर शामिल करें</summary><p>केवल तब दिखता है जब लक्ष्य फ़ोल्डर हो, और डिफ़ॉल्ट रूप से बंद रहता है। यह तय करता है कि प्रसारित फ़ोल्डर के सबफ़ोल्डरों की फ़ाइलें शामिल होंगी या नहीं।</p></details>
+<details id="internet"><summary>इंटरनेट के ज़रिए भी</summary><p>यह चुना हुआ रहता है, जब तक साझाकरण सेटिंग्स निर्यात को केवल स्थानीय नेटवर्क पर न रखें। चुने होने पर लिंक में स्थानीय पते के साथ इस पीसी के IPv6 और पोर्ट-फ़ॉरवर्ड किए गए इंटरनेट पते भी होते हैं, यदि वे ज्ञात हों। इसे चुनने से अवधि 24 घंटे से 1 घंटे पर आ जाती है (आप वापस बदल सकते हैं) और एक लाल चेतावनी दिखती है: HTTP ट्रैफ़िक एन्क्रिप्टेड नहीं होता, इसलिए सामग्री और प्रसारण टोकन बिना एन्क्रिप्शन के जाते हैं। जिसके पास लिंक है, वह प्रसारण फ़ाइलों को तब तक पढ़ सकता है जब तक उसकी अवधि समाप्त न हो जाए या वह रद्द न हो जाए। प्रसारण को स्थानीय नेटवर्क के भीतर रखने के लिए बॉक्स से निशान हटा दें।</p></details>
+<details id="answer"><summary>प्रसारित करें और रद्द करें</summary><p>प्रसारित करें केवल आपके चुनाव प्रसारण विंडो को लौटाता है, जो फिर प्रसारण बनाती है और उसका लिंक कॉपी करती है। रद्द करें संवाद बंद कर देता है और कुछ नहीं बनाता।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

@@ -14,7 +14,7 @@
   <h1 id="title">.fdd disks</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Manage shared FileDO disks and inspect their state, autostart setting, holder and container path.</p>
+    <p>Lists the FileDO .fdd disks that this PC shares over SFTP and carries the everyday disk commands: connect a disk, open or close it, stop sharing it, and decide whether it opens together with the server. It opens from the &#39;.fdd disks..&#39; item of the Add menu in the Share Manager main window.</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="share-disks-light.png" alt=".fdd disks">
@@ -22,11 +22,16 @@
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Select a disk and use Autostart.. to enable or disable automatic reopening with the server. Both the disk table and the main resource list update after changes.</p>
+    <ol class="order"><li>Press &#39;Connect .fdd..&#39;, pick the .fdd file and confirm the options dialog.</li><li>Select the disk in the list; the line under the list shows its access mode, open files and autostart.</li><li>Use &#39;Open..&#39; for a closed disk, &#39;Close disk&#39; for an open one, or &#39;Autostart..&#39; to change automatic opening.</li><li>Press &#39;Refresh&#39; to re-read the state; the window also re-reads it every 10 seconds.</li><li>Press &#39;Close&#39; to leave.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-<details id="autostart"><summary>Autostart</summary><p>The Autostart column shows Yes or No for every disk without selecting it. A dash (-) means the worker does not support autostart. FileDO rows in the main list also show autostart when enabled. The setting is independent of State: a disk can have autostart enabled while closed or failed. Select it to read the sanitized worker error below the table. Close leaves this window.</p></details>
+<details id="disk-list"><summary>Disk list</summary><p>Each row is one shared disk: Name, State (Open, Opening, Closing, Closed, Locked, Error or Unknown), Autostart, Holder and the path of the .fdd File. Holder says who keeps the disk open: Windows service, Current session, or No when nobody does. Hover a row to see its full path. The first row is selected on its own, and the line under the list shows its access (Read-only or Read and write), the number of open files and its autostart. When the sharing service cannot share disks, the list and the command buttons are hidden and that line gives the reason; if FileDO itself has the disk mounted, the &#39;Open FileDO Disk Manager&#39; link appears.</p></details>
+<details id="connect"><summary>Connect .fdd..</summary><p>Pick an .fdd file and register it for sharing. The options dialog asks for a Name, the Read-only choice and &#39;Open after registration&#39; (ticked by default). For an encrypted disk it also asks for the Password, and you can give the disk a drive letter or keep &#39;No letter - sharing only&#39;. A letter lasts only for the current Windows session. If the disk is still open in FileDO, save and close it there first. If registration succeeds but the disk does not open, a message says so and the disk stays in the list as closed.</p></details>
+<details id="mounted-drive"><summary>Mounted drive..</summary><p>Choose a ready drive of this PC, for example a disk that FileDO has already mounted. The window closes and the main window continues with its usual add-folder step for that drive.</p></details>
+<details id="disk-actions"><summary>Open, close and remove</summary><p>&#39;Open..&#39; reopens a closed, locked or failed disk and asks for the password of an encrypted one. &#39;Close disk&#39; is available for an open disk only; clients temporarily lose access and open files get up to 30 seconds to close. &#39;Force close..&#39; disconnects open files at once, so unsaved data may be lost. &#39;Remove&#39; stops sharing: the disk is closed, its autostart setting and stored key are deleted, and the .fdd file is kept. Each of these asks for confirmation first, with Cancel as the default answer.</p></details>
+<details id="autostart"><summary>Autostart</summary><p>The Autostart column shows Yes or No for every disk without selecting it. A dash (-) means the sharing service does not support autostart; then &#39;Autostart..&#39; is disabled. &#39;Autostart..&#39; toggles the setting after a confirmation: switching on opens the disk together with the server, and the password of an encrypted disk is saved in the protected Windows store on this PC; switching off deletes that stored key. The setting is independent of State, so a closed or failed disk can still have autostart on. FileDO rows in the main window list show it too.</p></details>
+<details id="guide-and-close"><summary>Guide, website and Close</summary><p>&#39;FileDO disks guide&#39; and &#39;FileDO website&#39; open the guide and the site of FileDO, the program the disks come from. If FileDO Disk Manager is not found on this PC, the window says to install FileDO from its website. &#39;Close&#39; leaves the window; it cannot be closed while a disk operation is running.</p></details>
     <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">

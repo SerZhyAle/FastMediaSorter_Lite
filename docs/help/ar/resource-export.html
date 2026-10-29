@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>تصدير المورد - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">تصدير المورد</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>يجهّز إعدادات خادم SFTP واحد ليستوردها كمبيوتر آخر أو هاتف. يُفتح من الأمر تصدير.. في قائمة المزيد في قائمة الموارد، ويتطلب موردًا محددًا؛ أما المجلد الذي يشاركه Share Manager فيُصدَّر من Share Manager نفسه.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="تصدير المورد">
+    <img class="shot dark" src="resource-export-dark.png" alt="تصدير المورد">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اقرأ التحذير تحت اسم المورد.</li><li>اختر بدون كلمة المرور (الافتراضي) أو مع كلمة المرور.</li><li>اضغط الزر حفظ في ملف.. أو انسخ الإعدادات كنص أو كرمز قصير.</li><li>سلّم الناتج لصاحبه فقط.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>التحذير</summary><p>يقول السطر تحت الاسم إن الملف يحمل مفتاح الوصول إلى الخادم: سلّمه لصاحبه فقط ولا تتركه أبدًا على أقراص مشتركة. وينطبق هذا على الملف والنص المنسوخ والرمز على السواء.</p></details>
+<details id="password-choice"><summary>بدون كلمة المرور أو معها</summary><p>الخيار بدون كلمة المرور محدد في البداية. أما مع كلمة المرور فلا يتفعّل إلا إذا أمكن قراءة كلمة المرور المحفوظة؛ وإلا يظهر التلميح: كلمة المرور غير محفوظة - سيكون الملف بدون واحدة. تُفكّ كلمة المرور في الذاكرة من أجل التصدير ولا تذهب إلى أي مكان آخر.</p></details>
+<details id="save-copy"><summary>حفظ ونسخ النص ونسخ الرمز</summary><p>الزر حفظ في ملف.. يكتب ملف .fmscfg عبر مربع حوار الحفظ؛ ويرفض الكاتب الأقراص بنظام FAT أو exFAT والأقراص الشبكية والمجلدات التي يستطيع مستخدمون آخرون تغييرها، ولا يترك أبدًا ملفًا مكتوبًا نصفه. الزر نسخ النص يضع مستند الإعدادات في الحافظة، والزر نسخ الرمز يضع رمزًا قصيرًا بالمحتوى نفسه. يُنسخ كلاهما مع علامات الخصوصية (دون سجل للحافظة ودون مزامنة سحابية). يعرض سطر الحالة النتيجة.</p></details>
+<details id="requirements"><summary>ما الذي يمكن تصديره</summary><p>خادم SFTP فقط يتذكر العارض مفتاحه. تُفتح النافذة في كل الأحوال، ويظهر الرفض في سطر الحالة عند الضغط على زر: لا يمكن وصف مجلد شبكة (SMB) بهذا الملف؛ مفتاح الخادم غير محفوظ (افتح المورد مرة واحدة وأكّد المفتاح)؛ ليس للمورد عنوان يمكن تسليمه؛ المجلد مكتوب بصيغة لا يقبلها الملف (أصلحها عبر الزر تعديل..).</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

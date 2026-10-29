@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>Mon serveur sur ce PC - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">Mon serveur sur ce PC</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Configure en une seule passe un Media Exchange Server personnel sur ce PC : il cr&#233;e le premier compte, d&#233;marre le serveur et y connecte ce m&#234;me PC. L&#39;assistant s&#39;ouvre depuis le bouton &#171;Utiliser ce PC comme mon serveur..&#187; de la page Media Exchange Server des param&#232;tres de Share Manager, qui n&#39;est affich&#233; que tant qu&#39;aucun serveur n&#39;est configur&#233; sur ce PC.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="Mon serveur sur ce PC">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Mon serveur sur ce PC">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>V&#233;rifiez l&#39;identifiant propos&#233;, tir&#233; de votre nom d&#39;utilisateur Windows, ou saisissez le v&#244;tre.</li><li>Lisez la d&#233;claration de ce que l&#39;op&#233;rateur peut voir.</li><li>Cliquez sur &#171;Commencer&#187; et attendez les quatre &#233;tapes.</li><li>Copiez aussit&#244;t le mot de passe, puis l&#39;empreinte ou la cha&#238;ne de connexion pour vos autres appareils.</li><li>Cliquez sur &#171;Fermer&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Identifiant</summary><p>&#171;Identifiant de votre compte :&#187; accepte de 3 &#224; 64 caract&#232;res : lettres latines minuscules, chiffres, point, tiret bas et tiret ; les majuscules sont converties en minuscules. L&#39;indication sous le champ prend la couleur d&#39;avertissement tant que le texte ne peut pas &#234;tre un identifiant, et &#171;Commencer&#187; reste sans effet avant que le texte en soit un.</p></details>
+<details id="statement"><summary>Ce que l&#39;op&#233;rateur peut voir</summary><p>La zone en lecture seule sous &#171;Avant de cr&#233;er le premier compte, lisez ce que l&#39;op&#233;rateur du serveur peut voir :&#187; &#233;num&#232;re ce qu&#39;un op&#233;rateur de serveur peut voir des comptes, des appareils, des dossiers, des diffusions et du presse-papiers, ce que le serveur ne peut pas lire et combien de jours les journaux sont conserv&#233;s. Sur votre propre serveur, l&#39;op&#233;rateur, c&#39;est vous.</p></details>
+<details id="steps"><summary>&#201;tapes et &#233;checs</summary><p>&#171;Commencer&#187; ex&#233;cute quatre &#233;tapes et nomme l&#39;&#233;tape en cours : &#171;Cr&#233;ation du compte..&#187;, &#171;D&#233;marrage du serveur..&#187;, &#171;V&#233;rification du certificat..&#187; et &#171;Connexion de ce PC..&#187;. Pendant ce temps, l&#39;identifiant est verrouill&#233; et la fen&#234;tre ne peut pas &#234;tre ferm&#233;e. Si aucun compte n&#39;a &#233;t&#233; cr&#233;&#233;, une phrase en donne la raison, par exemple &#171;Ce compte existe d&#233;j&#224; - choisissez un autre identifiant.&#187; ; corrigez l&#39;identifiant et cliquez de nouveau sur &#171;Commencer&#187;.</p></details>
+<details id="result"><summary>R&#233;sultat et adresses</summary><p>En cas de r&#233;ussite, la fen&#234;tre affiche &#171;Termin&#233; : le serveur fonctionne, le compte est cr&#233;&#233; et ce PC y est connect&#233;.&#187; et liste &#171;Adresse pour ce PC :&#187;, &#171;Adresse pour les autres appareils :&#187; (qui indique &#171;non d&#233;fini - saisissez-le dans les param&#232;tres du serveur d&#39;&#233;change&#187; tant que cette adresse n&#39;est pas d&#233;finie), &#171;Identifiant :&#187;, &#171;Mot de passe (affich&#233; une seule fois) :&#187; et &#171;Empreinte du certificat :&#187;. Une fois l&#39;adresse pour les autres appareils d&#233;finie, &#171;Cha&#238;ne de connexion :&#187; s&#39;ajoute. Si le serveur n&#39;a pas d&#233;marr&#233;, le compte existe quand m&#234;me et son mot de passe est affich&#233; une seule fois en dessous.</p></details>
+<details id="password-and-copying"><summary>Mot de passe et copie</summary><p>Le mot de passe est masqu&#233;. &#171;Afficher le mot de passe&#187; le r&#233;v&#232;le ; &#171;Copier le mot de passe&#187; le place dans le presse-papiers par la voie prot&#233;g&#233;e, qui l&#39;&#233;carte de l&#39;historique du presse-papiers de Windows et du presse-papiers cloud. La fen&#234;tre ne l&#39;affiche que cette fois, sauf si &#171;Conserver les mots de passe des comptes sur ce PC&#187; est activ&#233;. &#171;Copier l&#39;empreinte&#187; et &#171;Copier la cha&#238;ne&#187; sont de simples copies : aucune ne contient de mot de passe. Les autres appareils ont besoin de l&#39;adresse, de l&#39;identifiant, du mot de passe et de l&#39;empreinte, qu&#39;ils comparent &#224; la premi&#232;re connexion.</p></details>
+<details id="close-warning"><summary>Fermeture</summary><p>Si le mot de passe n&#39;a &#233;t&#233; ni copi&#233;, ni affich&#233;, ni conserv&#233; sur ce PC, &#171;Fermer&#187; demande &#171;Fermer sans avoir copi&#233; le mot de passe ?&#187; avec Non comme r&#233;ponse par d&#233;faut, car le mot de passe ne peut pas &#234;tre affich&#233; de nouveau, seulement r&#233;initialis&#233;.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

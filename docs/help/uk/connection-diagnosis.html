@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection Diagnosis - Fast Media Sorter</title>
+  <title>Діагностика підключення - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection Diagnosis</h1>
+  <h1 id="title">Діагностика підключення</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection Diagnosis.</p>
+    <p>Пояснює, чому не вдається зв&#39;язатися із сервером чи пристроєм, і по одному кроку пропонує, що спробувати. Вона не змінює жодного налаштування комп&#39;ютера чи Windows. Вікно відкривається пунктом &#171;Чому не підключається?..&#187; у меню &#171;Ще&#187; списку ресурсів (для вибраного рядка), кнопкою запису сервера в &#171;Мої пристрої&#187;, коли запис потребує входу заново, показує зміну сертифіката чи не може підключитися, а також саме - коли ресурс не відкрився.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="connection-diagnosis-light.png" alt="Connection Diagnosis">
-    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Connection Diagnosis">
+    <img class="shot light" src="connection-diagnosis-light.png" alt="Діагностика підключення">
+    <img class="shot dark" src="connection-diagnosis-dark.png" alt="Діагностика підключення">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте &#171;Що сталося:&#187;.</li><li>Спробуйте те, що написано в &#171;Що спробувати:&#187;.</li><li>Якщо причина не в цьому, натисніть &#171;Наступний крок&#187;.</li><li>Натисніть &#171;Подробиці&#187;, якщо потрібні коди, і &#171;Копіювати&#187;, щоб передати їх.</li><li>Закрийте вікно.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-happened"><summary>Що сталося</summary><p>Одна фраза про збій, наприклад &#171;Не вдається зв&#39;язатися із сервером.&#187;, &#171;Логін або пароль неправильні.&#187; чи &#171;Цей сервер не схожий на той, до якого ви підключалися раніше.&#187;. Вона залежить від виду збою, через який відкрилося вікно.</p></details>
+<details id="what-to-try"><summary>Що спробувати</summary><p>Вікно починається з першого кроку, на якому перевірка знайшла негаразд, а якщо такого немає - з першого кроку списку. Типові кроки: розбудити пристрій, на якому працює сервер; переконатися, що обидва пристрої в одній мережі; вийти з гостьової мережі Wi-Fi; ненадовго вимкнути VPN; перемкнути мережу Windows на &#171;Приватна&#187;; перевірити сервер з іншої мережі; встановити правильні дату й час; підтвердити новий відбиток; заново ввести логін і пароль. Останній крок каже, що виправити це може лише той, хто керує сервером.</p></details>
+<details id="next-step"><summary>Наступний крок і налаштування Windows</summary><p>&#171;Наступний крок&#187; переходить по кроках і зникає на останньому. Для двох кроків, які розв&#39;язуються в налаштуваннях Windows (профіль мережі й годинник), кнопка &#171;Відкрити налаштування Windows&#187; відкриває потрібну сторінку Windows; сама програма нічого не змінює.</p></details>
+<details id="details-copy"><summary>Подробиці і &#171;Копіювати&#187;</summary><p>&#171;Подробиці&#187; показують або ховають поле, яке не редагується, з кодами діагностики: вид збою, ціль, маршрут, крок із негараздом і пройдені кроки. У ньому ніколи немає адреси, логіна, пароля чи відбитка. &#171;Копіювати&#187; кладе цей рядок у буфер, і вікно повідомляє &#171;Коди діагностики скопійовано в буфер обміну.&#187;</p></details>
+<details id="how-it-checks"><summary>Як працює перевірка</summary><p>Перевірка виконується лише для підключення, яке ви намагалися встановити, і лише читає: вона пробує досягти хоста й порту та дивиться стан мережі, адаптери VPN, профіль мережі Windows, вид адреси, годинник і сертифікат. Вона зупиняється на першому кроці з негараздом, а перевірка, яку не вдалося виконати, ніколи не вважається ні пройденою, ні проваленою.</p></details>
+    <p><a href="settings.html">Налаштування</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

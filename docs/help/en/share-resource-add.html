@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Add Shared Resource - Fast Media Sorter</title>
+  <title>Add a resource - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Add Shared Resource</h1>
+  <h1 id="title">Add a resource</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Add Shared Resource.</p>
+    <p>A short wizard that adds one shared resource: a folder or an already open FileDO disk. It opens from the &#39;Resource addition wizard..&#39; item of the Add menu and from the first-run flow, and ends by adding the resource to the share list.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-resource-add-light.png" alt="Add Shared Resource">
-    <img class="shot dark" src="share-resource-add-dark.png" alt="Add Shared Resource">
+    <img class="shot light" src="share-resource-add-light.png" alt="Add a resource">
+    <img class="shot dark" src="share-resource-add-dark.png" alt="Add a resource">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read what a resource is and press &#39;Next&#39;.</li><li>Press &#39;Choose a folder..&#39; and pick the folder.</li><li>Set the name, type and access on the &#39;Resource settings&#39; page.</li><li>Review the summary and press &#39;Finish&#39;.</li><li>Use the buttons of the last page to show the QR code or open the settings.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-a-resource-is"><summary>What a resource is</summary><p>A resource is a folder or an open FileDO virtual disk that the viewer reaches through this PC. Files stay on the computer; the phone browses and copies them over the connection, and a ticked folder in the list is the one that is served.</p></details>
+<details id="choose-folder"><summary>Choose a folder</summary><p>&#39;Choose a folder..&#39; opens the usual folder picker and &#39;FileDO disks..&#39; lists open disks. A folder that is already in the list is refused with &#39;That folder is already in the list.&#39;. Pick FileDO disks that are already open; the wizard does not create or mount them.</p></details>
+<details id="resource-settings"><summary>Resource settings</summary><p>The name on the phone, the type, the exact media set, the scan conditions and the access. Read-only forbids changes; a destination folder allows copying and moving files into it. &#39;Advanced options&#39; hold the comment, the PIN and the slideshow interval. The destination colour is chosen by the phone.</p></details>
+<details id="finish"><summary>Resource and next actions</summary><p>&#39;Finish&#39; saves the settings and adds the resource; until then cancelling changes nothing. The last page tells whether the resource is served. If the server is off the phone cannot see it yet; if serving is not confirmed, check the settings. &#39;Show the QR code&#39; opens the access code, &#39;Settings..&#39; the manager settings, &#39;Close&#39; leaves the wizard.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

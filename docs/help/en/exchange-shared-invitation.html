@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>Shared invitation password - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">Shared invitation password</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>This window lets users register on the server with one shared password instead of a single-use invitation code. Open it by ticking &#171;Shared invitation password&#187; in the Invitations group of Exchange server settings, or with &#171;Set shared password..&#187; beside it.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared invitation password">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared invitation password">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Choose the account type.</li><li>Choose whether the program generates the password or you type it.</li><li>Press &#171;Set&#187;.</li><li>If the password was generated, copy it from the window that shows it once.</li><li>To stop accepting it, untick &#171;Shared invitation password&#187; and confirm.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>Account type</summary><p>&#171;Account type to create:&#187; offers &#171;Own device or family&#187; and &#171;Guest&#187;. &#171;Guest&#187; is disabled and the line under it gives the reason: the program&#39;s file server cannot limit a login to one folder. When a shared password is already on, its current type is preselected. If that existing type is Guest, &#171;Set&#187; is disabled; the shared password can still be switched off.</p></details>
+<details id="password"><summary>Password</summary><p>&#171;Password:&#187; offers &#171;Generate a random secure password&#187; (selected by default) and &#171;Enter password manually&#187;. After &#171;Set&#187;, a typed password is asked for in a password window that checks the policy: at least 10 characters with an upper-case Latin letter, a lower-case Latin letter and a digit. Cancelling that window brings you back here.</p></details>
+<details id="set"><summary>Set</summary><p>&#171;Set&#187; sends the password and the account type to the server and turns the shared password on; the page shows &#171;Shared invitation password saved and activated.&#187; and the status line under the checkbox reads &#171;Shared password enabled (account type: ..).&#187; A generated password is shown once in a window of its own: copy it there, it cannot be read again. Everyone who knows the password can register an account of the chosen type, so pass it only to people you want to admit.</p></details>
+<details id="switch-off"><summary>Switch off</summary><p>Unticking the checkbox asks &#171;Disable the shared invitation password? New registrations with it will become impossible.&#187; The default answer is No. After Yes the page shows &#171;Shared invitation password disabled.&#187; and the status line reads &#171;Shared password disabled.&#187;</p></details>
+<details id="cancel"><summary>Cancel</summary><p>&#171;Cancel&#187; or Escape closes the window and changes nothing. If you opened it by ticking the checkbox, the checkbox returns to its previous state.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

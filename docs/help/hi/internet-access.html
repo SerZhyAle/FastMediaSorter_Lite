@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>पोर्ट फ़ॉरवर्डिंग मार्गदर्शिका - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">पोर्ट फ़ॉरवर्डिंग मार्गदर्शिका</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>साझाकरण को आपके घर के नेटवर्क के बाहर से पहुँच योग्य बनाने में मदद करती है। यह बाहरी पता दिखाती है और यह भी कि पोर्ट अपने-आप खुला या राउटर पर फ़ॉरवर्ड करना होगा, और जाँच तथा विस्तृत मार्गदर्शिका देती है। यह मुख्य विंडो के इंटरनेट पहुँच कैसे सेट करें बटन से खुलती है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="पोर्ट फ़ॉरवर्डिंग मार्गदर्शिका">
+    <img class="shot dark" src="internet-access-dark.png" alt="पोर्ट फ़ॉरवर्डिंग मार्गदर्शिका">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>पहले साझाकरण शुरू करें; नहीं तो विंडो आपसे कहती है।</li><li>स्थिति की पंक्तियाँ पढ़ें: पहुँच योग्य, CGNAT के पीछे, या पोर्ट फ़ॉरवर्डिंग चाहिए।</li><li>फ़ॉरवर्डिंग चाहिए तो विस्तृत मार्गदर्शिका खोलें और राउटर पर नियम बनाएँ।</li><li>इस पीसी से पते को परखने के लिए जाँच दबाएँ।</li><li>फ़ोन से मोबाइल डेटा पर, उसका Wi-Fi बंद करके, पुष्टि करें।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>स्थिति</summary><p>विंडो बाहरी पता पहचानती है और इनमें से एक कहती है: इंटरनेट से उपलब्ध, बाहरी पता: .. (पोर्ट फ़ॉरवर्डिंग चाहिए), बाहरी पता अज्ञात - राउटर में देखें।, या CGNAT के पीछे - बाहर से पहुँच नहीं। जब पोर्ट अपने-आप खुल गया हो (UPnP), तब राउटर की सेटिंग नहीं चाहिए, फिर भी यह चलता है या नहीं, इसकी पुष्टि केवल मोबाइल डेटा वाला फ़ोन कर सकता है। ताज़ा करें पहचान दोहराता है।</p></details>
+<details id="guide"><summary>राउटर और मार्गदर्शिकाएँ</summary><p>राउटर की पंक्ति उसका पता दिखाती है, या खोज के दौरान राउटर पहचाना जा रहा है.. दिखाती है। लिंक विस्तृत मार्गदर्शिका खोलें (HTML, आपके मानों और राउटर मॉडल के साथ).. स्थानीय HTML मार्गदर्शिका खोलता है; न खुल पाए तो विंडो यह बताती है। लिंक घर से और अन्य नेटवर्क से पहुँच (पोर्टल) ब्राउज़र में सहायता पोर्टल का संबंधित पृष्ठ खोलता है।</p></details>
+<details id="test"><summary>जाँच</summary><p>बाहरी पते को इस पीसी से परखता है और बताता है: SFTP सर्वर उपलब्ध, पोर्ट खुला है, पर SFTP ने उत्तर नहीं दिया, बंद कनेक्शन (शायद कनेक्शन की सीमा) या कोई उत्तर नहीं। यह निर्णायक नहीं है: कई राउटर अंदर से अपने ही बाहरी पते पर आया अनुरोध ठुकरा देते हैं, इसलिए भरोसेमंद जाँच मोबाइल डेटा पर फ़ोन है।</p></details>
+<details id="safety"><summary>सुरक्षा</summary><p>SFTP को इंटरनेट पर खोलने से हर साझा फ़ोल्डर उस हर किसी को मिल जाता है जो पता, लॉगिन और पासवर्ड जान ले। QR कोड या .fmscfg फ़ाइल प्रकाशित न करें और काम पूरा होने पर साझाकरण बंद कर दें। बंद करें विंडो से बाहर निकलता है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Comprobaci&#243;n del acceso desde internet - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Comprobaci&#243;n del acceso desde internet</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>Comprueba desde este PC si la direcci&#243;n compartida responde como un servidor SFTP. Se abre desde el bot&#243;n &#171;Comprobar el acceso desde internet&#187; de la ventana principal y muestra la direcci&#243;n comprobada, un veredicto y una explicaci&#243;n.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Comprobaci&#243;n del acceso desde internet">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Comprobaci&#243;n del acceso desde internet">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Abre la ventana; muestra la direcci&#243;n e inicia la comprobaci&#243;n de inmediato.</li><li>Espera al titular del resultado.</li><li>Lee la l&#237;nea de detalle que hay debajo.</li><li>Si el resultado no es concluyente, repite la comprobaci&#243;n desde el tel&#233;fono con el Wi-Fi apagado y los datos m&#243;viles encendidos.</li><li>Pulsa &#171;Cerrar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Direcci&#243;n comprobada</summary><p>&#171;Direcci&#243;n comprobada: ..&#187; muestra el host y el puerto. Mientras la comprobaci&#243;n est&#225; en curso, la ventana dice &#171;Probando ..&#187;. Si no se conoce ninguna direcci&#243;n, el resultado es &#171;A&#250;n no hay direcci&#243;n de internet.&#187; y una direcci&#243;n mal formada da &#171;Direcci&#243;n no v&#225;lida.&#187;</p></details>
+<details id="verdicts"><summary>Veredictos</summary><p>&#171;Servidor SFTP accesible&#187; - el puerto respondi&#243; con un banner SFTP. &#171;Puerto abierto, pero sin respuesta SFTP&#187; - algo escucha en el puerto, pero no es nuestro programa; comprueba que la regla del router lleve a este PC y al puerto del recurso compartido. Una conexi&#243;n cerrada antes de la respuesta puede indicar el l&#237;mite de conexiones; int&#233;ntalo de nuevo. La falta de respuesta desde este PC significa que el router puede bloquear desde dentro su propia direcci&#243;n.</p></details>
+<details id="inconclusive"><summary>Por qu&#233; un resultado puede no ser concluyente</summary><p>La solicitud sale de este PC hacia la direcci&#243;n externa del router y vuelve directamente al interior, as&#237; que prueba la regla de redirecci&#243;n y no si el proveedor deja entrar conexiones desde fuera. Solo el tel&#233;fono puede aclararlo: apaga su Wi-Fi, deja los datos m&#243;viles encendidos y abre el c&#243;digo QR. Si aun as&#237; no puede conectarse, configura la redirecci&#243;n de puertos con el bot&#243;n &#171;C&#243;mo configurar el acceso desde internet&#187;.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

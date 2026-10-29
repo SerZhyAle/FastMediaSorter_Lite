@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled File Operation - Fast Media Sorter</title>
+  <title>عملية مجدولة - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled File Operation</h1>
+  <h1 id="title">عملية مجدولة</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled File Operation.</p>
+    <p>تحرّر عملية ملفات مجدولة واحدة: نسخ الملفات أو نقلها أو حذفها أو أرشفتها من مصدر إلى وجهة وفق جدول متكرر. تُفتح من الزرين جديدة.. وتعديل.. في صفحة عمليات الملفات المجدولة بإعدادات Share Manager، ومن عنصر قائمة مجلد العارض جدولة عملية لهذا المجلد.. الذي يملأ ذلك المجلد مصدرًا.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-operation-light.png" alt="Scheduled File Operation">
-    <img class="shot dark" src="scheduled-operation-dark.png" alt="Scheduled File Operation">
+    <img class="shot light" src="scheduled-operation-light.png" alt="عملية مجدولة">
+    <img class="shot dark" src="scheduled-operation-dark.png" alt="عملية مجدولة">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>أدخل الاسم واختر الإجراء.</li><li>حدّد المصدر، والوجهة للنسخ والنقل والأرشفة، بالأزرار اختيار.. أو المورد.. أو عبر Google Drive.</li><li>للنسخ والنقل اختر ما يحدث إذا كان الاسم مستخدمًا.</li><li>افتح شروط اختيار الملفات لتضييق الملفات.</li><li>اضبط البدء في والتكرار كل، وأبقِ التنفيذ حسب الجدول الزمني محددًا.</li><li>افحص ما الذي سيُنفَّذ الآن.. ثم اضغط حفظ.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="action"><summary>الإجراء وتعارض الأسماء</summary><p>الإجراء هو نسخ أو نقل أو حذف أو أرشفة، وتعرض النافذة الصفوف التي يحتاجها ذلك الإجراء فقط: لا وجهة للحذف؛ ويظهر إذا كان الاسم مستخدمًا (تخطي، استبدال، الاحتفاظ بالنسختين) للنسخ والنقل فقط؛ ويظهر حذف الملفات الأصلية بعد التحقق من الأرشيف للأرشفة فقط، ولا يزيل الأصول إلا بعد قراءة الأرشيف مجددًا وفحصه.</p></details>
+<details id="places"><summary>المصدر والوجهة</summary><p>اكتب مسارًا كاملًا أو اضغط اختيار.. أما المورد.. فيختار خادم SFTP أو مجلد شبكة من قائمة موارد العارض، ولا يُعرض للأرشفة التي تقبل المجلدات العادية وGoogle Drive فقط. يظهر عبر Google Drive فقط عندما تكون مسجّل الدخول إلى Drive أو يستخدمه ذلك الجانب بالفعل. وعندما يكون تضمين المجلدات الفرعية غير محدد تُعالَج ملفات مجلد المصدر نفسه فقط. يرفض حفظ المجلدات النظامية ومجلدات البرامج، ووجهة تساوي المصدر أو تقع داخله، ويذكر الخطأ.</p></details>
+<details id="delete-verdict"><summary>حذف الملفات</summary><p>عندما ستُزال ملفات (الحذف، أو الأرشفة مع خيار حذف الأصول)، يبيّن السطر حذف: .. أين تذهب: إلى سلة المحذوفات، أو نهائيًا مع ذكر السبب، مثل أن القرص الشبكي أو القابل للإزالة لا يملك سلة محذوفات. في مثل هذه العملية لا يحفظ Enter؛ اضغط حفظ عن قصد. لا تطرح العملية المجدولة أي أسئلة، وتسجّل أين ذهبت الملفات المحذوفة.</p></details>
+<details id="conditions"><summary>شروط اختيار الملفات</summary><p>تُفتح اللوحة تلقائيًا عندما تختلف الشروط عن الافتراضية. أنواع الملفات: كل الملفات، الصور، صوت، فيديو، المستندات (كل الملفات يعطّل الأربعة الأخرى). تاريخ التعديل: كل الأوقات، الجديد منذ آخر تشغيل، آخر ساعة، آخر 24 ساعة. يقبل نمط الاسم واستبعاد حسب النمط عدة أنماط تفصل بينها فاصلة منقوطة (;)، مثل *.jpg;IMG_??.png، وتُقارَن بالاسم الكامل للملف. أقدم من وأحدث من بالأيام والساعات، والحجم أكبر من والحجم أصغر من بالميغابايت. وتضمين الملفات المخفية وملفات النظام غير محدد افتراضيًا.</p></details>
+<details id="schedule"><summary>الجدول الزمني</summary><p>يحدد البدء في وقت اليوم، ويحدد التكرار كل الفاصل بالساعات والدقائق؛ وعدد صحيح من الأيام يتكرر في الوقت نفسه. يعرض السطر تحتهما التشغيل التالي: الوقت (القاعدة)، أو الجدول الزمني معطّل: تُنفَّذ العملية يدويًا فقط. تنفيذ التشغيل الفائت مرة واحدة عند بدء البرنامج وإظهار إشعار عند حدوث خطأ خياران منفصلان. ويذكر سطر آخر أن الجدول الزمني يعمل فقط أثناء تشغيل Share Manager، وهل يبدأ عند تسجيل الدخول إلى Windows؛ ولا شيء في هذه النافذة يغيّر البدء التلقائي.</p></details>
+<details id="preview"><summary>المعاينة والحفظ</summary><p>الزر ما الذي سيُنفَّذ الآن.. يسرد الملفات التي ستعالجها العملية ولا يغيّر شيئًا؛ والتشغيل لا يحتاج إليه. يخزّن حفظ العملية، أو يسرد ما يجب إصلاحه. أما إلغاء فيتجاهل تعديلاتك.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

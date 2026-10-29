@@ -5,30 +5,37 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Image Editor - Fast Media Sorter</title>
+  <title>تحرير الصورة - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Image Editor</h1>
+  <h1 id="title">تحرير الصورة</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Image Editor.</p>
+    <p>محرر صغير لصورة ثابتة واحدة: ارسم أشكالًا، واقتصّ، وأدِر، واقلب، ثم احفظ فوق الأصل أو كملف جديد. يُفتح، واسم ملف الصورة في عنوانه، من الزر تحرير في شريط الأدوات أو من أول عنصر في قائمة الصورة، ولصورة ثابتة فقط (وليس لصورة متحركة). يقرأ المحرر الملف من جديد ويعمل على نسخته الخاصة.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="image-editor-light.png" alt="Image Editor">
-    <img class="shot dark" src="image-editor-dark.png" alt="Image Editor">
+    <img class="shot light" src="image-editor-light.png" alt="تحرير الصورة">
+    <img class="shot dark" src="image-editor-dark.png" alt="تحرير الصورة">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اضغط تحرير في العارض.</li><li>اختر أداة ولونًا وسماكة.</li><li>ارسم على الصورة، أو اقتصّ أو أدِر أو اقلب؛ ويعيدك تراجع خطوة إلى الوراء.</li><li>اضغط حفظ للكتابة فوق الأصل، أو حفظ باسم.. لملف جديد.</li><li>أغلق النافذة؛ وإذا كانت هناك تغييرات غير محفوظة فأجب عن السؤال.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="tools"><summary>الأدوات</summary><p>في الشريط: اقتصاص وفرشاة ومستطيل ومستطيل ممتلئ وبيضاوي وبيضاوي ممتلئ. المفاتيح هي C وB وR وO (وللأدوات الممتلئة لا مفاتيح). اضغط Shift أثناء رسم مستطيل أو شكل بيضاوي لتحصل على مربع أو دائرة. وعند تمرير المؤشر على أداة يظهر اسمها ومفتاحها.</p></details>
+<details id="colour-thickness"><summary>اللون والسماكة</summary><p>يفتح زر اللون مربع حوار الألوان، وبجواره ثماني عينات سريعة (أسود وأبيض وأحمر وأصفر وأخضر ليموني وأزرق وماجنتا ورمادي). تتراوح السماكة من 1 إلى 64 بكسل من بكسلات الصورة (الافتراضي 4)؛ والمفتاحان [ و] يغيّرانها بمقدار واحد. اللون والسماكة مشتركان بين كل الأدوات.</p></details>
+<details id="crop"><summary>الاقتصاص</summary><p>مع أداة الاقتصاص، اسحب إطارًا على الصورة. لا يظهر الزر تطبيق الاقتصاص إلا أثناء وجود إطار. ويفعل Enter الشيء نفسه؛ أما Esc فيزيل الإطار دون اقتصاص. ولا تُقصّ الصورة إلا عندما تطبّق ذلك.</p></details>
+<details id="rotate-flip"><summary>التدوير والقلب</summary><p>تدوير لليسار (Ctrl+[) وتدوير لليمين (Ctrl+]) يديران البكسلات. يقلب المفتاحان H وV الصورة أفقيًا ورأسيًا. وهذا يغيّر الصورة نفسها، بخلاف R في العارض الذي يدير العرض فقط.</p></details>
+<details id="undo-redo"><summary>تراجع وإعادة</summary><p>يتنقل تراجع (Ctrl+Z) وإعادة (Ctrl+Y أو Ctrl+Shift+Z) في سجل يصل إلى 20 خطوة ضمن حد للذاكرة. يعرض شريط الحالة الحجم، وبعد أي تغيير يعرض مُعدَّل مع خطوة N من M؛ وعندما يُسقط الحد أقدم الخطوات يقول تم تجاهل الخطوات القديمة: حد الذاكرة.</p></details>
+<details id="save"><summary>الحفظ</summary><p>يكتب حفظ (Ctrl+S) فوق الأصل ولا يُفعَّل إلا بعد حدوث تغيير؛ وقبل ذلك تقول تلميحته لا شيء للحفظ: لم يتم تغيير الصورة. وبالنسبة إلى JPEG يُطرح عليك سؤال مرة واحدة لكل جلسة: ستتم إعادة ضغط ملف JPEG - وهذا إجراء لا رجعة فيه. ويُحتفظ بتاريخ التصوير وبقية بيانات EXIF. يُكتب الملف باسم مؤقت ثم يُستبدل؛ وإذا فشل الحفظ تبقى النافذة مفتوحة مع ذكر السبب.</p></details>
+<details id="save-as"><summary>حفظ باسم..</summary><p>يفتح مربع حوار ملف مع إضافة (معدَّل) إلى الاسم. الصيغ هي PNG وJPEG وBMP وTIFF وWebP؛ والصورة بأي صيغة أخرى تُعرض بصيغة PNG. ويُرفض المجلد المؤقت للأرشيف. بعد الحفظ فوق الأصل يعيد العارض تحميله؛ ويُفتح الملف الجديد في المجلد نفسه؛ أما الملف في مكان آخر فيُذكر اسمه في شريط الحالة.</p></details>
+<details id="save-refused"><summary>عندما يكون حفظ معطّلًا</summary><p>يقول شريط الحالة لا يمكن الكتابة فوق الأصل مع السبب: هذه الصيغة لا تُكتب، أو الملف للقراءة فقط، أو لا يوجد إذن كتابة، أو برنامج آخر يحتفظ بالملف، أو الملف متعدد الصفحات أو الإطارات (يُحرَّر الأول فقط)، أو هو داخل أرشيف، أو مفقود. ويبقى حفظ باسم.. متاحًا.</p></details>
+<details id="close"><summary>الإغلاق</summary><p>يغلق إغلاق أو Esc النافذة؛ ويلغي Esc أولًا ضربة قيد الرسم، ثم يزيل إطار الاقتصاص. وعند وجود تعديلات غير محفوظة يكون السؤال: التعديلات غير محفوظة - إغلاق المحرّر وفقدان التعديلات غير المحفوظة؟ حفظ يحفظ أولًا، وعدم الحفظ يتجاهل، وإلغاء (الافتراضي، وكذلك Esc) يبقيك في المحرر. ويُطرح هذا السؤال حتى لو كانت التأكيدات متوقفة.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

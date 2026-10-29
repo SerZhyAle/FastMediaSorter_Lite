@@ -59,7 +59,7 @@ Friend NotInheritable Class OutwardAccessFeatures
 
     ''' <summary>The one line shown wherever a closed surface stands: honest about the cause, no date.</summary>
     Friend Shared Function Reason() As String
-        Return Localization.T("Недоступно: файловый сервер программы пока не умеет ограничить вход одной папкой.")
+        Return Localization.T("Недоступно: файловый сервер программы не умеет ограничить вход одной папкой.")
     End Function
 
 End Class

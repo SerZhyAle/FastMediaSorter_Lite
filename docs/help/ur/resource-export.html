@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Export Resource Config - Fast Media Sorter</title>
+  <title>وسیلہ برآمد کریں - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Export Resource Config</h1>
+  <h1 id="title">وسیلہ برآمد کریں</h1>
   <section id="purpose">
     <h2>یہ کس مقصد کے لیے ہے</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Export Resource Config.</p>
+    <p>ایک SFTP سرور کی سیٹنگز اس طرح تیار کرتا ہے کہ کوئی دوسرا کمپیوٹر یا فون انہیں درآمد کر سکے۔ یہ وسائل کی فہرست کے مزید مینو کی ایکسپورٹ.. کمانڈ سے کھلتی ہے اور اس کے لیے ایک منتخب وسیلہ درکار ہے؛ Share Manager کے مشترک فولڈر کی ایکسپورٹ اس کے بجائے Share Manager سے کی جاتی ہے۔</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-export-light.png" alt="Export Resource Config">
-    <img class="shot dark" src="resource-export-dark.png" alt="Export Resource Config">
+    <img class="shot light" src="resource-export-light.png" alt="وسیلہ برآمد کریں">
+    <img class="shot dark" src="resource-export-dark.png" alt="وسیلہ برآمد کریں">
   </figure>
   <section id="order">
     <h2>اس ترتیب میں</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>وسیلے کے نام کے نیچے انتباہ پڑھیں۔</li><li>پاس ورڈ کے بغیر (ڈیفالٹ) یا پاس ورڈ کے ساتھ منتخب کریں۔</li><li>فائل میں محفوظ کریں.. بٹن دبائیں، یا سیٹنگز کو ٹیکسٹ یا چھوٹے کوڈ کی صورت میں کاپی کریں۔</li><li>نتیجہ صرف اس کے مالک کو دیں۔</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="warning"><summary>انتباہ</summary><p>نام کے نیچے کی لائن بتاتی ہے کہ فائل میں سرور تک رسائی کی کلید ہے: اسے صرف اس کے مالک کو دیں اور کبھی مشترک ڈسک پر نہ چھوڑیں۔ یہ فائل، کاپی کیے گئے ٹیکسٹ اور کوڈ، تینوں پر لاگو ہوتا ہے۔</p></details>
+<details id="password-choice"><summary>پاس ورڈ کے بغیر یا ساتھ</summary><p>پاس ورڈ کے بغیر شروع میں منتخب ہوتا ہے۔ پاس ورڈ کے ساتھ صرف تب فعال ہوتا ہے جب محفوظ پاس ورڈ واپس پڑھا جا سکے؛ ورنہ یہ اشارہ دکھاتا ہے: پاس ورڈ محفوظ نہیں ہے - فائل اس کے بغیر بنے گی۔ پاس ورڈ ایکسپورٹ کے لیے صرف میموری میں ڈی کرپٹ ہوتا ہے اور کہیں اور نہیں جاتا۔</p></details>
+<details id="save-copy"><summary>محفوظ کرنا، ٹیکسٹ کاپی، کوڈ کاپی</summary><p>فائل میں محفوظ کریں.. محفوظ کرنے کے ڈائیلاگ کے ذریعے ایک .fmscfg فائل لکھتا ہے؛ لکھنے والا FAT یا exFAT ڈسک، نیٹ ورک ڈسک اور وہ فولڈر جنہیں دوسرے صارف بدل سکتے ہیں مسترد کر دیتا ہے، اور کبھی آدھی لکھی فائل نہیں چھوڑتا۔ ٹیکسٹ کاپی کریں سیٹنگز کی دستاویز کلپ بورڈ پر رکھتا ہے اور کوڈ کاپی کریں اسی مواد کا چھوٹا کوڈ۔ دونوں رازداری کے نشان کے ساتھ کاپی ہوتے ہیں (کلپ بورڈ ہسٹری نہیں، کلاؤڈ سنک نہیں)۔ اسٹیٹس لائن نتیجہ دکھاتی ہے۔</p></details>
+<details id="requirements"><summary>کیا ایکسپورٹ ہو سکتا ہے</summary><p>صرف وہ SFTP سرور جس کی کلید ویوئر پہلے سے یاد رکھتا ہو۔ ونڈو ہر صورت میں کھلتی ہے، اور بٹن دبانے پر اسٹیٹس لائن میں انکار نظر آتا ہے: نیٹ ورک فولڈر (SMB) کو اس فائل سے بیان نہیں کیا جا سکتا؛ سرور کی کلید یاد نہیں رکھی گئی (وسیلے کو ایک بار کھول کر کلید کی تصدیق کریں)؛ وسیلے کا کوئی ایسا پتہ نہیں جو آگے دیا جا سکے؛ فولڈر اس طرح لکھا گیا ہے جسے فائل قبول نہیں کرتی (اسے ترمیم کریں.. سے درست کریں)۔</p></details>
+    <p><a href="settings.html">ترتیبات</a></p>
   </section>
   <nav id="related">
     <h2>متعلقہ</h2>

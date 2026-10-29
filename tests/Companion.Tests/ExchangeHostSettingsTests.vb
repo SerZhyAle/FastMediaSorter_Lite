@@ -23,7 +23,7 @@ Public Class ExchangeHostSettingsTests
                 Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer) With {.Location = New Point(-6000, -6000), .StartPosition = FormStartPosition.Manual, .ShowInTaskbar = False}
                     form.Show()
                     Dim flags As BindingFlags = BindingFlags.Instance Or BindingFlags.NonPublic
-                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(form, New Object() {"exchange"})
+                    GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(form, New Object() {"exchange", Nothing})
                     Dim snap As New ExchangeSnapshot With {.Report = New ExchangeProcess.InspectReport With {.Answered = True, .Accounts = 1, .KeepAwake = True, .LogRetentionDays = 7}}
                     Dim apply As MethodInfo = GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", flags)
                     apply.Invoke(form, New Object() {snap})

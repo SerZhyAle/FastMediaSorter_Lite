@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Internet Access Guide - Fast Media Sorter</title>
+  <title>Інструкція з пробросу порту - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Internet Access Guide</h1>
+  <h1 id="title">Інструкція з пробросу порту</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Internet Access Guide.</p>
+    <p>Допомагає зробити роздачу доступною ззовні домашньої мережі. Показує зовнішню адресу та те, чи порт відкрито автоматично, чи його потрібно прокинути на роутері, і пропонує перевірку та докладну інструкцію. Відкривається кнопкою &#171;Як налаштувати доступ через інтернет&#187; головного вікна.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="internet-access-light.png" alt="Internet Access Guide">
-    <img class="shot dark" src="internet-access-dark.png" alt="Internet Access Guide">
+    <img class="shot light" src="internet-access-light.png" alt="Інструкція з пробросу порту">
+    <img class="shot dark" src="internet-access-dark.png" alt="Інструкція з пробросу порту">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Спершу почніть роздачу; інакше вікно попросить про це.</li><li>Прочитайте рядки стану: доступно, за CGNAT або потрібен проброс порту.</li><li>Якщо потрібен проброс, відкрийте детальну інструкцію й створіть правило на роутері.</li><li>Натисніть &#171;Тест&#187;, щоб перевірити адресу з цього ПК.</li><li>Підтвердьте з телефона через мобільний інтернет при вимкненому Wi-Fi.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="status"><summary>Стан</summary><p>Вікно визначає зовнішню адресу й показує одне з повідомлень: &#171;Доступно з інтернету: ..&#187;, &#171;Зовнішня адреса: .. (потрібен проброс порту)&#187;, &#171;Зовнішня адреса невідома - дізнайтеся в роутері.&#187; або &#171;За CGNAT - ззовні недоступно.&#187;. Коли порт відкрито автоматично (UPnP), налаштовувати роутер не потрібно, але підтвердити, що все працює, може лише телефон через мобільний інтернет. &#171;Оновити&#187; повторює визначення.</p></details>
+<details id="guide"><summary>Роутер та інструкції</summary><p>Рядок роутера показує його адресу або &#171;Визначаємо роутер..&#187;, поки триває пошук. Посилання &#171;Відкрити детальну інструкцію (HTML, з вашими значеннями та моделлю роутера)..&#187; відкриває локальну HTML-інструкцію; якщо її не вдається відкрити, вікно повідомляє про це. Посилання &#171;Доступ з дому та з інших мереж (портал)&#187; відкриває у браузері відповідну сторінку порталу довідки.</p></details>
+<details id="test"><summary>Тест</summary><p>Перевіряє зовнішню адресу з цього ПК і повідомляє &#171;SFTP-сервер доступний: ..&#187;, &#171;Порт відкрито, але SFTP не відповів: ..&#187;, закрите з&#39;єднання (можливо, через ліміт підключень) або відсутність відповіді. Результат не остаточний: багато роутерів не пускають запит на власну зовнішню адресу зсередини, тож надійна перевірка - телефон через мобільний інтернет.</p></details>
+<details id="safety"><summary>Безпека</summary><p>Відкриття SFTP в інтернет дає доступ до кожної спільної папки будь-кому, хто дізнається адресу, логін і пароль. Не публікуйте QR-код і файл .fmscfg, а коли закінчите, вимкніть роздачу. &#171;Закрити&#187; виходить із вікна.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

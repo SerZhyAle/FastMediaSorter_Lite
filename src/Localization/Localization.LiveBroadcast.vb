@@ -111,13 +111,13 @@ Partial Public NotInheritable Class Localization
         ' The refusal of a descriptor of a later schema is not a string of this table: it is the row `format-unsupported` of
         ' ConnectionDiagnosisLocalization (DEVICE-EXCHANGE 1.3 amendment of 2026-10-17, named by LIVE-BROADCAST 1.1).
 
-        Add("Этот режим пока не поддерживается",
-            "This mode is not yet supported", "Цей режим поки що не підтримується",
-            "Dieser Modus wird noch nicht unterstützt", "Questa modalità non è ancora supportata",
-            "Este modo aún no es compatible", "Ce mode n'est pas encore pris en charge",
-            "Este modo ainda não é suportado", "هذا الوضع غير مدعوم حاليًا",
-            "यह मोड अभी समर्थित नहीं है", "এই মোডটি এখনও সমর্থিত নয়",
-            "یہ موڈ ابھی تعاون یافتہ نہیں ہے", "此模式暂不支持")
+        Add("Этот режим не поддерживается",
+            "This mode is not supported", "Цей режим не підтримується",
+            "Dieser Modus wird nicht unterstützt", "Questa modalità non è supportata",
+            "Este modo no es compatible", "Ce mode n'est pas pris en charge",
+            "Este modo não é suportado", "هذا الوضع غير مدعوم",
+            "यह मोड समर्थित नहीं है", "এই মোডটি সমর্থিত নয়",
+            "یہ موڈ تعاون یافتہ نہیں ہے", "不支持此模式")
 
         Add("Устройство передало локальный адрес (loopback), недоступный с ПК",
             "The device sent a local loopback address unreachable from the PC",

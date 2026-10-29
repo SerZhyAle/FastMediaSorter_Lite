@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>وسائل - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">وسائل</h1>
   <section id="purpose">
     <h2>یہ کس مقصد کے لیے ہے</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>سرورز اور نیٹ ورک فولڈرز کی وہ فہرست جسے ویوئر کھول سکتا ہے: SFTP سرورز، Windows نیٹ ورک فولڈرز (SMB) اور وہ فولڈرز جنہیں Share Manager اس کمپیوٹر سے شیئر کرتا ہے۔ یہ فولڈر مینو کی وسائل کا انتظام.. کمانڈ سے کھلتی ہے؛ یہی فہرست سیٹنگز ونڈو کے صفحے سرور اور وسائل میں بھی ہے۔</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="وسائل">
+    <img class="shot dark" src="resource-manager-dark.png" alt="وسائل">
   </figure>
   <section id="order">
     <h2>اس ترتیب میں</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>شامل کریں.. بٹن دبا کر سرور کی تفصیلات بھریں، یا مزید بٹن سے سیٹنگز کی فائل درآمد کریں۔</li><li>نئی قطار منتخب کر کے جانچیں دبائیں۔</li><li>کھولیں دبائیں، یا قطار پر ڈبل کلک کریں: ویوئر جڑ کر سرور کے فولڈر دکھاتا ہے۔</li><li>پتہ یا پاس ورڈ بدلنے کے لیے ترمیم کریں.. استعمال کریں، اور کسی وسیلے کو بھلانے کے لیے حذف کریں۔</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>فہرست</summary><p>کالم: نام، قسم، پتہ، رسائی اور آخری بار کھولا۔ قسم یہ ہو سکتی ہے: SFTP سرور، نیٹ ورک فولڈر (SMB) یا مشترک فولڈر (Share Manager)؛ رسائی میں لکھا ہوتا ہے صرف پڑھنے کے لیے یا پڑھنا اور لکھنا۔ فہرست کے نیچے ایک لائن وسائل کو گنتی ہے، اور جب کوئی وسیلہ نہ ہو تو ونڈو ایک اشارہ اور شامل کریں.. بٹن دکھاتی ہے۔ ترمیم کریں.. ، حذف کریں اور جانچیں بٹن (اور وسائل ونڈو کی نچلی قطار میں کھولیں بٹن) کو ایک منتخب قطار درکار ہے؛ اس سے پہلے ان کے ٹول ٹپ میں لکھا ہوتا ہے: پہلے فہرست سے ایک وسیلہ منتخب کریں</p></details>
+<details id="add-edit"><summary>شامل کریں.. اور ترمیم کریں..</summary><p>شامل کریں.. نئے وسیلے کا فارم کھولتا ہے اور ترمیم کریں.. منتخب وسیلے کا۔ وہاں لکھا گیا پاس ورڈ آپ کے Windows اکاونٹ کے لیے انکرپٹ کر کے رکھا جاتا ہے، فہرست میں کبھی نہیں۔</p></details>
+<details id="remove"><summary>حذف کریں</summary><p>حذف کریں پہلے پوچھتا ہے، اور ڈیفالٹ جواب نہیں ہے۔ سوال میں وسیلے کا نام ہوتا ہے اور بتایا جاتا ہے کہ اس کا محفوظ پاس ورڈ بھی ختم ہو جائے گا، جبکہ سرور کی فائلیں متاثر نہیں ہوتیں۔</p></details>
+<details id="check"><summary>جانچیں</summary><p>جانچیں منتخب قطار کو کھولے بغیر پرکھتا ہے۔ SFTP سرور کے لیے یہ وسیلے کے ہر معلوم پتے کو آزماتا ہے اور ہر ایک کی رپورٹ host:port کی شکل میں دیتا ہے، ساتھ ایک فیصلہ: ایک بھی زندہ SSH جواب جانچ کو کامیاب بناتا ہے، کھلا پورٹ جو SSH نہ ہو وہ انتباہ ہے، اور خاموشی ناکامی۔ کوئی پاس ورڈ نہیں بھیجا جاتا۔ نیٹ ورک فولڈر کے لیے یہ محفوظ پاس ورڈ سے شیئر کھولتا ہے اور اس کا اوپری فولڈر پڑھتا ہے؛ پاس ورڈ محفوظ نہ ہو تو ترمیم کریں.. کے ذریعے ایک دینے کو کہتا ہے۔ Share Manager والی قطار کے لیے یہ صرف دیکھتا ہے کہ فولڈر اس کمپیوٹر پر موجود ہے یا نہیں۔</p></details>
+<details id="open"><summary>کھولیں</summary><p>کھولیں، یا قطار پر ڈبل کلک، وسیلہ ویوئر کے حوالے کرتا ہے، جو جڑ کر اس کا فولڈر دکھاتا ہے۔ اگر پاس ورڈ محفوظ نہ ہو، یا محفوظ والا مسترد ہو جائے، تو پہلے ایک چھوٹی ونڈو اسے مانگتی ہے۔</p></details>
+<details id="more-menu"><summary>مزید بٹن</summary><p>نقطوں والے بٹن میں یہ ہیں: ایکسپورٹ.. (منتخب وسیلہ درکار)؛ فائل سے درآمد.. (.fmscfg، .json یا .txt فائل، یا QR کوڈ کی تصویر؛ فائل کو فہرست پر چھوڑ کر بھی درآمد کی جا سکتی ہے)؛ کلپ بورڈ سے درآمد؛ کیمرے سے اسکین کریں.. (صرف جب Share Manager انسٹال ہو اور کیمرا دستیاب ہو)؛ فون کے لیے کوڈ دکھائیں..؛ اور منتخب قطار کے لیے Why doesn&#39;t it connect?.. ، جو کنکشن کی تشخیص کھولتا ہے۔</p></details>
+<details id="share-manager-rows"><summary>Share Manager قطاریں اور میرے آلات</summary><p>جو فولڈر Share Manager اس کمپیوٹر سے شیئر کرتا ہے وہ وہیں منظم ہوتا ہے: اس کے ٹول ٹپ میں یہ لکھا ہوتا ہے (یہ مشترک فولڈر Share Manager میں منظم کیا جاتا ہے)، اور اس کی قطار پر ترمیم کریں.. اور حذف کریں یہاں کچھ بدلنے کے بجائے Share Manager کھولتے ہیں، جبکہ ایکسپورٹ.. غیر فعال رہتا ہے۔ ایکسچینج کلائنٹ دستیاب ہو تو فہرست کے نیچے میرے آلات کا حصہ ایکسچینج سرور پر آپ کے دوسرے آلات کے فولڈر دکھاتا ہے۔</p></details>
+    <p><a href="settings.html">ترتیبات</a></p>
   </section>
   <nav id="related">
     <h2>متعلقہ</h2>

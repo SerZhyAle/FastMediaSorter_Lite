@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Aggiungi da un server di scambio - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Aggiungi da un server di scambio</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Collega questo computer a un account su un server di scambio, cos&#236; le cartelle di tutti i dispositivi di quell&#39;account compaiono nell&#39;elenco delle risorse. Si apre dal pulsante &#171;Aggiungi da un server di scambio..&#187; nella sezione &#171;I miei dispositivi&#187; dell&#39;elenco delle risorse, e quando trascini una stringa o un file di connessione sul programma o ne digiti una nel campo della cartella.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Aggiungi da un server di scambio">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Aggiungi da un server di scambio">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Incolla la stringa di connessione dell&#39;operatore del server, digita l&#39;indirizzo come host:porta oppure premi &#171;Apri file..&#187;.</li><li>Controlla la riga &#171;La password verr&#224; inviata a: ..&#187;: quell&#39;indirizzo &#232; l&#39;unico posto in cui va la password.</li><li>Inserisci il login e la password.</li><li>Premi &#171;Connetti&#187;.</li><li>Se il programma chiede del certificato del server, confronta l&#39;impronta con quella indicata dall&#39;operatore.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Stringa di connessione o indirizzo</summary><p>Il primo campo accetta una stringa di connessione (inizia con FMSEXCH1:) o un indirizzo come host:porta. &#171;Incolla&#187; lo riempie dagli appunti, da un testo o da un&#39;immagine di un codice QR, e &#171;Apri file..&#187; legge un file .fmsexch o un&#39;immagine QR. Incollare compila soltanto il modulo: non viene inviato nulla finch&#233; non premi &#171;Connetti&#187;. La riga sotto il campo mostra dove andr&#224; la password; un indirizzo web, un codice di cartella o una stringa danneggiata vengono rifiutati l&#236; in parole semplici.</p></details>
+<details id="account"><summary>Login e password</summary><p>&#171;Login:&#187; viene compilato dalla stringa quando ne contiene uno. &#171;Password:&#187; &#232; nascosta; &#171;Mostra la password&#187; la rivela. Quando premi &#171;Connetti&#187;, i campi della password vengono svuotati prima che il primo byte lasci il computer. La riga di stato mostra l&#39;avanzamento e, in caso di errore, il motivo: un login o una password che non andavano, troppi tentativi, un server che non risponde.</p></details>
+<details id="register"><summary>Una stringa di invito</summary><p>Una stringa che &#232; un invito nomina gi&#224; il server e porta la finestra alla creazione di un account: compaiono &#171;Password di nuovo:&#187; e una nota sulla regola della password (almeno 10 caratteri, con una lettera latina maiuscola, una minuscola e una cifra), e il pulsante diventa &#171;Crea l&#39;account&#187;. L&#39;ultima parola sulla regola spetta al server.</p></details>
+<details id="trust"><summary>Il certificato del server</summary><p>Se il certificato &#232; sconosciuto, una domanda ne mostra l&#39;impronta e chiede se fidarsi del server e ricordarlo; la risposta predefinita &#232; No. Se la stringa indica un&#39;impronta e il server ne presenta un&#39;altra, vengono mostrate entrambe, non viene ricordato nulla e non viene inviata nessuna password.</p></details>
+<details id="sign-in-again"><summary>Accedere di nuovo</summary><p>Se la finestra &#232; aperta per una voce di server esistente per accedere di nuovo, mostra l&#39;indirizzo e il login in sola lettura, e l&#39;impronta che quella voce ricorda &#232; l&#39;ancora di fiducia.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

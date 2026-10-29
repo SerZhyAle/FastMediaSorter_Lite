@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>Operation report - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">Operation report</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>Lists what happened to every file of the last batch operation (move, copy, delete or undo) and why anything was skipped or failed. It never opens by itself: click the report line at the bottom of the thumbnail panel (F3) after a run. When the run was not clean, the line ends with &#171;click to see details&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="Operation report">
+    <img class="shot dark" src="batch-report-dark.png" alt="Operation report">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Run an operation on several files in the thumbnail panel.</li><li>Read the summary line at the bottom of the panel.</li><li>Click the line to open this window.</li><li>Look at the top of the list: failures come first.</li><li>Select rows, then use &#171;Copy&#187; to take their paths or &#171;Show in Explorer&#187; to find a file.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>The summary line</summary><p>The line starts with the result: &#171;Moved files: 5&#187;, &#171;Copied files: 5&#187;, &#171;Deleted files: 5&#187;, &#171;Restored files: 5&#187; or &#171;Operations completed: 5&#187;. Further parts, each with its count, appear only when the count is not zero: &#171;skipped&#187;, &#171;errors&#187;, &#171;operations without undo&#187;, &#171;permanently deleted, cannot be restored&#187;, and, when the run stops early, &#171;interrupted, no connection to folder - not started&#187; (three failed connections in a row stop it) or &#171;canceled - not started&#187;.</p></details>
+<details id="list"><summary>The list</summary><p>Columns: File, Status and Details. The worst rows come first: failed, then not started, then skipped, then done; inside a group the files keep the order of the run. The tooltip of a row shows the full path. Details give a plain reason for a failure, the destination folder for a finished file, &#171;saved as&#187; and the new name when the old name was taken, and &#171;Deleted permanently - undo unavailable&#187; for a delete that skipped the Recycle Bin.</p></details>
+<details id="states"><summary>States and skip reasons</summary><p>States: &#171;ready&#187;, &#171;error&#187;, &#171;skipped&#187;, &#171;not started&#187;. A skipped file says why: &#171;already in this folder&#187;, &#171;file no longer on disk&#187;, &#171;files inside archive are not modified&#187;, &#171;same name already exists among selected files&#187;, &#171;resource is read-only&#187;, &#171;this is the same file&#187; or &#171;name already taken in destination folder&#187;. A file that was not started says &#171;launch did not take place: operation interrupted&#187;.</p></details>
+<details id="copy-show"><summary>Show in Explorer, Copy, Close</summary><p>&#171;Show in Explorer&#187; is enabled when a row is selected; it opens a folder window with the first selected file highlighted, or the folder when the file has moved. &#171;Copy&#187; (also Ctrl+C) puts the full paths of the selected rows on the clipboard, one per line, or of all rows when none is selected: a quick way to pass on the list of problem files. &#171;Close&#187; ends the report.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

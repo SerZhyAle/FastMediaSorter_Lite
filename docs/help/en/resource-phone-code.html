@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>Phone connection - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">Phone connection</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>Shows a QR code that a phone scans to send a folder&#39;s settings to this computer. It opens from &#171;Show code for phone..&#187; in the &#171;More&#187; menu of the resources list.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>There is no screenshot of this window: opening it starts a device, a network listener or the whole viewer, so it is not captured.</figcaption></figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Open &#171;Show code for phone..&#187;.</li><li>Scan the QR code with the phone; the phone must reach this computer on the local network.</li><li>The phone sends its code, the window says &#171;Code received&#187; and closes, and the import starts.</li><li>If the phone cannot reach the computer, put its code on this computer&#39;s clipboard, as text or as a screenshot of the QR code, and press &#171;Paste from clipboard..&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>The QR code</summary><p>The code stands for a one-time address on your local network with a single-use token. The window listens at that address only while it is open and stops when it closes; only that one address is listened on, not every network adapter. If the listener cannot start, the status line says &#171;Failed to start local listener&#187;.</p></details>
+<details id="address"><summary>The address box and Copy</summary><p>The read-only box under the code shows the same address as text. &#171;Copy&#187; puts it on the clipboard with the privacy markers (no clipboard history, no cloud sync), because the token in it lets whoever holds it hand a code to this window. Someone who opens the address in a browser sees only a short page saying that it is a one-time address.</p></details>
+<details id="paste"><summary>Paste from clipboard</summary><p>&#171;Paste from clipboard..&#187; reads text, or a screenshot of the phone&#39;s QR code, from the clipboard and checks it with the same reader as typed text. If it is not a code, the status line says why and the window stays open for the phone.</p></details>
+<details id="result"><summary>What happens with the code</summary><p>The first code that arrives, from the phone or from the clipboard, takes the window; a second one is dropped. The window closes and the same import as &#171;Import from file..&#187; runs: a summary to confirm, a password question if the code needs one, then &#171;Resources added or updated&#187; with a count in the status line.</p></details>
+<details id="close"><summary>Waiting and Close</summary><p>While it waits, the status line reads &#171;Waiting for phone connection..&#187;. &#171;Close&#187; only ends the waiting; Enter and Esc both choose it, so a key never takes the phone&#39;s code.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

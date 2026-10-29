@@ -21,6 +21,25 @@ paths:
 
 > Area rules for the paths above (auto-loaded). Index and the always-on rules: CLAUDE.md.
 
+## Between-release checks (L0282, 2026-10-29)
+
+Canon `TESTING_AND_QA` section 2: between releases run only recorded checks of at most 5 seconds and a
+direct check of the change; an unknown duration is release-only. The owner may explicitly request a
+slower run. Record skipped build and test rungs as RELEASE items naming the commands and report "not built,
+not tested until the release".
+
+| Area or check | Command and measured process wall time | Date and source |
+| --- | --- | --- |
+| Engineering placement and documentation | `pwsh -NoProfile -File tools/Invoke-Tests.ps1 -Fast -Area engineering` - 2.445 s, exit 0 | 2026-10-29, direct timed call |
+| Placement gate, direct | `pwsh -NoProfile -File tools/Test-CheckPlacement.ps1` - 0.782 s, exit 0 | 2026-10-29, direct timed call |
+| Document registry, direct | `pwsh -NoProfile -File tools/Test-DocRegistry.ps1` - 1.322 s, exit 0 | 2026-10-29, bounded direct timed call |
+| Audit campaign fixture | `pwsh -NoProfile -File tests/Integration/AuditCampaign.ps1` - about 8 s; release only | 2026-09-26, `tools/check-placement.jsonl` |
+| All unmeasured build, test and gate commands | Release only until measured | 2026-10-29, L0282 inventory |
+
+The full release command is `pwsh -NoProfile -File tools/Release.ps1`: its preflight runs
+`tools/Run-AllTests.ps1` and `tools/Build-OfflineRelease.ps1`. Other areas have no measured fast selector;
+do not treat that absence as a passing test.
+
 ### Prerequisites
 - **.NET 10 SDK** builds the mainline x64 viewer and the Companion (both via `dotnet publish`); the **.NET Framework 4.8** targeting pack builds the x86 fallback viewer; plus Visual Studio 2022 (or MSBuild CLI). A full build spans two toolchains (MSBuild/net48 + dotnet/net10) across **three programs**, and `build.ps1` orchestrates all of them. **`msbuild` alone does NOT produce the mainline exe** - the sln yields only the x86 viewer + Companion in `bin\Release`; the self-contained single-file x64 build comes only out of `dotnet publish` (which is why every packager runs its own).
 - **Go (64-bit)**, the version pinned by `exchange-server/go.mod`, builds the exchange server (`exchange-server/`, spec 133, `fms-exchange-server.exe`) via `exchange-server/build.ps1`, which `build.ps1` calls. A 32-bit `go` can be first on `PATH`: the scripts resolve a 64-bit one and pin `GOARCH=amd64`. Without Go, `build.ps1` stops with an error unless `-SkipExchange` is given, so setups are never packaged without the server by accident; `Run-AllTests.ps1 -SkipExchangeGo` skips the Go suite and says so. `-race` runs inside `Run-AllTests.ps1` only with a MinGW-w64 gcc installed (`winget install BrechtSanders.WinLibs.POSIX.UCRT`), otherwise the row says `race not run`; the `GOOS=linux` WSL run is a hand step (`exchange-server/README.md`).
@@ -67,5 +86,5 @@ The Store path (MSIX) is **additive** - it does not change the GitHub release or
 
 ### Key dependencies (versions live in the .vbproj files)
 - **LibVLCSharp** + **VideoLAN.LibVLC.Windows** - the video engine; the modern project takes the **x64 payload only** (`VlcWindowsX86Enabled=false`).
-- Modern only: **Magick.NET-Q8-x64 15.0.0** (the whole Imaging seam: every decode and the editor's encoder, spec `270`; no OS codec, so WEBP works on Server editions and HEIC opens without the paid Store "HEVC Video Extensions"; its `Magick.Native-*.dll` publishes loose next to the exe like libvlc) and **SharpCompress** (ZIP/CBZ, [src/Archives/](../../src/Archives)). The Share Manager references the same Magick.NET and bundles Magick.Native inside its single-file exe (`IncludeNativeLibrariesForSelfExtract`), so a Manager-only Server installation needs nothing of the viewer's payload. **Do not re-add** to the modern project: ImageSharp (any version - spec 270 removed it for its licence key; `tools/Test-ImageBackendArtifacts.ps1` fails on it in any artifact), QRCoder (unused in the viewer; the net48 exe only carries a vestigial copy), WebView2, the `System.*` shims and ProtectedData (all inbox on `net10.0-windows`; NU1510 flags them as redundant), ILMerge (single-file publish instead).
+- Modern only: **Magick.NET-Q8-x64 15.0.0** (the whole Imaging seam: every decode and the editor's encoder, spec `270`; no OS codec, so WEBP works on Server editions and HEIC opens without the paid Store "HEVC Video Extensions"; its `Magick.Native-*.dll` publishes loose next to the exe like libvlc) and **SharpCompress** (ZIP/CBZ, [src/Archives/](../../src/Archives)), **Microsoft.Web.WebView2 1.0.4314.35** (the EPUB reader of spec `274` and the optional HTML page viewer of spec `275`; the WPF reference is stripped by the `RemoveUnusedWebViewWpfReference` target and the x64 `WebView2Loader.dll` is laid down in `webview2\win-x64\` - every host goes through `HtmlRuntimeService.PrepareLoader()`, because the loader folder can be set only once per process; the Edge WebView2 Runtime itself is never bundled, downloaded or installed) and **AngleSharp 1.8.5** (managed HTML parser behind the spec-275 sanitizer). The Share Manager references the same Magick.NET and bundles Magick.Native inside its single-file exe (`IncludeNativeLibrariesForSelfExtract`), so a Manager-only Server installation needs nothing of the viewer's payload. **Do not re-add** to the modern project: ImageSharp (any version - spec 270 removed it for its licence key; `tools/Test-ImageBackendArtifacts.ps1` fails on it in any artifact), QRCoder (unused in the viewer; the net48 exe only carries a vestigial copy), the WebView2 WPF assembly or a second copy of the loader outside `webview2\win-x64\`, the `System.*` shims and ProtectedData (all inbox on `net10.0-windows`; NU1510 flags them as redundant), ILMerge (single-file publish instead).
 - x86/net48 only: **libwebp 1.6.0** `libwebpdecoder.dll` (BSD-3-Clause + PATENTS) is the WEBP decode fallback when WIC cannot handle a file. It is built from the pinned upstream tag by `tools/Build-LibWebpDecoder.ps1` (static CRT, imports checked against Windows 7's KERNEL32) into `payload/libwebp/` with a `PROVENANCE.txt`; the net48 project copies it to `x86\` (and `x64\` for the test leg). It decodes still WEBP only, so on Windows 7/8.1 (no WIC WebP codec) animated WEBP still does not open in the x86 viewer - the same known gap as before.

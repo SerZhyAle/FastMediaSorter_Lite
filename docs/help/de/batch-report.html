@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>Bericht zum Vorgang - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">Bericht zum Vorgang</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>Listet auf, was mit jeder Datei des letzten Stapelvorgangs (Verschieben, Kopieren, L&#246;schen oder R&#252;ckg&#228;ngig) geschah und warum etwas &#252;bersprungen wurde oder fehlschlug. Das Fenster &#246;ffnet sich nie von selbst: Klicken Sie nach einem Lauf auf die Berichtszeile am unteren Rand der Miniaturansicht (F3). War der Lauf nicht sauber, endet die Zeile mit &#171;klicken f&#252;r Details&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="Bericht zum Vorgang">
+    <img class="shot dark" src="batch-report-dark.png" alt="Bericht zum Vorgang">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>F&#252;hren Sie in der Miniaturansicht einen Vorgang f&#252;r mehrere Dateien aus.</li><li>Lesen Sie die Zusammenfassungszeile am unteren Rand des Panels.</li><li>Klicken Sie auf die Zeile, um dieses Fenster zu &#246;ffnen.</li><li>Sehen Sie oben in der Liste nach: Fehlschl&#228;ge stehen zuerst.</li><li>W&#228;hlen Sie Zeilen aus und nehmen Sie mit &#171;Kopieren&#187; ihre Pfade oder finden Sie mit &#171;Im Datei-Explorer anzeigen&#187; eine Datei.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>Die Zusammenfassungszeile</summary><p>Die Zeile beginnt mit dem Ergebnis: &#171;Verschobene Dateien: 5&#187;, &#171;Kopierte Dateien: 5&#187;, &#171;Gel&#246;schte Dateien: 5&#187;, &#171;Wiederhergestellte Dateien: 5&#187; oder &#171;Abgeschlossene Vorg&#228;nge: 5&#187;. Weitere Teile mit je ihrer Anzahl erscheinen nur, wenn die Anzahl nicht null ist: &#171;&#252;bersprungen&#187;, &#171;Fehler&#187;, &#171;Vorg&#228;nge ohne R&#252;cknahme&#187;, &#171;dauerhaft gel&#246;scht, kann nicht wiederhergestellt werden&#187; und, wenn der Lauf vorzeitig endet, &#171;unterbrochen, keine Verbindung zum Ordner - nicht gestartet&#187; (drei fehlgeschlagene Verbindungen hintereinander stoppen ihn) oder &#171;abgebrochen - nicht gestartet&#187;.</p></details>
+<details id="list"><summary>Die Liste</summary><p>Spalten: Datei, Status und Details. Die schlechtesten Zeilen kommen zuerst: fehlgeschlagen, dann nicht gestartet, dann &#252;bersprungen, dann erledigt; innerhalb einer Gruppe behalten die Dateien die Reihenfolge des Laufs. Der Tooltip einer Zeile zeigt den vollst&#228;ndigen Pfad. Die Details nennen bei einem Fehlschlag einen klaren Grund, bei einer erledigten Datei den Zielordner, &#171;gespeichert als&#187; und den neuen Namen, wenn der alte schon vergeben war, und &#171;Endg&#252;ltig gel&#246;scht - R&#252;cknahme nicht verf&#252;gbar&#187; bei einem L&#246;schen, das den Papierkorb &#252;bergangen hat.</p></details>
+<details id="states"><summary>Zust&#228;nde und Gr&#252;nde f&#252;rs &#220;berspringen</summary><p>Zust&#228;nde: &#171;fertig&#187;, &#171;Fehler&#187;, &#171;&#252;bersprungen&#187;, &#171;nicht gestartet&#187;. Eine &#252;bersprungene Datei nennt den Grund: &#171;bereits in diesem Ordner&#187;, &#171;Datei nicht mehr auf dem Datentr&#228;ger&#187;, &#171;Dateien im Archiv werden nicht ge&#228;ndert&#187;, &#171;derselbe Name existiert bereits unter den ausgew&#228;hlten Dateien&#187;, &#171;Ressource ist schreibgesch&#252;tzt&#187;, &#171;dies ist dieselbe Datei&#187; oder &#171;Name im Zielordner bereits vergeben&#187;. Bei einer nicht gestarteten Datei steht &#171;Start nicht erfolgt: Vorgang unterbrochen&#187;.</p></details>
+<details id="copy-show"><summary>Im Datei-Explorer anzeigen, Kopieren, Schlie&#223;en</summary><p>&#171;Im Datei-Explorer anzeigen&#187; ist aktiv, wenn eine Zeile ausgew&#228;hlt ist; es &#246;ffnet ein Ordnerfenster, in dem die erste ausgew&#228;hlte Datei markiert ist, oder den Ordner, wenn die Datei verschoben wurde. &#171;Kopieren&#187; (auch Ctrl+C) legt die vollst&#228;ndigen Pfade der ausgew&#228;hlten Zeilen in die Zwischenablage, einen pro Zeile, oder aller Zeilen, wenn keine ausgew&#228;hlt ist: ein schneller Weg, die Liste der Problemdateien weiterzugeben. &#171;Schlie&#223;en&#187; beendet den Bericht.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

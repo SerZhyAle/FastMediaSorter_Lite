@@ -16,7 +16,7 @@ Friend Module LiveBroadcastMessages
                 ' A sealed-only descriptor reads the same sentence: this program cannot play it (spec 234 stage E2b).
                 Return ConnectionDiagnosisLocalization.FormatUnsupportedText()
             Case LiveReadStatus.UnsupportedMode
-                Return Localization.T("Этот режим пока не поддерживается")
+                Return Localization.T("Этот режим не поддерживается")
             Case LiveReadStatus.LoopbackHost
                 Return Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
             Case LiveReadStatus.TooLarge

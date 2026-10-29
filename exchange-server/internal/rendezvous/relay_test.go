@@ -320,22 +320,32 @@ func TestTheLargestChunkIsAcceptedAndATwoPartChunkIsReassembled(t *testing.T) {
 func TestEveryWayAMediaBroadcastEndsClosesEveryListenerCleanly(t *testing.T) {
 	type ender struct {
 		name string
+		why  string
+		subs int
 		end  func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn)
 	}
 	enders := []ender{
-		{"a zero-length chunk", func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
+		{"a zero-length chunk", "upload-end", 1, func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
 			_ = up.EndUpload()
 		}},
-		{"broadcast-end", func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
+		{"broadcast-end", "broadcast-end", 1, func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
 			_ = p.EndBroadcast(id)
 		}},
-		{"the loss of the control stream", func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
+		{"the loss of the control stream", "offline", 0, func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
 			p.Control().Close()
 		}},
-		{"a revoke", func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
+		{"a revoke", "revoked", 0, func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
 			if _, err := env.Ops.RevokeDevice("alice", p.ID); err != nil {
 				t.Fatal(err)
 			}
+		}},
+		{"an operator end", "admin", 1, func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
+			if err := env.Ops.EndBroadcast("alice", id); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"a withdrawal", "withdrawn", 1, func(t *testing.T, env *testkit.Env, p *testkit.Producer, id string, up *testkit.Conn) {
+			env.Dir.WithdrawAll("alice")
 		}},
 	}
 	for _, en := range enders {
@@ -364,11 +374,77 @@ func TestEveryWayAMediaBroadcastEndsClosesEveryListenerCleanly(t *testing.T) {
 			}
 			eventually(t, "the relay to drop the broadcast", func() bool { return env.Relay.Broadcasts() == 0 && env.Relay.ListenersTotal() == 0 })
 			eventually(t, "the record to leave the directory", func() bool { return env.Dir.Counts().Broadcasts == 0 })
-			// the id is now unknown
-			if code, _ := statusOf(t, env, getRequest(id), "GET"); code != 404 {
-				t.Fatalf("an ended broadcast is 404: %d", code)
+			// the id is remembered as ended (DEVICE-EXCHANGE item DX), whatever ended it
+			if code, _ := statusOf(t, env, getRequest(id), "GET"); code != 410 {
+				t.Fatalf("an ended broadcast is 410: %d", code)
+			}
+			eventually(t, "the removal's reason and fan-out in the log", func() bool {
+				for _, ln := range env.Log.Lines() {
+					if strings.Contains(ln, "broadcast-removal-pushed") && strings.Contains(ln, "why="+en.why) &&
+						strings.Contains(ln, fmt.Sprintf("subscribers=%d\tqueued=%d\tdropped=0\tguest-queued=0", en.subs, en.subs)) {
+						return true
+					}
+				}
+				return false
+			})
+			if en.why == "upload-end" {
+				found := false
+				for _, ln := range env.Log.Lines() {
+					if strings.Contains(ln, "upload-ended") && strings.Contains(ln, "why=zero-chunk") {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatal("the zero-length chunk must have its own log event")
+				}
 			}
 		})
+	}
+}
+
+func TestAnEndedIdIsGoneForTheMemoryThenNotFound(t *testing.T) {
+	var offset atomic.Int64
+	env := relayEnv(t, func(c *rendezvous.RelayConfig) {
+		c.Now = func() time.Time { return time.Now().Add(time.Duration(offset.Load())) }
+		c.EndedMemory = time.Hour
+	})
+	p, id, _ := startBroadcast(t, env, "alice", nil, "audio/aac")
+	// a broadcast that never uploaded is remembered too
+	quiet, err := p.StartBroadcast("AUDIO_ONLY", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = p.EndBroadcast(id)
+	_ = p.EndBroadcast(quiet)
+	eventually(t, "both records to leave the directory", func() bool { return env.Dir.Counts().Broadcasts == 0 })
+
+	for _, x := range []string{id, quiet} {
+		t0 := time.Now()
+		if code, _ := statusOf(t, env, getRequest(x), "GET"); code != 410 {
+			t.Fatalf("an ended id is 410: %d", code)
+		}
+		if d := time.Since(t0); d < env.Params.UnavailableDelay {
+			t.Fatalf("a 410 came after %v, before the minimum delay %v", d, env.Params.UnavailableDelay)
+		}
+	}
+	// an id never seen stays 404
+	if code, _ := statusOf(t, env, getRequest(env.NewID()), "GET"); code != 404 {
+		t.Fatalf("an unknown id is 404: %d", code)
+	}
+	// started again under the same id: live, not gone
+	if _, err := p.StartBroadcastID(quiet, "AUDIO_ONLY", nil); err != nil {
+		t.Fatal(err)
+	}
+	if code, h := statusOf(t, env, getRequest(quiet), "GET"); code != 503 || h["Retry-After"] != "1" {
+		t.Fatalf("a restarted id with no upload is 503 with Retry-After: %d %v", code, h)
+	}
+	// past the memory the id is forgotten: 404
+	offset.Store(int64(time.Hour + time.Minute))
+	if code, _ := statusOf(t, env, getRequest(id), "GET"); code != 404 {
+		t.Fatalf("a forgotten ended id is 404: %d", code)
+	}
+	if env.Relay.EndedIDs() != 1 {
+		t.Fatalf("the relay still remembers %d ended ids", env.Relay.EndedIDs())
 	}
 }
 

@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Enable Sharing - Fast Media Sorter</title>
+  <title>Enable folder sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Enable Sharing</h1>
+  <h1 id="title">Enable folder sharing</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Enable Sharing.</p>
+    <p>Asks permission to install the server side of sharing: a small background SFTP server and one Windows Firewall exception. It opens from the &#39;Enable server features..&#39; button of the main window and from the wizards, and needs administrator rights once.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-enable-light.png" alt="Enable Sharing">
-    <img class="shot dark" src="share-enable-dark.png" alt="Enable Sharing">
+    <img class="shot light" src="share-enable-light.png" alt="Enable folder sharing">
+    <img class="shot dark" src="share-enable-dark.png" alt="Enable folder sharing">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read the explanation.</li><li>Press &#39;Install server features..&#39;.</li><li>Confirm the Windows administrator prompt.</li><li>Wait for the result line; on success the window reports that folder sharing is enabled.</li><li>Press &#39;Cancel&#39; to leave without changes.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="what-it-does"><summary>What it does</summary><p>Sharing folders with an Android phone needs a small background SFTP server and a Windows Firewall permission. While sharing is on, the chosen folders can be read over the network, and those opened for writing can be written too. Unless the local-network-only option is ticked, the program also asks the router to open a port (UPnP/NAT-PMP) and checks the address through an external service.</p></details>
+<details id="install-button"><summary>Install server features..</summary><p>Starts the setup and the Windows administrator prompt. The status line shows &#39;Setting up.. confirm the administrator prompt.&#39; and then the outcome. The button is available only when the server component is next to the app; otherwise the window asks to reinstall the application.</p></details>
+<details id="outcomes"><summary>Outcomes</summary><p>&#39;Done. Folder sharing is enabled.&#39;; &#39;Sharing not enabled - administrator rights were not granted.&#39; when the prompt is declined (nothing changes and you can retry); or a firewall failure, which asks to try again and to send the log from the tray icon menu.</p></details>
+<details id="admin-rights"><summary>Administrator rights and how to take them back</summary><p>The link explains what the rights are used for. To undo it, use &#39;Switch off server features..&#39; in the manager settings: sharing stops, connected phones are disconnected and the firewall permission is removed. The folder list and the password are kept, and everything can be switched on again.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

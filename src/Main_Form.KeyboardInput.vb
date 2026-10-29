@@ -40,6 +40,7 @@ Partial Public Class Main_Form
             last_KeyDown_Was_Repeat = KeyRouting.IsAutoRepeat(msg.LParam.ToInt64())
 #If Not NETFRAMEWORK Then
             ' A toast over the media (124 UX-207) goes with the next key - never an auto-repeat of the key that raised it.
+            RevealPdfReaderToolbar()
             If Not last_KeyDown_Was_Repeat Then DismissNotifyToast()
             ' The card is above panel focus mode in the Escape ladder. Its scroll keys also
             ' precede user bindings, so reading help never navigates or sorts the hidden file.
@@ -103,6 +104,9 @@ Partial Public Class Main_Form
 
     Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
 #If Not NETFRAMEWORK Then
+        If PdfReaderOwnsInput(e) Then Return
+        If EpubReaderOwnsInput(e) Then Return
+        If HtmlViewOwnsInput(e) Then Return
         ' KeybUse is also called directly by forwarding windows, without ProcessCmdKey.
         If Not ChromeMenu.PopupVisible AndAlso help_Card IsNot Nothing AndAlso help_Card.Visible AndAlso
            e.KeyData = e.KeyCode AndAlso help_Card.TryScrollKey(e.KeyCode) Then

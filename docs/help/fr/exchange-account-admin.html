@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>Nouveau compte - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">Nouveau compte</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>Une seule fen&#234;tre en deux modes. &#171;Nouveau compte&#187; ajoute un compte au Media Exchange Server que vous exploitez ; &#171;R&#233;initialiser le mot de passe : &lt;login&gt;&#187; donne un nouveau mot de passe &#224; un compte existant. Ils s&#39;ouvrent depuis &#171;Ajouter un compte..&#187; et &#171;R&#233;initialiser le mot de passe..&#187; sous la liste des comptes de la page Media Exchange Server des param&#232;tres de Share Manager ; la r&#233;initialisation exige qu&#39;un compte soit s&#233;lectionn&#233;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="Nouveau compte">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Nouveau compte">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>En mode ajout, saisissez l&#39;identifiant.</li><li>Choisissez comment le mot de passe est cr&#233;&#233;.</li><li>En mode r&#233;initialisation, d&#233;cidez si tous les appareils du compte sont d&#233;connect&#233;s.</li><li>Cliquez sur &#171;Cr&#233;er&#187; ou &#171;R&#233;initialiser&#187;.</li><li>Copiez le mot de passe g&#233;n&#233;r&#233; depuis la fen&#234;tre suivante, ou saisissez le v&#244;tre.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>D&#233;claration pour le premier compte</summary><p>Pour tout premier compte, la fen&#234;tre commence par &#171;Avant de cr&#233;er le premier compte, lisez ce que l&#39;op&#233;rateur du serveur peut voir :&#187; et une zone en lecture seule contenant la d&#233;claration. Les comptes suivants et les r&#233;initialisations ne l&#39;affichent pas.</p></details>
+<details id="login"><summary>Identifiant</summary><p>Mode ajout uniquement. De 3 &#224; 64 caract&#232;res : lettres latines minuscules, chiffres, point, tiret bas et tiret ; les majuscules sont converties en minuscules. L&#39;indication prend la couleur d&#39;avertissement tant que le texte ne peut pas &#234;tre un identifiant, et &#171;Cr&#233;er&#187; n&#39;avance pas avant que le texte en soit un.</p></details>
+<details id="password-choice"><summary>Comment le mot de passe est cr&#233;&#233;</summary><p>&#171;G&#233;n&#233;rer un mot de passe (affich&#233; une seule fois)&#187; est le choix par d&#233;faut : le programme cr&#233;e un mot de passe al&#233;atoire conforme aux r&#232;gles, et la fen&#234;tre suivante l&#39;affiche une seule fois. &#171;Saisir moi-m&#234;me un mot de passe&#187; ouvre la fen&#234;tre &#171;Mot de passe du compte&#187;, o&#249; une ligne en direct indique ce qui manque : au moins 10 caract&#232;res avec une lettre latine majuscule, une minuscule et un chiffre.</p></details>
+<details id="sign-out"><summary>D&#233;connecter tous les appareils</summary><p>Mode r&#233;initialisation uniquement. &#171;D&#233;connecter aussi tout de suite tous les appareils de ce compte&#187; est coch&#233;e par d&#233;faut. La ligne de r&#233;sultat indique alors que le mot de passe est modifi&#233; et que tous les appareils du compte sont d&#233;connect&#233;s ; sans la coche, elle indique seulement que le mot de passe est modifi&#233;.</p></details>
+<details id="after"><summary>Une fois que le serveur accepte</summary><p>La ligne de r&#233;sultat indique que le compte est cr&#233;&#233;. Un mot de passe g&#233;n&#233;r&#233; appara&#238;t une seule fois dans sa propre fen&#234;tre avec &#171;Copier le mot de passe&#187; et &#171;D&#233;finir mon propre mot de passe..&#187;, qui revient &#224; la r&#233;initialisation sur le choix &#171;Saisir moi-m&#234;me un mot de passe&#187;. Avec &#171;Conserver les mots de passe des comptes sur ce PC&#187; activ&#233;, le mot de passe est aussi enregistr&#233; sur ce PC et le compte re&#231;oit &#171;Afficher le mot de passe..&#187;. Si cette version propose les fonctions client de l&#39;&#233;change et que ce PC n&#39;a pas de compte &#224; lui, il est connect&#233; comme premier appareil du compte avec ce mot de passe.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

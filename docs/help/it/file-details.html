@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>Informazioni sul file - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">Informazioni sul file</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>Un&#39;istantanea di sola lettura di ci&#242; che il programma sa del file sullo schermo: il file stesso, un&#39;immagine con i dati della fotocamera, un documento, e le tracce audio e video. Si apre dalla voce i del primo pannello, oppure da Informazioni sul file nel blocco del file dei menu del visualizzatore, e descrive il file com&#39;era nel momento del clic.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="Informazioni sul file">
+    <img class="shot dark" src="file-details-dark.png" alt="Informazioni sul file">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Mostra un file nel visualizzatore.</li><li>Fai clic sulla voce i del primo pannello, oppure scegli Informazioni sul file nel menu.</li><li>Attendi un momento: la riga di stato dice Lettura dei metadati del file.. e le righe si riempiono.</li><li>Leggi i blocchi, seleziona ci&#242; che ti serve e premi Copia per mettere tutto il testo negli appunti.</li><li>Premi Chiudi o Esc.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>File</summary><p>Ogni file ha questo blocco: Nome, Cartella, Tipo, Dimensione, Byte, Creato, Modificato, Ultimo accesso e Attributi. Una riga senza nulla da mostrare viene omessa. Se nessun file &#232; aperto la riga di stato dice Nessun file selezionato; una copia temporanea da un archivio, un indirizzo remoto o un file scomparso d&#224; Il file non &#232; disponibile, e non si apre nessuna finestra.</p></details>
+<details id="image-block"><summary>Immagine</summary><p>Per un&#39;immagine: Risoluzione come visualizzata (una foto del telefono salvata di lato si legge nella sua dimensione dritta), Profondit&#224; colore e Densit&#224; dei pixel, quando il file li registra.</p></details>
+<details id="camera-block"><summary>Fotocamera</summary><p>Letto dai dati EXIF della foto: Fotocamera, Software, Data di scatto, Esposizione, Diaframma, ISO, Lunghezza focale e Autore. Le coordinate compaiono solo se la foto contiene dati GPS, e Copia le include: controlla il testo prima di condividerlo.</p></details>
+<details id="document-block"><summary>Documento</summary><p>Per un file di testo: Righe, Parole, Caratteri e Codifica, pi&#249; Il file &#232; stato letto solo in parte quando &#232; troppo grande per essere letto per intero. Per un e-book: Nome e Autore. Per un PDF: Pagine.</p></details>
+<details id="media-block"><summary>Media, Video e Audio</summary><p>Per i file audio e video i tag (Nome, Artista, Album, Anno, Traccia, Genere, Regista, Serie, Stagione, Episodio, Durata) e la prima traccia di ogni tipo (Video: Risoluzione, Fotogrammi al secondo, Codec, Bitrate; Audio: Codec, Canali, Frequenza di campionamento, Bitrate) vengono aggiunti un istante dopo il resto, quando il motore multimediale finisce di leggere. La finestra non lo aspetta mai. I flussi di rete non hanno righe di tracce.</p></details>
+<details id="related-files"><summary>File associati</summary><p>I file archiviati accanto a questo e che gli appartengono sono elencati per nome: Sottotitoli, Testo del brano, Copertina e Metadati. Il blocco &#232; assente quando non ce ne sono.</p></details>
+<details id="copy-close"><summary>Copia e Chiudi</summary><p>Copia mette tutto il testo negli appunti e la riga di stato dice Copiato negli appunti; se un altro programma sta occupando gli appunti, lo dice e puoi premere di nuovo Copia. Funziona anche una selezione copiata con Ctrl+C. Se non &#232; stato possibile leggere nulla, il riquadro dice Impossibile leggere le informazioni sul file. Accanto ai pulsanti la riga di stato mostra il nome del file. Passare a un altro file non cambia questa finestra: fai di nuovo clic su i per il nuovo file.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

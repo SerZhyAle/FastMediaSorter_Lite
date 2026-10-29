@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>ফাইল সম্পর্কে - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">ফাইল সম্পর্কে</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>পর্দায় থাকা ফাইল সম্পর্কে প্রোগ্রাম যা জানে তার শুধু-পড়ার একটি ঝলক: ফাইলটি নিজে, ক্যামেরার তথ্যসহ ছবি, নথি এবং অডিও ও ভিডিও ট্র্যাক। এটি প্রথম প্যানেলের i আইটেম থেকে, বা ভিউয়ার মেনুর ফাইল ব্লকের ফাইল সম্পর্কে থেকে খোলে, এবং ক্লিকের মুহূর্তে ফাইলটি যেমন ছিল তেমনই বর্ণনা করে।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="ফাইল সম্পর্কে">
+    <img class="shot dark" src="file-details-dark.png" alt="ফাইল সম্পর্কে">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>ভিউয়ারে একটি ফাইল দেখান।</li><li>প্রথম প্যানেলের i আইটেমে ক্লিক করুন, বা মেনুতে ফাইল সম্পর্কে বেছে নিন।</li><li>একটু অপেক্ষা করুন: স্ট্যাটাস বারে ফাইলের মেটাডেটা পড়া হচ্ছে.. লেখা আসে এবং সারিগুলো ভরে ওঠে।</li><li>ব্লকগুলো পড়ুন, যা দরকার তা নির্বাচন করুন, আর পুরো লেখা ক্লিপবোর্ডে রাখতে কপি করুন চাপুন।</li><li>বন্ধ করুন চাপুন বা Esc।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>ফাইল</summary><p>প্রতিটি ফাইলে এই ব্লক থাকে: নাম, ফোল্ডার, ধরন, আকার, বাইট, তৈরি, পরিবর্তিত, সর্বশেষ ব্যবহার ও বৈশিষ্ট্য। যে সারিতে দেখানোর কিছু নেই সেটি বাদ যায়। কোনো ফাইল খোলা না থাকলে স্ট্যাটাস বারে কোনো ফাইল নির্বাচিত নেই লেখা আসে; আর্কাইভের অস্থায়ী কপি, দূরবর্তী ঠিকানা বা হারিয়ে যাওয়া ফাইলে ফাইলটি উপলব্ধ নয় আসে, এবং কোনো উইন্ডো খোলে না।</p></details>
+<details id="image-block"><summary>ছবি</summary><p>ছবির জন্য: রেজোলিউশন যেমন দেখানো হয় তেমন (ফোনে কাত করে রাখা ছবি সোজা আকারে পড়া হয়), রঙের গভীরতা ও পিক্সেল ঘনত্ব, ফাইল সেগুলো রেকর্ড করলে।</p></details>
+<details id="camera-block"><summary>ক্যামেরা</summary><p>ছবির EXIF তথ্য থেকে পড়া হয়: ক্যামেরা, সফটওয়্যার, তোলার তারিখ, এক্সপোজার, অ্যাপারচার, ISO, ফোকাল দূরত্ব ও লেখক। স্থানাঙ্ক শুধু তখনই দেখা যায় যখন ছবিতে GPS তথ্য থাকে, এবং কপি করুন সেগুলোও নেয়, তাই শেয়ার করার আগে লেখাটি দেখে নিন।</p></details>
+<details id="document-block"><summary>নথি</summary><p>টেক্সট ফাইলের জন্য: লাইন, শব্দ, অক্ষর ও এনকোডিং, সঙ্গে ফাইলের কেবল অংশ পড়া হয়েছে, যখন ফাইল এত বড় যে পুরোটা পড়া যায় না। ই-বুকের জন্য: নাম ও লেখক। PDF-এর জন্য: পৃষ্ঠা।</p></details>
+<details id="media-block"><summary>মিডিয়া, ভিডিও ও অডিও</summary><p>অডিও ও ভিডিও ফাইলের জন্য ট্যাগ (নাম, শিল্পী, অ্যালবাম, বছর, ট্র্যাক, ধারা, পরিচালক, সিরিজ, সিজন, পর্ব, সময়কাল) এবং প্রতিটি ধরনের প্রথম ট্র্যাক (ভিডিও: রেজোলিউশন, প্রতি সেকেন্ডে ফ্রেম, কোডেক, বিটরেট; অডিও: কোডেক, চ্যানেল, স্যাম্পল রেট, বিটরেট) বাকি তথ্যের কিছুক্ষণ পরে যোগ হয়, যখন মিডিয়া ইঞ্জিন পড়া শেষ করে। উইন্ডো এর জন্য কখনো অপেক্ষা করে না। নেটওয়ার্ক স্ট্রিমে ট্র্যাকের সারি থাকে না।</p></details>
+<details id="related-files"><summary>সম্পর্কিত ফাইল</summary><p>এই ফাইলের পাশে থাকা এবং এর সঙ্গে সম্পর্কিত ফাইলগুলো নাম ধরে তালিকাভুক্ত হয়: সাবটাইটেল, গানের কথা, প্রচ্ছদ ও মেটাডেটা। এমন কিছু না থাকলে ব্লকটি দেখা যায় না।</p></details>
+<details id="copy-close"><summary>কপি করুন ও বন্ধ করুন</summary><p>কপি করুন পুরো লেখা ক্লিপবোর্ডে রাখে এবং স্ট্যাটাস বারে ক্লিপবোর্ডে কপি হয়েছে লেখা আসে; অন্য কোনো প্রোগ্রাম ক্লিপবোর্ড ধরে রাখলে সেটিও জানানো হয় এবং আপনি আবার কপি করুন চাপতে পারেন। Ctrl+C দিয়ে নির্বাচিত অংশ কপি করাও কাজ করে। কিছু পড়া না গেলে বাক্সে ফাইলের তথ্য পড়া যায়নি। লেখা থাকে। বোতামগুলোর পাশে স্ট্যাটাস বার ফাইলের নাম দেখায়। অন্য ফাইলে গেলে এই উইন্ডো বদলায় না: নতুন ফাইলের জন্য আবার i-তে ক্লিক করুন।</p></details>
+    <p><a href="settings.html">সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

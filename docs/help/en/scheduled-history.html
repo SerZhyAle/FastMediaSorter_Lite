@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Scheduled Operations History - Fast Media Sorter</title>
+  <title>Scheduled operations history - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Scheduled Operations History</h1>
+  <h1 id="title">Scheduled operations history</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Scheduled Operations History.</p>
+    <p>Shows the recent runs and notes of scheduled file operations as recorded in the journal. It opens from &#39;History..&#39; on the &#39;Scheduled file operations&#39; page of the Share Manager settings.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled Operations History">
-    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled Operations History">
+    <img class="shot light" src="scheduled-history-light.png" alt="Scheduled operations history">
+    <img class="shot dark" src="scheduled-history-dark.png" alt="Scheduled operations history">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Read the list: Time, Operation, Startup and Result.</li><li>Widen the window if a result is long.</li><li>Press &#39;Refresh&#39; to read the journal again.</li><li>Press &#39;Clear history&#39; and confirm to empty it.</li><li>Press &#39;Close&#39;.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="columns"><summary>Columns</summary><p>Time, Operation (its name), Startup and Result. Startup is On schedule, Manual, Run all or Late, and stays empty for a note. The window reads the latest 200 journal entries when it opens and on &#39;Refresh&#39;; it does not update by itself.</p></details>
+<details id="results"><summary>Results of a run</summary><p>&#39;Completed: N file(s)&#39;, with &#39;, skipped: M&#39; when some were left out and &#39;(to the Recycle Bin)&#39; for deletions. &#39;With errors: N; completed: M file(s)&#39; followed by the first cause, such as a file in use, no access, a file not found or changed, or a full disk. &#39;Stopped: ..&#39; when a wall ends a run, for example an unreachable folder, a resource without a stored password or with an unconfirmed server key, or a device that is offline. &#39;Not started: ..&#39; when the definition is refused, &#39;Skipped: ..&#39; and &#39;Interrupted&#39;. The journal keeps codes, not raw error text, so the wording follows the current language.</p></details>
+<details id="notes"><summary>Notes</summary><p>A row without Startup is a note: &#39;Skipped: the run time (..) passed while the manager was closed&#39;, &#39;Running late: the run was due at ..&#39;, &#39;Refused: this operation is already running or waiting in the queue&#39; and &#39;Resumed: the cause of the stop is gone&#39;.</p></details>
+<details id="clear"><summary>Clear history</summary><p>Asks &#39;Clear the history of scheduled operations? The operations and their schedules do not change.&#39; with No as the default answer. It empties this journal only; the operations and their schedules stay. The button is disabled while the history is empty.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

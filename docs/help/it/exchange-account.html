@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account - Fast Media Sorter</title>
+  <title>Account di scambio - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account</h1>
+  <h1 id="title">Account di scambio</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account.</p>
+    <p>Fa accedere questo PC come dispositivo di un account su un Media Exchange Server. Si apre dal pulsante &#171;Accedi..&#187; nella pagina Account di scambio delle impostazioni di Share Manager e da &#171;Pubblica tramite un server di scambio..&#187;, che lo apre con l&#39;opzione di pubblicazione gi&#224; spuntata.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-light.png" alt="Exchange Account">
-    <img class="shot dark" src="exchange-account-dark.png" alt="Exchange Account">
+    <img class="shot light" src="exchange-account-light.png" alt="Account di scambio">
+    <img class="shot dark" src="exchange-account-dark.png" alt="Account di scambio">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Se vuoi, incolla, apri o scansiona una stringa di connessione: compila il server e il login.</li><li>Premi &#171;Controlla il certificato&#187;; se il sistema non lo considera attendibile e la stringa non lo conteneva, confronta l&#39;impronta con quella dell&#39;operatore e premi &#171;Considera attendibile questo certificato&#187;.</li><li>Inserisci il login e la password oppure il codice di abbinamento.</li><li>Imposta il nome del dispositivo e le opzioni.</li><li>Premi &#171;Accedi&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Stringa di connessione</summary><p>&#171;Stringa di connessione (facoltativa):&#187; accetta una stringa che incolli con &#171;Incolla&#187;, carichi da un file .fmsexch o da un&#39;immagine QR con &#171;Apri file..&#187; oppure leggi con &#171;Scansiona con la fotocamera..&#187;. Compila solo il server e il login; nulla si collega finch&#233; non premi &#171;Accedi&#187;. Una stringa con un&#39;impronta fissa quel certificato, quindi non c&#39;&#232; nulla da confrontare a mano. Una stringa con un invito porta la finestra alla registrazione. Una stringa inutilizzabile riceve un rifiuto di una riga.</p></details>
+<details id="certificate"><summary>Server e certificato</summary><p>&#171;Controlla il certificato&#187; si collega a &#171;Server (host:porta):&#187; e mostra &#171;Impronta del certificato del server:&#187;. Se il sistema considera attendibile il certificato, non serve fissare nulla. Altrimenti confronta l&#39;impronta con quella che ti ha dato l&#39;operatore del server e premi &#171;Considera attendibile questo certificato&#187;; solo questo pulsante accetta un certificato che il sistema non conosce. Cambiare il testo del server fa dimenticare il controllo. Invio non fa nulla finch&#233; un certificato non &#232; considerato attendibile, cos&#236; nessuna password arriva a un server che nessuno ha garantito.</p></details>
+<details id="login-and-secret"><summary>Login, password e codice di abbinamento</summary><p>Inserisci &#171;Utente:&#187; e scegli &#171;Accedi con la password&#187; (&#171;Password:&#187;, con &#171;Mostra la password&#187;) oppure &#171;Accedi con un codice di un altro dispositivo&#187; (&#171;Codice di abbinamento:&#187;, emesso da un altro dispositivo dello stesso account). Il campo viene svuotato nel momento in cui il suo valore viene inviato, qualunque sia l&#39;esito; il dispositivo conserva solo un token, mai la password.</p></details>
+<details id="registration"><summary>Registrazione tramite invito</summary><p>Quando la stringa contiene un invito, le due scelte di accesso lasciano il posto alla registrazione: &#171;La password dell&#39;account:&#187; e &#171;Password di nuovo:&#187; impostano la nuova password, che deve rispettare la regola mostrata (almeno 10 caratteri con una lettera latina maiuscola, una minuscola e una cifra), e il pulsante diventa &#171;Crea l&#39;account&#187;.</p></details>
+<details id="device-options"><summary>Nome del dispositivo e opzioni</summary><p>&#171;Nome di questo dispositivo:&#187; (fino a 64 caratteri) parte dal nome del computer. &#171;Pubblica subito le mie cartelle condivise su questo server&#187; &#232; disattivata, a meno che la finestra non sia stata aperta da &#171;Pubblica tramite un server di scambio..&#187;; una volta attivata, ogni dispositivo del tuo account pu&#242; aprire tutte le tue cartelle condivise, perch&#233; la condivisione ha un solo login. L&#39;ultima opzione avvia Share Manager quando accedi a Windows (disattivata per impostazione predefinita), cos&#236; gli altri dispositivi possono trasmettere a questo PC.</p></details>
+<details id="one-server"><summary>Un server alla volta</summary><p>Un dispositivo appartiene a un solo server. Accedere a un altro server chiede se lasciare quello attuale, e la pubblicazione sul vecchio server si interrompe. Dopo un contatto non riuscito, il pulsante &#171;Perch&#233; non si connette?..&#187; apre il test di connessione.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

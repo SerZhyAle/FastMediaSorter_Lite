@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection String - Fast Media Sorter</title>
+  <title>Cadena de conexi&#243;n al servidor de intercambio - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection String</h1>
+  <h1 id="title">Cadena de conexi&#243;n al servidor de intercambio</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection String.</p>
+    <p>Esta ventana crea la cadena de conexi&#243;n con la que otros dispositivos encuentran este servidor de intercambio y comprueban su certificado. Se abre con &#171;Cadena de conexi&#243;n y c&#243;digo QR..&#187; en los ajustes del servidor de intercambio o en la bienvenida del servidor que aparece en el primer inicio. La ventana no cambia ning&#250;n ajuste.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connection-string-light.png" alt="Connection String">
-    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Connection String">
+    <img class="shot light" src="exchange-connection-string-light.png" alt="Cadena de conexi&#243;n al servidor de intercambio">
+    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Cadena de conexi&#243;n al servidor de intercambio">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Comprueba que el servidor tenga un certificado y que la direcci&#243;n para los clientes est&#233; definida.</li><li>Abre la ventana: la cadena aparece de inmediato.</li><li>Si quieres, escribe un nombre de servidor y un usuario; la cadena se vuelve a crear un instante despu&#233;s de que dejes de escribir.</li><li>Copia la cadena, gu&#225;rdala en un archivo, muestra su c&#243;digo QR o copia el enlace de inicio de sesi&#243;n.</li><li>Entrega el resultado a la otra persona y pasa la contrase&#241;a de la cuenta por separado.</li><li>Pulsa &#171;Cerrar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Cu&#225;ndo est&#225; activo el bot&#243;n</summary><p>El bot&#243;n &#171;Cadena de conexi&#243;n y c&#243;digo QR..&#187; solo est&#225; activo cuando el servidor tiene un certificado y la direcci&#243;n para los clientes est&#225; definida. Con la direcci&#243;n vac&#237;a el bot&#243;n sigue desactivado y la indicaci&#243;n que hay debajo dice &#171;Define primero la direcci&#243;n para los clientes: sin ella no se puede crear la cadena de conexi&#243;n.&#187; Dentro de la ventana los botones siguen desactivados mientras no haya cadena.</p></details>
+<details id="name-and-login"><summary>Nombre del servidor y usuario</summary><p>&#171;Nombre del servidor (opcional):&#187; admite hasta 64 caracteres y se guarda en la cadena como el nombre del servidor. &#171;Para este usuario (opcional):&#187; admite de 3 a 64 caracteres (a-z, 0-9, punto, guion bajo, guion) y se rellena en el formulario de inicio de sesi&#243;n del dispositivo que usa la cadena. Una contrase&#241;a nunca entra en la cadena.</p></details>
+<details id="connection-string"><summary>Cadena de conexi&#243;n</summary><p>El cuadro de solo lectura &#171;Cadena de conexi&#243;n:&#187; muestra el resultado: la direcci&#243;n para los clientes, la huella del certificado y el nombre y el usuario opcionales. El dispositivo que recibe la cadena conf&#237;a en la huella que contiene, as&#237; que nadie tiene que compararla a mano.</p></details>
+<details id="copy-and-save"><summary>Copiar y guardar</summary><p>&#171;Copiar la cadena&#187; la pone en el portapapeles como texto normal, porque no es un secreto, y la l&#237;nea de debajo dice &#171;La cadena se ha copiado.&#187; &#171;Guardar en un archivo..&#187; escribe un archivo de texto .fmsexch (nombre sugerido exchange-server.fmsexch) y muestra su ruta; el otro dispositivo lo lee con &#171;Abrir archivo..&#187; en su ventana de la cuenta de intercambio. Si el portapapeles est&#225; ocupado o no se puede escribir el archivo, una l&#237;nea lo indica.</p></details>
+<details id="qr-and-link"><summary>C&#243;digo QR y enlace de inicio de sesi&#243;n</summary><p>&#171;Mostrar el c&#243;digo QR&#187; abre una imagen de la misma cadena para escanearla; nombra un servidor y no da acceso a nada. &#171;Copiar el enlace de inicio de sesi&#243;n&#187; aparece solo cuando este servidor ofrece un cliente web; copia un enlace para el navegador que contiene la misma cadena.</p></details>
+<details id="refusals"><summary>Si no se puede crear la cadena</summary><p>Una l&#237;nea en el color de advertencia indica la causa: el nombre o el usuario est&#225; fuera de los l&#237;mites; el servidor no tiene certificado (inicia el servidor una vez); o el servidor de intercambio no respondi&#243;. Corrige la causa y la cadena se vuelve a crear. &#171;Cerrar&#187; termina la ventana; el nombre y el usuario no se guardan.</p></details>
+    <p><a href="share-settings.html">Ajustes del gestor</a> · <a href="sftp-settings.html">Ajustes de uso compartido SFTP</a> · <a href="exchange-server-settings.html">Ajustes del servidor de intercambio</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

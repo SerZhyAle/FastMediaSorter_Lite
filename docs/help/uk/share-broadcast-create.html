@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Live Broadcast - Fast Media Sorter</title>
+  <title>Створити трансляцію - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Create Live Broadcast</h1>
+  <h1 id="title">Створити трансляцію</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Live Broadcast.</p>
+    <p>Налаштовує одну трансляцію до її створення: назву, термін життя та вихід за межі локальної мережі. Діалог відкривається з вікна трансляцій кнопкою &#171;Створити трансляцію..&#187; для вибраного файла чи папки. Нічого не створюється й не надсилається, доки ви не натиснете &#171;Транслювати&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcast-create-light.png" alt="Create Live Broadcast">
-    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Create Live Broadcast">
+    <img class="shot light" src="share-broadcast-create-light.png" alt="Створити трансляцію">
+    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Створити трансляцію">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Перевірте шлях у першому рядку (&#171;Папка:&#187; або &#171;Файл:&#187;).</li><li>За потреби змініть &#171;Назва каналу:&#187;; спершу це ім&#39;я папки чи файла.</li><li>Виберіть &#171;Термін дії:&#187;.</li><li>Для папки ввімкніть &#171;Включаючи підпапки&#187;, якщо вони потрібні.</li><li>Залиште або зніміть &#171;Також через інтернет&#187;.</li><li>Натисніть &#171;Транслювати&#187; (Enter) або &#171;Скасувати&#187; (Escape).</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="title-lifetime"><summary>Назва й термін дії</summary><p>Назва каналу - те, що показує список трансляцій. Термін дії: 24 години (за замовчуванням), 1 година, 7 днів або &#171;До відкликання&#187; - без кінцевої дати, трансляція живе, доки ви не відкличете її у вікні трансляцій.</p></details>
+<details id="subfolders"><summary>Включаючи підпапки</summary><p>Показується лише для папки й за замовчуванням вимкнено. Визначає, чи потраплять у трансляцію файли з вкладених папок.</p></details>
+<details id="internet"><summary>Також через інтернет</summary><p>Увімкнено, якщо в налаштуваннях роздачі експорт не обмежено локальною мережею. Коли прапорець стоїть, посилання містить поряд із локальною адресою ще й адреси цього ПК в інтернеті (IPv6 і з прокинутим портом), якщо вони відомі. Увімкнення перемикає термін дії з 24 годин на 1 годину (можна повернути) і показує червоне попередження: HTTP-трафік не шифрується, вміст і токен трансляції передаються у відкритому вигляді. Будь-хто, у кого є посилання, може читати файли трансляції, доки термін не минув або її не відкликано. Зніміть прапорець, щоб трансляція лишалася в локальній мережі.</p></details>
+<details id="answer"><summary>Транслювати й Скасувати</summary><p>&#171;Транслювати&#187; лише повертає ваш вибір вікну трансляцій, а воно створює трансляцію й копіює її посилання. &#171;Скасувати&#187; закриває діалог, нічого не створюючи.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

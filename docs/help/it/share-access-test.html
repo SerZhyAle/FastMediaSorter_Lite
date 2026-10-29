@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>Verifica dell&#39;accesso da internet - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">Verifica dell&#39;accesso da internet</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>Verifica da questo PC se l&#39;indirizzo condiviso risponde come un server SFTP. Si apre dal pulsante &#171;Verifica l&#39;accesso da internet&#187; della finestra principale e mostra l&#39;indirizzo verificato, un verdetto e una spiegazione.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="Verifica dell&#39;accesso da internet">
+    <img class="shot dark" src="share-access-test-dark.png" alt="Verifica dell&#39;accesso da internet">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Apri la finestra; mostra l&#39;indirizzo e avvia subito la verifica.</li><li>Attendi il titolo del risultato.</li><li>Leggi la riga di dettaglio sotto di esso.</li><li>Se il risultato non &#232; conclusivo, ripeti la verifica dal telefono con il Wi-Fi spento e i dati mobili attivi.</li><li>Premi &#171;Chiudi&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>Indirizzo verificato</summary><p>&#171;Indirizzo verificato: ..&#187; mostra host e porta. Mentre la verifica &#232; in corso, la finestra scrive &#171;Prova di ..&#187;. Se non &#232; noto nessun indirizzo il risultato &#232; &#171;Nessun indirizzo internet ancora.&#187;; un indirizzo malformato d&#224; &#171;Indirizzo non valido.&#187;</p></details>
+<details id="verdicts"><summary>Verdetti</summary><p>&#171;Server SFTP raggiungibile&#187; - la porta ha risposto con un banner SFTP. &#171;Porta aperta, ma nessuna risposta SFTP&#187; - qualcosa &#232; in ascolto sulla porta, ma non &#232; il nostro programma; controlla che la regola del router porti a questo PC e alla porta della condivisione. Una connessione chiusa prima della risposta pu&#242; indicare il limite di connessioni; riprova. Nessuna risposta da questo PC significa che il router potrebbe bloccare dall&#39;interno il proprio indirizzo.</p></details>
+<details id="inconclusive"><summary>Perch&#233; un risultato pu&#242; non essere conclusivo</summary><p>La richiesta esce da questo PC verso l&#39;indirizzo esterno del router e torna subito all&#39;interno, quindi verifica la regola di inoltro e non se il provider lascia entrare le connessioni dall&#39;esterno. Solo il telefono pu&#242; chiarirlo: spegni il suo Wi-Fi, lascia attivi i dati mobili e apri il codice QR. Se ancora non riesce a connettersi, configura l&#39;inoltro delle porte con il pulsante &#171;Come configurare l&#39;accesso da internet&#187;.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

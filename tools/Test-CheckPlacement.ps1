@@ -16,7 +16,7 @@
     check that is not a file here. Comments are dropped with the PowerShell tokenizer first: a runner
     that only talks about a check does not run it.
 
-    Classes: agent-closure (tools\Run-AllTests.ps1, which CLAUDE.md makes the step before "done"),
+    Classes: agent-closure (measured fast checks in tools\Invoke-Tests.ps1 before "done"),
     release (tools\Release.ps1, before the tag), build (where the artifact is produced), hand-run (an
     opt-in switch or a person). Every record is "judged"; a "seeded" one would need rule 7's open-owner
     check, which this script does not implement, so it refuses one.

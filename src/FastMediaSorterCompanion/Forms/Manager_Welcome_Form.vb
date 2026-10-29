@@ -140,7 +140,7 @@ Friend NotInheritable Class Manager_Welcome_Form
     Private Sub BuildStep(panel As FlowLayoutPanel, kind As ManagerWelcomeStep)
         Select Case kind
             Case ManagerWelcomeStep.Introduction
-                Explain(panel, Localization.TF("{0} управляет сервером папок для телефона и SFTP-клиентов.", ProductNames.ShareManager),
+                Explain(panel, Localization.TF("{0}: локальная служба раздачи и расписаний. Она раздаёт папки телефонам и SFTP-клиентам, выполняет операции по расписанию и подключает этот ПК к учётной записи обмена.", ProductNames.ShareManager),
                     Localization.T("Вы выбираете папки, а телефон получает доступ по QR-коду."),
                     Localization.T("Включите сервер, выберите первую папку и отсканируйте код. Закрытие окна оставляет программу в трее; двойной щелчок по значку открывает окно."),
                     Localization.T("Окно открывается из трея или кнопкой менеджера в просмотрщике. Повторить эти шаги: Настройки - Общие - Приветствие.."))

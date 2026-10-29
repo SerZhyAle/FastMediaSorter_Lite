@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>Relat&#243;rio da opera&#231;&#227;o - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">Relat&#243;rio da opera&#231;&#227;o</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>Lista o que aconteceu com cada arquivo da &#250;ltima opera&#231;&#227;o em lote (mover, copiar, excluir ou desfazer) e por que algo foi ignorado ou falhou. Nunca se abre sozinho: clique na linha do relat&#243;rio no rodap&#233; do painel de miniaturas (F3) depois de uma execu&#231;&#227;o. Se a execu&#231;&#227;o n&#227;o foi limpa, a linha termina com &#171;clique para ver os detalhes&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="Relat&#243;rio da opera&#231;&#227;o">
+    <img class="shot dark" src="batch-report-dark.png" alt="Relat&#243;rio da opera&#231;&#227;o">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Execute uma opera&#231;&#227;o sobre v&#225;rios arquivos no painel de miniaturas.</li><li>Leia a linha de resumo no rodap&#233; do painel.</li><li>Clique na linha para abrir esta janela.</li><li>Olhe o topo da lista: as falhas v&#234;m primeiro.</li><li>Selecione linhas e use &#171;Copiar&#187; para pegar os caminhos delas ou &#171;Mostrar no Explorador de Arquivos&#187; para achar um arquivo.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>A linha de resumo</summary><p>A linha come&#231;a com o resultado: &#171;Arquivos movidos: 5&#187;, &#171;Arquivos copiados: 5&#187;, &#171;Arquivos exclu&#237;dos: 5&#187;, &#171;Arquivos restaurados: 5&#187; ou &#171;Opera&#231;&#245;es conclu&#237;das: 5&#187;. Outras partes, cada uma com a sua contagem, aparecem s&#243; quando a contagem n&#227;o &#233; zero: &#171;ignorados&#187;, &#171;erros&#187;, &#171;opera&#231;&#245;es sem desfazer&#187;, &#171;exclu&#237;dos permanentemente, n&#227;o &#233; poss&#237;vel restaurar&#187; e, quando a execu&#231;&#227;o para antes, &#171;interrompido, sem conex&#227;o com a pasta - n&#227;o iniciado&#187; (tr&#234;s conex&#245;es que falham seguidas a param) ou &#171;cancelado - n&#227;o iniciado&#187;.</p></details>
+<details id="list"><summary>A lista</summary><p>Colunas: Arquivo, Estado e Detalhes. As piores linhas v&#234;m primeiro: com falha, depois n&#227;o iniciadas, depois ignoradas, depois conclu&#237;das; dentro de um grupo os arquivos mant&#234;m a ordem da execu&#231;&#227;o. A dica de uma linha mostra o caminho completo. Os detalhes d&#227;o um motivo claro para uma falha, a pasta de destino para um arquivo conclu&#237;do, &#171;salvo como&#187; e o novo nome quando o antigo estava ocupado, e &#171;Exclu&#237;do permanentemente - n&#227;o &#233; poss&#237;vel desfazer&#187; para uma exclus&#227;o que pulou a Lixeira.</p></details>
+<details id="states"><summary>Estados e motivos de omiss&#227;o</summary><p>Estados: &#171;pronto&#187;, &#171;Erro&#187;, &#171;ignorado&#187;, &#171;n&#227;o iniciado&#187;. Um arquivo ignorado diz por qu&#234;: &#171;j&#225; nesta pasta&#187;, &#171;o arquivo n&#227;o est&#225; mais no disco&#187;, &#171;os arquivos dentro do arquivo compactado n&#227;o s&#227;o modificados&#187;, &#171;o mesmo nome j&#225; existe entre os arquivos selecionados&#187;, &#171;o recurso &#233; somente leitura&#187;, &#171;este &#233; o mesmo arquivo&#187; ou &#171;nome j&#225; em uso na pasta de destino&#187;. Um arquivo n&#227;o iniciado diz &#171;inicializa&#231;&#227;o n&#227;o ocorreu: opera&#231;&#227;o interrompida&#187;.</p></details>
+<details id="copy-show"><summary>Mostrar no Explorador de Arquivos, Copiar, Fechar</summary><p>&#171;Mostrar no Explorador de Arquivos&#187; fica ativo quando h&#225; uma linha selecionada; abre uma janela de pasta com o primeiro arquivo selecionado em destaque, ou a pasta se o arquivo foi movido. &#171;Copiar&#187; (tamb&#233;m Ctrl+C) coloca na &#225;rea de transfer&#234;ncia os caminhos completos das linhas selecionadas, um por linha, ou de todas as linhas quando nenhuma est&#225; selecionada: um jeito r&#225;pido de passar adiante a lista de arquivos com problema. &#171;Fechar&#187; encerra o relat&#243;rio.</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

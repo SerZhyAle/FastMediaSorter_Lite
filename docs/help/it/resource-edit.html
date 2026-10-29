@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>Modifica risorsa - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">Modifica risorsa</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>Il modulo di un server o di una cartella di rete salvati. &#171;Aggiungi..&#187; nell&#39;elenco delle risorse lo apre vuoto con il titolo &#171;Nuova risorsa&#187;, &#171;Modifica..&#187; lo apre compilato come &#171;Modifica risorsa&#187; e un indirizzo sftp:// digitato nel campo della cartella lo apre precompilato.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="Modifica risorsa">
+    <img class="shot dark" src="resource-edit-dark.png" alt="Modifica risorsa">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Scegli il tipo: server SFTP o cartella di rete (SMB).</li><li>Dai un nome alla risorsa e inserisci l&#39;indirizzo del server e la porta, oppure il percorso di rete.</li><li>Inserisci il nome utente e la password.</li><li>Imposta la cartella sul server e attiva la sola lettura se l&#236; non deve cambiare nulla.</li><li>Premi &#171;Salva&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>Tipo</summary><p>&#171;Tipo:&#187; si sceglie quando si crea la risorsa: &#171;Server SFTP&#187; (porta 22, cartella /) o &#171;Cartella di rete (SMB)&#187;. Per una risorsa salvata l&#39;elenco &#232; disattivato, perch&#233; la password salvata e la chiave del server appartengono a un solo tipo. Per SMB il campo dell&#39;indirizzo si chiama &#171;Cartella di rete:&#187; e accetta un percorso come \\server\folder; i campi della porta e della cartella valgono solo per SFTP.</p></details>
+<details id="address"><summary>Nome, server e porta</summary><p>&#171;Nome:&#187; &#232; ci&#242; che mostra l&#39;elenco; se &#232; vuoto, si usa l&#39;indirizzo del server. &#171;Server:&#187; &#232; un nome o un indirizzo IP e &#171;Porta:&#187; un numero da 1 a 65535. Cambiare il server o la porta elimina gli altri indirizzi arrivati con una risorsa importata, cos&#236; una password salvata non va mai a un indirizzo che non hai inserito tu.</p></details>
+<details id="credentials"><summary>Utente e password</summary><p>&#171;Utente:&#187; e &#171;Password:&#187;. La password viene salvata cifrata per il tuo account Windows; l&#39;elenco contiene solo un riferimento ad essa. Per una risorsa salvata il campo &#232; vuoto con il suggerimento &#171;Vuoto - mantieni la password salvata&#187;: scrivi qualcosa solo per sostituirla. &#171;Mostra la password&#187; all&#39;inizio &#232; disattivato. Una nuova risorsa richiede una password.</p></details>
+<details id="folder-readonly"><summary>Cartella e sola lettura</summary><p>&#171;Cartella sul server:&#187; &#232; la cartella che il programma apre per prima, un percorso che inizia con /. &#171;Sola lettura (non modificare nulla sul server)&#187; fa s&#236; che il programma tratti la risorsa come di sola lettura: nessuno spostamento o copia al suo interno, nessuna eliminazione o rinomina.</p></details>
+<details id="server-key"><summary>Chiave del server</summary><p>&#171;Chiave del server:&#187; mostra l&#39;impronta ricordata per questo server, oppure dice che comparir&#224; alla prima connessione, dove la confermi. &#171;Dimentica la chiave del server..&#187; compare solo quando una chiave &#232; ricordata. Chiede prima conferma (la risposta predefinita &#232; No) e spiega: se il server &#232; stato reinstallato &#232; normale, altrimenti qualcuno potrebbe impersonarlo. Cancella solo la chiave: la connessione successiva mostra la nuova impronta e chiede di nuovo.</p></details>
+<details id="save-errors"><summary>Salva</summary><p>&#171;Salva&#187; controlla i campi e indica il primo problema in rosso sotto di essi: indirizzo, porta, cartella, nome utente o password mancante. &#171;Annulla&#187; chiude il modulo senza modifiche.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

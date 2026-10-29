@@ -68,7 +68,7 @@ $glyphIds = @(
     # its outlined state variant while free (a line-drawn tilted pin read as a second pencil next to action.edit).
     'action.pin', 'action.pin--off',
     'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.disk-container', 'content.folder', 'content.image',
-    'content.video', 'device.phone', 'view.screen',
+    'content.video', 'content.document', 'device.phone', 'view.screen',
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',
     'media.play', 'media.previous', 'media.random', 'media.slideshow', 'media.volume',
     'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent', 'source.resource',

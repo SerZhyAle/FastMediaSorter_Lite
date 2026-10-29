@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>खाता सीमाएँ - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">खाता सीमाएँ</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>आपके चलाए Media Exchange Server के एक खाते की अलग-अलग सीमाएँ तय करता है; 0 छोड़ा गया मान सर्वर के डिफ़ॉल्ट का पालन करता है। यह Share Manager की सेटिंग के Media Exchange Server पेज पर खातों की सूची के नीचे के सीमाएँ.. बटन से खुलती है, जो खाता चुनने पर दिखता है। शीर्षक में खाते का नाम होता है: खाता सीमाएँ: &lt;लॉगिन&gt;।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="खाता सीमाएँ">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="खाता सीमाएँ">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>खाता चुनें और सीमाएँ.. दबाएँ।</li><li>जिस सीमा को बदलना है उसके लिए संख्या डालें, और सर्वर के डिफ़ॉल्ट के लिए 0 छोड़ें।</li><li>सहेजें दबाएँ।</li><li>परिणाम की पंक्ति पढ़ें: खाते &lt;लॉगिन&gt; की सीमाएँ सहेजी गईं।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>डिवाइस और संसाधन</summary><p>अधिकतम डिवाइस (0 = डिफ़ॉल्ट) तय करता है कि खाते में कितने डिवाइस साइन इन हो सकते हैं। अधिकतम प्रकाशित संसाधन (0 = डिफ़ॉल्ट) तय करता है कि खाता सर्वर पर कितने साझा फ़ोल्डर और अन्य संसाधन प्रकाशित कर सकता है।</p></details>
+<details id="broadcasts"><summary>प्रसारण</summary><p>अधिकतम प्रसारण (0 = डिफ़ॉल्ट) पूरे खाते के प्रसारणों की सीमा तय करता है, और प्रति डिवाइस अधिकतम प्रसारण (0 = डिफ़ॉल्ट) तय करता है कि उसका एक डिवाइस कितने शुरू कर सकता है।</p></details>
+<details id="clipboard"><summary>क्लिपबोर्ड सीमा</summary><p>क्लिपबोर्ड सीमा, MB (0 = डिफ़ॉल्ट 5 GB) सर्वर पर खाते के क्लिपबोर्ड में भेजा जा सकने वाला सबसे बड़ा मान तय करती है, पूरे मेगाबाइट में। छोटी इकाइयों में सहेजी गई सीमा, उदाहरण के लिए 512 KB, 0 दिखती है और जब तक आप इस फ़ील्ड को नहीं छूते, अपना सटीक आकार बनाए रखती है।</p></details>
+<details id="save"><summary>सहेजें और रद्द करें</summary><p>सहेजें खाते की अपनी सीमाओं को एक साथ बदल देता है: 0 से बड़ी हर संख्या सीमा बन जाती है, हर 0 का अर्थ सर्वर का डिफ़ॉल्ट है, और पाँच शून्य खाते के सभी अपने मान हटा देते हैं। रद्द करें कुछ नहीं बदलता। यदि सर्वर कोई मान अस्वीकार करे, तो परिणाम की पंक्ति कारण बताती है, उदाहरण के लिए: सीमा की अनुमति नहीं है: यह सर्वर द्वारा स्वीकार की जाने वाली सीमा के भीतर एक पूर्णांक होना चाहिए।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

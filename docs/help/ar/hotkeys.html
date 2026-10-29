@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Keyboard Shortcuts - Fast Media Sorter</title>
+  <title>اختصارات لوحة المفاتيح - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Keyboard Shortcuts</h1>
+  <h1 id="title">اختصارات لوحة المفاتيح</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Keyboard Shortcuts.</p>
+    <p>قائمة بكل إجراء في العارض يمكن تغيير مفتاحه، مع الاختصار الذي يستجيب له حاليًا. تُفتح من الإعدادات، صفحة الملفات والنظام، بالزر إعداد.. في صف اختصارات لوحة المفاتيح. تعدّل النافذة نسخة عمل: لا يصل أي شيء إلى ملفك الشخصي حتى تضغط موافق.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="hotkeys-light.png" alt="Keyboard Shortcuts">
-    <img class="shot dark" src="hotkeys-dark.png" alt="Keyboard Shortcuts">
+    <img class="shot light" src="hotkeys-light.png" alt="اختصارات لوحة المفاتيح">
+    <img class="shot dark" src="hotkeys-dark.png" alt="اختصارات لوحة المفاتيح">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>افتح الإعدادات، وانتقل إلى الملفات والنظام، واضغط إعداد.. في صف اختصارات لوحة المفاتيح.</li><li>حدّد إجراءً في القائمة.</li><li>انقر على الحقل الموجود أسفل القائمة واضغط الاختصار الجديد.</li><li>إذا كان إجراء آخر يملكه بالفعل، فاختر تبديل الاختصارات أو إزالته من ذلك الإجراء أو إلغاء.</li><li>كرّر ذلك مع إجراءات أخرى؛ واستخدم إعادة تعيين أو إزالة الاختصار أو إعادة تعيين الكل عند الحاجة.</li><li>اضغط موافق للاحتفاظ بالتغييرات، أو إلغاء لتجاهلها كلها.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="shortcut-list"><summary>قائمة الإجراء والاختصار</summary><p>يمثل كل صف إجراءً واحدًا واختصاره الرئيسي؛ والإجراء الذي لا مفتاح له يظهر فيه غير معيَّن. تظهر خانات المجلدات العشر باسم النقل إلى المجلد 1..0 والنسخ إلى المجلد 1..0 (مفاتيح الأرقام تنقل، وShift مع رقم من الصف العلوي ينسخ). تستجيب بعض الإجراءات أيضًا لمفاتيح إضافية أصلية (الملف التالي يستجيب أيضًا لـ Space وPageDown). تعرض القائمة المفتاح الرئيسي فقط، ولكن بمجرد أن تعطي الإجراء اختصارًا جديدًا تتوقف جميع مفاتيحه الأصلية القديمة عن العمل. يذكر النص الموجود فوق القائمة مفاتيح ثابتة للمستندات (العجلة وPgUp/PgDn وHome/End والأسهم) ليست ضمن القائمة.</p></details>
+<details id="record-shortcut"><summary>تسجيل اختصار</summary><p>حدّد صفًا، ثم انقر على الحقل الموجود أسفل القائمة (أو انقر نقرًا مزدوجًا على الصف) واضغط المفاتيح، مع Ctrl أو Shift أو Alt إن شئت. يسجّل الحقل الاختصار كاملًا دفعة واحدة، ولا يُعدّ مفتاح التعديل وحده اختصارًا. يخرج Esc من الحقل دون تسجيل أي شيء. يظهر التغيير في القائمة فورًا، لكنه لا يزال في نسخة العمل فقط.</p></details>
+<details id="reserved-keys"><summary>المفاتيح التي لا يمكن تعيينها</summary><p>المفاتيح F1 وF10 وF11 وEsc ومفاتيح Windows ومفتاح القائمة وAlt+Tab وAlt+F4 وCtrl+Alt+Delete تخص Windows أو البرنامج. وعند الضغط على أحدها تظهر الرسالة: هذا الاختصار محجوز للنظام أو للبرنامج ولا يمكن تعيينه. ولا يتغير شيء.</p></details>
+<details id="conflicts"><summary>اختصار مأخوذ بالفعل</summary><p>يذكر السؤال المالك: الاختصار X معيَّن بالفعل للإجراء الآخر. يعطي تبديل الاختصارات ذلك الإجراء الاختصار الذي كان للإجراء الحالي (وقد لا يكون له أي اختصار). أما إزالته من ذلك الإجراء فيتركه غير معيَّن ويعطيك الاختصار. ولا يغيّر إلغاء أي شيء.</p></details>
+<details id="reset-remove"><summary>إعادة تعيين، وإزالة الاختصار، وإعادة تعيين الكل</summary><p>تعيد إعادة تعيين الإجراء المحدد إلى مفتاحه الأصلي. وتترك إزالة الاختصار الإجراء بلا أي مفتاح، فيتوقف مفتاحه الأصلي عن العمل أيضًا؛ استخدمها لتعطيل مفتاح. أما إعادة تعيين الكل فتسأل: إعادة كل الاختصارات إلى قيمها الافتراضية؟ يمسح إعادة إلى الافتراضي كل تغييراتك في النافذة؛ ويبقيها إلغاء.</p></details>
+<details id="save-cancel"><summary>موافق وإلغاء</summary><p>يحفظ موافق الخريطة كاملة في الملف الشخصي ويستخدمها العارض فورًا. ويغلق إلغاء النافذة ويترك الملف الشخصي كما كان تمامًا. أما مفاتيح الفيديو والصوت (الإيقاف المؤقت وكتم الصوت ومستوى الصوت والتنقل داخل المقطع والسرعة والتقدم إطارًا بإطار والمسارات) فتعمل على الوسائط التي يجري تشغيلها.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

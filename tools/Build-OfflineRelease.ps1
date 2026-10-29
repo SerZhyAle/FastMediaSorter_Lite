@@ -209,6 +209,11 @@ if (-not (Test-Path $modernExe)) {
 Get-ChildItem $modernOut -File |
     Where-Object { $_.Extension -notin ".pdb", ".xml" } |
     ForEach-Object { Copy-Item $_.FullName (Join-Path $stageDir $_.Name) -Force }
+# Specification 275 section 9.2: the WebView2 loader sits in its own subfolder, not beside the exe.
+$loader = Join-Path $modernOut "webview2\win-x64\WebView2Loader.dll"
+if (-not (Test-Path -LiteralPath $loader)) { throw "The modern publish output has no webview2\win-x64\WebView2Loader.dll." }
+New-Item -ItemType Directory -Path (Join-Path $stageDir "webview2\win-x64") -Force | Out-Null
+Copy-Item -LiteralPath $loader -Destination (Join-Path $stageDir "webview2\win-x64") -Force
 Remove-Item -LiteralPath $modernOut -Recurse -Force -ErrorAction SilentlyContinue
 
 # Android Folder Share payload (mirror of release.yml): publish the Companion app

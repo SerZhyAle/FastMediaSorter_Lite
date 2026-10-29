@@ -50,7 +50,7 @@ Friend NotInheritable Class ResourceImportFlow
         If preview.Refusal = ImportRefusal.PinnedRoot Then
             Dim locked As FmsRootPlan = read.Plan.RefusedRoots.FirstOrDefault()
             ViewerBox.Show(owner,
-                Localization.TF("Файл не импортирован: папка «{0}» защищена PIN-кодом, а Fast Media Sorter пока не умеет открывать такие ресурсы.",
+                Localization.TF("Файл не импортирован: папка «{0}» защищена PIN-кодом, а Fast Media Sorter не умеет открывать такие ресурсы.",
                                 If(locked IsNot Nothing, If(locked.Label.Length > 0, locked.Label, locked.VirtualPath), "")),
                 title, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return New List(Of String)()

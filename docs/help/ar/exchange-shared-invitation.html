@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Shared Invitation - Fast Media Sorter</title>
+  <title>كلمة مرور الدعوة المشتركة - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Shared Invitation</h1>
+  <h1 id="title">كلمة مرور الدعوة المشتركة</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Shared Invitation.</p>
+    <p>تتيح هذه النافذة للمستخدمين التسجيل على الخادم بكلمة مرور مشتركة واحدة بدلًا من رمز دعوة يُستخدم مرة واحدة. افتحها بتحديد المربع كلمة مرور الدعوة المشتركة في مجموعة الدعوات ضمن إعدادات خادم التبادل، أو بالزر تعيين كلمة المرور المشتركة.. المجاور له.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-shared-invitation-light.png" alt="Shared Invitation">
-    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="Shared Invitation">
+    <img class="shot light" src="exchange-shared-invitation-light.png" alt="كلمة مرور الدعوة المشتركة">
+    <img class="shot dark" src="exchange-shared-invitation-dark.png" alt="كلمة مرور الدعوة المشتركة">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>اختر نوع الحساب.</li><li>اختر هل يولّد البرنامج كلمة المرور أم تكتبها أنت.</li><li>اضغط تعيين.</li><li>إذا وُلّدت كلمة المرور فانسخها من النافذة التي تعرضها مرة واحدة.</li><li>لإيقاف قبولها ألغِ تحديد المربع كلمة مرور الدعوة المشتركة وأكّد.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="account-type"><summary>نوع الحساب</summary><p>نوع الحساب المراد إنشاؤه: يعرض الخيارين جهازك أو عائلتك وضيف. الخيار ضيف معطّل، ويذكر السطر تحته السبب: خادم الملفات في البرنامج لا يستطيع حصر تسجيل الدخول في مجلد واحد. وإذا كانت كلمة مرور مشتركة مفعّلة بالفعل فإن نوعها الحالي يكون محدّدًا مسبقًا. وإذا كان هذا النوع الموجود ضيفًا فإن الزر تعيين يكون معطّلًا؛ ومع ذلك يمكن إيقاف كلمة المرور المشتركة.</p></details>
+<details id="password"><summary>كلمة المرور</summary><p>كلمة المرور: تعرض الخيارين توليد كلمة مرور آمنة عشوائية (محدّد افتراضيًا) وإدخال كلمة المرور يدويًا. وبعد الضغط على تعيين تُطلب كلمة المرور المكتوبة يدويًا في نافذة كلمة مرور تتحقق من السياسة: 10 أحرف على الأقل، مع حرف لاتيني كبير وحرف لاتيني صغير ورقم. وإلغاء تلك النافذة يعيدك إلى هنا.</p></details>
+<details id="set"><summary>تعيين</summary><p>يرسل الزر تعيين كلمة المرور ونوع الحساب إلى الخادم ويفعّل كلمة المرور المشتركة. وتظهر كلمة المرور المولَّدة مرة واحدة في نافذة مستقلة: انسخها هناك، فلا يمكن قراءتها مرة أخرى. وكل من يعرف كلمة المرور يستطيع تسجيل حساب من النوع المختار، فلا تسلّمها إلا لمن تريد قبوله. وبعد النجاح تعرض الصفحة: تم حفظ كلمة مرور الدعوة المشتركة وتفعيلها. ويقرأ سطر الحالة تحت مربع الاختيار: كلمة المرور المشتركة مفعّلة (نوع الحساب: ..).</p></details>
+<details id="switch-off"><summary>الإيقاف</summary><p>يؤدي إلغاء تحديد المربع إلى طرح السؤال: هل تريد تعطيل كلمة مرور الدعوة المشتركة؟ سيصبح التسجيل الجديد بها غير ممكن. والإجابة الافتراضية هي لا. وبعد الضغط على نعم تعرض الصفحة: تم تعطيل كلمة مرور الدعوة المشتركة. ويقرأ سطر الحالة: كلمة المرور المشتركة معطّلة.</p></details>
+<details id="cancel"><summary>إلغاء</summary><p>يغلق الزر إلغاء أو Esc النافذة دون تغيير أي شيء. وإذا فتحتها بتحديد المربع عاد المربع إلى حالته السابقة.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

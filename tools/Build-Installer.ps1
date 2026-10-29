@@ -260,6 +260,11 @@ if (Test-Path $modernProj) {
     Get-ChildItem $modernPub -File |
         Where-Object { $_.Extension -notin ".pdb", ".xml" } |
         ForEach-Object { Copy-Item $_.FullName (Join-Path $stageDir $_.Name) -Force }
+    # Specification 275 section 9.2: the WebView2 loader sits in its own subfolder, not beside the exe.
+    $loader = Join-Path $modernPub "webview2\win-x64\WebView2Loader.dll"
+    if (-not (Test-Path -LiteralPath $loader)) { throw "The modern publish output has no webview2\win-x64\WebView2Loader.dll." }
+    New-Item -ItemType Directory -Path (Join-Path $stageDir "webview2\win-x64") -Force | Out-Null
+    Copy-Item -LiteralPath $loader -Destination (Join-Path $stageDir "webview2\win-x64") -Force
     Remove-Item -LiteralPath $modernPub -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "Bundled the x64 mainline viewer -> $exeName"
 } else {
@@ -296,6 +301,11 @@ if ($SkipOcr) {
     if ($IncludeBest) { $ocrArgs.IncludeBest = $true }
     & (Join-Path $PSScriptRoot "Prepare-OcrOfflinePayload.ps1") @ocrArgs
 }
+
+# Specification 275 section 9.2, judged on the stage the installer is compiled from: one x64
+# WebView2 loader in webview2\win-x64, from the pinned SDK, and the notices naming it.
+& (Join-Path $PSScriptRoot "Test-HtmlHostArtifacts.ps1") -Path $stageDir
+if ($LASTEXITCODE -ne 0) { throw "The installer stage does not hold the WebView2 host of specification 275 (exit $LASTEXITCODE)." }
 
 # --- compile installer ------------------------------------------------------
 $stageAbs = (Resolve-Path $stageDir).Path

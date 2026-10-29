@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Create Live Broadcast - Fast Media Sorter</title>
+  <title>Cr&#233;er une diffusion - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Create Live Broadcast</h1>
+  <h1 id="title">Cr&#233;er une diffusion</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Create Live Broadcast.</p>
+    <p>R&#232;gle une diffusion avant sa cr&#233;ation : son titre, sa dur&#233;e de vie et si elle atteint au-del&#224; du r&#233;seau local. Elle s&#39;ouvre depuis &#171;Cr&#233;er une diffusion..&#187; dans la fen&#234;tre des diffusions pour le fichier ou le dossier choisi. Rien n&#39;est cr&#233;&#233; ni envoy&#233; tant que vous ne cliquez pas sur &#171;Diffuser&#187;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-broadcast-create-light.png" alt="Create Live Broadcast">
-    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Create Live Broadcast">
+    <img class="shot light" src="share-broadcast-create-light.png" alt="Cr&#233;er une diffusion">
+    <img class="shot dark" src="share-broadcast-create-dark.png" alt="Cr&#233;er une diffusion">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>V&#233;rifiez le chemin sur la premi&#232;re ligne (Dossier : ou Fichier :).</li><li>Modifiez &#171;Titre du canal :&#187; ; il commence par le nom du dossier ou du fichier.</li><li>Choisissez &#171;Dur&#233;e de validit&#233; :&#187;.</li><li>Pour un dossier, cochez &#171;Inclure les sous-dossiers&#187; si vous en avez besoin.</li><li>Gardez ou d&#233;cochez &#171;&#201;galement via internet&#187;.</li><li>Cliquez sur &#171;Diffuser&#187; (Entr&#233;e) ou &#171;Annuler&#187; (&#201;chap).</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="title-lifetime"><summary>Titre et dur&#233;e de validit&#233;</summary><p>Le titre du canal est ce qu&#39;affiche la liste des diffusions. La dur&#233;e de validit&#233; propose 24 heures (par d&#233;faut), 1 heure, 7 jours et &#171;Jusqu&#39;&#224; r&#233;vocation&#187;, qui n&#39;a pas de date de fin et reste valable jusqu&#39;&#224; ce que vous la r&#233;voquiez dans la fen&#234;tre des diffusions.</p></details>
+<details id="subfolders"><summary>Inclure les sous-dossiers</summary><p>N&#39;appara&#238;t que lorsque la cible est un dossier, et d&#233;sactiv&#233;e par d&#233;faut. Elle d&#233;termine si les fichiers des sous-dossiers du dossier diffus&#233; sont inclus.</p></details>
+<details id="internet"><summary>&#201;galement via internet</summary><p>Coch&#233;e, sauf si les r&#233;glages de partage limitent les exports au r&#233;seau local. Quand elle est coch&#233;e, le lien contient aussi, &#224; c&#244;t&#233; de l&#39;adresse locale, les adresses internet IPv6 et &#224; port redirig&#233; de ce PC, si elles sont connues. La cocher fait passer la dur&#233;e de validit&#233; de 24 heures &#224; 1 heure (vous pouvez la r&#233;tablir) et affiche un avertissement rouge : le trafic HTTP n&#39;est pas chiffr&#233;, si bien que le contenu et le jeton de la diffusion circulent en clair. Quiconque poss&#232;de le lien peut lire les fichiers de la diffusion jusqu&#39;&#224; son expiration ou sa r&#233;vocation. D&#233;cochez la case pour garder la diffusion dans le r&#233;seau local.</p></details>
+<details id="answer"><summary>Diffuser et Annuler</summary><p>&#171;Diffuser&#187; se contente de renvoyer vos choix &#224; la fen&#234;tre des diffusions, qui cr&#233;e alors la diffusion et copie son lien. &#171;Annuler&#187; ferme la bo&#238;te de dialogue et ne cr&#233;e rien.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>Мій сервер на цьому ПК - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">Мій сервер на цьому ПК</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Налаштовує особистий Media Exchange Server на цьому ПК за один прохід: створює перший обліковий запис, запускає сервер і підключає до нього цей самий ПК. Вікно відкривається кнопкою &#171;Використати цей ПК як мій сервер..&#187; на сторінці Media Exchange Server у налаштуваннях Share Manager; кнопка видима, лише коли на цьому ПК немає налаштованого сервера.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="Мій сервер на цьому ПК">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Мій сервер на цьому ПК">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Перевірте запропонований логін, узятий з імені користувача Windows, або введіть свій.</li><li>Прочитайте, що бачить оператор сервера.</li><li>Натисніть &#171;Почати&#187; й дочекайтеся чотирьох кроків.</li><li>Одразу скопіюйте пароль, потім відбиток або рядок підключення для інших пристроїв.</li><li>Натисніть &#171;Закрити&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Логін</summary><p>Поле &#171;Логін вашого облікового запису:&#187; приймає від 3 до 64 символів: малі латинські літери, цифри, крапку, підкреслення та дефіс; великі літери перетворюються на малі. Підказка під полем набуває кольору попередження, коли текст не може бути логіном, а &#171;Почати&#187; нічого не робить, якщо він не підходить.</p></details>
+<details id="statement"><summary>Що бачить оператор</summary><p>Поле лише для читання під рядком &#171;Перш ніж створити перший обліковий запис, прочитайте, що бачить оператор сервера:&#187; перелічує, що оператор сервера бачить про облікові записи, пристрої, папки, трансляції та буфер обміну, чого сервер прочитати не може та скільки днів зберігаються журнали. На власному сервері оператор - це ви.</p></details>
+<details id="steps"><summary>Кроки та збої</summary><p>&#171;Почати&#187; виконує чотири кроки й називає поточний: &#171;Створюю обліковий запис..&#187;, &#171;Запускаю сервер..&#187;, &#171;Перевіряю сертифікат..&#187; та &#171;Підключаю цей ПК..&#187;. У цей час логін заблоковано, а вікно не закривається. Якщо обліковий запис не створено, рядок пояснює причину, наприклад &#171;Такий обліковий запис уже є - виберіть інший логін.&#187;; виправте логін і натисніть &#171;Почати&#187; знову.</p></details>
+<details id="result"><summary>Підсумок і адреси</summary><p>У разі успіху вікно повідомляє &#171;Готово: сервер працює, обліковий запис створено, цей ПК підключено до нього.&#187; і показує &#171;Адреса для цього ПК:&#187;, &#171;Адреса для інших пристроїв:&#187; (якщо адресу не задано, там написано &#171;не задано - вкажіть його в налаштуваннях сервера обміну&#187;), &#171;Логін:&#187;, &#171;Пароль (показано один раз):&#187; та &#171;Відбиток сертифіката:&#187;. Коли адресу для інших пристроїв задано, додається &#171;Рядок підключення:&#187;. Якщо сервер не запустився, обліковий запис усе одно створено, а його пароль показано нижче один раз.</p></details>
+<details id="password-and-copying"><summary>Пароль і копіювання</summary><p>Пароль приховано. &#171;Показати пароль&#187; розкриває його, &#171;Скопіювати пароль&#187; кладе його в буфер обміну захищеним шляхом: в історію буфера Windows і в хмарний буфер він не потрапляє. Вікно показує пароль лише один раз, якщо не ввімкнено &#171;Зберігати паролі облікових записів на цьому ПК&#187;. &#171;Скопіювати відбиток&#187; і &#171;Скопіювати рядок&#187; копіюють звичайним способом: пароля в них немає. Іншим пристроям потрібні адреса, логін, пароль і відбиток, який вони звіряють під час першого підключення.</p></details>
+<details id="close-warning"><summary>Закриття</summary><p>Якщо пароль не скопійовано, не показано й не збережено на цьому ПК, &#171;Закрити&#187; запитує &#171;Закрити, не скопіювавши пароль?&#187; (за замовчуванням вибрано &#171;Ні&#187;), бо показати пароль знову не можна - його можна лише скинути.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

@@ -23,6 +23,7 @@ Partial Public Class Main_Form
     End Property
 
     Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
+        ApplyPdfReaderTheme(palette)
         ' Content-coloured: nothing here follows the palette (see the file remark) - EXCEPT the first-run card.
         ' It is a text card, not content: the Designer made it white with black text, which in a dark theme was the one
         ' white slab in the whole application (124 UX-210).

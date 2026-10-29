@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>ایکسچینج سرور سے شامل کریں - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">ایکسچینج سرور سے شامل کریں</h1>
   <section id="purpose">
     <h2>یہ کس مقصد کے لیے ہے</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>اس کمپیوٹر کو ایکسچینج سرور کے اکاونٹ سے جوڑتی ہے، تاکہ اس اکاونٹ کے تمام آلات کے فولڈر وسائل کی فہرست میں نظر آئیں۔ یہ وسائل کی فہرست کے میرے آلات حصے کے ایکسچینج سرور سے شامل کریں.. بٹن سے کھلتی ہے، اور تب بھی جب آپ ویوئر میں کنکشن اسٹرنگ یا فائل چھوڑیں یا اسے فولڈر کے خانے میں ٹائپ کریں۔</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="ایکسچینج سرور سے شامل کریں">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="ایکسچینج سرور سے شامل کریں">
   </figure>
   <section id="order">
     <h2>اس ترتیب میں</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>سرور کے آپریٹر کی دی ہوئی کنکشن اسٹرنگ پیسٹ کریں، پتہ host:port کی شکل میں ٹائپ کریں، یا فائل کھولیں.. دبائیں۔</li><li>لائن (پاس ورڈ یہاں بھیجا جائے گا: ..) دیکھیں: وہی پتہ واحد جگہ ہے جہاں پاس ورڈ جاتا ہے۔</li><li>لاگ ان اور پاس ورڈ لکھیں۔</li><li>کنیکٹ کریں دبائیں۔</li><li>اگر پروگرام سرور کے سرٹیفکیٹ کے بارے میں پوچھے تو فنگر پرنٹ کو اس فنگر پرنٹ سے ملائیں جو آپریٹر نے بتایا ہے۔</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>کنکشن اسٹرنگ یا پتہ</summary><p>پہلا خانہ ایک کنکشن اسٹرنگ (جو FMSEXCH1: سے شروع ہوتی ہے) یا host:port کی شکل میں پتہ لیتا ہے۔ پیسٹ کریں اسے کلپ بورڈ سے بھرتا ہے، ٹیکسٹ سے یا QR کوڈ کی تصویر سے، اور فائل کھولیں.. ایک .fmsexch فائل یا QR تصویر پڑھتا ہے۔ پیسٹ کرنا صرف فارم بھرتا ہے: کنیکٹ کریں دبانے سے پہلے کچھ نہیں بھیجا جاتا۔ خانے کے نیچے کی لائن دکھاتی ہے کہ پاس ورڈ کہاں جائے گا؛ ویب پتے، فولڈر کوڈ یا خراب اسٹرنگ وہاں سادہ زبان میں مسترد کر دیے جاتے ہیں۔</p></details>
+<details id="account"><summary>لاگ ان اور پاس ورڈ</summary><p>اگر اسٹرنگ میں لاگ ان ہو تو لاگ ان کا خانہ اسی سے بھر جاتا ہے۔ پاس ورڈ چھپا رہتا ہے؛ پاس ورڈ دکھائیں اسے دکھاتا ہے۔ کنیکٹ کریں دبانے پر پہلا بائٹ کمپیوٹر سے نکلنے سے پہلے ہی پاس ورڈ کا خانہ خالی کر دیا جاتا ہے۔ اسٹیٹس لائن پیش رفت دکھاتی ہے اور ناکامی پر وجہ: نہ ملنے والا لاگ ان یا پاس ورڈ، بہت زیادہ کوششیں، یا جواب نہ دینے والا سرور۔</p></details>
+<details id="register"><summary>ایک دعوتی اسٹرنگ</summary><p>جو اسٹرنگ دعوت ہو وہ پہلے ہی سرور کا نام بتاتی ہے اور ونڈو کو اکاونٹ بنانے کی حالت میں لے جاتی ہے: پاس ورڈ ایک بار اور خانہ اور پاس ورڈ کے اصولوں کا نوٹ نظر آتا ہے (کم از کم 10 حروف، ایک بڑا اور ایک چھوٹا لاطینی حرف اور ایک ہندسہ)، اور بٹن کا نام اکاونٹ بنائیں ہو جاتا ہے۔ اصولوں پر آخری فیصلہ سرور کا ہے۔</p></details>
+<details id="trust"><summary>سرور کا سرٹیفکیٹ</summary><p>سرٹیفکیٹ نامعلوم ہو تو ایک سوال اس کا فنگر پرنٹ دکھاتا ہے اور پوچھتا ہے کہ سرور پر بھروسا کر کے اسے یاد رکھا جائے یا نہیں؛ ڈیفالٹ جواب نہیں ہے۔ اگر اسٹرنگ کسی فنگر پرنٹ کا نام لے اور سرور کوئی اور دکھائے تو دونوں دکھائے جاتے ہیں، کچھ یاد نہیں رکھا جاتا اور کوئی پاس ورڈ نہیں بھیجا جاتا۔</p></details>
+<details id="sign-in-again"><summary>دوبارہ سائن اِن</summary><p>موجودہ سرور اندراج کے لیے دوبارہ سائن اِن کرنے کے واسطے کھولی جائے تو ونڈو پتہ اور لاگ ان صرف پڑھنے کی صورت میں دکھاتی ہے، اور اسی اندراج کا یاد رکھا گیا فنگر پرنٹ ہی بھروسے کی بنیاد ہے۔</p></details>
+    <p><a href="settings.html">ترتیبات</a></p>
   </section>
   <nav id="related">
     <h2>متعلقہ</h2>

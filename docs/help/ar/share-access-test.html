@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Test Outside Access - Fast Media Sorter</title>
+  <title>اختبار الوصول من الإنترنت - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Test Outside Access</h1>
+  <h1 id="title">اختبار الوصول من الإنترنت</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Test Outside Access.</p>
+    <p>يفحص من هذا الكمبيوتر هل يستجيب العنوان المشترك كخادم SFTP. يُفتح من زر اختبار الوصول من الإنترنت في النافذة الرئيسية ويعرض العنوان الذي يختبره والحكم والتوضيح.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-access-test-light.png" alt="Test Outside Access">
-    <img class="shot dark" src="share-access-test-dark.png" alt="Test Outside Access">
+    <img class="shot light" src="share-access-test-light.png" alt="اختبار الوصول من الإنترنت">
+    <img class="shot dark" src="share-access-test-dark.png" alt="اختبار الوصول من الإنترنت">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>افتح النافذة؛ تعرض العنوان وتبدأ الفحص فوراً.</li><li>انتظر ظهور العنوان الرئيسي للنتيجة.</li><li>اقرأ سطر التفاصيل تحته.</li><li>إذا لم تكن النتيجة حاسمة فكرّر الفحص من الهاتف مع إيقاف Wi-Fi وتشغيل بيانات الجوال.</li><li>اضغط إغلاق.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="address"><summary>العنوان المُختبَر</summary><p>العنوان المُختبَر: .. يعرض المضيف والمنفذ. أثناء الفحص تقول النافذة: اختبار .. وإذا لم يكن هناك عنوان معروف فالنتيجة: لا يوجد عنوان إنترنت بعد. أما العنوان المشوّه فيعطي: عنوان غير صالح.</p></details>
+<details id="verdicts"><summary>الأحكام</summary><p>خادم SFTP متاح - أجاب المنفذ بشعار SFTP. المنفذ مفتوح لكن لا استجابة من SFTP - هناك شيء يستمع على المنفذ لكنه ليس برنامجنا؛ تحقّق من أن قاعدة الموجّه تؤدي إلى هذا الكمبيوتر وإلى منفذ المشاركة. قد يعني إغلاق الاتصال قبل الجواب حد الاتصالات؛ جرّب مرة أخرى. وعدم وجود جواب من هذا الكمبيوتر يعني أن الموجّه قد يحجب عنوانه هو من الداخل.</p></details>
+<details id="inconclusive"><summary>لماذا قد لا تكون النتيجة حاسمة</summary><p>يغادر الطلب هذا الكمبيوتر إلى العنوان الخارجي للموجّه ثم يعود مباشرة إلى الداخل، لذلك يختبر قاعدة التوجيه لا ما إذا كان مزوّد الخدمة يسمح بالاتصالات الواردة. لا يحسم الأمر إلا الهاتف: أوقف Wi-Fi فيه واترك بيانات الجوال تعمل وافتح رمز QR. فإن ظل غير قادر على الاتصال، فأعدّ توجيه المنافذ بالزر كيفية إعداد الوصول من الإنترنت.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

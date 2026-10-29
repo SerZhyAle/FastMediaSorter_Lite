@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>خادمي على هذا الكمبيوتر - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">خادمي على هذا الكمبيوتر</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>يُعدّ هذا المعالج خادم Media Exchange Server شخصيًا على هذا الكمبيوتر دفعة واحدة: ينشئ أول حساب، ويشغّل الخادم، ثم يربط هذا الكمبيوتر نفسه به. تُفتح النافذة من الزر استخدام هذا الكمبيوتر كخادم لي.. في صفحة Media Exchange Server ضمن إعدادات Share Manager، ولا يظهر هذا الزر إلا ما دام لا يوجد خادم معدّ على هذا الكمبيوتر.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="خادمي على هذا الكمبيوتر">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="خادمي على هذا الكمبيوتر">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>راجع اسم الدخول المقترح، وهو مأخوذ من اسم مستخدم Windows لديك، أو اكتب اسمًا من عندك.</li><li>اقرأ البيان الذي يوضح ما يستطيع المشغّل رؤيته.</li><li>اضغط ابدأ وانتظر الخطوات الأربع.</li><li>انسخ كلمة المرور فورًا، ثم البصمة أو سلسلة الاتصال لأجهزتك الأخرى.</li><li>اضغط إغلاق.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>اسم الدخول</summary><p>يقبل الحقل اسم الدخول لحسابك من 3 إلى 64 حرفًا، وهي الأحرف اللاتينية الصغيرة والأرقام والنقطة والشرطة السفلية والواصلة؛ وتُحوَّل الأحرف الكبيرة إلى صغيرة. يتحول التلميح أسفل الحقل إلى لون التحذير ما دام النص لا يصلح اسم دخول، ولا يفعل الزر ابدأ شيئًا حتى يصبح صالحًا.</p></details>
+<details id="statement"><summary>ما يستطيع المشغّل رؤيته</summary><p>الصندوق المخصص للقراءة فقط أسفل السطر قبل إنشاء أول حساب، اقرأ ما يستطيع مشغّل الخادم رؤيته: يسرد ما يراه مشغّل الخادم عن الحسابات والأجهزة والمجلدات والبثوث والحافظة، وما لا يستطيع الخادم قراءته، وعدد أيام الاحتفاظ بالسجلات. وعلى خادمك الخاص أنت المشغّل.</p></details>
+<details id="steps"><summary>الخطوات وحالات الفشل</summary><p>يشغّل الزر ابدأ أربع خطوات ويذكر الجارية منها: جارٍ إنشاء الحساب.. ثم جارٍ تشغيل الخادم.. ثم جارٍ فحص الشهادة.. ثم جارٍ ربط هذا الكمبيوتر.. ويبقى اسم الدخول مقفلًا ولا يمكن إغلاق النافذة خلال ذلك. وإذا لم يُنشأ أي حساب، تذكر جملة السبب، مثل: هذا الحساب موجود بالفعل - اختر اسم دخول آخر. صحّح اسم الدخول واضغط ابدأ مرة أخرى.</p></details>
+<details id="result"><summary>النتيجة والعناوين</summary><p>عند النجاح تعرض النافذة الجملة تم: الخادم يعمل والحساب مُنشأ وهذا الكمبيوتر متصل به. ثم تسرد البنود العنوان لهذا الكمبيوتر، والعنوان للأجهزة الأخرى (ويقرأ غير محدد - أدخله في إعدادات خادم التبادل إلى أن يُحدَّد هذا العنوان)، واسم المستخدم، وكلمة المرور (تُعرض مرة واحدة)، وبصمة الشهادة. وبعد تحديد العنوان للأجهزة الأخرى يُضاف البند سلسلة الاتصال. وإذا لم يبدأ الخادم فإن الحساب يبقى موجودًا وتُعرض كلمة مروره مرة واحدة في الأسفل.</p></details>
+<details id="password-and-copying"><summary>كلمة المرور والنسخ</summary><p>كلمة المرور مخفية بأقنعة. يكشفها الزر إظهار كلمة المرور، وينسخها الزر نسخ كلمة المرور إلى الحافظة عبر المسار المحمي الذي يُبقيها خارج سجل حافظة Windows والحافظة السحابية. لا تعرضها النافذة إلا هذه المرة، ما لم يكن الخيار حفظ كلمات مرور الحسابات على هذا الكمبيوتر مفعّلًا. أما الزران نسخ البصمة ونسخ السلسلة فيجريان نسخًا عاديًا: لا يحوي أي منهما كلمة مرور. تحتاج الأجهزة الأخرى إلى العنوان واسم المستخدم وكلمة المرور والبصمة، وتقارن البصمة عند أول اتصال.</p></details>
+<details id="close-warning"><summary>الإغلاق</summary><p>إذا لم تُنسخ كلمة المرور ولم تُكشف ولم تُحفظ على هذا الكمبيوتر، فإن الزر إغلاق يسأل: هل تريد الإغلاق دون نسخ كلمة المرور؟ ويكون الجواب الافتراضي لا، لأن كلمة المرور لا يمكن عرضها مجددًا بل إعادة تعيينها فقط.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

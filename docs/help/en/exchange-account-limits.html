@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>Account limits - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">Account limits</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>Sets individual limits for one account of the Media Exchange Server you run; a value left at 0 follows the server default. It opens from the &#39;Limits..&#39; button under the account list on the Media Exchange Server page of the Share Manager settings, which appears once an account is selected. The caption names the account: &#39;Account limits: &lt;login&gt;&#39;.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="Account limits">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Account limits">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Select the account and press &#39;Limits..&#39;.</li><li>Set a number for each limit you want to change and leave 0 for the server default.</li><li>Press &#39;Save&#39;.</li><li>Read the result line: &#39;Limits for account &lt;login&gt; saved.&#39;</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>Devices and resources</summary><p>&#39;Maximum devices (0 = default):&#39; caps the devices that may be signed in to the account. &#39;Maximum published resources (0 = default):&#39; caps the shared folders and other resources the account may publish on the server.</p></details>
+<details id="broadcasts"><summary>Broadcasts</summary><p>&#39;Maximum broadcasts (0 = default):&#39; caps the broadcasts of the whole account, and &#39;Maximum broadcasts per device (0 = default):&#39; caps what one device of it may start.</p></details>
+<details id="clipboard"><summary>Clipboard limit</summary><p>&#39;Clipboard limit, MB (0 = default 5 GB):&#39; sets the largest value the account can send to its clipboard on the server, in whole megabytes. A limit stored in smaller units, for example 512 KB, shows as 0 and keeps its exact size while you leave this field alone.</p></details>
+<details id="save"><summary>Save and cancel</summary><p>&#39;Save&#39; replaces the account&#39;s own limits as a whole: each number above 0 becomes a limit, each 0 means the server default, and five zeros remove the account&#39;s overrides. &#39;Cancel&#39; changes nothing. If the server refuses a value, the result line gives the reason, for example &#39;A limit is not allowed: it must be a whole number inside the range the server accepts.&#39;</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect to Media Exchange Server - Fast Media Sorter</title>
+  <title>Add from an exchange server - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connect to Media Exchange Server</h1>
+  <h1 id="title">Add from an exchange server</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect to Media Exchange Server.</p>
+    <p>Connects this computer to an account on an exchange server, so that the folders of all the devices of that account appear in the resources list. It opens from the &#171;Add from an exchange server..&#187; button in the &#171;My devices&#187; section of the resources list, and when you drop a connection string or file on the viewer or type one in the folder box.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connect-light.png" alt="Connect to Media Exchange Server">
-    <img class="shot dark" src="exchange-connect-dark.png" alt="Connect to Media Exchange Server">
+    <img class="shot light" src="exchange-connect-light.png" alt="Add from an exchange server">
+    <img class="shot dark" src="exchange-connect-dark.png" alt="Add from an exchange server">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Paste the connection string from the server&#39;s operator, type the address as host:port, or press &#171;Open file..&#187;.</li><li>Check the line &#171;The password will be sent to: ..&#187;: that address is the only place the password goes.</li><li>Enter the login and the password.</li><li>Press &#171;Connect&#187;.</li><li>If the program asks about the server&#39;s certificate, compare the fingerprint with the one the operator named.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="connection-string"><summary>Connection string or address</summary><p>The first box takes a connection string (it starts with FMSEXCH1:) or an address as host:port. &#171;Paste&#187; fills it from the clipboard, from text or from a picture of a QR code, and &#171;Open file..&#187; reads a .fmsexch file or a QR picture. Pasting only fills the form: nothing is sent until you press &#171;Connect&#187;. The line under the box shows where the password will go; a web address, a folder code or a damaged string is refused there in plain words.</p></details>
+<details id="account"><summary>Login and password</summary><p>&#171;Login:&#187; is filled from the string when it carries one. &#171;Password:&#187; is masked; &#171;Show the password&#187; reveals it. When you press &#171;Connect&#187;, the password boxes are cleared before the first byte leaves the computer. The status line shows the progress and, on failure, the reason: a login or password that did not fit, too many attempts, a server that does not answer.</p></details>
+<details id="register"><summary>An invitation string</summary><p>A string that is an invitation already names the server and switches the window to creating an account: &#171;Password once more:&#187; and a note on the password rule appear (at least 10 characters, with an upper-case and a lower-case Latin letter and a digit), and the button reads &#171;Create the account&#187;. The server has the last word on the rule.</p></details>
+<details id="trust"><summary>The server&#39;s certificate</summary><p>If the certificate is unknown, a question shows its fingerprint and asks whether to trust the server and remember it; the default answer is No. If the string names a fingerprint and the server presents another one, both are shown, nothing is remembered and no password is sent.</p></details>
+<details id="sign-in-again"><summary>Signing in again</summary><p>Opened for an existing server entry to sign in again, the window shows the address and the login read-only, and the fingerprint that entry remembers is the anchor of trust.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

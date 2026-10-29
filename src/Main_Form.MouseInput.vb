@@ -19,6 +19,7 @@ Partial Public Class Main_Form
         ' which swallows every other key, ends with it (UX-105 of 123) instead of staying on unseen.
         ChromeLeaveKeyboardMode()
         If e.Button = MouseButtons.Left AndAlso TryHandlePdfIndicatorClick(TryCast(sender, PictureBox), e.Location) Then Return
+        If PdfReaderMouseDown(TryCast(sender, PictureBox), e) Then Return
 #End If
         ' Store the initial mouse position for drag detection
         mouse_Down_Start_Point = e.Location
@@ -182,6 +183,7 @@ Partial Public Class Main_Form
             help_Card.ScrollByWheel(e.Delta)
             Return
         End If
+        If e.Delta <> 0 AndAlso HtmlViewOwnsWheel(e) Then Return
 #End If
 
 #If Not NETFRAMEWORK Then
@@ -427,6 +429,9 @@ Partial Public Class Main_Form
     ''' button: release without moving, press again, and the stale base teleported the
     ''' box back to where the previous drag had begun.</summary>
     Private Sub Picture_Box_MouseUp(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseUp, Picture_Box_2.MouseUp
+#If Not NETFRAMEWORK Then
+        If PdfReaderMouseUp(TryCast(sender, PictureBox), e) Then Return
+#End If
         EndPan()
 #If Not NETFRAMEWORK Then
         If e.Button = MouseButtons.Left Then TextSelectionMouseUp(e)
@@ -434,6 +439,9 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub Pic_MouseMove(sender As Object, e As MouseEventArgs)
+#If Not NETFRAMEWORK Then
+        If PdfReaderMouseMove(TryCast(sender, PictureBox), e) Then Return
+#End If
         ' Moving the mouse is how a slideshow with hidden chrome is asked to show it
         ' again for a moment - without stopping the slideshow, which any key would.
         RevealSlideshowChromeTemporarily()

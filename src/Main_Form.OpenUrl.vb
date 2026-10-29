@@ -25,6 +25,7 @@ Partial Public Class Main_Form
     Private openUrlMenu As ContextMenuStrip
     Private openUrlMenuItem As ToolStripMenuItem
     Private openLiveBroadcastMenuItem As ToolStripMenuItem
+    Private openHtmlPageMenuItem As ToolStripMenuItem
 
     ''' <summary>Last address the user typed, so a retry after a typo does not start
     ''' from an empty box. Not persisted - it can carry credentials.</summary>
@@ -52,6 +53,12 @@ Partial Public Class Main_Form
             AddHandler openLiveBroadcastMenuItem.Click, Sub() ShowLiveBroadcastDialog()
             openUrlMenu.Items.Add(openLiveBroadcastMenuItem)
 
+            ' Specification 275 W09: online pages are a second opt-in under the HTML viewer one.
+            openHtmlPageMenuItem = New ToolStripMenuItem()
+            AddHandler openHtmlPageMenuItem.Click, Sub() ShowOpenHtmlPagePrompt()
+            openUrlMenu.Items.Add(openHtmlPageMenuItem)
+            AddHandler openUrlMenu.Opening, Sub() UpdateOpenHtmlPageMenuItem()
+
             If btn_choose_file IsNot Nothing Then btn_choose_file.ContextMenuStrip = openUrlMenu
         End If
         LocalizeOpenUrlEntryPoint()
@@ -65,6 +72,16 @@ Partial Public Class Main_Form
         If openLiveBroadcastMenuItem IsNot Nothing Then
             openLiveBroadcastMenuItem.Text = Localization.T("Открыть live-трансляцию..")
         End If
+        If openHtmlPageMenuItem IsNot Nothing Then
+            openHtmlPageMenuItem.Text = Localization.T("Открыть HTML-страницу по адресу..")
+        End If
+        UpdateOpenHtmlPageMenuItem()
+    End Sub
+
+    Private Sub UpdateOpenHtmlPageMenuItem()
+        If openHtmlPageMenuItem Is Nothing Then Return
+        Dim preferences = GetModernPreferences()
+        openHtmlPageMenuItem.Visible = preferences.HtmlViewerEnabled AndAlso preferences.HtmlOnlinePagesEnabled
     End Sub
 
     ''' <summary>The tooltip for the choose-file button, which has to advertise the

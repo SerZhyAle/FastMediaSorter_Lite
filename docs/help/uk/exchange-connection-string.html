@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connection String - Fast Media Sorter</title>
+  <title>Рядок підключення до сервера обміну - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Connection String</h1>
+  <h1 id="title">Рядок підключення до сервера обміну</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connection String.</p>
+    <p>У цьому вікні складається рядок підключення, за яким інші пристрої знаходять цей сервер обміну й перевіряють його сертифікат. Вікно відкривається кнопкою &#171;Рядок підключення і QR-код..&#187; у налаштуваннях сервера обміну або у вітанні сервера під час першого запуску. Вікно нічого не змінює в налаштуваннях.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-connection-string-light.png" alt="Connection String">
-    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Connection String">
+    <img class="shot light" src="exchange-connection-string-light.png" alt="Рядок підключення до сервера обміну">
+    <img class="shot dark" src="exchange-connection-string-dark.png" alt="Рядок підключення до сервера обміну">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Переконайтеся, що в сервера є сертифікат і задано адресу для клієнтів.</li><li>Відкрийте вікно: рядок з&#39;являється одразу.</li><li>За бажання введіть назву сервера та логін; рядок перебудується за мить після того, як ви перестанете друкувати.</li><li>Скопіюйте рядок, збережіть його у файл, покажіть QR-код або скопіюйте посилання для входу.</li><li>Передайте результат іншій людині, а пароль облікового запису - окремо.</li><li>Натисніть &#171;Закрити&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Коли кнопка доступна</summary><p>Кнопка &#171;Рядок підключення і QR-код..&#187; доступна лише тоді, коли в сервера є сертифікат і задано адресу для клієнтів. Якщо адреса порожня, кнопка вимкнена, а підказка під нею каже: &#171;Спершу задайте адресу для клієнтів: без неї рядок підключення скласти не можна.&#187; Усередині вікна кнопки вимкнені, якщо рядка немає.</p></details>
+<details id="name-and-login"><summary>Назва сервера і логін</summary><p>&#171;Назва сервера (необов&#39;язково):&#187; - до 64 символів; вона записується в рядок як назва сервера. &#171;Для цього логіну (необов&#39;язково):&#187; - від 3 до 64 знаків (a-z, 0-9, крапка, підкреслення, дефіс); цей логін підставляється у форму входу на пристрої, який використовує рядок. Пароль у рядок не потрапляє ніколи.</p></details>
+<details id="connection-string"><summary>Рядок підключення</summary><p>У полі &#171;Рядок підключення:&#187; (лише читання) показано результат: адресу для клієнтів, відбиток сертифіката та необов&#39;язкові назву й логін. Пристрій, що отримав рядок, довіряє відбитку з нього, тому порівнювати його вручну не потрібно.</p></details>
+<details id="copy-and-save"><summary>Копіювання і збереження</summary><p>&#171;Скопіювати рядок&#187; кладе рядок у буфер обміну звичайним текстом, бо він не є секретом; рядок нижче повідомляє &#171;Рядок скопійовано.&#187; &#171;Зберегти у файл..&#187; записує текстовий файл .fmsexch (запропонована назва exchange-server.fmsexch) і показує шлях до нього; інший пристрій читає такий файл кнопкою &#171;Відкрити файл..&#187; у вікні облікового запису обміну. Якщо буфер обміну зайнятий або файл записати не вдалося, рядок стану повідомляє про це.</p></details>
+<details id="qr-and-link"><summary>QR-код і посилання для входу</summary><p>&#171;Показати QR-код&#187; відкриває картинку з тим самим рядком для сканування; вона називає сервер і не дає доступу ні до чого. &#171;Скопіювати посилання для входу&#187; з&#39;являється лише тоді, коли цей сервер віддає вебклієнт; воно копіює посилання для браузера з тим самим рядком.</p></details>
+<details id="refusals"><summary>Якщо рядок не вдалося скласти</summary><p>Рядок попереджувального кольору називає причину: назва або логін поза допустимими межами; у сервера немає сертифіката (запустіть сервер один раз); сервер обміну не відповів. Усуньте причину - і рядок перебудується. &#171;Закрити&#187; завершує роботу вікна; назва й логін не зберігаються.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

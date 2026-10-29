@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Link - Fast Media Sorter</title>
+  <title>Link f&#252;r einen Ordner - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Link</h1>
+  <h1 id="title">Link f&#252;r einen Ordner</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Link.</p>
+    <p>&#220;bergibt einen ver&#246;ffentlichten Ordner an eine Person ohne Konto auf dem Austauschserver: als QR-Code, als Linktext und als .fmscfg-Datei. Das Fenster &#246;ffnet sich nach &#171;Link erstellen..&#187; oder &#171;Neuer Link..&#187; in der Gruppe &#171;Meine Freigaben im Austauschkonto&#187; sowie &#252;ber &#171;QR / Code anzeigen..&#187; im Fenster &#171;Zugriff nach au&#223;en geben..&#187; eines Ordners. Im aktuellen Programm sind beide Befehle deaktiviert, weil der Zugriff f&#252;r Personen au&#223;erhalb des Kontos nicht angeboten wird; diese Seite beschreibt, was das Fenster zeigt, sobald ein Link existiert.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-link-light.png" alt="Exchange Link">
-    <img class="shot dark" src="exchange-link-dark.png" alt="Exchange Link">
+    <img class="shot light" src="exchange-link-light.png" alt="Link f&#252;r einen Ordner">
+    <img class="shot dark" src="exchange-link-dark.png" alt="Link f&#252;r einen Ordner">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>W&#228;hlen Sie einen ver&#246;ffentlichten Ordner und klicken Sie auf &#171;Link erstellen..&#187; (oder auf &#171;Neuer Link..&#187;, um einen alten Link zu ersetzen).</li><li>Lesen Sie den Hinweis oben im Fenster.</li><li>Geben Sie den Link weiter mit &#171;QR-Code anzeigen&#187;, &#171;Linktext kopieren&#187; oder &#171;Datei .fmscfg speichern..&#187;.</li><li>Klicken Sie auf &#171;Schlie&#223;en&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="availability"><summary>Wann das Fenster verf&#252;gbar ist</summary><p>Das Fenster gibt es nur f&#252;r einen Link, der gerade erstellt wurde oder bereits existiert. Solange der Zugriff f&#252;r Personen au&#223;erhalb des Kontos nicht angeboten wird, sind &#171;Link erstellen..&#187; und &#171;Neuer Link..&#187; deaktiviert, ein Hinweis darunter nennt den Grund und das Fenster &#246;ffnet sich nicht; auch &#171;QR / Code anzeigen..&#187; ist deaktiviert. &#171;Link entfernen&#187; bleibt verf&#252;gbar.</p></details>
+<details id="note"><summary>Der Hinweis oben</summary><p>&#171;Geben Sie der Person den Code oder die Datei. Beide enthalten den Zugang zum Ordner: Ver&#246;ffentlichen Sie sie nicht.&#187; Wer den QR-Code, den Linktext oder die Datei besitzt, kann diesen Ordner &#246;ffnen. Der Linktext wird nie auf dem Bildschirm angezeigt.</p></details>
+<details id="qr-code"><summary>QR-Code anzeigen</summary><p>&#214;ffnet das QR-Bild in einem Vergr&#246;&#223;erungsfenster. Die Schaltfl&#228;che ist nur vorhanden, wenn sich ein QR-Code erzeugen lie&#223;; ist der Linktext f&#252;r einen QR-Code zu gro&#223;, lautet die Antwort &#171;Der Code ist f&#252;r einen QR-Code zu gro&#223; - verwenden Sie die Datei.&#187;.</p></details>
+<details id="copy-text"><summary>Linktext kopieren</summary><p>Legt den Linktext (er beginnt mit FMSSFTP2:) &#252;ber einen gesch&#252;tzten Weg in die Zwischenablage, der ihn aus dem Windows-Zwischenablageverlauf und aus der Cloud-Zwischenablage heraush&#228;lt, und antwortet &#171;Linktext kopiert.&#187;. Nur vorhanden, wenn der Link einen Text hat.</p></details>
+<details id="save-file"><summary>Datei .fmscfg speichern..</summary><p>Speichert eine Einstellungsdatei f&#252;r genau diesen einen Ordner, die nur der Besitzer lesen kann. Das Fenster meldet &#171;Datei gespeichert:&#187; mit dem Pfad oder &#171;Die Datei konnte nicht gespeichert werden.&#187;. Nur vorhanden, wenn sich die Datei erzeugen lie&#223;.</p></details>
+<details id="renew-or-remove"><summary>Neuer Link und Link entfernen</summary><p>Beide geh&#246;ren zur Gruppe, nicht zu diesem Fenster, und beide fragen zuerst nach, mit &#171;Nein&#187; als Standardantwort: &#171;Neuer Link..&#187; warnt, dass alle fr&#252;heren QR-Codes und Dateien nicht mehr funktionieren, &#171;Link entfernen&#187;, dass alle damit ausgegebenen QR-Codes und Dateien nicht mehr funktionieren.</p></details>
+<details id="close"><summary>Schlie&#223;en</summary><p>Schlie&#223;t das Fenster und entfernt daraus den Linktext, den Dateiinhalt und das QR-Bild.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

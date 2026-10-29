@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Welcome Wizard - Fast Media Sorter</title>
+  <title>Добро пожаловать - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="Сервер обмена"></span> Welcome Wizard</h1>
+  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="Сервер обмена"></span> Добро пожаловать</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Welcome Wizard.</p>
+    <p>Приветственные шаги за несколько минут настраивают основное: язык, внешний вид, папку для клавиши 1, удаление и сопоставление файлов. Они открываются при первом запуске, по кнопке &#171;Первоначальная настройка&#187; на пустом экране просмотра и по параметру &#171;Показать приветственные шаги снова&#187; на странице &#171;Общие&#187; настроек. Шаги есть только в 64-разрядной версии.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="welcome-light.png" alt="Welcome Wizard">
-    <img class="shot dark" src="welcome-dark.png" alt="Welcome Wizard">
+    <img class="shot light" src="welcome-light.png" alt="Добро пожаловать">
+    <img class="shot dark" src="welcome-dark.png" alt="Добро пожаловать">
   </figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Выберите язык.</li><li>Выберите фоновую схему и действие колеса.</li><li>Выберите папку для клавиши 1.</li><li>Прочитайте, как работает удаление.</li><li>Задайте сопоставление файлов.</li><li>Проверьте итог и нажмите &#171;Готово&#187;. Кнопка &#171;Далее&#187; ведёт дальше, &#171;Назад&#187; возвращает, &#171;Пропустить настройку&#187; переходит к последнему шагу.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="step-language"><summary>Язык интерфейса</summary><p>Окно меняет язык сразу, как предпросмотр; просмотрщик принимает его только после &#171;Далее&#187;. Если закрыть окно без этого, язык просмотрщика остаётся прежним.</p></details>
+<details id="step-appearance"><summary>Внешний вид</summary><p>Выберите фоновую схему области картинки (По углу, Чёрный, Белый, По краю, По верху, По низу) и действие колеса: либо оно масштабирует в точке курсора, а листают стрелками, либо листает файлы, а масштаб - Ctrl+колесо. Оба выбора можно изменить позже на странице &#171;Изображения&#187; настроек.</p></details>
+<details id="step-sorting"><summary>Как устроена сортировка</summary><p>Цифры 0-9 переносят текущий файл в папку; Shift и цифра верхнего ряда копируют его. Папку для клавиши 1 выбирает кнопка &#171;Выбрать папку..&#187;; остальные девять задаются позже на странице &#171;Получатели&#187; настроек. Если папка исчезла, шаг сообщает: &#171;Папка больше не доступна. Выберите другую.&#187;</p></details>
+<details id="step-delete"><summary>Безопасное удаление</summary><p>Показывает, как работают Del (в Корзину) и Shift+Del (окончательно). Параметры удаления находятся на странице &#171;Файлы&#187; настроек.</p></details>
+<details id="step-associations"><summary>Открывать картинки здесь</summary><p>Позволяет открывать картинки и видео из Проводника этой программой. Шаг появляется, только если программа установлена не как пакет Microsoft Store; сопоставление действует для вашей учётной записи и не требует прав администратора.</p></details>
+<details id="step-finish"><summary>Всё готово</summary><p>В итоге указаны все настройки, их значения и места, где их можно изменить. Если на этом ПК установлены серверные компоненты, блок &#171;Серверы на этом ПК&#187; показывает каждый со статусом и кнопкой &#171;Открыть менеджер&#187;; если ничего не установлено, блок скрыт.</p></details>
+<details id="step-parts"><summary>Части шага</summary><p>У каждого шага четыре части: &#171;Что это&#187;, &#171;Зачем&#187;, &#171;Как будет работать&#187; и &#171;Где это менять&#187;.</p></details>
+<details id="buttons"><summary>Кнопки и закрытие</summary><p>&#171;Пропустить настройку&#187; переходит к последнему шагу и отменяет предпросмотр языка. &#171;Далее&#187; применяет только то, что изменено на текущем шаге. &#171;Готово&#187; закрывает окно, так же как и Esc (кроме случая, когда открыт выпадающий список). Любое закрытие запоминает, что шаги пройдены; чтобы увидеть их снова, используйте параметр на странице &#171;Общие&#187; настроек.</p></details>
+    <p><a href="settings.html">Настройки</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

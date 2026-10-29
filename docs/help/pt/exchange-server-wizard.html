@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Setup Wizard - Fast Media Sorter</title>
+  <title>O meu servidor neste PC - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Setup Wizard</h1>
+  <h1 id="title">O meu servidor neste PC</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Setup Wizard.</p>
+    <p>Configura de uma s&#243; vez um Media Exchange Server pessoal neste PC: cria a primeira conta, inicia o servidor e liga a ele este mesmo PC. Abre-se a partir do bot&#227;o &#171;Usar este PC como o meu servidor..&#187; da p&#225;gina Media Exchange Server das defini&#231;&#245;es do Share Manager, que s&#243; aparece enquanto n&#227;o houver nenhum servidor configurado neste PC.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-server-wizard-light.png" alt="Media Exchange Server Setup Wizard">
-    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="Media Exchange Server Setup Wizard">
+    <img class="shot light" src="exchange-server-wizard-light.png" alt="O meu servidor neste PC">
+    <img class="shot dark" src="exchange-server-wizard-dark.png" alt="O meu servidor neste PC">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Verifique o utilizador sugerido, tirado do seu nome de utilizador do Windows, ou escreva o seu.</li><li>Leia a declara&#231;&#227;o sobre o que o operador pode ver.</li><li>Clique em &#171;Iniciar&#187; e aguarde os quatro passos.</li><li>Copie a palavra-passe de imediato e, depois, a impress&#227;o digital ou a cadeia de liga&#231;&#227;o para os seus outros dispositivos.</li><li>Clique em &#171;Fechar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="login"><summary>Utilizador</summary><p>&#171;Utilizador da sua conta:&#187; aceita de 3 a 64 caracteres: letras latinas min&#250;sculas, d&#237;gitos, ponto, sublinhado e h&#237;fen; as mai&#250;sculas s&#227;o convertidas em min&#250;sculas. A indica&#231;&#227;o por baixo do campo passa &#224; cor de aviso enquanto o texto n&#227;o puder ser um utilizador, e &#171;Iniciar&#187; n&#227;o faz nada at&#233; que o possa ser.</p></details>
+<details id="statement"><summary>O que o operador pode ver</summary><p>A caixa s&#243; de leitura por baixo de &#171;Antes de criar a primeira conta, leia o que o operador do servidor pode ver:&#187; enumera o que um operador do servidor pode ver de contas, dispositivos, pastas, transmiss&#245;es e da &#225;rea de transfer&#234;ncia, o que o servidor n&#227;o consegue ler e durante quantos dias os registos s&#227;o guardados. No seu pr&#243;prio servidor, o operador &#233; voc&#234;.</p></details>
+<details id="steps"><summary>Passos e falhas</summary><p>&#171;Iniciar&#187; executa quatro passos e indica o atual: &#171;A criar a conta..&#187;, &#171;A iniciar o servidor..&#187;, &#171;A verificar o certificado..&#187; e &#171;A ligar este PC..&#187;. Entretanto, o utilizador fica bloqueado e a janela n&#227;o pode ser fechada. Se nenhuma conta foi criada, uma frase explica o motivo, por exemplo &#171;Essa conta j&#225; existe - escolha outro utilizador.&#187;; corrija o utilizador e clique de novo em &#171;Iniciar&#187;.</p></details>
+<details id="result"><summary>Resultado e endere&#231;os</summary><p>Em caso de &#234;xito, a janela diz &#171;Conclu&#237;do: o servidor est&#225; em execu&#231;&#227;o, a conta foi criada e este PC est&#225; ligado a ela.&#187; e lista &#171;Endere&#231;o para este PC:&#187;, &#171;Endere&#231;o para os outros dispositivos:&#187; (que mostra &#171;n&#227;o definido - indique-o nas defini&#231;&#245;es do servidor de troca&#187; at&#233; esse endere&#231;o ser definido), &#171;Utilizador:&#187;, &#171;Palavra-passe (mostrada uma s&#243; vez):&#187; e &#171;Impress&#227;o digital do certificado:&#187;. Depois de definido o endere&#231;o para os outros dispositivos, acrescenta-se &#171;Cadeia de liga&#231;&#227;o:&#187;. Se o servidor n&#227;o arrancou, a conta existe na mesma e a sua palavra-passe &#233; mostrada uma s&#243; vez mais abaixo.</p></details>
+<details id="password-and-copying"><summary>Palavra-passe e c&#243;pia</summary><p>A palavra-passe est&#225; mascarada. &#171;Mostrar a palavra-passe&#187; revela-a; &#171;Copiar palavra-passe&#187; coloca-a na &#225;rea de transfer&#234;ncia pela via protegida, que a mant&#233;m fora do hist&#243;rico da &#225;rea de transfer&#234;ncia do Windows e da &#225;rea de transfer&#234;ncia na nuvem. A janela mostra-a s&#243; desta vez, a menos que &#171;Guardar as palavras-passe das contas neste PC&#187; esteja ativado. &#171;Copiar impress&#227;o digital&#187; e &#171;Copiar a cadeia&#187; s&#227;o c&#243;pias simples: nenhuma cont&#233;m uma palavra-passe. Os outros dispositivos precisam do endere&#231;o, do utilizador, da palavra-passe e da impress&#227;o digital, que comparam na primeira liga&#231;&#227;o.</p></details>
+<details id="close-warning"><summary>Fecho</summary><p>Se a palavra-passe n&#227;o foi copiada, nem mostrada, nem guardada neste PC, &#171;Fechar&#187; pergunta &#171;Fechar sem copiar a palavra-passe?&#187; com N&#227;o como resposta predefinida, porque a palavra-passe n&#227;o pode ser mostrada de novo, apenas redefinida.</p></details>
+    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

@@ -42,6 +42,7 @@
          the no-mail-client decision are tested ONCE and compiled into both test projects, because both programs
          link the same LogPackage / HostingReport / MailSender and must come out with the same sources. -->
     <Compile Include="..\Lite.Tests\LogPackageSourcesTests.vb" Link="Linked\LogPackageSourcesTests.vb" />
+    <Compile Include="..\Lite.Tests\ServerLogExportTests.vb" Link="Linked\ServerLogExportTests.vb" />
     <Compile Include="..\Lite.Tests\HostingReportTests.vb" Link="Linked\HostingReportTests.vb" />
     <!-- Ticket 180: the TLS stub server and the scripted connection of the exchange client tests, one kit for the library
          (Lite.Tests) and the device agent (here). Whole-file "#If Not NETFRAMEWORK". -->

@@ -77,9 +77,11 @@ audit them here: {{SIBLINGS}}
    section 8, otherwise its own ticket. P3 - inline under section 8, otherwise one follow-up ticket per
    concern. P4 - recorded here; no ticket. A new ticket takes the next number in
    `docs/specifications/README.md` and a line in `RELEASE_QUEUE.md`.
-6. **Fix and prove** the inline set: `.\build.ps1 -SkipInstaller`, then
-   `pwsh -NoProfile -File .\tools\Run-AllTests.ps1 -SkipGo`. Quote both commands and their exit codes in
-   `## Last Audit`. A red run ends the slice as `Partial`, never `Done`.
+6. **Fix and prove** the inline set with a measured fast check for the touched area and a direct static
+   check of the change. In `## Last Audit`, quote a `FAST:` or `STATIC:` command and exit 0 and record:
+   `RELEASE: tools/Release.ps1 (Build-OfflineRelease.ps1)` and
+   `RELEASE: tools/Release.ps1 (Run-AllTests.ps1)`. The full build and suite run at the release; a red
+   fast or static check ends the slice as `Partial`, never `Done`.
 7. **Close** like any ticket: fill `## Last Audit`, set the status line to `Done`, update this ticket's
    row in `docs/specifications/README.md`, remove its line from `RELEASE_QUEUE.md` and move the file to
    `done/` without renumbering it (`tools/Audit-Status.ps1` finds a slice ticket in either folder).
@@ -88,13 +90,14 @@ audit them here: {{SIBLINGS}}
 
 Fix a finding here only when its proof needs no manual run of the UI:
 - (a) the change is in a pure, unit-tested layer (`ZoomMath`, `DecodeCacheKey`, `OcrResultPolicy`,
-  `ArchivePaths`, `FdSec*`, `ShareConfigBuilder`, ..) and `tools/Run-AllTests.ps1 -SkipGo` passes after
-  it (the viewer suite runs under net48 and net10); or
+  `ArchivePaths`, `FdSec*`, `ShareConfigBuilder`, ..), has a direct static check and records the full
+  suite as RELEASE (the viewer suite runs under net48 and net10); or
 - (b) the change preserves behaviour by construction: `Using` around an `IDisposable` that had no owner,
   a log line inside a silent `Catch`, a comment, a redundant null check removed.
 
-Every inline fix compiles in both viewers (`.\build.ps1 -SkipInstaller`; `msbuild` alone never proves the
-mainline). Everything else is its own ticket, and these always are, whatever they look like:
+Compilation of inline fixes in both viewers is a RELEASE item (`tools/Release.ps1`, via
+`Build-OfflineRelease.ps1`; `msbuild` alone never proves the mainline). Everything else is its own ticket,
+and these always are, whatever they look like:
 `publishing/installer/*` (elevated - a ticket with a VM check); frozen anchors; anything that changes the
 content of an `OcrOverlayDocument` (needs an `OcrPipelineVersion` bump); anything a contract states (an
 amendment first); dead wiring the owner decided to keep (ILMerge, WebView2); any registry, cache-format

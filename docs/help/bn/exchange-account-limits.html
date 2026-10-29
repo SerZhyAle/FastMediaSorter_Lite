@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>অ্যাকাউন্ট সীমা - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">অ্যাকাউন্ট সীমা</h1>
   <section id="purpose">
     <h2>এটি কীসের জন্য</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>আপনার চালানো Media Exchange Server-এর একটি অ্যাকাউন্টের আলাদা সীমা ঠিক করে; 0 রাখা মান সার্ভারের ডিফল্ট অনুসরণ করে। এটি Share Manager সেটিংসের Media Exchange Server পৃষ্ঠায় অ্যাকাউন্ট তালিকার নিচের সীমা.. বোতাম থেকে খোলে, যা অ্যাকাউন্ট বাছলে দেখা যায়। শিরোনামে অ্যাকাউন্টের নাম থাকে: অ্যাকাউন্ট সীমা: &lt;লগইন&gt;।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="অ্যাকাউন্ট সীমা">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="অ্যাকাউন্ট সীমা">
   </figure>
   <section id="order">
     <h2>এই ক্রমে</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>অ্যাকাউন্ট বেছে নিয়ে সীমা.. চাপুন।</li><li>যে সীমা বদলাতে চান তার জন্য সংখ্যা দিন, আর সার্ভারের ডিফল্টের জন্য 0 রাখুন।</li><li>সংরক্ষণ করুন চাপুন।</li><li>ফলাফলের লাইন পড়ুন: &lt;লগইন&gt; অ্যাকাউন্টের সীমা সংরক্ষিত হয়েছে।</li></ol>
   </section>
   <section id="elements">
     <h2>উপাদানসমূহ</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>ডিভাইস ও রিসোর্স</summary><p>সর্বোচ্চ ডিভাইস (0 = ডিফল্ট) ঠিক করে অ্যাকাউন্টে কতগুলো ডিভাইস সাইন ইন থাকতে পারে। সর্বোচ্চ প্রকাশিত রিসোর্স (0 = ডিফল্ট) ঠিক করে অ্যাকাউন্টটি সার্ভারে কতগুলো শেয়ার করা ফোল্ডার ও অন্য রিসোর্স প্রকাশ করতে পারে।</p></details>
+<details id="broadcasts"><summary>সম্প্রচার</summary><p>সর্বোচ্চ সম্প্রচার (0 = ডিফল্ট) পুরো অ্যাকাউন্টের সম্প্রচারের সীমা ঠিক করে, আর প্রতি ডিভাইসে সর্বোচ্চ সম্প্রচার (0 = ডিফল্ট) ঠিক করে তার একটি ডিভাইস কতগুলো শুরু করতে পারে।</p></details>
+<details id="clipboard"><summary>ক্লিপবোর্ড সীমা</summary><p>ক্লিপবোর্ড সীমা, MB (0 = ডিফল্ট 5 GB) সার্ভারে অ্যাকাউন্টের ক্লিপবোর্ডে পাঠানো যায় এমন সবচেয়ে বড় মান ঠিক করে, পূর্ণ মেগাবাইটে। ছোট এককে রাখা সীমা, যেমন 512 KB, 0 দেখায় এবং আপনি এই ঘরে হাত না দেওয়া পর্যন্ত তার নিখুঁত আকার বজায় রাখে।</p></details>
+<details id="save"><summary>সংরক্ষণ ও বাতিল</summary><p>সংরক্ষণ করুন অ্যাকাউন্টের নিজস্ব সীমাগুলো একসঙ্গে বদলে দেয়: 0-র চেয়ে বড় প্রতিটি সংখ্যা একটি সীমা হয়, প্রতিটি 0 মানে সার্ভারের ডিফল্ট, আর পাঁচটি শূন্য অ্যাকাউন্টের নিজস্ব মানগুলো সরিয়ে দেয়। বাতিল কিছুই বদলায় না। সার্ভার কোনো মান প্রত্যাখ্যান করলে ফলাফলের লাইন কারণ জানায়, যেমন: সীমা অনুমোদিত নয়: এটি সার্ভার কর্তৃক গৃহীত সীমার মধ্যে একটি পূর্ণসংখ্যা হতে হবে।</p></details>
+    <p><a href="share-settings.html">ম্যানেজার সেটিংস</a> · <a href="sftp-settings.html">SFTP শেয়ারিং সেটিংস</a> · <a href="exchange-server-settings.html">এক্সচেঞ্জ সার্ভার সেটিংস</a></p>
   </section>
   <nav id="related">
     <h2>সম্পর্কিত</h2>

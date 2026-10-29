@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>Acerca del archivo - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">Acerca del archivo</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>Una instant&#225;nea de solo lectura de lo que el programa sabe del archivo que hay en pantalla: el archivo en s&#237;, una imagen con los datos de su c&#225;mara, un documento y las pistas de audio y v&#237;deo. Se abre desde el elemento i del primer panel, o desde Acerca del archivo en el bloque de archivo de los men&#250;s del visor, y describe el archivo tal como estaba en el momento del clic.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="Acerca del archivo">
+    <img class="shot dark" src="file-details-dark.png" alt="Acerca del archivo">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Muestre un archivo en el visor.</li><li>Haga clic en el elemento i del primer panel, o elija Acerca del archivo en el men&#250;.</li><li>Espere un momento: la l&#237;nea de estado dice Leyendo los metadatos del archivo.. y las filas se van rellenando.</li><li>Lea los bloques, seleccione lo que necesite y pulse Copiar para poner todo el texto en el portapapeles.</li><li>Pulse Cerrar o Esc.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>Archivo</summary><p>Todos los archivos tienen este bloque: Nombre, Carpeta, Tipo, Tama&#241;o, Bytes, Creado, Modificado, &#218;ltimo acceso y Atributos. Una fila sin nada que mostrar se omite. Si no hay ning&#250;n archivo abierto, la l&#237;nea de estado dice No hay ning&#250;n archivo seleccionado; una copia temporal de un archivo comprimido, una direcci&#243;n remota o un archivo que ha desaparecido da El archivo no est&#225; disponible, y no se abre ninguna ventana.</p></details>
+<details id="image-block"><summary>Imagen</summary><p>Para una imagen: Resoluci&#243;n tal como se muestra (una foto de m&#243;vil guardada de lado se lee con su tama&#241;o en vertical), Profundidad de color y Densidad de p&#237;xeles, cuando el archivo los registra.</p></details>
+<details id="camera-block"><summary>C&#225;mara</summary><p>Se leen de los datos EXIF de la foto: C&#225;mara, Software, Fecha de toma, Exposici&#243;n, Abertura, ISO, Distancia focal y Autor. Las coordenadas aparecen solo si la foto lleva datos GPS, y Copiar las incluye, as&#237; que revise el texto antes de compartirlo.</p></details>
+<details id="document-block"><summary>Documento</summary><p>Para un archivo de texto: L&#237;neas, Palabras, Caracteres y Codificaci&#243;n, adem&#225;s de El archivo se ley&#243; solo parcialmente cuando es demasiado grande para leerlo entero. Para un libro electr&#243;nico: Nombre y Autor. Para un PDF: P&#225;ginas.</p></details>
+<details id="media-block"><summary>Medios, V&#237;deo y Audio</summary><p>Para los archivos de audio y v&#237;deo, las etiquetas (Nombre, Int&#233;rprete, &#193;lbum, A&#241;o, Pista, G&#233;nero, Director, Serie, Temporada, Episodio, Duraci&#243;n) y la primera pista de cada tipo (V&#237;deo: Resoluci&#243;n, Fotogramas por segundo, C&#243;dec, Tasa de bits; Audio: C&#243;dec, Canales, Frecuencia de muestreo, Tasa de bits) se a&#241;aden un momento despu&#233;s del resto, cuando el motor multimedia termina de leer. La ventana nunca lo espera. Las transmisiones de red no tienen filas de pistas.</p></details>
+<details id="related-files"><summary>Archivos asociados</summary><p>Los archivos guardados junto a este y que le pertenecen se enumeran por nombre: Subt&#237;tulos, Letra, Portada y Metadatos. El bloque no aparece cuando no hay ninguno.</p></details>
+<details id="copy-close"><summary>Copiar y Cerrar</summary><p>Copiar pone todo el texto en el portapapeles y la l&#237;nea de estado dice Copiado al portapapeles; si otro programa tiene ocupado el portapapeles, lo indica y puede pulsar Copiar de nuevo. Tambi&#233;n funciona una selecci&#243;n copiada con Ctrl+C. Si no se pudo leer nada, el cuadro dice No se pudieron leer los datos del archivo. Junto a los botones, la l&#237;nea de estado muestra el nombre del archivo. Pasar a otro archivo no cambia esta ventana: haga clic en i otra vez para el archivo nuevo.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

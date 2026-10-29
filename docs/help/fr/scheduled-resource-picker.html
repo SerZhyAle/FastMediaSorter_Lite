@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Select Resource for Schedule - Fast Media Sorter</title>
+  <title>Choisir une ressource - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Select Resource for Schedule</h1>
+  <h1 id="title">Choisir une ressource</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Select Resource for Schedule.</p>
+    <p>Choisit une ressource de la liste des ressources de la visionneuse comme source ou destination d&#39;une op&#233;ration planifi&#233;e. Elle s&#39;ouvre depuis &#171;Ressource..&#187; &#224; c&#244;t&#233; de Source ou Destination dans la fen&#234;tre de l&#39;op&#233;ration planifi&#233;e.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Select Resource for Schedule">
-    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Select Resource for Schedule">
+    <img class="shot light" src="scheduled-resource-picker-light.png" alt="Choisir une ressource">
+    <img class="shot dark" src="scheduled-resource-picker-dark.png" alt="Choisir une ressource">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Choisissez la ressource dans la liste &#171;Ressource&#187;.</li><li>V&#233;rifiez ou modifiez &#171;Dossier dans la ressource&#187; ; il commence au dossier racine de la ressource.</li><li>Cliquez sur &#171;Choisir&#187;. &#171;Annuler&#187; conserve l&#39;emplacement pr&#233;c&#233;dent.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="resources"><summary>Liste des ressources</summary><p>Seuls les serveurs SFTP et les dossiers r&#233;seau de la liste de la visionneuse sont propos&#233;s, tri&#233;s par nom ; les ressources d&#39;autres types n&#39;apparaissent pas. S&#39;il n&#39;y en a aucun, la fen&#234;tre indique : &#171;La liste des ressources ne contient aucune ressource adapt&#233;e. Ajoutez un serveur SFTP ou un dossier r&#233;seau dans la visionneuse.&#187; et &#171;Choisir&#187; reste d&#233;sactiv&#233;. L&#39;ajout d&#39;une ressource ou la reconfirmation de sa confiance se fait dans la visionneuse ; cette fen&#234;tre n&#39;&#233;tablit aucune connexion.</p></details>
+<details id="folder"><summary>Dossier dans la ressource</summary><p>Le dossier doit se trouver dans la racine de la ressource choisie, sinon &#171;Enregistrer&#187; dans la fen&#234;tre de l&#39;op&#233;ration le refuse. Choisir une autre ressource remplit de nouveau la zone avec la racine de cette ressource.</p></details>
+<details id="unattended"><summary>S&#39;ex&#233;cute sans poser de questions</summary><p>Le mot de passe et la cl&#233; du serveur viennent de la liste des ressources de la visionneuse. Une ex&#233;cution ne demande rien : si le mot de passe n&#39;est pas enregistr&#233; ou si la cl&#233; du serveur n&#39;est pas confirm&#233;e, l&#39;op&#233;ration s&#39;arr&#234;te et l&#39;historique en indique la raison. Une ressource en lecture seule ne peut pas &#234;tre la cible d&#39;un d&#233;placement ou d&#39;une suppression, une ressource dont la racine est prot&#233;g&#233;e par un PIN est refus&#233;e, et une archive n&#39;accepte que des dossiers ordinaires.</p></details>
+    <p><a href="share-settings.html">Param&#232;tres du gestionnaire</a> · <a href="sftp-settings.html">Param&#232;tres de partage SFTP</a> · <a href="exchange-server-settings.html">Param&#232;tres du serveur d’&#233;change</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

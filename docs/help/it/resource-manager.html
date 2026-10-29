@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>Risorse - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">Risorse</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>L&#39;elenco dei server e delle cartelle di rete che il programma pu&#242; aprire: server SFTP, cartelle di rete di Windows (SMB) e cartelle che Share Manager condivide da questo computer. Si apre da &#171;Gestisci risorse..&#187; nel menu delle cartelle; lo stesso elenco si trova nella pagina &#171;Server e risorse&#187; della finestra Impostazioni.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="Risorse">
+    <img class="shot dark" src="resource-manager-dark.png" alt="Risorse">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Premi &#171;Aggiungi..&#187; e compila i dati del server, oppure porta dentro un file di impostazioni con il pulsante &#171;Altro&#187;.</li><li>Seleziona la nuova riga e premi &#171;Verifica&#187;.</li><li>Premi &#171;Apri&#187; o fai doppio clic sulla riga: il programma si connette e mostra la cartella del server.</li><li>Usa &#171;Modifica..&#187; per cambiare un indirizzo o una password e &#171;Elimina&#187; per dimenticare una risorsa.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>L&#39;elenco</summary><p>Colonne: Nome, Tipo, Indirizzo, Accesso e Ultima apertura. Il tipo &#232; &#171;Server SFTP&#187;, &#171;Cartella di rete (SMB)&#187; o &#171;Cartella condivisa (Share Manager)&#187;; l&#39;accesso indica &#171;Sola lettura&#187; o &#171;Lettura e scrittura&#187;. Una riga sotto l&#39;elenco conta le risorse e, quando non ce ne sono, la finestra mostra un suggerimento e un pulsante &#171;Aggiungi..&#187;. Modifica, Elimina e Verifica (e Apri nella riga inferiore della finestra Risorse) richiedono una riga selezionata; finch&#233; non c&#39;&#232;, il loro suggerimento dice &#171;Selezionare prima una risorsa nell&#39;elenco&#187;.</p></details>
+<details id="add-edit"><summary>Aggiungi.. e Modifica..</summary><p>&#171;Aggiungi..&#187; apre il modulo di una nuova risorsa e &#171;Modifica..&#187; quello della risorsa selezionata. Una password digitata l&#236; viene salvata cifrata per il tuo account Windows, mai nell&#39;elenco stesso.</p></details>
+<details id="remove"><summary>Elimina</summary><p>&#171;Elimina&#187; chiede prima conferma e la risposta predefinita &#232; No. La domanda nomina la risorsa e dice che anche la password salvata per essa viene rimossa, mentre i file sul server non sono toccati.</p></details>
+<details id="check"><summary>Verifica</summary><p>&#171;Verifica&#187; controlla la riga selezionata senza aprirla. Per un server SFTP prova tutti gli indirizzi noti della risorsa e riporta ciascuno come host:porta con un esito: una risposta SSH viva rende la verifica riuscita, una porta aperta che non &#232; SSH &#232; un avviso, il silenzio &#232; un fallimento. Non viene inviata nessuna password. Per una cartella di rete apre la condivisione con la password salvata e legge la sua cartella principale; se non c&#39;&#232; una password salvata, ti chiede di inserirla con &#171;Modifica..&#187;. Per una riga di Share Manager controlla soltanto se la cartella esiste su questo computer.</p></details>
+<details id="open"><summary>Apri</summary><p>&#171;Apri&#187;, o un doppio clic su una riga, consegna la risorsa al programma, che si connette e mostra la sua cartella. Se non c&#39;&#232; una password salvata, o quella salvata viene rifiutata, prima compare una piccola finestra che la chiede.</p></details>
+<details id="more-menu"><summary>Il pulsante Altro</summary><p>Il pulsante con i puntini contiene: &#171;Esporta..&#187; (richiede una risorsa selezionata), &#171;Importa da file..&#187; (un file .fmscfg, .json o .txt, oppure l&#39;immagine di un codice QR; un file si pu&#242; anche trascinare sull&#39;elenco), &#171;Importa dagli appunti&#187;, &#171;Scansiona con la fotocamera..&#187; (presente solo se Share Manager &#232; installato e si trova una fotocamera), &#171;Mostra codice per telefono..&#187; e, per una riga selezionata, &#171;Perch&#233; non si connette?..&#187;, che apre la diagnosi della connessione.</p></details>
+<details id="share-manager-rows"><summary>Righe di Share Manager e I miei dispositivi</summary><p>Una cartella che Share Manager condivide da questo computer viene gestita l&#236;: il suo suggerimento dice &#171;Questa cartella condivisa &#232; gestita in Share Manager&#187;, Modifica ed Elimina sulla sua riga aprono Share Manager invece di cambiare qualcosa qui, ed Esporta &#232; disattivato. Quando il client di scambio &#232; disponibile, una sezione &#171;I miei dispositivi&#187; sotto l&#39;elenco mostra le cartelle degli altri tuoi dispositivi su un server di scambio.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

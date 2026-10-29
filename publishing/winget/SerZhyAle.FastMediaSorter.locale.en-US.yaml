@@ -19,24 +19,29 @@ PackageUrl: https://serzhyale.github.io/FastMediaSorter_Lite/
 License: MIT
 LicenseUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE
 Copyright: Copyright (c) 2025 SZA
-ShortDescription: Fast Media Sorter & Sharing for Windows - sort photos and videos with one key per file; an optional server, off by default, shares folders to your phone over SFTP.
+ShortDescription: Fast Media Sorter & Sharing for Windows - a media and file manager that sorts photos and videos with one key per file, manages files on disks and servers and shares folders to your phone over SFTP (off until you switch it on).
 Description: |-
-  Three optional parts: a media viewer and sorter, a local SFTP folder-sharing service, and
-  a Media Exchange Server (in development, not released yet) - start with the viewer or with
-  the folder-sharing server, and add the rest only if you want it. This package installs the
-  viewer, with local sharing as an optional component that stays off until you switch it on;
-  the Media Exchange Server is still in development and is in no package.
+  Three optional parts: a media and file manager that views and sorts photos and videos with one
+  key and manages files in local folders, on servers and on connected devices; a local
+  sharing and scheduling service that shares folders over SFTP, runs file operations on a schedule
+  and connects this PC to an exchange account; and a Media Exchange Server that you run yourself,
+  through which your devices reach each other - start with the manager or with the folder-sharing
+  server, and add the rest only if you want it. This package installs the manager, with local
+  sharing and scheduling as an optional component that stays off until you switch it on; the
+  Media Exchange Server is not in this package.
 
-  Fast Media Sorter & Sharing for Windows is a fast, keyboard-driven viewer and sorter for images and
-  video on Windows - sort, view and share. Tick folders to browse, then move, copy, rename or
-  delete files with single-key hotkeys - built for photographers and creators who triage large media
-  folders quickly. It handles a wide range of formats, slideshow and random modes, EXIF auto-rotate, an
-  Ambilight-style background fill, and optional on-image OCR translation.
+  Fast Media Sorter & Sharing for Windows is a fast, keyboard-driven way to view and sort photos and
+  videos, with a file manager mode for local folders, SFTP and SMB servers and
+  connected devices. Tick folders to browse, then move, copy, rename or delete files with single-key
+  hotkeys - built for photographers and creators who triage large media folders quickly. It handles a
+  wide range of formats, slideshow and random modes, EXIF auto-rotate, an Ambilight-style background
+  fill, and optional on-image OCR translation.
 
   Sharing here means giving your own media to your own devices: the bundled Share Manager turns the PC
   into a private SFTP server for the folders you pick, and the Android app pairs with it by QR code. It
-  is opt-in and stays off until you switch it on. The setup wizard lets you leave it out: the Compact
-  type installs the viewer without folder sharing.
+  also runs file operations on a schedule and joins this PC to an exchange account. It is opt-in and
+  stays off until you switch it on. The setup wizard lets you leave it out: the Compact type installs
+  the manager without folder sharing.
 
   The main program is now a 64-bit .NET 10 build that carries its own runtime - there is nothing extra
   to install and no .NET Framework requirement. It replaces the previous version in place and keeps
@@ -63,22 +68,22 @@ InstallationNotes: "This package is unsigned - Windows may show a SmartScreen wa
 # `discoverability.wingetTags` in tools/site-facts.json, held by tools/Test-SitePositioning.ps1). No tag is a
 # competitor's name, and none repeats a retired runtime word.
 Tags:
-- heic
-- hotkeys
-- image-sorter
-- image-viewer
-- media-player
-- media-sorter
-- ocr
-- photo-organizer
+- media-manager
+- file-manager
 - photo-sorter
-- photos
-- sftp
-- sharing
-- slideshow
+- photo-organizer
+- image-viewer
 - video-viewer
-- videos
+- media-sorter
+- media-player
+- slideshow
+- sftp
+- ocr
+- heic
 - webp
+- photos
+- videos
+- sharing
 ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830
 Documentations:
 - DocumentLabel: Windows warning (SmartScreen)

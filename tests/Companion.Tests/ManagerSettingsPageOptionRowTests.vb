@@ -126,9 +126,10 @@ Public Class ManagerSettingsPageOptionRowTests
         Return TryCast(field.GetValue(window), CheckBox)
     End Function
 
-    ''' <summary>Opens every group of the page (nothing folds any more, but a page may still hold a collapsed one) and selects it.</summary>
-    Private Shared Sub ShowPage(window As Share_Settings_Form, pageId As String)
-        GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", Flags).Invoke(window, New Object() {pageId})
+    ''' <summary>Selects the page at one rail group (a page shows only the selected group's card) and opens every group of
+    ''' the page (nothing folds any more, but a page may still hold a collapsed one).</summary>
+    Private Shared Sub ShowPage(window As Share_Settings_Form, pageId As String, Optional groupId As String = Nothing)
+        GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", Flags).Invoke(window, New Object() {pageId, groupId})
         Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", Flags).GetValue(window),
                                 Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
         If groups.ContainsKey(pageId) Then
@@ -357,10 +358,14 @@ Public Class ManagerSettingsPageOptionRowTests
                                 GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", Flags).Invoke(window, New Object() {snapshot})
                             End If
                             For Each pageId As String In Pages(window).Keys.ToList()
-                                ShowPage(window, pageId)
-                                RevealConditionalGroups(window)
-                                Dim lbl As String = code & " @" & CInt(factor * 100).ToString(CultureInfo.InvariantCulture) & "% " & destination.ToString()
-                                AuditPage(window, pageId, lbl, factor, found, seen)
+                                Dim groupIds As List(Of String) = SettingsGroups(window, pageId).Select(Function(g) g.Id).ToList()
+                                If groupIds.Count = 0 Then groupIds.Add(Nothing)
+                                For Each groupId In groupIds
+                                    ShowPage(window, pageId, groupId)
+                                    RevealConditionalGroups(window)
+                                    Dim lbl As String = code & " @" & CInt(factor * 100).ToString(CultureInfo.InvariantCulture) & "% " & destination.ToString()
+                                    AuditPage(window, pageId, lbl, factor, found, seen)
+                                Next
                             Next
                         Next
                         ' Where a box that stayed out of the audit is cut off from the screen (the message names the first hidden container).
@@ -398,7 +403,7 @@ Public Class ManagerSettingsPageOptionRowTests
                     Dim keep As CheckBox = Fld(window, "_chkXKeep")
                     Assert.NotNull(keep)
                     Dim row As OptionRowHost = DirectCast(keep.Parent, OptionRowHost)
-                    ShowPage(window, "exchange")
+                    ShowSettingsCardOf(window, keep)
                     Dim setVisible As MethodInfo = GetType(Share_Settings_Form).GetMethod("SetBooleanVisible", BindingFlags.Static Or BindingFlags.NonPublic)
                     Dim setEnabled As MethodInfo = GetType(Share_Settings_Form).GetMethod("SetBooleanEnabled", BindingFlags.Static Or BindingFlags.NonPublic)
                     setVisible.Invoke(Nothing, New Object() {keep, False})

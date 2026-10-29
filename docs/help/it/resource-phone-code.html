@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>Connessione del telefono - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">Connessione del telefono</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>Mostra un codice QR che un telefono scansiona per inviare a questo computer le impostazioni di una cartella. Si apre da &#171;Mostra codice per telefono..&#187; nel menu &#171;Altro&#187; dell&#39;elenco delle risorse.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>Non c&#39;&#232; uno screenshot di questa finestra: all&#39;apertura avvia un dispositivo, un ascolto di rete o l&#39;intero visualizzatore, quindi non viene acquisita.</figcaption></figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Apri &#171;Mostra codice per telefono..&#187;.</li><li>Scansiona il codice QR con il telefono; il telefono deve raggiungere questo computer nella rete locale.</li><li>Il telefono invia il suo codice, la finestra dice &#171;Codice ricevuto&#187; e si chiude, e l&#39;importazione parte.</li><li>Se il telefono non riesce a raggiungere il computer, metti il suo codice negli appunti di questo computer, come testo o come schermata del codice QR, e premi &#171;Incolla dagli appunti..&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>Il codice QR</summary><p>Il codice rappresenta un indirizzo monouso nella tua rete locale con un token a uso singolo. La finestra resta in ascolto a quell&#39;indirizzo solo finch&#233; &#232; aperta e smette quando si chiude; si ascolta solo quell&#39;unico indirizzo, non ogni scheda di rete. Se l&#39;ascolto non riesce a partire, la riga di stato dice &#171;Impossibile avviare la ricezione locale&#187;.</p></details>
+<details id="address"><summary>Il campo dell&#39;indirizzo e Copia</summary><p>Il campo di sola lettura sotto il codice mostra lo stesso indirizzo come testo. &#171;Copia&#187; lo mette negli appunti con i marcatori di riservatezza (niente cronologia degli appunti, niente sincronizzazione cloud), perch&#233; il token al suo interno permette a chiunque lo abbia di consegnare un codice a questa finestra. Chi apre l&#39;indirizzo in un browser vede solo una breve pagina che dice che &#232; un indirizzo monouso.</p></details>
+<details id="paste"><summary>Incolla dagli appunti</summary><p>&#171;Incolla dagli appunti..&#187; legge dagli appunti un testo o una schermata del codice QR del telefono e lo controlla con lo stesso lettore del testo digitato. Se non &#232; un codice, la riga di stato ne spiega il motivo e la finestra resta aperta per il telefono.</p></details>
+<details id="result"><summary>Che cosa succede con il codice</summary><p>Il primo codice che arriva, dal telefono o dagli appunti, occupa la finestra; un secondo viene scartato. La finestra si chiude e parte la stessa importazione di &#171;Importa da file..&#187;: un riepilogo da confermare, una domanda sulla password se il codice la richiede, poi &#171;Risorse aggiunte o aggiornate&#187; con un numero nella riga di stato.</p></details>
+<details id="close"><summary>Attesa e Chiudi</summary><p>Durante l&#39;attesa la riga di stato dice &#171;In attesa della connessione del telefono..&#187;. &#171;Chiudi&#187; termina soltanto l&#39;attesa; Invio ed Esc scelgono entrambi questo pulsante, cos&#236; la pressione di un tasto non accetta mai il codice del telefono.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

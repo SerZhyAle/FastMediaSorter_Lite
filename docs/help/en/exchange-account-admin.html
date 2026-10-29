@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>New account - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">New account</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>One window in two modes. &#39;New account&#39; adds an account to the Media Exchange Server you run; &#39;Reset password: &lt;login&gt;&#39; gives an existing account a new password. They open from &#39;Add an account..&#39; and &#39;Reset password..&#39; under the account list on the Media Exchange Server page of the Share Manager settings; Reset needs an account selected.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="New account">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="New account">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>In Add mode type the login.</li><li>Choose how the password is made.</li><li>In Reset mode decide whether every device of the account is signed out.</li><li>Press &#39;Create&#39; or &#39;Reset&#39;.</li><li>Copy the generated password from the next window, or type your own.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>Statement for the first account</summary><p>At the very first account the window starts with &#39;Before you create the first account, read what the operator of the server can see:&#39; and a read-only box with the statement. Later accounts and resets do not show it.</p></details>
+<details id="login"><summary>Login</summary><p>Add mode only. 3 to 64 characters: lower-case Latin letters, digits, dot, underscore and hyphen; capitals are folded to lower case. The hint turns to the warning colour while the text cannot be a login, and &#39;Create&#39; does not go on until it can.</p></details>
+<details id="password-choice"><summary>How the password is made</summary><p>&#39;Generate a password (it is shown once)&#39; is the default: the program makes a random password that meets the rules and the next window shows it a single time. &#39;Type a password myself&#39; opens the &#39;Account password&#39; window, where a live line names what is missing: at least 10 characters with an upper-case and a lower-case Latin letter and a digit.</p></details>
+<details id="sign-out"><summary>Sign out every device</summary><p>Reset mode only. &#39;Also sign out every device of this account right away&#39; is ticked by default. The result line then reports that the password is changed and all the devices of the account are signed out; without the tick it reports only that the password is changed.</p></details>
+<details id="after"><summary>After the server accepts</summary><p>The result line reports that the account is created. A generated password appears once in its own window with &#39;Copy password&#39; and &#39;Set my own password..&#39;, which returns to Reset on the typed choice. With &#39;Keep account passwords on this PC&#39; on, the password is also stored on this PC and the account gets &#39;Show password..&#39;. If this build offers the exchange client features and this PC has no account of its own, it is signed in as the account&#39;s first device with this password.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

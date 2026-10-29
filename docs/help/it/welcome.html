@@ -5,30 +5,36 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Welcome Wizard - Fast Media Sorter</title>
+  <title>Benvenuto - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="Server di scambio"></span> Welcome Wizard</h1>
+  <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="Server di scambio"></span> Benvenuto</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Welcome Wizard.</p>
+    <p>I passaggi di benvenuto configurano l&#39;essenziale in pochi minuti: lingua, aspetto, la cartella per il tasto 1, l&#39;eliminazione e le associazioni dei file. Si aprono al primo avvio, dal pulsante &#171;Configurazione iniziale&#187; sulla schermata vuota del visualizzatore e da &#171;Mostra di nuovo i passaggi di benvenuto&#187; nella pagina &#171;Generali&#187; delle Impostazioni. Esistono solo nella versione a 64 bit.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="welcome-light.png" alt="Welcome Wizard">
-    <img class="shot dark" src="welcome-dark.png" alt="Welcome Wizard">
+    <img class="shot light" src="welcome-light.png" alt="Benvenuto">
+    <img class="shot dark" src="welcome-dark.png" alt="Benvenuto">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Scegliere la lingua.</li><li>Scegliere lo schema dello sfondo e l&#39;azione della rotella.</li><li>Scegliere la cartella per il tasto 1.</li><li>Leggere come funziona l&#39;eliminazione.</li><li>Impostare le associazioni dei file.</li><li>Controllare il riepilogo e premere &#171;Fine&#187;. &#171;Avanti&#187; passa al passaggio successivo, &#171;Indietro&#187; torna al precedente, &#171;Salta la configurazione&#187; salta all&#39;ultimo passaggio.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="step-language"><summary>Lingua dell&#39;interfaccia</summary><p>La finestra cambia lingua subito, come anteprima; il visualizzatore la adotta solo con &#171;Avanti&#187;. Se si chiude la finestra senza averlo premuto, viene ripristinata la lingua del visualizzatore.</p></details>
+<details id="step-appearance"><summary>Aspetto</summary><p>Scegliere lo schema dello sfondo dell&#39;area dell&#39;immagine (Per angolo, Nero, Bianco, Per lato, Dall&#39;alto, Dal basso) e l&#39;azione della rotella: o esegue lo zoom sul cursore e si scorre con le frecce, oppure scorre i file e lo zoom si fa con Ctrl+rotella. Entrambe le scelte si possono cambiare in seguito nella pagina &#171;Immagini&#187; delle Impostazioni.</p></details>
+<details id="step-sorting"><summary>Come funziona lo smistamento</summary><p>Le cifre 0-9 spostano il file corrente in una cartella; Shift pi&#249; una cifra della riga superiore lo copia. La cartella per il tasto 1 si sceglie con &#171;Scegli cartella..&#187;; le altre nove si impostano in seguito nella pagina &#171;Destinazioni&#187; delle Impostazioni. Se una cartella &#232; scomparsa, viene segnalato: &#171;La cartella non &#232; pi&#249; disponibile. Sceglierne un&#39;altra.&#187;</p></details>
+<details id="step-delete"><summary>Eliminazione sicura</summary><p>Mostra come funzionano Del (Cestino) e Shift+Del (definitiva). Le opzioni di eliminazione si trovano nella pagina &#171;File&#187; delle Impostazioni.</p></details>
+<details id="step-associations"><summary>Aprire qui le immagini</summary><p>Permette a questo programma di aprire immagini e video da Esplora risorse. Il passaggio compare solo quando il programma non &#232; installato come pacchetto di Microsoft Store; vale per il proprio account utente e non richiede diritti di amministratore.</p></details>
+<details id="step-finish"><summary>Tutto pronto</summary><p>Il riepilogo elenca ogni impostazione, il suo valore e dove modificarla. Se su questo PC sono installati componenti server, il blocco &#171;Server su questo PC&#187; mostra ciascuno con il suo stato e il pulsante &#171;Apri il gestore&#187;; se non ne &#232; installato nessuno, il blocco &#232; nascosto.</p></details>
+<details id="step-parts"><summary>Parti di un passaggio</summary><p>Ogni passaggio ha quattro parti: &#171;Cos&#39;&#232;&#187;, &#171;Perch&#233;&#187;, &#171;Come funzioner&#224;&#187; e &#171;Dove si cambia&#187;.</p></details>
+<details id="buttons"><summary>Pulsanti e chiusura</summary><p>&#171;Salta la configurazione&#187; passa all&#39;ultimo passaggio e scarta l&#39;anteprima della lingua. &#171;Avanti&#187; applica solo ci&#242; che &#232; cambiato nel passaggio corrente. &#171;Fine&#187; chiude la finestra, e lo stesso fa Esc (tranne quando &#232; aperto un elenco a discesa). La chiusura registra che i passaggi sono stati eseguiti; per rivederli si usa l&#39;opzione nella pagina &#171;Generali&#187; delle Impostazioni.</p></details>
+    <p><a href="settings.html">Impostazioni</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

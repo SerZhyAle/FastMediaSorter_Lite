@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Media Exchange Server Welcome - Fast Media Sorter</title>
+  <title>Erster Start des Servers - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Media Exchange Server Welcome</h1>
+  <h1 id="title">Erster Start des Servers</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Media Exchange Server Welcome.</p>
+    <p>Eine Anleitung f&#252;r den ersten Start der Gruppe Austauschserver im Share Manager. Sie erkl&#228;rt, was der Computer wird, zeigt die Betreibererkl&#228;rung, legt die Ports, die Adresse f&#252;r Clients und das erste Konto fest und endet mit dem Serverstatus. Sie &#246;ffnet sich nur, wenn der Austauschserver vorhanden und aktiviert ist.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="server-welcome-light.png" alt="Media Exchange Server Welcome">
-    <img class="shot dark" src="server-welcome-dark.png" alt="Media Exchange Server Welcome">
+    <img class="shot light" src="server-welcome-light.png" alt="Erster Start des Servers">
+    <img class="shot dark" src="server-welcome-dark.png" alt="Erster Start des Servers">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Lesen Sie auf der ersten Seite die Betreibererkl&#228;rung.</li><li>Pr&#252;fen Sie die Ports und die Firewall-Regel.</li><li>Entscheiden Sie bei einer Server-Edition ohne Dienst &#252;ber den Windows-Dienst.</li><li>Tragen Sie die Adresse f&#252;r Clients ein.</li><li>Legen Sie das erste Konto an.</li><li>Pr&#252;fen Sie den Fingerabdruck des Zertifikats und dr&#252;cken Sie &#171;Fertig&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="pages"><summary>Seiten und Schaltfl&#228;chen</summary><p>Die Fu&#223;zeile zeigt &#171;Schritt N von M&#187;; &#171;Zur&#252;ck&#187;, &#171;Weiter&#187; und &#171;Sp&#228;ter&#187; funktionieren wie in jedem Assistenten, und &#171;Fertig&#187; auf der letzten Seite &#246;ffnet die Gruppe Austauschserver des Managers. Eine Seite l&#228;sst sich ohne &#196;nderungen &#252;berspringen: Der Server bleibt dann aus oder so, wie er war.</p></details>
+<details id="operator-statement"><summary>Betreibererkl&#228;rung</summary><p>Die vollst&#228;ndige Erkl&#228;rung, wer auf dem Server was sieht. Sie l&#228;sst sich nicht &#252;berspringen. Der Server verbindet die Ger&#228;te eines Kontos und meldet, welche davon online sind.</p></details>
+<details id="ports"><summary>Ports und Firewall</summary><p>Ein Treffpunkt-Port f&#252;r Ger&#228;te und ein Portbereich f&#252;r Clients von Drittanbietern. Die Ger&#228;te m&#252;ssen den Serverport kennen, deshalb gelten &#196;nderungen nur f&#252;r neue Codes. Die Firewall-Regel geh&#246;rt zum Programm, daher braucht eine Port&#228;nderung keine neue Regel. Diese Werte liegen in der Gruppe Austauschserver.</p></details>
+<details id="service"><summary>Windows-Dienst</summary><p>Wird nur auf einer Server-Edition angezeigt, auf der der Dienst noch nicht existiert. Ein Dienst h&#228;lt den Server verf&#252;gbar, wenn niemand angemeldet ist. Das Kontrollk&#228;stchen merkt sich nur Ihre Zustimmung: Der Dienst wird erst nach dem ersten Konto mit einer einzigen Rechteabfrage registriert, vorher wird nichts installiert. &#171;Als Dienst registrieren..&#187; in der Gruppe Austauschserver macht dasselbe sp&#228;ter.</p></details>
+<details id="client-address"><summary>Adresse f&#252;r Clients</summary><p>&#171;Adresse f&#252;r Clients (Host:Port):&#187; ist das, womit andere Ger&#228;te diesen Computer erreichen. &#171;Lokale Adresse vorschlagen&#187; f&#252;llt das Feld nur auf Knopfdruck. Eine leere Adresse h&#228;lt einen rein lokalen ersten Start g&#252;ltig, verbirgt aber &#220;bertragungen und Ordnerverbindungen vor anderen Ger&#228;ten.</p></details>
+<details id="first-account"><summary>Erstes Konto</summary><p>Das Konto, mit dem sich das erste Ger&#228;t anmeldet. W&#228;hlen Sie &#171;Passwort erzeugen&#187; oder &#171;Eigenes Passwort eingeben&#187;; &#171;Diesen PC mit dem Konto verbinden&#187; verbindet diesen Computer mit dem Konto. &#171;Weiter&#187; legt das Konto an, startet den Server und pr&#252;ft das Zertifikat. Das Kennwort wird einmal im vorhandenen Dialog angezeigt und nicht auf diesem PC gespeichert. Ein Fehler nach dem Anlegen des Kontos entfernt es nicht wieder.</p></details>
+<details id="server-ready"><summary>Server ist bereit</summary><p>Die letzte Seite nennt, wo die Adresse, der Benutzername und der Fingerabdruck des Zertifikats festgehalten sind, und bietet &#171;Fingerabdruck kopieren&#187; und &#171;Verbindungszeichenfolge und QR-Code..&#187; an. Ein Ger&#228;t vertraut dem Server, nachdem es bei der ersten Verbindung den Fingerabdruck gepr&#252;ft hat. Die Links &#171;Telefon verbinden (Hilfe)&#187; und &#171;Ersten Ordner freigeben (Hilfe)&#187; f&#252;hren zu den passenden Hilfeseiten.</p></details>
+    <p><a href="share-settings.html">Managereinstellungen</a> · <a href="sftp-settings.html">SFTP-Freigabeeinstellungen</a> · <a href="exchange-server-settings.html">Einstellungen des Austauschservers</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

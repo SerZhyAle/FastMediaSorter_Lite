@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Convert to Video - Fast Media Sorter</title>
+  <title>In Video umwandeln - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Convert to Video</h1>
+  <h1 id="title">In Video umwandeln</h1>
   <section id="purpose">
     <h2>Verwendungszweck</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Convert to Video.</p>
+    <p>Das Fortschrittsfenster von In Video umwandeln: Es macht aus einem animierten GIF, WebP oder APNG ein MP4 und l&#246;scht dann das Original. Es &#246;ffnet sich, nachdem Sie die Umwandlung best&#228;tigt haben, bleibt &#252;ber dem Viewer, bis die Arbeit endet, und hat eine einzige Schaltfl&#228;che, Abbrechen.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="video-convert-light.png" alt="Convert to Video">
-    <img class="shot dark" src="video-convert-dark.png" alt="Convert to Video">
+    <img class="shot light" src="video-convert-light.png" alt="In Video umwandeln">
+    <img class="shot dark" src="video-convert-dark.png" alt="In Video umwandeln">
   </figure>
   <section id="order">
     <h2>In dieser Reihenfolge</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Zeigen Sie ein animiertes Bild an.</li><li>W&#228;hlen Sie im Bildmen&#252; In Video umwandeln.. oder dr&#252;cken Sie die Schaltfl&#228;che In Video umwandeln der Symbolleiste; beide gibt es nur, solange eine Animation angezeigt wird, und es gibt keine Tastenkombination.</li><li>Lesen Sie die Best&#228;tigung und dr&#252;cken Sie Umwandeln.</li><li>Wenn Sie zum Herunterladen von FFmpeg gefragt werden, antworten Sie mit Ja.</li><li>Beobachten Sie den Balken oder dr&#252;cken Sie Abbrechen.</li><li>Der Viewer &#246;ffnet das neue MP4.</li></ol>
   </section>
   <section id="elements">
     <h2>Die Elemente</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="start"><summary>Start der Umwandlung</summary><p>Der Befehl wird nur f&#252;r Animationen angeboten, nie f&#252;r ein Standbild oder ein Video, und der Viewer lehnt ihn bei einem gesch&#252;tzten Container oder an einem Ort ab, an dem neben der Datei nichts geschrieben werden kann. Die Wiedergabe stoppt, sobald die Arbeit beginnt.</p></details>
+<details id="confirm"><summary>Die Best&#228;tigung</summary><p>Sie lautet sinngem&#228;&#223;: Das Original wird in das neue MP4 umgewandelt, und das Original wird endg&#252;ltig gel&#246;scht, am Papierkorb vorbei. Hat die Animation Transparenz, kommt hinzu: Transparenz wird mit Schwarz gef&#252;llt. Abbrechen ist die Standardantwort. Das Kontrollk&#228;stchen Bis zum Schlie&#223;en des Programms nicht mehr fragen gilt nur, bis der Viewer geschlossen wird; es wird nie gespeichert.</p></details>
+<details id="ffmpeg"><summary>FFmpeg</summary><p>Die Umwandlung verwendet FFmpeg, das nicht zum Programm geh&#246;rt. Fehlt es, werden Sie einmal nach dem Download gefragt (die Frage zeigt die Gr&#246;&#223;e; die Datei kommt von der Projektseite, wird lokal gespeichert und ist freie Software unter der GPL). Antworten Sie mit Nein, endet der Vorgang hier, und nichts wird erstellt oder gel&#246;scht.</p></details>
+<details id="progress"><summary>Das Fortschrittsfenster</summary><p>Die Titelzeile lautet Video wird erstellt.. mit einer Prozentangabe, und der Balken folgt ihr. Ist die L&#228;nge der Animation unbekannt, pendelt der Balken nur hin und her, ohne Zahl. Abbrechen, die Esc-Taste und das Schlie&#223;feld bedeuten dasselbe: Das Fenster bleibt einen Moment stehen, bis der Encoder wirklich angehalten hat, schlie&#223;t sich dann, und der Viewer meldet Die Umwandlung wurde abgebrochen. Der Viewer l&#228;sst sich w&#228;hrenddessen nicht bedienen.</p></details>
+<details id="result"><summary>Was Sie erhalten</summary><p>Ein MP4 im selben Ordner mit demselben Namen (ist der Name vergeben, wird eine Zahl in Klammern angeh&#228;ngt), mit der Bildrate der Animation, zwischen 1 und 50 Bildern pro Sekunde. Es wird unter einem tempor&#228;ren Namen geschrieben und nach Fertigstellung umbenannt. Das Original wird erst gel&#246;scht, wenn das MP4 unter seinem endg&#252;ltigen Namen existiert und gepr&#252;ft wurde, dass es die ganze Animation enth&#228;lt. Die Statuszeile sagt Fertig, und der Viewer zeigt das Video.</p></details>
+<details id="safety"><summary>Wenn etwas schiefgeht</summary><p>Das Original bleibt erhalten, und die Statuszeile nennt den Grund: Das Video konnte nicht erstellt werden, mit dem Grund; das Video wurde erstellt, aber das Original lie&#223; sich nicht l&#246;schen; oder das Video konnte nicht auf Vollst&#228;ndigkeit gepr&#252;ft werden und das Original blieb erhalten. Ein fehlgeschlagener Lauf l&#228;sst das Original unber&#252;hrt, entfernt die tempor&#228;re Datei und schreibt Details ins Protokoll.</p></details>
+    <p><a href="settings.html">Einstellungen</a></p>
   </section>
   <nav id="related">
     <h2>Verwandte Themen</h2>

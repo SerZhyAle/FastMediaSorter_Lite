@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>Ressources - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">Ressources</h1>
   <section id="purpose">
     <h2>Objectif</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>La liste des serveurs et des dossiers r&#233;seau que le programme peut ouvrir : serveurs SFTP, dossiers r&#233;seau Windows (SMB) et dossiers que Share Manager partage depuis cet ordinateur. Elle s&#39;ouvre depuis &#171;G&#233;rer les ressources..&#187; dans le menu des dossiers ; la m&#234;me liste se trouve sur la page &#171;Serveur et ressources&#187; de la fen&#234;tre des param&#232;tres.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="Ressources">
+    <img class="shot dark" src="resource-manager-dark.png" alt="Ressources">
   </figure>
   <section id="order">
     <h2>Dans cet ordre</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Appuyez sur &#171;Ajouter..&#187; et renseignez le serveur, ou apportez un fichier de param&#232;tres avec le bouton &#171;Plus&#187;.</li><li>S&#233;lectionnez la nouvelle ligne et appuyez sur &#171;V&#233;rifier&#187;.</li><li>Appuyez sur &#171;Ouvrir&#187; ou double-cliquez sur la ligne : le programme se connecte et affiche le dossier du serveur.</li><li>Utilisez &#171;Modifier..&#187; pour changer une adresse ou un mot de passe et &#171;Supprimer&#187; pour oublier une ressource.</li></ol>
   </section>
   <section id="elements">
     <h2>Les éléments</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>La liste</summary><p>Colonnes : Nom, Type, Adresse, Acc&#232;s et Derni&#232;re ouverture. Le type est &#171;Serveur SFTP&#187;, &#171;Dossier r&#233;seau (SMB)&#187; ou &#171;Dossier partag&#233; (Share Manager)&#187; ; l&#39;acc&#232;s indique &#171;Lecture seule&#187; ou &#171;Lecture et &#233;criture&#187;. Une ligne sous la liste compte les ressources et, s&#39;il n&#39;y en a aucune, la fen&#234;tre affiche une indication et un bouton &#171;Ajouter..&#187;. Modifier, Supprimer et V&#233;rifier (et Ouvrir dans la rang&#233;e du bas de la fen&#234;tre Ressources) demandent une ligne s&#233;lectionn&#233;e ; tant qu&#39;il n&#39;y en a pas, leur info-bulle indique &#171;S&#233;lectionnez d&#39;abord une ressource dans la liste&#187;.</p></details>
+<details id="add-edit"><summary>Ajouter.. et Modifier..</summary><p>&#171;Ajouter..&#187; ouvre le formulaire d&#39;une nouvelle ressource et &#171;Modifier..&#187; celui de la ressource s&#233;lectionn&#233;e. Un mot de passe saisi l&#224; est enregistr&#233; chiffr&#233; pour votre compte Windows, jamais dans la liste elle-m&#234;me.</p></details>
+<details id="remove"><summary>Supprimer</summary><p>&#171;Supprimer&#187; demande d&#39;abord confirmation, et la r&#233;ponse par d&#233;faut est Non. La question nomme la ressource et pr&#233;cise que le mot de passe enregistr&#233; pour elle dispara&#238;t aussi, tandis que les fichiers sur le serveur ne sont pas touch&#233;s.</p></details>
+<details id="check"><summary>V&#233;rifier</summary><p>&#171;V&#233;rifier&#187; teste la ligne s&#233;lectionn&#233;e sans l&#39;ouvrir. Pour un serveur SFTP, il essaie toutes les adresses connues de la ressource et signale chacune sous la forme h&#244;te:port avec un verdict : une r&#233;ponse SSH vivante fait de la v&#233;rification un succ&#232;s, un port ouvert qui n&#39;est pas SSH est un avertissement, le silence est un &#233;chec. Aucun mot de passe n&#39;est envoy&#233;. Pour un dossier r&#233;seau, il ouvre le partage avec le mot de passe enregistr&#233; et lit son dossier racine ; si aucun mot de passe n&#39;est enregistr&#233;, il vous demande d&#39;en saisir un avec &#171;Modifier..&#187;. Pour une ligne Share Manager, il regarde seulement si le dossier existe sur cet ordinateur.</p></details>
+<details id="open"><summary>Ouvrir</summary><p>&#171;Ouvrir&#187;, ou un double-clic sur une ligne, confie la ressource au programme, qui se connecte et affiche son dossier. Si aucun mot de passe n&#39;est enregistr&#233;, ou si celui qui l&#39;est est refus&#233;, une petite fen&#234;tre le demande d&#39;abord.</p></details>
+<details id="more-menu"><summary>Le bouton Plus</summary><p>Le bouton aux points contient : &#171;Exporter..&#187; (demande une ressource s&#233;lectionn&#233;e), &#171;Importer depuis un fichier..&#187; (un fichier .fmscfg, .json ou .txt, ou l&#39;image d&#39;un code QR ; un fichier peut aussi &#234;tre d&#233;pos&#233; sur la liste), &#171;Importer du presse-papiers&#187;, &#171;Scanner avec la cam&#233;ra..&#187; (pr&#233;sent seulement si Share Manager est install&#233; et qu&#39;une cam&#233;ra est trouv&#233;e), &#171;Afficher le code pour le t&#233;l&#233;phone..&#187; et, pour une ligne s&#233;lectionn&#233;e, &#171;Pourquoi la connexion &#233;choue-t-elle ?..&#187;, qui ouvre le diagnostic de connexion.</p></details>
+<details id="share-manager-rows"><summary>Lignes Share Manager et Mes appareils</summary><p>Un dossier que Share Manager partage depuis cet ordinateur y est g&#233;r&#233; : son info-bulle indique &#171;Ce dossier partag&#233; est g&#233;r&#233; dans Share Manager&#187;, Modifier et Supprimer sur sa ligne ouvrent Share Manager au lieu de changer quoi que ce soit ici, et Exporter est d&#233;sactiv&#233;. Lorsque le client d&#39;&#233;change est disponible, une section &#171;Mes appareils&#187; sous la liste affiche les dossiers de vos autres appareils sur un serveur d&#39;&#233;change.</p></details>
+    <p><a href="settings.html">Param&#232;tres</a></p>
   </section>
   <nav id="related">
     <h2>Sujets associés</h2>

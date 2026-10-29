@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Account Limits - Fast Media Sorter</title>
+  <title>账户限额 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Account Limits</h1>
+  <h1 id="title">账户限额</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Account Limits.</p>
+    <p>为您运行的 Media Exchange Server 的某个账户设置单独的限额；保持为 0 的值沿用服务器默认值。从 Share Manager 设置中 Media Exchange Server 页面账户列表下方的「限额..」按钮打开，该按钮在选中账户后出现。标题会写出账户名：「账户限额：&lt;登录名&gt;」。</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-limits-light.png" alt="Exchange Account Limits">
-    <img class="shot dark" src="exchange-account-limits-dark.png" alt="Exchange Account Limits">
+    <img class="shot light" src="exchange-account-limits-light.png" alt="账户限额">
+    <img class="shot dark" src="exchange-account-limits-dark.png" alt="账户限额">
   </figure>
   <section id="order">
     <h2>操作顺序</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>选中账户并点击「限额..」。</li><li>为想要更改的每项限额设置数值，保持 0 表示沿用服务器默认值。</li><li>点击「保存」。</li><li>查看结果行：「账户 &lt;登录名&gt; 的限额已保存。」</li></ol>
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="devices-resources"><summary>设备与资源</summary><p>「最大设备数（0 = 默认）：」限制可登录该账户的设备数量。「最大已发布资源数（0 = 默认）：」限制该账户可在服务器上发布的共享文件夹和其他资源的数量。</p></details>
+<details id="broadcasts"><summary>广播</summary><p>「最大广播数（0 = 默认）：」限制整个账户的广播数量，「每台设备的最大广播数（0 = 默认）：」限制其中一台设备可以发起的广播数量。</p></details>
+<details id="clipboard"><summary>剪贴板限额</summary><p>「剪贴板限额，MB（0 = 默认 5 GB）：」设置账户可发送到服务器上其剪贴板的最大值，以整数兆字节计。以更小单位存储的限额（例如 512 KB）显示为 0，只要您不改动此字段，就会保持其精确大小。</p></details>
+<details id="save"><summary>保存与取消</summary><p>「保存」会整体替换该账户自己的限额：每个大于 0 的数值成为一项限额，每个 0 表示沿用服务器默认值，五个 0 则清除该账户的所有自定义值。「取消」不会更改任何内容。如果服务器拒绝某个值，结果行会给出原因，例如「限额不被允许：必须是服务器接受范围内的整数。」</p></details>
+    <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">
     <h2>相关主题</h2>

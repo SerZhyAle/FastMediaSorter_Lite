@@ -36,7 +36,15 @@ func (d *Device) StartBroadcast(mode string, maxListeners *int) (string, error) 
 // StartBroadcastWith is StartBroadcast with the broadcast's listener verifiers (item BF, item DV): nil sends no
 // `verifiers` member, a pointer to an empty list sends `"verifiers": []`.
 func (d *Device) StartBroadcastWith(mode string, maxListeners *int, verifiers *[]wire.ListenerVerifier) (string, error) {
-	id := wire.NewID()
+	return d.startBroadcast(wire.NewID(), mode, maxListeners, verifiers)
+}
+
+// StartBroadcastID is StartBroadcast under an id the caller chose: a prepared id (item DW) or one that ended.
+func (d *Device) StartBroadcastID(id, mode string, maxListeners *int) (string, error) {
+	return d.startBroadcast(id, mode, maxListeners, nil)
+}
+
+func (d *Device) startBroadcast(id, mode string, maxListeners *int, verifiers *[]wire.ListenerVerifier) (string, error) {
 	d.secret(id)
 	ctl := d.Control()
 	if ctl == nil {

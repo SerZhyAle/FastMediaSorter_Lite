@@ -105,11 +105,11 @@ Public Class PdfDocumentSourceTests
         Public Sub Document_history_is_bounded_and_ignores_malformed_entries()
             Dim preferences As New ModernViewerPreferences With {.DocumentPageHistory = "[null,{}]"}
             Assert.Equal(1, preferences.RememberedDocumentPage("missing.pdf", 1, 1))
-            For i As Integer = 1 To 201
+            For i As Integer = 1 To 501
                 preferences.RecordDocumentPage(i.ToString() & ".pdf", i, i, 12)
             Next
             Assert.Equal(1, preferences.RememberedDocumentPage("1.pdf", 1, 1))
-            Assert.Equal(12, preferences.RememberedDocumentPage("201.pdf", 201, 201))
+            Assert.Equal(12, preferences.RememberedDocumentPage("501.pdf", 501, 501))
         End Sub
 
     End Class

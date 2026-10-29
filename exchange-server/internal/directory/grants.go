@@ -253,16 +253,17 @@ type guestChange struct {
 }
 
 // pushGuestLocked sends ONE `changed` to every subscriber of a guest account, with the guest hub's own
-// next revision. A subscriber that cannot take it is dropped, as everywhere in the directory.
-func (d *Dir) pushGuestLocked(guest string, c *guestChange) {
+// next revision. A subscriber that cannot take it is dropped, as everywhere in the directory. It reports
+// how many subscribers took it.
+func (d *Dir) pushGuestLocked(guest string, c *guestChange) int {
 	h := d.hubs[guest]
 	if h == nil {
-		return
+		return 0
 	}
 	h.revision++
 	d.revDirty = true
 	if len(h.subs) == 0 {
-		return
+		return 0
 	}
 	ch := &wire.Changed{
 		Revision: h.revision,
@@ -270,6 +271,7 @@ func (d *Dir) pushGuestLocked(guest string, c *guestChange) {
 		Removals: wire.Removals{DeviceIDs: []string{}, ResourceIDs: nonNilIDs(c.rmRes), BroadcastIDs: nonNilIDs(c.rmBro)},
 	}
 	frame, err := wire.EncodeFrame(ch, wire.MaxFrameAuth)
+	queued := 0
 	for id, sink := range h.subs {
 		if err != nil {
 			go sink.Close()
@@ -278,8 +280,11 @@ func (d *Dir) pushGuestLocked(guest string, c *guestChange) {
 		}
 		if sink.SendFrame(frame) != nil {
 			delete(h.subs, id)
+			continue
 		}
+		queued++
 	}
+	return queued
 }
 
 func nonNil(in []json.RawMessage) []json.RawMessage {
@@ -297,10 +302,11 @@ func nonNilIDs(in []string) []string {
 }
 
 // fanOutToGuestsLocked tells the guests of an owner what one transaction of the owner changed in what
-// they were given. It runs inside commit, under the lock, after the owner's own subscribers.
-func (d *Dir) fanOutToGuestsLocked(owner string, t *tx) {
+// they were given. It runs inside commit, under the lock, before the owner's own subscribers. It reports
+// how many guest subscribers took each broadcast's removal (ticket 271, for the log).
+func (d *Dir) fanOutToGuestsLocked(owner string, t *tx) map[string]int {
 	if d.grants == nil || (len(t.upRes)+len(t.rmRes)+len(t.upBro)+len(t.rmBro)) == 0 {
-		return
+		return nil
 	}
 	per := map[string]*guestChange{}
 	get := func(g string) *guestChange {
@@ -344,9 +350,17 @@ func (d *Dir) fanOutToGuestsLocked(owner string, t *tx) {
 		guests = append(guests, g)
 	}
 	sort.Strings(guests)
+	var queued map[string]int
 	for _, g := range guests {
-		d.pushGuestLocked(g, per[g])
+		n := d.pushGuestLocked(g, per[g])
+		for _, id := range per[g].rmBro {
+			if queued == nil {
+				queued = map[string]int{}
+			}
+			queued[id] += n
+		}
 	}
+	return queued
 }
 
 // GrantAdded is the directory's half of a grant that was just recorded (20 item BD, 27 item DJ). The payload p
@@ -460,7 +474,7 @@ func (d *Dir) WithdrawAll(account string) {
 		d.removeResourceLocked(t, h, r)
 	}
 	for _, b := range sortedBro(h) {
-		d.endBroadcastLocked(t, h, b)
+		d.endBroadcastLocked(t, h, b, EndWithdrawn)
 	}
 	t.finish()
 }

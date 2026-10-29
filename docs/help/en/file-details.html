@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>File Details - Fast Media Sorter</title>
+  <title>About file - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">File Details</h1>
+  <h1 id="title">About file</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: File Details.</p>
+    <p>A read-only snapshot of what the program knows about the file on screen: the file itself, an image with its camera data, a document, and the audio and video tracks. It opens from the i item of the first panel, or from About file in the file block of the viewer menus, and describes the file as it was at the moment of the click.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="file-details-light.png" alt="File Details">
-    <img class="shot dark" src="file-details-dark.png" alt="File Details">
+    <img class="shot light" src="file-details-light.png" alt="About file">
+    <img class="shot dark" src="file-details-dark.png" alt="About file">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Show a file in the viewer.</li><li>Click the i item of the first panel, or choose About file in the menu.</li><li>Wait a moment: the status line says Reading file metadata.. and the rows fill in.</li><li>Read the blocks, select what you need, and press Copy to put the whole text on the clipboard.</li><li>Press Close or Esc.</li></ol>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="file-block"><summary>File</summary><p>Every file has this block: Name, Folder, Type, Size, Bytes, Created, Modified, Accessed and Attributes. A row with nothing to show is left out. If no file is open the status line says No file is selected; a temporary copy from an archive, a remote address or a file that has disappeared gives The file is not available, and no window opens.</p></details>
+<details id="image-block"><summary>Image</summary><p>For a picture: Resolution as displayed (a phone photo stored sideways reads in its upright size), Color depth and Pixel density, when the file records them.</p></details>
+<details id="camera-block"><summary>Camera</summary><p>Read from the EXIF data of the photo: Camera, Software, Date taken, Exposure, Aperture, ISO, Focal length and Author. Coordinates appear only when the photo carries GPS data, and Copy includes them, so check the text before you share it.</p></details>
+<details id="document-block"><summary>Document</summary><p>For a text file: Lines, Words, Characters and Encoding, plus Only part of the file was read when it is too large to read in full. For an e-book: Name and Author. For a PDF: Pages.</p></details>
+<details id="media-block"><summary>Media, Video and Audio</summary><p>For audio and video files the tags (Name, Artist, Album, Year, Track, Genre, Director, Series, Season, Episode, Duration) and the first track of each kind (Video: Resolution, Frames per second, Codec, Bitrate; Audio: Codec, Channels, Sample rate, Bitrate) are added a moment after the rest, when the media engine finishes reading. The window never waits for it. Network streams get no track rows.</p></details>
+<details id="related-files"><summary>Associated files</summary><p>Files stored next to this one that belong to it are listed by name: Subtitles, Lyrics, Cover art and Metadata. The block is absent when there are none.</p></details>
+<details id="copy-close"><summary>Copy and Close</summary><p>Copy puts the whole text on the clipboard and the status line says Copied to the clipboard; if another program is holding the clipboard it says so and you can press Copy again. A selection copied with Ctrl+C works too. If nothing could be read, the box says The file&#39;s details could not be read. Next to the buttons the status line shows the file name. Flipping to another file does not change this window: click i again for the new file.</p></details>
+    <p><a href="settings.html">Settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

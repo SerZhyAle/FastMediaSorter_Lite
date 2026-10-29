@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Edit Shared Resource - Fast Media Sorter</title>
+  <title>Editar recurso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Edit Shared Resource</h1>
+  <h1 id="title">Editar recurso</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Edit Shared Resource.</p>
+    <p>O formul&#225;rio de um servidor ou de uma pasta de rede salvos. &#171;Adicionar..&#187; na lista de recursos abre-o vazio com o t&#237;tulo &#171;Novo recurso&#187;, &#171;Editar..&#187; abre-o preenchido como &#171;Editar recurso&#187;, e um endere&#231;o sftp:// digitado na caixa de pasta abre-o j&#225; preenchido.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-edit-light.png" alt="Edit Shared Resource">
-    <img class="shot dark" src="resource-edit-dark.png" alt="Edit Shared Resource">
+    <img class="shot light" src="resource-edit-light.png" alt="Editar recurso">
+    <img class="shot dark" src="resource-edit-dark.png" alt="Editar recurso">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Escolha o tipo: servidor SFTP ou pasta de rede (SMB).</li><li>D&#234; um nome ao recurso e informe o endere&#231;o do servidor e a porta, ou o caminho de rede.</li><li>Informe o usu&#225;rio e a senha.</li><li>Defina a pasta no servidor e ative somente leitura se nada deve mudar l&#225;.</li><li>Pressione &#171;Salvar&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="kind"><summary>Tipo</summary><p>&#171;Tipo:&#187; &#233; escolhido ao criar o recurso: &#171;Servidor SFTP&#187; (porta 22, pasta /) ou &#171;Pasta de rede (SMB)&#187;. Num recurso salvo a lista fica desativada, porque a senha guardada e a chave do servidor pertencem a um s&#243; tipo. Para SMB o campo do endere&#231;o chama-se &#171;Pasta de rede:&#187; e aceita um caminho como \\server\folder; os campos de porta e de pasta valem s&#243; para SFTP.</p></details>
+<details id="address"><summary>Nome, servidor e porta</summary><p>&#171;Nome:&#187; &#233; o que a lista mostra; se estiver vazio, usa-se o endere&#231;o do servidor. &#171;Servidor:&#187; &#233; um nome ou um endere&#231;o IP e &#171;Porta:&#187; um n&#250;mero de 1 a 65535. Mudar o servidor ou a porta descarta os outros endere&#231;os que vieram com um recurso importado, para que uma senha salva nunca v&#225; para um endere&#231;o que voc&#234; n&#227;o digitou.</p></details>
+<details id="credentials"><summary>Usu&#225;rio e senha</summary><p>&#171;Usu&#225;rio:&#187; e &#171;Senha:&#187;. A senha &#233; guardada cifrada para a sua conta do Windows; a lista cont&#233;m apenas uma refer&#234;ncia a ela. Num recurso salvo a caixa fica vazia com a dica &#171;Vazio - manter a senha salva&#187;: digite algo s&#243; para substitu&#237;-la. &#171;Mostrar a senha&#187; come&#231;a desativado. Um recurso novo precisa de uma senha.</p></details>
+<details id="folder-readonly"><summary>Pasta e somente leitura</summary><p>&#171;Pasta no servidor:&#187; &#233; a pasta que o programa abre primeiro, um caminho que come&#231;a por /. &#171;Somente leitura (n&#227;o alterar nada no servidor)&#187; faz o programa tratar o recurso como de somente leitura: nenhuma movimenta&#231;&#227;o ou c&#243;pia para dentro dele, nenhuma exclus&#227;o ou renomea&#231;&#227;o nele.</p></details>
+<details id="server-key"><summary>Chave do servidor</summary><p>&#171;Chave do servidor:&#187; mostra a impress&#227;o digital lembrada para este servidor, ou diz que ela aparecer&#225; na primeira conex&#227;o, onde voc&#234; a confirma. &#171;Esquecer a chave do servidor..&#187; s&#243; aparece quando h&#225; uma chave lembrada. Pergunta antes (a resposta padr&#227;o &#233; N&#227;o) e explica: se o servidor foi reinstalado, isso &#233; normal; caso contr&#225;rio, algu&#233;m pode estar se passando por ele. Apaga apenas a chave: a pr&#243;xima conex&#227;o mostra a nova impress&#227;o digital e pergunta de novo.</p></details>
+<details id="save-errors"><summary>Salvar</summary><p>&#171;Salvar&#187; verifica os campos e nomeia o primeiro problema em vermelho abaixo deles: endere&#231;o, porta, pasta, nome de usu&#225;rio ou uma senha em falta. &#171;Cancelar&#187; fecha o formul&#225;rio sem altera&#231;&#245;es.</p></details>
+    <p><a href="settings.html">Configura&#231;&#245;es</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

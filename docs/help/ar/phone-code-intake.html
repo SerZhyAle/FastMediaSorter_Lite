@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Connect Phone Code Intake - Fast Media Sorter</title>
+  <title>رمز الهاتف - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Connect Phone Code Intake</h1>
+  <h1 id="title">رمز الهاتف</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Connect Phone Code Intake.</p>
+    <p>تستقبل رمز اتصال أنشأه تطبيق الهاتف وتسلّمه إلى Fast Media Sorter، الذي يضيف مجلد الهاتف إلى قائمة موارده على هذا الكمبيوتر. تُفتح من الزر رمز الهاتف.. في النافذة الرئيسية لـ Share Manager.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="phone-code-intake-light.png" alt="Connect Phone Code Intake">
-    <img class="shot dark" src="phone-code-intake-dark.png" alt="Connect Phone Code Intake">
+    <img class="shot light" src="phone-code-intake-light.png" alt="رمز الهاتف">
+    <img class="shot dark" src="phone-code-intake-dark.png" alt="رمز الهاتف">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>أدخل الرمز في النافذة بإحدى أربع طرق: اكتبه أو الصقه في الحقل، أو اضغط الزر فتح ملف.. أو من الحافظة.. أو مسح بالكاميرا..</li><li>اضغط إرسال.</li><li>أكّد إضافة المجلد في نافذة Fast Media Sorter التي تظهر.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="code-field"><summary>رمز الاتصال</summary><p>حقل من سطر واحد يعرض نقاطًا بدل الأحرف لأن الرمز سري؛ ولا يُكتب في أي سجل أبدًا. وإذا ضغطت إرسال والحقل فارغ طُلب منك كتابة الرمز أو لصقه أو فتح ملف أو لقطة شاشة.</p></details>
+<details id="doors"><summary>الملف والحافظة والكاميرا</summary><p>فتح ملف.. يقرأ ملفات .fmscfg و.json و.txt وصور QR (.png و.jpg و.jpeg و.bmp و.webp)؛ ويمكن أيضًا سحب الملف وإفلاته على النافذة. ومن الحافظة.. يقرأ الرمز من الحافظة. ومسح بالكاميرا.. يفتح نافذة الكاميرا، ويُعامَل النص الممسوح كأنه ملصوق.</p></details>
+<details id="hand-over"><summary>إرسال</summary><p>يُفحص الرمز ثم يُرسل إلى Fast Media Sorter العامل، الذي يظل مربع حوار الاستيراد الخاص به يطرح أسئلته المعتادة. عند النجاح تعرض الحالة: تم إرسال الرمز: أكد الإضافة في نافذة Fast Media Sorter. وتُغلق هذه النافذة. وإذا لم يُعثر على Fast Media Sorter أو كان إصدارًا أقدم أو لم يستجب، يوضع الرمز في الحافظة مع علامات الخصوصية، ويطلب سطر الحالة لصقه عبر استيراد من الحافظة في لوحة الموارد.</p></details>
+<details id="problems"><summary>الرسائل في سطر الحالة</summary><p>يُبلَّغ عن المستند الذي ليس رمز اتصال ولا ملف إعدادات موارد بأنه غير قابل للقراءة. ويطلب الملف الذي أنشأه إصدار أحدث تحديث Fast Media Sorter. وإذا كان برنامج آخر يحجز الحافظة تذكر الحالة ذلك.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

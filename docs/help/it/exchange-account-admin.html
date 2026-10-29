@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>Nuovo account - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">Nuovo account</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>Una finestra con due modalit&#224;. &#171;Nuovo account&#187; aggiunge un account al Media Exchange Server che gestisci; &#171;Reimposta password: &lt;login&gt;&#187; assegna una nuova password a un account esistente. Si aprono da &#171;Aggiungi un account..&#187; e &#171;Reimposta password..&#187; sotto l&#39;elenco degli account nella pagina Media Exchange Server delle impostazioni di Share Manager; per reimpostare serve un account selezionato.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="Nuovo account">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Nuovo account">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Nella modalit&#224; di aggiunta scrivi il login.</li><li>Scegli come viene creata la password.</li><li>Nella modalit&#224; di reimpostazione decidi se disconnettere tutti i dispositivi dell&#39;account.</li><li>Premi &#171;Crea&#187; o &#171;Reimposta&#187;.</li><li>Copia la password generata dalla finestra successiva, oppure scrivine una tua.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>Dichiarazione per il primo account</summary><p>Al primo account in assoluto la finestra inizia con &#171;Prima di creare il primo account, leggi che cosa pu&#242; vedere l&#39;operatore del server:&#187; e un riquadro di sola lettura con la dichiarazione. Gli account successivi e le reimpostazioni non la mostrano.</p></details>
+<details id="login"><summary>Login</summary><p>Solo nella modalit&#224; di aggiunta. Da 3 a 64 caratteri: lettere latine minuscole, cifre, punto, trattino basso e trattino; le maiuscole vengono convertite in minuscole. Il suggerimento diventa del colore di avviso finch&#233; il testo non pu&#242; essere un login, e &#171;Crea&#187; non procede finch&#233; non lo diventa.</p></details>
+<details id="password-choice"><summary>Come viene creata la password</summary><p>&#171;Genera una password (viene mostrata una sola volta)&#187; &#232; la scelta predefinita: il programma crea una password casuale che rispetta le regole e la finestra successiva la mostra una sola volta. &#171;Digito io una password&#187; apre la finestra &#171;Password dell&#39;account&#187;, dove una riga in tempo reale indica che cosa manca: almeno 10 caratteri con una lettera latina maiuscola, una minuscola e una cifra.</p></details>
+<details id="sign-out"><summary>Disconnettere tutti i dispositivi</summary><p>Solo nella modalit&#224; di reimpostazione. &#171;Disconnetti subito anche tutti i dispositivi di questo account&#187; &#232; spuntata per impostazione predefinita. La riga del risultato segnala allora che la password &#232; cambiata e che tutti i dispositivi dell&#39;account sono disconnessi; senza la spunta segnala solo che la password &#232; cambiata.</p></details>
+<details id="after"><summary>Dopo l&#39;accettazione da parte del server</summary><p>La riga del risultato segnala che l&#39;account &#232; creato. Una password generata compare una sola volta in una finestra propria con &#171;Copia password&#187; e &#171;Imposta una password personale..&#187;, che torna alla reimpostazione con la scelta &#171;Digito io una password&#187;. Con &#171;Conserva le password degli account su questo PC&#187; attivo, la password viene salvata anche su questo PC e l&#39;account ottiene &#171;Mostra password..&#187;. Se questa build offre le funzioni client dello scambio e questo PC non ha un account proprio, vi accede come primo dispositivo dell&#39;account con questa password.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

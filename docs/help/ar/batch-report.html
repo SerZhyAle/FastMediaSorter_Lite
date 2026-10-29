@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Batch Report - Fast Media Sorter</title>
+  <title>تقرير العملية - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Batch Report</h1>
+  <h1 id="title">تقرير العملية</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Batch Report.</p>
+    <p>يسرد ما حدث لكل ملف في آخر عملية جماعية (نقل أو نسخ أو حذف أو تراجع) وسبب تخطي أي شيء أو فشله. لا يُفتح من تلقاء نفسه: انقر سطر التقرير أسفل لوحة الصور المصغرة (F3) بعد التشغيل. وعندما لا يكون التشغيل نظيفًا ينتهي السطر بعبارة انقر لعرض التفاصيل.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="batch-report-light.png" alt="Batch Report">
-    <img class="shot dark" src="batch-report-dark.png" alt="Batch Report">
+    <img class="shot light" src="batch-report-light.png" alt="تقرير العملية">
+    <img class="shot dark" src="batch-report-dark.png" alt="تقرير العملية">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>نفّذ عملية على عدة ملفات في لوحة الصور المصغرة.</li><li>اقرأ سطر الملخص أسفل اللوحة.</li><li>انقر السطر لفتح هذه النافذة.</li><li>انظر إلى أعلى القائمة: الإخفاقات تأتي أولاً.</li><li>حدّد صفوفًا ثم استخدم الزر نسخ لأخذ مساراتها أو الزر إظهار في مستكشف الملفات للعثور على ملف.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="summary"><summary>سطر الملخص</summary><p>يبدأ السطر بالنتيجة: الملفات المنقولة: 5 أو الملفات المنسوخة: 5 أو الملفات المحذوفة: 5 أو الملفات المستعادة: 5 أو العمليات المكتملة: 5. وتظهر أجزاء أخرى، لكل منها عدده، فقط عندما لا يكون العدد صفرًا: تم تخطي؛ أخطاء؛ عمليات بلا تراجع؛ محذوف نهائيًا، لا يمكن استعادته؛ وعندما يتوقف التشغيل مبكرًا: مقطوع، لا يوجد اتصال بالمجلد - لم يبدأ (ثلاث محاولات اتصال فاشلة متتالية توقفه) أو ملغى - لم يبدأ.</p></details>
+<details id="list"><summary>القائمة</summary><p>الأعمدة: ملف، الحالة، التفاصيل. أسوأ الصفوف أولاً: الفاشلة، ثم التي لم تبدأ، ثم المتخطاة، ثم المنجزة؛ وداخل المجموعة تحتفظ الملفات بترتيب التشغيل. يعرض تلميح الصف المسار الكامل. تعطي التفاصيل سببًا واضحًا للفشل، والمجلد الوجهة للملف المنجز، وعبارة محفوظ كـ مع الاسم الجديد عندما كان الاسم القديم مأخوذًا، وعبارة حُذف نهائياً - التراجع غير متاح للحذف الذي تجاوز سلة المحذوفات.</p></details>
+<details id="states"><summary>الحالات وأسباب التخطي</summary><p>الحالات: جاهز؛ خطأ؛ تم التخطي؛ لم يبدأ. يذكر الملف المتخطى السبب: موجود بالفعل في هذا المجلد؛ الملف لم يعد موجودًا على القرص؛ لا يتم تعديل الملفات داخل الأرشيف؛ الاسم نفسه موجود بالفعل بين الملفات المحددة؛ المورد للقراءة فقط؛ هذا هو الملف نفسه؛ أو الاسم مستخدم بالفعل في مجلد الوجهة. ويقول الملف الذي لم يبدأ: لم يتم البدء: تم قطع العملية.</p></details>
+<details id="copy-show"><summary>إظهار في مستكشف الملفات ونسخ وإغلاق</summary><p>الزر إظهار في مستكشف الملفات متاح عند تحديد صف؛ يفتح نافذة مجلد مع تمييز أول ملف محدد، أو المجلد نفسه إذا انتقل الملف. الزر نسخ (وكذلك Ctrl+C) يضع المسارات الكاملة للصفوف المحددة في الحافظة، مسارًا في كل سطر، أو مسارات كل الصفوف إذا لم يُحدَّد شيء: طريقة سريعة لتمرير قائمة الملفات المشكلة. الزر إغلاق ينهي التقرير.</p></details>
+    <p><a href="settings.html">الإعدادات</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

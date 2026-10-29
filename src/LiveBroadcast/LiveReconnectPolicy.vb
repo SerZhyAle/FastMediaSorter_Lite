@@ -183,7 +183,7 @@ Friend NotInheritable Class LiveReconnectPolicy
             Case LiveTerminationKind.NotAudioStream
                 Return Localization.T("Устройство вернуло не аудиопоток")
             Case LiveTerminationKind.UnsupportedMode
-                Return Localization.T("Этот режим пока не поддерживается")
+                Return Localization.T("Этот режим не поддерживается")
             Case LiveTerminationKind.LoopbackAddress
                 Return Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
             Case LiveTerminationKind.HttpStatus

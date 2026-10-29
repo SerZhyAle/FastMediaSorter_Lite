@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**Fast Media Sorter & Sharing for Windows** is a Windows Forms application for viewing, sorting and sharing image and video files, shipped as **two exes side by side in one folder** built from **one source tree**: the **.NET 10 x64 mainline** (`FastMediaSorter_LITE.exe`) and a **net48 x86 fallback** (`FastMediaSorter_x86.exe`) for Windows 7/8.1 and 32-bit Windows. Read "Two builds, one source tree" below before touching anything build- or media-related.
+**Fast Media Sorter & Sharing for Windows** is a Windows Forms media and file manager with a local sharing and scheduling service and a Media Exchange Server as its two further optional parts (what the product is, in what order and in which words: [docs/guides/POSITIONING.md](docs/guides/POSITIONING.md) - cite it, never restate it). The viewer program is shipped as **two exes side by side in one folder** built from **one source tree**: the **.NET 10 x64 mainline** (`FastMediaSorter_LITE.exe`) and a **net48 x86 fallback** (`FastMediaSorter_x86.exe`) for Windows 7/8.1 and 32-bit Windows. Read "Two builds, one source tree" below before touching anything build- or media-related.
 
 
 ## Layout of the agent instructions (2026-10-15)
@@ -104,19 +104,19 @@ Prerequisites (Go, .NET, VS), version stamping, the release pipeline, the standa
 
 ### "Сборка" vs "Релиз" - two distinct flows (see [BUILD_AND_RELEASE.md](docs/guides/BUILD_AND_RELEASE.md))
 
-- **Сборка / build** = LOCAL only: `.\build.ps1` (all three programs; deploys **both viewer exes side by side** to the user's work folders, then packages the offline `dist\..-setup.exe` via `tools\Build-Installer.ps1 -SkipBuild`, skippable with `-SkipInstaller`). Test by hand, then commit/push. **Never creates or pushes a `v*` tag** - packaging an installer locally is still a build. Pushing to a branch is free: GitHub Actions does NOT run on branch pushes.
+- **Сборка / build** = LOCAL only, when explicitly requested: `.\build.ps1` deploys both viewer exes and packages the offline installer (skippable with `-SkipInstaller`). A build does not authorize a commit or push and never creates a tag.
 - **Релиз / release** = GitHub build + winget + Microsoft Store: `.\tools\Release.ps1 -Push` (runs the free local preflight first and pushes the `vYY.M.D.HHmm` tag only on a bare `Release-Preflight: PASS`; a step skipped with `-SkipTests`/`-SkipLocalCheck` makes it COULD NOT VERIFY, so those switches serve a quicker dry run and never ship a tag). The release `workflow` ([.github/workflows/release.yml](.github/workflows/release.yml)) is triggered **ONLY by pushing a `v*` tag** - that tag push is the single billable operation.
 - <!-- canon-ok: INVARIANTS 4 says never trigger a release unasked; this line is the repo-specific mapping of that to the two Russian trigger words the owner actually types, which the canon cannot know. --> **When the user asks for a "сборка"/"build"/"собери", run the LOCAL flow only and do NOT create or push a tag.** A tag (= paid GitHub run) requires an explicit "релиз"/"release" instruction. `tools/Release.ps1` defaults to a dry-run (no push) for safety; it pushes only with `-Push`.
 
 ### Build Commands
 
-Full local build - **all three programs**, deployed into the distribution shape, then packaged into `dist\FastMediaSorter-<version>-windows-x64-setup.exe` (needs Inno Setup 6):
+An explicitly requested full local build - **all three programs**, deployed into the distribution shape, then packaged into `dist\FastMediaSorter-<version>-windows-x64-setup.exe` (needs Inno Setup 6):
 ```powershell
 .\build.ps1
 ```
 Flags: `-SkipModern` (x86 viewer + Companion only), `-SkipCompanion`, `-SkipInstaller` (stop after the deploy - packaging is the slow step), `-InstallerIncludeBest` / `-InstallerSkipOcr` (default is the lighter `fast` OCR models), `-NoClean`. The packaging step reuses `bin\Release` (`-SkipBuild`) and reads the version as **text** from the just-written `src\My Project\VersionInfo.vb`, since the exe's numeric `FileVersion` would turn `26.7.30.0108` into `26.7.30.108` and misname the package.
 
-Partial builds (syntax checks only - neither shape is shippable on its own):
+Explicitly requested or release-only partial builds (neither shape is shippable on its own):
 ```powershell
 # x86 viewer + Companion; does NOT produce the mainline exe
 msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU"
@@ -146,21 +146,19 @@ dotnet publish src\Modern\FastMediaSorter.Modern.vbproj -c Release -r win-x64
 
 ## Testing & Validation
 
-### Inner loop - use this, not raw `dotnet test ... | Select-Object -Last N`
+### Between-release checks
 
 ```powershell
-pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Build modern                      # compile check of the mainline (net10 x64), errors deduplicated
-pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Suite lite -Filter OcrOverlayFit  # one class / test-name fragment, net10 only
-pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Suite companion -Filter Scheduled
-pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Suite lite -Tfm both              # shared code or a #If NETFRAMEWORK seam: both shipped runtimes
+pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Fast -Area engineering
 ```
 
-It prints a **bounded digest** (each compile error once, each failing test with its first message line, the totals) and keeps the full log in `%TEMP%\fms-tests\` - **grep that log, do not re-run to see more**. Exit 0 pass, 1 failed, 2 could not verify.
-- Order: compile check, then the filtered suite for what you touched, then `Run-AllTests.ps1` **once** before you say done. Re-running the whole battery after each edit was most of the ~400 minutes of build/test wall-clock measured, and 40% of the runs were red (100 of them compile errors that a compile check finds in a third of the time).
-- `Lite.Tests` is multi-targeted (net48 + net10); iterate on net10 and finish with `-Tfm both` when the change reaches shared code.
-- Kill a stray viewer before a build that writes `bin\Release` (a running exe locks it); never rely on a green run while the exe is still running.
+Between releases, only recorded checks of at most 5 seconds and a direct check of the change run (canon
+`TESTING_AND_QA` section 2). Other areas have no measured fast selector; do not read COULD NOT VERIFY as
+a pass. The measured list and release command are in [.claude/rules/build-release.md](.claude/rules/build-release.md).
+Record each deferred build or test as a RELEASE audit item naming its command and report "not built, not
+tested until the release". The owner can explicitly request a slower run.
 
-**There IS an automated suite - run it before claiming anything works:**
+**Release and explicitly requested test commands:**
 
 ```powershell
 pwsh -NoProfile -File .\tools\Run-AllTests.ps1            # unit suites
@@ -169,7 +167,7 @@ pwsh -NoProfile -File .\tools\Run-AllTests.ps1 -Integration -SkipGo
 
 [tools/Run-AllTests.ps1](tools/Run-AllTests.ps1) drives [tests/Lite.Tests/](tests/Lite.Tests) (the viewer, **multi-targeted so the same linked sources are tested under BOTH shipped runtimes**, net48 and net10), [tests/Companion.Tests/](tests/Companion.Tests) (the Share Manager, net10), the Go worker suite in the sibling `fms_companion` repository (`-WorkerRepo` or `FMS_WORKER_REPO` to point elsewhere) and `tools/Test-CheckPlacement.ps1`, and ends in **one verdict line** (contract `CHECK-VERDICT`, via [tools/lib/Verdict.ps1](tools/lib/Verdict.ps1)): `Run-AllTests: PASS (4 passed)`. **Exit 0 = pass, 1 = a suite ran and failed, 2 = could not verify** (a missing project, `dotnet`, `go.exe`, worker repository or live worker - "could not check" is never folded into a pass, nor into a defect). `-SkipGo` reports that suite as **SKIPPED**, never as passed. The live suites are opt-in, each behind its own switch: `-Integration` runs [tests/Integration/WorkerRoundTrip.ps1](tests/Integration/WorkerRoundTrip.ps1) (needs a running worker - without one it is COULD NOT VERIFY); `-OcrScenes` runs [tests/Integration/OcrOverlayScenes.ps1](tests/Integration/OcrOverlayScenes.ps1) (drives the built `bin\Release` viewer on screen and borrows the OCR settings - owner decision: never part of a default or `-Integration` run); `-DynAudit` runs [tools/dynaudit/DynAudit.ps1](tools/dynaudit/DynAudit.ps1) (specification 209; isolated profile, backed up and restored in `finally`; hand-run, never a default run). Which runner owns which check is declared once in [tools/check-placement.jsonl](tools/check-placement.jsonl) (contract `CHECK-PLACEMENT`) and held in both directions by `Test-CheckPlacement.ps1`: a check wired into a runner without its record, or recorded without being run, fails the next test run. A new check that reports a verdict needs its record in the same commit.
 
-The suite does not cover the UI, so these still matter:
+At release or on explicit request, the suite does not cover the UI, so these still matter:
 1. **Build**: `.\build.ps1` - confirms both viewers compile (a shared-code change can break the *other* exe; `msbuild` alone never proves the mainline builds).
 2. **Run**: open the built `.exe` and exercise load/navigate/slideshow/video. **Exercise a media change in both exes** when it touches a seam (video, image decode, drag-drop, file ops). The Share Manager (launched from the viewer's folder right-click or the Settings "Files and system" button) needs `FastMediaSorterCompanion.exe` built and `payload/companion/fms-share-worker.exe` present (committed via a `.gitignore` negation) to do more than show "unavailable".
 3. **Code analysis**: Visual Studio's analyzer in the Debug config.

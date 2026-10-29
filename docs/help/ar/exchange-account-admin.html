@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Exchange Accounts Administration - Fast Media Sorter</title>
+  <title>حساب جديد - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   <span class="exchange-picture"><img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server"></span>
-  <h1 id="title">Exchange Accounts Administration</h1>
+  <h1 id="title">حساب جديد</h1>
   <section id="purpose">
     <h2>الغرض من هذه النافذة</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Exchange Accounts Administration.</p>
+    <p>نافذة واحدة بوضعين. حساب جديد يضيف حسابًا إلى Media Exchange Server الذي تشغّله؛ وإعادة تعيين كلمة المرور: &lt;اسم الدخول&gt; تمنح حسابًا موجودًا كلمة مرور جديدة. تُفتحان من الزرين إضافة حساب.. وإعادة تعيين كلمة المرور.. أسفل قائمة الحسابات في صفحة Media Exchange Server ضمن إعدادات Share Manager؛ ويتطلب وضع إعادة التعيين تحديد حساب.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="exchange-account-admin-light.png" alt="Exchange Accounts Administration">
-    <img class="shot dark" src="exchange-account-admin-dark.png" alt="Exchange Accounts Administration">
+    <img class="shot light" src="exchange-account-admin-light.png" alt="حساب جديد">
+    <img class="shot dark" src="exchange-account-admin-dark.png" alt="حساب جديد">
   </figure>
   <section id="order">
     <h2>بهذا الترتيب</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>في وضع الإضافة اكتب اسم الدخول.</li><li>اختر طريقة إنشاء كلمة المرور.</li><li>في وضع إعادة التعيين قرّر هل يُسجَّل خروج كل أجهزة الحساب.</li><li>اضغط إنشاء أو إعادة تعيين.</li><li>انسخ كلمة المرور المولَّدة من النافذة التالية، أو اكتب كلمة مرور من عندك.</li></ol>
   </section>
   <section id="elements">
     <h2>عناصر النافذة</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="statement"><summary>البيان للحساب الأول</summary><p>عند إنشاء أول حساب تبدأ النافذة بالسطر قبل إنشاء أول حساب، اقرأ ما يستطيع مشغّل الخادم رؤيته وتحته صندوق للقراءة فقط يحوي البيان. أما الحسابات اللاحقة وعمليات إعادة التعيين فلا تعرضه.</p></details>
+<details id="login"><summary>اسم الدخول</summary><p>في وضع الإضافة فقط. من 3 إلى 64 حرفًا: أحرف لاتينية صغيرة وأرقام ونقطة وشرطة سفلية وواصلة؛ وتُحوَّل الأحرف الكبيرة إلى صغيرة. يتحول التلميح إلى لون التحذير ما دام النص لا يصلح اسم دخول، ولا يتابع الزر إنشاء حتى يصبح صالحًا.</p></details>
+<details id="password-choice"><summary>طريقة إنشاء كلمة المرور</summary><p>الخيار إنشاء كلمة مرور (تُعرض مرة واحدة) هو الافتراضي: ينشئ البرنامج كلمة مرور عشوائية تستوفي القواعد وتعرضها النافذة التالية مرة واحدة فقط. أما إدخال كلمة المرور بنفسي فيفتح نافذة كلمة مرور الحساب، وفيها سطر مباشر يسمّي ما ينقص: 10 أحرف على الأقل مع حرف لاتيني كبير وآخر صغير ورقم.</p></details>
+<details id="sign-out"><summary>تسجيل خروج كل جهاز</summary><p>في وضع إعادة التعيين فقط. الخيار تسجيل خروج جميع أجهزة هذا الحساب فورًا أيضًا محدَّد افتراضيًا. وحينها يفيد سطر النتيجة بأن كلمة المرور تغيّرت وأن جميع أجهزة الحساب سُجّل خروجها؛ وبدون التحديد يفيد بأن كلمة المرور تغيّرت فقط.</p></details>
+<details id="after"><summary>بعد قبول الخادم</summary><p>يفيد سطر النتيجة بأن الحساب أُنشئ. وتظهر كلمة المرور المولَّدة مرة واحدة في نافذة خاصة فيها الزران نسخ كلمة المرور وتعيين كلمة مرور خاصة بي.. اللذان يعيدان إلى وضع إعادة التعيين مع اختيار كتابة كلمة المرور. وعند تفعيل الخيار حفظ كلمات مرور الحسابات على هذا الكمبيوتر تُحفظ كلمة المرور أيضًا على هذا الكمبيوتر، ويحصل الحساب على الزر عرض كلمة المرور.. وإذا كان هذا الإصدار يتيح ميزات عميل التبادل ولا يملك هذا الكمبيوتر حسابًا خاصًا به، فإنه يسجّل دخوله بوصفه أول جهاز لهذا الحساب بكلمة المرور هذه.</p></details>
+    <p><a href="share-settings.html">إعدادات المدير</a> · <a href="sftp-settings.html">إعدادات مشاركة SFTP</a> · <a href="exchange-server-settings.html">إعدادات خادم التبادل</a></p>
   </section>
   <nav id="related">
     <h2>موضوعات ذات صلة</h2>

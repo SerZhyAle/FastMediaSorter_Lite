@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Package Wizard - Fast Media Sorter</title>
+  <title>Condividi - codice di accesso - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Package Wizard</h1>
+  <h1 id="title">Condividi - codice di accesso</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Package Wizard.</p>
+    <p>Crea il codice di accesso per un telefono: un codice QR e un file .fmscfg che contengono l&#39;indirizzo, l&#39;utente e le cartelle scelte. Si apre dal pulsante &#171;Condividi&#187; della finestra principale mentre la condivisione &#232; attiva e, prima di consegnare il codice, verifica che il telefono possa davvero raggiungere il PC.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="package-wizard-light.png" alt="Package Wizard">
-    <img class="shot dark" src="package-wizard-dark.png" alt="Package Wizard">
+    <img class="shot light" src="package-wizard-light.png" alt="Condividi - codice di accesso">
+    <img class="shot dark" src="package-wizard-dark.png" alt="Condividi - codice di accesso">
   </figure>
   <section id="order">
     <h2>In questo ordine</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Spunta le cartelle da inserire nel codice.</li><li>Modifica ogni cella della tabella che deve essere diversa per questo codice.</li><li>Se serve, spunta &#171;Non includere l&#39;indirizzo Internet in questo codice&#187; oppure &#171;Non includere la password nel file/QR&#187;.</li><li>Attendi il controllo dell&#39;accesso.</li><li>Mostra il codice QR, salva il file .fmscfg, invialo per email oppure copia utente e password.</li></ol>
   </section>
   <section id="elements">
     <h2>Gli elementi</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="folders-grid"><summary>Cartelle e impostazioni per questo codice di accesso</summary><p>Una riga per cartella condivisa, con le colonne On, Cartella, Nome sul telefono, Tipo, Tipi di media, Scansiona sottocartelle, Sottocartelle come elementi, Nascosti, Sola lettura, Suggerimento RO, Destinazione, Commento e Slideshow, sec. Fai clic su una cella per modificarla. I valori partono dalle impostazioni di ogni cartella e le modifiche valgono solo per questo codice. &#171;Sola lettura&#187; &#232; un vero blocco sul server; &#171;Suggerimento RO&#187; nasconde soltanto i pulsanti di modifica nell&#39;app. Una cartella di destinazione &#232; sempre scrivibile, quindi &#171;Sola lettura&#187; non si applica ad essa.</p></details>
+<details id="common-settings"><summary>Impostazioni di trasferimento comuni</summary><p>&#171;Non includere l&#39;indirizzo Internet in questo codice&#187; fa s&#236; che il telefono si connetta solo tramite la rete locale; non spegne il server, e l&#39;accesso da internet per l&#39;intera condivisione si chiude nelle impostazioni del gestore. &#171;Non includere la password nel file/QR&#187; toglie la password dal codice; trasmettila separatamente. La possibilit&#224; che il telefono accetti un codice senza password dipende dalla versione dell&#39;app.</p></details>
+<details id="access-check"><summary>Controllo dell&#39;accesso</summary><p>Mentre lo stato viene letto, la finestra lo indica. Se il server non &#232; in funzione, se nessuna cartella &#232; spuntata o se manca un indirizzo utilizzabile, un suggerimento dice che cosa manca. Quando il controllo non si conclude, il codice e il file non vengono consegnati: premi &#171;Ricontrolla l&#39;accesso&#187;.</p></details>
+<details id="qr-code"><summary>Mostrare il codice QR</summary><p>Il codice QR e il file .fmscfg aprono l&#39;accesso alle cartelle e contengono la password e il PIN, se impostato: conservali e consegnali come una chiave. Se le impostazioni sono troppo grandi per un codice QR, salva il file e invialo al suo posto.</p></details>
+<details id="file-and-mail"><summary>File, posta e utente</summary><p>&#171;Salva un file .fmscfg..&#187; scrive il file; su un file system che non pu&#242; limitare l&#39;accesso, o in una cartella che altri possono modificare, la finestra rifiuta perch&#233; il file contiene una chiave di accesso. &#171;Invia per email..&#187; allega il file con una nota che invita a importarlo nell&#39;app Android e poi a eliminarlo. &#171;Copia utente/password&#187; mette entrambi negli appunti.</p></details>
+    <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>
   </section>
   <nav id="related">
     <h2>Argomenti correlati</h2>

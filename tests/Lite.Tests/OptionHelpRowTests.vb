@@ -784,7 +784,9 @@ Public Class OptionHelpRowTests
     Public Sub A_long_explanation_grows_the_popup_and_is_never_clipped()
         OnSta(
             Sub()
-                Dim lengthy As New OptionHelpSource("long.one", "Short.", String.Join(" ", Enumerable.Repeat("A long explanation of both states and their dependencies.", 30)))
+                ' Long enough to wrap onto many lines, short enough that the window still fits a 768 px high screen at 175 %:
+                ' the OS caps a top-level window at the screen height, whatever work area the controller is given.
+                Dim lengthy As New OptionHelpSource("long.one", "Short.", String.Join(" ", Enumerable.Repeat("A long explanation of both states and their dependencies.", 12)))
                 For Each scale As Single In {1.0F, 1.75F}
                     Dim row As RowParts = BuildRow(scale, False, SettingsCheckBox.Px(520, scale), "Network scan", "Explanation.", "", lengthy)
                     Try
@@ -794,7 +796,9 @@ Public Class OptionHelpRowTests
                         Dim need As Integer = SettingsRowText.WrappedHeight(body, body.Width, 1, 0)
                         Assert.True(body.Height >= need - 1, "the explanation is clipped")
                         Assert.True(body.Bottom < popup.CloseButton.Top, "the text runs into the Close action")
-                        Assert.True(popup.ClientSize.Height >= popup.CloseButton.Bottom)
+                        Assert.True(popup.ClientSize.Height >= popup.CloseButton.Bottom,
+                                    $"the popup is shorter than its content: scale {scale}, client {popup.ClientSize}, bounds {popup.Bounds}, " &
+                                    $"body {body.Bounds}, close {popup.CloseButton.Bounds}")
                         Assert.False(body.AutoEllipsis)
                         row.Heading.Controller.CloseFull(True)
                     Finally

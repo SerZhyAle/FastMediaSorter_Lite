@@ -153,6 +153,8 @@ figure { margin-inline: 0; }
 .shot.light { display: none; }
 .shot.dark { display: block; }
 @media (prefers-color-scheme: light) { .shot.light { display: block; } .shot.dark { display: none; } }
+/* A window that is not captured says so where its picture would be (specification 267). */
+.no-shot { padding: .8rem 1rem; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--muted); }
 nav a, footer a, li a { min-height: 44px; display: inline-flex; align-items: center; padding-inline: .5rem; }
 a:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
 footer { margin-block-start: 2rem; color: var(--muted); }

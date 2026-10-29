@@ -105,6 +105,14 @@ function Copy-PublishOutput([string]$PublishDir, [string]$TargetDir) {
             Copy-Item -Path $_.FullName -Destination (Join-Path $TargetDir $_.Name) -Force
             if ($_.Extension -ne ".exe") { Write-Host "  loose publish asset -> $($_.Name)" }
         }
+    # Specification 275 section 9.2: the WebView2 loader lives in its own subfolder, never in the
+    # root beside the exe, so the wildcard above does not carry it.
+    $loader = Join-Path $PublishDir "webview2\win-x64\WebView2Loader.dll"
+    if (-not (Test-Path -LiteralPath $loader)) { throw "The publish output has no webview2\win-x64\WebView2Loader.dll ($PublishDir)." }
+    $loaderDir = Join-Path $TargetDir "webview2\win-x64"
+    New-Item -ItemType Directory -Path $loaderDir -Force | Out-Null
+    Copy-Item -LiteralPath $loader -Destination $loaderDir -Force
+    Write-Host "  loose publish asset -> webview2\win-x64\WebView2Loader.dll"
 }
 
 # Mirror payload\companion\ into <targetDir>\companion\. No-op (with a warning)
@@ -499,6 +507,16 @@ if (-not $SkipModern -and -not $SkipCompanion) {
     }
 } else {
     Write-Host "Image backend artifact check not run: a -Skip* build leaves an earlier exe in bin\Release." -ForegroundColor Yellow
+}
+# Specification 275 section 9.2: the one x64 WebView2 loader in webview2\win-x64, from the pinned SDK.
+if (-not $SkipModern) {
+    & (Join-Path $SolutionDir "tools\Test-HtmlHostArtifacts.ps1") -Path $OutputDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "bin\Release does not hold the WebView2 host specification 275 requires - nothing was deployed." -ForegroundColor Red
+        exit $LASTEXITCODE
+    }
+} else {
+    Write-Host "WebView2 host artifact check not run: -SkipModern leaves an earlier exe in bin\Release." -ForegroundColor Yellow
 }
 foreach ($Destination in $Destinations) {
     if (-not (Test-Path $Destination)) {

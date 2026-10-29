@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Resource Manager - Fast Media Sorter</title>
+  <title>Recursos - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Resource Manager</h1>
+  <h1 id="title">Recursos</h1>
   <section id="purpose">
     <h2>Para qué sirve</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Resource Manager.</p>
+    <p>La lista de servidores y carpetas de red que el programa puede abrir: servidores SFTP, carpetas de red de Windows (SMB) y carpetas que Share Manager comparte desde este equipo. Se abre desde &#171;Administrar recursos..&#187; en el men&#250; de carpetas; la misma lista est&#225; en la p&#225;gina &#171;Servidor y recursos&#187; de la ventana de Configuraci&#243;n.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="resource-manager-light.png" alt="Resource Manager">
-    <img class="shot dark" src="resource-manager-dark.png" alt="Resource Manager">
+    <img class="shot light" src="resource-manager-light.png" alt="Recursos">
+    <img class="shot dark" src="resource-manager-dark.png" alt="Recursos">
   </figure>
   <section id="order">
     <h2>En este orden</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Pulse &#171;A&#241;adir..&#187; y rellene los datos del servidor, o traiga un archivo de configuraci&#243;n con el bot&#243;n &#171;M&#225;s&#187;.</li><li>Seleccione la fila nueva y pulse &#171;Comprobar&#187;.</li><li>Pulse &#171;Abrir&#187; o haga doble clic en la fila: el programa se conecta y muestra la carpeta del servidor.</li><li>Use &#171;Editar..&#187; para cambiar una direcci&#243;n o una contrase&#241;a y &#171;Eliminar&#187; para olvidar un recurso.</li></ol>
   </section>
   <section id="elements">
     <h2>Los elementos</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="list"><summary>La lista</summary><p>Columnas: Nombre, Tipo, Direcci&#243;n, Acceso y &#218;ltima apertura. El tipo es &#171;Servidor SFTP&#187;, &#171;Carpeta de red (SMB)&#187; o &#171;Carpeta compartida (Share Manager)&#187;; el acceso indica &#171;Solo lectura&#187; o &#171;Lectura y escritura&#187;. Una l&#237;nea bajo la lista cuenta los recursos y, si no hay ninguno, la ventana muestra una sugerencia y un bot&#243;n &#171;A&#241;adir..&#187;. Editar, Eliminar y Comprobar (y Abrir en la fila inferior de la ventana Recursos) necesitan una fila seleccionada; mientras no la haya, su informaci&#243;n en pantalla dice &#171;Seleccione primero un recurso de la lista&#187;.</p></details>
+<details id="add-edit"><summary>A&#241;adir.. y Editar..</summary><p>&#171;A&#241;adir..&#187; abre el formulario de un recurso nuevo y &#171;Editar..&#187; el del recurso seleccionado. Una contrase&#241;a escrita all&#237; se guarda cifrada para su cuenta de Windows, nunca en la propia lista.</p></details>
+<details id="remove"><summary>Eliminar</summary><p>&#171;Eliminar&#187; pregunta antes, y la respuesta predeterminada es No. La pregunta nombra el recurso y dice que tambi&#233;n se elimina la contrase&#241;a guardada para &#233;l, mientras que los archivos del servidor no se tocan.</p></details>
+<details id="check"><summary>Comprobar</summary><p>&#171;Comprobar&#187; prueba la fila seleccionada sin abrirla. En un servidor SFTP intenta todas las direcciones conocidas del recurso y informa de cada una como host:puerto con un veredicto: una respuesta SSH viva hace que la comprobaci&#243;n sea correcta, un puerto abierto que no es SSH es una advertencia y el silencio es un fallo. No se env&#237;a ninguna contrase&#241;a. En una carpeta de red abre el recurso compartido con la contrase&#241;a guardada y lee su carpeta superior; si no hay contrase&#241;a guardada, le pide que la introduzca con &#171;Editar..&#187;. En una fila de Share Manager solo mira si la carpeta existe en este equipo.</p></details>
+<details id="open"><summary>Abrir</summary><p>&#171;Abrir&#187;, o un doble clic en una fila, entrega el recurso al programa, que se conecta y muestra su carpeta. Si no hay contrase&#241;a guardada, o la guardada es rechazada, primero aparece una ventana peque&#241;a que la pide.</p></details>
+<details id="more-menu"><summary>El bot&#243;n M&#225;s</summary><p>El bot&#243;n con los puntos contiene: &#171;Exportar..&#187; (necesita un recurso seleccionado), &#171;Importar de archivo..&#187; (un archivo .fmscfg, .json o .txt, o la imagen de un c&#243;digo QR; tambi&#233;n se puede soltar un archivo sobre la lista), &#171;Importar del portapapeles&#187;, &#171;Escanear con c&#225;mara..&#187; (solo aparece si Share Manager est&#225; instalado y se encuentra una c&#225;mara), &#171;Mostrar c&#243;digo para el tel&#233;fono..&#187; y, para una fila seleccionada, &#171;&#191;Por qu&#233; no conecta?..&#187;, que abre el diagn&#243;stico de conexi&#243;n.</p></details>
+<details id="share-manager-rows"><summary>Filas de Share Manager y Mis dispositivos</summary><p>Una carpeta que Share Manager comparte desde este equipo se gestiona all&#237;: su informaci&#243;n en pantalla dice &#171;Esta carpeta compartida se gestiona en Share Manager&#187;, Editar y Eliminar en su fila abren Share Manager en lugar de cambiar algo aqu&#237;, y Exportar est&#225; desactivado. Cuando el cliente de intercambio est&#225; disponible, una secci&#243;n &#171;Mis dispositivos&#187; bajo la lista muestra las carpetas de sus otros dispositivos en un servidor de intercambio.</p></details>
+    <p><a href="settings.html">Configuraci&#243;n</a></p>
   </section>
   <nav id="related">
     <h2>Temas relacionados</h2>

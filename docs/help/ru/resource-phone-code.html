@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Phone Connection Code - Fast Media Sorter</title>
+  <title>Подключение телефона - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Phone Connection Code</h1>
+  <h1 id="title">Подключение телефона</h1>
   <section id="purpose">
     <h2>Назначение</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Phone Connection Code.</p>
+    <p>Показывает QR-код, который телефон сканирует, чтобы передать на этот компьютер настройки папки. Окно открывается пунктом &#171;Показать код для телефона..&#187; в меню &#171;Ещё&#187; списка ресурсов.</p>
   </section>
-  <figure id="capture">
-    <img class="shot light" src="resource-phone-code-light.png" alt="Phone Connection Code">
-    <img class="shot dark" src="resource-phone-code-dark.png" alt="Phone Connection Code">
-  </figure>
+  <figure id="capture" class="no-shot"><figcaption>Снимка этого окна нет: при открытии оно запускает устройство, сетевое подключение или весь просмотрщик, поэтому его не снимают.</figcaption></figure>
   <section id="order">
     <h2>Порядок действий</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Откройте &#171;Показать код для телефона..&#187;.</li><li>Отсканируйте QR-код телефоном; телефон должен достучаться до этого компьютера по локальной сети.</li><li>Телефон отправляет свой код, окно сообщает &#171;Код получен&#187; и закрывается, начинается импорт.</li><li>Если телефон не достаёт до компьютера, положите его код в буфер обмена этого компьютера - текстом или снимком QR-кода - и нажмите &#171;Вставить из буфера..&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Элементы окна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="qr"><summary>QR-код</summary><p>QR-код кодирует одноразовый адрес в вашей локальной сети с одноразовым ключом. Окно принимает соединения по этому адресу, только пока оно открыто, и перестаёт, когда закрывается; слушается именно этот один адрес, а не все сетевые адаптеры. Если приём запустить не удалось, строка состояния сообщает &#171;Не удалось запустить локальный приём&#187;.</p></details>
+<details id="address"><summary>Поле адреса и &#171;Копировать&#187;</summary><p>Нередактируемое поле под кодом показывает тот же адрес текстом. &#171;Копировать&#187; кладёт его в буфер с пометками приватности (без истории буфера обмена и облачной синхронизации): ключ в адресе позволяет тому, у кого он есть, передать в это окно код. Кто откроет адрес в браузере, увидит лишь короткую страницу о том, что это адрес однократного приёма кода.</p></details>
+<details id="paste"><summary>Вставить из буфера</summary><p>&#171;Вставить из буфера..&#187; читает из буфера текст или снимок QR-кода телефона и проверяет его тем же средством, что и набранный текст. Если это не код, строка состояния говорит почему, а окно остаётся открытым для телефона.</p></details>
+<details id="result"><summary>Что происходит с кодом</summary><p>Первый пришедший код - от телефона или из буфера - занимает окно, второй отбрасывается. Окно закрывается, и запускается тот же импорт, что и у &#171;Импорт из файла..&#187;: сводка для подтверждения, вопрос о пароле, если он нужен коду, затем в строке состояния &#171;Добавлено или обновлено ресурсов&#187; с числом.</p></details>
+<details id="close"><summary>Ожидание и &#171;Закрыть&#187;</summary><p>Пока идёт ожидание, строка состояния сообщает &#171;Ожидание подключения телефона..&#187;. &#171;Закрыть&#187; лишь прекращает ожидание; Enter и Esc выбирают именно его, так что код телефона не принимается нажатием клавиши.</p></details>
+    <p><a href="settings.html">Настройки</a></p>
   </section>
   <nav id="related">
     <h2>Связанные разделы</h2>

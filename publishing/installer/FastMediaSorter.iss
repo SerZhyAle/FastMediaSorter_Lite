@@ -123,49 +123,49 @@ english.CompFileDO=FileDO virtual disk host - optional extra (disk sharing stays
 russian.CompFileDO=Хост виртуальных дисков FileDO - необязательное дополнение (общий доступ к дискам включается отдельно)
 ukrainian.CompFileDO=Хост віртуальних дисків FileDO - необов’язкове доповнення (спільний доступ до дисків вмикається окремо)
 #ifndef NoExchange
-english.CompExchange={#ExchangeServerName} - optional extra; a relay that lets share servers and clients reach each other (not installed unless ticked; nothing runs and no firewall rule exists until you ask for it in the Share Manager)
-russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер обмена, через который серверы раздачи и клиенты находят друг друга (не ставится, пока вы его не отметите; ничего не запускается и правило брандмауэра не добавляется, пока вы сами не попросите об этом в Менеджере общего доступа)
-ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер обміну, через який сервери роздачі та клієнти знаходять одне одного (не ставиться, доки ви його не позначите; нічого не запускається, а правило брандмауера не додається, доки ви самі не попросите про це в Менеджері спільного доступу)
+english.CompExchange={#ExchangeServerName} - optional extra: a server you run yourself, through which your devices reach each other (not installed unless ticked; nothing runs and no firewall rule exists until you ask for it in the Share Manager)
+russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер, который вы запускаете сами и через который ваши устройства связываются друг с другом (не ставится, пока вы его не отметите; ничего не запускается и правило брандмауэра не добавляется, пока вы сами не попросите об этом в Менеджере общего доступа)
+ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер, який ви запускаєте самі і через який ваші пристрої зв’язуються між собою (не ставиться, доки ви його не позначите; нічого не запускається, а правило брандмауера не додається, доки ви самі не попросите про це в Менеджері спільного доступу)
 #endif
 english.TypeFull=Full - everything offline-ready (recommended)
-english.TypeCompact=Compact - the viewer without folder sharing (codecs & models download on demand)
+english.TypeCompact=Compact - the media and file manager without folder sharing (codecs & models download on demand)
 english.TypeCustom=Custom
-english.CompCore=Core - image & video viewer and sorter (required)
+english.CompCore=Core - media and file manager (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
-english.CompPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the sorter
+english.CompPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the media and file manager
 english.CompOcr=OCR & translation models - offline on-image text recognition
-english.CompShare=Folder share server and scheduled file operations (Share Manager + SFTP worker) - optional; gives folders to your phone and runs copy, move, delete and archive on a schedule; sharing is off until you enable it (bundles its own .NET runtime)
+english.CompShare=Local sharing and scheduling service (Share Manager + SFTP worker) - optional; shares folders over SFTP, runs copy, move, delete and archive on a schedule and joins this PC to an exchange account; sharing is off until you enable it (bundles its own .NET runtime)
 english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
 english.ShareDesktopIcon=Create a desktop shortcut for the Share Manager
 
 russian.TypeFull=Полная - всё для работы без интернета (рекомендуется)
-russian.TypeCompact=Компактная - просмотрщик без раздачи папок (кодеки и модели скачаются по мере надобности)
+russian.TypeCompact=Компактная - медиа- и файловый менеджер без раздачи папок (кодеки и модели скачаются по мере надобности)
 russian.TypeCustom=Выборочная
-russian.CompCore=Ядро - просмотр и сортировка изображений и видео (обязательно)
+russian.CompCore=Ядро - медиа- и файловый менеджер (обязательно)
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
-russian.CompPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в сортировщике
+russian.CompPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в медиа- и файловом менеджере
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
-russian.CompShare=Сервер раздачи папок и файловые операции по расписанию (Менеджер общего доступа + SFTP-воркер) - необязательно; отдаёт папки на телефон и по расписанию копирует, переносит, удаляет и архивирует файлы; раздача выключена, пока вы её не включите (включает свой рантайм .NET)
+russian.CompShare=Служба раздачи и расписаний (Менеджер общего доступа + SFTP-воркер) - необязательно; раздаёт папки по SFTP, по расписанию копирует, переносит, удаляет и архивирует файлы и подключает этот ПК к учётной записи обмена; раздача выключена, пока вы её не включите (включает свой рантайм .NET)
 russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
 russian.ShareDesktopIcon=Создать ярлык Менеджера общего доступа на рабочем столе
 
 ukrainian.TypeFull=Повна - усе для роботи без інтернету (рекомендовано)
-ukrainian.TypeCompact=Компактна - переглядач без роздачі тек (кодеки та моделі завантажаться за потреби)
+ukrainian.TypeCompact=Компактна - медіа- та файловий менеджер без роздачі тек (кодеки та моделі завантажаться за потреби)
 ukrainian.TypeCustom=Вибіркова
-ukrainian.CompCore=Ядро - перегляд і сортування зображень та відео (обов'язково)
+ukrainian.CompCore=Ядро - медіа- та файловий менеджер (обов'язково)
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
-ukrainian.CompPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у сортувальнику
+ukrainian.CompPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у медіа- та файловому менеджері
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
-ukrainian.CompShare=Сервер роздачі тек і файлові операції за розкладом (Менеджер спільного доступу + SFTP-воркер) - необов’язково; віддає теки на телефон і за розкладом копіює, переносить, видаляє та архівує файли; роздача вимкнена, доки ви її не ввімкнете (містить власний рантайм .NET)
+ukrainian.CompShare=Служба роздачі та розкладів (Менеджер спільного доступу + SFTP-воркер) - необов’язково; роздає теки по SFTP, за розкладом копіює, переносить, видаляє та архівує файли і підключає цей ПК до облікового запису обміну; роздача вимкнена, доки ви її не ввімкнете (містить власний рантайм .NET)
 ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
 ukrainian.ShareDesktopIcon=Створити ярлик Менеджера спільного доступу на робочому столі
 
 ; Prepend an honest one-liner to the component-selection page: the viewer is light,
 ; the weight is optional offline payload the user can trim.
 [Messages]
-english.SelectComponentsLabel2=This is one program with a few roles. The viewer and sorter is the core. The folder share server, FileDO disks, video codecs and OCR models are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need (codecs and models can download later on demand). Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Основа - просмотрщик и сортировщик. Сервер раздачи папок, диски FileDO, видео-кодеки и модели OCR необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное (кодеки и модели при необходимости скачаются позже). Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Основа - переглядач і сортувальник. Сервер роздачі тек, диски FileDO, відео-кодеки та моделі OCR необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне (кодеки та моделі за потреби завантажаться пізніше). Натисніть "Далі", коли будете готові продовжити.
+english.SelectComponentsLabel2=This is one program with a few roles. The media and file manager is required. The local sharing and scheduling service, FileDO disks, video codecs and OCR models are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need (codecs and models can download later on demand). Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Обязательная часть - медиа- и файловый менеджер. Служба раздачи и расписаний, диски FileDO, видео-кодеки и модели OCR необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное (кодеки и модели при необходимости скачаются позже). Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Обов'язкова частина - медіа- та файловий менеджер. Служба роздачі та розкладів, диски FileDO, відео-кодеки та моделі OCR необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне (кодеки та моделі за потреби завантажаться пізніше). Натисніть "Далі", коли будете готові продовжити.
 
 ; Explain the admin choice at the exact spot it is made (the built-in "Select Setup
 ; Install Mode" screen shown by PrivilegesRequiredOverridesAllowed=dialog), so the user

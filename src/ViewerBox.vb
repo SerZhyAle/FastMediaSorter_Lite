@@ -78,9 +78,10 @@ Friend NotInheritable Class ViewerBox
 #End If
 
     ''' <summary>The stock system box with this class's options (right-to-left reading), never the product-owned
-    ''' question window: for a question whose Escape or close box must not answer the way the question window's would
-    ''' (the close-time prompt, where "No" closes the program and unfinished file operations are dropped), and for the
-    ''' sets that are not questions. A caller that uses it says why at the call.</summary>
+    ''' question window: for the sets that are not questions (and for a question the mapping has no spec for). No call
+    ''' site asks for it directly any more - the close-time prompt, its one user, has named answers on the
+    ''' product-owned window since ticket 243 Q-8 (<c>AskSpecs.CloseWithUnfinishedFileOperations</c>), because a system
+    ''' box can open behind a viewer pinned "on top". A new caller says why at the call.</summary>
     Friend Shared Function ShowSystem(owner As IWin32Window, text As String, caption As String, buttons As MessageBoxButtons,
                                       icon As MessageBoxIcon, defaultButton As MessageBoxDefaultButton) As DialogResult
         Return MessageBox.Show(owner, text, caption, buttons, icon, defaultButton, Options())

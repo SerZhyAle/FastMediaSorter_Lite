@@ -12,19 +12,19 @@ Partial Public NotInheritable Class Localization
     ''' links, and an address is opened on a click only.
     ''' </summary>
     Private Shared Sub AddAboutPageStrings()
-        Add("Раздаёт папки этого компьютера Android-телефону, подключается к серверу обмена медиа и по расписанию выполняет операции с файлами.",
-            "Shares this computer's folders with an Android phone, connects to the media exchange server and runs file operations on a schedule.",
-            "Роздає папки цього комп'ютера Android-телефону, підключається до сервера обміну медіа та за розкладом виконує операції з файлами.",
-            "Gibt Ordner dieses Computers für ein Android-Telefon frei, verbindet sich mit dem Medienaustausch-Server und führt Dateivorgänge nach Zeitplan aus.",
-            "Condivide le cartelle di questo computer con un telefono Android, si collega al server di scambio multimediale ed esegue operazioni sui file in base a una pianificazione.",
-            "Comparte las carpetas de este equipo con un teléfono Android, se conecta al servidor de intercambio de medios y ejecuta operaciones con archivos según un horario.",
-            "Partage les dossiers de cet ordinateur avec un téléphone Android, se connecte au serveur d'échange de médias et exécute des opérations sur les fichiers selon un calendrier.",
-            "Partilha as pastas deste computador com um telemóvel Android, liga-se ao servidor de troca de multimédia e executa operações com ficheiros de acordo com um horário.",
-            "يشارك مجلدات هذا الكمبيوتر مع هاتف Android، ويتصل بخادم تبادل الوسائط، وينفّذ عمليات الملفات وفق جدول زمني.",
-            "इस कंप्यूटर के फ़ोल्डर Android फ़ोन के साथ साझा करता है, मीडिया आदान-प्रदान सर्वर से जुड़ता है और शेड्यूल के अनुसार फ़ाइल कार्य चलाता है।",
-            "এই কম্পিউটারের ফোল্ডার Android ফোনের সঙ্গে শেয়ার করে, মিডিয়া বিনিময় সার্ভারের সঙ্গে যুক্ত হয় এবং নির্ধারিত সময়সূচি অনুযায়ী ফাইলের কাজ চালায়।",
-            "اس کمپیوٹر کے فولڈر Android فون کے ساتھ شیئر کرتا ہے، میڈیا تبادلہ سرور سے جڑتا ہے اور شیڈول کے مطابق فائل آپریشن چلاتا ہے۔",
-            "与 Android 手机共享此电脑的文件夹，连接媒体交换服务器，并按计划执行文件操作。")
+        Add("Локальная служба раздачи и расписаний: раздаёт папки этого компьютера телефонам и SFTP-клиентам, выполняет операции по расписанию и подключает компьютер к учётной записи обмена.",
+            "Local sharing and scheduling service: shares this computer's folders with phones and SFTP clients, runs scheduled operations and connects the computer to an exchange account.",
+            "Локальна служба роздачі та розкладів: роздає папки цього комп'ютера телефонам і SFTP-клієнтам, виконує операції за розкладом і підключає комп'ютер до облікового запису обміну.",
+            "Lokaler Freigabe- und Zeitplandienst: gibt Ordner dieses Computers für Telefone und SFTP-Clients frei, führt Vorgänge nach Zeitplan aus und verbindet den Computer mit einem Austauschkonto.",
+            "Servizio locale di condivisione e pianificazione: condivide le cartelle di questo computer con telefoni e client SFTP, esegue operazioni pianificate e collega il computer a un account di scambio.",
+            "Servicio local de uso compartido y programación: comparte las carpetas de este equipo con teléfonos y clientes SFTP, ejecuta operaciones programadas y conecta el equipo a una cuenta de intercambio.",
+            "Service local de partage et de planification : partage les dossiers de cet ordinateur avec les téléphones et clients SFTP, exécute des opérations planifiées et connecte l'ordinateur à un compte d'échange.",
+            "Serviço local de partilha e agendamento: partilha as pastas deste computador com telemóveis e clientes SFTP, executa operações agendadas e liga o computador a uma conta de troca.",
+            "خدمة محلية للمشاركة والجدولة: تشارك مجلدات هذا الكمبيوتر مع الهواتف وعملاء SFTP، وتنفّذ العمليات المجدولة، وتربط الكمبيوتر بحساب التبادل.",
+            "स्थानीय साझाकरण और शेड्यूलिंग सेवा: इस कंप्यूटर के फ़ोल्डर फ़ोन और SFTP क्लाइंट के साथ साझा करती है, शेड्यूल किए गए ऑपरेशन चलाती है और कंप्यूटर को एक्सचेंज खाते से जोड़ती है।",
+            "স্থানীয় শেয়ারিং ও সময়সূচি সেবা: এই কম্পিউটারের ফোল্ডার ফোন ও SFTP ক্লায়েন্টের সঙ্গে শেয়ার করে, সময়সূচিবদ্ধ অপারেশন চালায় এবং কম্পিউটারকে এক্সচেঞ্জ অ্যাকাউন্টে যুক্ত করে।",
+            "مقامی شیئرنگ اور شیڈولنگ سروس: اس کمپیوٹر کے فولڈر فون اور SFTP کلائنٹس کے ساتھ شیئر کرتی ہے، شیڈول شدہ آپریشنز چلاتی ہے اور کمپیوٹر کو ایکسچینج اکاؤنٹ سے جوڑتی ہے۔",
+            "本地共享与计划服务：与手机和 SFTP 客户端共享此电脑的文件夹，运行计划操作，并将电脑连接到交换账户。")
         Add("Новые версии", "Releases", "Нові версії", "Veröffentlichungen", "Versioni", "Versiones", "Versions", "Versões", "الإصدارات", "रिलीज़", "রিলিজ", "ریلیزز", "版本发布")
         Add("Установлена версия {0}. Программа сама не проверяет обновления и ничего не скачивает: новые версии выходят на странице релизов GitHub, в winget и в Microsoft Store.",
             "Version {0} is installed. The program does not check for updates by itself and downloads nothing: new versions are published on the GitHub releases page, in winget and in the Microsoft Store.",

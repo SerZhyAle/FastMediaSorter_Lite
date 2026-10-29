@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Share Manager Welcome - Fast Media Sorter</title>
+  <title>अपना पहला फ़ोल्डर साझा करें - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Share Manager Welcome</h1>
+  <h1 id="title">अपना पहला फ़ोल्डर साझा करें</h1>
   <section id="purpose">
     <h2>यह किस लिए है</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Share Manager Welcome.</p>
+    <p>छह चरणों का विज़ार्ड जो आपको शून्य से फ़ोन को परोसे जाने वाले फ़ोल्डर तक ले जाता है: यह सर्वर चालू करता है, पहला फ़ोल्डर चुनता है, पोर्ट और बुनियादी विकल्प तय करता है और स्थिति की जाँच पर समाप्त होता है। यह Share Manager की पहली शुरुआत पर खुलता है और सेटिंग्स से दोबारा चलाया जा सकता है।</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="manager-welcome-light.png" alt="Share Manager Welcome">
-    <img class="shot dark" src="manager-welcome-dark.png" alt="Share Manager Welcome">
+    <img class="shot light" src="manager-welcome-light.png" alt="अपना पहला फ़ोल्डर साझा करें">
+    <img class="shot dark" src="manager-welcome-dark.png" alt="अपना पहला फ़ोल्डर साझा करें">
   </figure>
   <section id="order">
     <h2>इस क्रम में</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>परिचय पढ़ें और आगे दबाएँ।</li><li>सर्वर चालू करें पृष्ठ पर बटन को एक बार दबाएँ और व्यवस्थापक के अनुरोध की पुष्टि करें।</li><li>पहला फ़ोल्डर और उसके विकल्प चुनें।</li><li>पोर्ट रखें या बदलें।</li><li>भाषा, स्टार्टअप और स्थानीय नेटवर्क के विकल्प तय करें।</li><li>अंतिम पृष्ठ पर स्थिति देखें, QR कोड खोलें और समाप्त दबाएँ।</li></ol>
   </section>
   <section id="elements">
     <h2>तत्व</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="steps"><summary>चरण और बटन</summary><p>नीचे की पट्टी में चरण N / 6 दिखता है। पीछे और आगे पृष्ठों के बीच जाते हैं, अंतिम पृष्ठ पर आगे समाप्त बन जाता है, बाद में विज़ार्ड बंद करता है और जो आप पहले पुष्ट कर चुके हैं वह रखता है, और सेटअप अस्वीकार करें उसे हमेशा के लिए बंद करता है। हर पृष्ठ पर चार छोटे खंड हैं: यह क्या है, यह क्यों है, यह कैसे काम करेगा और कहाँ बदलें।</p></details>
+<details id="enable-step"><summary>सर्वर चालू करें</summary><p>इस चरण तक सर्वर बंद रहता है। सक्षम करने वाला बटन व्यवस्थापक अधिकार एक बार माँगता है और प्रोग्राम के लिए Windows फ़ायरवॉल का एक नियम जोड़ता है। अनुरोध रद्द करने पर सर्वर बंद रहता है और आप फिर कोशिश कर सकते हैं; यदि वह पहले से चालू है, तो पृष्ठ बताता है कि अनुमति का और अनुरोध नहीं चाहिए।</p></details>
+<details id="folder-step"><summary>पहला फ़ोल्डर</summary><p>एक फ़ोल्डर चुनें, फिर उसका नाम, प्रोफ़ाइल और पहुँच। अभी पहला संसाधन जोड़ें.. संसाधन विज़ार्ड खोलता है। आगे बढ़ने के लिए कम से कम एक फ़ोल्डर चाहिए। सेटिंग सर्वर को भेजी जाती हैं, और फ़ोल्डर मुख्य विंडो की सूची में संपादित किए जा सकते हैं।</p></details>
+<details id="port-step"><summary>पोर्ट</summary><p>सिस्टम चुनता है एक बार पोर्ट तय करके उसे रखता है; स्थिर पोर्ट: आपको अपनी संख्या लिखने देता है, जैसे राउटर पर पोर्ट फ़ॉरवर्डिंग के लिए। यह संख्या हर QR कोड और .fmscfg फ़ाइल में लिखी जाती है, इसलिए इसे बाद में बदलने से पहले दिए जा चुके कोड काम करना बंद कर देते हैं। फ़ायरवॉल का नियम प्रोग्राम का है, पोर्ट का नहीं।</p></details>
+<details id="basics-step"><summary>बुनियादी सेटिंग</summary><p>इंटरफ़ेस की भाषा, Windows लॉगऑन पर शुरू करें, स्टार्टअप पर प्रबंधक विंडो खोलें और केवल स्थानीय नेटवर्क (इंटरनेट से पहुँच नहीं)। स्थानीय नेटवर्क मोड पोर्ट फ़ॉरवर्डिंग और इंटरनेट का पता बंद कर देता है। Store संस्करण का स्टार्टअप विकल्प Windows की सेटिंग में सँभाला जाता है।</p></details>
+<details id="finish-step"><summary>समाप्ति</summary><p>अंतिम पृष्ठ सर्वर और चुने हुए फ़ोल्डरों की जाँच करके नतीजा दिखाता है; हरी स्थिति का मतलब है कि फ़ोल्डर की पहुँच के साथ कोई साझाकरण सच में चल रहा है। फ़ोन के लिए QR कोड कोड खोलता है और ताज़ा करें जाँच दोहराता है। यदि स्थिति पर ध्यान देना हो, तो कारण मुख्य विंडो में ठीक करें या फ़ोल्डर वाले चरण पर लौटें।</p></details>
+<details id="replay"><summary>विज़ार्ड दोबारा चलाना</summary><p>सेटिंग्स - सामान्य - स्वागत.. एक मेन्यू खोलता है जिसमें फ़ोल्डर सेटअप दोहराएँ है, और वह इसी विज़ार्ड को फिर खोलता है।</p></details>
+    <p><a href="share-settings.html">प्रबंधक सेटिंग</a> · <a href="sftp-settings.html">SFTP साझाकरण सेटिंग</a> · <a href="exchange-server-settings.html">एक्सचेंज सर्वर सेटिंग</a></p>
   </section>
   <nav id="related">
     <h2>संबंधित</h2>

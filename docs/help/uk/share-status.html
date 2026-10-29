@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Sharing Status - Fast Media Sorter</title>
+  <title>Поточний стан роздачі - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Sharing Status</h1>
+  <h1 id="title">Поточний стан роздачі</h1>
   <section id="purpose">
     <h2>Призначення</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Sharing Status.</p>
+    <p>Показує поточний стан роздачі та її прості лічильники. Відкривається посиланням &#171;Статистика&#187; головного вікна.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-status-light.png" alt="Sharing Status">
-    <img class="shot dark" src="share-status-dark.png" alt="Sharing Status">
+    <img class="shot light" src="share-status-light.png" alt="Поточний стан роздачі">
+    <img class="shot dark" src="share-status-dark.png" alt="Поточний стан роздачі">
   </figure>
   <section id="order">
     <h2>Порядок дій</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <ol class="order"><li>Прочитайте стан угорі.</li><li>Перевірте останнє підключення, кількість підключень і віддані файли.</li><li>Натисніть &#171;Оновити&#187;, щоб побачити нові значення.</li><li>Натисніть &#171;Скинути лічильники&#187;, щоб почати відлік заново.</li><li>Натисніть &#171;Закрити&#187;.</li></ol>
   </section>
   <section id="elements">
     <h2>Елементи вікна</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="state"><summary>Стан</summary><p>&#171;Роздача:&#187; показує, чи роздача працює і на якому порту, чи вона вимкнена, чи &#171;немає зв&#39;язку з сервером&#187;. &#171;Використовується з:&#187; показує, коли роздача запустилася.</p></details>
+<details id="counters"><summary>Лічильники</summary><p>&#171;Останнє підключення:&#187; показує час останнього підключення телефона або &#171;ще не було&#187;. &#171;З&#39;єднань:&#187; і &#171;Файлів віддано:&#187; показують загальну кількість і в дужках - кількість з останнього запуску. Лічильники зберігаються лише на цьому ПК і нікуди не надсилаються.</p></details>
+<details id="reset-refresh"><summary>Оновити та скинути</summary><p>&#171;Оновити&#187; знову зчитує значення із сервера. &#171;Скинути лічильники&#187; спершу запитує підтвердження: попередні значення відновити не вийде. Якщо скидання не вдалося, кнопка показує &#171;Скидання не вдалося&#187;. &#171;Закрити&#187; виходить із вікна.</p></details>
+    <p><a href="share-settings.html">Налаштування менеджера</a> · <a href="sftp-settings.html">Налаштування спільного доступу SFTP</a> · <a href="exchange-server-settings.html">Налаштування сервера обміну</a></p>
   </section>
   <nav id="related">
     <h2>Пов'язані розділи</h2>

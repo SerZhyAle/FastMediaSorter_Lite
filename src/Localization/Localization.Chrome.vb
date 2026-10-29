@@ -24,19 +24,19 @@ Partial Public NotInheritable Class Localization
         Add("удалить (del)","(D)elete", "видалити (del)", "Löschen (Entf)", "elimina (Canc)", "eliminar (Supr)", "supprimer (Suppr)", "excluir (Del)", "حذف (Del)", "हटाएँ (Del)", "মুছুন (Del)", "حذف (Del)", "删除 (Del)")
 
         ' --- first-run help, before the zoom block --------------------------------
-        Add(" Программа для быстрого переноса/копирования изображений по папкам. Да, та самая, которой вам не хватало.",
-            " Program for fast image sorting. Yes, the one you've been missing.",
-            " Програма для швидкого перенесення/копіювання зображень по теках. Так, та сама, якої вам бракувало.",
-            " Programm zum schnellen Verschieben/Kopieren von Bildern in Ordner. Ja, genau das, was Ihnen gefehlt hat.",
-            " Programma per spostare/copiare rapidamente immagini tra cartelle. Sì, proprio quello che ti mancava.",
-            " Programa para mover o copiar imágenes entre carpetas rápidamente. Sí, ese que le faltaba.",
-            " Programme pour déplacer/copier rapidement des images entre dossiers. Oui, celui qui vous manquait.",
-            " Programa para mover/copiar imagens entre pastas rapidamente. Sim, aquele que faltava.",
-            " برنامج لنقل/نسخ الصور بين المجلدات بسرعة. نعم، ذاك الذي كان ينقصك.",
-            " फ़ोल्डरों के बीच छवियाँ तेज़ी से ले जाने/कॉपी करने का प्रोग्राम। हाँ, वही जिसकी आपको कमी थी।",
-            " ফোল্ডারের মাঝে দ্রুত ছবি সরানো/কপি করার প্রোগ্রাম। হ্যাঁ, সেটাই যেটার অভাব ছিল।",
-            " فولڈرز کے درمیان تیزی سے تصاویر منتقل/نقل کرنے کا پروگرام۔ جی ہاں، وہی جس کی کمی تھی۔",
-            " 在文件夹之间快速移动/复制图片的程序。没错，就是你一直想要的那个。")
+        Add(" Медиа- и файловый менеджер: быстро раскладывает фото и видео по папкам одной клавишей. Да, тот самый, которого вам не хватало.",
+            " Media and file manager: it sorts photos and videos into folders with one key, fast. Yes, the one you've been missing.",
+            " Медіа- та файловий менеджер: швидко розкладає фото та відео по теках однією клавішею. Так, той самий, якого вам бракувало.",
+            " Medien- und Dateimanager: sortiert Fotos und Videos mit einer Taste schnell in Ordner. Ja, genau der, der Ihnen gefehlt hat.",
+            " Gestore di media e file: sposta foto e video nelle cartelle con un solo tasto, in un attimo. Sì, proprio quello che ti mancava.",
+            " Gestor de medios y archivos: coloca fotos y vídeos en carpetas con una sola tecla, a toda velocidad. Sí, ese que le faltaba.",
+            " Gestionnaire de médias et fichiers : range photos et vidéos dans des dossiers d'une seule touche, très vite. Oui, celui qui vous manquait.",
+            " Gestor de média e ficheiros: arruma fotos e vídeos em pastas com uma só tecla, rapidamente. Sim, aquele que faltava.",
+            " مدير وسائط وملفات: يوزّع الصور والفيديو على المجلدات بمفتاح واحد وبسرعة. نعم، ذاك الذي كان ينقصك.",
+            " मीडिया और फ़ाइल मैनेजर: एक कुंजी से फ़ोटो और वीडियो को तेज़ी से फ़ोल्डरों में छाँटता है। हाँ, वही जिसकी आपको कमी थी।",
+            " মিডিয়া ও ফাইল ম্যানেজার: এক কী-তে ছবি ও ভিডিও দ্রুত ফোল্ডারে সাজায়। হ্যাঁ, সেটাই যেটার অভাব ছিল।",
+            " میڈیا اور فائل مینیجر: ایک کلید سے تصاویر اور ویڈیو تیزی سے فولڈرز میں ترتیب دیتا ہے۔ جی ہاں، وہی جس کی کمی تھی۔",
+            " 媒体与文件管理器：一键把照片和视频快速整理到文件夹。没错，就是你一直想要的那个。")
         ' (the blank separator line needs no entry - T("") returns "" without a lookup)
         Add("Сначала заполните таблицу каталогов-получателей по клавишам 1,2,3.. - 0. ",
             "First fill the destination-folders table for keys: 1,2.. - 0. ",

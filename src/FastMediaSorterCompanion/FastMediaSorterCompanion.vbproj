@@ -81,6 +81,7 @@
     <InternalsVisibleTo Include="Companion.Tests" />
     <InternalsVisibleTo Include="ExchangeFirstRunScenes" />
     <InternalsVisibleTo Include="ResourceAddScenes" />
+    <InternalsVisibleTo Include="ContextHelpCaptures" />
   </ItemGroup>
 
   <ItemGroup>
@@ -152,6 +153,7 @@
       redaction, both logs in one archive - linked so none of that exists twice.
     -->
     <Compile Include="..\Support\LogPackage.vb" Link="Core\LogPackage.vb" />
+    <Compile Include="..\Support\ServerLogSources.vb" Link="Core\ServerLogSources.vb" />
     <Compile Include="..\Support\DiagnosticRedactor.vb" Link="Core\DiagnosticRedactor.vb" />
     <!--
       The "[hosting]" block of that report and the one state line of the log (ticket 182 L-4, L-8):

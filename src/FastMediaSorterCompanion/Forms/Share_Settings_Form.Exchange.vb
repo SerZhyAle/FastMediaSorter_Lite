@@ -340,7 +340,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Friend Sub FocusPublishPage()
-        SelectSettingsPage("exchange-account")
+        SelectSettingsPage("exchange-account", "publishing")
     End Sub
 
     Friend Sub FocusHostingPage()
