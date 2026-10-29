@@ -271,7 +271,7 @@ Public Class ExchangeAdminModelTests
         Assert.Equal("", ExchangeStatement.Text("not-a-point"))
     End Sub
 
-    ''' <summary>DEVICE-EXCHANGE 7.9 in substance, in English: relayed broadcast, plain tunnel, access in memory, opaque SFTP, the open
+    ''' <summary>DEVICE-EXCHANGE 7.9 in substance, in English: relayed broadcast, plain tunnel, access in memory, opaque SFTP, the
     ''' multi-user limit, flat trust and the clipboard value in memory (ticket 229) - the facts an operator must not be left unaware of.</summary>
     <Fact>
     Public Sub The_english_statement_says_what_the_contract_says_the_operator_can_see()
@@ -283,7 +283,7 @@ Public Class ExchangeAdminModelTests
                 {"tunnel-broadcast-plain", {"tunnel", "RTSP", "HTTP", "operator"}},
                 {"access-visible", {"access details", "memory", "operator", "never written to disk", "never logged"}},
                 {"sftp-opaque", {"SSH", "cannot read"}},
-                {"multi-user-limit", {"other people's accounts", "limit", "end to end", "open work"}},
+                {"multi-user-limit", {"other people's accounts", "operator", "points above"}},
                 {"flat-trust", {"every other device", "remove", "pairing codes", "access details", "remove itself"}},
                 {"clipboard-visible", {"memory", "nowhere else", "never written to disk", "lost when the server restarts",
                                        "operator can read it in the clear", "one value", "size limit"}}}

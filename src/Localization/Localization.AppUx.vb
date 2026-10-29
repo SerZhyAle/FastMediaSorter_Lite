@@ -74,7 +74,7 @@ Partial Public NotInheritable Class Localization
         Add("Контейнеры .fd-sec",
             ".fd-sec containers", "Контейнери .fd-sec", ".fd-sec-Container", "Contenitori .fd-sec",
             "Contenedores .fd-sec", "Conteneurs .fd-sec", "Contêineres .fd-sec", "حاويات ‎.fd-sec",
-            ".fd-sec कंटेनर", ".fd-sec কন্টেইনার", ".fd-sec کنٹینرز", ".fd-sec 容器")
+            ".fd-sec कंटेनर", ".fd-sec কন্টেইনার", "‎.fd-sec کنٹینرز", ".fd-sec 容器")
 
         ' --- Ф-7: the association rows say what the button does -----------------------
         Add("Регистрирует программу для открытия изображений у текущего пользователя, без прав администратора.",

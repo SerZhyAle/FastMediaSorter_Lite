@@ -102,7 +102,7 @@ Partial Public NotInheritable Class Localization
             "Impostazioni interfaccia",
             "Ajustes de interfaz",
             "Réglages de l’interface",
-            "Definições da interface",
+            "Configurações da interface",
             "إعدادات الواجهة",
             "इंटरफ़ेस सेटिंग्स",
             "ইন্টারফেস সেটিংস",
@@ -115,7 +115,7 @@ Partial Public NotInheritable Class Localization
             "Connessioni",
             "Conexiones",
             "Connexions",
-            "Ligações",
+            "Conexões",
             "الاتصالات",
             "कनेक्शन",
             "সংযোগ",
@@ -141,11 +141,11 @@ Partial Public NotInheritable Class Localization
             "Avvia il gestore dopo l’accesso a Windows. Non cambia la modalità del servizio.",
             "Inicia el gestor al entrar en Windows. No cambia el modo del servicio.",
             "Démarre le gestionnaire à la connexion Windows. Ne change pas le mode du service.",
-            "Inicia o gestor após entrar no Windows. Não altera o modo do serviço.",
+            "Inicia o gerenciador após entrar no Windows. Não altera o modo do serviço.",
             "يبدأ المدير بعد تسجيل الدخول إلى Windows. لا يغيّر وضع الخدمة.",
             "Windows में साइन इन करने पर मैनेजर शुरू करता है। सेवा मोड नहीं बदलता।",
             "Windows-এ সাইন ইন করার পর ম্যানেজার চালু করে। পরিষেবার মোড বদলায় না।",
-            "Windows میں سائن ان کے بعد مینیجر شروع کرتا ہے۔ سروس موڈ نہیں بدلتا۔",
+            "Windows میں سائن اِن کے بعد مینیجر شروع کرتا ہے۔ سروس موڈ نہیں بدلتا۔",
             "登录 Windows 后启动管理器，不更改服务模式。")
         Add("Меняет язык всех открытых окон и меню сразу.",
             "Changes the language of all open windows and menus immediately.",
@@ -167,7 +167,7 @@ Partial Public NotInheritable Class Localization
             "Il server di scambio resta attivo dopo la chiusura del gestore. Disattiva per fermarlo all’uscita.",
             "El servidor de intercambio sigue activo al cerrar el gestor. Desactívalo para detenerlo al salir.",
             "Le serveur d’échange continue après la fermeture du gestionnaire. Désactivez pour l’arrêter à la sortie.",
-            "O servidor de intercâmbio continua após fechar o gestor. Desative para o parar ao sair.",
+            "O servidor de troca continua em execução depois que o gerenciador é fechado. Desative para pará-lo ao sair.",
             "يستمر خادم التبادل بعد إغلاق المدير. عطّل الخيار لإيقافه عند الخروج.",
             "मैनेजर बंद होने पर एक्सचेंज सर्वर चलता रहेगा। बाहर निकलते समय रोकने के लिए इसे बंद करें।",
             "ম্যানেজার বন্ধ হলেও এক্সচেঞ্জ সার্ভার চলবে। বের হওয়ার সময় থামাতে এটি বন্ধ করুন।",
@@ -180,7 +180,7 @@ Partial Public NotInheritable Class Localization
             "Porta di connessione. Applica col pulsante; aggiorna la regola del router e i codici emessi.",
             "Puerto de conexión. Aplica con el botón; actualiza la regla del router y los códigos entregados.",
             "Port de connexion. Appliquez avec le bouton, puis mettez à jour le routeur et les codes transmis.",
-            "Porta de ligação. Aplique no botão; atualize a regra do router e os códigos emitidos.",
+            "Porta de conexão. Aplique com o botão separado; atualize a regra do roteador e os códigos emitidos.",
             "منفذ الاتصال. طبّق بالزر المنفصل ثم حدّث قاعدة الموجّه والرموز الموزعة.",
             "कनेक्शन पोर्ट। अलग बटन से लागू करें; राउटर नियम और जारी कोड अपडेट करें।",
             "সংযোগ পোর্ট। আলাদা বোতামে প্রয়োগ করুন; রাউটারের নিয়ম ও দেওয়া কোড আপডেট করুন।",
@@ -206,7 +206,7 @@ Partial Public NotInheritable Class Localization
             "Cerca impostazioni",
             "Buscar ajustes",
             "Rechercher des paramètres",
-            "Pesquisar definições",
+            "Pesquisar configurações",
             "البحث في الإعدادات",
             "सेटिंग्स खोजें",
             "সেটিংস খুঁজুন",
@@ -221,9 +221,9 @@ Partial Public NotInheritable Class Localization
         Add("Автозапуск и запуск", "Autostart and startup", "Автозапуск і запуск", "Autostart und Start", "Avvio automatico e avvio", "Inicio automático y arranque", "Démarrage automatique et lancement", "Inicialização automática e início", "التشغيل التلقائي وبدء التشغيل", "ऑटोस्टार्ट और प्रारंभ", "স্বয়ংক্রিয় চালু ও শুরু", "خودکار آغاز اور لانچ", "自启动与启动")
         Add("Тема и язык", "Theme and language", "Тема та мова", "Design und Sprache", "Tema e lingua", "Tema e idioma", "Thème et langue", "Tema e idioma", "السمة واللغة", "थीम और भाषा", "থিম ও ভাষা", "تھیم اور زبان", "主题与语言")
         Add("Локальные подключения", "Local connections", "Локальні підключення", "Lokale Verbindungen", "Connessioni locali", "Conexiones locales", "Connexions locales", "Conexões locais", "الاتصالات المحلية", "स्थानीय कनेक्शन", "স্থানীয় সংযোগ", "مقامی کنکشنز", "本地连接")
-        Add("Сетевая политика и Wi-Fi", "Network policy and Wi-Fi", "Мережева політика та Wi-Fi", "Netzwerkrichtlinie und Wi-Fi", "Criteri di rete e Wi-Fi", "Directiva de red y Wi-Fi", "Stratégie réseau et Wi-Fi", "Política de rede e Wi-Fi", "نهج الشبكة وWi-Fi", "नेटवर्क नीति और Wi-Fi", "নেটওয়ার্ক नीति ও Wi-Fi", "نیٹ ورک پالیسی اور Wi-Fi", "网络策略与 Wi-Fi")
+        Add("Сетевая политика и Wi-Fi", "Network policy and Wi-Fi", "Мережева політика та Wi-Fi", "Netzwerkrichtlinie und Wi-Fi", "Criteri di rete e Wi-Fi", "Directiva de red y Wi-Fi", "Stratégie réseau et Wi-Fi", "Política de rede e Wi-Fi", "نهج الشبكة وWi-Fi", "नेटवर्क नीति और Wi-Fi", "নেটওয়ার্ক নীতি ও Wi-Fi", "نیٹ ورک پالیسی اور Wi-Fi", "网络策略与 Wi-Fi")
         Add("Текущее состояние", "Current state", "Поточний стан", "Aktueller Zustand", "Stato corrente", "Estado actual", "État actuel", "Estado atual", "الحالة الحالية", "वर्तमान स्थिति", "বর্তমান অবস্থা", "موجودہ حالت", "当前状态")
-        Add("Управление службой", "Service management", "Керування службою", "Dienstverwaltung", "Gestione del servizio", "Gestión del servicio", "Gestion du service", "Gestão do serviço", "إدارة الخدمة", "सेवा प्रबंधन", "পরিষেবা পরিচালনা", "سروس کا انتظام", "服务管理")
+        Add("Управление службой", "Service management", "Керування службою", "Dienstverwaltung", "Gestione del servizio", "Gestión del servicio", "Gestion du service", "Gerenciamento do serviço", "إدارة الخدمة", "सेवा प्रबंधन", "পরিষেবা পরিচালনা", "سروس کا انتظام", "服务管理")
         Add("Показать в Проводнике", "Show in File Explorer", "Показати у Провіднику", "Im Datei-Explorer anzeigen", "Mostra in Esplora file", "Mostrar en el Explorador de archivos", "Afficher dans l'Explorateur de fichiers", "Mostrar no Explorador de Arquivos", "إظهار في مستكشف الملفات", "फ़ाइल एक्सप्लोरर में दिखाएं", "ফাইল এক্সপ্লোরারে দেখান", "فائل ایکسپلورر میں دکھائیں", "在文件资源管理器中显示")
         Add("Буфер обмена ▾", "Clipboard ▾", "Буфер обміну ▾", "Zwischenablage ▾", "Appunti ▾", "Portapapeles ▾", "Presse-papiers ▾", "Área de transferência ▾", "الحافظة ▾", "क्लिपबोर्ड ▾", "ক্লিপবোর্ড ▾", "کلپ بورڈ ▾", "剪贴板 ▾")
         Add("Буфер обмена (передача..)", "Clipboard (transferring..)", "Буфер обміну (передавання..)", "Zwischenablage (Übertragung..)", "Appunti (trasferimento..)", "Portapapeles (transfiriendo..)", "Presse-papiers (transfert..)", "Área de transferência (transferindo..)", "الحافظة (جارٍ النقل..)", "क्लिपबोर्ड (स्थानांतरित हो रहा है..)", "ক্লিপবোর্ড (স্থানান্তর হচ্ছে..)", "کلپ بورڈ (منتقلی جاری ہے..)", "剪贴板 (传输中..)")

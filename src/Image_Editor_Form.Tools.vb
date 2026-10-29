@@ -183,7 +183,9 @@ Partial Friend NotInheritable Class Image_Editor_Form
             .Height = Tool_Bar_Height
         }
 
-        Dim x As Integer = 8
+        ' The strip starts at its left edge, and so does the help badge under right-to-left reading (it lies over the top-left
+        ' corner there): the first tool then begins right of the badge instead of under it.
+        Dim x As Integer = If(RightToLeft = RightToLeft.Yes, 8 + ContextHelpUi.BadgeEdge, 8)
         Dim topOfButtons As Integer = (Tool_Bar_Height - Tool_Button_Size) \ 2
 
         For Each tool As EditorTool In New EditorTool() {EditorTool.Crop,

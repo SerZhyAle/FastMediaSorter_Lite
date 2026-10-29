@@ -22,7 +22,7 @@ Partial Public NotInheritable Class Localization
             "Regular folder (default)", "Звичайна папка (за замовчуванням)",
             "Normaler Ordner (Standard)", "Cartella normale (predefinita)",
             "Carpeta normal (predeterminada)", "Dossier ordinaire (par défaut)",
-            "Pasta normal (predefinição)", "مجلد عادي (افتراضي)",
+            "Pasta normal (padrão)", "مجلد عادي (افتراضي)",
             "सामान्य फ़ोल्डर (डिफ़ॉल्ट)", "সাধারণ ফোল্ডার (ডিফল্ট)",
             "عام فولڈر (ڈیفالٹ)", "普通文件夹（默认）")
 
@@ -53,7 +53,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Название на телефоне:",
             "Name on the phone:", "Назва на телефоні:", "Name am Telefon:", "Nome sul telefono:",
-            "Nombre en el teléfono:", "Nom sur le téléphone :", "Nome no telemóvel:",
+            "Nombre en el teléfono:", "Nom sur le téléphone :", "Nome no celular:",
             "الاسم على الهاتف:", "फ़ोन पर नाम:", "ফোনে নাম:", "فون پر نام:", "手机上的名称：")
 
         Add("Как ресурс называется в приложении. Пусто = имя папки.",
@@ -63,7 +63,7 @@ Partial Public NotInheritable Class Localization
             "Come si chiama la risorsa nell'app. Vuoto = il nome della cartella.",
             "Cómo se llama el recurso en la aplicación. Vacío = el nombre de la carpeta.",
             "Le nom de la ressource dans l'application. Vide = le nom du dossier.",
-            "Como o recurso se chama na aplicação. Vazio = o nome da pasta.",
+            "Como o recurso se chama no aplicativo. Vazio = o nome da pasta.",
             "اسم المورد داخل التطبيق. فارغ = اسم المجلد.",
             "ऐप में संसाधन का नाम। खाली = फ़ोल्डर का नाम।",
             "অ্যাপে রিসোর্সের নাম। ফাঁকা = ফোল্ডারের নাম।",
@@ -82,7 +82,7 @@ Partial Public NotInheritable Class Localization
             "Come l'app mostra la cartella e quali file prende (es. «Videoteca» - solo video).",
             "Cómo muestra la aplicación la carpeta y qué archivos toma (p. ej. «Videoteca»: solo vídeos).",
             "Comment l'application affiche le dossier et quels fichiers elle prend (p. ex. « Vidéothèque » - vidéos uniquement).",
-            "Como a aplicação mostra a pasta e que ficheiros aceita (p. ex. «Videoteca» - apenas vídeos).",
+            "Como o aplicativo mostra a pasta e quais arquivos aceita (p. ex. «Biblioteca de vídeo» - apenas vídeos).",
             "كيف يعرض التطبيق المجلد وأي الملفات يأخذ (مثلاً «مكتبة فيديو» - الفيديو فقط).",
             "ऐप फ़ोल्डर को कैसे दिखाएगा और कौन-सी फ़ाइलें लेगा (जैसे «वीडियो लाइब्रेरी» - केवल वीडियो)।",
             "অ্যাপ ফোল্ডারটি কীভাবে দেখাবে ও কোন ফাইল নেবে (যেমন «ভিডিও লাইব্রেরি» - শুধু ভিডিও)।",
@@ -120,14 +120,14 @@ Partial Public NotInheritable Class Localization
         Add("Показывать скрытые файлы",
             "Show hidden files", "Показувати приховані файли", "Versteckte Dateien anzeigen",
             "Mostra i file nascosti", "Mostrar archivos ocultos", "Afficher les fichiers masqués",
-            "Mostrar ficheiros ocultos", "عرض الملفات المخفية", "छिपी फ़ाइलें दिखाएँ",
+            "Mostrar arquivos ocultos", "عرض الملفات المخفية", "छिपी फ़ाइलें दिखाएँ",
             "লুকানো ফাইল দেখান", "پوشیدہ فائلیں دکھائیں", "显示隐藏文件")
 
         Add("Все файлы (не только медиа)",
             "All files (not only media)", "Усі файли (не лише медіа)",
             "Alle Dateien (nicht nur Medien)", "Tutti i file (non solo multimediali)",
             "Todos los archivos (no solo medios)", "Tous les fichiers (pas seulement les médias)",
-            "Todos os ficheiros (não apenas multimédia)", "كل الملفات (وليس الوسائط فقط)",
+            "Todos os arquivos (não apenas mídia)", "كل الملفات (وليس الوسائط فقط)",
             "सभी फ़ाइलें (केवल मीडिया नहीं)", "সব ফাইল (শুধু মিডিয়া নয়)",
             "تمام فائلیں (صرف میڈیا نہیں)", "所有文件（不限于媒体）")
 
@@ -147,7 +147,7 @@ Partial Public NotInheritable Class Localization
             "Per impostazione predefinita il telefono può aggiungere, rinominare ed eliminare file nella cartella.",
             "De forma predeterminada, el teléfono puede añadir, renombrar y eliminar archivos en la carpeta.",
             "Par défaut, le téléphone peut ajouter, renommer et supprimer des fichiers dans le dossier.",
-            "Por predefinição, o telemóvel pode adicionar, mudar o nome e eliminar ficheiros na pasta.",
+            "Por padrão, o celular pode adicionar, renomear e excluir arquivos na pasta.",
             "افتراضيًا يمكن للهاتف إضافة الملفات وإعادة تسميتها وحذفها داخل المجلد.",
             "डिफ़ॉल्ट रूप से फ़ोन फ़ोल्डर में फ़ाइलें जोड़, नाम बदल और हटा सकता है।",
             "ডিফল্টভাবে ফোন ফোল্ডারে ফাইল যোগ, নাম পরিবর্তন ও মুছতে পারে।",
@@ -161,7 +161,7 @@ Partial Public NotInheritable Class Localization
             "Non scrivibile a livello di server: il server blocca le modifiche",
             "No escribible a nivel de servidor: el servidor bloquea los cambios",
             "Non accessible en écriture au niveau du serveur - le serveur bloque les modifications",
-            "Não gravável ao nível do servidor - o servidor bloqueia alterações",
+            "Não gravável no nível do servidor - o servidor bloqueia alterações",
             "غير قابل للكتابة على مستوى الخادم - الخادم يمنع التعديلات",
             "सर्वर स्तर पर लिखने योग्य नहीं - सर्वर बदलाव रोकता है",
             "সার্ভার স্তরে লেখা যায় না - সার্ভার পরিবর্তন আটকায়",
@@ -189,7 +189,7 @@ Partial Public NotInheritable Class Localization
             "Pubblica come «sola lettura»: un suggerimento per l'app (il server non blocca)",
             "Publicar como «solo lectura»: una indicación para la aplicación (el servidor no bloquea)",
             "Publier en « lecture seule » - une indication pour l'application (le serveur ne bloque pas)",
-            "Publicar como «só leitura» - uma sugestão para a aplicação (o servidor não bloqueia)",
+            "Publicar como «só leitura» - uma sugestão para o aplicativo (o servidor não bloqueia)",
             "النشر كـ «للقراءة فقط» - مجرد تلميح للتطبيق (الخادم لا يمنع)",
             "«केवल पढ़ने योग्य» के रूप में प्रकाशित करें - ऐप के लिए संकेत (सर्वर नहीं रोकता)",
             "«শুধু পঠনযোগ্য» হিসেবে প্রকাশ করুন - অ্যাপের জন্য ইঙ্গিত (সার্ভার আটকায় না)",
@@ -203,7 +203,7 @@ Partial Public NotInheritable Class Localization
             "Cartella di destinazione: il telefono può copiarci e spostarci dentro i file",
             "Carpeta de destino: el teléfono puede copiar y mover archivos a ella",
             "Dossier de destination - le téléphone peut y copier et déplacer des fichiers",
-            "Pasta de destino - o telemóvel pode copiar e mover ficheiros para ela",
+            "Pasta de destino - o celular pode copiar e mover arquivos para ela",
             "مجلد الوجهة - يمكن للهاتف نسخ الملفات ونقلها إليه",
             "गंतव्य फ़ोल्डर - फ़ोन इसमें फ़ाइलें कॉपी और मूव कर सकता है",
             "গন্তব্য ফোল্ডার - ফোন এতে ফাইল কপি ও সরাতে পারে",
@@ -217,7 +217,7 @@ Partial Public NotInheritable Class Localization
             "La cartella diventa scrivibile; la risorsa entra nell'elenco delle destinazioni. Il colore dell'etichetta lo sceglie l'app.",
             "La carpeta pasa a ser escribible; el recurso se añade a la lista de destinos. La aplicación elige el color de la etiqueta.",
             "Le dossier devient accessible en écriture ; la ressource rejoint la liste des destinations. L'application choisit la couleur de l'étiquette.",
-            "A pasta passa a ser gravável; o recurso entra na lista de destinos. A aplicação escolhe a cor da etiqueta.",
+            "A pasta passa a ser gravável; o recurso entra na lista de destinos. O aplicativo escolhe a cor da etiqueta.",
             "يصبح المجلد قابلاً للكتابة، وينضم المورد إلى قائمة الوجهات. ويختار التطبيق لون الوسم.",
             "फ़ोल्डर लिखने योग्य बन जाता है; संसाधन गंतव्य सूची में जुड़ जाता है। लेबल का रंग ऐप चुनता है।",
             "ফোল্ডারটি লেখার যোগ্য হয়; রিসোর্সটি গন্তব্য তালিকায় যুক্ত হয়। লেবেলের রং অ্যাপ বেছে নেয়।",
@@ -233,7 +233,7 @@ Partial Public NotInheritable Class Localization
             "wenn gesetzt - die App fragt beim Öffnen danach",
             "se impostato, l'app lo chiede all'apertura", "si se define, la aplicación lo pedirá al abrir",
             "s'il est défini - l'application le demande à l'ouverture",
-            "se definido - a aplicação pede-o ao abrir", "إذا حُدِّد، يطلبه التطبيق عند الفتح",
+            "se definido - o aplicativo o pede ao abrir", "إذا حُدِّد، يطلبه التطبيق عند الفتح",
             "यदि सेट हो - ऐप खोलते समय इसे माँगेगा", "সেট করা থাকলে - খোলার সময় অ্যাপ এটি চাইবে",
             "اگر مقرر ہو - ایپ کھولتے وقت اسے مانگے گی", "如果设置 - 应用会在打开时询问")
 
@@ -260,12 +260,12 @@ Partial Public NotInheritable Class Localization
 
         Add("Текущее состояние раздачи",
             "Sharing status", "Поточний стан роздачі", "Freigabestatus", "Stato della condivisione",
-            "Estado del uso compartido", "État du partage", "Estado da partilha",
+            "Estado del uso compartido", "État du partage", "Estado do compartilhamento",
             "حالة المشاركة", "साझाकरण की स्थिति", "শেয়ারিং স্ট্যাটাস", "شیئرنگ کی حالت", "共享状态")
 
         Add("Раздача:",
             "Sharing:", "Роздача:", "Freigabe:", "Condivisione:", "Uso compartido:", "Partage :",
-            "Partilha:", "المشاركة:", "साझाकरण:", "শেয়ারিং:", "شیئرنگ:", "共享：")
+            "Compartilhamento:", "المشاركة:", "साझाकरण:", "শেয়ারিং:", "شیئرنگ:", "共享：")
 
         Add("Используется с:",
             "In use since:", "Використовується з:", "In Nutzung seit:", "In uso da:",
@@ -279,7 +279,7 @@ Partial Public NotInheritable Class Localization
             "I contatori restano solo su questo PC e non vengono inviati da nessuna parte.",
             "Los contadores se guardan solo en este PC y nunca se envían a ninguna parte.",
             "Les compteurs restent uniquement sur ce PC et ne sont envoyés nulle part.",
-            "Os contadores ficam apenas neste PC e nunca são enviados para lado nenhum.",
+            "Os contadores ficam apenas neste PC e nunca são enviados para lugar nenhum.",
             "تُحفظ العدادات على هذا الحاسوب فقط ولا تُرسل إلى أي جهة.",
             "काउंटर केवल इसी पीसी पर रहते हैं और कहीं नहीं भेजे जाते।",
             "কাউন্টারগুলি কেবল এই পিসিতেই থাকে, কোথাও পাঠানো হয় না।",
@@ -288,7 +288,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Сбросить счётчики",
             "Reset counters", "Скинути лічильники", "Zähler zurücksetzen", "Azzera i contatori",
-            "Restablecer contadores", "Réinitialiser les compteurs", "Repor os contadores",
+            "Restablecer contadores", "Réinitialiser les compteurs", "Redefinir os contadores",
             "إعادة تعيين العدادات", "काउंटर रीसेट करें", "কাউন্টার রিসেট করুন",
             "کاؤنٹرز ری سیٹ کریں", "重置计数")
 
@@ -299,7 +299,7 @@ Partial Public NotInheritable Class Localization
             "সার্ভিস অনুপলব্ধ", "سروس دستیاب نہیں", "无法连接到服务进程")
 
         Add("выключена",
-            "off", "вимкнено", "aus", "disattivata", "desactivado", "désactivé", "desativada",
+            "off", "вимкнено", "aus", "disattivata", "desactivado", "désactivé", "desativado",
             "متوقفة", "बंद", "বন্ধ", "بند", "已关闭")
 
         Add("нет данных",
@@ -309,7 +309,7 @@ Partial Public NotInheritable Class Localization
 
         Add("работает, порт {0}",
             "on, port {0}", "працює, порт {0}", "aktiv, Port {0}", "attiva, porta {0}",
-            "activo, puerto {0}", "actif, port {0}", "ativa, porta {0}",
+            "activo, puerto {0}", "actif, port {0}", "ativo, porta {0}",
             "مفعّلة، المنفذ {0}", "चालू, पोर्ट {0}", "চালু, পোর্ট {0}",
             "آن، پورٹ {0}", "已开启，端口 {0}")
 

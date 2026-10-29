@@ -84,7 +84,8 @@ Public Class RecipientsOverlaySeamTests
         Assert.Contains(".Name = ""recipients_Overlay_Strip""", overlay)
         Assert.Contains(".Cursor = Cursors.SizeAll", overlay)
         Assert.Contains("If e.Button = MouseButtons.Left Then RecipientsOverlayBeginDrag()", overlay)
-        Assert.Contains("SendMessage(recipients_Overlay.Handle, WmNcLButtonDown, New IntPtr(HtCaption), lParam)", overlay)
+        ' (L0281 T-6: the same call on the local `host`, the loop now constrained by WM_MOVING - see the drag fact below.)
+        Assert.Contains("SendMessage(host.Handle, WmNcLButtonDown, New IntPtr(HtCaption), lParam)", overlay)
         ' The rows never drag: the wiring exists only on the strip, never on the rows host.
         Dim build As String = MemberBody(overlay, "Private Sub BuildRecipientsOverlay()")
         Assert.Contains("AddHandler strip.MouseDown", build)
@@ -94,30 +95,58 @@ Public Class RecipientsOverlaySeamTests
     End Sub
 
     <Fact>
-    Public Sub A_drag_writes_the_custom_point_once_on_drop_and_never_per_pixel()
+    Public Sub A_drag_is_clamped_live_and_decided_once_on_drop_and_never_per_pixel()
+        ' MOVED by L0281 T-6 (owner answer Q281-3). 219 saved "whatever the loop ended on" and repaired it at the next
+        ' placement; now the native loop is CONSTRAINED (WM_MOVING through FloatingPanelPlacement.Fit, no pixel outside
+        ' the allowed area, not even for a frame) and the drop is decided once by DecideDrop: Placed stores, Anchor
+        ' clears, Refused/Unchanged write nothing and the placement puts the table back.
         Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
-        ' Saved on drop, not per pixel - and a drag that ends where it began writes nothing.
         Dim drag As String = MemberBody(overlay, "Private Sub RecipientsOverlayBeginDrag()")
-        Assert.Contains("If recipients_Overlay.Location <> before Then", drag)
-        Assert.Contains("SaveRecipientsOverlayDraggedPosition()", drag)
-        Assert.True(drag.IndexOf("SaveRecipientsOverlayDraggedPosition()", StringComparison.Ordinal) <
-                    drag.IndexOf("PositionRecipientsOverlay()", StringComparison.Ordinal))
-        ' The point is stored through the logical-px seam (Q219-5), not as raw screen coordinates.
-        Dim save As String = MemberBody(overlay, "Private Sub SaveRecipientsOverlayDraggedPosition()")
-        Assert.Contains("RecipientsOverlayPlacement.ToLogicalPoint(", save)
-        Assert.Contains("prefs.RecipientsOverlayHasCustomPosition = True", save)
-        Assert.Contains("RecipientsOverlayPlacement.ToDeviceOffset(",
-                        MemberBody(overlay, "Private Function RecipientsOverlayPlacedRect()"))
+        Assert.Contains("host.MovingFit = AddressOf RecipientsOverlayFitMoving", drag)
+        Assert.Contains("SendMessage(host.Handle, WmNcLButtonDown, New IntPtr(HtCaption), lParam)", drag)
+        Assert.Contains("RecipientsOverlayFinishDrag(started,", drag)
+        Assert.True(drag.IndexOf("SendMessage(", StringComparison.Ordinal) <
+                    drag.IndexOf("RecipientsOverlayFinishDrag(", StringComparison.Ordinal), "the drop is decided after the loop returns")
+        Assert.Contains("recipients_Drag_Active = False", drag)
+        Assert.Contains("host.MovingFit = Nothing", drag)
+        Assert.Contains("FloatingPanelPlacement.Fit(proposed, recipients_Drag_Allowed, recipients_Drag_StartIsRight)",
+                        MemberBody(overlay, "Private Function RecipientsOverlayFitMoving("))
+        ' The window answers WM_MOVING by rewriting the proposed rectangle in place.
+        Assert.Contains("Private Const WM_MOVING As Integer = &H216", overlay)
+        Assert.Contains("Marshal.StructureToPtr(New MovingRect With {", overlay)
+        ' The drop decision, against the corner anchor, the protected surfaces and the snap distance.
+        Dim finish As String = MemberBody(overlay, "Private Sub RecipientsOverlayFinishDrag(")
+        Assert.Contains("FloatingPanelPlacement.DecideDrop(started, dropped, RecipientsOverlayAnchoredRect(), allowed,", finish)
+        Assert.Contains("ChromeProtectedRects()", finish)
+        Assert.Contains("PanelDropOutcome.Placed", finish)
+        Assert.Contains("PanelDropOutcome.Anchor", finish)
+        Assert.DoesNotContain("PanelDropOutcome.Refused", finish)   ' refused and unchanged write nothing: the placement alone
+        Assert.True(finish.IndexOf("PositionRecipientsOverlay()", StringComparison.Ordinal) >
+                    finish.IndexOf("DecideDrop(", StringComparison.Ordinal), "the table is placed afresh after the decision")
+        ' A drop stores the shared place and keeps the old triple meaningful for an older build (Q281-3), through the
+        ' logical-px seam (Q219-5), once - the same place again writes nothing.
+        Dim store As String = MemberBody(overlay, "Private Sub StoreRecipientsOverlayPlace(")
+        Assert.Contains("FloatingPanelPlacement.Encode(FloatingPanelPlacement.FromRectangle(rect, allowed, factor))", store)
+        Assert.Contains("RecipientsOverlayPlacement.ToLogicalPoint(", store)
+        Assert.Contains("prefs.RecipientsOverlayPlace = text", store)
+        Assert.Contains("prefs.RecipientsOverlayHasCustomPosition = True", store)
+        Assert.Contains("prefs.RecipientsOverlayCustomX = legacy.X", store)
+        Assert.Contains("SaveRecipientsOverlayPreferences()", store)
+        ' The 219 per-drop writer and its repair are gone.
+        Assert.DoesNotContain("SaveRecipientsOverlayDraggedPosition", overlay)
     End Sub
 
     <Fact>
-    Public Sub Geometry_callbacks_cannot_save_or_replace_a_position_during_the_native_drag()
+    Public Sub Geometry_callbacks_cannot_replace_a_position_during_the_native_drag_and_never_write_one()
+        ' MOVED by L0281 T-6 (Q281-3): the drag guard keeps its role; the repair write-back it used to guard is gone.
         Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
         Dim position As String = MemberBody(overlay, "Private Sub PositionRecipientsOverlay()")
-        Assert.True(position.IndexOf("If recipients_Drag_Active Then Return", StringComparison.Ordinal) <
-                    position.IndexOf("PersistRecipientsOverlayRepairedPosition(onScreen)", StringComparison.Ordinal))
-        Assert.Contains("If recipients_Drag_Active Then Return",
-                        MemberBody(overlay, "Private Sub PersistRecipientsOverlayRepairedPosition(applied As Point)"))
+        Assert.Contains("If recipients_Drag_Active Then Return", position)
+        Assert.DoesNotContain("Persist", position)
+        Assert.DoesNotContain("SaveRecipientsOverlay", position)
+        Assert.DoesNotContain("PersistRecipientsOverlayRepairedPosition", overlay)
+        Assert.Contains("If recipients_Drag_Active Then Return New Rectangle(recipients_Overlay.Location, recipients_Overlay.Size)",
+                        MemberBody(overlay, "Private Function RecipientsOverlayPlacedRect()"))
         Assert.Contains("recipients_Drag_Active OrElse RecipientsOverlayPlacedRect().Contains(pointer)", Source("Main_Form.Chrome.vb"))
     End Sub
 
@@ -166,7 +195,8 @@ Public Class RecipientsOverlaySeamTests
         Assert.Contains("WriteString(""RecipientsOverlayCustomX""", prefs)
         ' The overlay's layout key - the change detector that rebuilds the panel - sees the
         ' custom point, so a corner pick, a reset or an import re-places it at once.
-        Assert.Contains("RecipientsOverlayHasCustomPosition, RecipientsOverlayCustomX, RecipientsOverlayCustomY})", prefs)
+        ' MOVED by L0281 T-6 (Q281-3): the key now ends with the shared place beside the old triple.
+        Assert.Contains("RecipientsOverlayHasCustomPosition, RecipientsOverlayCustomX, RecipientsOverlayCustomY, RecipientsOverlayPlace})", prefs)
         Assert.Contains("""RecipientsOverlayHasCustomPosition""", Source("ProfileReset\ProfileResetScope.vb"))
         Assert.Contains("""RecipientsOverlayCustomY""", Source("Support\LogPackage.vb"))
     End Sub
@@ -195,6 +225,9 @@ Public Class RecipientsOverlaySeamTests
         Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
         Dim reset As String = MemberBody(overlay, "Friend Sub ResetRecipientsOverlayPosition()")
         Assert.Contains("prefs.RecipientsOverlayHasCustomPosition = False", reset)
+        ' L0281 T-6 (Q281-3): the shared place goes with the triple, and "had something" counts either.
+        Assert.Contains("prefs.RecipientsOverlayPlace = """"", reset)
+        Assert.Contains("Not String.IsNullOrEmpty(prefs.RecipientsOverlayPlace)", reset)
         Assert.Contains("ApplyRecipientsOverlay()", reset)
         Assert.Contains("NotifyLevel.Info", reset)
         ' The no-op is honest: both answers exist, each its own words.
@@ -206,6 +239,8 @@ Public Class RecipientsOverlaySeamTests
     Public Sub A_corner_pick_clears_the_custom_point_and_the_hint_names_the_drag()
         Dim settings As String = Source("Table_Form.ExpandedSettings.vb")
         Assert.Contains("Main_Form.GetModernPreferences().RecipientsOverlayHasCustomPosition = False", settings)
+        ' L0281 T-6 (Q281-3): the shared place is cleared by the same pick.
+        Assert.Contains("Main_Form.GetModernPreferences().RecipientsOverlayPlace = """"", settings)
         Assert.Contains("""Угол области просмотра; панель можно перетащить за заголовок.""",
                         Source("Table_Form.ModernLayout.vb"))
     End Sub
@@ -250,18 +285,30 @@ Public Class RecipientsOverlaySeamTests
     ' ------------------------------------------------ deliverables 5, 6: the recovery clamp ----
 
     <Fact>
-    Public Sub Every_placement_validates_and_the_repaired_point_is_what_persists()
+    Public Sub Every_placement_fits_the_intended_place_afresh_and_writes_nothing_back()
+        ' REPLACES "Every_placement_validates_and_the_repaired_point_is_what_persists" (219 §6) - L0281 T-6, owner answer
+        ' Q281-3: the live clamp replaces the repair-on-drop, and the intended place is kept across resizes. A free
+        ' table's rectangle is Effective(place, allowed, size) computed at every placement; a resize never writes.
         Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
         Dim placed As String = MemberBody(overlay, "Private Function RecipientsOverlayPlacedRect()")
-        Assert.Contains("If Not RecipientsOverlayPlacement.HeaderInside(location, recipients_Overlay.Size,", placed)
-        Assert.Contains("RecipientsOverlayPlacement.PullInside(location, recipients_Overlay.Size,", placed)
-        ' The repair rewrites the saved custom point at the moment it fires, silently.
-        Assert.Contains("PersistRecipientsOverlayRepairedPosition(onScreen)", overlay)
-        Dim repair As String = MemberBody(overlay, "Private Sub PersistRecipientsOverlayRepairedPosition(applied As Point)")
-        Assert.Contains("SaveRecipientsOverlayPreferences()", repair)
-        Assert.DoesNotContain("ViewerBox", repair)
-        ' Silent recovery: no dialog, no toast, nothing beyond the ordinary trace.
-        Assert.DoesNotContain("Notify", repair)
+        Assert.Contains("If RecipientsOverlayFreePlace(place) Then", placed)
+        Assert.Contains("FloatingPanelPlacement.Effective(place, RecipientsOverlayAllowedArea(factor), recipients_Overlay.Size,", placed)
+        Assert.Contains("Return RecipientsOverlayAnchoredRect()", placed)
+        ' The allowed area is the chrome panels' own (one model), read through the one helper.
+        Assert.Contains("Return ChromeAllowedArea(factor)", MemberBody(overlay, "Private Function RecipientsOverlayAllowedArea("))
+        ' The reader is the pure rule, not a copy of it.
+        Assert.Contains("RecipientsOverlayPlacement.TryReadPlace(prefs.RecipientsOverlayPlace,", MemberBody(overlay, "Private Function RecipientsOverlayFreePlace("))
+        ' No placement path writes a preference: neither the placement, nor the position pass, nor the anchored rectangle.
+        Dim anchored As String = MemberBody(overlay, "Private Function RecipientsOverlayAnchoredRect()")
+        For Each body As String In {placed, anchored, MemberBody(overlay, "Private Sub PositionRecipientsOverlay()"),
+                                    MemberBody(overlay, "Private Function RecipientsOverlayHotZone()")}
+            Assert.DoesNotContain("SaveRecipientsOverlayPreferences", body)
+            Assert.DoesNotContain("RecipientsOverlayCustomX =", body)
+            Assert.DoesNotContain("RecipientsOverlayPlace =", body)
+            Assert.DoesNotContain("RecipientsOverlayHasCustomPosition =", body)
+        Next
+        ' The anchored state keeps today's rule: a corner anchor whose header would be outside is carried in, unwritten.
+        Assert.Contains("RecipientsOverlayPlacement.PullInside(location, recipients_Overlay.Size,", anchored)
     End Sub
 
     <Fact>
@@ -279,7 +326,15 @@ Public Class RecipientsOverlaySeamTests
         Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
         ' The placement function's net48 branch is the legacy Select Case alone: no custom
         ' point, no clamp, no repair - the x86 overlay stays always-on at a fixed corner.
-        Dim placed As String = MemberBody(overlay, "Private Function RecipientsOverlayPlacedRect()")
+        ' MOVED by L0281 T-6: the corner arithmetic (and its #Else) now lives in RecipientsOverlayAnchoredRect, which the
+        ' placed rectangle falls back to; the free-place branch of PlacedRect is whole inside #If Not NETFRAMEWORK.
+        Dim placed As String = MemberBody(overlay, "Private Function RecipientsOverlayAnchoredRect()")
+        Dim placedHead As String = MemberBody(overlay, "Private Function RecipientsOverlayPlacedRect()")
+        Assert.Contains("#If Not NETFRAMEWORK Then", placedHead)
+        Assert.True(placedHead.IndexOf("RecipientsOverlayFreePlace(place)", StringComparison.Ordinal) >
+                    placedHead.IndexOf("#If Not NETFRAMEWORK Then", StringComparison.Ordinal))
+        Assert.True(placedHead.IndexOf("RecipientsOverlayFreePlace(place)", StringComparison.Ordinal) <
+                    placedHead.IndexOf("#End If", StringComparison.Ordinal), "the free branch is inside the modern seam")
         Dim seamStart As Integer = placed.IndexOf("#Else", StringComparison.Ordinal)
         Dim seamEnd As Integer = placed.IndexOf("#End If", seamStart, StringComparison.Ordinal)
         Assert.True(seamStart >= 0 AndAlso seamEnd > seamStart, "the placement seam was not found")

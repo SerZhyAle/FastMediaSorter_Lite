@@ -258,7 +258,7 @@ Public NotInheritable Class Share_Disks_Form
         Select Case holder
             Case "service" : Return Localization.T("Служба Windows")
             Case "session" : Return Localization.T("Текущий сеанс")
-            Case "none" : Return Localization.T("Нет")
+            Case "none" : Return Localization.T("Никто")
             Case Else : Return Localization.T("Неизвестно")
         End Select
     End Function

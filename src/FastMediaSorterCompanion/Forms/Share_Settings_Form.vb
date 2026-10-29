@@ -484,7 +484,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 MessageBox.Show(Me, Localization.T("Ничего не изменено: права администратора не получены. Раздача остановлена - её можно снова включить в главном окне."),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case ServerFeatures.WithdrawResult.Failed
-                MessageBox.Show(Me, Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..»."),
+                MessageBox.Show(Me, Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа»."),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case ServerFeatures.WithdrawResult.StillEnabledByInstaller
                 _changed = True

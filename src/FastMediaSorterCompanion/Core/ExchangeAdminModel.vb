@@ -295,7 +295,7 @@ End Class
 ''' <summary>
 ''' The statement of what the operator can see (DEVICE-EXCHANGE 7.9, ticket 167 rule 8, shown by 168 section 3.6): seven
 ''' points, each a fact of its own. The ids are the Go module's (<c>internal/statement</c>) and never change meaning;
-''' a point is added, never reworded in place. The text is the Russian source of the 13-language layer, one key per
+''' a point is added, and its wording changes only together with its 13 rows. The text is the Russian source of the 13-language layer, one key per
 ''' point, so a language never shows a different set of limits.
 ''' </summary>
 Friend NotInheritable Class ExchangeStatement
@@ -315,7 +315,7 @@ Friend NotInheritable Class ExchangeStatement
             Case "sftp-opaque"
                 Return Localization.T("Общая папка, к которой подключаются через туннель, остаётся защищённой собственным SSH-соединением: сервер переносит байты, которые не может прочитать.")
             Case "multi-user-limit"
-                Return Localization.T("На сервере, где живут чужие учётные записи, это известное ограничение данной версии: оператор видит то, что описано выше. Сквозное шифрование данных доступа, при котором их не прочитает даже оператор, - работа впереди.")
+                Return Localization.T("На сервере, где живут чужие учётные записи, оператор видит то, что описано выше.")
             Case "flat-trust"
                 Return Localization.T("Каждое устройство учётной записи полностью доверяет каждому другому устройству этой записи: любое устройство может удалить другое, запросить коды сопряжения и прочитать данные доступа всех общих папок записи. Удалить себя может любое устройство.")
             Case "clipboard-visible"

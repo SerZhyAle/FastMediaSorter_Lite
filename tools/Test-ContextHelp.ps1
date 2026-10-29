@@ -38,6 +38,21 @@ if (-not (Test-Path -LiteralPath $mapFile)) {
 . (Join-Path $PSScriptRoot 'lib/ExchangeMark.ps1')
 $exchangeTerms = Get-ExchangeMarkTerms $Root
 $problems = [Collections.Generic.List[string]]::new()
+
+# The pt help is pt-BR like the pt UI strings (L0291, L0293). One definition of European Portuguese serves both:
+# the marker regex of LocaleScriptRules.vb, read from its source so the two cannot drift apart.
+$europeanPortuguese = $null
+$rulesFile = Join-Path $Root 'tests/Lite.Tests/LocaleScriptRules.vb'
+if (Test-Path -LiteralPath $rulesFile) {
+    $ruleMatch = [regex]::Match([IO.File]::ReadAllText($rulesFile), 'Shared ReadOnly EuropeanPortuguese As New Regex\((?<body>[\s\S]*?),\s*RegexOptions\.IgnoreCase\)')
+    if ($ruleMatch.Success) {
+        $markerPattern = -join ([regex]::Matches($ruleMatch.Groups['body'].Value, '"([^"]*)"') | ForEach-Object { $_.Groups[1].Value })
+        if ($markerPattern.Length -gt 40) { $europeanPortuguese = [regex]::new($markerPattern, 'IgnoreCase') }
+    }
+}
+if (-not $europeanPortuguese) {
+    Exit-Verdict 'Test-ContextHelp' 2 'the European Portuguese marker rule of tests/Lite.Tests/LocaleScriptRules.vb could not be read'
+}
 function Problem([string]$msg) { $problems.Add($msg) }
 
 $map = $null
@@ -174,6 +189,10 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
             Problem "Missing index page: docs/help/$locale/index.html"
         } else {
             $indexHtml = [IO.File]::ReadAllText($indexPath)
+            if ($locale -eq 'pt') {
+                $european = $europeanPortuguese.Match([Net.WebUtility]::HtmlDecode($indexHtml))
+                if ($european.Success) { Problem "European Portuguese '$($european.Value)' in docs/help/pt/index.html: the pt help is pt-BR like the pt UI strings" }
+            }
             $expectedDir = if ($locale -in @('ar', 'ur')) { 'rtl' } else { 'ltr' }
             if ($indexHtml -notmatch "<html lang=`"$locale`" dir=`"$expectedDir`"") {
                 Problem "Incorrect html lang/dir in docs/help/$locale/index.html"
@@ -191,6 +210,10 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
                 continue
             }
             $html = [IO.File]::ReadAllText($topicPath)
+            if ($locale -eq 'pt') {
+                $european = $europeanPortuguese.Match([Net.WebUtility]::HtmlDecode($html))
+                if ($european.Success) { Problem "European Portuguese '$($european.Value)' in docs/help/pt/$topic.html: the pt help is pt-BR like the pt UI strings" }
+            }
             $surface = $map.surfaces | Where-Object { $_.help -eq $topic -and $_.exchangeMark } | Select-Object -First 1
             if ($surface) {
                 $expectedAlt = if ($surface.exchangeMark -eq 'full') { 'Media Exchange Server' } else { $exchangeTerms[$locale] }

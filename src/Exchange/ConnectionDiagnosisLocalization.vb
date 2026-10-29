@@ -2,12 +2,12 @@
 Option Strict On
 
 Imports System.Collections.Generic
-Imports System.Globalization
 
 ''' <summary>
 ''' Spec 232 / DEVICE-EXCHANGE 1.1 section 9 items CY, CZ, DD, DR:
 ''' Localization table for all 15 check steps and all message rows in 13 languages.
-''' Languages: en, ru, uk (canonical from contract) plus de, es, fr, it, ja, ko, pl, pt, tr, zh.
+''' Languages: the 13 shipped UI languages (Localization.Codes: en, ru, uk, de, es, fr, it, pt, ar, hi, bn, ur, zh)
+''' plus ja, ko, pl, tr, which no build offers as a UI language.
 ''' </summary>
 Public Module ConnectionDiagnosisLocalization
 
@@ -33,14 +33,17 @@ Public Module ConnectionDiagnosisLocalization
         InitializePortuguese()
         InitializeTurkish()
         InitializeChinese()
-        InitializeUiOnlyRows()
+        InitializeArabic()
+        InitializeHindi()
+        InitializeBengali()
+        InitializeUrdu()
     End Sub
 
+    ' The language the user picked in the program (Localization.CurrentCode), never the Windows culture:
+    ' the Share Manager and the viewer are one program family and both answer in the same language.
     Public Function CurrentLocale() As String
-        Dim name As String = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant()
+        Dim name As String = If(Localization.CurrentCode, String.Empty).ToLowerInvariant()
         If StepTexts.ContainsKey(name) Then Return name
-        ' check for ua -> uk
-        If name = "ua" AndAlso StepTexts.ContainsKey("uk") Then Return "uk"
         Return "en"
     End Function
 
@@ -176,7 +179,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Close"},
             {"btn_open_settings", "Open Windows Settings"},
             {"check_visibility", "Is my server visible from outside"},
-            {"checking", "Checking..."},
+            {"checking", "Checking.."},
             {"reachable", "Reachable from the internet."},
             {"not_reachable", "Not reachable from the internet."},
             {"could_not_check", "Could not check reachability right now."},
@@ -259,7 +262,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Закрыть"},
             {"btn_open_settings", "Открыть настройки Windows"},
             {"check_visibility", "Виден ли мой сервер снаружи"},
-            {"checking", "Проверка..."},
+            {"checking", "Проверка.."},
             {"reachable", "Сервер доступен из интернета."},
             {"not_reachable", "Сервер недоступен из интернета."},
             {"could_not_check", "Не удалось проверить доступность сейчас."},
@@ -342,7 +345,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Закрити"},
             {"btn_open_settings", "Відкрити налаштування Windows"},
             {"check_visibility", "Чи видно мій сервер ззовні"},
-            {"checking", "Перевірка..."},
+            {"checking", "Перевірка.."},
             {"reachable", "Сервер доступний з інтернету."},
             {"not_reachable", "Сервер недоступний з інтернету."},
             {"could_not_check", "Не вдалося перевірити доступність зараз."},
@@ -428,7 +431,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Schließen"},
             {"btn_open_settings", "Windows-Einstellungen öffnen"},
             {"check_visibility", "Ist mein Server von außen sichtbar"},
-            {"checking", "Prüfung..."},
+            {"checking", "Prüfung.."},
             {"reachable", "Aus dem Internet erreichbar."},
             {"not_reachable", "Aus dem Internet nicht erreichbar."},
             {"could_not_check", "Erreichbarkeit konnte nicht geprüft werden."},
@@ -507,7 +510,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Cerrar"},
             {"btn_open_settings", "Abrir configuración de Windows"},
             {"check_visibility", "¿Es visible mi servidor desde el exterior?"},
-            {"checking", "Comprobando..."},
+            {"checking", "Comprobando.."},
             {"reachable", "Accesible desde Internet."},
             {"not_reachable", "No accesible desde Internet."},
             {"could_not_check", "No se pudo comprobar la visibilidad en este momento."},
@@ -586,7 +589,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Fermer"},
             {"btn_open_settings", "Ouvrir les paramètres Windows"},
             {"check_visibility", "Mon serveur est-il visible depuis l'extérieur ?"},
-            {"checking", "Vérification..."},
+            {"checking", "Vérification.."},
             {"reachable", "Accessible depuis Internet."},
             {"not_reachable", "Non accessible depuis Internet."},
             {"could_not_check", "Impossible de vérifier la visibilité actuellement."},
@@ -665,7 +668,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Chiudi"},
             {"btn_open_settings", "Apri impostazioni di Windows"},
             {"check_visibility", "Il mio server è visibile dall'esterno?"},
-            {"checking", "Controllo in corso..."},
+            {"checking", "Controllo in corso.."},
             {"reachable", "Raggiungibile da Internet."},
             {"not_reachable", "Non raggiungibile da Internet."},
             {"could_not_check", "Impossibile verificare la visibilità ora."},
@@ -981,7 +984,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "Fechar"},
             {"btn_open_settings", "Abrir configurações do Windows"},
             {"check_visibility", "Meu servidor é visível externamente?"},
-            {"checking", "Verificando..."},
+            {"checking", "Verificando.."},
             {"reachable", "Acessível pela Internet."},
             {"not_reachable", "Inacessível pela Internet."},
             {"could_not_check", "Não foi possível verificar a visibilidade agora."},
@@ -1139,7 +1142,7 @@ Public Module ConnectionDiagnosisLocalization
             {"btn_close", "关闭"},
             {"btn_open_settings", "打开 Windows 设置"},
             {"check_visibility", "我的服务器是否可从外部访问"},
-            {"checking", "正在检查..."},
+            {"checking", "正在检查.."},
             {"reachable", "可以从互联网访问。"},
             {"not_reachable", "无法从互联网访问。"},
             {"could_not_check", "当前无法检查可访问性。"},
@@ -1152,19 +1155,320 @@ Public Module ConnectionDiagnosisLocalization
     ' --- 14. the four interface languages of the programs that the table does not carry (ar, hi, bn, ur) ---
     ' Only the row `format-unsupported` is translated for them; every other row and every step reads as English there, as before
     ' (NormalizeLocale accepts the code, GetStepText and GetUiText fall back to English).
-    Private Sub InitializeUiOnlyRows()
-        MessageTexts("ar") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-            {"format-unsupported", "هذا التنسيق أحدث مما يدعمه هذا البرنامج. لم يتم استيراد أي شيء. استخدم برنامجًا متوافقًا."}
+    ' --- 14. ARABIC (interface language, RTL) ---
+    Private Sub InitializeArabic()
+        Dim steps As New Dictionary(Of ConnectionDiagnosisStep, String) From {
+            {ConnectionDiagnosisStep.PcAsleep, "شغّل الجهاز الذي يعمل عليه الخادم أو خدمة المشاركة، وأيقظه، ومنعه من الدخول في وضع السكون."},
+            {ConnectionDiagnosisStep.AddressLan, "تحقّق من العنوان، وتأكد من أن الجهازين على شبكة Wi-Fi أو شبكة منزلية واحدة."},
+            {ConnectionDiagnosisStep.GuestNetwork, "اتصل بشبكة Wi-Fi الرئيسية، لا بشبكة الضيوف في الموجّه: فغالبًا لا ترى الأجهزة بعضها في شبكة الضيوف."},
+            {ConnectionDiagnosisStep.Vpn, "أوقف تشغيل VPN على هذا الجهاز لحظة، ثم حاول مرة أخرى."},
+            {ConnectionDiagnosisStep.WindowsPublicNetwork, "على جهاز Windows، اجعل هذه الشبكة خاصة: فـ Windows يمنع الأجهزة الأخرى من الوصول في الشبكات العامة."},
+            {ConnectionDiagnosisStep.IpFamily, "جرّب شبكة أخرى، مثل بيانات الهاتف المحمول: قد لا يكون الخادم متاحًا إلا عبر نوع من العناوين (IPv4 أو IPv6) لا تمنحه هذه الشبكة."},
+            {ConnectionDiagnosisStep.ServerInternet, "من شبكة أخرى، مثل بيانات الهاتف المحمول، تحقّق من أن الخادم يستجيب عبر الإنترنت."},
+            {ConnectionDiagnosisStep.PortForward, "في إعدادات الموجّه، وجّه منفذ الخادم إلى الكمبيوتر الذي يشغّله."},
+            {ConnectionDiagnosisStep.DeviceClock, "اضبط التاريخ والوقت الصحيحين على هذا الجهاز، أو فعّل التوقيت التلقائي، ثم حاول مرة أخرى."},
+            {ConnectionDiagnosisStep.Certificate, "إن لم تكن تتوقع هذا، فلا تكمل: اسأل من يدير الخادم. وإن أُعيد تثبيت الخادم، فتأكد من بصمته الجديدة."},
+            {ConnectionDiagnosisStep.Credentials, "تحقّق من اسم الدخول، وأعد كتابة كلمة المرور. وإن استخدمت رمزًا لمرة واحدة، فاطلب رمزًا جديدًا."},
+            {ConnectionDiagnosisStep.SignInRate, "انتظر بضع ثوانٍ وحاول مرة أخرى: يقبل الخادم محاولة واحدة تقريبًا في كل ثانية."},
+            {ConnectionDiagnosisStep.Invitation, "تحقّق من الدعوة أو اطلب دعوة جديدة: كل دعوة تعمل مرة واحدة، وقد تكون هذه خاطئة أو مستخدمة أو مسحوبة."},
+            {ConnectionDiagnosisStep.DeviceRemoved, "سجّل الدخول إلى الحساب مرة أخرى لإعادة إضافة هذا الجهاز."},
+            {ConnectionDiagnosisStep.Operator, "اسأل من يدير الخادم: لا يمكن إصلاح هذا إلا من جهة الخادم."}
         }
-        MessageTexts("hi") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-            {"format-unsupported", "यह फ़ॉर्मैट इस प्रोग्राम के समर्थन से नया है। कुछ भी आयात नहीं किया गया। संगत प्रोग्राम का उपयोग करें।"}
+        Dim msgs As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"bad-credentials", "اسم الدخول أو كلمة المرور غير صحيح."},
+            {"bad-credentials-code", "اسم الدخول أو الرمز لمرة واحدة غير صحيح."},
+            {"device-revoked", "أُزيل هذا الجهاز من الحساب."},
+            {"signed-out", "تم تغيير كلمة مرور هذا الحساب، لذلك خرج هذا الجهاز من الجلسة."},
+            {"version-unsupported", "هذا البرنامج والخادم يستخدمان إصدارين مختلفين من التبادل."},
+            {"tls-required", "لا يقبل الخادم هذا إلا عبر اتصال محمي، وهذا الاتصال غير محمي."},
+            {"id-collision", "يعرف الخادم جهازًا آخر بهذا الرقم بالفعل. أزل هذا الخادم من القائمة ثم أضفه مرة أخرى."},
+            {"capacity", "لا يستطيع الخادم استيعاب هذا: فقد بلغ حدًا خاصًا به، أو أن العنصر كبير جدًا لإدراجه."},
+            {"port-unavailable", "ليس لدى الخادم منفذ حر يفتحه لهذا المجلد."},
+            {"unavailable", "الجهاز أو الخادم غير متاح الآن."},
+            {"rate-limited", "عدد كبير جدًا من المحاولات المتتالية."},
+            {"protection-unsupported", "هذا المجلد مقفل برمز PIN، ولا يستطيع هذا البرنامج طلبه. افتحه في برنامج يستطيع ذلك."},
+            {"invitation-invalid", "هذه الدعوة لا تعمل."},
+            {"login-taken", "اسم الدخول هذا مستخدم بالفعل. اختر اسمًا آخر."},
+            {"password-policy", "كلمة المرور بسيطة جدًا. استخدم 10 أحرف على الأقل، مع أحرف لاتينية كبيرة وصغيرة وأرقام."},
+            {"limit-reached", "تم بلوغ حد محدد على الخادم."},
+            {"limit-reached-clipboard", "لا يقبل هذا الخادم حافظة بهذا الحجم، أو أن الحافظة معطلة فيه. أرسل شيئًا أصغر، أو اسأل من يدير الخادم."},
+            {"not-permitted", "لا يستطيع حساب الضيف القيام بهذا. إن احتجت إليه، فاطلب دعوة من نوع «جهاز خاص أو عائلة»."},
+            {"declined", "لم يقبل الجهاز الآخر البث."},
+            {"timeout", "لم يرد الجهاز الآخر في الوقت المحدد."},
+            {"unsupported", "لا يستطيع الجهاز الآخر تشغيل هذا النوع من البث."},
+            {"unreachable-server", "تعذر الوصول إلى الخادم."},
+            {"unreachable-device", "تعذر الوصول إلى الجهاز."},
+            {"unanswered", "لم يرد الخادم."},
+            {"tls-failed", "تعذر إنشاء اتصال محمي."},
+            {"certificate-changed", "لا يبدو هذا الخادم مطابقًا للخادم الذي اتصلت به من قبل."},
+            {"empty-credential", "أدخل اسم الدخول وكلمة المرور أولًا."},
+            {"server-offline", "الخادم غير متصل. ما أضفته يبقى في القائمة."},
+            {"resource-locked", "هذا المجلد مقفل برمز PIN. أدخل الرمز لفتحه."},
+            {"clipboard-empty", "الحافظة فارغة على الخادم."},
+            {"share-paused", "أوقف Android المشاركة على هذا الهاتف. ستستأنف عند فتح التطبيق على الهاتف."},
+            {"e2e-missing", "لا يستطيع هذا الجهاز تلقي محتوى محمي بعد، لذلك لا يُرسل إليه شيء عبر الخادم."},
+            {"key-changed", "تغيّر مفتاح حماية هذا الجهاز، لذلك لا يُرسل إليه شيء. أزل الجهاز من الحساب ثم أضفه مرة أخرى."},
+            {"server-no-e2e", "لا يستطيع هذا الخادم نقل المحتوى المحمي، لذلك لا تمر المجلدات والبثوث والحافظة عبره."},
+            {"sealed-failed", "تعذر فتح هذا على هذا الجهاز. حاول مرة أخرى من الجهاز الآخر."},
+            {"format-unsupported", "هذا التنسيق أحدث مما يدعمه هذا البرنامج. لم يتم استيراد أي شيء. استخدم برنامجًا متوافقًا."},
+            {"refused", "رفض الخادم هذا."}
         }
-        MessageTexts("bn") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-            {"format-unsupported", "এই ফরম্যাটটি এই প্রোগ্রামের সমর্থনের চেয়ে নতুন। কিছুই ইমপোর্ট করা হয়নি। একটি সামঞ্জস্যপূর্ণ প্রোগ্রাম ব্যবহার করুন।"}
+        Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"door_button", "لماذا لا يتصل؟.."},
+            {"dialog_title", "تشخيص الاتصال"},
+            {"what_happened", "ما الذي حدث:"},
+            {"what_to_try", "ما الذي يجب تجربته:"},
+            {"btn_next_step", "الخطوة التالية"},
+            {"btn_details", "التفاصيل"},
+            {"btn_copy", "نسخ"},
+            {"btn_close", "إغلاق"},
+            {"btn_open_settings", "فتح إعدادات Windows"},
+            {"check_visibility", "هل خادمي مرئي من الخارج؟"},
+            {"checking", "جارٍ التحقق.."},
+            {"reachable", "يمكن الوصول إليه من الإنترنت."},
+            {"not_reachable", "لا يمكن الوصول إليه من الإنترنت."},
+            {"could_not_check", "تعذر التحقق من إمكانية الوصول الآن."},
+            {"likely_causes", "الأسباب المحتملة: غياب توجيه المنفذ في الموجّه، أو CGNAT، أو جدار الحماية."},
+            {"codes_copied", "تم نسخ رموز التشخيص إلى الحافظة."}
         }
-        MessageTexts("ur") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-            {"format-unsupported", "یہ فارمیٹ اس پروگرام کی معاونت سے نیا ہے۔ کچھ بھی درآمد نہیں کیا گیا۔ ہم آہنگ پروگرام استعمال کریں۔"}
+        AddLocale("ar", steps, msgs, ui)
+    End Sub
+
+    ' --- 15. HINDI ---
+    Private Sub InitializeHindi()
+        Dim steps As New Dictionary(Of ConnectionDiagnosisStep, String) From {
+            {ConnectionDiagnosisStep.PcAsleep, "जिस डिवाइस पर सर्वर या शेयरिंग सेवा चल रही है उसे चालू और जागृत रखें, और उसे स्लीप मोड में जाने से रोकें।"},
+            {ConnectionDiagnosisStep.AddressLan, "पता जाँचें, और सुनिश्चित करें कि दोनों डिवाइस एक ही Wi-Fi या होम नेटवर्क पर हैं।"},
+            {ConnectionDiagnosisStep.GuestNetwork, "राउटर के गेस्ट नेटवर्क की बजाय मुख्य Wi-Fi नेटवर्क से जुड़ें: गेस्ट नेटवर्क में डिवाइस अक्सर एक-दूसरे को नहीं देख पाते।"},
+            {ConnectionDiagnosisStep.Vpn, "इस डिवाइस पर VPN को कुछ देर के लिए बंद करें और फिर से कोशिश करें।"},
+            {ConnectionDiagnosisStep.WindowsPublicNetwork, "Windows कंप्यूटर पर इस नेटवर्क को निजी (private) सेट करें: सार्वजनिक नेटवर्क पर Windows दूसरे डिवाइसों को दूर रखता है।"},
+            {ConnectionDiagnosisStep.IpFamily, "कोई दूसरा नेटवर्क आज़माएँ, जैसे मोबाइल डेटा: हो सकता है सर्वर केवल किसी ख़ास प्रकार के पते (IPv4 या IPv6) से पहुँच योग्य हो, जो यह नेटवर्क आपको नहीं देता।"},
+            {ConnectionDiagnosisStep.ServerInternet, "किसी दूसरे नेटवर्क, जैसे मोबाइल डेटा, से जाँचें कि सर्वर इंटरनेट पर जवाब दे रहा है या नहीं।"},
+            {ConnectionDiagnosisStep.PortForward, "राउटर की सेटिंग्स में सर्वर का पोर्ट उस कंप्यूटर पर फ़ॉरवर्ड करें जिस पर वह चलता है।"},
+            {ConnectionDiagnosisStep.DeviceClock, "इस डिवाइस पर सही तारीख और समय सेट करें, या स्वचालित समय चालू करें, और फिर से कोशिश करें।"},
+            {ConnectionDiagnosisStep.Certificate, "अगर आपने यह उम्मीद नहीं की थी, तो आगे न बढ़ें: सर्वर चलाने वाले व्यक्ति से पूछें। अगर सर्वर दोबारा इंस्टॉल हुआ है, तो उसका नया फ़िंगरप्रिंट पक्का करें।"},
+            {ConnectionDiagnosisStep.Credentials, "लॉगिन जाँचें और पासवर्ड फिर से लिखें। अगर आपने एक-बार का कोड इस्तेमाल किया था, तो नया कोड माँगें।"},
+            {ConnectionDiagnosisStep.SignInRate, "कुछ सेकंड रुककर फिर कोशिश करें: सर्वर लगभग हर सेकंड में एक प्रयास स्वीकार करता है।"},
+            {ConnectionDiagnosisStep.Invitation, "आमंत्रण जाँचें या नया आमंत्रण माँगें: हर आमंत्रण एक बार काम करता है, और यह गलत, इस्तेमाल हो चुका या वापस लिया गया हो सकता है।"},
+            {ConnectionDiagnosisStep.DeviceRemoved, "इस डिवाइस को फिर से जोड़ने के लिए खाते में दोबारा साइन इन करें।"},
+            {ConnectionDiagnosisStep.Operator, "सर्वर चलाने वाले व्यक्ति से पूछें: इसे केवल सर्वर की ओर से ठीक किया जा सकता है।"}
         }
+        Dim msgs As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"bad-credentials", "लॉगिन या पासवर्ड गलत है।"},
+            {"bad-credentials-code", "लॉगिन या एक-बार का कोड गलत है।"},
+            {"device-revoked", "यह डिवाइस खाते से हटा दिया गया है।"},
+            {"signed-out", "इस खाते का पासवर्ड बदला गया था, इसलिए इस डिवाइस को साइन आउट कर दिया गया।"},
+            {"version-unsupported", "यह प्रोग्राम और सर्वर एक्सचेंज के अलग-अलग संस्करण इस्तेमाल करते हैं।"},
+            {"tls-required", "सर्वर यह केवल सुरक्षित कनेक्शन पर स्वीकार करता है, और यह कनेक्शन सुरक्षित नहीं है।"},
+            {"id-collision", "सर्वर पहले से इस डिवाइस के नंबर के तहत एक और डिवाइस जानता है। इस सर्वर को सूची से हटाकर फिर से जोड़ें।"},
+            {"capacity", "सर्वर यह स्वीकार नहीं कर सकता: वह अपनी किसी सीमा तक पहुँच चुका है, या यह आइटम सूची में डालने के लिए बहुत बड़ा है।"},
+            {"port-unavailable", "इस फ़ोल्डर के लिए सर्वर के पास कोई खाली पोर्ट नहीं है।"},
+            {"unavailable", "डिवाइस या सर्वर अभी उपलब्ध नहीं है।"},
+            {"rate-limited", "लगातार बहुत ज़्यादा प्रयास हुए।"},
+            {"protection-unsupported", "यह फ़ोल्डर PIN से लॉक है, और यह प्रोग्राम उसे नहीं माँग सकता। उसे ऐसे प्रोग्राम में खोलें जो माँग सके।"},
+            {"invitation-invalid", "यह आमंत्रण काम नहीं करता।"},
+            {"login-taken", "यह लॉगिन पहले से लिया जा चुका है। कोई और चुनें।"},
+            {"password-policy", "पासवर्ड बहुत आसान है। कम से कम 10 अक्षर लें, जिनमें बड़े और छोटे लैटिन अक्षर और अंक हों।"},
+            {"limit-reached", "सर्वर पर तय की गई एक सीमा पहुँच गई है।"},
+            {"limit-reached-clipboard", "यह सर्वर इस आकार का क्लिपबोर्ड स्वीकार नहीं करता, या उसका क्लिपबोर्ड बंद है। कुछ छोटा भेजें, या सर्वर चलाने वाले व्यक्ति से पूछें।"},
+            {"not-permitted", "गेस्ट खाता यह नहीं कर सकता। अगर आपको इसकी ज़रूरत है, तो «अपना डिवाइस या परिवार» प्रकार का आमंत्रण माँगें।"},
+            {"declined", "दूसरे डिवाइस ने प्रसारण स्वीकार नहीं किया।"},
+            {"timeout", "दूसरे डिवाइस ने समय पर जवाब नहीं दिया।"},
+            {"unsupported", "दूसरा डिवाइस इस प्रकार का प्रसारण नहीं चला सकता।"},
+            {"unreachable-server", "सर्वर तक पहुँच नहीं हो पा रही।"},
+            {"unreachable-device", "डिवाइस तक पहुँच नहीं हो पा रही।"},
+            {"unanswered", "सर्वर ने जवाब नहीं दिया।"},
+            {"tls-failed", "सुरक्षित कनेक्शन स्थापित नहीं हो सका।"},
+            {"certificate-changed", "यह सर्वर वैसा नहीं लगता जिससे आप पहले जुड़े थे।"},
+            {"empty-credential", "पहले लॉगिन और पासवर्ड दर्ज करें।"},
+            {"server-offline", "सर्वर ऑफ़लाइन है। जो आपने जोड़ा है वह सूची में बना रहेगा।"},
+            {"resource-locked", "यह फ़ोल्डर PIN से लॉक है। खोलने के लिए PIN दर्ज करें।"},
+            {"clipboard-empty", "सर्वर पर क्लिपबोर्ड में कुछ नहीं है।"},
+            {"share-paused", "Android ने इस फ़ोन पर शेयरिंग रोक दी है। फ़ोन पर ऐप खुलने पर यह फिर शुरू होगी।"},
+            {"e2e-missing", "यह डिवाइस अभी सुरक्षित सामग्री प्राप्त नहीं कर सकता, इसलिए सर्वर के ज़रिए इसे कुछ नहीं भेजा जाता।"},
+            {"key-changed", "इस डिवाइस की सुरक्षा कुंजी बदल गई है, इसलिए इसे कुछ नहीं भेजा जा रहा। खाते से डिवाइस हटाकर उसे फिर से जोड़ें।"},
+            {"server-no-e2e", "यह सर्वर सुरक्षित सामग्री नहीं ले जा सकता, इसलिए फ़ोल्डर, प्रसारण और क्लिपबोर्ड उसके ज़रिए नहीं जाते।"},
+            {"sealed-failed", "यह इस डिवाइस पर नहीं खुल सका। दूसरे डिवाइस से फिर कोशिश करें।"},
+            {"format-unsupported", "यह फ़ॉर्मैट इस प्रोग्राम के समर्थन से नया है। कुछ भी आयात नहीं किया गया। संगत प्रोग्राम का उपयोग करें।"},
+            {"refused", "सर्वर ने इसे अस्वीकार किया।"}
+        }
+        Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"door_button", "कनेक्ट क्यों नहीं हो रहा?.."},
+            {"dialog_title", "कनेक्शन निदान"},
+            {"what_happened", "क्या हुआ:"},
+            {"what_to_try", "क्या आज़माएँ:"},
+            {"btn_next_step", "अगला चरण"},
+            {"btn_details", "विवरण"},
+            {"btn_copy", "कॉपी करें"},
+            {"btn_close", "बंद करें"},
+            {"btn_open_settings", "Windows सेटिंग्स खोलें"},
+            {"check_visibility", "क्या मेरा सर्वर बाहर से दिखता है?"},
+            {"checking", "जाँच हो रही है.."},
+            {"reachable", "इंटरनेट से पहुँच योग्य।"},
+            {"not_reachable", "इंटरनेट से पहुँच योग्य नहीं।"},
+            {"could_not_check", "अभी पहुँच की जाँच नहीं हो सकी।"},
+            {"likely_causes", "संभावित कारण: राउटर में पोर्ट फ़ॉरवर्ड नहीं है, CGNAT है, या फ़ायरवॉल।"},
+            {"codes_copied", "निदान कोड क्लिपबोर्ड पर कॉपी हो गए।"}
+        }
+        AddLocale("hi", steps, msgs, ui)
+    End Sub
+
+    ' --- 16. BENGALI ---
+    Private Sub InitializeBengali()
+        Dim steps As New Dictionary(Of ConnectionDiagnosisStep, String) From {
+            {ConnectionDiagnosisStep.PcAsleep, "যে ডিভাইসে সার্ভার বা শেয়ারিং সেবা চলছে সেটি চালু ও জাগিয়ে রাখুন, এবং যাতে ঘুমে না যায় তা দেখুন।"},
+            {ConnectionDiagnosisStep.AddressLan, "ঠিকানা পরীক্ষা করুন, এবং নিশ্চিত করুন যে দুটি ডিভাইসই একই Wi-Fi বা হোম নেটওয়ার্কে আছে।"},
+            {ConnectionDiagnosisStep.GuestNetwork, "রাউটারের গেস্ট নেটওয়ার্কের বদলে মূল Wi-Fi নেটওয়ার্কে যুক্ত হন: গেস্ট নেটওয়ার্কে ডিভাইসগুলো প্রায়ই একে অপরকে দেখতে পায় না।"},
+            {ConnectionDiagnosisStep.Vpn, "এই ডিভাইসে কিছুক্ষণের জন্য VPN বন্ধ করে আবার চেষ্টা করুন।"},
+            {ConnectionDiagnosisStep.WindowsPublicNetwork, "Windows কম্পিউটারে এই নেটওয়ার্ক ব্যক্তিগত (private) সেট করুন: পাবলিক নেটওয়ার্কে Windows অন্য ডিভাইসগুলোকে দূরে রাখে।"},
+            {ConnectionDiagnosisStep.IpFamily, "অন্য একটি নেটওয়ার্ক চেষ্টা করুন, যেমন মোবাইল ডেটা: সার্ভার হয়তো শুধু এক ধরনের ঠিকানা (IPv4 বা IPv6) দিয়ে পৌঁছানো যায়, যা এই নেটওয়ার্ক আপনাকে দেয় না।"},
+            {ConnectionDiagnosisStep.ServerInternet, "অন্য নেটওয়ার্ক থেকে, যেমন মোবাইল ডেটায়, পরীক্ষা করুন সার্ভার ইন্টারনেট থেকে সাড়া দিচ্ছে কি না।"},
+            {ConnectionDiagnosisStep.PortForward, "রাউটারের সেটিংসে সার্ভারের পোর্ট যে কম্পিউটারে সার্ভার চলছে সেখানে ফরওয়ার্ড করুন।"},
+            {ConnectionDiagnosisStep.DeviceClock, "এই ডিভাইসে সঠিক তারিখ ও সময় সেট করুন, বা স্বয়ংক্রিয় সময় চালু করুন, তারপর আবার চেষ্টা করুন।"},
+            {ConnectionDiagnosisStep.Certificate, "এটি আশা না করে থাকলে এগোবেন না: যিনি সার্ভার চালান তাঁকে জিজ্ঞাসা করুন। সার্ভার নতুন করে ইনস্টল হলে তার নতুন ফিঙ্গারপ্রিন্ট নিশ্চিত করুন।"},
+            {ConnectionDiagnosisStep.Credentials, "লগইন যাচাই করুন এবং পাসওয়ার্ড আবার লিখুন। একবারের কোড ব্যবহার করে থাকলে নতুন কোড চান।"},
+            {ConnectionDiagnosisStep.SignInRate, "কয়েক সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন: সার্ভার প্রায় প্রতি সেকেন্ডে একটি চেষ্টা নেয়।"},
+            {ConnectionDiagnosisStep.Invitation, "আমন্ত্রণ যাচাই করুন বা নতুন আমন্ত্রণ চান: প্রতিটি আমন্ত্রণ একবার কাজ করে, আর এটি ভুল, ব্যবহৃত বা প্রত্যাহার করা হয়ে থাকতে পারে।"},
+            {ConnectionDiagnosisStep.DeviceRemoved, "এই ডিভাইস আবার যোগ করতে অ্যাকাউন্টে আবার সাইন ইন করুন।"},
+            {ConnectionDiagnosisStep.Operator, "সার্ভার চালান এমন কাউকে জিজ্ঞাসা করুন: এটি শুধু সার্ভারের দিক থেকেই ঠিক করা সম্ভব।"}
+        }
+        Dim msgs As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"bad-credentials", "লগইন বা পাসওয়ার্ড ভুল।"},
+            {"bad-credentials-code", "লগইন বা একবারের কোড ভুল।"},
+            {"device-revoked", "এই ডিভাইস অ্যাকাউন্ট থেকে সরানো হয়েছে।"},
+            {"signed-out", "এই অ্যাকাউন্টের পাসওয়ার্ড বদলানো হয়েছে, তাই এই ডিভাইস থেকে সাইন আউট করা হয়েছে।"},
+            {"version-unsupported", "এই প্রোগ্রাম ও সার্ভার আলাদা আলাদা বিনিময় সংস্করণ ব্যবহার করছে।"},
+            {"tls-required", "সার্ভার এটি শুধু সুরক্ষিত সংযোগের মাধ্যমে গ্রহণ করে, আর এই সংযোগ সুরক্ষিত নয়।"},
+            {"id-collision", "সার্ভার ইতিমধ্যে এই ডিভাইসের নম্বরে অন্য একটি ডিভাইস চেনে। এই সার্ভারটি তালিকা থেকে সরিয়ে আবার যোগ করুন।"},
+            {"capacity", "সার্ভার এটি নিতে পারছে না: এটি নিজের কোনো সীমায় পৌঁছেছে, অথবা আইটেমটি তালিকাভুক্ত করার জন্য খুব বড়।"},
+            {"port-unavailable", "এই ফোল্ডারের জন্য সার্ভারে খোলার মতো কোনো খালি পোর্ট নেই।"},
+            {"unavailable", "ডিভাইস বা সার্ভার এখন পাওয়া যাচ্ছে না।"},
+            {"rate-limited", "পরপর অনেক বেশি চেষ্টা হয়েছে।"},
+            {"protection-unsupported", "এই ফোল্ডার PIN দিয়ে লক করা, আর এই প্রোগ্রাম সেটি চাইতে পারে না। যে প্রোগ্রাম চাইতে পারে সেখানে খুলুন।"},
+            {"invitation-invalid", "এই আমন্ত্রণ কাজ করছে না।"},
+            {"login-taken", "এই লগইন ইতিমধ্যে নেওয়া হয়েছে। অন্যটি বেছে নিন।"},
+            {"password-policy", "পাসওয়ার্ড খুব সহজ। অন্তত 10টি অক্ষর নিন, যাতে বড় ও ছোট ল্যাটিন অক্ষর এবং সংখ্যা থাকে।"},
+            {"limit-reached", "সার্ভারে নির্ধারিত একটি সীমা পৌঁছে গেছে।"},
+            {"limit-reached-clipboard", "এই সার্ভার এই আকারের ক্লিপবোর্ড নেয় না, বা সেখানে ক্লিপবোর্ড বন্ধ। ছোট কিছু পাঠান, বা সার্ভার চালান এমন কাউকে জিজ্ঞাসা করুন।"},
+            {"not-permitted", "গেস্ট অ্যাকাউন্ট এটি করতে পারে না। দরকার হলে «নিজের ডিভাইস বা পরিবার» ধরনের আমন্ত্রণ চান।"},
+            {"declined", "অন্য ডিভাইস সম্প্রচার গ্রহণ করেনি।"},
+            {"timeout", "অন্য ডিভাইস সময়মতো সাড়া দেয়নি।"},
+            {"unsupported", "অন্য ডিভাইস এই ধরনের সম্প্রচার চালাতে পারে না।"},
+            {"unreachable-server", "সার্ভারে পৌঁছানো যাচ্ছে না।"},
+            {"unreachable-device", "ডিভাইসে পৌঁছানো যাচ্ছে না।"},
+            {"unanswered", "সার্ভার সাড়া দেয়নি।"},
+            {"tls-failed", "সুরক্ষিত সংযোগ স্থাপন করা যায়নি।"},
+            {"certificate-changed", "এই সার্ভারটি আগে যার সঙ্গে সংযুক্ত হয়েছিলেন তার মতো মনে হচ্ছে না।"},
+            {"empty-credential", "আগে লগইন ও পাসওয়ার্ড লিখুন।"},
+            {"server-offline", "সার্ভার অফলাইন। আপনি যা যোগ করেছেন তা তালিকায় থেকে যাবে।"},
+            {"resource-locked", "এই ফোল্ডার PIN দিয়ে লক করা। খুলতে PIN লিখুন।"},
+            {"clipboard-empty", "সার্ভারে ক্লিপবোর্ডে কিছু নেই।"},
+            {"share-paused", "Android এই ফোনে শেয়ারিং থামিয়ে দিয়েছে। ফোনে অ্যাপ খুললে আবার চালু হবে।"},
+            {"e2e-missing", "এই ডিভাইস এখনও সুরক্ষিত বিষয়বস্তু নিতে পারে না, তাই সার্ভারের মাধ্যমে এতে কিছু পাঠানো হয় না।"},
+            {"key-changed", "এই ডিভাইসের সুরক্ষা কী বদলে গেছে, তাই এতে কিছু পাঠানো হচ্ছে না। অ্যাকাউন্ট থেকে ডিভাইসটি সরিয়ে আবার যোগ করুন।"},
+            {"server-no-e2e", "এই সার্ভার সুরক্ষিত বিষয়বস্তু বহন করতে পারে না, তাই ফোল্ডার, সম্প্রচার ও ক্লিপবোর্ড এর মধ্য দিয়ে যায় না।"},
+            {"sealed-failed", "এই ডিভাইসে এটি খোলা যায়নি। অন্য ডিভাইস থেকে আবার চেষ্টা করুন।"},
+            {"format-unsupported", "এই ফরম্যাটটি এই প্রোগ্রামের সমর্থনের চেয়ে নতুন। কিছুই ইমপোর্ট করা হয়নি। একটি সামঞ্জস্যপূর্ণ প্রোগ্রাম ব্যবহার করুন।"},
+            {"refused", "সার্ভার এটি প্রত্যাখ্যান করেছে।"}
+        }
+        Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"door_button", "কেন সংযোগ হচ্ছে না?.."},
+            {"dialog_title", "সংযোগ নির্ণয়"},
+            {"what_happened", "কী ঘটেছে:"},
+            {"what_to_try", "কী চেষ্টা করবেন:"},
+            {"btn_next_step", "পরবর্তী ধাপ"},
+            {"btn_details", "বিস্তারিত"},
+            {"btn_copy", "কপি করুন"},
+            {"btn_close", "বন্ধ করুন"},
+            {"btn_open_settings", "Windows সেটিংস খুলুন"},
+            {"check_visibility", "আমার সার্ভার কি বাইরে থেকে দেখা যায়?"},
+            {"checking", "যাচাই করা হচ্ছে.."},
+            {"reachable", "ইন্টারনেট থেকে পৌঁছানো যায়।"},
+            {"not_reachable", "ইন্টারনেট থেকে পৌঁছানো যায় না।"},
+            {"could_not_check", "এখন পৌঁছানোর যোগ্যতা যাচাই করা যায়নি।"},
+            {"likely_causes", "সম্ভাব্য কারণ: রাউটারে পোর্ট ফরওয়ার্ড নেই, CGNAT, বা ফায়ারওয়াল।"},
+            {"codes_copied", "নির্ণয় কোড ক্লিপবোর্ডে কপি হয়েছে।"}
+        }
+        AddLocale("bn", steps, msgs, ui)
+    End Sub
+
+    ' --- 17. URDU (interface language, RTL) ---
+    Private Sub InitializeUrdu()
+        Dim steps As New Dictionary(Of ConnectionDiagnosisStep, String) From {
+            {ConnectionDiagnosisStep.PcAsleep, "جس ڈیوائس پر سرور یا شیئرنگ سروس چل رہی ہے اسے آن اور بیدار رکھیں، اور اسے سلیپ میں جانے سے روکیں۔"},
+            {ConnectionDiagnosisStep.AddressLan, "پتا چیک کریں، اور یقینی بنائیں کہ دونوں ڈیوائسز ایک ہی Wi-Fi یا ہوم نیٹ ورک پر ہیں۔"},
+            {ConnectionDiagnosisStep.GuestNetwork, "راؤٹر کے گیسٹ نیٹ ورک کی بجائے مرکزی Wi-Fi نیٹ ورک سے جڑیں: گیسٹ نیٹ ورک میں ڈیوائسز اکثر ایک دوسرے کو نہیں دیکھ پاتیں۔"},
+            {ConnectionDiagnosisStep.Vpn, "اس ڈیوائس پر VPN کچھ دیر کے لیے بند کریں اور دوبارہ کوشش کریں۔"},
+            {ConnectionDiagnosisStep.WindowsPublicNetwork, "ونڈوز کمپیوٹر پر اس نیٹ ورک کو نجی (private) سیٹ کریں: عوامی نیٹ ورک پر ونڈوز دوسری ڈیوائسز کو دور رکھتا ہے۔"},
+            {ConnectionDiagnosisStep.IpFamily, "کوئی اور نیٹ ورک آزمائیں، جیسے موبائل ڈیٹا: ہو سکتا ہے سرور صرف ایک خاص قسم کے پتے (IPv4 یا IPv6) سے قابلِ رسائی ہو جو یہ نیٹ ورک آپ کو نہیں دیتا۔"},
+            {ConnectionDiagnosisStep.ServerInternet, "کسی دوسرے نیٹ ورک، جیسے موبائل ڈیٹا، سے چیک کریں کہ سرور انٹرنیٹ پر جواب دے رہا ہے یا نہیں۔"},
+            {ConnectionDiagnosisStep.PortForward, "راؤٹر کی ترتیبات میں سرور کا پورٹ اس کمپیوٹر کی طرف فارورڈ کریں جس پر وہ چل رہا ہے۔"},
+            {ConnectionDiagnosisStep.DeviceClock, "اس ڈیوائس پر درست تاریخ اور وقت سیٹ کریں، یا خودکار وقت آن کریں، اور پھر دوبارہ کوشش کریں۔"},
+            {ConnectionDiagnosisStep.Certificate, "اگر آپ نے یہ توقع نہیں کی تھی تو آگے نہ بڑھیں: سرور چلانے والے سے پوچھیں۔ اگر سرور دوبارہ انسٹال ہوا ہے تو اس کا نیا فنگر پرنٹ تصدیق کریں۔"},
+            {ConnectionDiagnosisStep.Credentials, "لاگ اِن چیک کریں اور پاس ورڈ دوبارہ لکھیں۔ اگر آپ نے یک بار استعمال ہونے والا کوڈ استعمال کیا تھا تو نیا کوڈ مانگیں۔"},
+            {ConnectionDiagnosisStep.SignInRate, "چند سیکنڈ رک کر دوبارہ کوشش کریں: سرور تقریباً ہر سیکنڈ میں ایک کوشش قبول کرتا ہے۔"},
+            {ConnectionDiagnosisStep.Invitation, "دعوت نامہ چیک کریں یا نیا مانگیں: ہر دعوت ایک بار کام کرتی ہے، اور یہ غلط، استعمال شدہ یا واپس لی گئی ہو سکتی ہے۔"},
+            {ConnectionDiagnosisStep.DeviceRemoved, "یہ ڈیوائس دوبارہ شامل کرنے کے لیے اکاؤنٹ میں دوبارہ سائن اِن کریں۔"},
+            {ConnectionDiagnosisStep.Operator, "سرور چلانے والے سے پوچھیں: یہ صرف سرور کی طرف سے ٹھیک ہو سکتا ہے۔"}
+        }
+        Dim msgs As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"bad-credentials", "لاگ اِن یا پاس ورڈ غلط ہے۔"},
+            {"bad-credentials-code", "لاگ اِن یا یک بار کا کوڈ غلط ہے۔"},
+            {"device-revoked", "یہ ڈیوائس اکاؤنٹ سے ہٹا دی گئی ہے۔"},
+            {"signed-out", "اس اکاؤنٹ کا پاس ورڈ تبدیل ہو گیا تھا، اس لیے اس ڈیوائس کو سائن آؤٹ کر دیا گیا۔"},
+            {"version-unsupported", "یہ پروگرام اور سرور مختلف ایکسچینج ورژن استعمال کر رہے ہیں۔"},
+            {"tls-required", "سرور یہ صرف محفوظ کنکشن پر قبول کرتا ہے، اور یہ کنکشن محفوظ نہیں ہے۔"},
+            {"id-collision", "سرور اس ڈیوائس کے نمبر کے تحت پہلے ہی ایک اور ڈیوائس جانتا ہے۔ اس سرور کو فہرست سے ہٹا کر دوبارہ شامل کریں۔"},
+            {"capacity", "سرور یہ قبول نہیں کر سکتا: وہ اپنی کسی حد تک پہنچ چکا ہے، یا یہ آئٹم فہرست میں شامل کرنے کے لیے بہت بڑا ہے۔"},
+            {"port-unavailable", "سرور کے پاس اس فولڈر کے لیے کوئی خالی پورٹ نہیں ہے۔"},
+            {"unavailable", "ڈیوائس یا سرور اس وقت دستیاب نہیں ہے۔"},
+            {"rate-limited", "لگاتار بہت زیادہ کوششیں ہوئیں۔"},
+            {"protection-unsupported", "یہ فولڈر PIN سے لاک ہے، اور یہ پروگرام اسے طلب نہیں کر سکتا۔ اسے ایسے پروگرام میں کھولیں جو طلب کر سکے۔"},
+            {"invitation-invalid", "یہ دعوت نامہ کام نہیں کرتا۔"},
+            {"login-taken", "یہ لاگ اِن پہلے ہی لیا جا چکا ہے۔ کوئی اور چنیں۔"},
+            {"password-policy", "پاس ورڈ بہت سادہ ہے۔ کم از کم 10 حروف استعمال کریں، جن میں بڑے اور چھوٹے لاطینی حروف اور ہندسے ہوں۔"},
+            {"limit-reached", "سرور پر مقرر کردہ ایک حد پہنچ گئی ہے۔"},
+            {"limit-reached-clipboard", "یہ سرور اس سائز کا کلپ بورڈ قبول نہیں کرتا، یا اس کا کلپ بورڈ بند ہے۔ کوئی چھوٹی چیز بھیجیں، یا سرور چلانے والے سے پوچھیں۔"},
+            {"not-permitted", "گیسٹ اکاؤنٹ یہ نہیں کر سکتا۔ اگر آپ کو اس کی ضرورت ہے تو «اپنی ڈیوائس یا خاندان» قسم کا دعوت نامہ مانگیں۔"},
+            {"declined", "دوسری ڈیوائس نے نشریات قبول نہیں کیں۔"},
+            {"timeout", "دوسری ڈیوائس نے وقت پر جواب نہیں دیا۔"},
+            {"unsupported", "دوسری ڈیوائس اس قسم کی نشریات نہیں چلا سکتی۔"},
+            {"unreachable-server", "سرور تک رسائی نہیں ہو سکی۔"},
+            {"unreachable-device", "ڈیوائس تک رسائی نہیں ہو سکی۔"},
+            {"unanswered", "سرور نے جواب نہیں دیا۔"},
+            {"tls-failed", "محفوظ کنکشن قائم نہیں ہو سکا۔"},
+            {"certificate-changed", "یہ سرور اس سرور جیسا نہیں لگتا جس سے آپ پہلے جڑے تھے۔"},
+            {"empty-credential", "پہلے لاگ اِن اور پاس ورڈ درج کریں۔"},
+            {"server-offline", "سرور آف لائن ہے۔ جو آپ نے شامل کیا ہے وہ فہرست میں رہے گا۔"},
+            {"resource-locked", "یہ فولڈر PIN سے لاک ہے۔ کھولنے کے لیے PIN درج کریں۔"},
+            {"clipboard-empty", "سرور پر کلپ بورڈ میں کچھ نہیں ہے۔"},
+            {"share-paused", "Android نے اس فون پر شیئرنگ روک دی ہے۔ فون پر ایپ کھلنے پر یہ دوبارہ شروع ہو جائے گی۔"},
+            {"e2e-missing", "یہ ڈیوائس ابھی محفوظ مواد وصول نہیں کر سکتی، اس لیے سرور کے ذریعے اسے کچھ نہیں بھیجا جاتا۔"},
+            {"key-changed", "اس ڈیوائس کی حفاظتی کلید بدل گئی ہے، اس لیے اسے کچھ نہیں بھیجا جا رہا۔ اکاؤنٹ سے ڈیوائس ہٹا کر دوبارہ شامل کریں۔"},
+            {"server-no-e2e", "یہ سرور محفوظ مواد نہیں لے جا سکتا، اس لیے فولڈرز، نشریات اور کلپ بورڈ اس کے ذریعے نہیں جاتے۔"},
+            {"sealed-failed", "یہ اس ڈیوائس پر نہیں کھل سکا۔ دوسری ڈیوائس سے دوبارہ کوشش کریں۔"},
+            {"format-unsupported", "یہ فارمیٹ اس پروگرام کی معاونت سے نیا ہے۔ کچھ بھی درآمد نہیں کیا گیا۔ ہم آہنگ پروگرام استعمال کریں۔"},
+            {"refused", "سرور نے اسے مسترد کر دیا۔"}
+        }
+        Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"door_button", "کنیکٹ کیوں نہیں ہو رہا؟.."},
+            {"dialog_title", "کنکشن تشخیص"},
+            {"what_happened", "کیا ہوا:"},
+            {"what_to_try", "کیا آزمائیں:"},
+            {"btn_next_step", "اگلا قدم"},
+            {"btn_details", "تفصیلات"},
+            {"btn_copy", "کاپی کریں"},
+            {"btn_close", "بند کریں"},
+            {"btn_open_settings", "Windows ترتیبات کھولیں"},
+            {"check_visibility", "کیا میرا سرور باہر سے نظر آتا ہے؟"},
+            {"checking", "چیک ہو رہا ہے.."},
+            {"reachable", "انٹرنیٹ سے قابلِ رسائی۔"},
+            {"not_reachable", "انٹرنیٹ سے قابلِ رسائی نہیں۔"},
+            {"could_not_check", "ابھی رسائی چیک نہیں ہو سکی۔"},
+            {"likely_causes", "ممکنہ وجوہات: راؤٹر میں پورٹ فارورڈ نہیں ہے، CGNAT، یا فائر وال۔"},
+            {"codes_copied", "تشخیصی کوڈ کلپ بورڈ پر کاپی ہو گئے۔"}
+        }
+        AddLocale("ur", steps, msgs, ui)
     End Sub
 
 End Module

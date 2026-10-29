@@ -275,4 +275,67 @@ Public Class ExchangeAccountPasswordStoreTests
                                  End Sub)
     End Sub
 
+    ' --- ticket 287: "set my own password" in the shared-invitation and administrator-password flows ---
+
+    <Fact>
+    Public Sub A_shared_invitation_opened_from_the_own_password_way_starts_on_typed_with_the_same_kind()
+        ExchangeTestSupport.OnUi(Sub()
+                                     Using typed As New Exchange_Shared_Invitation_Form("guest", True)
+                                         Assert.True(Field(Of RadioButton)(typed, "_rbType").Checked)
+                                         Assert.False(Field(Of RadioButton)(typed, "_rbGenerate").Checked)
+                                     End Using
+                                     Using ordinary As New Exchange_Shared_Invitation_Form("member")
+                                         Assert.True(Field(Of RadioButton)(ordinary, "_rbGenerate").Checked)
+                                         Assert.False(Field(Of RadioButton)(ordinary, "_rbType").Checked)
+                                     End Using
+                                 End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub The_shared_invitation_flow_reads_the_own_password_choice_and_asks_again_on_typed()
+        Dim admin As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.ExchangeAdmin.vb"))
+        Dim body As String = ExchangeTestSupport.MethodBody(admin, "Private Async Function SetSharedInvitationAsync(")
+        Assert.Contains("ExchangePasswordSubject.SharedInvitation", body)
+        Assert.Contains("askOwn = ShowPasswordOnce(", body)
+        Assert.Contains("Await SetSharedInvitationAsync(kind, True)", body)
+        Dim entry As String = ExchangeTestSupport.MethodBody(admin, "Private Async Sub OnXSetSharedInvitation(")
+        Assert.Contains("Await SetSharedInvitationAsync(curKind, False)", entry)
+    End Sub
+
+    <Fact>
+    Public Sub Both_administrator_password_flows_read_the_own_password_choice_and_set_the_typed_one()
+        Dim remote As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.ExchangeRemoteAdmin.vb"))
+        For Each name As String In New String() {"Private Async Sub OnXRemoteAdminCheckChanged(", "Private Async Sub OnXRemoteAdminSetPassword("}
+            Dim body As String = ExchangeTestSupport.MethodBody(remote, name)
+            Assert.Contains("askOwn = ShowAdminPasswordOnce(res.GeneratedPassword)", body)
+            Assert.Contains("Await SetTypedAdminPasswordAsync()", body)
+            ' the generated dialog is no longer built here without its answer being read
+            Assert.DoesNotContain("DialogMode.Generated", body)
+        Next
+        Dim typed As String = ExchangeTestSupport.MethodBody(remote, "Private Async Function SetTypedAdminPasswordAsync(")
+        Assert.Contains("DialogMode.Enter", typed)
+        Assert.Contains("ExchangeProcess.AdminPasswd(False, typed)", typed)
+        Dim shown As String = ExchangeTestSupport.MethodBody(remote, "Private Function ShowAdminPasswordOnce(")
+        Assert.Contains("ExchangePasswordSubject.Administrator", shown)
+        Assert.Contains("dlg.ChoseOwnPassword", shown)
+    End Sub
+
+    <Fact>
+    Public Sub The_generated_dialog_names_the_administrator_and_the_invited_not_an_account_owner()
+        ExchangeTestSupport.OnUi(Sub()
+                                     Dim titles As New HashSet(Of String)(StringComparer.Ordinal)
+                                     For Each subject As ExchangePasswordSubject In [Enum].GetValues(Of ExchangePasswordSubject)()
+                                         Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, "Hq7Tm2Zk9Xv4Bn8Rc3Wd", "", False, subject)
+                                             Assert.Equal(ExchangeText.GenerateTitle(subject), dlg.Text)
+                                             Assert.NotNull(Field(Of Button)(dlg, "_btnOwn"))
+                                             titles.Add(dlg.Text)
+                                         End Using
+                                     Next
+                                     Assert.True(titles.Count >= 2)   ' the administrator's dialog is not titled as an account's
+                                     Assert.NotEqual(ExchangeText.GenerateIntro(ExchangePasswordSubject.Account), ExchangeText.GenerateIntro(ExchangePasswordSubject.Administrator))
+                                     Assert.NotEqual(ExchangeText.GenerateIntro(ExchangePasswordSubject.Account), ExchangeText.GenerateIntro(ExchangePasswordSubject.SharedInvitation))
+                                     Assert.Equal(ExchangeText.GenerateIntro(), ExchangeText.GenerateIntro(ExchangePasswordSubject.Account))
+                                 End Sub)
+    End Sub
+
 End Class

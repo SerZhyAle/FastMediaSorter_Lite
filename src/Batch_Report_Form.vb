@@ -42,9 +42,11 @@ Friend NotInheritable Class Batch_Report_Form
         Font = New Font(family, 9.0F)
         If Localization.IsRightToLeft() Then RightToLeft = RightToLeft.Yes
 
+        ' The summary strip is as tall as the help badge and leaves its corner free (right, or left under right-to-left reading):
+        ' the badge lay over the Details header and over the start of the Arabic summary.
         summary.Dock = DockStyle.Top
-        summary.Height = 34
-        summary.Padding = New Padding(10, 8, 10, 0)
+        summary.Height = ContextHelpUi.BadgeEdge
+        summary.Padding = ContextHelpUi.ClearOfBadge(New Padding(10, 12, 10, 0), RightToLeft = RightToLeft.Yes)
         summary.Text = report.SummaryLine()
         summary.AutoEllipsis = True
 

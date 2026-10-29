@@ -1,5 +1,7 @@
 Option Strict On
 
+Imports System.Globalization
+
 ''' <summary>Why a broadcast action or entry did not go through (spec 159 section 3.3).</summary>
 Public Enum BroadcastNoticeReason
     ''' <summary>The host offers the page and the worker lacks the verbs: a real mismatch, and the only reason
@@ -41,7 +43,15 @@ Public Module BroadcastMessages
         If b Is Nothing Then Return ""
         If b.Expired Then Return Localization.T("Срок истёк")
         If String.IsNullOrEmpty(b.ExpiresAt) Then Return Localization.T("До отзыва")
-        Return b.ExpiresAt
+        Return FormatStamp(b.ExpiresAt)
+    End Function
+
+    ''' <summary>A worker timestamp (ISO 8601 with an offset) in the user's local date and time format. A value
+    ''' that does not parse is returned as the worker wrote it, so nothing is lost.</summary>
+    Public Function FormatStamp(iso As String) As String
+        Dim t As DateTimeOffset
+        If String.IsNullOrEmpty(iso) OrElse Not DateTimeOffset.TryParse(iso, CultureInfo.InvariantCulture, DateTimeStyles.None, t) Then Return If(iso, "")
+        Return t.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)
     End Function
 
     ''' <summary>

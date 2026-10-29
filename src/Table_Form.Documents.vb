@@ -137,9 +137,98 @@ Partial Public Class Table_Form
             AddSettingRow(flow, "doc_clear_history", clear, 150, True)
         End Sub)
         RegisterHtmlSettings(flow)
+        RegisterDocumentConverterSettings(flow)
     End Sub
 
+    ' ---- doc-html-translate: specification 276 section 5 (T-2 rows) ----------------------------------------
+    ' Building the rows starts nothing: the converter is looked for and asked its version only on Check.
+
+    Private documentConverterStatusText As String = ""
+    Private documentConverterChecking As Boolean
+
+    Private Sub RegisterDocumentConverterSettings(flow As FlowLayoutPanel)
+        AddSettingsGroup("documents", "converter", "doc-html-translate", False,
+            "doc_converter_enabled", "doc_converter_mode", "doc_converter_location", "doc_converter_check")
+        RegisterSettingsRow("doc_converter_enabled", Sub() AddPreferenceCheck(flow, "doc_converter_enabled",
+            Function() Main_Form.GetModernPreferences().DocumentConverterEnabled,
+            Sub(value) Main_Form.GetModernPreferences().DocumentConverterEnabled = value))
+        RegisterSettingsRow("doc_converter_mode", Sub() AddPreferenceChoice(flow, "doc_converter_mode",
+            Function() {Choice(DocHtmlJobArguments.ModeBrowser, "Открыть в браузере"), Choice(DocHtmlJobArguments.ModeConvert, "Только преобразовать"),
+                        Choice(DocHtmlJobArguments.ModeLocal, "Перевести через Ollama")},
+            Function() Main_Form.GetModernPreferences().DocumentProcessingMode,
+            Sub(value) Main_Form.GetModernPreferences().DocumentProcessingMode = value))
+        RegisterSettingsRow("doc_converter_location",
+            Sub()
+                Dim text As New TextBox With {.Text = Main_Form.GetModernPreferences().DocumentConverterLocation, .MaxLength = 1024}
+                expandedRefreshActions.Add(Sub() If Not text.Focused Then text.Text = Main_Form.GetModernPreferences().DocumentConverterLocation)
+                AddHandler text.Validated,
+                    Sub()
+                        Dim value As String = text.Text.Trim()
+                        If value.Length > 0 AndAlso Not DocHtmlConverterLocator.IsAcceptableExplicitPath(value) Then
+                            text.Text = Main_Form.GetModernPreferences().DocumentConverterLocation
+                            Return
+                        End If
+                        Main_Form.GetModernPreferences().DocumentConverterLocation = value
+                        ApplyExpandedPreferences()
+                    End Sub
+                AddSettingRow(flow, "doc_converter_location", text, 230, True)
+            End Sub)
+        RegisterHtmlButton(flow, "doc_converter_check", "Проверить", AddressOf CheckDocumentConverterClicked)
+    End Sub
+
+    ''' <summary>The explicit readiness check: discovery and the version query off the UI thread; nothing is
+    ''' installed or downloaded. The answer becomes the row's explanation.</summary>
+    Private Async Sub CheckDocumentConverterClicked(sender As Object, e As EventArgs)
+        If documentConverterChecking Then Return
+        Dim button As Button = TryCast(sender, Button)
+        documentConverterChecking = True
+        If button IsNot Nothing Then button.Enabled = False
+        Dim location As String = Main_Form.GetModernPreferences().DocumentConverterLocation
+        Dim answer As String
+        Try
+            Dim probe = Await Task.Run(Function() DocHtmlConverterLocator.Probe(location)).ConfigureAwait(True)
+            Select Case probe.State
+                Case DocHtmlConverterState.Ready
+                    answer = Localization.TF("Готово: {0}", probe.VersionText)
+                Case DocHtmlConverterState.NotRunnable
+                    answer = Localization.TF("Программа не ответила на проверку версии: {0}", probe.ExePath)
+                Case Else
+                    answer = If(probe.FromExplicitChoice, Localization.TF("Выбранная программа не найдена: {0}", probe.ExePath),
+                                Localization.T("doc-html-translate не найдена на этом компьютере."))
+            End Select
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings: checking doc-html-translate", ex)
+            answer = Localization.T("Не удалось проверить doc-html-translate.")
+        End Try
+        documentConverterChecking = False
+        If IsDisposed OrElse Disposing Then Return
+        If button IsNot Nothing AndAlso Not button.IsDisposed Then button.Enabled = True
+        documentConverterStatusText = answer
+        Dim statusRow As ModernSettingRow = modernSettingsRows.FirstOrDefault(Function(item) item.Key = "doc_converter_check")
+        If statusRow Is Nothing OrElse statusRow.Description Is Nothing Then Return
+        statusRow.Description.Text = answer
+        If button IsNot Nothing Then button.AccessibleDescription = answer
+        SizeModernSettingRow(statusRow)
+    End Sub
+
+    Private Function DocumentConverterSettingDescription(key As String) As String
+        Select Case key
+            Case "doc_converter_enabled" : Return Localization.T("Кнопка doc-html-translate в PDF и EPUB сначала проверяет программу и спрашивает, что сделать с документом. Пока параметр выключен, кнопка передаёт документ программе сразу. Перевод изображений не меняется.")
+            Case "doc_converter_mode" : Return Localization.T("Что предлагается первым: страница для перевода в браузере, только преобразование или перевод локальной моделью Ollama.")
+            Case "doc_converter_location" : Return Localization.T("Полный путь к doc-html-translate.exe. Пустое поле - найти программу автоматически.")
+            Case "doc_converter_check" : Return If(documentConverterStatusText.Length > 0, documentConverterStatusText,
+                Localization.T("Проверка выполняется только по кнопке: ничего не устанавливается и не скачивается."))
+            Case Else : Return key
+        End Select
+    End Function
+
     Private Function DocumentSettingTitle(key As String) As String
+        Select Case key
+            Case "doc_converter_enabled" : Return Localization.T("Обработка документов в doc-html-translate")
+            Case "doc_converter_mode" : Return Localization.T("Что делать с документом")
+            Case "doc_converter_location" : Return Localization.T("Программа doc-html-translate")
+            Case "doc_converter_check" : Return Localization.T("Проверить doc-html-translate")
+        End Select
         If key = "doc_clear_history" Then Return Localization.T("Очистить историю чтения")
         If key.StartsWith("doc_reset_", StringComparison.Ordinal) Then Return Localization.T("Сбросить оформление")
         Dim definition = documentRows.FirstOrDefault(Function(row) "doc_" & row(0) = key)

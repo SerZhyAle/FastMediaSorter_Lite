@@ -12,7 +12,9 @@
 - An unknown or empty extension classifies as `Other` - the contract's `UNKNOWN` - and never throws (held).
 - The owner accepted the desktop-viewer proposal into 0.10. `MediaKindClassifier` maps books,
   streams and containers separately; `.fd-sec` is `Container`. An audiobook is `Audio` unless
-  the caller supplies positive book evidence. Local aliases `.tif/.exif/.log/.html/.htm` remain, and
+  the caller supplies positive book evidence. Local aliases `.tif/.exif/.log/.html/.htm` remain, the
+  source-text extensions of ticket 277 (`.sql .sh .bat .cmd .ps1 .cs .vb .cpp .h .c .py .js .css`, never
+  `.ts`, which stays `Video`) are local `Document` aliases since 2026-10-29, and
   `.jxl` (JPEG XL, ticket 236, 2026-10-16) is an `Image` entry and, since 0.12, the contract's `IMAGE` row
   lists it too; the section 4 contract-table row in `tests/Lite.Tests/MediaKindClassifierTests.vb` carries it
   (seen 2026-10-20, not re-run); the contract's tables are a subset of the code's, category by category

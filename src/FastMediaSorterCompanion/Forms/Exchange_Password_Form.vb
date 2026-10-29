@@ -40,6 +40,7 @@ Friend NotInheritable Class Exchange_Password_Form
     Private ReadOnly _mode As DialogMode
     Private ReadOnly _login As String
     Private ReadOnly _retrievable As Boolean
+    Private ReadOnly _subject As ExchangePasswordSubject
     Private _iconHandle As IntPtr
     Private _txt As TextBox
     Private _chkShow As CheckBox
@@ -82,17 +83,20 @@ Friend NotInheritable Class Exchange_Password_Form
 
     ''' <param name="login">The account the password belongs to (the title of a kept password).</param>
     ''' <param name="retrievable">The password is kept on this PC, so closing it unseen-and-uncopied is not a loss.</param>
-    Friend Sub New(mode As DialogMode, Optional generatedPassword As String = "", Optional login As String = "", Optional retrievable As Boolean = False)
+    ''' <param name="subject">Whose password a generated one is (ticket 287): the title and the one-time sentence name the right person.</param>
+    Friend Sub New(mode As DialogMode, Optional generatedPassword As String = "", Optional login As String = "", Optional retrievable As Boolean = False,
+                   Optional subject As ExchangePasswordSubject = ExchangePasswordSubject.Account)
         _mode = mode
         _login = If(login, "")
         _retrievable = retrievable
+        _subject = subject
         BuildUi(generatedPassword)
     End Sub
 
     Private Sub BuildUi(generatedPassword As String)
         UiLanguage.ApplyTo(Me)
         Me.Text = If(_mode = DialogMode.Enter, ExchangeText.SetPasswordTitle(),
-                     If(_mode = DialogMode.Kept, ExchangeAdminText.KeptTitle(_login), ExchangeText.GenerateTitle()))
+                     If(_mode = DialogMode.Kept, ExchangeAdminText.KeptTitle(_login), ExchangeText.GenerateTitle(_subject)))
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         AddHandler Me.FormClosed,
             Sub()
@@ -116,7 +120,7 @@ Friend NotInheritable Class Exchange_Password_Form
 
         If _mode <> DialogMode.Enter Then
             Dim intro As String = If(_mode = DialogMode.Kept, ExchangeAdminText.KeptIntro(),
-                                     If(_retrievable, ExchangeText.GenerateIntroKept(), ExchangeText.GenerateIntro()))
+                                     If(_retrievable, ExchangeText.GenerateIntroKept(), ExchangeText.GenerateIntro(_subject)))
             body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0),
                 .Margin = New Padding(0, 0, 0, 8), .Text = intro})
         Else

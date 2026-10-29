@@ -21,7 +21,7 @@ Partial Public NotInheritable Class Localization
         Add("Esc или щелчок - закрыть. Клавиши можно изменить в настройках.",
             "Esc or a click closes this. Keys can be changed in the settings.", "Esc або клік - закрити. Клавіші можна змінити в налаштуваннях.", "Esc oder ein Klick schließt dies. Die Tasten lassen sich in den Einstellungen ändern.",
             "Esc o un clic per chiudere. I tasti si possono cambiare nelle impostazioni.", "Esc o un clic lo cierra. Las teclas se pueden cambiar en los ajustes.", "Échap ou un clic pour fermer. Les touches se modifient dans les réglages.",
-            "Esc ou um clique fecha isto. As teclas podem ser alteradas nas definições.", "اضغط Esc أو انقر للإغلاق. يمكن تغيير المفاتيح من الإعدادات.", "बंद करने के लिए Esc या क्लिक। कुंजियाँ सेटिंग्स में बदली जा सकती हैं।",
+            "Esc ou um clique fecha isto. As teclas podem ser alteradas nas configurações.", "اضغط Esc أو انقر للإغلاق. يمكن تغيير المفاتيح من الإعدادات.", "बंद करने के लिए Esc या क्लिक। कुंजियाँ सेटिंग्स में बदली जा सकती हैं।",
             "বন্ধ করতে Esc বা ক্লিক। কী সেটিংসে বদলানো যায়।", "بند کرنے کے لیے Esc یا کلک۔ کلیدیں سیٹنگز میں بدلی جا سکتی ہیں۔", "按 Esc 或单击即可关闭。按键可在设置中更改。")
 
         ' --- the six groups ("Файлы" is an existing key) ----------------------------------------
@@ -65,22 +65,22 @@ Partial Public NotInheritable Class Localization
         Add("Во весь экран без панелей",
             "Full screen without panels", "На весь екран без панелей", "Vollbild ohne Leisten",
             "Schermo intero senza pannelli", "Pantalla completa sin paneles", "Plein écran sans panneaux",
-            "Ecrã inteiro sem painéis", "ملء الشاشة بدون لوحات", "पैनल के बिना पूर्ण स्क्रीन",
+            "Tela cheia sem painéis", "ملء الشاشة بدون لوحات", "पैनल के बिना पूर्ण स्क्रीन",
             "প্যানেল ছাড়া পূর্ণ পর্দা", "پینل کے بغیر پوری سکرین", "无面板全屏")
         Add("Клавиатурный режим панелей (Tab и стрелки - выбор, Enter - нажать)",
             "Panel keyboard mode (Tab and arrows choose, Enter presses)", "Клавіатурний режим панелей (Tab і стрілки - вибір, Enter - натиснути)", "Tastaturmodus der Leisten (Tab und Pfeile wählen, Enter drückt)",
             "Modalità tastiera dei pannelli (Tab e frecce scelgono, Invio preme)", "Modo de teclado de los paneles (Tab y flechas eligen, Intro pulsa)", "Mode clavier des panneaux (Tab et flèches choisissent, Entrée active)",
-            "Modo de teclado dos painéis (Tab e setas escolhem, Enter prime)", "وضع لوحة المفاتيح للّوحات (Tab والأسهم للاختيار وEnter للضغط)", "पैनल कीबोर्ड मोड (Tab और तीर से चुनें, Enter से दबाएँ)",
+            "Modo de teclado dos painéis (Tab e setas escolhem, Enter pressiona)", "وضع لوحة المفاتيح للّوحات (Tab والأسهم للاختيار وEnter للضغط)", "पैनल कीबोर्ड मोड (Tab और तीर से चुनें, Enter से दबाएँ)",
             "প্যানেল কীবোর্ড মোড (Tab ও তীর দিয়ে বাছুন, Enter চাপুন)", "پینل کی بورڈ موڈ (Tab اور تیر سے منتخب کریں، Enter دبائیں)", "面板键盘模式（Tab 和方向键选择，Enter 按下）")
         Add("Меню текущего файла",
             "Menu of the current file", "Меню поточного файлу", "Menü der aktuellen Datei",
             "Menu del file corrente", "Menú del archivo actual", "Menu du fichier actuel",
-            "Menu do ficheiro atual", "قائمة الملف الحالي", "वर्तमान फ़ाइल का मेनू",
+            "Menu do arquivo atual", "قائمة الملف الحالي", "वर्तमान फ़ाइल का मेनू",
             "বর্তমান ফাইলের মেনু", "موجودہ فائل کا مینو", "当前文件的菜单")
         Add("Шаг назад: меню, справка, перевод, масштаб, слайд-шоу, полный экран, затем закрытие окна",
             "One step back: menu, help, translation, zoom, slideshow, full screen, then closing the window", "Крок назад: меню, довідка, переклад, масштаб, слайд-шоу, повний екран, потім закриття вікна", "Ein Schritt zurück: Menü, Hilfe, Übersetzung, Zoom, Diashow, Vollbild, zuletzt Fenster schließen",
             "Un passo indietro: menu, guida, traduzione, zoom, presentazione, schermo intero, infine chiusura della finestra", "Un paso atrás: menú, ayuda, traducción, zoom, presentación, pantalla completa y, al final, cerrar la ventana", "Un pas en arrière : menu, aide, traduction, zoom, diaporama, plein écran, puis fermeture de la fenêtre",
-            "Um passo atrás: menu, ajuda, tradução, zoom, apresentação, ecrã inteiro e, por fim, fechar a janela", "خطوة للخلف: القائمة، المساعدة، الترجمة، التكبير، عرض الشرائح، ملء الشاشة، ثم إغلاق النافذة", "एक कदम पीछे: मेनू, सहायता, अनुवाद, ज़ूम, स्लाइड शो, पूर्ण स्क्रीन, फिर विंडो बंद",
+            "Um passo atrás: menu, ajuda, tradução, zoom, apresentação, tela cheia e, por fim, fechar a janela", "خطوة للخلف: القائمة، المساعدة، الترجمة، التكبير، عرض الشرائح، ملء الشاشة، ثم إغلاق النافذة", "एक कदम पीछे: मेनू, सहायता, अनुवाद, ज़ूम, स्लाइड शो, पूर्ण स्क्रीन, फिर विंडो बंद",
             "এক ধাপ পিছনে: মেনু, সহায়তা, অনুবাদ, জুম, স্লাইড শো, পূর্ণ পর্দা, তারপর উইন্ডো বন্ধ", "ایک قدم پیچھے: مینو، مدد، ترجمہ، زوم، سلائیڈ شو، پوری سکرین، پھر ونڈو بند", "后退一步：菜单、帮助、翻译、缩放、幻灯片、全屏，最后关闭窗口")
 
         ' --- the mouse chords (UX-116): the key column and the description column ---------------
@@ -122,12 +122,12 @@ Partial Public NotInheritable Class Localization
         Add("Клик по видео",
             "Click on a video", "Клік по відео", "Klick auf ein Video",
             "Clic su un video", "Clic en un vídeo", "Clic sur une vidéo",
-            "Clique num vídeo", "النقر على فيديو", "वीडियो पर क्लिक",
+            "Clique em um vídeo", "النقر على فيديو", "वीडियो पर क्लिक",
             "ভিডিওতে ক্লিক", "ویڈیو پر کلک", "单击视频")
         Add("Правая кнопка по видео",
             "Right button on a video", "Права кнопка по відео", "Rechte Taste auf einem Video",
             "Tasto destro su un video", "Botón derecho en un vídeo", "Bouton droit sur une vidéo",
-            "Botão direito num vídeo", "الزر الأيمن على فيديو", "वीडियो पर दायाँ बटन",
+            "Botão direito em um vídeo", "الزر الأيمن على فيديو", "वीडियो पर दायाँ बटन",
             "ভিডিওতে ডান বোতাম", "ویڈیو پر دایاں بٹن", "视频上的右键")
         Add("Боковые кнопки мыши",
             "Side mouse buttons", "Бічні кнопки миші", "Seitentasten der Maus",
@@ -142,12 +142,12 @@ Partial Public NotInheritable Class Localization
         Add("Листать файлы (в настройках колесо можно переключить на масштаб)",
             "Flip through files (the wheel can be switched to zoom in the settings)", "Гортати файли (у налаштуваннях колесо можна перемкнути на масштаб)", "Dateien blättern (in den Einstellungen lässt sich das Rad auf Zoom umstellen)",
             "Scorrere i file (nelle impostazioni la rotella può passare allo zoom)", "Pasar archivos (en los ajustes la rueda puede cambiarse a zoom)", "Parcourir les fichiers (la molette peut passer au zoom dans les réglages)",
-            "Folhear ficheiros (nas definições a roda pode passar para zoom)", "تصفّح الملفات (يمكن تحويل العجلة إلى التكبير في الإعدادات)", "फ़ाइलें पलटें (सेटिंग्स में व्हील को ज़ूम पर बदला जा सकता है)",
+            "Folhear arquivos (nas configurações a roda pode ser trocada por zoom)", "تصفّح الملفات (يمكن تحويل العجلة إلى التكبير في الإعدادات)", "फ़ाइलें पलटें (सेटिंग्स में व्हील को ज़ूम पर बदला जा सकता है)",
             "ফাইল ওল্টান (সেটিংসে হুইলকে জুমে বদলানো যায়)", "فائلیں پلٹیں (سیٹنگز میں وہیل کو زوم پر بدلا جا سکتا ہے)", "翻阅文件（可在设置中将滚轮改为缩放）")
         Add("На 10 / 100 / 1000 файлов вперёд; правой кнопкой - назад",
             "10 / 100 / 1000 files forward; with the right button - back", "На 10 / 100 / 1000 файлів уперед; правою кнопкою - назад", "10 / 100 / 1000 Dateien vor; mit der rechten Taste - zurück",
             "Avanti di 10 / 100 / 1000 file; con il tasto destro - indietro", "10 / 100 / 1000 archivos adelante; con el botón derecho, atrás", "10 / 100 / 1000 fichiers en avant ; avec le bouton droit - en arrière",
-            "10 / 100 / 1000 ficheiros para a frente; com o botão direito, para trás", "10 / 100 / 1000 ملف للأمام؛ وبالزر الأيمن - للخلف", "10 / 100 / 1000 फ़ाइलें आगे; दाएँ बटन से - पीछे",
+            "10 / 100 / 1000 arquivos para a frente; com o botão direito, para trás", "10 / 100 / 1000 ملف للأمام؛ وبالزر الأيمن - للخلف", "10 / 100 / 1000 फ़ाइलें आगे; दाएँ बटन से - पीछे",
             "10 / 100 / 1000 ফাইল সামনে; ডান বোতামে - পিছনে", "10 / 100 / 1000 فائلیں آگے؛ دائیں بٹن سے - پیچھے", "向前 10 / 100 / 1000 个文件；右键则向后")
         Add("Масштаб / 100 % / вписать в окно",
             "Zoom / 100 % / fit to window", "Масштаб / 100 % / вписати у вікно", "Zoom / 100 % / an Fenster anpassen",
@@ -162,14 +162,14 @@ Partial Public NotInheritable Class Localization
         Add("Следующий / предыдущий файл",
             "Next / previous file", "Наступний / попередній файл", "Nächste / vorherige Datei",
             "File successivo / precedente", "Archivo siguiente / anterior", "Fichier suivant / précédent",
-            "Ficheiro seguinte / anterior", "الملف التالي / السابق", "अगली / पिछली फ़ाइल",
+            "Arquivo seguinte / anterior", "الملف التالي / السابق", "अगली / पिछली फ़ाइल",
             "পরের / আগের ফাইল", "اگلی / پچھلی فائل", "下一个 / 上一个文件")
 
         ' --- 123 UX-112 / UX-114: the open action's caption and the "works on" marks under a row ---
         Add("Открыть документ в программе или защищённый файл",
             "Open a document in its program, or a protected file", "Відкрити документ у програмі або захищений файл", "Dokument im Programm öffnen oder geschützte Datei öffnen",
             "Apri un documento nel programma o un file protetto", "Abrir un documento en su programa o un archivo protegido", "Ouvrir un document dans son programme ou un fichier protégé",
-            "Abrir um documento no programa ou um ficheiro protegido", "فتح مستند في برنامجه أو فتح ملف محمي", "दस्तावेज़ को उसके प्रोग्राम में या सुरक्षित फ़ाइल खोलें",
+            "Abrir um documento no programa ou um arquivo protegido", "فتح مستند في برنامجه أو فتح ملف محمي", "दस्तावेज़ को उसके प्रोग्राम में या सुरक्षित फ़ाइल खोलें",
             "নথি তার প্রোগ্রামে বা সুরক্ষিত ফাইল খুলুন", "دستاویز کو اس کے پروگرام میں یا محفوظ فائل کھولیں", "在对应程序中打开文档，或打开受保护的文件")
         Add("Только видео и аудио",
             "Video and audio only", "Лише відео та аудіо", "Nur Video und Audio",
@@ -189,7 +189,7 @@ Partial Public NotInheritable Class Localization
         Add("Картинки и текстовые файлы",
             "Pictures and text files", "Картинки та текстові файли", "Bilder und Textdateien",
             "Immagini e file di testo", "Imágenes y archivos de texto", "Images et fichiers texte",
-            "Imagens e ficheiros de texto", "الصور والملفات النصية", "चित्र और टेक्स्ट फ़ाइलें",
+            "Imagens e arquivos de texto", "الصور والملفات النصية", "चित्र और टेक्स्ट फ़ाइलें",
             "ছবি ও টেক্সট ফাইল", "تصاویر اور ٹیکسٹ فائلیں", "图片和文本文件")
 
         ' --- 240: in-app context help link on the F1 reference card ---

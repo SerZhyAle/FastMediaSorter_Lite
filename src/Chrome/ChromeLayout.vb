@@ -253,6 +253,23 @@ Friend NotInheritable Class ChromeLayout
         Return New RowBandPlacement(Math.Max(naturalTop, cornerPanel.Bottom + gapValue), bandWidth, 0, True)
     End Function
 
+    ''' <summary>What the window commands present to a top row, as the rectangle <see cref="PlaceRowBesideCornerPanel"/>
+    ''' wants (L0281 §3.8, T-5). That function reserves its panel's width from the band's FAR (physical right) end, which is
+    ''' right while the panel stands in the corner and wrong once the user has put it elsewhere: a panel in the middle of
+    ''' the band would be reserved from the end and the row would run under it. The obstacle is therefore the panel's ACTUAL
+    ''' rectangle stretched to the band's far edge (<c>mediaWidth - inset</c>): a row is capped to the width left of the
+    ''' panel's near edge, or wraps below it, and never reaches it. For a panel in the corner the stretch is nothing and the
+    ''' result is the panel's own rectangle, so the default placement is exactly what it was. An empty panel gives an empty
+    ''' obstacle, which reserves nothing; a panel above or below the row's band is judged by
+    ''' <see cref="PlaceRowBesideCornerPanel"/> itself, whose vertical test reserves nothing for it. Pure; one coordinate
+    ''' space (the media area).</summary>
+    Public Shared Function BandObstacle(controls As Rectangle, mediaWidth As Integer, inset As Integer) As Rectangle
+        If controls.Width <= 0 OrElse controls.Height <= 0 Then Return Rectangle.Empty
+        Dim farEdge As Integer = mediaWidth - Math.Max(0, inset)
+        Dim right As Integer = Math.Max(controls.Right, farEdge)
+        Return New Rectangle(controls.Left, controls.Top, right - controls.Left, controls.Height)
+    End Function
+
     ''' <summary>
     ''' The status strip's two cells: the file name and the status words (121 UX-415). The name is entitled to its own
     ''' width up to half the strip, so a long sentence can no longer squeeze it (it used to be left with the third

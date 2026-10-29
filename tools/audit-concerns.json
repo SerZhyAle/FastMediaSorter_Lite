@@ -31,13 +31,13 @@
     {
       "pattern": "src/Localization/Localization.*.vb",
       "except": [ "src/Localization/Localization.Persistence.vb", "src/Localization/Localization.Registry.vb" ],
-      "coveredBy": "LocalizationParityTests, LocalizationCoverageTests",
+      "coveredBy": "LocalizationParityTests, LocalizationCoverageTests, LocalizationScriptTests",
       "sampledBy": "L-localization"
     },
     {
       "pattern": "src/FastMediaSorterCompanion/Localization/Localization.*.vb",
       "except": [ "src/FastMediaSorterCompanion/Localization/Localization.Registry.vb" ],
-      "coveredBy": "LocalizationParityTests, LocalizationCoverageTests",
+      "coveredBy": "LocalizationParityTests, LocalizationCoverageTests, LocalizationScriptTests",
       "sampledBy": "L-localization"
     }
   ],

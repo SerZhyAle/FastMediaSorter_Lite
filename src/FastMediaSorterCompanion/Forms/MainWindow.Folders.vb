@@ -190,7 +190,7 @@ Partial Public NotInheritable Class MainWindow
         Try
             Dim it As New ListViewItem(If(prm.Label.Trim().Length > 0, prm.Label, ShareFolderDisplayName(path))) With {.Checked = True, .Tag = path}
             it.SubItems.Add(ProfileLabel(prm))
-            it.SubItems.Add(path)
+            it.SubItems.Add(Localization.LtrValue(path))   ' display only: .Tag keeps the real path
             it.SubItems.Add(RoLabel(prm))
             lvFolders.Items.Add(it)
             _lastTouchedRoot = path
@@ -217,7 +217,7 @@ Partial Public NotInheritable Class MainWindow
                 Dim prm As ShareRootParams = ShareRootParamsStore.GetFor(host)
                 Dim it As New ListViewItem(If(String.IsNullOrEmpty(r.name), ShareFolderDisplayName(host), r.name)) With {.Checked = True, .Tag = host}
                 it.SubItems.Add(ProfileLabel(prm))
-                it.SubItems.Add(host)
+                it.SubItems.Add(Localization.LtrValue(host))   ' display only: .Tag keeps the real path
                 it.SubItems.Add(RoLabel(prm))
                 lvFolders.Items.Add(it)
             Next
@@ -698,16 +698,25 @@ Partial Public NotInheritable Class MainWindow
         Dim theme As ThemePalette = ThemeService.Palette
         Dim back As Color = If(selected, If(focused, theme.Accent, theme.SurfaceWindow), lvFolders.BackColor)
         Dim ink As Color = If(selected AndAlso focused, theme.AccentInk, theme.Restate(e.Item.ForeColor, False))
-        ' Column 0 carries the check box Windows draws at the cell's left edge; the
-        ' fill starts at the label so that box is not painted over.
+        ' Column 0 carries the check box at the cell's left edge. DrawDefault is off for the
+        ' selected row, so Windows never paints that box: the fill covers the whole cell and
+        ' the box is drawn below in its real state, the text starts at the label.
         Dim left As Integer = e.Bounds.Left
+        Dim textLeft As Integer = left
         If e.ColumnIndex = 0 Then
             Dim label As Rectangle = lvFolders.GetItemRect(e.ItemIndex, ItemBoundsPortion.Label)
-            left = Math.Max(e.Bounds.Left, label.Left)
+            textLeft = Math.Max(e.Bounds.Left, label.Left)
         End If
         Using b As New SolidBrush(back)
             e.Graphics.FillRectangle(b, left, e.Bounds.Top, e.Bounds.Right - left, e.Bounds.Height)
         End Using
+        If e.ColumnIndex = 0 AndAlso lvFolders.CheckBoxes Then
+            Dim state As System.Windows.Forms.VisualStyles.CheckBoxState = If(e.Item.Checked, System.Windows.Forms.VisualStyles.CheckBoxState.CheckedNormal, System.Windows.Forms.VisualStyles.CheckBoxState.UncheckedNormal)
+            Dim boxSize As Size = CheckBoxRenderer.GetGlyphSize(e.Graphics, state)
+            Dim boxX As Integer = left + Math.Max(0, (textLeft - left - boxSize.Width) \ 2)
+            Dim boxY As Integer = e.Bounds.Top + (e.Bounds.Height - boxSize.Height) \ 2
+            CheckBoxRenderer.DrawCheckBox(e.Graphics, New Point(boxX, boxY), state)
+        End If
         If lockCell Then
             Dim size As Integer = Math.Min(LogicalToDeviceUnits(16), Math.Max(1, e.Bounds.Height - 2))
             Using glyph As Bitmap = GlyphRenderer.Render("status.locked", size, ink, AddressOf CompanionAssets.OpenBundledAsset)
@@ -718,7 +727,7 @@ Partial Public NotInheritable Class MainWindow
         End If
         Dim cellText As String = If(e.SubItem Is Nothing, "", e.SubItem.Text)   ' column 0's SubItem is the item itself
         If cellText.Length > 0 Then
-            Dim bounds As New Rectangle(left + 2, e.Bounds.Top, e.Bounds.Right - left - 4, e.Bounds.Height)
+            Dim bounds As New Rectangle(textLeft + 2, e.Bounds.Top, e.Bounds.Right - textLeft - 4, e.Bounds.Height)
             TextRenderer.DrawText(e.Graphics, cellText, lvFolders.Font, bounds, ink,
                                   TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or
                                   TextFormatFlags.EndEllipsis Or TextFormatFlags.NoPrefix)

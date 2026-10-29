@@ -162,6 +162,91 @@ Public Class ChromeWindowControlsTests
         Assert.Equal(mediaWidth, placement.MaxWidth)
     End Sub
 
+    ' --- the band against the panel's ACTUAL rectangle (L0281 §3.8, T-5) ------------------------------
+
+    Private Function Band(naturalTop As Integer, rowHeight As Integer, minimumRowWidth As Integer, controls As Rectangle,
+                          Optional bandInset As Integer = 0) As ChromeLayout.RowBandPlacement
+        Return ChromeLayout.PlaceRowBesideCornerPanel(naturalTop, rowHeight, minimumRowWidth,
+                                                      ChromeLayout.BandObstacle(controls, mediaWidth, bandInset), mediaWidth, gap, bandInset)
+    End Function
+
+    <Theory>
+    <InlineData(0)>
+    <InlineData(8)>
+    Public Sub A_panel_in_the_corner_is_the_obstacle_it_always_was(cornerInset As Integer)
+        ' The default placement is unchanged: the stretch to the far edge is nothing for a panel that touches it.
+        Dim panel As New Rectangle(mediaWidth - cornerInset - 224, cornerInset, 224, 44)
+        Assert.Equal(panel, ChromeLayout.BandObstacle(panel, mediaWidth, cornerInset))
+        Dim direct As ChromeLayout.RowBandPlacement = ChromeLayout.PlaceRowBesideCornerPanel(cornerInset, 44, 700, panel, mediaWidth, gap, cornerInset)
+        Dim viaObstacle As ChromeLayout.RowBandPlacement = Band(cornerInset, 44, 700, panel, cornerInset)
+        Assert.Equal(direct.Top, viaObstacle.Top)
+        Assert.Equal(direct.MaxWidth, viaObstacle.MaxWidth)
+        Assert.Equal(direct.ReservedWidth, viaObstacle.ReservedWidth)
+        Assert.Equal(direct.Wrapped, viaObstacle.Wrapped)
+    End Sub
+
+    <Fact>
+    Public Sub A_panel_in_the_middle_of_the_band_caps_the_row_before_its_near_edge()
+        ' Put by the user at x = 700: the row, standing at the start edge, must end before the panel, not run under it.
+        Dim panel As New Rectangle(700, 0, 224, 44)
+        Dim obstacle As Rectangle = ChromeLayout.BandObstacle(panel, mediaWidth, 0)
+        Assert.Equal(panel.Left, obstacle.Left)
+        Assert.Equal(panel.Top, obstacle.Top)
+        Assert.Equal(panel.Height, obstacle.Height)
+        Assert.Equal(mediaWidth, obstacle.Right)
+        Dim placement As ChromeLayout.RowBandPlacement = Band(0, 44, 300, panel)
+        Assert.False(placement.Wrapped)
+        Assert.True(placement.MaxWidth <= panel.Left - gap, "the row ends before the panel")
+    End Sub
+
+    <Fact>
+    Public Sub A_panel_at_the_start_edge_of_the_band_sends_the_row_below_it()
+        ' Nothing is left of a panel that stands where the row starts: the row wraps under it, whole.
+        Dim panel As New Rectangle(0, 0, 224, 44)
+        Dim placement As ChromeLayout.RowBandPlacement = Band(0, 44, 300, panel)
+        Assert.True(placement.Wrapped)
+        Assert.Equal(panel.Bottom + gap, placement.Top)
+        Assert.Equal(mediaWidth, placement.MaxWidth)
+    End Sub
+
+    <Fact>
+    Public Sub A_panel_outside_the_rows_band_reserves_nothing()
+        ' Below the row (the user moved the window commands down the picture) or empty: the row keeps the whole band.
+        Dim below As New Rectangle(mediaWidth - 224, 300, 224, 44)
+        Dim placement As ChromeLayout.RowBandPlacement = Band(0, 44, 700, below)
+        Assert.False(placement.Wrapped)
+        Assert.Equal(0, placement.Top)
+        Assert.Equal(mediaWidth, placement.MaxWidth)
+        Assert.Equal(0, placement.ReservedWidth)
+        ' Above the row's natural top.
+        Dim above As New Rectangle(mediaWidth - 224, 0, 224, 44)
+        Dim lower As ChromeLayout.RowBandPlacement = Band(60, 44, 700, above)
+        Assert.False(lower.Wrapped)
+        Assert.Equal(0, lower.ReservedWidth)
+        Assert.Equal(mediaWidth, lower.MaxWidth)
+        ' An empty or degenerate rectangle is no obstacle at all.
+        Assert.True(ChromeLayout.BandObstacle(Rectangle.Empty, mediaWidth, 0).IsEmpty)
+        Assert.True(ChromeLayout.BandObstacle(New Rectangle(10, 10, 0, 44), mediaWidth, 0).IsEmpty)
+        Dim none As ChromeLayout.RowBandPlacement = Band(0, 44, 700, Rectangle.Empty)
+        Assert.False(none.Wrapped)
+        Assert.Equal(0, none.ReservedWidth)
+    End Sub
+
+    <Fact>
+    Public Sub Two_stacked_rows_both_meeting_a_dropped_panel_each_wrap_below_it_and_the_second_follows_the_first()
+        ' The window commands dropped across both rows' bands: row 1 wraps below them; row 2, stacked under row 1 where it
+        ' REALLY stands (Main_Form.Chrome.vb: ChromeAnchoredRect(row 1).Bottom + gap), wraps no further than it must.
+        Dim panel As New Rectangle(mediaWidth - 224, 20, 224, 44)
+        Dim first As ChromeLayout.RowBandPlacement = Band(0, 44, mediaWidth, panel)
+        Assert.True(first.Wrapped)
+        Assert.Equal(panel.Bottom + gap, first.Top)
+        Dim secondNaturalTop As Integer = first.Top + 44 + gap
+        Dim second As ChromeLayout.RowBandPlacement = Band(secondNaturalTop, 44, mediaWidth, panel)
+        Assert.False(second.Wrapped)
+        Assert.Equal(secondNaturalTop, second.Top)
+        Assert.True(second.Top >= first.Top + 44 + gap, "row 2 stands clear of row 1")
+    End Sub
+
     ' --- the grip's double click (188 §5) ---------------------------------------------------------
 
     <Fact>
@@ -185,14 +270,18 @@ Public Class ChromeWindowControlsTests
     ' --- the panel's own footprint (188 §3.7) ------------------------------------------------------
 
     <Fact>
-    Public Sub The_minimum_window_footprint_holds_the_pin_three_commands_and_the_grip()
-        ' Width: the panel's (horizontal) padding, the pin slot, three command buttons, the drag
-        ' grip (2026-10-12 owner revision: one virtual button wider) and their gaps. The height
-        ' keeps the STANDARD padding: the panel shares the toolbar rows' height at the same top edge.
+    Public Sub The_minimum_window_footprint_holds_the_pin_the_handle_three_commands_and_the_grip()
+        ' Width: the panel's (horizontal) padding, the pin slot, the move handle's slot (L0281 T-5: the window
+        ' commands are movable, so the panel gained one MinTarget + Gap slot beside the pin - the expectation moved
+        ' deliberately, by exactly that slot, from 192 to 224 logical px), three command buttons, the drag grip
+        ' (2026-10-12 owner revision: one virtual button wider) and their gaps. The height keeps the STANDARD
+        ' padding: the panel shares the toolbar rows' height at the same top edge.
         Dim button As Integer = Math.Max(ChromeMetrics.ItemHeight, ChromeMetrics.MinTarget)
         Dim pad As Integer = ChromeMetrics.PanelPadding + ChromeMetrics.WindowControlsExtraPadding
-        Dim expectedWidth As Integer = 2 * pad + (ChromeMetrics.MinTarget + ChromeMetrics.Gap) + 4 * button + 3 * ChromeMetrics.Gap
+        Dim slot As Integer = ChromeMetrics.MinTarget + ChromeMetrics.Gap
+        Dim expectedWidth As Integer = 2 * pad + slot + slot + 4 * button + 3 * ChromeMetrics.Gap
         Assert.Equal(expectedWidth, ChromeMetrics.WindowControlsLogicalWidth())
+        Assert.Equal(224, ChromeMetrics.WindowControlsLogicalWidth())
         Assert.Equal(button + 2 * ChromeMetrics.PanelPadding, ChromeMetrics.WindowControlsLogicalHeight())
     End Sub
 

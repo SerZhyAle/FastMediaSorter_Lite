@@ -24,8 +24,11 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
     Private _iconHandle As IntPtr
     Private _password As String = ""
     Private _generated As Boolean
+    Private ReadOnly _preferTyped As Boolean
 
-    Friend Sub New(Optional currentKind As String = "member")
+    ''' <param name="preferTyped">Opens on "type it by hand" (ticket 287): the way from the generated password's "set my own" button.</param>
+    Friend Sub New(Optional currentKind As String = "member", Optional preferTyped As Boolean = False)
+        _preferTyped = preferTyped
         BuildUi(currentKind)
     End Sub
 
@@ -100,9 +103,9 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
 
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Font = New Font(Me.Font, FontStyle.Bold),
             .Margin = New Padding(0, 4, 0, 2), .Text = Localization.T("Пароль:")})
-        _rbGenerate = New RadioButton With {.AutoSize = True, .Checked = True, .Margin = New Padding(0, 2, 0, 2),
+        _rbGenerate = New RadioButton With {.AutoSize = True, .Checked = Not _preferTyped, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Сгенерировать случайный безопасный пароль")}
-        _rbType = New RadioButton With {.AutoSize = True, .Checked = False, .Margin = New Padding(0, 0, 0, 6),
+        _rbType = New RadioButton With {.AutoSize = True, .Checked = _preferTyped, .Margin = New Padding(0, 0, 0, 6),
             .Text = Localization.T("Ввести пароль вручную")}
         body.Controls.Add(_rbGenerate)
         body.Controls.Add(_rbType)

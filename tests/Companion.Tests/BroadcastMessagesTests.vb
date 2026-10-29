@@ -127,9 +127,10 @@ Public Class BroadcastMessagesTests
 
     <Fact>
     Public Sub A_record_without_the_flag_keeps_its_end_time_or_says_until_revoked()
-        Dim live As New WorkerBroadcast With {.ExpiresAt = "2099-01-01 00:00"}
+        Dim live As New WorkerBroadcast With {.ExpiresAt = "2099-01-01T00:00:00Z"}
         Dim open As New WorkerBroadcast With {.ExpiresAt = ""}
-        Assert.Equal("2099-01-01 00:00", InRussian(Function() BroadcastMessages.ExpiryCell(live)))
+        Dim shown As String = DateTimeOffset.Parse("2099-01-01T00:00:00Z", Globalization.CultureInfo.InvariantCulture).ToLocalTime().ToString("g", Globalization.CultureInfo.CurrentCulture)
+        Assert.Equal(shown, InRussian(Function() BroadcastMessages.ExpiryCell(live)))
         Assert.Equal("До отзыва", InRussian(Function() BroadcastMessages.ExpiryCell(open)))
         Assert.Equal("", InRussian(Function() BroadcastMessages.ExpiryCell(Nothing)))
     End Sub

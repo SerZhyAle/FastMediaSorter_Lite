@@ -232,6 +232,25 @@ Partial Public NotInheritable Class Localization
         Return index >= 0 AndAlso index < RightToLeftByCode.Length AndAlso RightToLeftByCode(index)
     End Function
 
+    ''' <summary>A value that always reads left to right (a path, a file name, an address, a number with a unit),
+    ''' made safe to place inside a line of a right-to-left language. In Arabic or Urdu the bidi algorithm gives a
+    ''' neutral character at the edge of such a value (the "\\" of a share, a trailing "/") the paragraph
+    ''' direction, so it lands at the wrong end, and a Latin segment beside an Arabic folder name swaps places with it.
+    ''' The value is wrapped in an LRE..PDF embedding, which GDI, Uniscribe and the common controls honour; the
+    ''' isolate pair U+2066..U+2069 is NOT used, since TextRenderer draws it as two boxes, and a bare U+200E mark
+    ''' fixes only the edges. Any other language gets the value back untouched. Text that leaves the window
+    ''' (the clipboard) goes through <see cref="PlainValue"/>.</summary>
+    Public Shared Function LtrValue(value As String) As String
+        If String.IsNullOrEmpty(value) OrElse Not IsRightToLeft() Then Return value
+        Return ChrW(&H202A) & value & ChrW(&H202C)
+    End Function
+
+    ''' <summary>The text with the embedding marks of <see cref="LtrValue"/> taken off again.</summary>
+    Public Shared Function PlainValue(text As String) As String
+        If String.IsNullOrEmpty(text) Then Return text
+        Return text.Replace(ChrW(&H202A), "").Replace(ChrW(&H202C), "")
+    End Function
+
     ''' <summary>
     ''' UI font family for a script the app's default font does not cover, or Nothing
     ''' when the default is fine.

@@ -185,6 +185,52 @@ static class Scenes {
    form.ClientSize=new Size(520,680); Call(form,"PlaceChromePanels"); Pump();
    Assert(Hosts(form).Any(h=>((System.Collections.IEnumerable)Get(Get(h,"Surface"),"OverflowItems")).Cast<object>().Any()),"Narrow window did not expose overflow");
    form.ClientSize=new Size(1000,680); Call(form,"PlaceChromePanels"); Pump();
+   // L0281: the movable panels. The secondary-instance mark turns every Save into a no-op, so no drop reaches the user's registry.
+   typeof(Main_Form).Assembly.GetType("fmsl.MultiWindowPolicy").GetMethod("MarkInstanceRole",BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic).Invoke(null,new object[]{false});
+   var placeProperty=prefs.GetType().GetProperty("ChromeRow1Place");
+   var row1=Hosts(form).Single(h=>h.Name=="chrome_Row1");
+   var row1Surface=(Control)Get(row1,"Surface");
+   var handle=Get(row1Surface,"PanelHandleItem");
+   Assert(handle!=null && (bool)Get(handle,"IsPanelHandle") && !((Rectangle)Get(handle,"Bounds")).IsEmpty,"Row 1 has no laid-out move handle");
+   Assert(!string.IsNullOrWhiteSpace((string)Get(handle,"Tooltip")),"The move handle has no name");
+   var anchoredRow1=row1.Bounds;
+   Func<Rectangle> allowedNow=()=>(Rectangle)Call(form,"ChromeAllowedArea",Call(form,"ChromeScale"));
+   var pointer=Point.Empty;
+   var pointerHook=row1Surface.GetType().GetProperty("PointerScreenPosition",Flags);
+   pointerHook.SetValue(row1Surface,(Func<Point>)(()=>pointer));
+   var handleBounds=(Rectangle)Get(handle,"Bounds");
+   var press=new Point(handleBounds.Left+handleBounds.Width/2,handleBounds.Top+handleBounds.Height/2);
+   var packedPress=(IntPtr)((press.Y<<16)|(press.X&0xffff));
+   var pressScreen=row1Surface.PointToScreen(press);
+   pointer=pressScreen;
+   SendMessage(row1Surface.Handle,0x201,(IntPtr)1,packedPress);
+   foreach(var travel in new[]{new Size(40,40),new Size(400,300),new Size(3000,2000),new Size(-3000,-2000),new Size(-3000,2000),new Size(250,180)}) {
+    pointer=pressScreen+travel;
+    SendMessage(row1Surface.Handle,0x200,(IntPtr)1,packedPress); Application.DoEvents();
+    Assert(allowedNow().Contains(row1.Bounds),"Row 1 left the allowed area mid-drag at "+travel+": "+row1.Bounds);
+   }
+   SendMessage(row1Surface.Handle,0x202,IntPtr.Zero,packedPress); Pump();
+   var place=(string)placeProperty.GetValue(prefs);
+   var dropped=row1.Bounds;
+   Assert(!string.IsNullOrEmpty(place) && dropped!=anchoredRow1,"A drop did not store a place for row 1");
+   foreach(var size in new[]{new Size(600,420),new Size(420,300)}) {
+    form.ClientSize=size; Call(form,"PlaceChromePanels"); Pump();
+    var area=allowedNow();
+    Assert(area.Contains(row1.Bounds) || row1.Width>area.Width,"Row 1 left the window after a resize to "+size+": "+row1.Bounds);
+    Assert((string)placeProperty.GetValue(prefs)==place,"A resize wrote the place back");
+   }
+   form.ClientSize=new Size(1000,680); Call(form,"PlaceChromePanels"); Pump();
+   Assert(row1.Bounds==dropped,"Row 1 did not return to its place when the window grew again");
+   // What a restart reads: the stored text alone puts the panel where it was dropped.
+   placeProperty.SetValue(prefs,""); Call(form,"PlaceChromePanels"); Pump();
+   Assert(row1.Bounds==anchoredRow1,"An empty place did not anchor row 1");
+   placeProperty.SetValue(prefs,place); Call(form,"PlaceChromePanels"); Pump();
+   Assert(row1.Bounds==dropped,"The stored place did not put row 1 back where it was dropped");
+   Assert((bool)Call(form,"ResetChromePanelPlaces"),"Returning the panels reported nothing to do"); Pump();
+   Assert(string.IsNullOrEmpty((string)placeProperty.GetValue(prefs)) && row1.Bounds==anchoredRow1,"Returning the panels did not anchor row 1");
+   Assert(!(bool)Call(form,"ResetChromePanelPlaces"),"A second return was not idempotent");
+   Assert(form.ContainsFocus,"A panel move stole viewer focus");
+   pointerHook.SetValue(row1Surface,null);
    prefs.GetType().GetProperty("ChromePinned").SetValue(prefs,false);
    prefs.GetType().GetProperty("VideoControlsHideDelaySec").SetValue(prefs,1);
    Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,form.ClientSize.Height/2)); Pump(1300);
@@ -196,7 +242,7 @@ static class Scenes {
    if((bool)Call(form,"ChromeFadeAllowed")) Assert(Hosts(form).Any(h=>h.Visible && h.Opacity>0 && h.Opacity<0.86),"Reveal did not produce intermediate fade opacity");
    Pump(220); Assert(Hosts(form).Any(h=>h.Visible),"Pointer hot zone did not reveal the chrome");
    Call(form,"DisposeRecipientsOverlayResources"); Call(form,"DisposeChromeResources"); form.Hide();
-   Console.WriteLine("Geometry, tooltips, ABC/XYZ folder order, mouse/keyboard menus, font handle recreation, scale and idle hide passed; DPI="+form.DeviceDpi);
+   Console.WriteLine("Geometry, tooltips, ABC/XYZ folder order, mouse/keyboard menus, font handle recreation, scale, panel move (drag inside, resize, stored place, return) and idle hide passed; DPI="+form.DeviceDpi);
    return 0;
   } catch(Exception e) { Console.WriteLine(e); return 1; }
  }

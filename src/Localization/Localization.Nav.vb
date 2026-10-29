@@ -37,9 +37,9 @@ Partial Public NotInheritable Class Localization
         Add("Настройки менеджера..",
             "Manager settings..", "Налаштування менеджера..", "Manager-Einstellungen..",
             "Impostazioni del gestore..", "Ajustes del gestor..",
-            "Paramètres du gestionnaire..", "Definições do gestor..", "إعدادات المدير..",
+            "Paramètres du gestionnaire..", "Configurações do gerenciador..", "إعدادات المدير..",
             "मैनेजर सेटिंग्स..", "ম্যানেজার সেটিংস..", "مینیجر کی ترتیبات..", "管理器设置..")
-        Add("Диски .fdd..", ".fdd disks..", "Диски .fdd..", ".fdd-Laufwerke..", "Dischi .fdd..", "Discos .fdd..", "Disques .fdd..", "Discos .fdd..", "أقراص .fdd..", ".fdd डिस्क..", ".fdd ডিস্ক..", ".fdd ڈسک..", ".fdd 磁盘..")
+        Add("Диски .fdd..", ".fdd disks..", "Диски .fdd..", ".fdd-Laufwerke..", "Dischi .fdd..", "Discos .fdd..", "Disques .fdd..", "Discos .fdd..", "أقراص .fdd..", ".fdd डिस्क..", ".fdd ডিস্ক..", "‎.fdd ڈسک..", ".fdd 磁盘..")
 
         ' page subtitles
         Add("Назначьте папки для быстрого перемещения и копирования.", "Assign folders for quick moving and copying.", "Призначте теки для швидкого переміщення та копіювання.", "Weisen Sie Ordner für schnelles Verschieben und Kopieren zu.", "Assegna le cartelle per spostare e copiare rapidamente.", "Asigne carpetas para mover y copiar rápidamente.", "Attribuez des dossiers pour déplacer et copier rapidement.", "Atribua pastas para mover e copiar rapidamente.", "خصّص المجلدات للنقل والنسخ السريع.", "तेज़ी से ले जाने और कॉपी करने के लिए फ़ोल्डर तय करें।", "দ্রুত সরানো ও কপি করার জন্য ফোল্ডার নির্ধারণ করুন।", "تیزی سے منتقل اور نقل کرنے کے لیے فولڈرز مقرر کریں۔", "指定用于快速移动和复制的文件夹。")

@@ -10,14 +10,14 @@ Partial Public NotInheritable Class Localization
             "Il server è già attivo. Non servono altri privilegi. Nel prossimo passo scegli una cartella per il telefono.",
             "El servidor ya está activado. No hacen falta más permisos. En el siguiente paso elige una carpeta para el teléfono.",
             "Le serveur est déjà activé. Aucun droit supplémentaire n'est nécessaire. Choisissez un dossier pour le téléphone à l'étape suivante.",
-            "O servidor já está ativo. Não são necessários mais privilégios. Escolha uma pasta para o telefone no próximo passo.",
+            "O servidor já está ativo. Não são necessários mais privilégios. Escolha uma pasta para o telefone na próxima etapa.",
             "الخادم مفعّل بالفعل. لا حاجة لصلاحيات إضافية. اختر مجلداً للهاتف في الخطوة التالية.",
             "सर्वर पहले से चालू है। अतिरिक्त अनुमति की ज़रूरत नहीं है। अगले चरण में फ़ोन के लिए फ़ोल्डर चुनें।",
             "সার্ভার আগে থেকেই চালু। অতিরিক্ত অনুমতি লাগে না। পরের ধাপে ফোনের জন্য ফোল্ডার বেছে নিন।",
             "سرور پہلے سے فعال ہے۔ مزید اجازت درکار نہیں۔ اگلے مرحلے میں فون کے لیے فولڈر منتخب کریں۔",
             "服务器已启用，无需再次请求权限。请在下一步选择供手机访问的文件夹。")
-        Add("Расшарь свою первую папку", "Share your first folder", "Поділіться першою папкою", "Ersten Ordner freigeben", "Condividi la prima cartella", "Comparte tu primera carpeta", "Partagez votre premier dossier", "Partilhe a primeira pasta", "شارك مجلدك الأول", "अपना पहला फ़ोल्डर साझा करें", "প্রথম ফোল্ডার শেয়ার করুন", "اپنا پہلا فولڈر شیئر کریں", "共享第一个文件夹")
-        Add("Основные настройки", "Basic settings", "Основні налаштування", "Grundeinstellungen", "Impostazioni di base", "Configuración básica", "Réglages de base", "Definições básicas", "الإعدادات الأساسية", "बुनियादी सेटिंग", "মৌলিক সেটিংস", "بنیادی ترتیبات", "基本设置")
+        Add("Расшарь свою первую папку", "Share your first folder", "Поділіться першою папкою", "Ersten Ordner freigeben", "Condividi la prima cartella", "Comparte tu primera carpeta", "Partagez votre premier dossier", "Compartilhe a primeira pasta", "شارك مجلدك الأول", "अपना पहला फ़ोल्डर साझा करें", "প্রথম ফোল্ডার শেয়ার করুন", "اپنا پہلا فولڈر شیئر کریں", "共享第一个文件夹")
+        Add("Основные настройки", "Basic settings", "Основні налаштування", "Grundeinstellungen", "Impostazioni di base", "Configuración básica", "Réglages de base", "Configurações básicas", "الإعدادات الأساسية", "बुनियादी सेटिंग", "মৌলিক সেটিংস", "بنیادی ترتیبات", "基本设置")
         Add("Приветствие..", "Welcome..", "Привітання..", "Willkommen..", "Benvenuto..", "Bienvenida..", "Bienvenue..", "Boas-vindas..", "الترحيب..", "स्वागत..", "স্বাগত..", "خوش آمدید..", "欢迎..")
         Add("Повторить настройку папок", "Repeat folder setup", "Повторити налаштування папок", "Ordnereinrichtung wiederholen", "Ripeti configurazione cartelle", "Repetir configuración de carpetas", "Reprendre la configuration des dossiers", "Repetir configuração de pastas", "إعادة إعداد المجلدات", "फ़ोल्डर सेटअप दोहराएँ", "ফোল্ডার সেটআপ আবার করুন", "فولڈر کی ترتیب دوبارہ کریں", "重新设置文件夹")
         Add("Повторить настройку сервера обмена", "Repeat exchange server setup", "Повторити налаштування сервера обміну", "Einrichtung des Austauschservers wiederholen", "Ripeti configurazione server di scambio", "Repetir configuración del servidor de intercambio", "Reprendre la configuration du serveur d'échange", "Repetir configuração do servidor de troca", "إعادة إعداد خادم التبادل", "एक्सचेंज सर्वर सेटअप दोहराएँ", "এক্সচেঞ্জ সার্ভার সেটআপ আবার করুন", "ایکسچینج سرور کی ترتیب دوبارہ کریں", "重新设置交换服务器")
@@ -27,14 +27,14 @@ Partial Public NotInheritable Class Localization
             "{0}: the local sharing and scheduling service. It shares folders with phones and SFTP clients, runs scheduled operations and connects this PC to an exchange account.", "{0}: локальна служба роздачі та розкладів. Вона роздає папки телефонам і SFTP-клієнтам, виконує операції за розкладом і підключає цей ПК до облікового запису обміну.",
             "{0}: der lokale Freigabe- und Zeitplandienst. Er gibt Ordner für Telefone und SFTP-Clients frei, führt Vorgänge nach Zeitplan aus und verbindet diesen PC mit einem Austauschkonto.", "{0}: il servizio locale di condivisione e pianificazione. Condivide cartelle con telefoni e client SFTP, esegue operazioni pianificate e collega questo PC a un account di scambio.",
             "{0}: el servicio local de uso compartido y programación. Comparte carpetas con teléfonos y clientes SFTP, ejecuta operaciones programadas y conecta este PC a una cuenta de intercambio.", "{0} : le service local de partage et de planification. Il partage des dossiers avec les téléphones et clients SFTP, exécute des opérations planifiées et connecte ce PC à un compte d'échange.",
-            "{0}: o serviço local de partilha e agendamento. Partilha pastas com telefones e clientes SFTP, executa operações agendadas e liga este PC a uma conta de troca.", "{0}: خدمة محلية للمشاركة والجدولة. تشارك المجلدات مع الهواتف وعملاء SFTP، وتنفّذ العمليات المجدولة، وتربط هذا الكمبيوتر بحساب التبادل.",
+            "{0}: o serviço local de compartilhamento e agendamento. Compartilha pastas com telefones e clientes SFTP, executa operações agendadas e conecta este PC a uma conta de troca.", "{0}: خدمة محلية للمشاركة والجدولة. تشارك المجلدات مع الهواتف وعملاء SFTP، وتنفّذ العمليات المجدولة، وتربط هذا الكمبيوتر بحساب التبادل.",
             "{0}: स्थानीय साझाकरण और शेड्यूलिंग सेवा। यह फ़ोन और SFTP क्लाइंट के साथ फ़ोल्डर साझा करती है, शेड्यूल किए गए ऑपरेशन चलाती है और इस पीसी को एक्सचेंज खाते से जोड़ती है।", "{0}: স্থানীয় শেয়ারিং ও সময়সূচি সেবা। এটি ফোন ও SFTP ক্লায়েন্টের সঙ্গে ফোল্ডার শেয়ার করে, সময়সূচিবদ্ধ অপারেশন চালায় এবং এই পিসিকে এক্সচেঞ্জ অ্যাকাউন্টে যুক্ত করে।",
             "{0}: مقامی شیئرنگ اور شیڈولنگ سروس۔ یہ فون اور SFTP کلائنٹس کے ساتھ فولڈر شیئر کرتی ہے، شیڈول شدہ آپریشنز چلاتی ہے اور اس پی سی کو ایکسچینج اکاؤنٹ سے جوڑتی ہے۔", "{0}：本地共享与计划服务。它向手机和 SFTP 客户端共享文件夹，运行计划操作，并将此电脑连接到交换账户。")
         Add("Вы выбираете папки, а телефон получает доступ по QR-коду.",
             "You choose the folders; the phone gets access through a QR code.", "Ви вибираєте папки, а телефон отримує доступ за QR-кодом.",
             "Sie wählen die Ordner; das Telefon erhält über einen QR-Code Zugriff.", "Scegli le cartelle; il telefono accede tramite un codice QR.",
             "Eliges las carpetas; el teléfono accede mediante un código QR.", "Vous choisissez les dossiers ; le téléphone y accède par code QR.",
-            "Escolhe as pastas; o telefone acede por código QR.", "تختار المجلدات ويحصل الهاتف على الوصول عبر رمز QR.",
+            "Você escolhe as pastas; o telefone acessa por código QR.", "تختار المجلدات ويحصل الهاتف على الوصول عبر رمز QR.",
             "आप फ़ोल्डर चुनते हैं; फ़ोन को QR कोड से पहुँच मिलती है।", "আপনি ফোল্ডার বেছে নেন; ফোন QR কোড দিয়ে প্রবেশাধিকার পায়।",
             "آپ فولڈر منتخب کرتے ہیں؛ فون QR کوڈ سے رسائی پاتا ہے۔", "您选择文件夹，手机通过二维码获得访问权限。")
         Add("Включите сервер, выберите первую папку и отсканируйте код. Закрытие окна оставляет программу в трее; двойной щелчок по значку открывает окно.",
@@ -44,7 +44,7 @@ Partial Public NotInheritable Class Localization
             "Attiva il server, scegli la prima cartella e scansiona il codice. Chiudendo la finestra l'app resta nell'area di notifica; fai doppio clic sull'icona per riaprirla.",
             "Activa el servidor, elige la primera carpeta y escanea el código. Al cerrar la ventana, la aplicación queda en la bandeja; haz doble clic en el icono para abrirla.",
             "Activez le serveur, choisissez le premier dossier et scannez le code. Fermer la fenêtre laisse l'application dans la zone de notification ; un double clic sur son icône la rouvre.",
-            "Ative o servidor, escolha a primeira pasta e leia o código. Ao fechar a janela, a aplicação fica na área de notificação; um duplo clique no ícone abre-a.",
+            "Ative o servidor, escolha a primeira pasta e escaneie o código. Ao fechar a janela, o aplicativo fica na área de notificação; dê um clique duplo no ícone para reabri-lo.",
             "فعّل الخادم واختر المجلد الأول وامسح الرمز. إغلاق النافذة يبقي التطبيق في علبة النظام؛ انقر على الأيقونة مرتين لفتحه.",
             "सर्वर चालू करें, पहला फ़ोल्डर चुनें और कोड स्कैन करें। विंडो बंद करने पर ऐप ट्रे में रहता है; आइकन पर दो बार क्लिक करके खोलें।",
             "সার্ভার চালু করুন, প্রথম ফোল্ডার বেছে নিন ও কোড স্ক্যান করুন। উইন্ডো বন্ধ করলে অ্যাপ ট্রেতে থাকে; আইকনে দুবার ক্লিক করে খুলুন।",
@@ -57,7 +57,7 @@ Partial Public NotInheritable Class Localization
             "Apri la finestra dall'area di notifica o dal pulsante del gestore nel visualizzatore. Ripeti: Impostazioni - Generali - Benvenuto..",
             "Abre la ventana desde la bandeja o el botón del gestor en el visor. Repetir: Configuración - General - Bienvenida..",
             "Ouvrez la fenêtre depuis la zone de notification ou le bouton du gestionnaire dans la visionneuse. Reprendre : Réglages - Général - Bienvenue..",
-            "Abra a janela pela área de notificação ou pelo botão do gestor no visualizador. Repetir: Definições - Geral - Boas-vindas..",
+            "Abra a janela pela área de notificação ou pelo botão do gerenciador no visualizador. Repetir: Configurações - Geral - Boas-vindas..",
             "افتح النافذة من علبة النظام أو زر المدير في العارض. أعد الخطوات من الإعدادات - عام - الترحيب..",
             "ट्रे या व्यूअर के मैनेजर बटन से विंडो खोलें। चरण दोहराएँ: सेटिंग - सामान्य - स्वागत..",
             "ট্রে বা ভিউয়ারের ম্যানেজার বোতাম থেকে উইন্ডো খুলুন। ধাপ আবার করুন: সেটিংস - সাধারণ - স্বাগত..",
@@ -70,7 +70,7 @@ Partial Public NotInheritable Class Localization
             "Attiva o disattiva il server: Impostazioni - Hosting. Rifiutare i privilegi lo lascia spento; puoi riprovare.",
             "Activa o desactiva el servidor: Configuración - Alojamiento. Rechazar los permisos lo deja apagado; puedes reintentarlo.",
             "Activer ou désactiver le serveur : Réglages - Hébergement. Refuser les droits le laisse arrêté ; vous pouvez réessayer.",
-            "Ativar ou desativar o servidor: Definições - Alojamento. Recusar os privilégios deixa-o desligado; pode tentar novamente.",
+            "Ativar ou desativar o servidor: Configurações - Hospedagem. Recusar os privilégios o deixa desligado; você pode tentar novamente.",
             "تشغيل الخادم أو إيقافه: الإعدادات - الاستضافة. رفض الصلاحيات يبقيه متوقفاً؛ يمكنك المحاولة مجدداً.",
             "सर्वर चालू या बंद करें: सेटिंग - होस्टिंग। अनुमति अस्वीकार करने पर वह बंद रहता है; फिर कोशिश कर सकते हैं।",
             "সার্ভার চালু বা বন্ধ করুন: সেটিংস - হোস্টিং। অনুমতি প্রত্যাখ্যান করলে এটি বন্ধ থাকে; আবার চেষ্টা করতে পারেন।",
@@ -87,7 +87,7 @@ Partial Public NotInheritable Class Localization
             "Without a chosen folder, a running server has nothing to share yet.", "Без вибраної папки запущений сервер ще нічого не роздає.",
             "Ohne ausgewählten Ordner gibt auch ein laufender Server noch nichts frei.", "Senza una cartella scelta, il server attivo non condivide ancora nulla.",
             "Sin una carpeta elegida, el servidor activo aún no comparte nada.", "Sans dossier choisi, même un serveur actif ne partage encore rien.",
-            "Sem uma pasta escolhida, o servidor ativo ainda não partilha nada.", "بدون مجلد مختار لا يشارك الخادم العامل أي شيء بعد.",
+            "Sem uma pasta escolhida, o servidor ativo ainda não compartilha nada.", "بدون مجلد مختار لا يشارك الخادم العامل أي شيء بعد.",
             "चुने गए फ़ोल्डर के बिना चालू सर्वर अभी कुछ साझा नहीं करता।", "নির্বাচিত ফোল্ডার ছাড়া চালু সার্ভার এখনও কিছু শেয়ার করে না।",
             "منتخب فولڈر کے بغیر چلتا سرور ابھی کچھ شیئر نہیں کرتا۔", "未选择文件夹时，即使服务器正在运行也没有内容可共享。")
         Add("Выберите папку, затем её имя, профиль и доступ. Настройки папки передаются серверу. Для продолжения нужна хотя бы одна папка; «Позже» сохранит уже сделанное.",
@@ -97,7 +97,7 @@ Partial Public NotInheritable Class Localization
             "Scegli cartella, nome, profilo e accesso. Le impostazioni vengono inviate al server. Serve almeno una cartella per continuare; Più tardi conserva quanto confermato.",
             "Elige carpeta, nombre, perfil y acceso. La configuración se envía al servidor. Se necesita al menos una carpeta para continuar; Más tarde conserva lo confirmado.",
             "Choisissez le dossier, son nom, profil et accès. Les réglages sont envoyés au serveur. Un dossier au moins est nécessaire ; Plus tard conserve ce qui est confirmé.",
-            "Escolha pasta, nome, perfil e acesso. As definições são enviadas ao servidor. Precisa de uma pasta para continuar; Mais tarde mantém o que confirmou.",
+            "Escolha pasta, nome, perfil e acesso. As configurações são enviadas ao servidor. Você precisa de uma pasta para continuar; Mais tarde mantém o que você confirmou.",
             "اختر مجلداً ثم اسمه وملفه التعريفي والوصول. تُرسل إعداداته إلى الخادم. يلزم مجلد واحد على الأقل للمتابعة؛ لاحقاً يحتفظ بما أكدته.",
             "फ़ोल्डर, उसका नाम, प्रोफ़ाइल और पहुँच चुनें। सेटिंग सर्वर को भेजी जाती हैं। आगे बढ़ने के लिए एक फ़ोल्डर चाहिए; बाद में चुनने पर पुष्टि किए गए बदलाव रहते हैं।",
             "ফোল্ডার, নাম, প্রোফাইল ও প্রবেশাধিকার বেছে নিন। সেটিংস সার্ভারে পাঠানো হয়। চালিয়ে যেতে অন্তত একটি ফোল্ডার চাই; পরে বেছে নিলে নিশ্চিত পরিবর্তন থাকে।",
@@ -117,7 +117,7 @@ Partial Public NotInheritable Class Localization
             "Porta e modalità di rete: Impostazioni - Rete. Mantieni la scelta se non serve inoltrare la porta sul router.",
             "Puerto y modo de red: Configuración - Red. Conserva la opción si no necesitas redirigir el puerto del router.",
             "Port et mode réseau : Réglages - Réseau. Gardez le choix actuel si la redirection de port n'est pas nécessaire.",
-            "Porta e modo de rede: Definições - Rede. Mantenha a escolha se não precisar de encaminhar a porta no router.",
+            "Porta e modo de rede: Configurações - Rede. Mantenha a escolha se não precisar encaminhar a porta no roteador.",
             "المنفذ ووضع الشبكة: الإعدادات - الشبكة. أبقِ الاختيار إذا لم تحتج تحويل منفذ الموجّه.",
             "पोर्ट और नेटवर्क मोड: सेटिंग - नेटवर्क। राउटर पोर्ट फ़ॉरवर्डिंग न चाहिए तो मौजूदा विकल्प रखें।",
             "পোর্ট ও নেটওয়ার্ক মোড: সেটিংস - নেটওয়ার্ক। রাউটার পোর্ট ফরওয়ার্ডিং না লাগলে বর্তমান পছন্দ রাখুন।",
@@ -127,14 +127,14 @@ Partial Public NotInheritable Class Localization
             "Language, Windows startup, opening the window and LAN-only access.", "Мова, запуск із Windows, відкриття вікна та доступ лише з локальної мережі.",
             "Sprache, Windows-Autostart, Fensteröffnung und Zugriff nur im LAN.", "Lingua, avvio con Windows, apertura finestra e accesso solo LAN.",
             "Idioma, inicio con Windows, apertura de la ventana y acceso solo LAN.", "Langue, démarrage avec Windows, ouverture de fenêtre et accès local uniquement.",
-            "Idioma, arranque com Windows, abertura da janela e acesso apenas LAN.", "اللغة والبدء مع Windows وفتح النافذة والوصول المحلي فقط.",
+            "Idioma, inicialização com o Windows, abertura da janela e acesso apenas à LAN.", "اللغة والبدء مع Windows وفتح النافذة والوصول المحلي فقط.",
             "भाषा, Windows के साथ शुरू करना, विंडो खोलना और केवल LAN पहुँच।", "ভাষা, Windows-এর সঙ্গে চালু হওয়া, উইন্ডো খোলা ও শুধু LAN প্রবেশাধিকার।",
             "زبان، Windows کے ساتھ آغاز، ونڈو کھولنا اور صرف LAN رسائی۔", "语言、随 Windows 启动、打开窗口和仅限局域网访问。")
         Add("Эти параметры определяют, как программа встречает вас и откуда к ней можно подключиться.",
             "These options decide how the app opens and where connections may come from.", "Ці параметри визначають відкриття програми та звідки можна підключатися.",
             "Diese Optionen bestimmen das Öffnen der App und woher Verbindungen kommen dürfen.", "Queste opzioni decidono come si apre l'app e da dove ci si può connettere.",
             "Estas opciones determinan cómo se abre la aplicación y desde dónde se puede conectar.", "Ces options déterminent l'ouverture de l'application et l'origine des connexions.",
-            "Estas opções decidem como a aplicação abre e de onde podem vir ligações.", "تحدد هذه الخيارات كيف يُفتح التطبيق ومن أين يمكن الاتصال به.",
+            "Estas opções decidem como o aplicativo abre e de onde podem vir as conexões.", "تحدد هذه الخيارات كيف يُفتح التطبيق ومن أين يمكن الاتصال به.",
             "ये विकल्प तय करते हैं कि ऐप कैसे खुले और कहाँ से जुड़ा जा सके।", "এই বিকল্প ঠিক করে অ্যাপ কীভাবে খুলবে ও কোথা থেকে সংযোগ আসতে পারবে।",
             "یہ اختیارات طے کرتے ہیں کہ ایپ کیسے کھلے اور کہاں سے اتصال ہو سکے۔", "这些选项决定程序如何打开以及允许从哪里连接。")
         Add("Без автозапуска программу запускаете вы. Без открытия окна обычный запуск показывает значок в трее и подсказку. Режим локальной сети отключает проброс порта и адрес из интернета; выключенный режим допускает оба пути.",
@@ -144,7 +144,7 @@ Partial Public NotInheritable Class Localization
             "Senza avvio automatico avvii tu l'app. Con apertura finestra disattivata compaiono icona e suggerimento. Solo LAN disattiva inoltro porta e indirizzo internet; disattivandolo si consentono entrambi i percorsi.",
             "Sin inicio automático, tú abres la aplicación. Sin apertura de ventana aparecen icono y aviso. Solo LAN desactiva redirección de puerto y dirección de internet; al apagarlo se permiten ambas vías.",
             "Sans démarrage automatique, vous lancez l'application. Sans ouverture de fenêtre, elle montre une icône et une indication. Le mode local désactive redirection de port et adresse internet ; désactivé, il permet les deux voies.",
-            "Sem arranque automático, inicia a aplicação. Sem abertura da janela aparecem ícone e dica. Apenas LAN desativa encaminhamento e endereço internet; desligado permite ambos os caminhos.",
+            "Sem inicialização automática, você mesmo inicia o aplicativo. Sem abertura da janela, aparecem o ícone e uma dica. Apenas LAN desativa o encaminhamento e o endereço de internet; desativado, permite ambos os caminhos.",
             "بدون بدء تلقائي تشغّل التطبيق بنفسك. مع إيقاف فتح النافذة يظهر رمز في علبة النظام وتلميح. الوضع المحلي يعطّل تحويل المنفذ وعنوان الإنترنت؛ إيقافه يسمح بالمسارين.",
             "ऑटोस्टार्ट बंद हो तो ऐप आप शुरू करते हैं। विंडो खोलना बंद हो तो सामान्य शुरुआत पर ट्रे आइकन और संकेत दिखते हैं। केवल LAN पोर्ट फ़ॉरवर्डिंग और इंटरनेट पता बंद करता है; इसे बंद करने पर दोनों रास्ते अनुमत हैं।",
             "অটোস্টার্ট বন্ধ থাকলে অ্যাপ আপনি চালু করেন। উইন্ডো খোলা বন্ধ থাকলে ট্রে আইকন ও ইঙ্গিত দেখা যায়। শুধু LAN পোর্ট ফরওয়ার্ডিং ও ইন্টারনেট ঠিকানা বন্ধ করে; এটি বন্ধ করলে উভয় পথ অনুমোদিত।",
@@ -154,14 +154,14 @@ Partial Public NotInheritable Class Localization
             "Language and startup: Settings - General. Access mode: Settings - Network.", "Мова й запуск: Налаштування - Загальні. Режим доступу: Налаштування - Мережа.",
             "Sprache und Start: Einstellungen - Allgemein. Zugriffsmodus: Einstellungen - Netzwerk.", "Lingua e avvio: Impostazioni - Generali. Accesso: Impostazioni - Rete.",
             "Idioma e inicio: Configuración - General. Acceso: Configuración - Red.", "Langue et démarrage : Réglages - Général. Accès : Réglages - Réseau.",
-            "Idioma e arranque: Definições - Geral. Acesso: Definições - Rede.", "اللغة والبدء: الإعدادات - عام. وضع الوصول: الإعدادات - الشبكة.",
+            "Idioma e inicialização: Configurações - Geral. Acesso: Configurações - Rede.", "اللغة والبدء: الإعدادات - عام. وضع الوصول: الإعدادات - الشبكة.",
             "भाषा और शुरुआत: सेटिंग - सामान्य। पहुँच मोड: सेटिंग - नेटवर्क।", "ভাষা ও চালু হওয়া: সেটিংস - সাধারণ। প্রবেশ মোড: সেটিংস - নেটওয়ার্ক।",
             "زبان اور آغاز: ترتیبات - عمومی۔ رسائی موڈ: ترتیبات - نیٹ ورک۔", "语言和启动：设置 - 常规。访问模式：设置 - 网络。")
         Add("Автозапуск установленной версии из Store управляется в настройках Windows.",
             "Startup of the Store version is managed in Windows settings.", "Автозапуск версії зі Store керується в налаштуваннях Windows.",
             "Den Autostart der Store-Version verwalten Sie in den Windows-Einstellungen.", "L'avvio automatico della versione Store si gestisce nelle impostazioni Windows.",
             "El inicio automático de la versión Store se gestiona en Windows.", "Le démarrage automatique de la version Store se gère dans les paramètres Windows.",
-            "O arranque automático da versão Store é gerido nas definições Windows.", "يُدار بدء نسخة Store من إعدادات Windows.",
+            "A inicialização automática da versão Store é gerenciada nas configurações do Windows.", "يُدار بدء نسخة Store من إعدادات Windows.",
             "Store संस्करण की शुरुआत Windows सेटिंग में प्रबंधित होती है।", "Store সংস্করণের চালু হওয়া Windows সেটিংসে পরিচালিত হয়।",
             "Store ورژن کا آغاز Windows کی ترتیبات سے چلایا جاتا ہے۔", "Store 版本的自动启动由 Windows 设置管理。")
         Add("Состояние сервера и выбранных папок проверяется сейчас.",
@@ -175,7 +175,7 @@ Partial Public NotInheritable Class Localization
             "Green means a running share with folder access, rather than a promise from the wizard.", "Зелений статус означає працюючу роздачу з доступом до папок, а не обіцянку майстра.",
             "Grün bedeutet laufende Freigabe mit Ordnerzugriff, keine Zusage des Assistenten.", "Il verde indica condivisione attiva con accesso alle cartelle, non una promessa della procedura.",
             "El verde indica una distribución activa con acceso a carpetas, no una promesa del asistente.", "Le vert indique un partage actif avec accès aux dossiers, pas une promesse de l'assistant.",
-            "Verde significa partilha ativa com acesso às pastas, não uma promessa do assistente.", "الأخضر يعني مشاركة عاملة مع وصول للمجلدات، وليس وعداً من المعالج.",
+            "Verde significa compartilhamento ativo com acesso às pastas, não uma promessa do assistente.", "الأخضر يعني مشاركة عاملة مع وصول للمجلدات، وليس وعداً من المعالج.",
             "हरा स्थिति संकेत फ़ोल्डर पहुँच वाली चालू शेयरिंग बताता है, विज़ार्ड का वादा नहीं।", "সবুজ মানে ফোল্ডারে প্রবেশসহ চালু শেয়ারিং, উইজার্ডের প্রতিশ্রুতি নয়।",
             "سبز کا مطلب فولڈر تک رسائی کے ساتھ چلتی شیئرنگ ہے، وزرڈ کا وعدہ نہیں۔", "绿色表示共享正在运行且文件夹可访问，并非向导的承诺。")
         Add("Откройте QR-код и отсканируйте его телефоном. Если статус требует внимания, исправьте причину в главном окне или вернитесь к папке.",
@@ -185,7 +185,7 @@ Partial Public NotInheritable Class Localization
             "Apri il codice QR e scansionalo col telefono. Se lo stato richiede attenzione, risolvi nella finestra principale o torna al passo della cartella.",
             "Abre el código QR y escanéalo con el teléfono. Si el estado requiere atención, corrige la causa en la ventana principal o vuelve al paso de carpeta.",
             "Ouvrez le code QR et scannez-le avec le téléphone. Si le statut demande votre attention, corrigez la cause dans la fenêtre principale ou revenez au dossier.",
-            "Abra o código QR e leia-o com o telefone. Se o estado exigir atenção, corrija a causa na janela principal ou volte ao passo da pasta.",
+            "Abra o código QR e escaneie-o com o telefone. Se o estado exigir atenção, corrija a causa na janela principal ou volte à etapa da pasta.",
             "افتح رمز QR وامسحه بالهاتف. إذا احتاجت الحالة اهتماماً، أصلح السبب في النافذة الرئيسية أو عد إلى خطوة المجلد.",
             "QR कोड खोलकर फ़ोन से स्कैन करें। स्थिति पर ध्यान चाहिए तो मुख्य विंडो में कारण सुधारें या फ़ोल्डर चरण पर लौटें।",
             "QR কোড খুলে ফোন দিয়ে স্ক্যান করুন। অবস্থা মনোযোগ চাইলে মূল উইন্ডোতে কারণ ঠিক করুন বা ফোল্ডার ধাপে ফিরুন।",
@@ -198,7 +198,7 @@ Partial Public NotInheritable Class Localization
             "Cartelle: finestra principale. Server: Impostazioni - Hosting. Porta e accesso: Impostazioni - Rete. Lingua e avvio: Impostazioni - Generali. Azioni rapide: menu dell'area di notifica.",
             "Carpetas: ventana principal. Servidor: Configuración - Alojamiento. Puerto y acceso: Configuración - Red. Idioma e inicio: Configuración - General. Acciones rápidas: menú de bandeja.",
             "Dossiers : fenêtre principale. Serveur : Réglages - Hébergement. Port et accès : Réglages - Réseau. Langue et démarrage : Réglages - Général. Actions rapides : menu de notification.",
-            "Pastas: janela principal. Servidor: Definições - Alojamento. Porta e acesso: Definições - Rede. Idioma e arranque: Definições - Geral. Ações rápidas: menu da área de notificação.",
+            "Pastas: janela principal. Servidor: Configurações - Hospedagem. Porta e acesso: Configurações - Rede. Idioma e inicialização: Configurações - Geral. Ações rápidas: menu da área de notificação.",
             "المجلدات: النافذة الرئيسية. الخادم: الإعدادات - الاستضافة. المنفذ والوصول: الإعدادات - الشبكة. اللغة والبدء: الإعدادات - عام. الإجراءات السريعة: قائمة علبة النظام.",
             "फ़ोल्डर: मुख्य विंडो। सर्वर: सेटिंग - होस्टिंग। पोर्ट और पहुँच: सेटिंग - नेटवर्क। भाषा और शुरुआत: सेटिंग - सामान्य। त्वरित क्रियाएँ: ट्रे मेनू।",
             "ফোল্ডার: মূল উইন্ডো। সার্ভার: সেটিংস - হোস্টিং। পোর্ট ও প্রবেশ: সেটিংস - নেটওয়ার্ক। ভাষা ও চালু হওয়া: সেটিংস - সাধারণ। দ্রুত কাজ: ট্রে মেনু।",
@@ -207,6 +207,6 @@ Partial Public NotInheritable Class Localization
         Add("Не удалось сохранить настройки. Попробуйте ещё раз.",
             "Could not save settings. Try again.", "Не вдалося зберегти налаштування. Спробуйте ще раз.", "Einstellungen konnten nicht gespeichert werden. Versuchen Sie es erneut.",
             "Impossibile salvare le impostazioni. Riprova.", "No se pudo guardar la configuración. Inténtalo de nuevo.", "Impossible d'enregistrer les réglages. Réessayez.",
-            "Não foi possível guardar as definições. Tente novamente.", "تعذّر حفظ الإعدادات. حاول مجدداً.", "सेटिंग सहेजी नहीं जा सकी। फिर कोशिश करें।", "সেটিংস সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।", "ترتیبات محفوظ نہیں ہو سکیں۔ دوبارہ کوشش کریں۔", "无法保存设置，请重试。")
+            "Não foi possível salvar as configurações. Tente novamente.", "تعذّر حفظ الإعدادات. حاول مجدداً.", "सेटिंग सहेजी नहीं जा सकी। फिर कोशिश करें।", "সেটিংস সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।", "ترتیبات محفوظ نہیں ہو سکیں۔ دوبارہ کوشش کریں۔", "无法保存设置，请重试。")
     End Sub
 End Class

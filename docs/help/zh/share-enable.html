@@ -28,7 +28,7 @@
     <h2>界面元素</h2>
 <details id="what-it-does"><summary>它做什么</summary><p>与 Android 手机共享文件夹，需要一个在后台运行的小型 SFTP 服务器和一项 Windows 防火墙许可。共享开启期间，所选文件夹可以通过网络读取，开放写入的文件夹也可以被写入。除非勾选了仅限本地网络的选项，程序还会请求路由器开放一个端口（UPnP/NAT-PMP），并通过外部服务检查地址。</p></details>
 <details id="install-button"><summary>安装服务器功能..</summary><p>开始设置并弹出 Windows 管理员权限提示。状态行先显示「正在设置..请确认管理员提示。」，随后显示结果。只有当服务器组件位于应用旁边时该按钮才可用；否则窗口会要求重新安装应用。</p></details>
-<details id="outcomes"><summary>结果</summary><p>「完成。文件夹共享已启用。」；提示被拒绝时显示「共享未启用 - 未授予管理员权限。」（不会有任何改变，可以重试）；或者出现防火墙失败，此时会要求重试，并从托盘图标菜单发送日志。</p></details>
+<details id="outcomes"><summary>结果</summary><p>「完成。文件夹共享已启用。」；提示被拒绝时显示「共享未启用 - 未授予管理员权限。」（不会有任何改变，可以重试）；或者出现防火墙失败，此时会要求重试，并发送日志：管理器设置 - 帮助 - 「导出日志以供分析」。</p></details>
 <details id="admin-rights"><summary>管理员权限及如何收回</summary><p>该链接说明这些权限的用途。要撤销，请在管理器设置中使用「关闭服务器功能..」：共享停止，已连接的手机被断开，防火墙许可被移除。文件夹列表和密码会保留，所有功能都可以重新开启。</p></details>
     <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>

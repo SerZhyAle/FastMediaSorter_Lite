@@ -23,6 +23,9 @@
 - **Never parses a kind out of a name** (section 3): `MediaKindClassifier` classifies by extension only.
 - **Derived files are outside section 5 (0.3).** The image editor's "Save as.." writes a derived picture under a name
   the user types (offered as `<stem> (edited).<ext>`) and leaves a collision to the dialog's overwrite prompt;
+  the text reader's "Save selection as a new file" (specification 277, Ctrl+Shift+S) writes an excerpt of a text file the
+  user has in the same way - offered as `<stem> (excerpt).<ext>` beside the source, in the source's encoding, byte-order
+  mark and dominant line ending, so rule 14 does not bind it (`TextExcerpt`, unit-tested);
   "Replace with video" writes `<stem>.mp4` beside the source with the rule 5 ordinal already
   (`VideoConvertPlan.TargetPathFor`, unit-tested), then deletes the source.
 - **The QR image's place is `FMSCFG`'s question (0.4), and `FMSCFG` is silent on it.** This contract decides nothing

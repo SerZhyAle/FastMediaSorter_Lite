@@ -33,6 +33,25 @@ Public NotInheritable Class ContextHelpUi
     Private Shared ReadOnly Buttons As New ConditionalWeakTable(Of Form, Button)()
     Private Shared ReadOnly Tips As New ConditionalWeakTable(Of Button, ToolTip)()
 
+    ''' <summary>Edge of the corner badge in 96-dpi pixels (CONTEXT-HELP rule 1, hit target 44 x 44). The badge is laid over the
+    ''' form's top-right corner and, under right-to-left reading, its top-left one, so a window that authors content there gives
+    ''' that much room away - in these units, before <c>DialogLayout.ApplyAutoScale</c> scales them.</summary>
+    Public Const BadgeEdge As Integer = 44
+
+    ''' <summary>Padding of a top strip that keeps its text clear of the badge: the room is added on the side the badge takes.</summary>
+    Public Shared Function ClearOfBadge(basePadding As Padding, rtl As Boolean) As Padding
+        Return If(rtl,
+                  New Padding(basePadding.Left + BadgeEdge, basePadding.Top, basePadding.Right, basePadding.Bottom),
+                  New Padding(basePadding.Left, basePadding.Top, basePadding.Right + BadgeEdge, basePadding.Bottom))
+    End Function
+
+    ''' <summary>An empty strip docked to the top of a window whose content runs edge to edge (a list, a toolbar row): the
+    ''' badge sits in it instead of over the first column or the last button. Add it LAST, so it takes the top edge first;
+    ''' the window authors its height in 96-dpi pixels like every other child.</summary>
+    Public Shared Function CornerBand() As Panel
+        Return New Panel With {.Name = "contextHelpBand", .Dock = DockStyle.Top, .Height = BadgeEdge, .TabStop = False}
+    End Function
+
     Public Shared Function AttachedButton(form As Form) As Button
         Dim btn As Button = Nothing
         If form IsNot Nothing AndAlso Buttons.TryGetValue(form, btn) Then

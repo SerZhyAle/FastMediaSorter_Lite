@@ -11,7 +11,7 @@ Partial Public NotInheritable Class Localization
             "Non disponibile: il file server del programma non sa limitare un accesso a una sola cartella.",
             "No disponible: el servidor de archivos del programa no puede limitar un inicio de sesión a una sola carpeta.",
             "Indisponible : le serveur de fichiers du programme ne sait pas limiter une connexion à un seul dossier.",
-            "Indisponível: o servidor de ficheiros do programa não consegue limitar um início de sessão a uma só pasta.",
+            "Indisponível: o servidor de arquivos do programa não consegue limitar um login a uma única pasta.",
             "غير متاح: خادم الملفات في البرنامج لا يستطيع حصر تسجيل الدخول في مجلد واحد.",
             "उपलब्ध नहीं: प्रोग्राम का फ़ाइल सर्वर किसी लॉगिन को एक फ़ोल्डर तक सीमित नहीं कर सकता।",
             "অনুপলব্ধ: প্রোগ্রামের ফাইল সার্ভার একটি লগইনকে একটি ফোল্ডারে সীমাবদ্ধ করতে পারে না।",

@@ -53,7 +53,7 @@ Friend NotInheritable Class Resource_Manager_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(700, 372)
+        Me.ClientSize = New Size(700, 372 + ContextHelpUi.BadgeEdge)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -87,6 +87,9 @@ Friend NotInheritable Class Resource_Manager_Form
         ' first, the shared panel fills the rest.
         Controls.Add(panel)
         Controls.Add(bottom)
+        ' The strip the help badge sits in: the panel's action row runs edge to edge, and the badge lay over its last command.
+        ' Added last, so it takes the top edge before the panel fills the rest (the Settings page embeds the panel without it).
+        Controls.Add(ContextHelpUi.CornerBand())
         bottom.Bind(Me, bindAccept:=False)
 
         RefillForFirstShow()

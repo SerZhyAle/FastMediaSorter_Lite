@@ -18,6 +18,7 @@ Friend NotInheritable Class Phone_Code_Intake_Form
     Inherits Form
     Implements IThemeAware
 
+    Private ReadOnly _explain As Label
     Private ReadOnly _codeBox As TextBox
     Private ReadOnly _status As Label
     Private ReadOnly _relayButton As Button
@@ -39,9 +40,13 @@ Friend NotInheritable Class Phone_Code_Intake_Form
         ' The body ends at 164; the rest is the room of a one-line answer row (OnLoad adds the missing height of a longer one).
         ClientSize = New Size(560, 218)
 
-        Dim explain As New Label With {
-            .Location = New Point(16, 14),
-            .Size = New Size(528, 44),
+        ' The help badge lies over the top corner (the right one, the left under right-to-left reading): the intro starts or ends
+        ' beside it, and OnLoad grows the label by what a longer language needs in the narrower width (FitIntro).
+        Dim introClear As Integer = ContextHelpUi.BadgeEdge + 8
+        Dim introX As Integer = If(RightToLeft = RightToLeft.Yes, introClear, 16)
+        _explain = New Label With {
+            .Location = New Point(introX, 14),
+            .Size = New Size(528 - (introClear - 16), 44),
             .Text = Localization.T("Код добавит папку телефона в список ресурсов Fast Media Sorter на этом компьютере. Вставьте его, откройте файл или снимок, или отсканируйте камерой."),
             .UseMnemonic = False}
 
@@ -90,7 +95,7 @@ Friend NotInheritable Class Phone_Code_Intake_Form
         DpiLayout.AddAnswer(_answerRow, _relayButton, DialogButtonRole.Affirmative, "action.confirm")
         DpiLayout.AddAnswer(_answerRow, cancelButton, DialogButtonRole.Dismissing, "action.cancel")
 
-        Controls.AddRange({explain, _codeBox, _fileButton, _clipboardButton, _cameraButton, _status})
+        Controls.AddRange({_explain, _codeBox, _fileButton, _clipboardButton, _cameraButton, _status})
         ' Last in the collection: the docked row takes its edge first and reads after the field and its doors in the Tab order.
         Controls.Add(_answerRow)
         _answerRow.Bind(Me)
@@ -114,8 +119,22 @@ Friend NotInheritable Class Phone_Code_Intake_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         ' A fixed-size window: make it taller by what a wrapped row needs (a long language, a high scale) and keep it on screen.
+        FitIntro()
         DpiLayout.KeepRoomForRow(Me, _answerRow)
         DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    ''' <summary>The intro stands beside the help badge, so it is narrower than the field under it: a language whose text then needs
+    ''' another line grows the label by that much and moves the field, the doors and the status down with it.</summary>
+    Private Sub FitIntro()
+        PerformAutoScale()
+        Dim extra As Integer = _explain.GetPreferredSize(New Size(_explain.Width, 0)).Height - _explain.Height
+        If extra <= 0 Then Return
+        _explain.Height += extra
+        For Each moved As Control In New Control() {_codeBox, _fileButton, _clipboardButton, _cameraButton, _status}
+            moved.Top += extra
+        Next
+        ClientSize = New Size(ClientSize.Width, ClientSize.Height + extra)
     End Sub
 
     ''' <summary>The viewer probe the tray's own item uses, handed in by the window.</summary>

@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System
 Imports System.Collections.Generic
+Imports System.Globalization
 Imports System.IO
 Imports System.Linq
 Imports System.Threading
@@ -17,7 +18,7 @@ Imports Xunit
 Public Class ConnectionDiagnosisTests
 
     Private Shared ReadOnly Locales13 As String() = {
-        "en", "ru", "uk", "de", "es", "fr", "it", "ja", "ko", "pl", "pt", "tr", "zh"
+        "en", "ru", "uk", "de", "es", "fr", "it", "pt", "ar", "hi", "bn", "ur", "zh"
     }
 
     <Fact>
@@ -232,9 +233,28 @@ Public Class ConnectionDiagnosisTests
         Assert.Equal(ConnectionDiagnosisKind.Local, ConnectionDiagnosisMessages.FormatUnsupported.Kind)
         Assert.False(ConnectionDiagnosisMessages.FormatUnsupported.StepValue.HasValue)
         Assert.Same(ConnectionDiagnosisMessages.FormatUnsupported, ConnectionDiagnosisMessages.OfCode("format-unsupported"))
-        ' a language the table does not carry still reads every OTHER row as English (the step and ui tables fall back as before)
-        Assert.Equal(ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "en"), ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "ar"))
-        Assert.Equal(ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "en"), ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "hi"))
+        ' the four interface languages the table used to lack now carry their own rows, not English
+        Assert.NotEqual(ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "en"), ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "ar"))
+        Assert.NotEqual(ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "en"), ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "hi"))
+        ' a code the program does not ship still reads English
+        Assert.Equal(ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "en"), ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "xx"))
+    End Sub
+
+    <Fact>
+    Public Sub CurrentLocaleFollowsTheProgramLanguageNotTheWindowsCulture()
+        Dim savedCode As String = Localization.CurrentCode
+        Dim savedCulture As CultureInfo = CultureInfo.CurrentUICulture
+        Try
+            CultureInfo.CurrentUICulture = New CultureInfo("ru-RU")
+            Localization.CurrentCode = "de"
+            Assert.Equal("de", ConnectionDiagnosisLocalization.CurrentLocale())
+            Localization.CurrentCode = "ar"
+            Assert.Equal("ar", ConnectionDiagnosisLocalization.CurrentLocale())
+            Assert.Equal(ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "ar"), ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep))
+        Finally
+            Localization.CurrentCode = savedCode
+            CultureInfo.CurrentUICulture = savedCulture
+        End Try
     End Sub
 
     <Fact>

@@ -214,7 +214,11 @@ Public Class ImportedSettingsLimitsTests
             New ChoiceSpec("EpubSearchScope", "whole", "whole", "chapter"),
             New ChoiceSpec("HtmlPresentation", "original", "original", "reader"),
             New ChoiceSpec("HtmlTheme", "system", "system", "light", "dark", "sepia", "black"),
-            New ChoiceSpec("HtmlExternalLinks", "ask", "ask", "block")
+            New ChoiceSpec("HtmlExternalLinks", "ask", "ask", "block"),
+            New ChoiceSpec("TextTheme", "system", "system", "light", "dark", "sepia", "black"),
+            New ChoiceSpec("TextMarkdownPresentation", "source", "source", "rendered"),
+            New ChoiceSpec("TextTranslationScope", "selection_or_buffer", "selection_or_buffer", "file"),
+            New ChoiceSpec("DocumentProcessingMode", "browser", "browser", "convert", "local")
         }
     End Function
 
@@ -299,7 +303,12 @@ Public Class ImportedSettingsLimitsTests
             New NumericSpec("HtmlMargin", 0, 96),
             New NumericSpec("HtmlZoom", 25, 500),
             New NumericSpec("HtmlHistoryLimit", 0, 2000),
-            New NumericSpec("HtmlSnapshotCacheMb", 32, 256)
+            New NumericSpec("HtmlSnapshotCacheMb", 32, 256),
+            New NumericSpec("TextTabWidth", 1, 16),
+            New NumericSpec("TextReadWindowMb", 1, 16),
+            New NumericSpec("TextEditingMaxMb", 1, 100),
+            New NumericSpec("TextRecoveryIntervalSeconds", 10, 300),
+            New NumericSpec("TextBackupVersions", 1, 10)
         }
     End Function
 
@@ -477,7 +486,7 @@ Public Class ImportedSettingsLimitsTests
 
     <Fact>
     Public Sub The_numeric_inventory_covers_every_integer_property_including_the_two_specials()
-        Dim listed As New HashSet(Of String)(NumericSpecs().Select(Function(spec) spec.Name)) From {"InterfaceScalePercent", "InterfaceScaleRelativePercent", "PanelThumbnailSize", "EpubColumnWidth", "HtmlColumnWidth"}
+        Dim listed As New HashSet(Of String)(NumericSpecs().Select(Function(spec) spec.Name)) From {"InterfaceScalePercent", "InterfaceScaleRelativePercent", "PanelThumbnailSize", "EpubColumnWidth", "HtmlColumnWidth", "TextEncodingFallbackCodePage"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Integer)).
                                              Select(Function(prop) prop.Name))
@@ -491,7 +500,10 @@ Public Class ImportedSettingsLimitsTests
         Dim freeNames As New HashSet(Of String) From {
             "IncludedExtensions", "DocumentExtensions", "OtherExtensions", "PreferredAudioLanguage", "PreferredSubtitleLanguage",
             "CustomHotkeysJson", "FolderZoomHistory", "VideoPositionHistory", "DocumentPageHistory", "FileManagerPlaceSorts",
-            "DocumentBookmarks", "DocumentAppearanceHistory", "DocumentTtsVoice", "EpubFontFamily", "HtmlFontFamily"}
+            "DocumentBookmarks", "DocumentAppearanceHistory", "DocumentTtsVoice", "EpubFontFamily", "HtmlFontFamily",
+            "TextFontFamilyProportional", "TextFontFamilyMonospace", "DocumentConverterLocation",
+            "ChromeRow1Place", "ChromeRow2Place", "ChromeStatusPlace", "ChromeWindowControlsPlace", "ChromeTransportPlace",
+            "RecipientsOverlayPlace"}   ' L0281 T-6: the recipients table's place on the shared model (a free-form corner:dx,dy text like the panels')
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(String)).
                                              Select(Function(prop) prop.Name))
@@ -526,12 +538,15 @@ Public Class ImportedSettingsLimitsTests
             "RevealStatusOnFileOperation",
             "FileManagerShowHiddenFiles", "FileManagerShowLocalPlaces", "FileManagerShowResourcePlaces", "FileManagerShowDevicePlaces", "FileManagerRememberSort",
             "CreateMissingDestination", "DeleteToRecycleBin", "IncludeAudioInNavigation",
-            "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
+            "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned", "ChromeDocumentPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
             "SecureShowTrueName", "ShowVideoControlsWhenPaused", "StopSlideshowOnManualNavigation",
             "VideoAutoplay", "RecipientsOverlayHasCustomPosition", "FullPdfReader", "FullEpubReader", "RememberDocumentPosition", "RememberDocumentAppearance",
             "DocumentBoundaryNavigation", "DocumentTtsEnabled", "PdfFirstPageAlone", "PdfThumbnailPanel", "PdfOutlinePanel", "PdfSearchCase", "EpubUseBookStyles", "EpubUseEmbeddedFonts",
-            "HtmlViewerEnabled", "HtmlOnlinePagesEnabled", "HtmlWrapWideContent", "HtmlRememberPosition", "HtmlRememberAppearance", "HtmlFindCase", "HtmlFindWholeWord"}
+            "HtmlViewerEnabled", "HtmlOnlinePagesEnabled", "HtmlWrapWideContent", "HtmlRememberPosition", "HtmlRememberAppearance", "HtmlFindCase", "HtmlFindWholeWord",
+            "FullTextReaderEnabled", "TextEditingEnabled", "TextTranslationEnabled", "TextWrap", "TextLineNumbers", "TextWhitespace", "TextStatusBar",
+            "TextRememberEncoding", "TextRememberPosition", "TextSearchCase", "TextSearchWholeWord", "TextRegexSearch", "TextSyntaxHighlighting",
+            "TextRecoveryAutosave", "TextBackupOnSave", "DocumentConverterEnabled"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Boolean)).
                                              Select(Function(prop) prop.Name))
@@ -551,11 +566,14 @@ Public Class ImportedSettingsLimitsTests
             .TextPreviewMaxKb = 1024,
             .InterfaceScalePercent = 120,
             .InterfaceScaleRelativePercent = 110,
-            .NewImageScaleMode = "perFolder", .ReduceMotion = True, .ModernChrome = False, .ChromePinned = True, .ChromeRow1Pinned = True, .ChromeRow2Pinned = True, .ChromeStatusPinned = True, .ChromeWindowControlsPinned = False, .RecipientsOverlayPinned = True, .ChromeSize = "adaptive", .ChromeOpacityPercent = 75, .ChromeCornerRadius = 10,
+            .NewImageScaleMode = "perFolder", .ReduceMotion = True, .ModernChrome = False, .ChromePinned = True, .ChromeRow1Pinned = True, .ChromeRow2Pinned = True, .ChromeStatusPinned = True, .ChromeWindowControlsPinned = False, .ChromeDocumentPinned = True, .RecipientsOverlayPinned = True, .ChromeSize = "adaptive", .ChromeOpacityPercent = 75, .ChromeCornerRadius = 10,
+            .ChromeRow1Place = "BR:24,36", .ChromeRow2Place = "TL:0,0", .ChromeStatusPlace = "TR:7,300",
+            .ChromeWindowControlsPlace = "BL:24,36", .ChromeTransportPlace = "BR:1,2",
             .RecipientsOverlayPosition = "bottomRight", .RecipientsOverlayWidth = 400,
             .RecipientsOverlayFontSize = 14, .RecipientsOverlayOpacity = 77,
             .RecipientsOverlayVisibleRows = 8, .SlideshowRandomOrder = "shuffleCycle",
             .RecipientsOverlayHasCustomPosition = True, .RecipientsOverlayCustomX = -137, .RecipientsOverlayCustomY = 245,
+            .RecipientsOverlayPlace = "BR:5,9",
             .StopSlideshowOnManualNavigation = True, .SlideshowUiMode = "toolbarAndStatus",
             .VideoAutoplay = False, .IncludeVideoInNavigation = False, .RememberVideoPosition = False,
             .VideoControlsHideDelaySec = 9, .ShowVideoControlsWhenPaused = False,
@@ -594,7 +612,16 @@ Public Class ImportedSettingsLimitsTests
             .HtmlFontFamily = "serif", .HtmlFontSize = 22, .HtmlLineHeight = 2, .HtmlColumnWidth = 100, .HtmlMargin = 24,
             .HtmlZoom = 150, .HtmlWrapWideContent = True, .HtmlRememberPosition = False, .HtmlRememberAppearance = False,
             .HtmlFindCase = True, .HtmlFindWholeWord = True, .HtmlExternalLinks = "block", .HtmlHistoryLimit = 1000,
-            .HtmlSnapshotCacheMb = 64}
+            .HtmlSnapshotCacheMb = 64,
+            .FullTextReaderEnabled = True, .TextEditingEnabled = True, .TextTranslationEnabled = True,
+            .TextFontFamilyProportional = "Georgia", .TextFontFamilyMonospace = "Courier New", .TextFontSize = 14.5F,
+            .TextTheme = "sepia", .TextWrap = False, .TextLineNumbers = True, .TextTabWidth = 8, .TextLineSpacing = 1.5F,
+            .TextWhitespace = True, .TextStatusBar = False, .TextEncodingFallbackCodePage = 1251, .TextRememberEncoding = False,
+            .TextRememberPosition = False, .TextSearchCase = True, .TextSearchWholeWord = True, .TextRegexSearch = True,
+            .TextReadWindowMb = 8, .TextEditingMaxMb = 32, .TextSyntaxHighlighting = False, .TextMarkdownPresentation = "rendered",
+            .TextRecoveryAutosave = False, .TextRecoveryIntervalSeconds = 60, .TextBackupOnSave = False, .TextBackupVersions = 3,
+            .TextTranslationScope = "file",
+            .DocumentConverterEnabled = True, .DocumentProcessingMode = "local", .DocumentConverterLocation = "C:\Tools\doc-html-translate.exe"}
         p.DocumentBookmarks = System.Text.Json.JsonSerializer.Serialize(New DocumentBookmark() {
             New DocumentBookmark With {.Identity = New DocumentIdentity With {.Path = "book.pdf", .Length = 1}, .Position = New DocumentReadingPosition With {.PageNumber = 4}, .Label = "chapter"}})
         p.DocumentAppearanceHistory = System.Text.Json.JsonSerializer.Serialize(New ModernViewerPreferences.DocumentAppearanceEntry() {

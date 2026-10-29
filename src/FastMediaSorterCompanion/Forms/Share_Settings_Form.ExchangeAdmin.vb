@@ -481,7 +481,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pnlXInvitations.Controls.Add(_lvXInvitations)
 
         _btnXCreateInvitation = XButton(Localization.T("Создать приглашение.."), AddressOf OnXCreateInvitation, IconMap.GetMeaning("_btnXCreateInvitation").GlyphId)
-        _btnXWithdrawInvitation = XButton(Localization.T("Отозвать"), AddressOf OnXWithdrawInvitation, "action.remove")
+        _btnXWithdrawInvitation = XButton(Localization.T("Отозвать приглашение"), AddressOf OnXWithdrawInvitation, "action.remove")
         _btnXWithdrawInvitation.Visible = False
         _rowXInvButtons = AdminFlow()
         _rowXInvButtons.Controls.Add(_btnXCreateInvitation)
@@ -1167,9 +1167,10 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     ''' <summary>The generated password, once, in its own dialog; the reference is dropped the moment the dialog is up. True when the person
     ''' chose "set my own password" in it instead. A kept password is not asked about on close: it can be shown again from the account row.</summary>
-    Private Function ShowPasswordOnce(shownOnce As String, kept As Boolean, login As String) As Boolean
+    Private Function ShowPasswordOnce(shownOnce As String, kept As Boolean, login As String,
+                                      Optional subject As ExchangePasswordSubject = ExchangePasswordSubject.Account) As Boolean
         Dim ownChosen As Boolean
-        Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, shownOnce, login, kept)
+        Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, shownOnce, login, kept, subject)
             shownOnce = Nothing
             dlg.ShowDialog(Me)
             ownChosen = dlg.ChoseOwnPassword
@@ -1627,10 +1628,16 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Sub OnXSetSharedInvitation()
         If _exBusy Then Return
         Dim curKind As String = If(_exAccView IsNot Nothing AndAlso _exAccView.SharedInvitation IsNot Nothing, _exAccView.SharedInvitation.Kind, "member")
+        Await SetSharedInvitationAsync(curKind, False)
+    End Sub
+
+    ''' <summary>One pass of setting the shared invitation password. "Set my own password" in the generated dialog comes back here with
+    ''' <paramref name="preferTyped"/> and the kind just chosen, so the same dialog opens on TYPED and the typed one replaces the generated.</summary>
+    Private Async Function SetSharedInvitationAsync(curKind As String, preferTyped As Boolean) As Task
         Dim pw As String
         Dim kind As String
         Dim generated As Boolean
-        Using dlg As New Exchange_Shared_Invitation_Form(curKind)
+        Using dlg As New Exchange_Shared_Invitation_Form(curKind, preferTyped)
             If dlg.ShowDialog(Me) <> DialogResult.OK Then
                 If _exAccView IsNot Nothing AndAlso _exAccView.SharedInvitation IsNot Nothing Then
                     _loadingXSharedInv = True
@@ -1644,6 +1651,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             generated = dlg.Generated
             dlg.WipePassword()
         End Using
+        Dim askOwn As Boolean = False
         SetXBusy(True)
         Try
             Dim reply As ExchangeAdminReply = Await ExchangeAdmin.SetSharedInvitationAsync(pw, kind, True, CancellationToken.None)
@@ -1653,7 +1661,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 If generated Then
                     Dim shownOnce As String = pw
                     pw = Nothing
-                    ShowPasswordOnce(shownOnce, False, Localization.T("общий пароль"))
+                    askOwn = ShowPasswordOnce(shownOnce, False, Localization.T("общий пароль"), ExchangePasswordSubject.SharedInvitation)
                 End If
             Else
                 ShowXResult(ExchangeAdminText.Failure(reply.Code), False)
@@ -1665,7 +1673,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
-    End Sub
+        ' "set my own password" in the generated dialog: the same dialog again, on TYPED, with the kind just chosen
+        If askOwn AndAlso Not (IsDisposed OrElse Disposing) Then Await SetSharedInvitationAsync(kind, True)
+    End Function
 
     Private Async Sub OnXJoinLocalClicked()
         Dim preferredLogin As String = SelectedXAccountLogin()

@@ -24,8 +24,8 @@ Partial Public NotInheritable Class Localization
         Add("Обложки, управление и поведение аудиодорожек.", "Cover art, controls and audio-track behaviour.", "Обкладинки, керування та поведінка аудіодоріжок.", "Cover, Steuerung und Verhalten von Audiotiteln.", "Copertine, controlli e comportamento delle tracce audio.", "Carátulas, controles y comportamiento de pistas de audio.", "Pochettes, commandes et comportement des pistes audio.", "Capas, controles e comportamento de faixas de áudio.", "الغلاف وعناصر التحكم وسلوك المسارات الصوتية.", "कवर, नियंत्रण और ऑडियो ट्रैक का व्यवहार।", "কভার, নিয়ন্ত্রণ এবং অডিও ট্র্যাকের আচরণ।", "کور، کنٹرول اور آڈیو ٹریک کا رویہ۔", "封面、控件和音频曲目行为。")
 
         Add("Таймер сна остановил воспроизведение", "Sleep timer stopped playback", "Таймер сну зупинив відтворення", "Sleep-Timer hat die Wiedergabe beendet", "Il timer di spegnimento ha fermato la riproduzione", "El temporizador de apagado detuvo la reproducción", "La minuterie de sommeil a arrêté la lecture", "O temporizador de sono parou a reprodução", "أوقف مؤقت النوم التشغيل", "स्लीप टाइमर ने प्लेबैक रोक दिया", "স্লিপ টাইমার প্লেব্যাক বন্ধ করেছে", "سلیپ ٹائمر نے پلے بیک روک دیا", "睡眠定时器已停止播放")
-        Add("Учитывать видео при пролистывании файлов", "Include videos when browsing files", "Ураховувати відео під час перегляду файлів", "Videos beim Durchsuchen von Dateien einbeziehen", "Includi i video durante la navigazione dei file", "Incluir vídeos al explorar archivos", "Inclure les vidéos lors de la navigation dans les fichiers", "Incluir vídeos ao navegar pelos ficheiros", "تضمين الفيديو عند استعراض الملفات", "फ़ाइलों को ब्राउज़ करते समय वीडियो शामिल करें", "ফাইল ব্রাউজ করার সময় ভিডিও অন্তর্ভুক্ত করুন", "فائلوں کو براؤز کرتے وقت ویڈیو شامل کریں", "浏览文件时包含视频")
-        Add("Учитывать аудио при пролистывании файлов", "Include audio when browsing files", "Ураховувати аудіо під час перегляду файлів", "Audio beim Durchsuchen von Dateien einbeziehen", "Includi l'audio durante la navigazione dei file", "Incluir audio al explorar archivos", "Inclure l'audio lors de la navigation dans les fichiers", "Incluir áudio ao navegar pelos ficheiros", "تضمين الصوت عند استعراض الملفات", "फ़ाइलों को ब्राउज़ करते समय ऑडियो शामिल करें", "ফাইল ব্রাউজ করার সময় অডিও অন্তর্ভুক্ত করুন", "فائلوں کو براؤز کرتے وقت آڈیو شامل کریں", "浏览文件时包含音频")
+        Add("Учитывать видео при пролистывании файлов", "Include videos when browsing files", "Ураховувати відео під час перегляду файлів", "Videos beim Durchsuchen von Dateien einbeziehen", "Includi i video durante la navigazione dei file", "Incluir vídeos al explorar archivos", "Inclure les vidéos lors de la navigation dans les fichiers", "Incluir vídeos ao navegar pelos arquivos", "تضمين الفيديو عند استعراض الملفات", "फ़ाइलों को ब्राउज़ करते समय वीडियो शामिल करें", "ফাইল ব্রাউজ করার সময় ভিডিও অন্তর্ভুক্ত করুন", "فائلوں کو براؤز کرتے وقت ویڈیو شامل کریں", "浏览文件时包含视频")
+        Add("Учитывать аудио при пролистывании файлов", "Include audio when browsing files", "Ураховувати аудіо під час перегляду файлів", "Audio beim Durchsuchen von Dateien einbeziehen", "Includi l'audio durante la navigazione dei file", "Incluir audio al explorar archivos", "Inclure l'audio lors de la navigation dans les fichiers", "Incluir áudio ao navegar pelos arquivos", "تضمين الصوت عند استعراض الملفات", "फ़ाइलों को ब्राउज़ करते समय ऑडियो शामिल करें", "ফাইল ব্রাউজ করার সময় অডিও অন্তর্ভুক্ত করুন", "فائلوں کو براؤز کرتے وقت آڈیو شامل کریں", "浏览文件时包含音频")
         Add("Выключенные типы не показываются в текущей папке и не входят в счётчик.", "Disabled types are hidden from the current folder and its count.", "Вимкнені типи не показуються в поточній папці й не входять до лічильника.", "Deaktivierte Typen werden im aktuellen Ordner und dessen Zähler nicht angezeigt.", "I tipi disattivati non sono mostrati nella cartella corrente né nel conteggio.", "Los tipos desactivados no aparecen en la carpeta actual ni en el contador.", "Les types désactivés ne sont pas affichés dans le dossier actuel ni dans le compteur.", "Os tipos desativados não aparecem na pasta atual nem no contador.", "لا تظهر الأنواع المعطلة في المجلد الحالي ولا تدخل في العداد.", "बंद किए गए प्रकार वर्तमान फ़ोल्डर और गिनती में नहीं दिखते।", "নিষ্ক্রিয় ধরনগুলি বর্তমান ফোল্ডার বা গণনায় দেখানো হয় না।", "غیر فعال اقسام موجودہ فولڈر یا شمار میں نہیں دکھائی جاتیں۔", "已禁用的类型不会显示在当前文件夹或计数中。")
         Add("Поведение аудио", "Audio behaviour", "Поведінка аудіо", "Audioverhalten", "Comportamento audio", "Comportamiento de audio", "Comportement audio", "Comportamento de áudio", "سلوك الصوت", "ऑडियो व्यवहार", "অডিও আচরণ", "آڈیو رویہ", "音频行为")
         Add("После окончания аудио", "After audio ends", "Після завершення аудіо", "Nach Audioende", "Dopo la fine dell'audio", "Después de terminar el audio", "Après la fin de l'audio", "Depois do fim do áudio", "بعد انتهاء الصوت", "ऑडियो खत्म होने पर", "অডিও শেষ হলে", "آڈیو ختم ہونے کے بعد", "音频结束后")
@@ -152,7 +152,7 @@ Partial Public NotInheritable Class Localization
             "Per elaborare i video serve FFmpeg (circa {0} MB). Verrà scaricato dal sito del progetto e salvato localmente. FFmpeg è software libero con licenza GPL. Scaricarlo ora?",
             "Para trabajar con vídeo hace falta FFmpeg (unos {0} MB). Se descargará del sitio del proyecto y se guardará localmente. FFmpeg es software libre con licencia GPL. ¿Descargarlo ahora?",
             "Le traitement vidéo nécessite FFmpeg (environ {0} Mo). Il sera téléchargé depuis le site du projet et enregistré localement. FFmpeg est un logiciel libre sous licence GPL. Le télécharger maintenant ?",
-            "Para trabalhar com vídeo é preciso o FFmpeg (cerca de {0} MB). Será baixado do site do projeto e guardado localmente. O FFmpeg é software livre sob a licença GPL. Baixar agora?",
+            "Para trabalhar com vídeo é preciso o FFmpeg (cerca de {0} MB). Será baixado do site do projeto e salvo localmente. O FFmpeg é software livre sob a licença GPL. Baixar agora?",
             "تتطلب معالجة الفيديو FFmpeg (نحو {0} ميغابايت). سيُنزَّل من موقع المشروع ويُحفظ محليًا. FFmpeg برنامج حر برخصة GPL. هل تريد تنزيله الآن؟",
             "वीडियो पर काम करने के लिए FFmpeg चाहिए (लगभग {0} MB)। इसे परियोजना की साइट से डाउनलोड करके स्थानीय रूप से सहेजा जाएगा। FFmpeg GPL लाइसेंस वाला मुक्त सॉफ़्टवेयर है। अभी डाउनलोड करें?",
             "ভিডিও নিয়ে কাজ করতে FFmpeg দরকার (প্রায় {0} MB)। এটি প্রকল্পের সাইট থেকে নামিয়ে স্থানীয়ভাবে সংরক্ষণ করা হবে। FFmpeg হলো GPL লাইসেন্সের মুক্ত সফটওয়্যার। এখনই নামাবেন?",
@@ -165,7 +165,7 @@ Partial Public NotInheritable Class Localization
             "Per creare un video serve FFmpeg (circa {0} MB). Verrà scaricato dal sito del progetto e salvato nella cartella del programma. FFmpeg è software libero con licenza GPL. Scaricarlo ora?",
             "Para crear un vídeo hace falta FFmpeg (unos {0} MB). Se descargará del sitio del proyecto y se guardará en la carpeta del programa. FFmpeg es software libre con licencia GPL. ¿Descargarlo ahora?",
             "La création d'une vidéo nécessite FFmpeg (environ {0} Mo). Il sera téléchargé depuis le site du projet et conservé dans le dossier du programme. FFmpeg est un logiciel libre sous licence GPL. Le télécharger maintenant ?",
-            "Para criar um vídeo é preciso o FFmpeg (cerca de {0} MB). Ele será baixado do site do projeto e guardado na pasta do programa. O FFmpeg é software livre sob a licença GPL. Baixar agora?",
+            "Para criar um vídeo é preciso o FFmpeg (cerca de {0} MB). Ele será baixado do site do projeto e salvo na pasta do programa. O FFmpeg é software livre sob a licença GPL. Baixar agora?",
             "يحتاج إنشاء الفيديو إلى FFmpeg (نحو {0} ميغابايت). سيُنزَّل من موقع المشروع ويُحفظ في مجلد البرنامج. FFmpeg برنامج حر برخصة GPL. هل تريد تنزيله الآن؟",
             "वीडियो बनाने के लिए FFmpeg चाहिए (लगभग {0} MB)। इसे परियोजना की साइट से डाउनलोड करके प्रोग्राम के फ़ोल्डर में रखा जाएगा। FFmpeg GPL लाइसेंस वाला मुक्त सॉफ़्टवेयर है। अभी डाउनलोड करें?",
             "ভিডিও তৈরি করতে FFmpeg দরকার (প্রায় {0} MB)। এটি প্রকল্পের সাইট থেকে নামিয়ে প্রোগ্রামের ফোল্ডারে রাখা হবে। FFmpeg হলো GPL লাইসেন্সের মুক্ত সফটওয়্যার। এখনই নামাবেন?",
@@ -251,7 +251,7 @@ Partial Public NotInheritable Class Localization
         Add("Скорость недоступна для этого файла",
             "This file does not support speed changes", "Швидкість недоступна для цього файлу", "Für diese Datei ist keine Geschwindigkeitsänderung möglich",
             "Velocità non disponibile per questo file", "La velocidad no está disponible para este archivo", "Vitesse non disponible pour ce fichier",
-            "Velocidade indisponível para este ficheiro", "تغيير السرعة غير مدعوم لهذا الملف", "इस फ़ाइल के लिए गति उपलब्ध नहीं है",
+            "Velocidade indisponível para este arquivo", "تغيير السرعة غير مدعوم لهذا الملف", "इस फ़ाइल के लिए गति उपलब्ध नहीं है",
             "এই ফাইলের জন্য গতি পরিবর্তন সম্ভব নয়", "اس فائل کے لیے رفتار دستیاب نہیں", "此文件不支持调整速度")
         Add("Обычная",
             "Normal", "Звичайна", "Normal",
@@ -286,22 +286,22 @@ Partial Public NotInheritable Class Localization
         Add("Метка B слишком близко к A (нужна минимум 1 с)",
             "Mark B is too close to A (1 s minimum)", "Мітка B надто близько до A (потрібна мінімум 1 с)", "Marke B ist zu nahe an A (mindestens 1 s)",
             "Il punto B è troppo vicino ad A (minimo 1 s)", "La marca B está demasiado cerca de A (mínimo 1 s)", "La marque B est trop proche de A (1 s minimum)",
-            "A marca B está demasiado perto de A (mínimo 1 s)", "العلامة B قريبة جدًا من A (يلزم ثانية واحدة على الأقل)", "मार्क B, A के बहुत करीब है (न्यूनतम 1 से)",
+            "A marca B está muito perto de A (mínimo 1 s)", "العلامة B قريبة جدًا من A (يلزم ثانية واحدة على الأقل)", "मार्क B, A के बहुत करीब है (न्यूनतम 1 से)",
             "মার্ক B, A-এর খুব কাছে (কমপক্ষে 1 সেকেন্ড দরকার)", "مارک B، A کے بہت قریب ہے (کم از کم 1 سیکنڈ درکار)", "标记 B 距 A 过近（至少需要 1 秒）")
         Add("Метка B слишком близко к концу",
             "Mark B is too close to the end", "Мітка B надто близько до кінця", "Marke B ist zu nah am Ende",
             "Il punto B è troppo vicino alla fine", "La marca B está demasiado cerca del final", "La marque B est trop proche de la fin",
-            "A marca B está demasiado perto do fim", "العلامة B قريبة جدًا من النهاية", "मार्क B अंत से बहुत करीब है",
+            "A marca B está muito perto do fim", "العلامة B قريبة جدًا من النهاية", "मार्क B अंत से बहुत करीब है",
             "মার্ক B শেষের খুব কাছে", "مارک B اختتام کے بہت قریب ہے", "标记 B 距结尾过近")
         Add("Повтор A-B требует файл с известной длиной",
             "A-B repeat needs a file with a known length", "Повтор A-B потребує файл з відомою тривалістю", "A-B-Wiederholung benötigt eine Datei mit bekannter Länge",
             "La ripetizione A-B richiede un file di durata nota", "La repetición A-B necesita un archivo de duración conocida", "La répétition A-B exige un fichier de durée connue",
-            "A repetição A-B precisa de um ficheiro com duração conhecida", "يتطلب تكرار A-B ملفًا بمدة معروفة", "A-B रिपीट को ज्ञात अवधि वाली फ़ाइल चाहिए",
+            "A repetição A-B precisa de um arquivo com duração conhecida", "يتطلب تكرار A-B ملفًا بمدة معروفة", "A-B रिपीट को ज्ञात अवधि वाली फ़ाइल चाहिए",
             "A-B রিপিটের জন্য পরিচিত দৈর্ঘ্যের ফাইল দরকার", "A-B ریپیٹ کو معلوم دورانیے کی فائل درکار ہے", "A-B 重复需要时长已知的文件")
         Add("На паузе. Следующий кадр - ещё раз эту клавишу",
             "Paused. Press again for the next frame", "На паузі. Наступний кадр - ще раз цю клавішу", "Angehalten. Für das nächste Bild dieselbe Taste erneut drücken",
             "In pausa. Premere di nuovo per il fotogramma successivo", "En pausa. Pulse de nuevo para el fotograma siguiente", "En pause. Appuyez à nouveau pour l'image suivante",
-            "Em pausa. Prima outra vez para o fotograma seguinte", "متوقف مؤقتًا. اضغط المفتاح نفسه مرة أخرى للإطار التالي", "रुका हुआ। अगले फ़्रेम के लिए फिर से यही कुंजी दबाएँ",
+            "Pausado. Pressione novamente para o próximo quadro", "متوقف مؤقتًا. اضغط المفتاح نفسه مرة أخرى للإطار التالي", "रुका हुआ। अगले फ़्रेम के लिए फिर से यही कुंजी दबाएँ",
             "বিরত। পরের ফ্রেমের জন্য আবার একই কী চাপুন", "روکا ہوا۔ اگلے فریم کے لیے دوبارہ یہی کلید دبائیں", "已暂停。再按一次该键查看下一帧")
         Add("Следующий кадр",
             "Next frame", "Наступний кадр", "Nächstes Bild",
@@ -430,12 +430,12 @@ Partial Public NotInheritable Class Localization
         Add("Меню файла - ещё одна клавиша (Menu и Shift+F10 работают всегда)",
             "File menu - an extra key (Menu and Shift+F10 always work)", "Меню файлу - ще одна клавіша (Menu і Shift+F10 працюють завжди)", "Dateimenü - zusätzliche Taste (Menütaste und Shift+F10 funktionieren immer)",
             "Menu del file - un tasto aggiuntivo (Menu e Shift+F10 funzionano sempre)", "Menú del archivo - una tecla adicional (Menú y Shift+F10 funcionan siempre)", "Menu du fichier - une touche supplémentaire (Menu et Shift+F10 fonctionnent toujours)",
-            "Menu do ficheiro - uma tecla adicional (Menu e Shift+F10 funcionam sempre)", "قائمة الملف - مفتاح إضافي (مفتاح القائمة وShift+F10 يعملان دائمًا)", "फ़ाइल मेनू - एक अतिरिक्त कुंजी (Menu और Shift+F10 हमेशा काम करते हैं)",
+            "Menu do arquivo - uma tecla adicional (Menu e Shift+F10 funcionam sempre)", "قائمة الملف - مفتاح إضافي (مفتاح القائمة وShift+F10 يعملان دائمًا)", "फ़ाइल मेनू - एक अतिरिक्त कुंजी (Menu और Shift+F10 हमेशा काम करते हैं)",
             "ফাইল মেনু - একটি অতিরিক্ত কী (Menu এবং Shift+F10 সবসময় কাজ করে)", "فائل مینو - ایک اضافی کلید (Menu اور Shift+F10 ہمیشہ کام کرتے ہیں)", "文件菜单 - 额外的按键（Menu 键和 Shift+F10 始终有效）")
         Add("Режим клавиатуры панелей: стрелки и Tab - выбор, Enter - нажать, Esc - выйти",
             "Panel keyboard mode: arrows and Tab choose, Enter presses, Esc leaves", "Режим клавіатури панелей: стрілки та Tab - вибір, Enter - натиснути, Esc - вийти", "Tastaturmodus der Leisten: Pfeile und Tab wählen, Enter drückt, Esc beendet",
             "Modalità tastiera dei pannelli: frecce e Tab scelgono, Invio preme, Esc esce", "Modo de teclado de los paneles: flechas y Tab eligen, Intro pulsa, Esc sale", "Mode clavier des panneaux : flèches et Tab choisissent, Entrée active, Échap quitte",
-            "Modo de teclado dos painéis: setas e Tab escolhem, Enter prime, Esc sai", "وضع لوحة المفاتيح للّوحات: الأسهم وTab للاختيار وEnter للضغط وEsc للخروج", "पैनल कीबोर्ड मोड: तीर और Tab से चुनें, Enter से दबाएँ, Esc से बाहर निकलें",
+            "Modo de teclado dos painéis: setas e Tab escolhem, Enter aciona, Esc sai", "وضع لوحة المفاتيح للّوحات: الأسهم وTab للاختيار وEnter للضغط وEsc للخروج", "पैनल कीबोर्ड मोड: तीर और Tab से चुनें, Enter से दबाएँ, Esc से बाहर निकलें",
             "প্যানেল কীবোর্ড মোড: তীর ও Tab দিয়ে বাছুন, Enter চাপুন, Esc দিয়ে বেরোন", "پینل کی بورڈ موڈ: تیر اور Tab سے منتخب کریں، Enter دبائیں، Esc سے باہر نکلیں", "面板键盘模式：方向键和 Tab 选择，Enter 按下，Esc 退出")
         ' ... and the status lines the mute and volume keys answer with.
         Add("Звук выключен",
@@ -463,7 +463,7 @@ Partial Public NotInheritable Class Localization
         Add("Скорость, дорожки, повтор и другие операции с файлом",
             "Speed, tracks, repeat and other operations on the file", "Швидкість, доріжки, повтор та інші операції з файлом", "Geschwindigkeit, Spuren, Wiederholung und weitere Aktionen für die Datei",
             "Velocità, tracce, ripetizione e altre operazioni sul file", "Velocidad, pistas, repetición y otras operaciones con el archivo", "Vitesse, pistes, répétition et autres opérations sur le fichier",
-            "Velocidade, faixas, repetição e outras operações com o ficheiro", "السرعة والمسارات والتكرار وعمليات أخرى على الملف", "गति, ट्रैक, दोहराव और फ़ाइल पर अन्य कार्य",
+            "Velocidade, faixas, repetição e outras operações com o arquivo", "السرعة والمسارات والتكرار وعمليات أخرى على الملف", "गति, ट्रैक, दोहराव और फ़ाइल पर अन्य कार्य",
             "গতি, ট্র্যাক, পুনরাবৃত্তি এবং ফাইলের অন্যান্য কাজ", "رفتار، ٹریک، تکرار اور فائل پر دیگر کام", "速度、音轨、重复及对文件的其他操作")
         Add("Нажмите, чтобы показать оставшееся время",
             "Click to show the remaining time", "Натисніть, щоб показати час, що залишився", "Klicken, um die Restzeit anzuzeigen",

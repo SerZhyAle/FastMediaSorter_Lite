@@ -125,7 +125,10 @@ Friend NotInheritable Class ChromePathBox
             Using format As New StringFormat(StringFormat.GenericTypographic)
                 format.Alignment = StringAlignment.Center
                 format.LineAlignment = StringAlignment.Center
-                g.DrawString(ChrW(&H25BE), If(symbols, input.Font), brush, arrowArea, format)
+                ' The list marker is the catalog's nav.dropdown (BUTTONS 2.0 section 2 rule 3); the font character only stands in.
+                If Not ChromeSurface.PaintMarkerGlyph(g, ChromeMetrics.MenuMarkerGlyph, Rectangle.Round(arrowArea), theme.Foreground, UiScale.Px(ChromeMetrics.GlyphSize, scaleFactor), False) Then
+                    g.DrawString(ChrW(&H25BE), If(symbols, input.Font), brush, arrowArea, format)
+                End If
             End Using
             ' The right click opens the folder menu: the same corner mark the panel's other items carry (125 UX-306).
             ChromeSurface.PaintSecondaryMark(g, New Rectangle(0, 0, Width, Height), theme.Foreground, scaleFactor, rtl)
@@ -281,8 +284,10 @@ Friend NotInheritable Class ChromePathBox
         If inkExternal Then Return
         Dim drop As Integer = UiScale.Px(ChromeMetrics.ItemHeight, scaleFactor)
         Dim area As New Rectangle(If(rtl, 0, Width - drop), 0, drop, Height)
-        TextRenderer.DrawText(args.Graphics, ChrW(&H25BE), If(symbols, input.Font), area, theme.Foreground,
-                              TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
+        If Not ChromeSurface.PaintMarkerGlyph(args.Graphics, ChromeMetrics.MenuMarkerGlyph, area, theme.Foreground, UiScale.Px(ChromeMetrics.GlyphSize, scaleFactor), False) Then
+            TextRenderer.DrawText(args.Graphics, ChrW(&H25BE), If(symbols, input.Font), area, theme.Foreground,
+                                  TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
+        End If
         args.Graphics.SmoothingMode = SmoothingMode.AntiAlias
         ChromeSurface.PaintSecondaryMark(args.Graphics, New Rectangle(0, 0, Width, Height), theme.Foreground, scaleFactor, rtl)
     End Sub

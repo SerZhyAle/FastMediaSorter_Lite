@@ -31,7 +31,7 @@ Partial Public NotInheritable Class Localization
             "Verifica l'indirizzo esterno da questo PC (non conclusivo: un router può rifiutare il proprio indirizzo dall'interno).",
             "Comprobar la dirección externa desde este PC (no concluyente: un router puede rechazar su propia dirección desde dentro).",
             "Tester l'adresse externe depuis ce PC (non concluant - un routeur peut refuser sa propre adresse depuis l'intérieur).",
-            "Testar o endereço externo a partir deste PC (não conclusivo - um router pode recusar o próprio endereço a partir de dentro).",
+            "Testar o endereço externo a partir deste PC (inconclusivo - um roteador pode recusar o próprio endereço a partir de dentro).",
             "اختبر العنوان الخارجي من هذا الحاسوب (غير حاسم - قد يرفض الموجّه عنوانه الخاص من الداخل).",
             "इस पीसी से बाहरी पते की जाँच करें (निर्णायक नहीं - राउटर भीतर से अपने ही पते को अस्वीकार कर सकता है)।",
             "এই পিসি থেকে বাহ্যিক ঠিকানা পরীক্ষা করুন (চূড়ান্ত নয় - রাউটার ভেতর থেকে নিজের ঠিকানা প্রত্যাখ্যান করতে পারে)।",
@@ -45,7 +45,7 @@ Partial Public NotInheritable Class Localization
             "Apri la guida dettagliata (HTML, precompilata con i tuoi valori e il modello di router)..",
             "Abrir la guía detallada (HTML, con tus valores y el modelo de router)..",
             "Ouvrir le guide détaillé (HTML, prérempli avec vos valeurs et votre modèle de routeur)..",
-            "Abrir o guia detalhado (HTML, preenchido com os seus valores e o modelo do router)..",
+            "Abrir o guia detalhado (HTML, preenchido com os seus valores e o modelo do roteador)..",
             "افتح الدليل المفصّل (HTML، معبّأ بقيمك وطراز الموجّه)..",
             "विस्तृत मार्गदर्शिका खोलें (HTML, आपके मानों और राउटर मॉडल के साथ)..",
             "বিস্তারিত নির্দেশিকা খুলুন (HTML, আপনার মান ও রাউটার মডেল সহ)..",
@@ -58,7 +58,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Обновление..",
             "Refreshing..", "Оновлення..", "Wird aktualisiert..", "Aggiornamento..",
-            "Actualizando..", "Actualisation..", "A atualizar..",
+            "Actualizando..", "Actualisation..", "Atualizando..",
             "جارٍ التحديث..", "ताज़ा किया जा रहा है..", "রিফ্রেশ হচ্ছে..", "تازہ کیا جا رہا ہے..", "正在刷新..")
 
         Add("Запустите общий доступ, чтобы настроить интернет.",
@@ -68,7 +68,7 @@ Partial Public NotInheritable Class Localization
             "Avvia la condivisione per configurare l'accesso da internet.",
             "Inicia el uso compartido para configurar el acceso desde internet.",
             "Démarrez le partage pour configurer l'accès internet.",
-            "Inicie a partilha para configurar o acesso pela internet.",
+            "Inicie o compartilhamento para configurar o acesso pela internet.",
             "ابدأ المشاركة لإعداد الوصول من الإنترنت.",
             "इंटरनेट पहुँच सेट करने के लिए साझाकरण शुरू करें।",
             "ইন্টারনেট অ্যাক্সেস সেট করতে শেয়ারিং শুরু করুন।",
@@ -79,13 +79,13 @@ Partial Public NotInheritable Class Localization
             "Detecting the external address..", "Визначаємо зовнішню адресу..",
             "Externe Adresse wird ermittelt..", "Rilevamento dell'indirizzo esterno..",
             "Detectando la dirección externa..", "Détection de l'adresse externe..",
-            "A detetar o endereço externo..", "جارٍ تحديد العنوان الخارجي..",
+            "Detectando o endereço externo..", "جارٍ تحديد العنوان الخارجي..",
             "बाहरी पता पहचाना जा रहा है..", "বাহ্যিক ঠিকানা শনাক্ত করা হচ্ছে..",
             "بیرونی پتہ معلوم کیا جا رہا ہے..", "正在检测外部地址..")
 
         Add("адрес роутера",
             "the router address", "адреса роутера", "die Router-Adresse", "l'indirizzo del router",
-            "la dirección del router", "l'adresse du routeur", "o endereço do router",
+            "la dirección del router", "l'adresse du routeur", "o endereço do roteador",
             "عنوان الموجّه", "राउटर का पता", "রাউটারের ঠিকানা", "روٹر کا پتہ", "路由器地址")
 
         Add("IP этого ПК",
@@ -97,7 +97,7 @@ Partial Public NotInheritable Class Localization
             "Behind CGNAT - not reachable from outside.", "За CGNAT - ззовні недоступно.",
             "Hinter CGNAT - von außen nicht erreichbar.", "Dietro CGNAT: non raggiungibile dall'esterno.",
             "Detrás de CGNAT: no accesible desde fuera.", "Derrière un CGNAT - injoignable depuis l'extérieur.",
-            "Atrás de CGNAT - não alcançável do exterior.", "خلف CGNAT - غير قابل للوصول من الخارج.",
+            "Atrás de CGNAT - inacessível de fora.", "خلف CGNAT - غير قابل للوصول من الخارج.",
             "CGNAT के पीछे - बाहर से पहुँच नहीं।", "CGNAT-এর পিছনে - বাইরে থেকে পৌঁছানো যায় না।",
             "CGNAT کے پیچھے - باہر سے قابلِ رسائی نہیں۔", "位于 CGNAT 之后 - 外网无法访问。")
 
@@ -108,7 +108,7 @@ Partial Public NotInheritable Class Localization
             "La porta è stata aperta automaticamente (UPnP): non serve configurare il router. L'indirizzo è già nel codice QR e nel file .fmscfg. Nota: questo non conferma il funzionamento dall'esterno - la prova definitiva è dal telefono in rete mobile. Con sessioni lunghe il controllo può scadere; se il telefono non si connette, disattiva e riattiva la condivisione.",
             "El puerto se abrió automáticamente (UPnP): no hace falta configurar el router. La dirección ya está en el código QR y en el archivo .fmscfg. Ten en cuenta que esto no confirma que funcione desde fuera: la prueba definitiva es desde el teléfono con datos móviles. En sesiones largas la comprobación puede quedar obsoleta; si el teléfono no conecta, desactiva y vuelve a activar el uso compartido.",
             "Le port a été ouvert automatiquement (UPnP) - aucune configuration du routeur nécessaire. L'adresse est déjà dans le code QR et le fichier .fmscfg. À noter : cela ne confirme pas le fonctionnement depuis l'extérieur - le test décisif se fait depuis le téléphone en données mobiles. Sur une session longue, la vérification peut devenir obsolète ; si le téléphone ne se connecte pas, désactivez puis réactivez le partage.",
-            "A porta foi aberta automaticamente (UPnP) - não é preciso configurar o router. O endereço já está no código QR e no ficheiro .fmscfg. Note: isto não confirma que funciona do exterior - o teste definitivo é a partir do telemóvel com dados móveis. Em sessões longas a verificação pode ficar desatualizada; se o telemóvel não ligar, desative e reative a partilha.",
+            "A porta foi aberta automaticamente (UPnP) - não é preciso configurar o roteador. O endereço já está no código QR e no arquivo .fmscfg. Observação: isso não confirma que funciona de fora - o teste definitivo é feito no celular com dados móveis. Em sessões longas a verificação pode ficar desatualizada; se o celular não conectar, desative e reative o compartilhamento.",
             "تم فتح المنفذ تلقائيًا (UPnP) - لا حاجة لإعداد الموجّه. العنوان موجود بالفعل في رمز QR وملف ‎.fmscfg‎. لاحظ أن ذلك لا يؤكد عمله من الخارج - الاختبار الحاسم يكون من الهاتف عبر بيانات الجوال. في الجلسات الطويلة قد يصبح الفحص قديمًا؛ فإذا لم يتصل الهاتف، أوقف المشاركة ثم شغّلها من جديد.",
             "पोर्ट स्वतः खुल गया (UPnP) - राउटर सेट करने की ज़रूरत नहीं। पता पहले से QR कोड और .fmscfg फ़ाइल में है। ध्यान दें: यह बाहर से काम करने की पुष्टि नहीं करता - निर्णायक जाँच मोबाइल डेटा पर फ़ोन से ही होती है। लंबे सत्र में जाँच पुरानी पड़ सकती है; फ़ोन न जुड़े तो साझाकरण बंद करके फिर चालू करें।",
             "পোর্টটি স্বয়ংক্রিয়ভাবে খোলা হয়েছে (UPnP) - রাউটার সেট করার দরকার নেই। ঠিকানাটি ইতিমধ্যেই QR কোড ও .fmscfg ফাইলে আছে। মনে রাখুন: এটি বাইরে থেকে কাজ করার নিশ্চয়তা দেয় না - চূড়ান্ত পরীক্ষা মোবাইল ডেটায় ফোন থেকেই। দীর্ঘ সেশনে যাচাই পুরনো হয়ে যেতে পারে; ফোন সংযুক্ত না হলে শেয়ারিং বন্ধ করে আবার চালু করুন।",
@@ -119,7 +119,7 @@ Partial Public NotInheritable Class Localization
             "External address unknown - check the router.", "Зовнішня адреса невідома - дізнайтеся в роутері.",
             "Externe Adresse unbekannt - im Router nachsehen.", "Indirizzo esterno sconosciuto: controlla il router.",
             "Dirección externa desconocida: consúltala en el router.", "Adresse externe inconnue - vérifiez sur le routeur.",
-            "Endereço externo desconhecido - consulte o router.", "العنوان الخارجي غير معروف - راجع الموجّه.",
+            "Endereço externo desconhecido - consulte o roteador.", "العنوان الخارجي غير معروف - راجع الموجّه.",
             "बाहरी पता अज्ञात - राउटर में देखें।", "বাহ্যিক ঠিকানা অজানা - রাউটারে দেখুন।",
             "بیرونی پتہ نامعلوم - روٹر میں دیکھیں۔", "外部地址未知 - 请在路由器中查看。")
 
@@ -144,7 +144,7 @@ Partial Public NotInheritable Class Localization
         Add("Определяем роутер..",
             "Detecting router..", "Визначаємо роутер..", "Router wird erkannt..",
             "Rilevamento del router..", "Detectando el router..", "Détection du routeur..",
-            "A detetar o router..", "جارٍ التعرّف على الموجّه..", "राउटर पहचाना जा रहा है..",
+            "Detectando o roteador..", "جارٍ التعرّف على الموجّه..", "राउटर पहचाना जा रहा है..",
             "রাউটার শনাক্ত করা হচ্ছে..", "روٹر پہچانا جا رہا ہے..", "正在检测路由器..")
 
         Add("Не удалось открыть инструкцию.",
@@ -159,7 +159,7 @@ Partial Public NotInheritable Class Localization
         Add("Доступно из интернета: {0}",
             "Reachable from internet: {0}", "Доступно з інтернету: {0}", "Aus dem Internet erreichbar: {0}",
             "Raggiungibile da internet: {0}", "Accesible desde internet: {0}",
-            "Joignable depuis internet : {0}", "Alcançável pela internet: {0}",
+            "Joignable depuis internet : {0}", "Acessível pela internet: {0}",
             "يمكن الوصول إليه من الإنترنت: {0}", "इंटरनेट से उपलब्ध: {0}", "ইন্টারনেট থেকে পৌঁছানো যায়: {0}",
             "انٹرنیٹ سے قابلِ رسائی: {0}", "可从互联网访问：{0}")
 
@@ -175,14 +175,14 @@ Partial Public NotInheritable Class Localization
 
         Add("Проверка {0} ..",
             "Testing {0} ..", "Перевірка {0} ..", "Test {0} ..", "Prova di {0} ..",
-            "Probando {0} ..", "Test de {0} ..", "A testar {0} ..",
+            "Probando {0} ..", "Test de {0} ..", "Testando {0} ..",
             "اختبار {0} ..", "जाँच {0} ..", "পরীক্ষা {0} ..", "جانچ {0} ..", "正在测试 {0} ..")
 
         Add("SFTP-сервер доступен: {0}",
             "SFTP server reachable: {0}", "SFTP-сервер доступний: {0}",
             "SFTP-Server erreichbar: {0}", "Server SFTP raggiungibile: {0}",
             "Servidor SFTP accesible: {0}", "Serveur SFTP joignable : {0}",
-            "Servidor SFTP alcançável: {0}", "خادم SFTP متاح: {0}",
+            "Servidor SFTP acessível: {0}", "خادم SFTP متاح: {0}",
             "SFTP सर्वर उपलब्ध: {0}", "SFTP সার্ভার উপলব্ধ: {0}",
             "SFTP سرور قابلِ رسائی: {0}", "SFTP 服务器可访问：{0}")
 
@@ -217,7 +217,7 @@ Partial Public NotInheritable Class Localization
             "Nessuna risposta da questo PC ({0}). Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
             "Sin respuesta desde este PC ({0}). El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
             "Aucune réponse depuis ce PC ({0}). Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
-            "Sem resposta a partir deste PC ({0}). O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
+            "Sem resposta a partir deste PC ({0}). O roteador pode bloquear o próprio endereço a partir de dentro - teste com o celular em dados móveis.",
             "لا استجابة من هذا الحاسوب ({0}). قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
             "इस पीसी से कोई उत्तर नहीं ({0})। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
             "এই পিসি থেকে কোনো সাড়া নেই ({0})। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
@@ -226,7 +226,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Роутер: {0}",
             "Router: {0}", "Роутер: {0}", "Router: {0}", "Router: {0}", "Router: {0}",
-            "Routeur : {0}", "Router: {0}", "الموجّه: {0}", "राउटर: {0}", "রাউটার: {0}",
+            "Routeur : {0}", "Roteador: {0}", "الموجّه: {0}", "राउटर: {0}", "রাউটার: {0}",
             "روٹر: {0}", "路由器：{0}")
 
     End Sub

@@ -29,6 +29,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private ReadOnly engine As ScheduledEngine
     Private ReadOnly editing As ScheduledOperation
     Private ReadOnly toolTip As New ToolTip()
+    Private _page As TableLayoutPanel
+    Private _scroller As Panel
 
     Private txtName As TextBox
     Private cmbAction As ComboBox
@@ -170,8 +172,10 @@ Friend NotInheritable Class Scheduled_Operation_Form
         answerRow.Bind(Me, bindAccept:=False)
         AcceptButton = btnSave
 
+        ' The first row starts below the help badge that lies over the top corner (right, or left under right-to-left reading).
         Dim page As New TableLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 2, .Padding = New Padding(14, 10, 14, 6)}
+            .ColumnCount = 2, .Padding = New Padding(14, ContextHelpUi.BadgeEdge, 14, 6)}
+        _page = page
         page.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         page.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
 
@@ -284,6 +288,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
         AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, lblAutostart)
 
         Dim scroller As New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True}
+        _scroller = scroller
         scroller.Controls.Add(page)
         Controls.Add(scroller)
         ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
@@ -303,7 +308,34 @@ Friend NotInheritable Class Scheduled_Operation_Form
         ' The boolean rows (ticket 243 T-11c-b) are laid out now that the window has its scale; the page makes room for the
         ' taller rows and the body scrolls.
         OptionRows.ArrangeAll(Me)
+        FitCombos()
         ' The editor is authored at 640 x 640: at a high scale it must still fit the monitor (the body scrolls, the row does not).
+        DpiLayout.ClampToWorkingArea(Me)
+        GrowToContent()
+    End Sub
+
+    ''' <summary>A drop-down is as wide as its longest entry in the language shown (the fixed authored width cut "Новые с прошлого
+    ''' запуска" and its translations), and its list is never narrower than the face.</summary>
+    Private Sub FitCombos()
+        For Each box As ComboBox In New ComboBox() {cmbAction, cmbConflict, cmbTime}
+            Dim widest As Integer = 0
+            For Each item As Object In box.Items
+                widest = Math.Max(widest, TextRenderer.MeasureText(Convert.ToString(item), box.Font).Width)
+            Next
+            Dim wanted As Integer = widest + SystemInformation.VerticalScrollBarWidth + LogicalToDeviceUnits(16)
+            If wanted > box.Width Then box.Width = wanted
+            box.DropDownWidth = Math.Max(box.Width, wanted)
+        Next
+    End Sub
+
+    ''' <summary>The page is taller than the window it was authored in (the conditions group, a longer language, a higher scale):
+    ''' the window grows by what is missing, as far as its monitor allows; what still does not fit scrolls.</summary>
+    Private Sub GrowToContent()
+        If _page Is Nothing OrElse _scroller Is Nothing OrElse Not IsHandleCreated Then Return
+        _page.PerformLayout()
+        Dim missing As Integer = _page.GetPreferredSize(New Size(_scroller.ClientSize.Width, 0)).Height - _scroller.ClientSize.Height
+        If missing <= 0 Then Return
+        ClientSize = New Size(ClientSize.Width, ClientSize.Height + missing)
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
@@ -318,6 +350,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private Sub SetConditionsOpen(open As Boolean)
         pnlConditions.Visible = open
         spacerConditions.Visible = open
+        If open Then GrowToContent()
     End Sub
 
     Private Sub BuildConditions()

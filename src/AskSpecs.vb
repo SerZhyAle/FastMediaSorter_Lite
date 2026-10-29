@@ -267,6 +267,61 @@ Friend NotInheritable Class AskSpecs
                               lastUrl, Localization.T("Открыть"), validator, hint:=examples, selectAll:=True)
     End Function
 
+    Friend Const DocumentConvertBrowser As Integer = 0
+    Friend Const DocumentConvertOnly As Integer = 1
+    Friend Const DocumentConvertLocal As Integer = 2
+    Friend Const DocumentConvertCancel As Integer = 3
+
+    ''' <summary>276 T-2: the job panel of the document command. Names the source and the converter that will run,
+    ''' offers the three modes the producer supports without a cost decision; the remembered mode is the default
+    ''' and Escape cancels. The converter opens its own result in the browser.</summary>
+    Friend Shared Function DocumentConvertPanel(fileName As String, converterVersion As String, rememberedMode As String) As AskSpec
+        Dim defaultIndex As Integer = DocumentConvertBrowser
+        If rememberedMode = DocHtmlJobArguments.ModeConvert Then defaultIndex = DocumentConvertOnly
+        If rememberedMode = DocHtmlJobArguments.ModeLocal Then defaultIndex = DocumentConvertLocal
+        Return New AskSpec(
+            Localization.T("Обработать в doc-html-translate"),
+            Localization.TF("Сделать из «{0}» HTML-страницу в doc-html-translate?", fileName),
+            AskIcon.Question,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Открыть в браузере"), role:=ButtonGlyphRole.Affirmative),
+                New AskButton(Localization.T("Только преобразовать")),
+                New AskButton(Localization.T("Перевести через Ollama")),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=defaultIndex, cancelIndex:=DocumentConvertCancel,
+            detail:=Localization.TF("Программа: {0}", converterVersion) & Environment.NewLine &
+                Localization.T("Страница откроется в браузере; перевести её можно командой браузера «Перевести». «Только преобразовать» не переводит текст, «Перевести через Ollama» переводит его локальной моделью Ollama, настроенной в doc-html-translate. Сканы распознаются автоматически, исходный файл не изменяется."))
+    End Function
+
+    Friend Const DocumentConverterInstall As Integer = 0
+    Friend Const DocumentConverterChoose As Integer = 1
+    Friend Const DocumentConverterCheckAgain As Integer = 2
+    Friend Const DocumentConverterCancel As Integer = 3
+
+    ''' <summary>276 T-2, journey step 3: the converter is missing or did not answer. Install opens winget (else the
+    ''' Store page) and installs nothing silently; the user can also point at the program or check again after an
+    ''' install made outside the viewer.</summary>
+    Friend Shared Function DocumentConverterMissing(notRunnable As Boolean, chosenPath As String) As AskSpec
+        Dim detail As String
+        If notRunnable Then
+            detail = Localization.TF("Программа не ответила на проверку версии: {0}", chosenPath)
+        ElseIf Not String.IsNullOrEmpty(chosenPath) Then
+            detail = Localization.TF("Выбранная программа не найдена: {0}", chosenPath)
+        Else
+            detail = Localization.T("doc-html-translate не найдена на этом компьютере.")
+        End If
+        Return New AskSpec(
+            Localization.T("Обработать в doc-html-translate"),
+            Localization.T("Для этой команды нужна бесплатная программа doc-html-translate: она делает из документа HTML-страницу, распознаёт текст сканов и может перевести его."),
+            AskIcon.Info,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Установить"), role:=ButtonGlyphRole.Affirmative),
+                New AskButton(Localization.T("Выбрать программу..")),
+                New AskButton(Localization.T("Проверить снова")),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=DocumentConverterInstall, cancelIndex:=DocumentConverterCancel, detail:=detail)
+    End Function
+
     ''' <summary>Every call-site question that has a fixed shape, for the test that walks them all.</summary>
     Friend Shared Function All() As IReadOnlyList(Of AskSpec)
         Dim none As New AskFileFacts(1024, New Date(2026, 1, 2, 3, 4, 5))
@@ -279,6 +334,8 @@ Friend NotInheritable Class AskSpecs
             ProfileResetConfirm(),
             EditorUnsavedClose(),
             HtmlHistoryClear(),
+            DocumentConvertPanel("book.epub", "doc-html-translate 1.0", DocHtmlJobArguments.ModeBrowser),
+            DocumentConverterMissing(False, ""),
             CloseWithUnfinishedFileOperations(2)}
     End Function
 

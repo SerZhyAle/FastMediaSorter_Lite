@@ -117,8 +117,11 @@ Friend NotInheritable Class Exchange_Password_Change_Form
             child.Top += HeadingBand
         Next
         Me.ClientSize = New Size(Me.ClientSize.Width, Me.ClientSize.Height + HeadingBand)
-        heading = New Label With {.Name = "xpc_Heading", .AutoSize = False, .UseMnemonic = False, .Location = New Point(14, 12),
-                                  .Size = New Size(392, 40), .Text = Me.Text}
+        ' The heading stands beside the help badge that lies over the top corner (the right one, the left one under right-to-left
+        ' reading) instead of running under it; a long title wraps in the narrower label and FitContent grows it.
+        heading = New Label With {.Name = "xpc_Heading", .AutoSize = False, .UseMnemonic = False,
+                                  .Location = New Point(If(Me.RightToLeft = RightToLeft.Yes, 14 + ContextHelpUi.BadgeEdge, 14), 12),
+                                  .Size = New Size(392 - ContextHelpUi.BadgeEdge, 40), .Text = Me.Text}
         ExchangeMark.Apply(heading, 32, AddressOf RuntimeBootstrap.OpenBundledAsset)
         Me.Controls.Add(heading)
         Me.Controls.SetChildIndex(heading, 0)

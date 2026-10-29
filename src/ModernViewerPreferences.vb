@@ -108,13 +108,29 @@ Partial Public NotInheritable Class ModernViewerPreferences
     Friend Function ChromeLayoutKey() As String
         Return JsonSerializer.Serialize(New Object() {InterfaceScalePercent, InterfaceScaleRelativePercent, ChromeSize,
             ChromePinned, ChromeOpacityPercent, ChromeCornerRadius, ChromeRow1Pinned, ChromeRow2Pinned, ChromeStatusPinned,
-            ChromeWindowControlsPinned})
+            ChromeWindowControlsPinned, ChromeDocumentPinned, ChromeRow1Place, ChromeRow2Place, ChromeStatusPlace,
+            ChromeWindowControlsPlace, ChromeTransportPlace})
+    End Function
+
+    ''' <summary>Anchors every movable chrome panel again (L0281 section 3.7): the five stored places are emptied, including
+    ''' the keys of panels that become movable in later slices, so a reset is complete whatever a slice adds. True when
+    ''' any of them held a value; nothing is written here - the caller saves once.</summary>
+    Friend Function ClearChromePlaces() As Boolean
+        Dim had As Boolean = Not String.IsNullOrEmpty(ChromeRow1Place) OrElse Not String.IsNullOrEmpty(ChromeRow2Place) OrElse
+            Not String.IsNullOrEmpty(ChromeStatusPlace) OrElse Not String.IsNullOrEmpty(ChromeWindowControlsPlace) OrElse
+            Not String.IsNullOrEmpty(ChromeTransportPlace)
+        ChromeRow1Place = ""
+        ChromeRow2Place = ""
+        ChromeStatusPlace = ""
+        ChromeWindowControlsPlace = ""
+        ChromeTransportPlace = ""
+        Return had
     End Function
 
     Friend Function OverlayLayoutKey() As String
         Return JsonSerializer.Serialize(New Object() {RecipientsOverlayPosition, RecipientsOverlayWidth,
             RecipientsOverlayFontSize, RecipientsOverlayOpacity, RecipientsOverlayVisibleRows, RecipientsOverlayPinned,
-            RecipientsOverlayHasCustomPosition, RecipientsOverlayCustomX, RecipientsOverlayCustomY})
+            RecipientsOverlayHasCustomPosition, RecipientsOverlayCustomX, RecipientsOverlayCustomY, RecipientsOverlayPlace})
     End Function
 
     Friend Function Snapshot() As ModernViewerPreferences
@@ -154,6 +170,19 @@ Partial Public NotInheritable Class ModernViewerPreferences
     ''' the removed native caption, so hiding it out of the box would hide the window commands.</summary>
     Public Property ChromeWindowControlsPinned As Boolean = True
 
+    ''' <summary>The document panel's own pin (280 section 3.2), set by the small button in its corner: the panel that
+    ''' carries a PDF, EPUB, HTML or text reader's commands. Unpinned by default, like the two rows and the status strip.</summary>
+    Public Property ChromeDocumentPinned As Boolean
+
+    ''' <summary>The place of a chrome panel the user has moved (L0281 §5), one per movable panel: <c>corner:dx,dy</c>,
+    ''' the nearest corner of the media area and two distances in logical px (<c>FloatingPanelPlacement</c>).
+    ''' Empty = anchored. Written once per drop, never by a resize; a value the tolerant reader rejects is empty.</summary>
+    Public Property ChromeRow1Place As String = ""
+    Public Property ChromeRow2Place As String = ""
+    Public Property ChromeStatusPlace As String = ""
+    Public Property ChromeWindowControlsPlace As String = ""
+    Public Property ChromeTransportPlace As String = ""
+
     Public Property RecipientsOverlayPosition As String = "topLeft"
     ''' <summary>The panel was dragged by its header (219 §2/§3): the saved free position overrides the
     ''' corner anchor until the next corner pick, the reset row or the profile reset. The point itself is
@@ -167,6 +196,12 @@ Partial Public NotInheritable Class ModernViewerPreferences
     Public Property RecipientsOverlayCustomX As Integer
     ''' <summary>The saved free position's Y, in logical px relative to the media area's top-left.</summary>
     Public Property RecipientsOverlayCustomY As Integer
+    ''' <summary>The recipients table's free place on the shared model (L0281 T-6, owner answer Q281-3): <c>corner:dx,dy</c>
+    ''' exactly like the chrome panels' places (<c>FloatingPanelPlacement</c>), empty = no free place. The reader rule: a valid
+    ''' value here wins; otherwise the old triple above (HasCustomPosition + X + Y) is read as <c>TL:x,y</c>; otherwise the
+    ''' panel stands at its corner choice. A drop writes this AND keeps the triple meaningful for an older build; a corner
+    ''' pick, the reset row and the profile reset clear both. Written once per drop, never by a resize.</summary>
+    Public Property RecipientsOverlayPlace As String = ""
     Public Property RecipientsOverlayWidth As Integer = 280
     Public Property RecipientsOverlayFontSize As Integer = 9
     Public Property RecipientsOverlayOpacity As Integer = 88
@@ -448,11 +483,18 @@ Partial Public NotInheritable Class ModernViewerPreferences
         p.ChromeStatusPinned = ReadBool("ChromeStatusPinned", p.ChromeStatusPinned)
         p.RecipientsOverlayPinned = ReadBool("RecipientsOverlayPinned", p.RecipientsOverlayPinned)
         p.ChromeWindowControlsPinned = ReadBool("ChromeWindowControlsPinned", p.ChromeWindowControlsPinned)
+        p.ChromeDocumentPinned = ReadBool("ChromeDocumentPinned", p.ChromeDocumentPinned)
+        p.ChromeRow1Place = NormalizePlace(ReadString("ChromeRow1Place", p.ChromeRow1Place))
+        p.ChromeRow2Place = NormalizePlace(ReadString("ChromeRow2Place", p.ChromeRow2Place))
+        p.ChromeStatusPlace = NormalizePlace(ReadString("ChromeStatusPlace", p.ChromeStatusPlace))
+        p.ChromeWindowControlsPlace = NormalizePlace(ReadString("ChromeWindowControlsPlace", p.ChromeWindowControlsPlace))
+        p.ChromeTransportPlace = NormalizePlace(ReadString("ChromeTransportPlace", p.ChromeTransportPlace))
 
         p.RecipientsOverlayPosition = ReadChoice("RecipientsOverlayPosition", p.RecipientsOverlayPosition, "topLeft", "topRight", "bottomLeft", "bottomRight")
         p.RecipientsOverlayHasCustomPosition = ReadBool("RecipientsOverlayHasCustomPosition", p.RecipientsOverlayHasCustomPosition)
         p.RecipientsOverlayCustomX = ReadInt("RecipientsOverlayCustomX", p.RecipientsOverlayCustomX, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
         p.RecipientsOverlayCustomY = ReadInt("RecipientsOverlayCustomY", p.RecipientsOverlayCustomY, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
+        p.RecipientsOverlayPlace = NormalizePlace(ReadString("RecipientsOverlayPlace", p.RecipientsOverlayPlace))
         p.RecipientsOverlayWidth = ReadInt("RecipientsOverlayWidth", p.RecipientsOverlayWidth, 180, 520)
         p.RecipientsOverlayFontSize = ReadInt("RecipientsOverlayFontSize", p.RecipientsOverlayFontSize, 9, 18)
         p.RecipientsOverlayOpacity = ReadInt("RecipientsOverlayOpacity", p.RecipientsOverlayOpacity, 40, 100)
@@ -518,6 +560,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
         p.DocumentPageHistory = NormalizeArrayJson(ReadString("DocumentPageHistory", p.DocumentPageHistory))
         p.LoadDocumentPreferences()
         p.LoadHtmlPreferences()
+        p.LoadTextPreferences()
         Return p
     End Function
 
@@ -553,10 +596,17 @@ Partial Public NotInheritable Class ModernViewerPreferences
         WriteBool("ChromeStatusPinned", ChromeStatusPinned)
         WriteBool("RecipientsOverlayPinned", RecipientsOverlayPinned)
         WriteBool("ChromeWindowControlsPinned", ChromeWindowControlsPinned)
+        WriteBool("ChromeDocumentPinned", ChromeDocumentPinned)
+        WriteString("ChromeRow1Place", NormalizePlace(ChromeRow1Place))
+        WriteString("ChromeRow2Place", NormalizePlace(ChromeRow2Place))
+        WriteString("ChromeStatusPlace", NormalizePlace(ChromeStatusPlace))
+        WriteString("ChromeWindowControlsPlace", NormalizePlace(ChromeWindowControlsPlace))
+        WriteString("ChromeTransportPlace", NormalizePlace(ChromeTransportPlace))
         WriteString("RecipientsOverlayPosition", RecipientsOverlayPosition)
         WriteBool("RecipientsOverlayHasCustomPosition", RecipientsOverlayHasCustomPosition)
         WriteString("RecipientsOverlayCustomX", RecipientsOverlayCustomX.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayCustomY", RecipientsOverlayCustomY.ToString(CultureInfo.InvariantCulture))
+        WriteString("RecipientsOverlayPlace", NormalizePlace(RecipientsOverlayPlace))
         WriteString("RecipientsOverlayWidth", RecipientsOverlayWidth.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayFontSize", RecipientsOverlayFontSize.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayOpacity", RecipientsOverlayOpacity.ToString(CultureInfo.InvariantCulture))
@@ -625,6 +675,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
         WriteString("DocumentPageHistory", NormalizeArrayJson(DocumentPageHistory))
         SaveDocumentPreferences()
         SaveHtmlPreferences()
+        SaveTextPreferences()
     End Sub
 
     Public Function ExportJson(Optional includePersonalData As Boolean = False) As String
@@ -638,6 +689,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
             exported.DocumentPageHistory = "[]"
             exported.DocumentBookmarks = "[]"
             exported.DocumentAppearanceHistory = "[]"
+            exported.DocumentConverterLocation = ""
             exported.FileManagerPlaceSorts = "{}"
         End If
         Return JsonSerializer.Serialize(New SettingsExport With {.SchemaVersion = 1, .Preferences = exported},
@@ -819,9 +871,15 @@ Partial Public NotInheritable Class ModernViewerPreferences
         RecipientsOverlayPosition = Choice(RecipientsOverlayPosition, "topLeft", "topLeft", "topRight", "bottomLeft", "bottomRight")
         RecipientsOverlayCustomX = Clamp(RecipientsOverlayCustomX, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
         RecipientsOverlayCustomY = Clamp(RecipientsOverlayCustomY, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
+        RecipientsOverlayPlace = NormalizePlace(RecipientsOverlayPlace)
         ChromeSize = Choice(ChromeSize, "medium", "medium", "small", "large", "adaptive", "touch")
         ChromeOpacityPercent = Clamp(ChromeOpacityPercent, 0, 100)
         ChromeCornerRadius = Clamp(ChromeCornerRadius, 0, 16)
+        ChromeRow1Place = NormalizePlace(ChromeRow1Place)
+        ChromeRow2Place = NormalizePlace(ChromeRow2Place)
+        ChromeStatusPlace = NormalizePlace(ChromeStatusPlace)
+        ChromeWindowControlsPlace = NormalizePlace(ChromeWindowControlsPlace)
+        ChromeTransportPlace = NormalizePlace(ChromeTransportPlace)
         RecipientsOverlayWidth = Clamp(RecipientsOverlayWidth, 180, 520)
         RecipientsOverlayFontSize = Clamp(RecipientsOverlayFontSize, 9, 18)
         RecipientsOverlayOpacity = Clamp(RecipientsOverlayOpacity, 40, 100)
@@ -873,6 +931,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
         DocumentPageHistory = NormalizeArrayJson(DocumentPageHistory)
         NormalizeDocumentPreferences()
         NormalizeHtmlPreferences()
+        NormalizeTextPreferences()
     End Sub
 
     Private Shared Function ReadString(key As String, defaultValue As String) As String
@@ -940,6 +999,14 @@ Partial Public NotInheritable Class ModernViewerPreferences
 
     Private Shared Function Clamp(value As Integer, minimum As Integer, maximum As Integer) As Integer
         Return Math.Max(minimum, Math.Min(maximum, value))
+    End Function
+
+    ''' <summary>A stored panel place through the tolerant reader (L0281 §5): the encoder's own canonical text for a
+    ''' value it accepts, empty (anchored) for Nothing, garbled or future shapes. Never throws.</summary>
+    Private Shared Function NormalizePlace(value As String) As String
+        Dim place As PanelPlace
+        If Not FloatingPanelPlacement.TryDecode(value, place) Then Return String.Empty
+        Return FloatingPanelPlacement.Encode(place)
     End Function
 
     ''' <summary>The four sizes a thumbnail card may have (005 PG-3).</summary>

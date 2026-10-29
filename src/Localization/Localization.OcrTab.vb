@@ -102,7 +102,7 @@ Partial Public NotInheritable Class Localization
             "Download recognition language pack", "Завантажити пакет розпізнавання",
             "Erkennungssprachpaket herunterladen", "Scarica il pacchetto di riconoscimento",
             "Descargar el paquete de reconocimiento", "Télécharger le pack de reconnaissance",
-            "Transferir o pacote de reconhecimento", "تنزيل حزمة لغة التعرّف",
+            "Baixar o pacote de reconhecimento", "تنزيل حزمة لغة التعرّف",
             "पहचान भाषा पैक डाउनलोड करें", "শনাক্তকরণ ভাষা প্যাক ডাউনলোড করুন",
             "شناخت کا زبان پیک ڈاؤن لوڈ کریں", "下载识别语言包")
 
@@ -128,7 +128,7 @@ Partial Public NotInheritable Class Localization
         ' shows its own endonym and needs no translation (§2.8).
         Add("Автоопределение",
             "Auto-detect", "Автовизначення", "Automatisch erkennen", "Rilevamento automatico",
-            "Detección automática", "Détection automatique", "Deteção automática",
+            "Detección automática", "Détection automatique", "Detecção automática",
             "كشف تلقائي", "स्वतः पहचान", "স্বয়ংক্রিয় শনাক্তকরণ", "خودکار شناخت", "自动检测")
 
         ' --- combo items --------------------------------------------------------------
@@ -223,7 +223,7 @@ Partial Public NotInheritable Class Localization
             "URL del server di traduzione (lascia vuoto per il valore predefinito).",
             "URL del servidor de traducción (déjalo vacío para el valor predeterminado).",
             "URL du serveur de traduction (laissez vide pour la valeur par défaut).",
-            "URL do servidor de tradução (deixe vazio para o valor predefinido).",
+            "URL do servidor de tradução (deixe vazio para o valor padrão).",
             "عنوان خادم الترجمة (اتركه فارغًا للقيمة الافتراضية).",
             "अनुवाद सर्वर का URL (डिफ़ॉल्ट के लिए खाली छोड़ें)।",
             "অনুবাদ সার্ভারের URL (ডিফল্টের জন্য ফাঁকা রাখুন)।",
@@ -237,7 +237,7 @@ Partial Public NotInheritable Class Localization
             "Scarica e installa Ollama: un poliglotta locale che va a vivere sul tuo computer.",
             "Descargar e instalar Ollama: un políglota local que se muda a tu ordenador.",
             "Télécharger et installer Ollama - un polyglotte local qui emménage sur votre machine.",
-            "Transferir e instalar o Ollama - um poliglota local que se muda para o seu computador.",
+            "Baixar e instalar o Ollama - um poliglota local que se muda para o seu computador.",
             "نزّل وثبّت Ollama - مترجمًا محليًا متعدد اللغات يسكن حاسوبك.",
             "Ollama डाउनलोड और स्थापित करें - एक स्थानीय बहुभाषी जो आपके कंप्यूटर में बस जाएगा।",
             "Ollama ডাউনলোড ও ইনস্টল করুন - একজন স্থানীয় বহুভাষী যে আপনার কম্পিউটারে থাকবে।",
@@ -265,7 +265,7 @@ Partial Public NotInheritable Class Localization
             "Pull the selected model into Ollama.", "Завантажити вибрану модель в Ollama.",
             "Das gewählte Modell in Ollama laden.", "Scarica il modello selezionato in Ollama.",
             "Descargar el modelo elegido en Ollama.", "Télécharger le modèle choisi dans Ollama.",
-            "Transferir o modelo escolhido para o Ollama.", "نزّل النموذج المحدد إلى Ollama.",
+            "Baixar o modelo escolhido para o Ollama.", "نزّل النموذج المحدد إلى Ollama.",
             "चयनित मॉडल को Ollama में डाउनलोड करें।", "নির্বাচিত মডেলটি Ollama-তে ডাউনলোড করুন।",
             "منتخب ماڈل کو Ollama میں ڈاؤن لوڈ کریں۔", "将所选模型拉取到 Ollama。")
 
@@ -276,7 +276,7 @@ Partial Public NotInheritable Class Localization
             "Chiave API (per i traduttori cloud). La conserviamo cifrata, parola d'onore.",
             "Clave de API (para traductores en la nube). La guardamos cifrada, palabra.",
             "Clé API (pour les traducteurs cloud). Nous la stockons chiffrée, parole d'honneur.",
-            "Chave de API (para tradutores na nuvem). Guardamo-la cifrada, palavra de honra.",
+            "Chave de API (para tradutores na nuvem). Nós a guardamos criptografada, palavra de honra.",
             "مفتاح API (للمترجمات السحابية). نحفظه مشفّرًا، وعد.",
             "API कुंजी (क्लाउड अनुवादकों के लिए)। हम इसे एन्क्रिप्टेड रखते हैं, वचन।",
             "API কী (ক্লাউড অনুবাদকের জন্য)। আমরা এটি এনক্রিপ্ট করে রাখি, কথা দিলাম।",
@@ -298,7 +298,7 @@ Partial Public NotInheritable Class Localization
             "Lingua del testo originale nell'immagine (o rilevamento automatico).",
             "Idioma del texto original de la imagen (o detección automática).",
             "Langue du texte source sur l'image (ou détection automatique).",
-            "Idioma do texto original na imagem (ou deteção automática).",
+            "Idioma do texto original na imagem (ou detecção automática).",
             "لغة النص الأصلي في الصورة (أو الكشف التلقائي).",
             "छवि पर मूल पाठ की भाषा (या स्वतः पहचान)।",
             "ছবিতে থাকা মূল লেখার ভাষা (বা স্বয়ংক্রিয় শনাক্তকরণ)।",
@@ -334,7 +334,7 @@ Partial Public NotInheritable Class Localization
             "Scarica il pacchetto linguistico di riconoscimento per la lingua scelta.",
             "Descargar el paquete de reconocimiento del idioma elegido.",
             "Télécharger le pack de reconnaissance pour la langue choisie.",
-            "Transferir o pacote de reconhecimento para o idioma escolhido.",
+            "Baixar o pacote de reconhecimento para o idioma escolhido.",
             "نزّل حزمة لغة التعرّف للّغة المختارة.",
             "चुनी गई भाषा के लिए पहचान भाषा पैक डाउनलोड करें।",
             "নির্বাচিত ভাষার জন্য শনাক্তকরণ ভাষা প্যাক ডাউনলোড করুন।",

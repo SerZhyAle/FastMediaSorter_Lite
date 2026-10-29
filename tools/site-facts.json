@@ -89,7 +89,7 @@
         "names": { "en": "\\bPDF\\b", "ru": "\\bPDF\\b", "uk": "\\bPDF\\b" } },
       { "id": "reading", "component": "viewer", "state": "planned", "since": null,
         "label": "Reading documents, e-books and texts (reflow, bookmarks, table of contents, search)",
-        "evidence": ["docs/specifications/L0274_optional-pdf-epub-reader.md", "docs/specifications/L0275_optional-html-viewer.md", "docs/specifications/L0276_document-translate-roundtrip.md", "docs/specifications/L0277_text-view-edit-translate.md"], "surfaces": ["A"],
+        "evidence": ["docs/specifications/L0274_optional-pdf-epub-reader.md", "docs/specifications/done/L0275_optional-html-viewer.md", "docs/specifications/L0276_document-translate-roundtrip.md", "docs/specifications/L0277_text-view-edit-translate.md"], "surfaces": ["A"],
         "plannedClaims": {
           "en": ["(?i)\\b(?:e-?book reader|book reader|reads? (?:e-?books|books)|reading (?:e-?books|books|documents)|read (?:documents|PDFs?) (?:inside|in) the|reflow)\\b"],
           "ru": ["(?i)(?:читалк\\w*|чтени\\w+ (?:книг|документов|электронн\\w+ книг))"],

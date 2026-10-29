@@ -100,10 +100,12 @@ Friend Module ResourceMessages
         End Select
     End Function
 
-    ''' <summary>What the folder box and the list show for a resource: the address, never a secret.</summary>
+    ''' <summary>What the folder box and the list show for a resource: the address, never a secret. A path
+    ''' or locator reads left to right whatever the UI language, so in Arabic and Urdu it carries the
+    ''' embedding of <see cref="Localization.LtrValue"/> (display only: nothing persists or compares this).</summary>
     Friend Function DisplayAddress(resource As ResourceDescriptor) As String
         If resource Is Nothing Then Return ""
-        Return ResourceLocator.Build(resource, resource.RootPath)
+        Return Localization.LtrValue(ResourceLocator.Build(resource, resource.RootPath))
     End Function
 
 End Module

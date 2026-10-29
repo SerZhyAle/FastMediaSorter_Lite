@@ -179,6 +179,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             End If
         End If
 
+        Dim askOwn As Boolean = False
         SetXBusy(True)
         Try
             Dim allowed As String = _txtXRemoteAdminAllowed.Text.Trim()
@@ -186,9 +187,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim res As ExchangeProcess.AdminActionResult = Await Task.Run(Function() ExchangeProcess.AdminOn(generate, enteredPassword, allowed, lifetime))
             If res.Outcome = ExchangeProcess.ConfigOutcome.Saved Then
                 If generate AndAlso Not String.IsNullOrEmpty(res.GeneratedPassword) Then
-                    Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, res.GeneratedPassword)
-                        dlg.ShowDialog(Me)
-                    End Using
+                    askOwn = ShowAdminPasswordOnce(res.GeneratedPassword)
                 End If
                 ShowXResult(Localization.T("Настройки сохранены. Применяются при следующем запуске сервера."), ok:=True)
             Else
@@ -198,6 +197,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             SetXBusy(False)
         End Try
+        If askOwn AndAlso Not (IsDisposed OrElse Disposing) Then Await SetTypedAdminPasswordAsync()
     End Sub
 
     Private Async Sub OnXRemoteAdminSetPassword()
@@ -222,14 +222,13 @@ Partial Public NotInheritable Class Share_Settings_Form
             End Using
         End If
 
+        Dim askOwn As Boolean = False
         SetXBusy(True)
         Try
             Dim res As ExchangeProcess.AdminActionResult = Await Task.Run(Function() ExchangeProcess.AdminPasswd(generate, enteredPassword))
             If res.Outcome = ExchangeProcess.ConfigOutcome.Saved Then
                 If generate AndAlso Not String.IsNullOrEmpty(res.GeneratedPassword) Then
-                    Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, res.GeneratedPassword)
-                        dlg.ShowDialog(Me)
-                    End Using
+                    askOwn = ShowAdminPasswordOnce(res.GeneratedPassword)
                 End If
                 ShowXResult(Localization.T("Настройки сохранены. Применяются при следующем запуске сервера."), ok:=True)
             Else
@@ -239,7 +238,42 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             SetXBusy(False)
         End Try
+        If askOwn AndAlso Not (IsDisposed OrElse Disposing) Then Await SetTypedAdminPasswordAsync()
     End Sub
+
+    ''' <summary>The generated administrator password, once, in its own dialog (the words name the administrator, not an account owner).
+    ''' True when the person chose "set my own password" in it instead (ticket 287).</summary>
+    Private Function ShowAdminPasswordOnce(generatedPassword As String) As Boolean
+        Dim ownChosen As Boolean
+        Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, generatedPassword, "", False, ExchangePasswordSubject.Administrator)
+            dlg.ShowDialog(Me)
+            ownChosen = dlg.ChoseOwnPassword
+        End Using
+        Return ownChosen
+    End Function
+
+    ''' <summary>"Set my own password" after a generated administrator password: asks for the typed one and sets it over the generated one
+    ''' (ticket 287). Cancelling the entry leaves the generated password in force, as it does for an account.</summary>
+    Private Async Function SetTypedAdminPasswordAsync() As Task
+        Dim typed As String
+        Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Enter)
+            If dlg.ShowDialog(Me) <> DialogResult.OK OrElse String.IsNullOrEmpty(dlg.EnteredPassword) Then Return
+            typed = dlg.EnteredPassword
+        End Using
+        SetXBusy(True)
+        Try
+            Dim res As ExchangeProcess.AdminActionResult = Await Task.Run(Function() ExchangeProcess.AdminPasswd(False, typed))
+            typed = Nothing
+            If res.Outcome = ExchangeProcess.ConfigOutcome.Saved Then
+                ShowXResult(Localization.T("Настройки сохранены. Применяются при следующем запуске сервера."), ok:=True)
+            Else
+                ShowXResult(Localization.T("Серверу не удалось это сделать. Подробности - в журнале сервера."), ok:=False)
+            End If
+            Await RefreshExchangeAsync()
+        Finally
+            SetXBusy(False)
+        End Try
+    End Function
 
     Private Async Sub OnXRemoteAdminApply()
         If _exBusy Then Return

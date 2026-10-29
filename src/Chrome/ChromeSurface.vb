@@ -92,6 +92,26 @@ Friend NotInheritable Class ChromeSurface
         End Set
     End Property
     Private pinButton As ChromeItem
+    ''' <summary>The move handle of a movable floating panel (L0281 T-3a), or Nothing for a panel that cannot be moved
+    ''' (the default: such a panel is laid out exactly as it always was). A <see cref="ChromeMetrics.MinTarget"/>-wide
+    ''' slot beside the corner pin - on the row's side of it, in the corner itself when the panel has no pin - laid out
+    ''' apart from the row like the pin, so the row's overflow never takes it. The setter marks the item
+    ''' <see cref="ChromeItem.IsPanelHandle"/>; <see cref="CreatePanelHandleItem"/> builds a ready one.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property PanelHandleItem As ChromeItem
+        Get
+            Return panelHandleButton
+        End Get
+        Set(value As ChromeItem)
+            If ReferenceEquals(panelHandleButton, value) Then Return
+            EndPanelMoveMode()
+            ClearHandlePress()
+            If panelHandleButton IsNot Nothing Then itemList.Remove(panelHandleButton)
+            panelHandleButton = value
+            If panelHandleButton IsNot Nothing Then panelHandleButton.IsPanelHandle = True
+        End Set
+    End Property
+    Private panelHandleButton As ChromeItem
     Private overflowItem As New ChromeItem("btn_Overflow", ChromeItemKind.MenuButton) With {.Caption = "»"}
     Private ReadOnly overflowList As New List(Of ChromeItem)()
     Public Event OverflowRequested As EventHandler
@@ -146,6 +166,44 @@ Friend NotInheritable Class ChromeSurface
     Private lastMovePressTick As Integer = Integer.MinValue
     Private lastMovePressScreen As Point
 
+    ' --- the move handle (L0281 T-3a): the owner moves the host, the surface only reports the gesture -------
+
+    ''' <summary>A left press on the move handle, the surface holding the mouse capture. <see cref="PanelHandleEventArgs.ScreenPoint"/>
+    ''' is the pointer. It is NOT <see cref="MoveGripPress"/> (that drags the window), and the host is never activated.</summary>
+    Public Event PanelHandlePress As EventHandler(Of PanelHandleEventArgs)
+
+    ''' <summary>The pointer moved while the handle is held, after its travel from the press exceeded the system drag size
+    ''' (<see cref="ExceedsDragSize"/>); raised on every such move, with the pointer's screen position.</summary>
+    Public Event PanelHandleDrag As EventHandler(Of PanelHandleEventArgs)
+
+    ''' <summary>The button went up after a drag (screen position), or the capture was lost mid-drag
+    ''' (<see cref="PanelHandleEventArgs.Canceled"/>): the owner finishes the move.</summary>
+    Public Event PanelHandleRelease As EventHandler(Of PanelHandleEventArgs)
+
+    ''' <summary>The button went up on the handle without the pointer travelling past the drag size: a click (the handle's menu).
+    ''' Also raised by an assistive technology's default action on the handle.</summary>
+    Public Event PanelHandleClick As EventHandler(Of PanelHandleEventArgs)
+
+    ''' <summary>An arrow key in the keyboard move mode: <see cref="PanelHandleEventArgs.StepsX"/> and
+    ''' <see cref="PanelHandleEventArgs.StepsY"/> are -1 / 0 / +1 (physical directions, never mirrored in a right-to-left
+    ''' language) times 1, or times <see cref="PanelMoveBigSteps"/> with Shift. One step is <see cref="PanelMoveStepPixels"/>.</summary>
+    Public Event PanelHandleKeyMove As EventHandler(Of PanelHandleEventArgs)
+
+    ''' <summary>The keyboard move mode was entered or left; read <see cref="IsPanelMoveMode"/>.</summary>
+    Public Event PanelHandleMoveModeChanged As EventHandler
+
+    ''' <summary>Shift with an arrow in the keyboard move mode moves this many steps at once.</summary>
+    Public Const PanelMoveBigSteps As Integer = 5
+
+    Private handlePressActive As Boolean
+    Private handleDragging As Boolean
+    Private handlePressScreen As Point
+    Private panelMoveMode As Boolean
+
+    ''' <summary>A test seam: where the pointer is on the screen. Nothing = ask Windows.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Friend Property PointerScreenPosition As Func(Of Point)
+
     Public Sub New()
         SetStyle(ControlStyles.AllPaintingInWmPaint Or ControlStyles.UserPaint Or
                  ControlStyles.OptimizedDoubleBuffer Or ControlStyles.ResizeRedraw, True)
@@ -198,6 +256,7 @@ Friend NotInheritable Class ChromeSurface
 
     Public Sub SetItems(newItems As IEnumerable(Of ChromeItem))
         overflowItem = New ChromeItem(OverflowId, ChromeItemKind.MenuButton) With {.Caption = "»", .Action = Sub() RaiseEvent OverflowRequested(Me, EventArgs.Empty)}
+        EndPanelMoveMode()
         itemList.Clear()
         accessibleChildren.Clear()
         hotItem = Nothing
@@ -306,6 +365,17 @@ Friend NotInheritable Class ChromeSurface
         Return MinTargetPx() + Px(ChromeMetrics.Gap)
     End Function
 
+    ''' <summary>The width the move handle takes out of a row, gap included; 0 when the panel has none (or in a popup menu).</summary>
+    Private Function HandleStrip() As Integer
+        If PanelHandleItem Is Nothing OrElse VerticalLayout Then Return 0
+        Return MinTargetPx() + Px(ChromeMetrics.Gap)
+    End Function
+
+    ''' <summary>The whole strip the row gives up at its corner: the pin's slot and the move handle's, gaps included.</summary>
+    Private Function CornerStrip() As Integer
+        Return PinReserve() + HandleStrip()
+    End Function
+
     ''' <summary>The size a panel with these items wants: one row, padded. The height comes from
     ''' the VERTICAL padding, so the window-controls panel - wider, but with the standard vertical
     ''' breathing - stands exactly as tall as the toolbar rows beside it (2026-10-12).</summary>
@@ -316,32 +386,33 @@ Friend NotInheritable Class ChromeSurface
         If VerticalLayout Then
             Dim heights As New List(Of Integer)()
             For Each item As ChromeItem In itemList
-                If item.Visible AndAlso item IsNot overflowItem AndAlso item IsNot pinButton Then heights.Add(RowHeight(item))
+                If item.Visible AndAlso item IsNot overflowItem AndAlso item IsNot pinButton AndAlso item IsNot panelHandleButton Then heights.Add(RowHeight(item))
             Next
             Dim total As Integer = 0
             ChromeMenuRules.StackRows(heights, pad, total)
             Return New Size(If(slots.Count = 0, Px(ChromeMetrics.MenuMinWidth), slots.Max(Function(slot) slot.Width)) + 2 * pad, total)
         End If
-        Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + PinReserve() + 2 * pad, ItemHeight() + 2 * verticalPad)
+        Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + CornerStrip() + 2 * pad, ItemHeight() + 2 * verticalPad)
     End Function
 
     ''' <summary>The narrowest this horizontal row may get without losing its priority core (188 §3.5):
-    ''' <see cref="ChromeLayout.PinnedCoreWidth"/> over the panel's own slots. A host narrower than this
-    ''' has hidden pinned content; the placer wraps the row below an obstacle instead.</summary>
+    ''' <see cref="ChromeLayout.PinnedCoreWidth"/> over the panel's own slots, plus the move handle's slot when
+    ''' the panel has one (L0281 T-3a: the handle is never overflowed, so it is part of what must stay whole). A host
+    ''' narrower than this has hidden pinned content; the placer wraps the row below an obstacle instead.</summary>
     Public Function MinimumRowWidth() As Integer
         If VerticalLayout Then Return 0
-        Return ChromeLayout.PinnedCoreWidth(BuildSlots(Nothing), Px(ChromeMetrics.Gap), ItemHeight())
+        Return ChromeLayout.PinnedCoreWidth(BuildSlots(Nothing), Px(ChromeMetrics.Gap), ItemHeight()) + HandleStrip()
     End Function
 
     Private Function BuildSlots(indexMap As List(Of ChromeItem)) As List(Of ChromeSlot)
         Dim slots As New List(Of ChromeSlot)()
         For Each item As ChromeItem In itemList
-            If item Is overflowItem OrElse item Is pinButton Then Continue For
+            If item Is overflowItem OrElse item Is pinButton OrElse item Is panelHandleButton Then Continue For
             ' A conditional button that is away still holds its place (empty air) in a horizontal row (125 UX-313b).
             Dim away As Boolean = Not item.Visible
             If away AndAlso (Not item.KeepsSlotWhenHidden OrElse VerticalLayout) Then Continue For
             slots.Add(New ChromeSlot(item.Id, MeasureItemWidth(item), If(item.MinimumWidth > 0, Px(item.MinimumWidth), -1),
-                pinned:=Not away AndAlso (item.Id = "cmbox_Media_Folder" OrElse item.Id = "chkbox_Top_Most" OrElse item.Id = "cmbox_Sort"),
+                pinned:=Not away AndAlso (item.NeverOverflows OrElse item.Id = "cmbox_Media_Folder" OrElse item.Id = "chkbox_Top_Most" OrElse item.Id = "cmbox_Sort"),
                 soft:=away))
             If indexMap IsNot Nothing Then indexMap.Add(item)
         Next
@@ -356,7 +427,7 @@ Friend NotInheritable Class ChromeSurface
     ''' <summary>Places every visible item. Called when the items, the scale, the fonts or the size change.</summary>
     Public Sub LayoutItems()
         itemList.Remove(overflowItem)
-        itemList.RemoveAll(Function(item) item.IsPin)
+        itemList.RemoveAll(Function(item) item.IsPin OrElse item.IsPanelHandle)
         overflowList.Clear()
         Dim order As New List(Of ChromeItem)()
         Dim slots As List(Of ChromeSlot) = BuildSlots(order)
@@ -364,6 +435,7 @@ Friend NotInheritable Class ChromeSurface
             item.Bounds = Rectangle.Empty
         Next
         If PinItem IsNot Nothing Then PinItem.Bounds = Rectangle.Empty
+        If PanelHandleItem IsNot Nothing Then PanelHandleItem.Bounds = Rectangle.Empty
         If order.Count = 0 Then
             RaiseEvent LayoutChanged(Me, EventArgs.Empty)
             Return
@@ -371,7 +443,8 @@ Friend NotInheritable Class ChromeSurface
 
         Dim pad As Integer = PanelPadding()
         Dim verticalPad As Integer = PanelPaddingVertical()
-        Dim cornerReserve As Integer = PinReserve()
+        Dim pinStrip As Integer = PinReserve()
+        Dim cornerReserve As Integer = CornerStrip()
         Dim available As Integer = Math.Max(0, ClientSize.Width - 2 * pad - cornerReserve)
         ' The row sits beside the corner pin: after it in a right-to-left panel (the pin is on the left),
         ' and always after it when the pin leads the row (the window-controls panel, 188 §3.1).
@@ -420,8 +493,19 @@ Friend NotInheritable Class ChromeSurface
             overflowItem.Tooltip = overflowItem.AccessibleName
             itemList.Add(overflowItem)
         End If
-        If PinItem IsNot Nothing AndAlso cornerReserve > 0 Then
-            Dim pinWidth As Integer = cornerReserve - Px(ChromeMetrics.Gap)
+        ' The move handle (L0281 T-3a) stands on the row's side of the pin - in the corner itself when there is no pin -
+        ' and is listed before the pin, so the keyboard ring reads: the row, the handle, the pin.
+        If PanelHandleItem IsNot Nothing AndAlso cornerReserve > pinStrip Then
+            Dim handleWidth As Integer = cornerReserve - pinStrip - Px(ChromeMetrics.Gap)
+            If PinAtStart OrElse isRightToLeft Then
+                PanelHandleItem.Bounds = New Rectangle(pad + pinStrip, top, handleWidth, ItemHeight())
+            Else
+                PanelHandleItem.Bounds = New Rectangle(ClientSize.Width - pad - pinStrip - handleWidth, top, handleWidth, ItemHeight())
+            End If
+            itemList.Add(PanelHandleItem)
+        End If
+        If PinItem IsNot Nothing AndAlso pinStrip > 0 Then
+            Dim pinWidth As Integer = pinStrip - Px(ChromeMetrics.Gap)
             If PinAtStart Then
                 PinItem.Bounds = New Rectangle(pad, top, pinWidth, ItemHeight())
             Else
@@ -601,6 +685,12 @@ Friend NotInheritable Class ChromeSurface
         If item.Tone <> NotifyLevel.Info AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
             ink = NotifyRules.InkOnSurface(item.Tone, chromeTheme.PanelFill, chromeTheme.Foreground)
         End If
+        ' The move handle is an ambient control like the pin: it rests in the pin's quiet ink and warms to the foreground
+        ' under the pointer. Under high contrast the system pair the ordinary button already wears is left alone.
+        If item.IsPanelHandle AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
+            Dim restInk As Color = chromeTheme.PinRestInk(False)
+            ink = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
+        End If
         Dim drawn As Boolean = False
         If item.IsPin Then
             Dim pinInk As Color
@@ -653,7 +743,7 @@ Friend NotInheritable Class ChromeSurface
         ElseIf Not drawn AndAlso item.Caption.Length > 0 Then
             PaintCaption(g, item, r, ink)
         End If
-        If chevronRoom > 0 Then PaintAccessory(g, ChrW(&H25BE), New Rectangle(If(isRightToLeft, bounds.X, bounds.Right - chevronRoom), bounds.Y, chevronRoom, bounds.Height), ink)
+        If chevronRoom > 0 Then PaintMarker(g, ChromeMetrics.MenuMarkerGlyph, New Rectangle(If(isRightToLeft, bounds.X, bounds.Right - chevronRoom), bounds.Y, chevronRoom, bounds.Height), ink, False, ChrW(&H25BE))
 
         ' A checked toggle says so without colour (BUTTONS 2.0 section 3 rule 5): exactly one mark, chosen by
         ' CheckedMarkFor - the bar in the item's own ink, the high-contrast frame, or the check box the item already is.
@@ -744,6 +834,35 @@ Friend NotInheritable Class ChromeSurface
         End Using
     End Sub
 
+    ''' <summary>A catalog marker glyph (BUTTONS 2.0 section 2 rule 3: a menu's downward marker, a submenu row's
+    ''' reading-direction chevron) centred in a strip, in one ink. Shared with the path box. False when the glyph
+    ''' cannot be drawn, so the caller can fall back to a font character instead of leaving the marker out.</summary>
+    Friend Shared Function PaintMarkerGlyph(g As Graphics, glyphId As String, area As Rectangle, ink As Color, sizePx As Integer, mirror As Boolean) As Boolean
+        If area.Width <= 0 OrElse area.Height <= 0 OrElse sizePx <= 0 Then Return False
+        Dim bitmap As Bitmap = Nothing
+        Try
+            bitmap = GlyphRenderer.Render(glyphId, sizePx, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
+            Dim x As Integer = area.X + (area.Width - sizePx) \ 2
+            Dim y As Integer = area.Y + (area.Height - sizePx) \ 2
+            If mirror Then
+                Dim state As GraphicsState = g.Save()
+                g.TranslateTransform(x + sizePx, y)
+                g.ScaleTransform(-1.0F, 1.0F)
+                g.DrawImage(bitmap, 0, 0, sizePx, sizePx)
+                g.Restore(state)
+            Else
+                g.DrawImage(bitmap, x, y, sizePx, sizePx)
+            End If
+            Return True
+        Catch ex As Exception
+            ' A marker that cannot be drawn must not take the panel down: the font character stands in.
+            Debug.WriteLine("chrome marker " & glyphId & " failed: " & ex.Message)
+            Return False
+        Finally
+            If bitmap IsNot Nothing Then bitmap.Dispose()
+        End Try
+    End Function
+
     ''' <summary>"Always on top" from lines: two stacked windows, the front one filled while the mode is on
     ''' and only outlined while it is off. The catalogue has no glyph for it yet (125 UX-311).</summary>
     Friend Shared Sub PaintOnTop(g As Graphics, onTop As Boolean, r As Rectangle, ink As Color, scale As Single)
@@ -820,8 +939,14 @@ Friend NotInheritable Class ChromeSurface
         End Using
     End Sub
 
-    ''' <summary>A small symbol in the symbol font, centred in a strip: a menu button's chevron, a submenu
-    ''' row's arrow.</summary>
+    ''' <summary>A menu button's downward marker or a submenu row's chevron: the catalog glyph, and only when it cannot be
+    ''' drawn the font character <paramref name="fallback"/> (BUTTONS 2.0 section 2 rule 3; 279 T-3).</summary>
+    Private Sub PaintMarker(g As Graphics, glyphId As String, area As Rectangle, ink As Color, mirror As Boolean, fallback As Char)
+        If Not PaintMarkerGlyph(g, glyphId, area, ink, Px(ChromeMetrics.GlyphSize), mirror) Then PaintAccessory(g, fallback, area, ink)
+    End Sub
+
+    ''' <summary>A small symbol in the symbol font, centred in a strip: the scroll cue of a long menu, and the
+    ''' stand-in of a marker glyph that cannot be drawn.</summary>
     Private Sub PaintAccessory(g As Graphics, symbol As Char, area As Rectangle, ink As Color)
         Dim font As Font = If(symbolFont, textFont)
         If font Is Nothing OrElse area.Width <= 0 Then Return
@@ -841,7 +966,7 @@ Friend NotInheritable Class ChromeSurface
         If item.Chevron Then
             Dim strip As Integer = ChevronStrip()
             Dim arrow As Char = If(isRightToLeft, ChrW(&H25C2), ChrW(&H25B8))
-            PaintAccessory(g, arrow, New Rectangle(If(isRightToLeft, r.Left, r.Right - strip), r.Y, strip, r.Height), ink)
+            PaintMarker(g, ChromeMetrics.SubmenuMarkerGlyph, New Rectangle(If(isRightToLeft, r.Left, r.Right - strip), r.Y, strip, r.Height), ink, isRightToLeft, arrow)
             remaining = New Rectangle(If(isRightToLeft, r.X + strip, r.X), r.Y, Math.Max(0, r.Width - strip), r.Height)
         End If
         If item.Hint.Length > 0 AndAlso font IsNot Nothing Then
@@ -987,6 +1112,11 @@ Friend NotInheritable Class ChromeSurface
 
     Protected Overrides Sub OnMouseMove(e As MouseEventArgs)
         MyBase.OnMouseMove(e)
+        ' While the move handle is held the pointer belongs to the drag: no hover, no tooltip, and the panel moves under it.
+        If handlePressActive Then
+            TrackHandleDrag()
+            Return
+        End If
         Dim item As ChromeItem = HitTest(e.Location)
         ' A move grip is empty panel (188): it drags on press, but shows no hover fill and no tooltip.
         If item IsNot Nothing AndAlso item.IsMoveGrip Then item = Nothing
@@ -1004,6 +1134,13 @@ Friend NotInheritable Class ChromeSurface
         MyBase.OnMouseDown(e)
         If e.Button <> MouseButtons.Left Then Return
         Dim item As ChromeItem = HitTest(e.Location)
+        ' The move handle (L0281): the press is the start of a gesture the owner finishes - capture, no action, and it is
+        ' not a move-grip press (that drags the WINDOW). The host is not activated: this surface is not selectable and the
+        ' ChromeHost answers WM_MOUSEACTIVATE with MA_NOACTIVATE, exactly as for any other item.
+        If item IsNot Nothing AndAlso item.IsPanelHandle Then
+            BeginHandlePress(item)
+            Return
+        End If
         ' A press on the free background or on a move-grip slot belongs to the panel's owner -
         ' the window drag (188 §5): no capture, no press level, no action, and the second press
         ' of a double click is told apart by the shared rule.
@@ -1038,6 +1175,81 @@ Friend NotInheritable Class ChromeSurface
         End If
     End Sub
 
+    ' --- the move handle's pointer gesture (L0281 T-3a) --------------------------------------------------------
+
+    Private Function PointerScreen() As Point
+        Return If(PointerScreenPosition Is Nothing, Cursor.Position, PointerScreenPosition.Invoke())
+    End Function
+
+    ''' <summary>True when the pointer has left the rectangle of the system drag size (<see cref="SystemInformation.DragSize"/>)
+    ''' centred on the press point - Windows' own rule for "this press became a drag", so the travel is half the size on
+    ''' each side. Pure.</summary>
+    Friend Shared Function ExceedsDragSize(pressed As Point, current As Point, dragSize As Size) As Boolean
+        Return Math.Abs(current.X - pressed.X) > dragSize.Width \ 2 OrElse Math.Abs(current.Y - pressed.Y) > dragSize.Height \ 2
+    End Function
+
+    Private Sub BeginHandlePress(item As ChromeItem)
+        If Not item.Enabled Then Return
+        EndPanelMoveMode()
+        pressedItem = item
+        holdElapsed = 0
+        holdInvoked = False
+        holdArmed = False
+        item.IsPressed = True
+        handlePressActive = True
+        handleDragging = False
+        handlePressScreen = PointerScreen()
+        Capture = True
+        RefreshLevels()
+        RaiseEvent PanelHandlePress(Me, New PanelHandleEventArgs(handlePressScreen))
+    End Sub
+
+    Private Sub TrackHandleDrag()
+        Dim here As Point = PointerScreen()
+        If Not handleDragging Then
+            If Not ExceedsDragSize(handlePressScreen, here, SystemInformation.DragSize) Then Return
+            handleDragging = True
+            UpdateTip(Nothing)
+        End If
+        RaiseEvent PanelHandleDrag(Me, New PanelHandleEventArgs(here))
+    End Sub
+
+    ''' <summary>The button went up on the handle: the end of a drag, or - the pointer never travelled - a click.</summary>
+    Private Sub FinishHandleGesture(dragged As Boolean)
+        If panelHandleButton IsNot Nothing Then panelHandleButton.IsPressed = False
+        If dragged Then
+            RaiseEvent PanelHandleRelease(Me, New PanelHandleEventArgs(PointerScreen()))
+        Else
+            RaiseEvent PanelHandleClick(Me, New PanelHandleEventArgs(PointerScreen()))
+        End If
+    End Sub
+
+    Private Sub RaisePanelHandleClick()
+        RaiseEvent PanelHandleClick(Me, New PanelHandleEventArgs(PointerScreen()))
+    End Sub
+
+    ''' <summary>Forgets a handle press that is running (the handle was replaced under it).</summary>
+    Private Sub ClearHandlePress()
+        handlePressActive = False
+        handleDragging = False
+        If panelHandleButton IsNot Nothing Then panelHandleButton.IsPressed = False
+    End Sub
+
+    ''' <summary>The capture went elsewhere while the handle was held (a dialog, Alt+Tab, the host hidden): the gesture
+    ''' ends here. A drag in progress is reported as a release flagged <see cref="PanelHandleEventArgs.Canceled"/>, so the
+    ''' owner can finish its move; a press that never became a drag just ends, with no click.</summary>
+    Protected Overrides Sub OnMouseCaptureChanged(e As EventArgs)
+        MyBase.OnMouseCaptureChanged(e)
+        If Not handlePressActive OrElse Capture Then Return
+        Dim dragged As Boolean = handleDragging
+        handlePressActive = False
+        handleDragging = False
+        pressedItem = Nothing
+        If panelHandleButton IsNot Nothing Then panelHandleButton.IsPressed = False
+        RefreshLevels()
+        If dragged Then RaiseEvent PanelHandleRelease(Me, New PanelHandleEventArgs(PointerScreen(), canceled:=True))
+    End Sub
+
     Protected Overrides Sub OnMouseUp(e As MouseEventArgs)
         MyBase.OnMouseUp(e)
         Dim item As ChromeItem = HitTest(e.Location)
@@ -1045,11 +1257,20 @@ Friend NotInheritable Class ChromeSurface
         If e.Button = MouseButtons.Left Then
             Dim pressed As ChromeItem = pressedItem
             pressedItem = Nothing
+            ' The handle gesture ends BEFORE the capture goes, so the capture-lost notification below finds nothing to cancel.
+            Dim handleGesture As Boolean = handlePressActive
+            Dim handleDragged As Boolean = handleDragging
+            handlePressActive = False
+            handleDragging = False
             Capture = False
             If pressed IsNot Nothing Then pressed.IsPressed = False
             RefreshLevels()
-            ' A press that slid off the item is not a click, exactly like a Button.
-            If Not holdInvoked AndAlso pressed IsNot Nothing AndAlso pressed Is item AndAlso pressed.Enabled Then RunAction(pressed, pressed.Action)
+            If handleGesture Then
+                FinishHandleGesture(handleDragged)
+            ElseIf Not holdInvoked AndAlso pressed IsNot Nothing AndAlso pressed Is item AndAlso pressed.Enabled Then
+                ' A press that slid off the item is not a click, exactly like a Button.
+                RunAction(pressed, pressed.Action)
+            End If
         ElseIf e.Button = MouseButtons.Right Then
             If item IsNot Nothing AndAlso item.Enabled AndAlso item.SecondaryAction IsNot Nothing Then RunAction(item, item.SecondaryAction)
         End If
@@ -1203,6 +1424,7 @@ Friend NotInheritable Class ChromeSurface
 
     ''' <summary>Puts the focus ring on the first (or last) reachable item. False when there is none.</summary>
     Public Function EnterKeyboardMode(Optional last As Boolean = False) As Boolean
+        EndPanelMoveMode()
         inKeyboardMode = True
         focusedItem = Nothing
         Dim found As Boolean = If(last, MoveFocus(False), MoveFocus(True))
@@ -1211,6 +1433,7 @@ Friend NotInheritable Class ChromeSurface
     End Function
 
     Public Sub LeaveKeyboardMode()
+        EndPanelMoveMode()
         inKeyboardMode = False
         focusedItem = Nothing
         Invalidate()
@@ -1232,6 +1455,7 @@ Friend NotInheritable Class ChromeSurface
     ''' <summary>Puts the keyboard ring on one given item (type-ahead in a menu).</summary>
     Public Sub FocusItem(item As ChromeItem)
         If item Is Nothing OrElse Not IsReachable(item) Then Return
+        EndPanelMoveMode()
         inKeyboardMode = True
         focusedItem = item
         Invalidate()
@@ -1246,6 +1470,7 @@ Friend NotInheritable Class ChromeSurface
         Dim i As Integer = index + stepBy
         While i >= 0 AndAlso i < itemList.Count
             If IsReachable(itemList(i)) Then
+                EndPanelMoveMode()
                 focusedItem = itemList(i)
                 Invalidate()
                 NotifyFocusChanged(focusedItem)
@@ -1259,9 +1484,115 @@ Friend NotInheritable Class ChromeSurface
     ''' <summary>Runs the focused item's action. False when nothing is focused.</summary>
     Public Function ActivateFocused() As Boolean
         If focusedItem Is Nothing OrElse Not focusedItem.Enabled Then Return False
+        ' The move handle has no action: Enter / Space on it toggles the keyboard move mode (L0281 T-3a, section 3.6).
+        If focusedItem.IsPanelHandle Then
+            SetPanelMoveMode(Not panelMoveMode)
+            Return True
+        End If
         RunAction(focusedItem, focusedItem.Action)
         Return True
     End Function
+
+    ' --- the keyboard move mode of the move handle (L0281 T-3a, section 3.6 / Q281-5) --------------------------
+
+    ''' <summary>True while the move handle is in its keyboard move mode: the arrow keys move the panel instead of stepping
+    ''' the ring, and Enter, Space or Escape ends it. Left whenever the ring moves off the handle or leaves the panel.</summary>
+    Public ReadOnly Property IsPanelMoveMode As Boolean
+        Get
+            Return panelMoveMode
+        End Get
+    End Property
+
+    ''' <summary>How far one arrow press moves the panel in the keyboard move mode: one minimum hit target, in pixels.</summary>
+    Public Function PanelMoveStepPixels() As Integer
+        Return MinTargetPx()
+    End Function
+
+    ''' <summary>The key routing of the move handle, for the owner to call BEFORE it steps the ring (this surface cannot see
+    ''' the keyboard: it is never selectable). With the handle focused in the ring, Enter or Space enters the move mode;
+    ''' in it, an arrow raises <see cref="PanelHandleKeyMove"/> (Shift: <see cref="PanelMoveBigSteps"/> steps) and Enter,
+    ''' Space or Escape leaves it. True = the key was the handle's and goes no further. Every other key, a Ctrl or Alt
+    ''' chord and any key while the handle is not the focused item answer False.</summary>
+    Public Function HandlePanelMoveKey(keyData As Keys) As Boolean
+        If panelHandleButton Is Nothing OrElse Not inKeyboardMode Then Return False
+        Dim code As Keys = keyData And Keys.KeyCode
+        Dim modifiers As Keys = keyData And Keys.Modifiers
+        If (modifiers And (Keys.Control Or Keys.Alt)) <> Keys.None Then Return False
+        If Not ReferenceEquals(focusedItem, panelHandleButton) Then
+            EndPanelMoveMode()
+            Return False
+        End If
+        If Not panelMoveMode Then
+            If modifiers = Keys.None AndAlso (code = Keys.Enter OrElse code = Keys.Space) AndAlso panelHandleButton.Enabled Then
+                SetPanelMoveMode(True)
+                Return True
+            End If
+            Return False
+        End If
+        Dim stepsX As Integer
+        Dim stepsY As Integer
+        If PanelKeySteps(code, (modifiers And Keys.Shift) = Keys.Shift, stepsX, stepsY) Then
+            RaiseEvent PanelHandleKeyMove(Me, New PanelHandleEventArgs(Point.Empty, stepsX, stepsY))
+            Return True
+        End If
+        If code = Keys.Enter OrElse code = Keys.Space OrElse code = Keys.Escape Then
+            SetPanelMoveMode(False)
+            Return True
+        End If
+        Return False
+    End Function
+
+    ''' <summary>An arrow key as steps of the keyboard move mode: Left / Right are -1 / +1 on X, Up / Down are -1 / +1 on Y,
+    ''' each times <see cref="PanelMoveBigSteps"/> when <paramref name="bigStep"/> is set (Shift). Physical directions: a
+    ''' place does not mirror with the reading direction. False (both zero) for any other key. Pure.</summary>
+    Friend Shared Function PanelKeySteps(code As Keys, bigStep As Boolean, ByRef stepsX As Integer, ByRef stepsY As Integer) As Boolean
+        Dim count As Integer = If(bigStep, PanelMoveBigSteps, 1)
+        stepsX = 0
+        stepsY = 0
+        Select Case code
+            Case Keys.Left : stepsX = -count
+            Case Keys.Right : stepsX = count
+            Case Keys.Up : stepsY = -count
+            Case Keys.Down : stepsY = count
+            Case Else : Return False
+        End Select
+        Return True
+    End Function
+
+    ''' <summary>The catalog glyph of the move handle (<c>action.reorder</c>, "Drag to reorder": two bars).</summary>
+    Friend Const PanelHandleGlyphId As String = "action.reorder"
+
+    ''' <summary>A ready move-handle item for the panel called <paramref name="panelName"/>: the catalog glyph, the
+    ''' <see cref="ChromeItem.IsPanelHandle"/> flag, and the localized words for "move panel" as both tooltip and accessible name.
+    ''' Assign it to <see cref="PanelHandleItem"/>; it carries no action (the surface turns its press into events).</summary>
+    Friend Shared Function CreatePanelHandleItem(panelName As String) As ChromeItem
+        Dim words As String = Localization.T("Переместить панель")
+        Return New ChromeItem("chrome_handle_" & panelName, ChromeItemKind.Button) With {
+            .GlyphId = PanelHandleGlyphId,
+            .IsPanelHandle = True,
+            .AccessibleName = words,
+            .Tooltip = words}
+    End Function
+
+    ''' <summary>Enters or leaves the keyboard move mode. While in it the handle is drawn in its pressed state (and an
+    ''' assistive technology reads it as pressed), the mode's visible and spoken cue.</summary>
+    Private Sub SetPanelMoveMode(enabled As Boolean)
+        If panelMoveMode = enabled Then Return
+        panelMoveMode = enabled
+        If panelHandleButton IsNot Nothing Then panelHandleButton.IsPressed = enabled
+        RefreshLevels()
+        RaiseEvent PanelHandleMoveModeChanged(Me, EventArgs.Empty)
+    End Sub
+
+    Private Sub EndPanelMoveMode()
+        SetPanelMoveMode(False)
+    End Sub
+
+    ''' <summary>Leaves the keyboard move mode from outside - a command that returns the panels to their places ends the
+    ''' move that was in progress. The mode-changed event is raised as for any other end.</summary>
+    Friend Sub LeavePanelMoveMode()
+        EndPanelMoveMode()
+    End Sub
 
     Public Function ActivateFocusedSecondary() As Boolean
         If focusedItem Is Nothing OrElse Not focusedItem.Enabled OrElse focusedItem.SecondaryAction Is Nothing Then Return False
@@ -1430,7 +1761,13 @@ Friend NotInheritable Class ChromeSurface
         End Property
 
         Public Overrides Sub DoDefaultAction()
-            If item.Enabled AndAlso item.Visible Then surface.RunAction(item, item.Action)
+            If Not item.Enabled OrElse Not item.Visible Then Return
+            ' The move handle has no action; its default action is its click (the handle's menu), for a reader with no pointer.
+            If item.IsPanelHandle Then
+                surface.RaisePanelHandleClick()
+            Else
+                surface.RunAction(item, item.Action)
+            End If
         End Sub
 
         Public Overrides Function Navigate(navdir As AccessibleNavigation) As AccessibleObject
@@ -1457,6 +1794,26 @@ Friend NotInheritable Class ChromeSurface
         MyBase.Dispose(disposing)
     End Sub
 
+End Class
+
+''' <summary>What the surface says about a move-handle gesture (L0281 T-3a). <see cref="ScreenPoint"/> is the pointer on the
+''' screen for the pointer events (empty for a key move); <see cref="StepsX"/> and <see cref="StepsY"/> are the keyboard
+''' move in whole steps (-1, 0 or +1, times the big-step count with Shift), zero for the pointer events;
+''' <see cref="Canceled"/> marks a release that is not a button-up but a lost mouse capture.</summary>
+Friend NotInheritable Class PanelHandleEventArgs
+    Inherits EventArgs
+
+    Public Sub New(screenPoint As Point, Optional stepsX As Integer = 0, Optional stepsY As Integer = 0, Optional canceled As Boolean = False)
+        Me.ScreenPoint = screenPoint
+        Me.StepsX = stepsX
+        Me.StepsY = stepsY
+        Me.Canceled = canceled
+    End Sub
+
+    Public ReadOnly Property ScreenPoint As Point
+    Public ReadOnly Property StepsX As Integer
+    Public ReadOnly Property StepsY As Integer
+    Public ReadOnly Property Canceled As Boolean
 End Class
 #End If
 

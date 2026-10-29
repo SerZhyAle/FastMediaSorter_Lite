@@ -536,6 +536,12 @@
     <Compile Include="..\..\src\RecipientsOverlayPlacement.vb">
       <Link>Linked\RecipientsOverlayPlacement.vb</Link>
     </Compile>
+    <!-- The pure geometry of a user-movable floating panel (L0281): places, the fit, the push-out, the snap.
+         RecipientsOverlayPlacement delegates its clamp, hot zone and scale conversions to it. Whole-file
+         "#If Not NETFRAMEWORK", like the file above. -->
+    <Compile Include="..\..\src\Chrome\FloatingPanelPlacement.vb">
+      <Link>Linked\Chrome\FloatingPanelPlacement.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\AudioMetadata.vb">
       <Link>Linked\AudioMetadata.vb</Link>
     </Compile>
@@ -1176,6 +1182,14 @@
     <Compile Include="..\..\src\Documents\TextFileReader.vb">
       <Link>Linked\Documents\TextFileReader.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Documents\TextDocumentModels.vb" />
+    <Compile Include="..\..\src\Documents\TextEncodingDetector.vb" />
+    <Compile Include="..\..\src\Documents\TextEncodingChoice.vb" />
+    <Compile Include="..\..\src\Documents\TextExcerpt.vb" />
+    <Compile Include="..\..\src\Documents\TextFilePager.vb" />
+    <Compile Include="..\..\src\Documents\TextFileSearch.vb" />
+    <Compile Include="..\..\src\Documents\TextReaderLayout.vb" />
+    <Compile Include="..\..\src\Documents\DocumentPanelRules.vb" />
     <Compile Include="..\..\src\Documents\PdfDocumentSource.vb">
       <Link>Linked\Documents\PdfDocumentSource.vb</Link>
     </Compile>
@@ -1187,6 +1201,9 @@
     <Compile Include="..\..\src\Documents\DocumentSnapshot.vb" />
     <Compile Include="..\..\src\Documents\HtmlReaderContent.vb" />
     <Compile Include="..\..\src\ModernViewerPreferences.Documents.vb" />
+    <!-- Specification 276 T-2: the document command line and converter discovery (whole-file modern-only). -->
+    <Compile Include="..\..\src\Documents\DocHtmlJobArguments.vb" />
+    <Compile Include="..\..\src\Documents\DocHtmlConverterLocator.vb" />
     <!-- Specification 275: models/policy compile on both legs (DOCUMENT_PREVIEW_TESTS); the
          rest is modern-only and compiles to nothing on net48. No WebView2 host here. -->
     <Compile Include="..\..\src\Documents\HtmlDocumentModels.vb" />
@@ -1199,6 +1216,7 @@
     <Compile Include="..\..\src\Documents\HtmlDocumentAdapters.vb" />
     <Compile Include="..\..\src\Documents\HtmlBrowserLauncher.vb" />
     <Compile Include="..\..\src\ModernViewerPreferences.Html.vb" />
+    <Compile Include="..\..\src\ModernViewerPreferences.Text.vb" />
     <Compile Include="..\..\src\Documents\EpubMetadata.vb">
       <Link>Linked\Documents\EpubMetadata.vb</Link>
     </Compile>

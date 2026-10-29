@@ -43,7 +43,7 @@ Friend NotInheritable Class Scheduled_History_Form
         ShowInTaskbar = False
         StartPosition = FormStartPosition.CenterParent
         MinimumSize = New Size(560, 320)
-        ClientSize = New Size(860, 480)
+        ClientSize = New Size(860, 480 + ContextHelpUi.BadgeEdge)
 
         list = New ListView With {.Dock = DockStyle.Fill, .View = View.Details, .FullRowSelect = True, .HideSelection = False,
             .MultiSelect = False, .Name = "lvSchedHistory", .AccessibleName = Localization.T("Журнал операций по расписанию")}
@@ -73,14 +73,30 @@ Friend NotInheritable Class Scheduled_History_Form
         Controls.Add(list)
         Controls.Add(lblEmpty)
         Controls.Add(_answerRow)
+        ' The strip the help badge sits in, so it does not lie over the first column (the last one under right-to-left reading).
+        ' Added last: it takes the top edge first and the empty-journal line stands under it.
+        Controls.Add(ContextHelpUi.CornerBand())
         _answerRow.Bind(Me)
+        AddHandler list.SizeChanged, Sub() FillResultColumn()
         ResumeLayout(True)
         DpiLayout.ApplyAutoScale(Me)
     End Sub
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' WinForms never scales a ListView's column widths: they were measured before the window had its own DPI.
+        list.Columns(0).Width = LogicalToDeviceUnits(140)
+        list.Columns(1).Width = LogicalToDeviceUnits(170)
+        list.Columns(2).Width = LogicalToDeviceUnits(120)
+        FillResultColumn()
         DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    ''' <summary>The result is the long column: it takes the width the other three leave, never less than its authored width.</summary>
+    Private Sub FillResultColumn()
+        If list Is Nothing OrElse list.Columns.Count < 4 Then Return
+        Dim others As Integer = list.Columns(0).Width + list.Columns(1).Width + list.Columns(2).Width
+        list.Columns(3).Width = Math.Max(LogicalToDeviceUnits(380), list.ClientSize.Width - others)
     End Sub
 
     Private Sub LoadRows()

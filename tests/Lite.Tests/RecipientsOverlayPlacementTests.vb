@@ -1,6 +1,7 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.Drawing
 Imports Xunit
 
@@ -249,6 +250,181 @@ Public Class RecipientsOverlayPlacementTests
         Dim area As New Rectangle(0, 0, 800, 600)
         Dim panel As New Rectangle(120, 90, 200, 140)
         Assert.Equal(panel, RecipientsOverlayPlacement.HotZone(panel, area, 0))
+    End Sub
+
+    ' ----------------------------------------------- the shared place (L0281 T-6, owner answer Q281-3) ----
+    ' The recovery-clamp facts above (PullInside / HeaderInside) are 219 §6 arithmetic; since T-6 the free table is
+    ' placed by the shared model instead (live clamp, intended place kept across resizes, corner representation), and
+    ' PullInside is only the wrapper of the same Fit. The facts below are what 219's repair-on-drop is replaced by.
+
+    <Fact>
+    Public Sub A_valid_stored_place_wins_over_the_old_triple()
+        Dim place As PanelPlace
+        For Each hasLegacy As Boolean In {True, False}
+            Assert.True(RecipientsOverlayPlacement.TryReadPlace("BR:24,36", hasLegacy, 100, 200, place))
+            Assert.Equal(PanelCorner.BottomRight, place.Corner)
+            Assert.Equal(24, place.Dx)
+            Assert.Equal(36, place.Dy)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub An_old_triple_alone_is_read_as_a_top_left_place()
+        ' 219 stored a logical offset from the media area's top-left: the special case TL:x,y of the shared model.
+        Dim place As PanelPlace
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace("", True, 237, 19, place))
+        Assert.Equal(PanelCorner.TopLeft, place.Corner)
+        Assert.Equal(237, place.Dx)
+        Assert.Equal(19, place.Dy)
+        Assert.Equal("TL:237,19", FloatingPanelPlacement.Encode(place))
+    End Sub
+
+    <Fact>
+    Public Sub A_negative_old_coordinate_reads_as_zero()
+        ' 219 allowed a drop outside the media area (negative offsets); the shared place never has a negative distance.
+        Dim place As PanelPlace
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace(Nothing, True, -137, 245, place))
+        Assert.Equal("TL:0,245", FloatingPanelPlacement.Encode(place))
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace(Nothing, True, 12, -3, place))
+        Assert.Equal("TL:12,0", FloatingPanelPlacement.Encode(place))
+    End Sub
+
+    <Fact>
+    Public Sub A_garbled_stored_place_falls_back_to_the_old_triple_and_then_to_the_corner()
+        Dim garbled As String() = {"XX:1,2", "TL:-1,2", "TL:1,2,3", "TL:1", "tl:1,2", "TL:20001,0", "Z9:1,2;future", "BR:5", "  "}
+        Dim place As PanelPlace
+        For Each text As String In garbled
+            ' with an old triple the table is read from it; without one it stands at its corner choice
+            Assert.True(RecipientsOverlayPlacement.TryReadPlace(text, True, 40, 50, place), text)
+            Assert.Equal("TL:40,50", FloatingPanelPlacement.Encode(place))
+            Assert.False(RecipientsOverlayPlacement.TryReadPlace(text, False, 40, 50, place), text)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub Nothing_stored_means_the_corner_choice_and_the_flag_alone_says_so()
+        ' The flag alone says "anchored": numbers without HasCustomPosition (an imported old file, a reset) are not a place.
+        Dim place As PanelPlace
+        Assert.False(RecipientsOverlayPlacement.TryReadPlace("", False, 0, 0, place))
+        Assert.False(RecipientsOverlayPlacement.TryReadPlace(Nothing, False, 300, 200, place))
+        Assert.Equal("TL:0,0", FloatingPanelPlacement.Encode(place))
+    End Sub
+
+    <Theory>
+    <InlineData(1.0F)>
+    <InlineData(1.5F)>
+    <InlineData(2.0F)>
+    Public Sub An_old_point_reads_at_the_very_visual_spot_219_placed_it(factor As Single)
+        ' The allowed area of a free table starts where the media area does (inset 0), so TL:x,y puts the table exactly
+        ' where 219 put the stored point: media origin + the logical offset through the same scale seam.
+        Dim media As New Rectangle(100, 50, 800, 600)
+        Dim place As PanelPlace
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace("", True, 40, 30, place))
+        Dim rect As Rectangle = FloatingPanelPlacement.Effective(place, media, New Size(200, 120), factor, False)
+        Dim old As Point = RecipientsOverlayPlacement.ToDeviceOffset(New Point(40, 30), factor)
+        Assert.Equal(New Point(media.X + old.X, media.Y + old.Y), rect.Location)
+    End Sub
+
+    <Fact>
+    Public Sub A_resize_never_writes_the_intended_place_back_and_the_table_returns_where_it_was_left()
+        ' Q281-3: the intended place is kept across resizes. Placement is a pure function of (place, area, size): the same
+        ' place in a shrunken area is carried inside, and in the original area again it is exactly where it was.
+        Dim place As PanelPlace
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace("BR:24,36", False, 0, 0, place))
+        Dim panel As New Size(200, 300)
+        Dim wide As New Rectangle(0, 0, 1000, 800)
+        Dim original As Rectangle = FloatingPanelPlacement.Effective(place, wide, panel, 1.0F, False)
+        Assert.Equal(New Rectangle(776, 464, 200, 300), original)
+        For Each smaller As Rectangle In {New Rectangle(0, 0, 500, 400), New Rectangle(0, 0, 150, 250), New Rectangle(30, 20, 220, 310)}
+            Dim carried As Rectangle = FloatingPanelPlacement.Effective(place, smaller, panel, 1.0F, False)
+            If panel.Width <= smaller.Width AndAlso panel.Height <= smaller.Height Then
+                Assert.True(smaller.Contains(carried), "the table must be carried inside " & smaller.ToString())
+            End If
+            Assert.Equal("BR:24,36", FloatingPanelPlacement.Encode(place))   ' nothing was written back
+            Assert.Equal(original, FloatingPanelPlacement.Effective(place, wide, panel, 1.0F, False))
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub No_proposed_rectangle_of_a_drag_ever_leaves_the_allowed_area()
+        ' R2 (no pixel outside, even for a frame): WM_MOVING hands every proposed rectangle to Fit before the window moves.
+        Dim allowed As New Rectangle(20, 30, 760, 540)
+        Dim size As New Size(280, 300)
+        For x As Integer = -600 To 1500 Step 37
+            For y As Integer = -600 To 1300 Step 41
+                For Each startIsRight As Boolean In {False, True}
+                    Dim fitted As Rectangle = FloatingPanelPlacement.Fit(New Rectangle(x, y, size.Width, size.Height), allowed, startIsRight)
+                    Assert.True(allowed.Contains(fitted), "outside at " & x.ToString() & "," & y.ToString() & ": " & fitted.ToString())
+                    Assert.Equal(size, fitted.Size)
+                Next
+            Next
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub A_proposed_rectangle_already_inside_is_left_alone_so_the_pointer_keeps_its_grab_point()
+        Dim allowed As New Rectangle(20, 30, 760, 540)
+        Dim inside As New Rectangle(300, 200, 280, 300)
+        Assert.Equal(inside, FloatingPanelPlacement.Fit(inside, allowed, False))
+    End Sub
+
+    <Theory>
+    <InlineData(1.0F)>
+    <InlineData(1.5F)>
+    <InlineData(2.0F)>
+    Public Sub A_dropped_table_is_stored_as_a_place_and_comes_back_at_the_same_spot(factor As Single)
+        Dim allowed As New Rectangle(100, 50, 800, 600)
+        Dim size As New Size(CInt(280 * factor), CInt(300 * factor))
+        Dim started As New Rectangle(allowed.X + CInt(8 * factor), allowed.Y + CInt(8 * factor), size.Width, size.Height)
+        Dim dropped As New Rectangle(allowed.X + CInt(210 * factor), allowed.Y + CInt(90 * factor), size.Width, size.Height)
+        Dim result As Rectangle
+        Dim outcome As PanelDropOutcome = FloatingPanelPlacement.DecideDrop(started, dropped, started, allowed, New List(Of Rectangle)(),
+                                                                          CInt(12 * factor), False, result)
+        Assert.Equal(PanelDropOutcome.Placed, outcome)
+        Dim text As String = FloatingPanelPlacement.Encode(FloatingPanelPlacement.FromRectangle(result, allowed, factor))
+        Dim place As PanelPlace
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace(text, False, 0, 0, place))
+        Assert.Equal(result, FloatingPanelPlacement.Effective(place, allowed, size, factor, False))
+        ' The triple an older build reads: the dropped top-left in logical px from the media area. Read alone (the new key
+        ' absent) it puts the table at the same spot - the triple stays meaningful.
+        Dim legacy As Point = RecipientsOverlayPlacement.ToLogicalPoint(New Point(result.X - allowed.X, result.Y - allowed.Y), factor)
+        Dim fromTriple As PanelPlace
+        Assert.True(RecipientsOverlayPlacement.TryReadPlace("", True, legacy.X, legacy.Y, fromTriple))
+        Assert.Equal(result, FloatingPanelPlacement.Effective(fromTriple, allowed, size, factor, False))
+    End Sub
+
+    <Fact>
+    Public Sub A_drop_where_the_drag_began_is_unchanged_and_a_drop_next_to_the_anchor_clears_the_place()
+        Dim allowed As New Rectangle(0, 0, 800, 600)
+        Dim anchored As New Rectangle(8, 8, 280, 300)
+        Dim result As Rectangle
+        Assert.Equal(PanelDropOutcome.Unchanged, FloatingPanelPlacement.DecideDrop(anchored, anchored, anchored, allowed,
+                     New List(Of Rectangle)(), 12, False, result))
+        Assert.Equal(anchored, result)
+        Dim free As New Rectangle(400, 200, 280, 300)
+        Assert.Equal(PanelDropOutcome.Anchor, FloatingPanelPlacement.DecideDrop(free, New Rectangle(15, 17, 280, 300), anchored, allowed,
+                     New List(Of Rectangle)(), 12, False, result))
+        Assert.Equal(anchored, result)
+        Assert.Equal(PanelDropOutcome.Placed, FloatingPanelPlacement.DecideDrop(free, New Rectangle(25, 17, 280, 300), anchored, allowed,
+                     New List(Of Rectangle)(), 12, False, result))
+    End Sub
+
+    <Fact>
+    Public Sub A_table_dropped_on_a_protected_surface_is_pushed_out_or_the_move_is_refused()
+        Dim allowed As New Rectangle(0, 0, 800, 600)
+        Dim start As New Rectangle(8, 8, 280, 300)
+        Dim controls As New Rectangle(700, 0, 100, 40)        ' the window commands in the corner
+        Dim result As Rectangle
+        Dim outcome As PanelDropOutcome = FloatingPanelPlacement.DecideDrop(start, New Rectangle(500, 10, 280, 300), start, allowed,
+                                                                          New List(Of Rectangle) From {controls}, 12, False, result)
+        Assert.Equal(PanelDropOutcome.Placed, outcome)
+        Assert.False(result.IntersectsWith(controls), "the table must not cover the window commands")
+        Assert.True(allowed.Contains(result))
+        ' A protected surface that leaves no free fit refuses the move: nothing is stored, the table returns to the start.
+        Dim everything As New Rectangle(0, 0, 800, 600)
+        Assert.Equal(PanelDropOutcome.Refused, FloatingPanelPlacement.DecideDrop(start, New Rectangle(300, 200, 280, 300), start, allowed,
+                     New List(Of Rectangle) From {everything}, 12, False, result))
+        Assert.Equal(start, result)
     End Sub
 
 End Class

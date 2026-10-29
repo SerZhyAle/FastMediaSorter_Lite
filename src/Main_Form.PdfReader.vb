@@ -16,21 +16,21 @@ Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 Partial Public Class Main_Form
-    Private pdf_Reader_Toolbar As ToolStrip
     Private pdf_Reader_Pane As TabControl
-    Private pdf_Reader_Page As NumericUpDown
+    ''' <summary>The page the reader shows: what the page box of the document panel reads.</summary>
+    Private pdf_Reader_ShownPage As Integer = 1
     Private pdf_Reader_Text As RichTextBox
     Private pdf_Reader_Query As TextBox
     Private pdf_Reader_Results As ListBox
     Private pdf_Reader_Outline As TreeView
     Private pdf_Reader_Bookmarks As ListBox
-    Private pdf_Reader_Context As ToolStripLabel
+    ''' <summary>The context readout of the document panel: which keys work now, or the state of a search.</summary>
+    Private pdf_Reader_ContextText As String = ""
     Private pdf_Reader_Info As PdfReaderInfo
     Private pdf_Reader_TextPage As PdfTextPage
     Private pdf_Reader_Cts As CancellationTokenSource
     Private pdf_Reader_SearchCts As CancellationTokenSource
     Private pdf_Reader_Interaction As Boolean
-    Private pdf_Reader_Updating As Boolean
     Private pdf_Reader_SelectionStart As Integer = -1
     Private pdf_Reader_SelectionEnd As Integer = -1
     Private ReadOnly pdf_Reader_Back As New Stack(Of Integer)()
@@ -43,8 +43,6 @@ Partial Public Class Main_Form
     Private pdf_Reader_Preferences As ModernViewerPreferences
     Private ReadOnly pdf_Reader_SessionAppearance As New Dictionary(Of String, String)(StringComparer.Ordinal)
     Private pdf_Reader_Arranging As Boolean
-    Private pdf_Reader_ChromeTimer As System.Windows.Forms.Timer
-    Private pdf_Reader_LastActivity As DateTime
     Private pdf_Reader_Thumbnails As ListBox
     Private ReadOnly pdf_Reader_ThumbnailCache As New Dictionary(Of Integer, Bitmap)()
     Private pdf_Reader_ThumbnailBusy As Boolean
@@ -119,42 +117,23 @@ Partial Public Class Main_Form
         e.DrawFocusRectangle()
     End Sub
 
-    Private Sub RevealPdfReaderToolbar()
-        If Not FullPdfReaderActive() Then Return
-        pdf_Reader_LastActivity = DateTime.UtcNow
-        If Not pdf_Reader_Toolbar.Visible Then
-            pdf_Reader_Toolbar.Visible = True
-            LayoutPdfReader(Me, EventArgs.Empty)
-        End If
-    End Sub
-
-    Private Sub TickPdfReaderChrome(sender As Object, e As EventArgs)
-        If Not FullPdfReaderActive() Then Return
-        Dim pointer = panel_Media.PointToClient(Cursor.Position)
-        If Not (is_Full_Screen_Mode OrElse is_Super_Full_Screen_Mode) OrElse modern_Preferences.DocumentFullscreenChrome = "visible" OrElse
-            pdf_Reader_Toolbar.ContainsFocus OrElse pdf_Reader_Pane.Visible OrElse (pointer.Y >= 0 AndAlso pointer.Y <= pdf_Reader_Toolbar.Height AndAlso pointer.X >= 0 AndAlso pointer.X < panel_Media.Width) Then
-            RevealPdfReaderToolbar()
-        ElseIf (DateTime.UtcNow - pdf_Reader_LastActivity).TotalSeconds > 3 AndAlso pdf_Reader_Toolbar.Visible Then
-            pdf_Reader_Toolbar.Visible = False
-            LayoutPdfReader(Me, EventArgs.Empty)
-        End If
-    End Sub
-
+    ''' <summary>The page fills the whole media area beside the side pane: the document panel floats over it and takes no room.</summary>
     Private Function PdfReaderViewport() As Rectangle
         Dim rect = panel_Media.ClientRectangle
         If Not FullPdfReaderActive() Then Return rect
-        Dim top = If(pdf_Reader_Toolbar.Visible, pdf_Reader_Toolbar.Height, 0)
         Dim left = If(pdf_Reader_Pane.Visible, pdf_Reader_Pane.Width, 0)
-        Return New Rectangle(left, top, Math.Max(1, rect.Width - left), Math.Max(1, rect.Height - top))
+        Return New Rectangle(left, 0, Math.Max(1, rect.Width - left), Math.Max(1, rect.Height))
     End Function
 
     Private Sub LayoutPdfReader(sender As Object, e As EventArgs)
         If Not FullPdfReaderActive() OrElse pdf_Reader_Arranging Then Return
         pdf_Reader_Arranging = True
         Try
-            pdf_Reader_Toolbar.Width = panel_Media.ClientSize.Width
             Dim rect = PdfReaderViewport()
-            pdf_Reader_Pane.Bounds = New Rectangle(0, rect.Top, pdf_Reader_Pane.Width, rect.Height)
+            ' The pane starts below the lowest pinned top panel so its tabs are never hidden (280 Q280-1 default).
+            document_Pane_Top = DocumentPaneTop()
+            Dim paneTop = Math.Min(document_Pane_Top, Math.Max(0, rect.Height - 1))
+            pdf_Reader_Pane.Bounds = New Rectangle(0, paneTop, pdf_Reader_Pane.Width, Math.Max(1, rect.Height - paneTop))
             If pdf_Reading_Canvas IsNot Nothing Then pdf_Reading_Canvas.Bounds = rect
             ApplyPdfReaderFitViewport()
         Finally
@@ -200,25 +179,119 @@ Partial Public Class Main_Form
         pdf_Reader_Preferences.NormalizeDocumentPreferences()
     End Sub
 
-    Private Sub PdfAppearanceChoice(key As String, values As String(), titles As String())
-        Dim combo As New ToolStripComboBox With {.Name = key, .Tag = titles, .DropDownStyle = ComboBoxStyle.DropDownList, .AutoSize = False, .Width = CInt(110 * GetCurrentDpiScale())}
-        combo.Items.AddRange(titles.Select(Function(title) Localization.T(title)).Cast(Of Object)().ToArray())
+    ''' <summary>The stored value of an appearance choice (<c>PdfLayout</c>, <c>PdfColorMode</c>) for the document on screen.</summary>
+    Private Function PdfAppearanceValue(key As String) As String
         Dim prop = GetType(ModernViewerPreferences).GetProperty(key)
-        combo.SelectedIndex = Math.Max(0, Array.IndexOf(values, CStr(prop.GetValue(PdfReaderPreferences()))))
-        combo.AccessibleName = Localization.T(If(key = "PdfLayout", "Режим просмотра", "Цвет страницы"))
-        AddHandler combo.SelectedIndexChanged, Sub()
-            If pdf_Reader_Updating OrElse combo.SelectedIndex < 0 Then Return
-            Dim value = values(combo.SelectedIndex)
-            pdf_Reader_SessionAppearance(key) = value
-            If modern_Preferences.RememberDocumentAppearance Then modern_Preferences.OverrideDocumentAppearance(PdfReaderIdentity(), key, value)
-            UpdatePdfAppearance()
-            ConfigurePdfReadingCanvas()
-            ClearPdfCache()
-            DisplayPdfPage(pdf_Current_Page)
-            MarkSettingsDirty()
-        End Sub
-        pdf_Reader_Toolbar.Items.Add(combo)
+        Return CStr(prop.GetValue(PdfReaderPreferences()))
+    End Function
+
+    ''' <summary>The layout and colour-mode menu buttons: the item shows the current choice, reserves the width of the widest, and its menu
+    ''' lists the choices with the current one checked (the sort button's route).</summary>
+    Private Function PdfAppearanceCommand(key As String, id As String) As DocumentCommand
+        Dim choices = DocumentPanelRules.MenuChoices(id)
+        Return New DocumentCommand With {
+            .Text = Function() PdfAppearanceCaption(key, choices),
+            .Reserved = Function() choices.Select(Function(choice) Localization.T(choice.Value)).ToArray(),
+            .Menu = Function() PdfAppearanceMenu(key, choices)}
+    End Function
+
+    Private Function PdfAppearanceCaption(key As String, choices As KeyValuePair(Of String, String)()) As String
+        Dim current = PdfAppearanceValue(key)
+        For Each choice In choices
+            If choice.Key = current Then Return Localization.T(choice.Value)
+        Next
+        Return Localization.T(choices(0).Value)
+    End Function
+
+    Private Function PdfAppearanceMenu(key As String, choices As KeyValuePair(Of String, String)()) As IEnumerable(Of ChromeMenuItem)
+        Dim current = PdfAppearanceValue(key)
+        Dim entries As New List(Of ChromeMenuItem)()
+        For Each choice In choices
+            Dim value As String = choice.Key
+            entries.Add(New ChromeMenuItem(key & "_" & value) With {
+                .Caption = Localization.T(choice.Value), .Checked = value = current,
+                .Action = Sub() ApplyPdfAppearance(key, value)})
+        Next
+        Return entries
+    End Function
+
+    Private Sub ApplyPdfAppearance(key As String, value As String)
+        If Not FullPdfReaderActive() Then Return
+        pdf_Reader_SessionAppearance(key) = value
+        If modern_Preferences.RememberDocumentAppearance Then modern_Preferences.OverrideDocumentAppearance(PdfReaderIdentity(), key, value)
+        UpdatePdfAppearance()
+        ConfigurePdfReadingCanvas()
+        ClearPdfCache()
+        DisplayPdfPage(pdf_Current_Page)
+        MarkSettingsDirty()
+        SyncDocumentPanel()
     End Sub
+
+    Private Sub ResetPdfAppearance()
+        If Not FullPdfReaderActive() Then Return
+        modern_Preferences.ClearDocumentAppearance(PdfReaderIdentity())
+        pdf_Reader_SessionAppearance.Clear()
+        UpdatePdfAppearance()
+        ConfigurePdfReadingCanvas()
+        ClearPdfCache()
+        DisplayPdfPage(pdf_Current_Page)
+        MarkSettingsDirty()
+        SyncDocumentPanel()
+    End Sub
+
+    Private Sub RotatePdfReaderPage()
+        If Not FullPdfReaderActive() Then Return
+        pdf_Current_Source.RotatePageClockwise(pdf_Current_Page)
+        CancelPdfRender()
+        ClearPdfCache()
+        For Each image In pdf_Reader_ThumbnailCache.Values
+            image.Dispose()
+        Next
+        pdf_Reader_ThumbnailCache.Clear()
+        ConfigurePdfReadingCanvas()
+        DisplayPdfPage(pdf_Current_Page)
+    End Sub
+
+    Private Sub PdfReaderGoBack()
+        If pdf_Reader_Back.Count > 0 Then DisplayPdfPage(pdf_Reader_Back.Pop())
+    End Sub
+
+    ''' <summary>What the PDF reader puts on the document panel, by item id (the order is the panel's: <see cref="DocumentPanelRules"/>).
+    ''' Previous / next file and the settings button are not here - the rows carry them.</summary>
+    Private Function PdfReaderCommands() As Dictionary(Of String, DocumentCommand)
+        Dim commands As New Dictionary(Of String, DocumentCommand)(StringComparer.Ordinal)
+        commands(DocumentPanelRules.IdBack) = New DocumentCommand With {.Action = AddressOf PdfReaderGoBack}
+        commands(DocumentPanelRules.IdPrevPage) = New DocumentCommand With {.Action = AddressOf PdfPrevPage}
+        commands(DocumentPanelRules.IdPagePosition) = New DocumentCommand With {
+            .Action = Sub() BeginDocumentPositionEdit(DocumentPanelRules.IdPagePosition, pdf_Reader_ShownPage, pdf_Total_Pages, Sub(page) DisplayPdfPage(page)),
+            .Text = Function() DocumentPanelRules.PositionReadout(pdf_Reader_ShownPage, pdf_Total_Pages, DocumentPanelRules.PositionReadoutFormat),
+            .Reserved = Function() New String() {DocumentPanelRules.PositionReadoutReserved(pdf_Total_Pages, DocumentPanelRules.PositionReadoutFormat)}}
+        commands(DocumentPanelRules.IdNextPage) = New DocumentCommand With {.Action = AddressOf PdfNextPage}
+        For Each pane As KeyValuePair(Of String, Integer) In New KeyValuePair(Of String, Integer)() {
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneOutline, 0),
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneSearch, 1),
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneText, 2),
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneBookmarks, 3),
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneThumbnails, 4)}
+            Dim index As Integer = pane.Value
+            commands(pane.Key) = New DocumentCommand With {
+                .Action = Sub() TogglePdfReaderPane(index),
+                .IsChecked = Function() pdf_Reader_Pane IsNot Nothing AndAlso pdf_Reader_Pane.Visible AndAlso pdf_Reader_Pane.SelectedIndex = index}
+        Next
+        commands(DocumentPanelRules.IdAddBookmark) = New DocumentCommand With {.Action = AddressOf AddPdfReaderBookmark}
+        commands(DocumentPanelRules.IdSpeak) = New DocumentCommand With {.Action = AddressOf SpeakPdfReader}
+        commands(DocumentPanelRules.IdStopSpeech) = New DocumentCommand With {.Action = Sub() pdf_Reader_Voice?.Stop()}
+        commands(DocumentPanelRules.IdRotate) = New DocumentCommand With {.Action = AddressOf RotatePdfReaderPage}
+        commands(DocumentPanelRules.IdLayout) = PdfAppearanceCommand("PdfLayout", DocumentPanelRules.IdLayout)
+        commands(DocumentPanelRules.IdColorMode) = PdfAppearanceCommand("PdfColorMode", DocumentPanelRules.IdColorMode)
+        commands(DocumentPanelRules.IdResetAppearance) = New DocumentCommand With {.Action = AddressOf ResetPdfAppearance}
+        commands(DocumentPanelRules.IdOpenWith) = New DocumentCommand With {.Action = Sub() ManagerShellOpen.OpenWithPicker(Handle, pdf_Current_File_Path)}
+        commands(DocumentPanelRules.IdTranslate) = New DocumentCommand With {.Action = Sub() OpenDocumentConversion(pdf_Current_File_Path)}
+        commands(DocumentPanelRules.IdContext) = New DocumentCommand With {
+            .Text = Function() pdf_Reader_ContextText,
+            .Reserved = Function() New String() {Localization.T("Просмотр: клавиши сортируют файлы"), Localization.T("Документ: Esc возвращает сортировку")}}
+        Return commands
+    End Function
 
     Private Function PdfReaderPoint(box As PictureBox, location As Point) As PointF
         Dim rect = DisplayedImageRectangleOnPanel(ActiveMediaImage())
@@ -296,8 +369,7 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function FullPdfReaderActive() As Boolean
-        Return IsPdfDocumentShown() AndAlso pdf_Reader_Toolbar IsNot Nothing AndAlso Not pdf_Reader_Toolbar.IsDisposed AndAlso
-            pdf_Reader_Pane IsNot Nothing AndAlso Not pdf_Reader_Pane.IsDisposed
+        Return IsPdfDocumentShown() AndAlso pdf_Reader_Pane IsNot Nothing AndAlso Not pdf_Reader_Pane.IsDisposed
     End Function
 
     Private Function PdfReaderIdentity() As DocumentIdentity
@@ -349,13 +421,6 @@ Partial Public Class Main_Form
         End Try
     End Function
 
-    Private Sub PdfReaderButton(text As String, action As Action)
-        Dim button As New ToolStripButton(Localization.T(text)) With {.Tag = text, .DisplayStyle = ToolStripItemDisplayStyle.Text}
-        button.AccessibleName = button.Text
-        AddHandler button.Click, Sub() action()
-        pdf_Reader_Toolbar.Items.Add(button)
-    End Sub
-
     Private Sub OpenPdfReaderUi()
         UpdatePdfAppearance()
         If pdf_Reader_Restore IsNot Nothing AndAlso pdf_Reader_Restore.HasViewport Then
@@ -363,57 +428,8 @@ Partial Public Class Main_Form
             pdf_Reader_Preferences.PdfZoomPercent = pdf_Reader_Restore.ZoomPercent
         End If
         pdf_Reader_Cts = New CancellationTokenSource()
-        pdf_Reader_Toolbar = New ToolStrip With {.Dock = DockStyle.None, .AutoSize = False, .Height = CInt(32 * GetCurrentDpiScale()), .GripStyle = ToolStripGripStyle.Hidden, .TabStop = True,
-            .AccessibleName = Localization.T("Чтение PDF"), .RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)}
-        PdfReaderButton("Предыдущий файл", Sub() ReadShowMediaFile(Mode_Prev))
-        PdfReaderButton("Следующий файл", Sub() ReadShowMediaFile(Mode_Next))
-        pdf_Reader_Toolbar.Items.Add(New ToolStripSeparator())
-        PdfReaderButton("Назад", Sub()
-                                     If pdf_Reader_Back.Count > 0 Then DisplayPdfPage(pdf_Reader_Back.Pop())
-                                 End Sub)
-        PdfReaderButton("Предыдущая страница", AddressOf PdfPrevPage)
-        pdf_Reader_Page = New NumericUpDown With {.Minimum = 1, .Maximum = pdf_Total_Pages, .Value = pdf_Current_Page,
-            .Width = CInt(80 * GetCurrentDpiScale()), .AccessibleName = Localization.T("Номер страницы")}
-        pdf_Reader_Toolbar.Items.Add(New ToolStripControlHost(pdf_Reader_Page))
-        AddHandler pdf_Reader_Page.ValueChanged, Sub()
-                                                    If Not pdf_Reader_Updating Then DisplayPdfPage(CInt(pdf_Reader_Page.Value))
-                                                End Sub
-        PdfReaderButton("Следующая страница", AddressOf PdfNextPage)
-        PdfReaderButton("Оглавление", Sub() TogglePdfReaderPane(0))
-        PdfReaderButton("Поиск", Sub() TogglePdfReaderPane(1))
-        PdfReaderButton("Текст", Sub() TogglePdfReaderPane(2))
-        PdfReaderButton("Закладки", Sub() TogglePdfReaderPane(3))
-        PdfReaderButton("Миниатюры страниц", Sub() TogglePdfReaderPane(4))
-        PdfReaderButton("Добавить закладку", AddressOf AddPdfReaderBookmark)
-        PdfReaderButton("Чтение вслух", AddressOf SpeakPdfReader)
-        PdfReaderButton("Остановить", Sub() pdf_Reader_Voice?.Stop())
-        PdfReaderButton("Настройки", AddressOf ShowSettingsWindow)
-        PdfReaderButton("doc-html-translate", Sub() OpenDocumentConversion(pdf_Current_File_Path))
-        PdfReaderButton("Открыть с помощью", Sub() ManagerShellOpen.OpenWithPicker(Handle, pdf_Current_File_Path))
-        PdfReaderButton("Повернуть вправо", Sub()
-            pdf_Current_Source.RotatePageClockwise(pdf_Current_Page)
-            CancelPdfRender()
-            ClearPdfCache()
-            For Each image In pdf_Reader_ThumbnailCache.Values
-                image.Dispose()
-            Next
-            pdf_Reader_ThumbnailCache.Clear()
-            ConfigurePdfReadingCanvas()
-            DisplayPdfPage(pdf_Current_Page)
-        End Sub)
-        PdfAppearanceChoice("PdfLayout", {"single", "continuous", "spread"}, {"Одна страница", "Непрерывно", "Разворот"})
-        PdfAppearanceChoice("PdfColorMode", {"original", "night", "sepia"}, {"Оригинал", "Ночь", "Сепия"})
-        PdfReaderButton("Сбросить оформление", Sub()
-            modern_Preferences.ClearDocumentAppearance(PdfReaderIdentity())
-            pdf_Reader_SessionAppearance.Clear()
-            UpdatePdfAppearance()
-            ConfigurePdfReadingCanvas()
-            ClearPdfCache()
-            DisplayPdfPage(pdf_Current_Page)
-            MarkSettingsDirty()
-        End Sub)
-        pdf_Reader_Context = New ToolStripLabel(Localization.T("Просмотр: клавиши сортируют файлы")) With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.Never}
-        pdf_Reader_Toolbar.Items.Add(pdf_Reader_Context)
+        pdf_Reader_ShownPage = pdf_Current_Page
+        pdf_Reader_ContextText = Localization.T("Просмотр: клавиши сортируют файлы")
         pdf_Reader_Pane = New TabControl With {.Dock = DockStyle.None, .Width = CInt(PdfReaderPreferences().PdfPanelWidth * GetCurrentDpiScale()), .Visible = False}
         For Each title In {"Оглавление", "Поиск", "Текст", "Закладки", "Миниатюры страниц"}
             pdf_Reader_Pane.TabPages.Add(New TabPage(Localization.T(title)))
@@ -493,27 +509,21 @@ Partial Public Class Main_Form
         End Sub
         pdf_Reader_Pane.TabPages(4).Controls.Add(pdf_Reader_Thumbnails)
         panel_Media.Controls.Add(pdf_Reader_Pane)
-        panel_Media.Controls.Add(pdf_Reader_Toolbar)
         pdf_Reader_Pane.BringToFront()
-        pdf_Reader_Toolbar.BringToFront()
-        pdf_Reader_Toolbar.AllowDrop = True
-        AddHandler pdf_Reader_Toolbar.DragEnter, AddressOf Form1_DragEnter
-        AddHandler pdf_Reader_Toolbar.DragDrop, AddressOf Form1_DragDrop
         RefreshPdfBookmarks()
         ReadPdfReaderInfo()
         ConfigurePdfReadingCanvas()
         ApplyPdfReaderTheme(ThemeService.Palette)
         AddHandler panel_Media.SizeChanged, AddressOf LayoutPdfReader
-        AddHandler pdf_Reader_Pane.VisibleChanged, AddressOf LayoutPdfReader
-        AddHandler pdf_Reader_Toolbar.SizeChanged, AddressOf LayoutPdfReader
-        AddHandler pdf_Reader_Toolbar.Enter, Sub() UpdatePdfReaderContext()
+        AddHandler pdf_Reader_Pane.VisibleChanged, Sub()
+                                                      LayoutPdfReader(Me, EventArgs.Empty)
+                                                      SyncDocumentPanel()
+                                                  End Sub
+        AddHandler pdf_Reader_Pane.SelectedIndexChanged, Sub() SyncDocumentPanel()
         AddHandler pdf_Reader_Pane.Enter, Sub() UpdatePdfReaderContext()
         LayoutPdfReader(Me, EventArgs.Empty)
+        ShowDocumentCommands(DocumentReaderKind.Pdf, PdfReaderCommands())
         If PdfReaderPreferences().PdfThumbnailPanel Then TogglePdfReaderPane(4)
-        pdf_Reader_LastActivity = DateTime.UtcNow
-        pdf_Reader_ChromeTimer = New System.Windows.Forms.Timer With {.Interval = 250}
-        AddHandler pdf_Reader_ChromeTimer.Tick, AddressOf TickPdfReaderChrome
-        pdf_Reader_ChromeTimer.Start()
     End Sub
 
     Private Sub ConfigurePdfReadingCanvas()
@@ -572,54 +582,33 @@ Partial Public Class Main_Form
         panel_Media.Controls.Add(pdf_Reading_Canvas)
         pdf_Reading_Canvas.BringToFront()
         pdf_Reader_Pane.BringToFront()
-        pdf_Reader_Toolbar.BringToFront()
         pdf_Reading_Canvas.GoToPage(pdf_Current_Page, If(pdf_Reader_Restore Is Nothing, 0, pdf_Reader_Restore.Viewport))
         LayoutPdfReader(Me, EventArgs.Empty)
     End Sub
 
     Private Sub ApplyPdfReaderTheme(palette As ThemePalette)
-        ThemeApplier.ApplyTree(pdf_Reader_Toolbar, palette)
         ThemeApplier.ApplyTree(pdf_Reader_Pane, palette)
         If pdf_Reader_Pane IsNot Nothing Then ThemeApplier.ApplyNativeTree(pdf_Reader_Pane, palette.IsDark)
     End Sub
 
     Private Sub LocalizePdfReader()
         If Not FullPdfReaderActive() Then Return
-        pdf_Reader_Updating = True
-        Try
-            pdf_Reader_Toolbar.RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
-            pdf_Reader_Pane.RightToLeft = pdf_Reader_Toolbar.RightToLeft
-            For Each item As ToolStripItem In pdf_Reader_Toolbar.Items
-                If TypeOf item.Tag Is String Then
-                    item.Text = Localization.T(CStr(item.Tag))
-                    item.AccessibleName = item.Text
-                End If
-                Dim combo = TryCast(item, ToolStripComboBox)
-                If combo Is Nothing OrElse Not TypeOf combo.Tag Is String() Then Continue For
-                Dim index = combo.SelectedIndex
-                combo.Items.Clear()
-                combo.Items.AddRange(DirectCast(combo.Tag, String()).Select(Function(title) Localization.T(title)).Cast(Of Object)().ToArray())
-                combo.SelectedIndex = Math.Max(0, Math.Min(combo.Items.Count - 1, index))
+        pdf_Reader_Pane.RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
+        Dim captions = {"Оглавление", "Поиск", "Текст", "Закладки", "Миниатюры страниц"}
+        For index = 0 To captions.Length - 1
+            pdf_Reader_Pane.TabPages(index).Text = Localization.T(captions(index))
+        Next
+        Dim localizeControls As Action(Of Control) = Nothing
+        localizeControls = Sub(parent)
+            For Each child As Control In parent.Controls
+                If TypeOf child.Tag Is String Then child.Text = Localization.T(CStr(child.Tag))
+                localizeControls(child)
             Next
-            Dim captions = {"Оглавление", "Поиск", "Текст", "Закладки", "Миниатюры страниц"}
-            For index = 0 To captions.Length - 1
-                pdf_Reader_Pane.TabPages(index).Text = Localization.T(captions(index))
-            Next
-            Dim localizeControls As Action(Of Control) = Nothing
-            localizeControls = Sub(parent)
-                For Each child As Control In parent.Controls
-                    If TypeOf child.Tag Is String Then child.Text = Localization.T(CStr(child.Tag))
-                    localizeControls(child)
-                Next
-            End Sub
-            localizeControls(pdf_Reader_Pane)
-            pdf_Reader_Page.AccessibleName = Localization.T("Номер страницы")
-            pdf_Reader_Query.AccessibleName = Localization.T("Поиск в документе")
-            pdf_Reader_Text.AccessibleName = Localization.T("Текст страницы")
-            UpdatePdfReaderContext()
-        Finally
-            pdf_Reader_Updating = False
-        End Try
+        End Sub
+        localizeControls(pdf_Reader_Pane)
+        pdf_Reader_Query.AccessibleName = Localization.T("Поиск в документе")
+        pdf_Reader_Text.AccessibleName = Localization.T("Текст страницы")
+        UpdatePdfReaderContext()
         LayoutPdfReader(Me, EventArgs.Empty)
     End Sub
 
@@ -637,9 +626,10 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub UpdatePdfReaderContext()
-        If pdf_Reader_Context Is Nothing Then Return
-        pdf_Reader_Context.Text = If(pdf_Reader_Interaction OrElse pdf_Reader_Pane.ContainsFocus,
+        If pdf_Reader_Pane Is Nothing Then Return
+        pdf_Reader_ContextText = If(pdf_Reader_Interaction OrElse pdf_Reader_Pane.ContainsFocus,
             Localization.T("Документ: Esc возвращает сортировку"), Localization.T("Просмотр: клавиши сортируют файлы"))
+        SyncDocumentPanel()
     End Sub
 
     Private Async Sub ReadPdfReaderInfo()
@@ -678,9 +668,8 @@ Partial Public Class Main_Form
         pdf_Reader_SelectionStart = -1
         pdf_Reader_SelectionEnd = -1
         pdf_Reader_Text.Clear()
-        pdf_Reader_Updating = True
-        pdf_Reader_Page.Value = Math.Max(1, Math.Min(pdf_Total_Pages, page))
-        pdf_Reader_Updating = False
+        pdf_Reader_ShownPage = Math.Max(1, Math.Min(pdf_Total_Pages, page))
+        SyncDocumentPanel()
         Dim session = pdf_Session
         Dim source = pdf_Current_Source
         Dim token = pdf_Reader_Cts.Token
@@ -739,12 +728,17 @@ Partial Public Class Main_Form
                     Dim start = Math.Max(0, offset - 30)
                     pdf_Reader_Results.Items.Add(New PdfSearchHit With {.Page = page, .Offset = offset, .Snippet = text.Text.Substring(start, Math.Min(100, text.Text.Length - start)).Replace(vbCr, " ").Replace(vbLf, " ")})
                 Next
-                pdf_Reader_Context.Text = Localization.TF("Поиск: страница {0} из {1}", page, last)
+                pdf_Reader_ContextText = Localization.TF("Поиск: страница {0} из {1}", page, last)
+                SyncDocumentPanel()
                 If pdf_Reader_Results.Items.Count >= 500 Then Exit For
             Next
-            pdf_Reader_Context.Text = If(pagesWithoutText = 0, Localization.TF("Найдено: {0}", pdf_Reader_Results.Items.Count), Localization.TF("Найдено: {0}; страниц без текста: {1}", pdf_Reader_Results.Items.Count, pagesWithoutText))
+            pdf_Reader_ContextText = If(pagesWithoutText = 0, Localization.TF("Найдено: {0}", pdf_Reader_Results.Items.Count), Localization.TF("Найдено: {0}; страниц без текста: {1}", pdf_Reader_Results.Items.Count, pagesWithoutText))
+            SyncDocumentPanel()
         Catch ex As OperationCanceledException
-            If session = pdf_Session AndAlso FullPdfReaderActive() AndAlso pdf_Reader_SearchCts IsNot Nothing AndAlso pdf_Reader_SearchCts.Token = token Then pdf_Reader_Context.Text = Localization.T("Поиск отменён")
+            If session = pdf_Session AndAlso FullPdfReaderActive() AndAlso pdf_Reader_SearchCts IsNot Nothing AndAlso pdf_Reader_SearchCts.Token = token Then
+                pdf_Reader_ContextText = Localization.T("Поиск отменён")
+                SyncDocumentPanel()
+            End If
         Catch ex As Exception
             If session = pdf_Session AndAlso Not token.IsCancellationRequested Then Notify(Localization.T("Не удалось прочитать текст страницы"), NotifyLevel.Warning)
         End Try
@@ -841,7 +835,8 @@ Partial Public Class Main_Form
 
     Private Function PdfReaderOwnsInput(e As KeyEventArgs) As Boolean
         If Not FullPdfReaderActive() Then Return False
-        Dim owns = pdf_Reader_Interaction OrElse pdf_Reader_Toolbar.ContainsFocus OrElse pdf_Reader_Pane.ContainsFocus
+        Dim onPanel = ChromeKeyboardOnDocumentPanel()
+        Dim owns = pdf_Reader_Interaction OrElse onPanel OrElse pdf_Reader_Pane.ContainsFocus
         If Not owns Then Return False
         UpdatePdfReaderContext()
         SlideShowStop()
@@ -856,7 +851,7 @@ Partial Public Class Main_Form
             e.Handled = True
             e.SuppressKeyPress = True
             UpdatePdfReaderContext()
-        ElseIf Not pdf_Reader_Toolbar.ContainsFocus AndAlso Not pdf_Reader_Pane.ContainsFocus Then
+        ElseIf Not onPanel AndAlso Not pdf_Reader_Pane.ContainsFocus Then
             If e.KeyCode = Keys.PageUp Then PdfPrevPage()
             If e.KeyCode = Keys.PageDown Then PdfNextPage()
             If e.KeyData = (Keys.Control Or Keys.C) AndAlso pdf_Reader_Info IsNot Nothing AndAlso pdf_Reader_Info.CanCopy AndAlso
@@ -872,9 +867,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub ClosePdfReaderUi()
-        pdf_Reader_ChromeTimer?.Stop()
-        pdf_Reader_ChromeTimer?.Dispose()
-        pdf_Reader_ChromeTimer = Nothing
+        HideDocumentPanel()
         If panel_Media IsNot Nothing Then RemoveHandler panel_Media.SizeChanged, AddressOf LayoutPdfReader
         pdf_Reading_Canvas?.Dispose()
         pdf_Reading_Canvas = Nothing
@@ -891,9 +884,7 @@ Partial Public Class Main_Form
         pdf_Reader_ThumbnailBusy = False
         pdf_Reader_Voice?.Dispose()
         pdf_Reader_Voice = Nothing
-        pdf_Reader_Toolbar?.Dispose()
         pdf_Reader_Pane?.Dispose()
-        pdf_Reader_Toolbar = Nothing
         pdf_Reader_Pane = Nothing
         pdf_Reader_Info = Nothing
         pdf_Reader_TextPage = Nothing

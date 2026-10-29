@@ -64,6 +64,8 @@ Partial Public Class Table_Form
                                         ' A drag is the fine move, a corner pick the coarse one (219 §3):
                                         ' the chosen corner is the anchor again, and the custom point goes.
                                         Main_Form.GetModernPreferences().RecipientsOverlayHasCustomPosition = False
+                                        ' L0281 T-6: the shared-model place goes with the triple (both cleared together).
+                                        Main_Form.GetModernPreferences().RecipientsOverlayPlace = ""
                                     End Sub)
             End Sub)
         RegisterSettingsRow("recipients_width",
@@ -158,6 +160,18 @@ Partial Public Class Table_Form
                 AddPreferenceNumber(viewing, "chrome_corners", 0, 16,
                                     Function() Main_Form.GetModernPreferences().ChromeCornerRadius,
                                     Sub(v) Main_Form.GetModernPreferences().ChromeCornerRadius = v)
+            End Sub)
+        ' L0281 §3.7: the way back for a floating panel the user moved and lost, beside the other chrome appearance rows -
+        ' the settings window is where a user looks for it (219 §5 did the same for the recipients table). One command,
+        ' no dialog: it clears the places on the live preferences object the rows above already write into (there is no
+        ' copy for a Save to overwrite them from), saves once and answers through the Notify line, moved or already there.
+        RegisterSettingsRow("chrome_reset_places",
+            Sub()
+                Dim resetPlaces As New Button With {.AutoSize = True}
+                expandedRefreshActions.Add(Sub() resetPlaces.Text = Localization.T("Вернуть панели на места"))
+                resetPlaces.Text = Localization.T("Вернуть панели на места")
+                AddHandler resetPlaces.Click, Sub() Main_Form.ResetChromePanelPlaces()
+                AddSettingRow(viewing, "chrome_reset_places", resetPlaces, 230, True)
             End Sub)
 
         RegisterSettingsRow("slideshow_random_order",

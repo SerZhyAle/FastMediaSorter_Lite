@@ -21,7 +21,7 @@ Partial Public NotInheritable Class Localization
             "Il gestore è in esecuzione nell'area di notifica. Fai doppio clic sull'icona per aprire la finestra.",
             "El gestor se ejecuta en la bandeja. Haz doble clic en el icono para abrir la ventana.",
             "Le gestionnaire tourne dans la zone de notification. Double-cliquez sur l'icône pour ouvrir la fenêtre.",
-            "O gestor está a correr na área de notificação. Faça duplo clique no ícone para abrir a janela.",
+            "O gerenciador está em execução na área de notificação. Clique duas vezes no ícone para abrir a janela.",
             "يعمل المدير في شريط المهام. انقر نقرًا مزدوجًا على الأيقونة لفتح النافذة.",
             "प्रबंधक ट्रे में चल रहा है। विंडो खोलने के लिए आइकन पर डबल-क्लिक करें।",
             "ম্যানেজার ট্রেতে চলছে। উইন্ডো খুলতে আইকনে ডাবল-ক্লিক করুন।",
@@ -31,17 +31,17 @@ Partial Public NotInheritable Class Localization
         Add("Открыть менеджер общего доступа",
             "Open Share Manager", "Відкрити менеджер спільного доступу", "Freigabe-Manager öffnen",
             "Apri Gestione condivisione", "Abrir el gestor de uso compartido",
-            "Ouvrir le gestionnaire de partage", "Abrir o gestor de partilha",
+            "Ouvrir le gestionnaire de partage", "Abrir o Share Manager",
             "فتح مدير المشاركة", "शेयर प्रबंधक खोलें", "শেয়ার ম্যানেজার খুলুন",
             "شیئر مینیجر کھولیں", "打开共享管理器")
 
         Add("Поделиться..",
             "Share..", "Поділитися..", "Teilen..", "Condividi..", "Compartir..", "Partager..",
-            "Partilhar..", "مشاركة..", "साझा करें..", "শেয়ার করুন..", "شیئر کریں..", "共享..")
+            "Compartilhar..", "مشاركة..", "साझा करें..", "শেয়ার করুন..", "شیئر کریں..", "共享..")
 
         Add("Текущее состояние..",
             "Status..", "Поточний стан..", "Status..", "Stato..", "Estado..", "État..",
-            "Estado..", "الحالة..", "स्थिति..", "স্ট্যাটাস..", "حالت..", "状态..")
+            "Status..", "الحالة..", "स्थिति..", "স্ট্যাটাস..", "حالت..", "状态..")
 
         Add("Описание..",
             "Description..", "Опис..", "Beschreibung..", "Descrizione..", "Descripción..",
@@ -50,7 +50,7 @@ Partial Public NotInheritable Class Localization
         Add("Выключить общий доступ",
             "Turn off sharing", "Вимкнути спільний доступ", "Freigabe ausschalten",
             "Disattiva la condivisione", "Desactivar el uso compartido", "Désactiver le partage",
-            "Desativar a partilha", "إيقاف المشاركة", "साझाकरण बंद करें", "শেয়ারিং বন্ধ করুন",
+            "Desativar o compartilhamento", "إيقاف المشاركة", "साझाकरण बंद करें", "শেয়ারিং বন্ধ করুন",
             "شیئرنگ بند کریں", "关闭共享")
 
         ' {0} is the Store name of the product (ProductNames.CompactForLabel at the call site: this
@@ -73,14 +73,14 @@ Partial Public NotInheritable Class Localization
 
         Add("Общий доступ включён",
             "Sharing on", "Спільний доступ увімкнено", "Freigabe aktiv", "Condivisione attiva",
-            "Uso compartido activo", "Partage actif", "Partilha ativa",
+            "Uso compartido activo", "Partage actif", "Compartilhamento ativo",
             "المشاركة مفعّلة", "साझाकरण चालू", "শেয়ারিং চালু", "شیئرنگ آن ہے", "共享已开启")
 
         ' Tray-balloon fragments, appended after the "Sharing on" line. Leading space
         ' and trailing separator are part of the key - they are what joins the pieces.
         Add(" · подключений: {0}",
             " · conns: {0}", " · з'єднань: {0}", " · Verb.: {0}", " · conn.: {0}", " · con.: {0}",
-            " · conn. : {0}", " · lig.: {0}", " · اتصالات: {0}", " · कनेक्शन: {0}", " · সংযোগ: {0}",
+            " · conn. : {0}", " · conex.: {0}", " · اتصالات: {0}", " · कनेक्शन: {0}", " · সংযোগ: {0}",
             " · کنکشنز: {0}", " · 连接数: {0}")
 
         Add(" · посл.: {0}",
@@ -97,7 +97,7 @@ Partial Public NotInheritable Class Localization
             "Attenzione: stai esponendo un server SFTP a internet. Chiunque conosca indirizzo, nome utente e password può raggiungere ogni cartella condivisa. Non pubblicare il codice QR né il file .fmscfg. Disattiva la condivisione quando hai finito.",
             "Atención: estás exponiendo un servidor SFTP a internet. Cualquiera que conozca la dirección, el usuario y la contraseña podrá acceder a todas las carpetas compartidas. No publiques el código QR ni el archivo .fmscfg. Desactiva el acceso cuando termines.",
             "Attention : vous exposez un serveur SFTP à internet. Quiconque connaît l'adresse, l'identifiant et le mot de passe atteint chaque dossier partagé. Ne publiez pas le code QR ni le fichier .fmscfg. Désactivez l'accès quand vous avez terminé.",
-            "Atenção: está a expor um servidor SFTP à internet. Qualquer pessoa que saiba o endereço, o utilizador e a palavra-passe alcança todas as pastas partilhadas. Não publique o código QR nem o ficheiro .fmscfg. Desative o acesso quando terminar.",
+            "Atenção: você está expondo um servidor SFTP à internet. Qualquer pessoa que saiba o endereço, o usuário e a senha pode acessar todas as pastas compartilhadas. Não publique o código QR nem o arquivo .fmscfg. Desative o acesso quando terminar.",
             "تحذير: أنت تعرّض خادم SFTP للإنترنت. أي شخص يعرف العنوان واسم المستخدم وكلمة المرور يمكنه الوصول إلى كل مجلد مشترك. لا تنشر رمز QR ولا ملف ‎.fmscfg‎. أوقف الوصول عند الانتهاء.",
             "चेतावनी: आप एक SFTP सर्वर को इंटरनेट पर खोल रहे हैं। पता, उपयोगकर्ता नाम और पासवर्ड जानने वाला कोई भी हर साझा फ़ोल्डर तक पहुँच सकता है। QR कोड और .fmscfg फ़ाइल प्रकाशित न करें। काम पूरा होने पर पहुँच बंद कर दें।",
             "সতর্কতা: আপনি একটি SFTP সার্ভার ইন্টারনেটে উন্মুক্ত করছেন। ঠিকানা, ব্যবহারকারীর নাম ও পাসওয়ার্ড জানলে যে কেউ প্রতিটি শেয়ার করা ফোল্ডারে পৌঁছাতে পারবে। QR কোড ও .fmscfg ফাইল প্রকাশ করবেন না। কাজ শেষ হলে অ্যাক্সেস বন্ধ করুন।",
@@ -111,7 +111,7 @@ Partial Public NotInheritable Class Localization
             "Funziona su un telefono nella stessa rete Wi-Fi. Niente da configurare. Chiunque abbia questo codice o file può aprire le cartelle - non mostrarlo ad altri.",
             "Funciona en un teléfono en la misma red Wi-Fi. No hay nada que configurar. Cualquiera que tenga este código o archivo podrá abrir las carpetas: no se lo muestres a otros.",
             "Fonctionne sur un téléphone sur le même Wi-Fi. Rien à configurer. Quiconque possède ce code ou ce fichier peut ouvrir les dossiers - ne le montrez pas à d'autres.",
-            "Funciona num telemóvel na mesma rede Wi-Fi. Nada para configurar. Quem tiver este código ou ficheiro consegue abrir as pastas - não o mostre a outras pessoas.",
+            "Funciona em um celular na mesma rede Wi-Fi. Nada para configurar. Quem tiver este código ou arquivo consegue abrir as pastas - não o mostre a outras pessoas.",
             "يعمل على هاتف متصل بنفس شبكة Wi-Fi. لا حاجة لأي إعداد. أي شخص يملك هذا الرمز أو الملف يمكنه فتح المجلدات - لا تُظهره للآخرين.",
             "उसी Wi-Fi से जुड़े फ़ोन पर काम करता है। कुछ भी सेट करने की ज़रूरत नहीं। जिसके पास यह कोड या फ़ाइल है वह फ़ोल्डर खोल सकता है - इसे दूसरों को न दिखाएँ।",
             "একই Wi-Fi-তে থাকা ফোনে কাজ করে। কিছু কনফিগার করার দরকার নেই। এই কোড বা ফাইল যার কাছে আছে সে ফোল্ডারগুলি খুলতে পারবে - অন্যদের দেখাবেন না।",
@@ -125,7 +125,7 @@ Partial Public NotInheritable Class Localization
             "Mentre la condivisione è attiva, i dispositivi della rete attuale (anche un Wi-Fi pubblico) possono raggiungere questo PC con la password. Disattiva la condivisione quando non serve.",
             "Mientras el uso compartido está activo, los dispositivos de tu red actual (incluida una Wi-Fi pública) pueden acceder a este PC con la contraseña. Desactívalo cuando no lo necesites.",
             "Tant que le partage est actif, les appareils de votre réseau actuel (y compris un Wi-Fi public) peuvent atteindre ce PC avec le mot de passe. Désactivez le partage quand il est inutile.",
-            "Enquanto a partilha estiver ativa, os dispositivos da sua rede atual (incluindo um Wi-Fi público) conseguem alcançar este PC com a palavra-passe. Desative a partilha quando não precisar dela.",
+            "Enquanto o compartilhamento estiver ativo, os dispositivos da sua rede atual (incluindo um Wi-Fi público) conseguem acessar este PC com a senha. Desative o compartilhamento quando não precisar dele.",
             "أثناء تشغيل المشاركة، يمكن للأجهزة الموجودة على شبكتك الحالية (بما فيها شبكة Wi-Fi عامة) الوصول إلى هذا الحاسوب باستخدام كلمة المرور. أوقف المشاركة عند عدم الحاجة إليها.",
             "जब तक साझाकरण चालू है, आपके मौजूदा नेटवर्क (सार्वजनिक Wi-Fi सहित) के उपकरण पासवर्ड से इस पीसी तक पहुँच सकते हैं। ज़रूरत न होने पर साझाकरण बंद कर दें।",
             "শেয়ারিং চালু থাকা অবস্থায় আপনার বর্তমান নেটওয়ার্কের (পাবলিক Wi-Fi সহ) ডিভাইসগুলি পাসওয়ার্ড দিয়ে এই পিসিতে পৌঁছাতে পারে। প্রয়োজন না হলে শেয়ারিং বন্ধ করুন।",
@@ -139,7 +139,7 @@ Partial Public NotInheritable Class Localization
             "Un solo codice per casa e fuori casa: il telefono sceglie l'indirizzo raggiungibile. Contiene anche il tuo indirizzo internet: non pubblicarlo e disattiva la condivisione al termine. Configurazione e test nella scheda «Accesso da internet».",
             "Un único código para casa y fuera: el teléfono elige la dirección accesible. También lleva tu dirección de internet: no la publiques y desactiva el acceso al terminar. La configuración y la prueba están en la pestaña «Acceso desde internet».",
             "Un seul code pour la maison et l'extérieur : le téléphone choisit l'adresse joignable. Il contient aussi votre adresse internet : ne la publiez pas et désactivez le partage une fois terminé. Configuration et test dans l'onglet « Accès depuis internet ».",
-            "Um único código para casa e fora: o telemóvel escolhe o endereço alcançável. Também leva o seu endereço de internet: não o publique e desative a partilha quando terminar. Configuração e teste no separador «Acesso pela internet».",
+            "Um único código para casa e fora: o celular escolhe o endereço acessível. Ele também inclui o seu endereço de internet: não o publique e desative o compartilhamento quando terminar. Configuração e teste na guia «Acesso pela internet».",
             "رمز واحد للمنزل وللخارج - يختار الهاتف العنوان المتاح. يحتوي أيضًا على عنوانك على الإنترنت: لا تنشره، وأوقف المشاركة عند الانتهاء. الإعداد والاختبار في تبويب «الوصول من الإنترنت».",
             "घर और बाहर दोनों के लिए एक ही कोड - फ़ोन खुद उपलब्ध पता चुन लेता है। इसमें आपका इंटरनेट पता भी है: इसे प्रकाशित न करें और काम पूरा होने पर साझाकरण बंद कर दें। सेटअप और जाँच «इंटरनेट पहुँच» टैब में हैं।",
             "ঘরে ও বাইরে - একটাই কোড, ফোন নিজেই উপলব্ধ ঠিকানা বেছে নেয়। এতে আপনার ইন্টারনেট ঠিকানাও আছে: এটি প্রকাশ করবেন না, কাজ শেষে শেয়ারিং বন্ধ করুন। সেটআপ ও পরীক্ষা «ইন্টারনেট অ্যাক্সেস» ট্যাবে।",
@@ -150,7 +150,7 @@ Partial Public NotInheritable Class Localization
             "Keep the password out of the file/QR", "Не включати пароль до файлу/QR",
             "Kennwort nicht in Datei/QR aufnehmen", "Non includere la password nel file/QR",
             "No incluir la contraseña en el archivo/QR", "Ne pas inclure le mot de passe dans le fichier/QR",
-            "Não incluir a palavra-passe no ficheiro/QR", "عدم تضمين كلمة المرور في الملف/رمز QR",
+            "Não incluir a senha no arquivo/QR", "عدم تضمين كلمة المرور في الملف/رمز QR",
             "पासवर्ड को फ़ाइल/QR में शामिल न करें", "ফাইল/QR-এ পাসওয়ার্ড অন্তর্ভুক্ত করবেন না",
             "پاس ورڈ کو فائل/QR میں شامل نہ کریں", "不要将密码写入文件/二维码")
 
@@ -161,7 +161,7 @@ Partial Public NotInheritable Class Localization
             "Troppe impostazioni per un codice QR: salva il file .fmscfg e invialo al telefono.",
             "Demasiados ajustes para un código QR: guarda el archivo .fmscfg y envíalo al teléfono.",
             "Trop de réglages pour un code QR - enregistrez le fichier .fmscfg et envoyez-le au téléphone.",
-            "Demasiadas definições para um código QR - guarde o ficheiro .fmscfg e envie-o para o telemóvel.",
+            "Configurações demais para um código QR - salve o arquivo .fmscfg e envie-o para o celular.",
             "الإعدادات كثيرة على رمز QR - احفظ ملف ‎.fmscfg‎ وأرسله إلى الهاتف بدلاً من ذلك.",
             "QR कोड के लिए बहुत अधिक सेटिंग्स - .fmscfg फ़ाइल सहेजें और उसे फ़ोन पर भेजें।",
             "QR কোডের জন্য অনেক বেশি সেটিং - .fmscfg ফাইল সংরক্ষণ করে ফোনে পাঠান।",
@@ -175,7 +175,7 @@ Partial Public NotInheritable Class Localization
             "Impossibile determinare l'indirizzo di questo PC nella rete locale (verifica se è attiva una VPN). Se il telefono è vicino, sulla stessa rete, ferma e riavvia la condivisione per riprovare: per ora il codice QR contiene solo l'indirizzo internet.",
             "No se pudo determinar la dirección de este PC en la red local (comprueba si hay una VPN activa). Si el teléfono está cerca, en la misma red, detén y vuelve a iniciar el uso compartido para reintentarlo: por ahora el código QR solo lleva la dirección de internet.",
             "Impossible de déterminer l'adresse de ce PC sur le réseau local (vérifiez si un VPN est actif). Si le téléphone est à proximité sur le même réseau, arrêtez puis relancez le partage pour réessayer - pour l'instant, le code QR ne contient que l'adresse internet.",
-            "Não foi possível determinar o endereço deste PC na rede local (verifique se há uma VPN ativa). Se o telemóvel estiver perto, na mesma rede, pare e volte a iniciar a partilha para tentar de novo - por agora o código QR só tem o endereço de internet.",
+            "Não foi possível determinar o endereço deste PC na rede local (verifique se há uma VPN ativa). Se o celular estiver perto, na mesma rede, pare o compartilhamento e inicie-o de novo para tentar outra vez - por enquanto, o código QR contém apenas o endereço de internet.",
             "تعذّر تحديد عنوان هذا الحاسوب في الشبكة المحلية (تحقّق مما إذا كانت VPN مفعّلة). إذا كان الهاتف قريبًا على الشبكة نفسها، أوقف المشاركة ثم شغّلها من جديد للمحاولة مرة أخرى - حاليًا يحتوي رمز QR على عنوان الإنترنت فقط.",
             "इस पीसी का स्थानीय नेटवर्क पता निर्धारित नहीं हो सका (देखें कि कोई VPN सक्रिय तो नहीं)। यदि फ़ोन उसी नेटवर्क पर पास है, तो साझाकरण बंद करके फिर से चालू करें - अभी QR कोड में केवल इंटरनेट पता है।",
             "এই পিসির স্থানীয় নেটওয়ার্ক ঠিকানা নির্ধারণ করা যায়নি (VPN চালু আছে কি না দেখুন)। ফোনটি একই নেটওয়ার্কে কাছাকাছি থাকলে শেয়ারিং বন্ধ করে আবার চালু করুন - এখন QR কোডে শুধু ইন্টারনেট ঠিকানা আছে।",
@@ -189,7 +189,7 @@ Partial Public NotInheritable Class Localization
             "La porta è stata aperta automaticamente (UPnP), ma non è stato possibile verificare se il provider usa un NAT nascosto (il servizio esterno di controllo IP non ha risposto). L'indirizzo potrebbe non funzionare dall'esterno: provalo dal telefono in rete mobile.",
             "El puerto se abrió automáticamente (UPnP), pero no se pudo comprobar si tu proveedor usa un NAT oculto (el servicio externo de comprobación de IP no respondió). Puede que la dirección no funcione desde fuera: pruébala desde el teléfono con datos móviles.",
             "Le port a été ouvert automatiquement (UPnP), mais la vérification d'un NAT caché chez votre fournisseur a échoué (le service externe de contrôle d'IP n'a pas répondu). L'adresse peut ne pas fonctionner depuis l'extérieur - testez-la depuis le téléphone en données mobiles.",
-            "A porta foi aberta automaticamente (UPnP), mas não foi possível verificar se o operador usa um NAT oculto (o serviço externo de verificação de IP não respondeu). O endereço pode não funcionar do exterior - teste-o a partir do telemóvel com dados móveis.",
+            "A porta foi aberta automaticamente (UPnP), mas não foi possível verificar se o provedor usa um NAT oculto (o serviço externo de verificação de IP não respondeu). O endereço pode não funcionar de fora - teste-o a partir do celular com dados móveis.",
             "تم فتح المنفذ تلقائيًا (UPnP)، لكن تعذّر التحقق مما إذا كان مزوّد الخدمة يستخدم NAT مخفيًا (لم تستجب خدمة فحص IP الخارجية). قد لا يعمل هذا العنوان من الخارج - تأكد من اختباره من الهاتف عبر بيانات الجوال.",
             "पोर्ट स्वतः खुल गया (UPnP), लेकिन यह जाँचा नहीं जा सका कि प्रदाता छिपे NAT का उपयोग करता है या नहीं (बाहरी IP-जाँच सेवा ने उत्तर नहीं दिया)। यह पता बाहर से काम नहीं भी कर सकता - इसे मोबाइल डेटा पर फ़ोन से अवश्य जाँचें।",
             "পোর্টটি স্বয়ংক্রিয়ভাবে খোলা হয়েছে (UPnP), তবে প্রদানকারী গোপন NAT ব্যবহার করে কি না তা যাচাই করা যায়নি (বাহ্যিক IP-যাচাই পরিষেবা সাড়া দেয়নি)। ঠিকানাটি বাইরে থেকে কাজ নাও করতে পারে - মোবাইল ডেটায় ফোন থেকে অবশ্যই পরীক্ষা করুন।",
@@ -203,7 +203,7 @@ Partial Public NotInheritable Class Localization
             "Il tuo provider usa CGNAT (un indirizzo pubblico condiviso). L'inoltro delle porte non serve: questo PC non è raggiungibile dall'esterno. Sulla rete locale funziona tutto come sempre.",
             "Tu proveedor usa CGNAT (una dirección pública compartida). Abrir puertos no ayudará: no se puede llegar a este PC desde fuera. En la red local todo funciona igual.",
             "Votre fournisseur utilise le CGNAT (adresse publique partagée). La redirection de port n'y changera rien - ce PC est injoignable depuis l'extérieur. Sur le réseau local, tout fonctionne normalement.",
-            "O seu operador usa CGNAT (endereço público partilhado). O encaminhamento de portas não ajuda - este PC não é alcançável do exterior. Na rede local tudo funciona como habitualmente.",
+            "Seu provedor usa CGNAT (endereço público compartilhado). O encaminhamento de portas não ajuda - não é possível acessar este PC de fora. O compartilhamento na rede local funciona como de costume.",
             "يستخدم مزوّد خدمتك تقنية CGNAT (عنوان عام مشترك). لن يفيد إعادة توجيه المنافذ - لا يمكن الوصول إلى هذا الحاسوب من الخارج. أما على الشبكة المحلية فكل شيء يعمل كالمعتاد.",
             "आपका प्रदाता CGNAT (साझा सार्वजनिक पता) उपयोग करता है। पोर्ट फ़ॉरवर्डिंग से मदद नहीं मिलेगी - इस पीसी तक बाहर से नहीं पहुँचा जा सकता। स्थानीय नेटवर्क पर सब सामान्य रूप से काम करता है।",
             "আপনার প্রদানকারী CGNAT (শেয়ার করা পাবলিক ঠিকানা) ব্যবহার করে। পোর্ট ফরওয়ার্ডিং সাহায্য করবে না - বাইরে থেকে এই পিসিতে পৌঁছানো যাবে না। স্থানীয় নেটওয়ার্কে সবকিছু আগের মতোই কাজ করে।",
@@ -219,7 +219,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile sulla stessa rete Wi-Fi (indirizzo internet volutamente escluso).",
             "Accesible en la misma red Wi-Fi (la dirección de internet se omitió a propósito).",
             "Joignable sur le même Wi-Fi (l'adresse internet a été volontairement omise).",
-            "Alcançável na mesma rede Wi-Fi (endereço de internet deixado de fora de propósito).",
+            "Acessível na mesma rede Wi-Fi deste PC (endereço de internet omitido de propósito).",
             "يمكن الوصول إليه على شبكة Wi-Fi نفسها (تم استبعاد عنوان الإنترنت عمدًا).",
             "उसी Wi-Fi पर उपलब्ध (इंटरनेट पता जानबूझकर शामिल नहीं किया गया)।",
             "একই Wi-Fi-তে পৌঁছানো যায় (ইন্টারনেট ঠিকানা ইচ্ছাকৃতভাবে বাদ দেওয়া হয়েছে)।",
@@ -233,7 +233,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile via Wi-Fi e da internet: la porta inoltrata ha superato un test esterno.",
             "Accesible por Wi-Fi y desde internet: el puerto redirigido superó una prueba externa.",
             "Joignable en Wi-Fi et depuis internet - le port redirigé a passé un test externe.",
-            "Alcançável por Wi-Fi e pela internet - a porta encaminhada passou num teste externo.",
+            "Acessível pelo Wi-Fi e pela internet - a porta encaminhada passou em um teste externo.",
             "يمكن الوصول إليه عبر Wi-Fi ومن الإنترنت - نجح المنفذ المُعاد توجيهه في اختبار خارجي.",
             "Wi-Fi और इंटरनेट दोनों से उपलब्ध - फ़ॉरवर्ड किया गया पोर्ट बाहरी जाँच में सफल रहा।",
             "Wi-Fi ও ইন্টারনেট উভয় থেকেই পৌঁছানো যায় - ফরওয়ার্ড করা পোর্ট বাহ্যিক পরীক্ষায় উত্তীর্ণ।",
@@ -247,7 +247,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile solo sulla stessa rete Wi-Fi. Il provider usa CGNAT, quindi una porta inoltrata non può funzionare: usa l'indirizzo IPv6 se mostrato, oppure una VPN.",
             "Solo accesible en la misma red Wi-Fi. Tu proveedor usa CGNAT, así que redirigir un puerto no funciona: usa la dirección IPv6 si aparece, o una VPN.",
             "Joignable uniquement sur le même Wi-Fi. Votre fournisseur utilise le CGNAT : un port redirigé ne peut pas fonctionner - utilisez l'adresse IPv6 si elle est affichée, ou un VPN.",
-            "Alcançável apenas na mesma rede Wi-Fi. O operador usa CGNAT, por isso uma porta encaminhada não funciona - use o endereço IPv6 se aparecer, ou uma VPN.",
+            "Acessível apenas na mesma rede Wi-Fi. O provedor usa CGNAT, então uma porta encaminhada não funciona - use o endereço IPv6, se aparecer, ou uma VPN.",
             "يمكن الوصول إليه على شبكة Wi-Fi نفسها فقط. يستخدم مزوّدك تقنية CGNAT، لذا لن يعمل المنفذ المُعاد توجيهه - استخدم عنوان IPv6 إن ظهر، أو شبكة VPN.",
             "केवल उसी Wi-Fi पर उपलब्ध। आपका प्रदाता CGNAT उपयोग करता है, इसलिए फ़ॉरवर्ड किया गया पोर्ट काम नहीं करेगा - दिखे तो IPv6 पता, अन्यथा VPN का उपयोग करें।",
             "শুধু একই Wi-Fi-তে পৌঁছানো যায়। আপনার প্রদানকারী CGNAT ব্যবহার করে, তাই ফরওয়ার্ড করা পোর্ট কাজ করবে না - দেখানো হলে IPv6 ঠিকানা, নয়তো VPN ব্যবহার করুন।",
@@ -261,7 +261,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile via Wi-Fi e via IPv6 dalle reti che lo supportano. Su questa connessione non è disponibile un semplice inoltro di porta.",
             "Accesible por Wi-Fi y por IPv6 desde redes que lo admitan. En esta conexión no hay redirección de puertos sencilla.",
             "Joignable en Wi-Fi et en IPv6 depuis les réseaux qui le prennent en charge. Une simple redirection de port n'est pas disponible sur cette connexion.",
-            "Alcançável por Wi-Fi e por IPv6 a partir de redes que o suportem. Nesta ligação não há encaminhamento de portas simples.",
+            "Acessível pelo Wi-Fi e por IPv6, a partir de redes que oferecem suporte a ele. Não há encaminhamento de porta simples nesta conexão.",
             "يمكن الوصول إليه عبر Wi-Fi وعبر IPv6 من الشبكات التي تدعمه. إعادة توجيه المنافذ العادية غير متاحة على هذا الاتصال.",
             "Wi-Fi से और IPv6 का समर्थन करने वाले नेटवर्क से उपलब्ध। इस कनेक्शन पर सामान्य पोर्ट फ़ॉरवर्डिंग उपलब्ध नहीं है।",
             "Wi-Fi থেকে এবং IPv6 সমর্থনকারী নেটওয়ার্ক থেকে পৌঁছানো যায়। এই সংযোগে সাধারণ পোর্ট ফরওয়ার্ডিং নেই।",
@@ -275,7 +275,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile via Wi-Fi e, se l'inoltro/UPnP regge, da internet: verifica dal telefono in rete mobile.",
             "Accesible por Wi-Fi y, si la redirección/UPnP se mantiene, desde internet: compruébalo desde el teléfono con datos móviles.",
             "Joignable en Wi-Fi et, si la redirection/UPnP tient, depuis internet - vérifiez-le depuis le téléphone en données mobiles.",
-            "Alcançável por Wi-Fi e, se o encaminhamento/UPnP se mantiver, pela internet - confirme a partir do telemóvel com dados móveis.",
+            "Acessível pelo Wi-Fi e, se o encaminhamento/UPnP do roteador se mantiver, pela internet - confirme a partir do celular com dados móveis.",
             "يمكن الوصول إليه عبر Wi-Fi، ومن الإنترنت إذا ظلّت إعادة التوجيه/UPnP فعّالة - تحقّق من ذلك من الهاتف عبر بيانات الجوال.",
             "Wi-Fi से उपलब्ध और, यदि फ़ॉरवर्ड/UPnP बना रहे, तो इंटरनेट से भी - मोबाइल डेटा पर फ़ोन से पुष्टि करें।",
             "Wi-Fi থেকে পৌঁছানো যায় এবং ফরওয়ার্ড/UPnP টিকে থাকলে ইন্টারনেট থেকেও - মোবাইল ডেটায় ফোন থেকে নিশ্চিত করুন।",
@@ -290,7 +290,7 @@ Partial Public NotInheritable Class Localization
             "Verifica di ciò che il telefono può raggiungere..",
             "Comprobando a qué puede llegar el teléfono..",
             "Vérification de ce que le téléphone peut joindre..",
-            "A verificar o que o telemóvel consegue alcançar..",
+            "Verificando o que o celular consegue acessar..",
             "جارٍ التحقق مما يمكن للهاتف الوصول إليه..",
             "जाँच रहे हैं कि फ़ोन कहाँ तक पहुँच सकता है..",
             "ফোন কোথায় পৌঁছাতে পারে তা যাচাই করা হচ্ছে..",
@@ -304,7 +304,7 @@ Partial Public NotInheritable Class Localization
             "Al momento funziona solo sulla tua rete Wi-Fi. Il provider usa CGNAT: l'accesso da internet non è possibile.",
             "Ahora mismo solo funciona en tu propia red Wi-Fi. Tu proveedor usa CGNAT: el acceso desde internet no es posible.",
             "Pour l'instant, cela ne fonctionne que sur votre propre Wi-Fi. Votre fournisseur utilise le CGNAT - l'accès depuis internet est impossible.",
-            "Neste momento só funciona na sua própria rede Wi-Fi. O operador usa CGNAT - o acesso pela internet não é possível.",
+            "No momento, isso funciona apenas na sua própria rede Wi-Fi. Seu provedor usa CGNAT - o acesso pela internet não é possível.",
             "يعمل هذا حاليًا على شبكة Wi-Fi الخاصة بك فقط. يستخدم مزوّدك تقنية CGNAT - الوصول عبر الإنترنت غير ممكن.",
             "अभी यह केवल आपके अपने Wi-Fi पर काम करता है। आपका प्रदाता CGNAT उपयोग करता है - इंटरनेट से पहुँच संभव नहीं है।",
             "এখন এটি কেবল আপনার নিজের Wi-Fi-তে কাজ করে। আপনার প্রদানকারী CGNAT ব্যবহার করে - ইন্টারনেট থেকে প্রবেশ সম্ভব নয়।",
@@ -318,7 +318,7 @@ Partial Public NotInheritable Class Localization
             "Funziona sia sulla tua rete Wi-Fi sia da internet: la porta esterna ha risposto a un controllo dall'esterno.",
             "Funciona tanto en tu Wi-Fi como desde internet: el puerto externo respondió a una comprobación desde fuera.",
             "Fonctionne à la fois sur votre Wi-Fi et depuis internet - le port externe a répondu à un test depuis l'extérieur.",
-            "Funciona tanto na sua rede Wi-Fi como pela internet - a porta externa respondeu a uma verificação a partir de fora.",
+            "Funciona tanto na sua rede Wi-Fi quanto pela internet - a porta externa respondeu a uma verificação feita de fora.",
             "يعمل على شبكة Wi-Fi لديك ومن الإنترنت معًا - استجاب المنفذ الخارجي لفحص من الخارج.",
             "आपके Wi-Fi पर और इंटरनेट से, दोनों तरह काम करता है - बाहरी पोर्ट ने बाहर से की गई जाँच का उत्तर दिया।",
             "আপনার Wi-Fi-তে এবং ইন্টারনেট থেকে - দুইভাবেই কাজ করে; বাইরের পোর্ট বাইরে থেকে করা পরীক্ষায় সাড়া দিয়েছে।",
@@ -333,7 +333,7 @@ Partial Public NotInheritable Class Localization
             "Per ora funziona solo nella tua rete Wi-Fi. La porta {0} è stata aperta sul router automaticamente (UPnP), ma dall'esterno non risponde: probabilmente il provider blocca le connessioni in entrata.",
             "Por ahora solo funciona en tu red Wi-Fi. El puerto {0} se abrió en el router automáticamente (UPnP), pero no responde desde fuera: seguramente tu proveedor bloquea las conexiones entrantes.",
             "Pour l'instant, cela ne fonctionne que sur votre Wi-Fi. Le port {0} a été ouvert automatiquement sur le routeur (UPnP), mais il ne répond pas de l'extérieur - votre fournisseur bloque probablement les connexions entrantes.",
-            "Por agora funciona apenas na sua rede Wi-Fi. A porta {0} foi aberta no router automaticamente (UPnP), mas não responde do exterior - o seu operador deve estar a bloquear ligações de entrada.",
+            "Por enquanto, isso funciona apenas na sua rede Wi-Fi. A porta {0} foi aberta no roteador automaticamente (UPnP), mas não responde de fora - seu provedor provavelmente está bloqueando conexões de entrada.",
             "يعمل حاليًا داخل شبكة Wi-Fi لديك فقط. فُتح المنفذ {0} على الموجّه تلقائيًا (UPnP)، لكنه لا يستجيب من الخارج - على الأرجح يحجب المزوّد الاتصالات الواردة.",
             "अभी यह केवल आपके Wi-Fi नेटवर्क में काम करता है। पोर्ट {0} राउटर पर स्वतः खुल गया (UPnP), पर बाहर से उत्तर नहीं देता - संभवतः आपका प्रदाता आने वाले कनेक्शन रोक रहा है।",
             "এখন এটি কেবল আপনার Wi-Fi নেটওয়ার্কে কাজ করে। পোর্ট {0} রাউটারে স্বয়ংক্রিয়ভাবে খোলা হয়েছে (UPnP), কিন্তু বাইরে থেকে সাড়া দেয় না - সম্ভবত আপনার প্রোভাইডার ইনকামিং সংযোগ আটকে রাখছে।",
@@ -347,7 +347,7 @@ Partial Public NotInheritable Class Localization
             "Al momento funziona solo sulla tua rete Wi-Fi. La porta {0} non risponde dall'esterno: probabilmente sul router manca l'inoltro.",
             "Ahora mismo solo funciona en tu propia red Wi-Fi. El puerto {0} no responde desde fuera: es probable que falte la redirección en el router.",
             "Pour l'instant, cela ne fonctionne que sur votre propre Wi-Fi. Le port {0} ne répond pas depuis l'extérieur - la redirection manque sans doute sur le routeur.",
-            "Neste momento só funciona na sua própria rede Wi-Fi. A porta {0} não responde a partir de fora - provavelmente falta o encaminhamento no router.",
+            "No momento, isso funciona apenas na sua própria rede Wi-Fi. A porta {0} não responde de fora - provavelmente falta o encaminhamento no roteador.",
             "يعمل هذا حاليًا على شبكة Wi-Fi الخاصة بك فقط. المنفذ {0} لا يستجيب من الخارج - على الأرجح لا توجد إعادة توجيه له في الموجّه.",
             "अभी यह केवल आपके अपने Wi-Fi पर काम करता है। पोर्ट {0} बाहर से उत्तर नहीं देता - संभवतः राउटर में उसका फ़ॉरवर्ड नहीं है।",
             "এখন এটি কেবল আপনার নিজের Wi-Fi-তে কাজ করে। পোর্ট {0} বাইরে থেকে সাড়া দেয় না - সম্ভবত রাউটারে এর ফরওয়ার্ড নেই।",
@@ -361,7 +361,7 @@ Partial Public NotInheritable Class Localization
             "Al momento è sicuro solo sulla tua rete Wi-Fi. La porta è stata aperta automaticamente (UPnP), ma dall'esterno non è ancora confermato.",
             "Ahora mismo solo es seguro en tu propia red Wi-Fi. El puerto se abrió automáticamente (UPnP), pero aún no se ha confirmado desde fuera.",
             "Pour l'instant, seul votre propre Wi-Fi est certain. Le port a été ouvert automatiquement (UPnP), mais cela n'a pas encore été confirmé depuis l'extérieur.",
-            "Neste momento só a sua própria rede Wi-Fi é certa. A porta foi aberta automaticamente (UPnP), mas isso ainda não foi confirmado a partir de fora.",
+            "No momento, só há certeza quanto à sua própria rede Wi-Fi. A porta foi aberta automaticamente (UPnP), mas isso ainda não foi confirmado de fora.",
             "المؤكَّد حاليًا هو شبكة Wi-Fi الخاصة بك فقط. فُتح المنفذ تلقائيًا (UPnP)، لكن لم يتم التأكد من ذلك من الخارج بعد.",
             "अभी निश्चित रूप से केवल आपका अपना Wi-Fi काम करता है। पोर्ट स्वतः खुला (UPnP), पर बाहर से इसकी पुष्टि अभी नहीं हुई है।",
             "এখন নিশ্চিতভাবে কেবল আপনার নিজের Wi-Fi কাজ করে। পোর্টটি স্বয়ংক্রিয়ভাবে খোলা হয়েছে (UPnP), তবে বাইরে থেকে তা এখনও নিশ্চিত করা হয়নি।",
@@ -375,7 +375,7 @@ Partial Public NotInheritable Class Localization
             "Al momento è sicuro solo sulla tua rete Wi-Fi. L'indirizzo internet è noto ma non è stato verificato dall'esterno: di solito serve prima un inoltro di porta sul router.",
             "Ahora mismo solo es seguro en tu propia red Wi-Fi. La dirección de internet se conoce, pero no se ha comprobado desde fuera: normalmente hace falta antes una redirección de puerto en el router.",
             "Pour l'instant, seul votre propre Wi-Fi est certain. L'adresse internet est connue mais n'a pas été testée depuis l'extérieur - il faut généralement d'abord une redirection de port sur le routeur.",
-            "Neste momento só a sua própria rede Wi-Fi é certa. O endereço de internet é conhecido mas não foi verificado a partir de fora - normalmente é preciso primeiro um encaminhamento de porta no router.",
+            "No momento, só há certeza quanto à sua própria rede Wi-Fi. O endereço de internet é conhecido, mas não foi verificado de fora - normalmente é preciso primeiro um encaminhamento de porta no roteador.",
             "المؤكَّد حاليًا هو شبكة Wi-Fi الخاصة بك فقط. عنوان الإنترنت معروف لكنه لم يُفحص من الخارج بعد - وعادةً يحتاج أولًا إلى إعادة توجيه منفذ في الموجّه.",
             "अभी निश्चित रूप से केवल आपका अपना Wi-Fi काम करता है। इंटरनेट पता ज्ञात है, पर बाहर से जाँचा नहीं गया - आमतौर पर इसके लिए पहले राउटर में पोर्ट फ़ॉरवर्ड चाहिए।",
             "এখন নিশ্চিতভাবে কেবল আপনার নিজের Wi-Fi কাজ করে। ইন্টারনেট ঠিকানা জানা আছে, কিন্তু বাইরে থেকে যাচাই করা হয়নি - সাধারণত এর জন্য আগে রাউটারে পোর্ট ফরওয়ার্ড দরকার।",
@@ -389,7 +389,7 @@ Partial Public NotInheritable Class Localization
             "Funziona sulla tua rete Wi-Fi e via IPv6, dove l'operatore del telefono lo supporta.",
             "Funciona en tu red Wi-Fi y por IPv6, allí donde el operador del teléfono lo admita.",
             "Fonctionne sur votre Wi-Fi et en IPv6 - partout où l'opérateur du téléphone le prend en charge.",
-            "Funciona na sua rede Wi-Fi e por IPv6 - onde a operadora do telemóvel o suportar.",
+            "Funciona na sua rede Wi-Fi e por IPv6 - onde a operadora do celular oferecer suporte.",
             "يعمل على شبكة Wi-Fi لديك وعبر IPv6 - حيثما دعمه مشغّل الهاتف.",
             "आपके Wi-Fi पर और IPv6 से काम करता है - जहाँ फ़ोन का ऑपरेटर उसे समर्थन देता है।",
             "আপনার Wi-Fi-তে এবং IPv6-এ কাজ করে - যেখানে ফোনের অপারেটর তা সমর্থন করে।",
@@ -419,7 +419,7 @@ Partial Public NotInheritable Class Localization
             "Poi: premi «Condividi» in alto - ottieni un codice QR che il telefono usa a casa e fuori casa.",
             "Siguiente: pulsa «Compartir» arriba y obtendrás un código QR que el teléfono puede usar en casa y fuera.",
             "Ensuite : cliquez sur « Partager » en haut - vous obtenez un code QR utilisable par le téléphone à la maison comme à l'extérieur.",
-            "A seguir: carregue em «Partilhar» no topo - obtém um código QR que o telemóvel usa em casa e fora.",
+            "A seguir: clique em «Compartilhar» no topo - você obtém um código QR que o celular usa em casa e fora.",
             "التالي: اضغط «مشاركة» في الأعلى - ستحصل على رمز QR يستخدمه الهاتف في المنزل وخارجه.",
             "आगे: ऊपर «साझा करें» दबाएँ - आपको एक QR कोड मिलेगा, जिसे फ़ोन घर पर और बाहर दोनों जगह उपयोग कर सकता है।",
             "পরবর্তী: উপরে «শেয়ার করুন» চাপুন - একটি QR কোড পাবেন, যা ফোন বাড়িতে ও বাইরে দুই জায়গাতেই ব্যবহার করতে পারবে।",
@@ -433,7 +433,7 @@ Partial Public NotInheritable Class Localization
             "Poi: premi «Condividi» in alto - ottieni un codice QR per la rete di casa. Configurare il router qui non serve.",
             "Siguiente: pulsa «Compartir» arriba y obtendrás un código QR para tu red doméstica. Configurar el router no ayudará aquí.",
             "Ensuite : cliquez sur « Partager » en haut - vous obtenez un code QR pour votre réseau domestique. Configurer le routeur n'y changera rien.",
-            "A seguir: carregue em «Partilhar» no topo - obtém um código QR para a sua rede doméstica. Configurar o router não ajuda aqui.",
+            "A seguir: clique em «Compartilhar» no topo - você obtém um código QR para a sua rede doméstica. Configurar o roteador não ajuda aqui.",
             "التالي: اضغط «مشاركة» في الأعلى - ستحصل على رمز QR لشبكتك المنزلية. لن يفيد ضبط الموجّه هنا.",
             "आगे: ऊपर «साझा करें» दबाएँ - आपको घर के नेटवर्क के लिए QR कोड मिलेगा। राउटर सेट करने से यहाँ मदद नहीं मिलेगी।",
             "পরবর্তী: উপরে «শেয়ার করুন» চাপুন - বাড়ির নেটওয়ার্কের জন্য একটি QR কোড পাবেন। এখানে রাউটার কনফিগার করে লাভ হবে না।",
@@ -447,7 +447,7 @@ Partial Public NotInheritable Class Localization
             "Poi, a scelta. Solo a casa: premi «Condividi» in alto e mostra il codice QR al telefono. Da qualsiasi rete: premi «Verifica l'accesso da internet», oppure verifica dal telefono in rete mobile.",
             "Ahora, a tu elección. Solo en casa: pulsa «Compartir» arriba y muestra el código QR al teléfono. Desde cualquier red: pulsa «Comprobar el acceso desde internet» o compruébalo desde el teléfono con datos móviles.",
             "Ensuite, au choix. À la maison seulement : cliquez sur « Partager » en haut et montrez le code QR au téléphone. Depuis n'importe quel réseau : cliquez sur « Tester l'accès depuis internet », ou vérifiez depuis le téléphone en données mobiles.",
-            "A seguir, à sua escolha. Só em casa: carregue em «Partilhar» no topo e mostre o código QR ao telemóvel. A partir de qualquer rede: carregue em «Testar o acesso pela internet» ou confirme no telemóvel com dados móveis.",
+            "A seguir, você escolhe. Só em casa: clique em «Compartilhar» no topo e mostre o código QR ao celular. A partir de qualquer rede: clique em «Testar o acesso pela internet» ou confirme no celular com dados móveis.",
             "التالي، والخيار لك. في المنزل فقط: اضغط «مشاركة» في الأعلى وأظهر رمز QR للهاتف. من أي شبكة: اضغط «اختبار الوصول من الإنترنت» أو تحقّق من الهاتف عبر بيانات الجوال.",
             "आगे, आपकी पसंद। केवल घर पर: ऊपर «साझा करें» दबाएँ और QR कोड फ़ोन को दिखाएँ। किसी भी नेटवर्क से: «इंटरनेट पहुँच जाँचें» दबाएँ, या मोबाइल डेटा पर फ़ोन से जाँचें।",
             "পরবর্তী, আপনার পছন্দ। শুধু বাড়িতে: উপরে «শেয়ার করুন» চাপুন এবং QR কোডটি ফোনকে দেখান। যেকোনো নেটওয়ার্ক থেকে: «ইন্টারনেট অ্যাক্সেস পরীক্ষা করুন» চাপুন, বা মোবাইল ডেটায় ফোন থেকে যাচাই করুন।",
@@ -461,7 +461,7 @@ Partial Public NotInheritable Class Localization
             "Poi, a scelta. Solo a casa: premi «Condividi» in alto e mostra il codice QR al telefono, non serve altro. Da qualsiasi rete: il passo successivo è configurare il router (pulsanti qui sotto).",
             "Ahora, a tu elección. Solo en casa: pulsa «Compartir» arriba y muestra el código QR al teléfono; no hace falta nada más. Desde cualquier red: el siguiente paso es configurar el router (botones de abajo).",
             "Ensuite, au choix. À la maison seulement : cliquez sur « Partager » en haut et montrez le code QR au téléphone, rien d'autre n'est nécessaire. Depuis n'importe quel réseau : l'étape suivante est la configuration du routeur (boutons ci-dessous).",
-            "A seguir, à sua escolha. Só em casa: carregue em «Partilhar» no topo e mostre o código QR ao telemóvel - nada mais é preciso. A partir de qualquer rede: o passo seguinte é configurar o router (botões abaixo).",
+            "A seguir, você escolhe. Só em casa: clique em «Compartilhar» no topo e mostre o código QR ao celular - nada mais é preciso. A partir de qualquer rede: o próximo passo é configurar o roteador (botões abaixo).",
             "التالي، والخيار لك. في المنزل فقط: اضغط «مشاركة» في الأعلى وأظهر رمز QR للهاتف، ولا يلزم شيء آخر. من أي شبكة: الخطوة التالية هي ضبط الموجّه (الأزرار بالأسفل).",
             "आगे, आपकी पसंद। केवल घर पर: ऊपर «साझा करें» दबाएँ और QR कोड फ़ोन को दिखाएँ - और कुछ नहीं चाहिए। किसी भी नेटवर्क से: अगला कदम है राउटर सेट करना (नीचे के बटन)।",
             "পরবর্তী, আপনার পছন্দ। শুধু বাড়িতে: উপরে «শেয়ার করুন» চাপুন এবং QR কোডটি ফোনকে দেখান - আর কিছুই লাগবে না। যেকোনো নেটওয়ার্ক থেকে: পরের ধাপ হলো রাউটার সেট করা (নিচের বোতামগুলি)।",
@@ -473,7 +473,7 @@ Partial Public NotInheritable Class Localization
         Add("Включить общий доступ к папкам",
             "Enable folder sharing", "Увімкнути спільний доступ до папок", "Ordnerfreigabe aktivieren",
             "Attiva la condivisione delle cartelle", "Activar el uso compartido de carpetas",
-            "Activer le partage de dossiers", "Ativar a partilha de pastas",
+            "Activer le partage de dossiers", "Ativar o compartilhamento de pastas",
             "تفعيل مشاركة المجلدات", "फ़ोल्डर साझाकरण सक्षम करें", "ফোল্ডার শেয়ারিং চালু করুন",
             "فولڈر شیئرنگ فعال کریں", "启用文件夹共享")
 
@@ -484,7 +484,7 @@ Partial Public NotInheritable Class Localization
             "Per condividere cartelle con un telefono Android servono un piccolo server SFTP in background e un'eccezione nel Windows Firewall. Richiede una volta i diritti di amministratore. Dopo l'attivazione le cartelle scelte diventano leggibili in rete. Continuare?",
             "Para compartir carpetas con un teléfono Android hacen falta un pequeño servidor SFTP en segundo plano y una excepción en el Firewall de Windows. Esto pide permisos de administrador una vez. Después, las carpetas elegidas serán legibles por la red. ¿Continuar?",
             "Pour partager des dossiers avec un téléphone Android, un petit serveur SFTP en arrière-plan et une exception dans le pare-feu Windows sont nécessaires. Cela demande une fois les droits administrateur. Ensuite, les dossiers choisis seront lisibles sur le réseau. Continuer ?",
-            "Para partilhar pastas com um telemóvel Android são necessários um pequeno servidor SFTP em segundo plano e uma exceção na Firewall do Windows. Isto pede direitos de administrador uma vez. Depois, as pastas escolhidas ficam legíveis na rede. Continuar?",
+            "Para compartilhar pastas com um celular Android, são necessários um pequeno servidor SFTP em segundo plano e uma exceção no Firewall do Windows. Isso pede direitos de administrador uma vez. Depois de ativado, as pastas escolhidas ficam legíveis na rede. Continuar?",
             "لمشاركة المجلدات مع هاتف Android يلزم خادم SFTP صغير يعمل في الخلفية واستثناء في جدار حماية Windows. يتطلب ذلك صلاحيات المسؤول مرة واحدة. بعد التفعيل تصبح المجلدات التي تختارها قابلة للقراءة عبر الشبكة. هل تريد المتابعة؟",
             "Android फ़ोन के साथ फ़ोल्डर साझा करने के लिए एक छोटा पृष्ठभूमि SFTP सर्वर और Windows फ़ायरवॉल में एक अपवाद चाहिए। इसके लिए एक बार व्यवस्थापक अधिकार माँगे जाएँगे। चालू होने के बाद आपके चुने फ़ोल्डर नेटवर्क पर पढ़े जा सकेंगे। जारी रखें?",
             "Android ফোনের সাথে ফোল্ডার শেয়ার করতে একটি ছোট ব্যাকগ্রাউন্ড SFTP সার্ভার এবং Windows ফায়ারওয়ালে একটি ব্যতিক্রম প্রয়োজন। এতে একবার প্রশাসক অধিকার চাওয়া হবে। চালু হলে আপনার নির্বাচিত ফোল্ডারগুলি নেটওয়ার্কে পড়া যাবে। চালিয়ে যাবেন?",
@@ -498,7 +498,7 @@ Partial Public NotInheritable Class Localization
             "La condivisione delle cartelle con un telefono Android non è attiva. Aggiunge un piccolo server SFTP in background e un'eccezione nel Windows Firewall (i diritti di amministratore servono una volta).",
             "El uso compartido de carpetas para un teléfono Android no está activado. Añade un pequeño servidor SFTP en segundo plano y una excepción en el Firewall de Windows (los permisos de administrador se piden una vez).",
             "Le partage de dossiers pour un téléphone Android n'est pas activé. Il ajoute un petit serveur SFTP en arrière-plan et une exception dans le pare-feu Windows (droits administrateur une seule fois).",
-            "A partilha de pastas para um telemóvel Android não está ativada. Acrescenta um pequeno servidor SFTP em segundo plano e uma exceção na Firewall do Windows (direitos de administrador uma vez).",
+            "O compartilhamento de pastas para um celular Android não está ativado. Ele adiciona um pequeno servidor SFTP em segundo plano e uma exceção no Firewall do Windows (são necessários direitos de administrador uma vez).",
             "مشاركة المجلدات مع هاتف Android غير مفعّلة. تضيف خادم SFTP صغيرًا في الخلفية واستثناءً واحدًا في جدار حماية Windows (تلزم صلاحيات المسؤول مرة واحدة).",
             "Android फ़ोन के लिए फ़ोल्डर साझाकरण सक्षम नहीं है। यह एक छोटा पृष्ठभूमि SFTP सर्वर और Windows फ़ायरवॉल में एक अपवाद जोड़ता है (व्यवस्थापक अधिकार एक बार चाहिए)।",
             "Android ফোনের জন্য ফোল্ডার শেয়ারিং চালু নয়। এটি একটি ছোট ব্যাকগ্রাউন্ড SFTP সার্ভার ও Windows ফায়ারওয়ালে একটি ব্যতিক্রম যোগ করে (একবার প্রশাসক অধিকার লাগে)।",
@@ -514,7 +514,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Отмена",
             "Cancel", "Скасувати", "Abbrechen", "Annulla", "Cancelar", "Annuler", "Cancelar",
-            "إلغاء", "रद्द करें", "বাতিল", "منسوخ", "取消")
+            "إلغاء", "रद्द करें", "বাতিল", "منسوخ کریں", "取消")
 
         Add("Настройка.. подтвердите запрос прав администратора.",
             "Setting up.. confirm the administrator prompt.",
@@ -523,7 +523,7 @@ Partial Public NotInheritable Class Localization
             "Configurazione in corso.. conferma la richiesta di amministratore.",
             "Configurando.. confirma la solicitud de administrador.",
             "Configuration.. confirmez la demande d'administrateur.",
-            "A configurar.. confirme o pedido de administrador.",
+            "Configurando.. confirme a solicitação de administrador.",
             "جارٍ الإعداد.. أكّد طلب صلاحيات المسؤول.",
             "सेटअप हो रहा है.. व्यवस्थापक अनुरोध की पुष्टि करें।",
             "সেটআপ চলছে.. প্রশাসক অনুরোধটি নিশ্চিত করুন।",
@@ -534,7 +534,7 @@ Partial Public NotInheritable Class Localization
             "Done. Folder sharing is enabled.", "Готово. Спільний доступ увімкнено.",
             "Fertig. Die Ordnerfreigabe ist aktiviert.", "Fatto. La condivisione delle cartelle è attiva.",
             "Listo. El uso compartido de carpetas está activado.", "Terminé. Le partage de dossiers est activé.",
-            "Concluído. A partilha de pastas está ativada.", "تم. تم تفعيل مشاركة المجلدات.",
+            "Concluído. O compartilhamento de pastas está ativado.", "تم. تم تفعيل مشاركة المجلدات.",
             "हो गया। फ़ोल्डर साझाकरण सक्षम है।", "সম্পন্ন। ফোল্ডার শেয়ারিং চালু হয়েছে।",
             "مکمل۔ فولڈر شیئرنگ فعال ہے۔", "完成。文件夹共享已启用。")
 
@@ -545,7 +545,7 @@ Partial Public NotInheritable Class Localization
             "Condivisione non attivata: i diritti di amministratore non sono stati concessi.",
             "Uso compartido no activado: no se concedieron permisos de administrador.",
             "Partage non activé - les droits administrateur n'ont pas été accordés.",
-            "Partilha não ativada - os direitos de administrador não foram concedidos.",
+            "Compartilhamento não ativado - os direitos de administrador não foram concedidos.",
             "لم يتم تفعيل المشاركة - لم تُمنح صلاحيات المسؤول.",
             "साझाकरण सक्षम नहीं - व्यवस्थापक अधिकार नहीं मिले।",
             "শেয়ারিং চালু হয়নি - প্রশাসক অধিকার দেওয়া হয়নি।",
@@ -559,7 +559,7 @@ Partial Public NotInheritable Class Localization
             "Impossibile configurare il firewall. Riprova.",
             "No se pudo configurar el cortafuegos. Inténtalo de nuevo.",
             "Impossible de configurer le pare-feu. Veuillez réessayer.",
-            "Não foi possível configurar a firewall. Tente novamente.",
+            "Não foi possível configurar o firewall. Tente novamente.",
             "تعذّر ضبط جدار الحماية. حاول مرة أخرى.",
             "फ़ायरवॉल कॉन्फ़िगर नहीं हो सका। कृपया फिर से प्रयास करें।",
             "ফায়ারওয়াল কনফিগার করা যায়নি। আবার চেষ্টা করুন।",
@@ -573,7 +573,7 @@ Partial Public NotInheritable Class Localization
             "Il componente server non è stato trovato accanto al programma: reinstalla l'applicazione per attivare la condivisione.",
             "No se encontró el componente del servidor junto a la aplicación: reinstálala para activar el uso compartido.",
             "Le composant serveur est introuvable à côté du programme - réinstallez l'application pour activer le partage.",
-            "O componente do servidor não foi encontrado junto à aplicação - reinstale-a para ativar a partilha.",
+            "O componente do servidor não foi encontrado ao lado do aplicativo - reinstale-o para ativar o compartilhamento.",
             "لم يُعثر على مكوّن الخادم بجوار البرنامج - أعد تثبيت التطبيق لتفعيل المشاركة.",
             "सर्वर घटक कार्यक्रम के पास नहीं मिला - साझाकरण सक्षम करने के लिए एप्लिकेशन दोबारा स्थापित करें।",
             "প্রোগ্রামের পাশে সার্ভার উপাদানটি পাওয়া যায়নি - শেয়ারিং চালু করতে অ্যাপ্লিকেশনটি পুনরায় ইনস্টল করুন।",
@@ -587,7 +587,7 @@ Partial Public NotInheritable Class Localization
             "Condivisione delle cartelle con un telefono Android. Fai clic per attivarla (i diritti di amministratore servono una volta).",
             "Uso compartido de carpetas para un teléfono Android. Haz clic para activarlo (los permisos de administrador se piden una vez).",
             "Partage de dossiers pour un téléphone Android. Cliquez pour l'activer (droits administrateur une seule fois).",
-            "Partilha de pastas para um telemóvel Android. Clique para ativar (direitos de administrador uma vez).",
+            "Compartilhamento de pastas para um celular Android. Clique para ativar (são necessários direitos de administrador uma vez).",
             "مشاركة المجلدات مع هاتف Android. انقر للتفعيل (تلزم صلاحيات المسؤول مرة واحدة).",
             "Android फ़ोन के लिए फ़ोल्डर साझाकरण। सक्षम करने के लिए क्लिक करें (व्यवस्थापक अधिकार एक बार चाहिए)।",
             "Android ফোনের জন্য ফোল্ডার শেয়ারিং। চালু করতে ক্লিক করুন (একবার প্রশাসক অধিকার লাগে)।",
@@ -605,7 +605,7 @@ Partial Public NotInheritable Class Localization
             "La password resta fuori dal file/QR. Comunicala separatamente: {0}",
             "La contraseña no se incluye en el archivo/QR. Compártela por separado: {0}",
             "Le mot de passe reste hors du fichier/QR. Transmettez-le séparément : {0}",
-            "A palavra-passe fica fora do ficheiro/QR. Transmita-a em separado: {0}",
+            "A senha fica fora do arquivo/QR. Transmita-a separadamente: {0}",
             "لن تُدرج كلمة المرور في الملف/رمز QR. أرسلها بشكل منفصل: {0}",
             "पासवर्ड फ़ाइल/QR में नहीं जाएगा। इसे अलग से बताएँ: {0}",
             "পাসওয়ার্ড ফাইল/QR-এ যাবে না। এটি আলাদাভাবে জানান: {0}",
@@ -619,7 +619,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile solo sulla stessa rete Wi-Fi. La porta internet {0} non ha risposto a un test esterno: ricontrolla l'inoltro sul router o attiva UPnP.",
             "Solo accesible en la misma red Wi-Fi. El puerto de internet {0} no respondió a una prueba externa: revisa la redirección en el router o activa UPnP.",
             "Joignable uniquement sur le même Wi-Fi. Le port internet {0} n'a pas répondu à un test externe - vérifiez la redirection sur le routeur ou activez l'UPnP.",
-            "Alcançável apenas na mesma rede Wi-Fi. A porta de internet {0} não respondeu a um teste externo - verifique o encaminhamento no router ou ative o UPnP.",
+            "Acessível apenas na mesma rede Wi-Fi. A porta de internet {0} não respondeu a um teste externo - verifique o encaminhamento no roteador ou ative o UPnP.",
             "يمكن الوصول إليه على شبكة Wi-Fi نفسها فقط. لم يستجب منفذ الإنترنت {0} لاختبار خارجي - راجع إعادة التوجيه في الموجّه أو فعّل UPnP.",
             "केवल उसी Wi-Fi पर उपलब्ध। इंटरनेट पोर्ट {0} ने बाहरी जाँच का उत्तर नहीं दिया - राउटर पर फ़ॉरवर्डिंग जाँचें या UPnP चालू करें।",
             "শুধু একই Wi-Fi-তে পৌঁছানো যায়। ইন্টারনেট পোর্ট {0} বাহ্যিক পরীক্ষায় সাড়া দেয়নি - রাউটারে ফরওয়ার্ডিং যাচাই করুন বা UPnP চালু করুন।",
@@ -633,7 +633,7 @@ Partial Public NotInheritable Class Localization
             "Raggiungibile sulla stessa rete Wi-Fi. Per altre reti inoltra la porta TCP {0} a {1} sul router, oppure attiva UPnP.",
             "Accesible en la misma red Wi-Fi. Para otras redes, redirige el puerto TCP {0} a {1} en el router, o activa UPnP.",
             "Joignable sur le même Wi-Fi. Pour d'autres réseaux, redirigez le port TCP {0} vers {1} sur votre routeur, ou activez l'UPnP.",
-            "Alcançável na mesma rede Wi-Fi. Para outras redes, encaminhe a porta TCP {0} para {1} no router, ou ative o UPnP.",
+            "Acessível na mesma rede Wi-Fi deste PC. Para outras redes, encaminhe a porta TCP {0} para {1} no roteador ou ative o UPnP.",
             "يمكن الوصول إليه على شبكة Wi-Fi نفسها. للشبكات الأخرى، أعد توجيه منفذ TCP رقم {0} إلى {1} في الموجّه، أو فعّل UPnP.",
             "उसी Wi-Fi पर उपलब्ध। अन्य नेटवर्क के लिए राउटर में TCP पोर्ट {0} को {1} पर फ़ॉरवर्ड करें, या UPnP चालू करें।",
             "একই Wi-Fi-তে পৌঁছানো যায়। অন্য নেটওয়ার্কের জন্য রাউটারে TCP পোর্ট {0} কে {1}-এ ফরওয়ার্ড করুন, বা UPnP চালু করুন।",
@@ -685,12 +685,12 @@ Partial Public NotInheritable Class Localization
             "3. Trouvez la section « Redirection de ports » (Port Forwarding / Virtual Server)." & vbCrLf &
             "4. Ajoutez une règle : port externe {1} -> {2}:{3}, protocole TCP." & vbCrLf &
             "5. Enregistrez la règle, puis rescannez le code QR (ou réenregistrez le .fmscfg) sur le téléphone.",
-            "O endereço externo já está no código QR e no ficheiro .fmscfg. Para funcionar, encaminhe a porta no router:" & vbCrLf &
-            "1. Abra o router: {0} (botão «Abrir router»)." & vbCrLf &
-            "2. Inicie sessão (utilizador e palavra-passe estão normalmente num autocolante sob o router)." & vbCrLf &
-            "3. Procure a secção «Encaminhamento de portas» (Port Forwarding / Virtual Server)." & vbCrLf &
+            "O endereço externo já está no código QR e no arquivo .fmscfg. Para funcionar, encaminhe a porta no roteador:" & vbCrLf &
+            "1. Abra o roteador: {0} (botão «Abrir roteador»)." & vbCrLf &
+            "2. Faça login (usuário e senha geralmente estão em uma etiqueta embaixo do roteador)." & vbCrLf &
+            "3. Procure a seção «Encaminhamento de portas» (Port Forwarding / Virtual Server)." & vbCrLf &
             "4. Adicione uma regra: porta externa {1} -> {2}:{3}, protocolo TCP." & vbCrLf &
-            "5. Guarde a regra e volte a ler o código QR (ou guarde o .fmscfg) no telemóvel.",
+            "5. Salve a regra e escaneie o código QR de novo (ou salve o .fmscfg) no celular.",
             "العنوان الخارجي موجود بالفعل في رمز QR وملف ‎.fmscfg‎. ولكي يعمل، أعد توجيه المنفذ في الموجّه:" & vbCrLf &
             "1. افتح الموجّه: {0} (زر «فتح الموجّه»)." & vbCrLf &
             "2. سجّل الدخول (اسم المستخدم وكلمة المرور عادةً على ملصق أسفل الموجّه)." & vbCrLf &
@@ -711,7 +711,7 @@ Partial Public NotInheritable Class Localization
             "5. নিয়মটি সংরক্ষণ করুন - তারপর ফোনে QR কোড আবার স্ক্যান করুন (বা .fmscfg আবার সংরক্ষণ করুন)।",
             "بیرونی پتہ پہلے ہی QR کوڈ اور ‎.fmscfg‎ فائل میں موجود ہے۔ اسے کام کرنے کے لیے روٹر پر پورٹ فارورڈ کریں:" & vbCrLf &
             "1. روٹر کھولیں: {0} («روٹر کھولیں» بٹن)۔" & vbCrLf &
-            "2. سائن ان کریں (صارف نام اور پاس ورڈ عام طور پر روٹر کے نیچے اسٹیکر پر ہوتے ہیں)۔" & vbCrLf &
+            "2. سائن اِن کریں (صارف نام اور پاس ورڈ عام طور پر روٹر کے نیچے اسٹیکر پر ہوتے ہیں)۔" & vbCrLf &
             "3. «پورٹ فارورڈنگ» سیکشن تلاش کریں (Port Forwarding / Virtual Server)۔" & vbCrLf &
             "4. ایک قاعدہ شامل کریں: بیرونی پورٹ {1} -> {2}:{3}، پروٹوکول TCP۔" & vbCrLf &
             "5. قاعدہ محفوظ کریں - پھر فون پر QR کوڈ دوبارہ اسکین کریں (یا ‎.fmscfg‎ دوبارہ محفوظ کریں)۔",
@@ -731,7 +731,7 @@ Partial Public NotInheritable Class Localization
             "È lo stesso numero che scrivi nella regola di inoltro del router ed è scritto nei codici QR che hai distribuito. Il programma non lo cambia mai: se lo cambi tu, cambialo anche sul router. Meglio tenerlo sotto 49152: sopra inizia l'intervallo che Windows assegna alle connessioni in uscita, e qualsiasi programma può occuparlo.",
             "Es el mismo número que pones en la regla de reenvío del router y que está escrito en los códigos QR que repartiste. El programa nunca lo cambia: si lo cambias tú, cámbialo también en el router. Mejor mantenerlo por debajo de 49152: por encima empieza el rango que Windows reparte a las conexiones salientes, y cualquier programa puede ocuparlo.",
             "C'est le même numéro que vous indiquez dans la règle de redirection du routeur, et il est inscrit dans les codes QR déjà distribués. Le programme ne le change jamais : si vous le changez, changez-le aussi sur le routeur. Mieux vaut rester sous 49152 : au-dessus commence la plage que Windows attribue aux connexions sortantes, et n'importe quel programme peut la prendre.",
-            "É o mesmo número que indica na regra de encaminhamento do router e que está escrito nos códigos QR distribuídos. O programa nunca o muda - se o mudar, mude-o também no router. É melhor mantê-lo abaixo de 49152: acima disso começa o intervalo que o Windows atribui às ligações de saída, e qualquer programa o pode ocupar.",
+            "É o mesmo número que você indica na regra de encaminhamento do roteador e que está escrito nos códigos QR distribuídos. O programa nunca o altera - se você o alterar, altere-o também no roteador. É melhor mantê-lo abaixo de 49152: acima disso começa o intervalo que o Windows atribui às conexões de saída, e qualquer programa pode ocupá-lo.",
             "هو نفسه الرقم الذي تكتبه في قاعدة التوجيه على الموجّه، وهو مكتوب في رموز QR التي وزّعتها. البرنامج لا يغيّره أبدًا - وإذا غيّرته أنت فغيّره في الموجّه أيضًا. يُفضَّل إبقاؤه أقل من 49152: فوق ذلك يبدأ النطاق الذي يوزّعه Windows على الاتصالات الصادرة، ويمكن لأي برنامج أن يشغله.",
             "यही संख्या आप राउटर के फ़ॉरवर्डिंग नियम में लिखते हैं, और यही बाँटे गए QR कोड में दर्ज है। कार्यक्रम इसे कभी नहीं बदलता - आप बदलें तो राउटर में भी बदलें। इसे 49152 से नीचे रखना बेहतर है: उससे ऊपर वह श्रेणी शुरू होती है जिसे Windows बाहर जाने वाले कनेक्शनों को देता है, और उसे कोई भी प्रोग्राम ले सकता है।",
             "এই একই সংখ্যা আপনি রাউটারের ফরওয়ার্ডিং নিয়মে লেখেন, আর সেটিই দেওয়া QR কোডে লেখা আছে। প্রোগ্রাম এটি কখনও বদলায় না - আপনি বদলালে রাউটারেও বদলান। এটি 49152-এর নিচে রাখা ভালো: তার উপরে সেই পরিসর শুরু হয় যা Windows বাইরে যাওয়া সংযোগগুলিকে দেয়, আর যেকোনো প্রোগ্রাম সেটি দখল করতে পারে।",
@@ -745,7 +745,7 @@ Partial Public NotInheritable Class Localization
             "La porta {0} è occupata da un altro programma: la condivisione non è partita. Libera quella porta oppure scegli un altro numero (il pulsante «Trova una libera» accanto al campo) e cambialo anche nella regola del router.",
             "El puerto {0} está ocupado por otro programa: no se inició el acceso compartido. Libera ese puerto o elige otro número (el botón «Buscar uno libre» junto al campo) y cámbialo también en la regla del router.",
             "Le port {0} est occupé par un autre programme - le partage n'a pas démarré. Libérez ce port ou choisissez un autre numéro (le bouton «En trouver un libre» à côté du champ) - et changez-le aussi dans la règle du routeur.",
-            "A porta {0} está ocupada por outro programa - a partilha não arrancou. Liberte essa porta ou escolha outro número (o botão «Encontrar uma livre» ao lado do campo) - e mude-o também na regra do router.",
+            "A porta {0} está ocupada por outro programa - o compartilhamento não foi iniciado. Libere essa porta ou escolha outro número (o botão «Encontrar uma livre» ao lado do campo) - e altere-o também na regra do roteador.",
             "المنفذ {0} مشغول ببرنامج آخر - لم تبدأ المشاركة. حرّر المنفذ أو اختر رقمًا آخر (زر «اختيار منفذ متاح» بجانب الحقل) - وغيّره أيضًا في قاعدة الموجّه.",
             "पोर्ट {0} किसी दूसरे प्रोग्राम के पास है - साझा पहुँच शुरू नहीं हुई। वह पोर्ट खाली करें या दूसरी संख्या चुनें (फ़ील्ड के पास «कोई खाली चुनें» बटन) - और राउटर के नियम में भी बदल दें।",
             "পোর্ট {0} অন্য একটি প্রোগ্রামের দখলে - শেয়ারিং চালু হয়নি। পোর্টটি খালি করুন বা অন্য একটি সংখ্যা বেছে নিন (ফিল্ডের পাশে «একটি খালি খুঁজুন» বোতাম) - আর রাউটারের নিয়মেও সেটি বদলে দিন।",
@@ -759,7 +759,7 @@ Partial Public NotInheritable Class Localization
             "La porta non può essere occupata anche se nessuno è in ascolto. Potrebbe rientrare in un intervallo riservato da Hyper-V, WSL o Docker. Verifica con: netsh int ipv4 show excludedportrange tcp",
             "El puerto no se puede ocupar aunque nadie escucha en él. Puede estar dentro de un rango reservado por Hyper-V, WSL o Docker. Compruébalo con: netsh int ipv4 show excludedportrange tcp",
             "Le port ne peut pas être pris alors que personne ne l'écoute. Il est peut-être dans une plage réservée par Hyper-V, WSL ou Docker. Vérifiez avec : netsh int ipv4 show excludedportrange tcp",
-            "Não é possível ocupar a porta embora ninguém esteja à escuta. Pode estar num intervalo reservado pelo Hyper-V, WSL ou Docker. Verifique com: netsh int ipv4 show excludedportrange tcp",
+            "Não é possível vincular a porta, embora ninguém esteja escutando nela. Ela pode estar dentro de um intervalo reservado pelo Hyper-V, WSL ou Docker. Verifique com: netsh int ipv4 show excludedportrange tcp",
             "لا يمكن حجز المنفذ رغم أنّ لا أحد يستمع عليه. ربما يقع ضمن نطاق محجوز لـ Hyper-V أو WSL أو Docker. تحقّق بالأمر: netsh int ipv4 show excludedportrange tcp",
             "पोर्ट पर कोई सुन नहीं रहा, फिर भी उसे लिया नहीं जा सकता। संभव है वह Hyper-V, WSL या Docker द्वारा सुरक्षित रखी गई श्रेणी में आता हो। इस आदेश से जाँचें: netsh int ipv4 show excludedportrange tcp",
             "কেউ শুনছে না, তবুও পোর্টটি দখল করা যাচ্ছে না। সম্ভবত এটি Hyper-V, WSL বা Docker-এর সংরক্ষিত পরিসরে পড়েছে। এই কমান্ড দিয়ে দেখুন: netsh int ipv4 show excludedportrange tcp",
@@ -773,7 +773,7 @@ Partial Public NotInheritable Class Localization
             "Il server è in esecuzione sulla porta {0}, non su quella scelta {1}. Aggiorna l'app: il modulo installato non sa ancora scegliere la porta.",
             "El servidor funciona en el puerto {0}, no en el elegido {1}. Actualiza la aplicación: el módulo instalado todavía no sabe elegir el puerto.",
             "Le serveur tourne sur le port {0}, pas sur celui choisi {1}. Mettez l'application à jour - le module installé ne sait pas encore choisir le port.",
-            "O servidor está a funcionar na porta {0} e não na escolhida {1}. Atualize a aplicação - o módulo instalado ainda não sabe escolher a porta.",
+            "O servidor está em execução na porta {0}, e não na escolhida {1}. Atualize o aplicativo - o módulo instalado ainda não sabe escolher a porta.",
             "الخادم يعمل على المنفذ {0} وليس على المنفذ المختار {1}. حدّث التطبيق - وحدة العمل المثبَّتة لا تستطيع بعد اختيار المنفذ.",
             "सर्वर पोर्ट {0} पर चल रहा है, चुने गए {1} पर नहीं। ऐप अपडेट करें - स्थापित वर्कर मॉड्यूल अभी पोर्ट चुनना नहीं जानता।",
             "সার্ভার চলছে পোর্ট {0}-এ, নির্বাচিত {1}-এ নয়। অ্যাপটি আপডেট করুন - ইনস্টল করা ওয়ার্কার মডিউল এখনও পোর্ট বেছে নিতে পারে না।",
@@ -787,7 +787,7 @@ Partial Public NotInheritable Class Localization
             "La porta è cambiata: i codici QR e i file di configurazione già distribuiti non sono più validi. Creali di nuovo.",
             "El puerto ha cambiado: los códigos QR y los archivos de configuración ya repartidos dejan de servir. Vuelve a crearlos.",
             "Le port a changé - les codes QR et fichiers de configuration déjà distribués ne conviennent plus. Recréez-les.",
-            "A porta mudou - os códigos QR e ficheiros de configuração já distribuídos deixaram de servir. Crie-os de novo.",
+            "A porta mudou - os códigos QR e os arquivos de configuração distribuídos antes não correspondem mais. Exporte-os novamente.",
             "تغيّر المنفذ - رموز QR وملفات الإعداد التي وزّعتها من قبل لم تعد صالحة. أنشئها من جديد.",
             "पोर्ट बदल गया है - पहले बाँटे गए QR कोड और सेटिंग फ़ाइलें अब मेल नहीं खातीं। उन्हें दोबारा बनाएँ।",
             "পোর্ট বদলে গেছে - আগে দেওয়া QR কোড ও কনফিগ ফাইল আর মেলে না। সেগুলি আবার তৈরি করুন।",
@@ -803,7 +803,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio di condivisione risponde con la versione di protocollo {0}, questa app capisce la {1}. Aggiorna l'app.",
             "El servicio de uso compartido responde con la versión de protocolo {0} y esta aplicación entiende la {1}. Actualiza la aplicación.",
             "Le service de partage répond avec la version de protocole {0}, alors que cette application comprend la {1}. Mettez l'application à jour.",
-            "O serviço de partilha responde com a versão de protocolo {0} e esta aplicação compreende a {1}. Atualize a aplicação.",
+            "O serviço de compartilhamento responde com a versão de protocolo {0}, e este aplicativo entende a {1}. Atualize o aplicativo.",
             "تجيب خدمة المشاركة بإصدار البروتوكول {0}، بينما يفهم هذا التطبيق الإصدار {1}. حدّث التطبيق.",
             "साझाकरण सेवा प्रोटोकॉल संस्करण {0} से उत्तर देती है, और यह ऐप {1} समझता है। ऐप अपडेट करें।",
             "শেয়ারিং পরিষেবা প্রোটোকল সংস্করণ {0} দিয়ে উত্তর দেয়, আর এই অ্যাপ {1} বোঝে। অ্যাপটি আপডেট করুন।",
@@ -819,7 +819,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio Windows {0} risponde con la versione di protocollo {1}, questa app capisce la {2}. Aggiorna l'app e l'edizione Server alla stessa versione.",
             "El servicio de Windows {0} responde con la versión de protocolo {1} y esta aplicación entiende la {2}. Actualiza la aplicación y la edición Server a la misma versión.",
             "Le service Windows {0} répond avec la version de protocole {1}, alors que cette application comprend la {2}. Mettez l'application et l'édition Server à la même version.",
-            "O serviço do Windows {0} responde com a versão de protocolo {1} e esta aplicação compreende a {2}. Atualize a aplicação e a edição Server para a mesma versão.",
+            "O serviço do Windows {0} responde com a versão de protocolo {1}, e este aplicativo entende a {2}. Atualize o aplicativo e a edição Server para a mesma versão.",
             "تجيب خدمة Windows {0} بإصدار البروتوكول {1}، بينما يفهم هذا التطبيق الإصدار {2}. حدّث التطبيق وإصدار الخادم إلى النسخة نفسها.",
             "Windows सेवा {0} प्रोटोकॉल संस्करण {1} से उत्तर देती है, और यह ऐप {2} समझता है। ऐप और सर्वर संस्करण को एक ही संस्करण पर अपडेट करें।",
             "Windows পরিষেবা {0} প্রোটোকল সংস্করণ {1} দিয়ে উত্তর দেয়, আর এই অ্যাপ {2} বোঝে। অ্যাপ ও সার্ভার সংস্করণ একই সংস্করণে আপডেট করুন।",
@@ -835,7 +835,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio di condivisione ha rifiutato: {0}",
             "El servicio de uso compartido se negó: {0}",
             "Le service de partage a refusé : {0}",
-            "O serviço de partilha recusou: {0}",
+            "O serviço de compartilhamento recusou: {0}",
             "رفضت خدمة المشاركة: {0}",
             "साझाकरण सेवा ने अस्वीकार किया: {0}",
             "শেয়ারিং পরিষেবা প্রত্যাখ্যান করেছে: {0}",
@@ -850,7 +850,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio di condivisione in esecuzione è più vecchio di questa app e non può applicare «Solo rete locale». Aggiorna l'app o disattiva la condivisione.",
             "El servicio de uso compartido en ejecución es más antiguo que esta aplicación y no puede aplicar «Solo red local». Actualiza la aplicación o desactiva el uso compartido.",
             "Le service de partage en cours est plus ancien que cette application et ne peut pas appliquer «Réseau local uniquement». Mettez l'application à jour ou arrêtez le partage.",
-            "O serviço de partilha em execução é mais antigo do que esta aplicação e não consegue aplicar «Apenas rede local». Atualize a aplicação ou desligue a partilha.",
+            "O serviço de compartilhamento em execução é mais antigo que este aplicativo e não consegue aplicar «Apenas rede local». Atualize o aplicativo ou desative o compartilhamento.",
             "خدمة المشاركة العاملة أقدم من هذا التطبيق ولا يمكنها فرض «الشبكة المحلية فقط». حدّث التطبيق أو أوقف المشاركة.",
             "चल रही साझाकरण सेवा इस ऐप से पुरानी है और «केवल स्थानीय नेटवर्क» लागू नहीं कर सकती। ऐप अपडेट करें या साझाकरण बंद करें।",
             "চলমান শেয়ারিং পরিষেবাটি এই অ্যাপের চেয়ে পুরোনো এবং «শুধু লোকাল নেটওয়ার্ক» প্রয়োগ করতে পারে না। অ্যাপ আপডেট করুন বা শেয়ারিং বন্ধ করুন।",
@@ -865,7 +865,7 @@ Partial Public NotInheritable Class Localization
             "Impossibile azzerare i contatori.",
             "No se pudieron restablecer los contadores.",
             "Impossible de réinitialiser les compteurs.",
-            "Não foi possível repor os contadores.",
+            "Não foi possível redefinir os contadores.",
             "تعذّر إعادة تعيين العدادات.",
             "काउंटर रीसेट नहीं हो सके।",
             "কাউন্টার রিসেট করা যায়নি।",
@@ -879,7 +879,7 @@ Partial Public NotInheritable Class Localization
             "Impossibile azzerare i contatori: {0}",
             "No se pudieron restablecer los contadores: {0}",
             "Impossible de réinitialiser les compteurs : {0}",
-            "Não foi possível repor os contadores: {0}",
+            "Não foi possível redefinir os contadores: {0}",
             "تعذّر إعادة تعيين العدادات: {0}",
             "काउंटर रीसेट नहीं हो सके: {0}",
             "কাউন্টার রিসেট করা যায়নি: {0}",
@@ -889,7 +889,7 @@ Partial Public NotInheritable Class Localization
         Add("Сброс не удался",
             "Reset failed", "Скидання не вдалося", "Zurücksetzen fehlgeschlagen",
             "Azzeramento non riuscito", "No se pudo restablecer", "Échec de la réinitialisation",
-            "A reposição falhou", "فشلت إعادة التعيين", "रीसेट विफल रहा", "রিসেট ব্যর্থ হয়েছে",
+            "Falha na redefinição", "فشلت إعادة التعيين", "रीसेट विफल रहा", "রিসেট ব্যর্থ হয়েছে",
             "ری سیٹ ناکام رہا", "重置失败")
 
         ' --- spec 228 outward access, channels and PIN strings ---
@@ -908,7 +908,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Дать доступ наружу..",
             "Give access outside..", "Дати доступ назовні..", "Zugriff nach außen geben..", "Dai accesso esterno..", "Dar acceso externo..",
-            "Donner l'accès extérieur..", "Dar acceso externo..", "منح وصول خارجي..", "बाहरी पहुंच दें..", "বাইরের অ্যাক্সেস দিন..",
+            "Donner l'accès extérieur..", "Dar acesso externo..", "منح وصول خارجي..", "बाहरी पहुंच दें..", "বাইরের অ্যাক্সেস দিন..",
             "باہر رسائی دیں..", "提供外部访问..")
 
         Add("PIN-код изменился",
@@ -949,7 +949,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Пароль ссылки:",
             "Link password:", "Пароль посилання:", "Link-Passwort:", "Password del collegamento:", "Contraseña del enlace:",
-            "Mot de passe du lien :", "Palavra-passe do link:", "كلمة مرور الرابط:", "लिंक पासवर्ड:", "লিঙ্ক পাসওয়ার্ড:",
+            "Mot de passe du lien :", "Senha do link:", "كلمة مرور الرابط:", "लिंक पासवर्ड:", "লিঙ্ক পাসওয়ার্ড:",
             "لنک پاس ورڈ:", "链接密码：")
 
         Add("Сгенерировать",
@@ -994,7 +994,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Создание ссылки..",
             "Creating link..", "Створення посилання..", "Link wird erstellt..", "Creazione collegamento in corso..", "Creando enlace..",
-            "Création du lien en cours..", "A criar link..", "جارٍ إنشاء الرابط..", "लिंक बनाया जा रहा है..", "লিঙ্ক তৈরি হচ্ছে..",
+            "Création du lien en cours..", "Criando link..", "جارٍ إنشاء الرابط..", "लिंक बनाया जा रहा है..", "লিঙ্ক তৈরি হচ্ছে..",
             "لنک بنایا جا رہا ہے..", "正在创建链接..")
 
         Add("Ссылка успешно создана.",
@@ -1014,7 +1014,7 @@ Partial Public NotInheritable Class Localization
             "Revocare il collegamento esterno per questa cartella? Tutte le sessioni attive su di essa saranno terminate.",
             "¿Retirar el enlace externo para esta carpeta? Todas las sesiones activas en él se finalizarán.",
             "Retirer le lien sortant pour ce dossier ? Toutes les sessions actives associées seront interrompues.",
-            "Revogar o link externo para esta pasta? Todas as sessões ativas nele serão terminadas.",
+            "Revogar o link externo para esta pasta? Todas as sessões ativas nele serão encerradas.",
             "هل تريد سحب الرابط الخارجي لهذا المجلد؟ سيتم إنهاء جميع الجلسات النشطة عليه.",
             "इस फ़ोल्डर के लिए बाहरी लिंक वापस लें? इस पर सभी सक्रिय सत्र समाप्त हो जाएँगे।",
             "এই ফোল্ডারের জন্য বাইরের লিঙ্ক প্রত্যাহার করবেন? এতে থাকা সমস্ত সক্রিয় সেশন বন্ধ হয়ে যাবে।",
@@ -1023,7 +1023,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Отзыв ссылки..",
             "Withdrawing link..", "Відкликання посилання..", "Link wird widerrufen..", "Revoca collegamento in corso..", "Retirando enlace..",
-            "Retrait du lien en cours..", "A revogar link..", "جارٍ سحب الرابط..", "लिंक वापस लिया जा रहा है..", "লিঙ্ক প্রত্যাহার করা হচ্ছে..",
+            "Retrait du lien en cours..", "Revogando link..", "جارٍ سحب الرابط..", "लिंक वापस लिया जा रहा है..", "লিঙ্ক প্রত্যাহার করা হচ্ছে..",
             "لنک واپس لیا جا رہا ہے..", "正在撤回链接..")
 
         Add("Ссылка отозвана.",
@@ -1038,7 +1038,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Создание гостевого приглашения..",
             "Creating guest invitation..", "Створення гостьового запрошення..", "Gasteinladung wird erstellt..", "Creazione invito ospite in corso..", "Creando invitación de invitado..",
-            "Création de l'invitation d'invité en cours..", "A criar convite de convidado..", "جارٍ إنشاء دعوة ضيف..", "अतिथि आमंत्रण बनाया जा रहा है..", "অতিথি আমন্ত্রণ তৈরি হচ্ছে..",
+            "Création de l'invitation d'invité en cours..", "Criando convite de convidado..", "جارٍ إنشاء دعوة ضيف..", "अतिथि आमंत्रण बनाया जा रहा है..", "অতিথি আমন্ত্রণ তৈরি হচ্ছে..",
             "مہمان کی دعوت بنائی جا رہی ہے..", "正在创建访客邀请..")
 
         Add("Гостевое приглашение создано.",
@@ -1058,7 +1058,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Отзыв приглашения..",
             "Withdrawing invitation..", "Відкликання запрошення..", "Einladung wird widerrufen..", "Revoca invito in corso..", "Retirando invitación..",
-            "Retrait de l'invitation en cours..", "A revogar convite..", "جارٍ سحب الدعوة..", "आमंत्रण वापस लिया जा रहा है..", "আমন্ত্রণ প্রত্যাহার করা হচ্ছে..",
+            "Retrait de l'invitation en cours..", "Revogando convite..", "جارٍ سحب الدعوة..", "आमंत्रण वापस लिया जा रहा है..", "আমন্ত্রণ প্রত্যাহার করা হচ্ছে..",
             "دعوت نامہ واپس لیا جا رہا ہے..", "正在撤回邀请..")
 
         Add("Не удалось отозвать приглашение.",

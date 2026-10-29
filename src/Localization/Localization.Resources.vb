@@ -1491,7 +1491,7 @@ Partial Public NotInheritable Class Localization
             "Scansiona questo codice QR con il telefono per trasferire le impostazioni della cartella",
             "Escanea este código QR con el teléfono para transferir la configuración de la carpeta",
             "Scannez ce code QR avec votre téléphone pour transférer les paramètres du dossier",
-            "Digitalize este código QR com o telefone para transferir as configurações da pasta",
+            "Escaneie este código QR com o celular para transferir as configurações da pasta",
             "امسح رمز QR هذا بهاتفك لنقل إعدادات المجلد",
             "फ़ोल्डर सेटिंग्स स्थानांतरित करने के लिए अपने फ़ोन से इस QR कोड को स्कैन करें",
             "ফোল্ডার সেটিংস স্থানান্তর করতে আপনার ফোন দিয়ে এই QR কোডটি স্ক্যান করুন",

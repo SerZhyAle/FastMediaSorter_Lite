@@ -288,7 +288,7 @@ Partial Public NotInheritable Class Localization
             "Il percorso dell'archivio è stato copiato negli appunti",
             "La ruta del archivo se copió al portapapeles",
             "Le chemin de l'archive a été copié dans le presse-papiers",
-            "O caminho do arquivo foi copiado para a área de transferência",
+            "O caminho do arquivo compactado foi copiado para a área de transferência",
             "نُسخ مسار الأرشيف إلى الحافظة",
             "संग्रह का पथ क्लिपबोर्ड में कॉपी किया गया",
             "আর্কাইভের পথ ক্লিপবোর্ডে কপি করা হয়েছে",

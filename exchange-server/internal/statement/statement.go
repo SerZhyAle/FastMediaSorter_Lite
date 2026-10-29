@@ -2,8 +2,8 @@
 // and ticket 167 rule 8: what the operator of an exchange server can see, said once, in one place.
 //
 // The text is the English source. The Share Manager's administration surface (ticket 168) renders it
-// in 13 languages, keyed by Point.ID - so an id never changes meaning, and a point is added, never
-// reworded in place. The statement is shown where an operator sets a server up, because on a
+// in 13 languages, keyed by Point.ID - so an id never changes meaning, and a point is added, its wording
+// changing only together with its 13 rows. The statement is shown where an operator sets a server up, because on a
 // deployment that hosts other people's accounts it is a limit they must know.
 //
 // That is the statement of a server that does not seal. A server that advertises `sealed` (DEVICE-EXCHANGE
@@ -45,9 +45,8 @@ var Points = []Point{
 		"and never logged."},
 	{"sftp-opaque", "A shared folder reached through a tunnel stays protected by its own SSH connection: the server " +
 		"carries bytes it cannot read."},
-	{"multi-user-limit", "On a server that hosts other people's accounts this is a known limit of this version: the " +
-		"operator can see what the points above describe. Sealing the access details end to end, so that even the " +
-		"operator cannot read them, is open work."},
+	{"multi-user-limit", "On a server that hosts other people's accounts, the operator can see what the points above " +
+		"describe."},
 	{"flat-trust", "Every device of an account trusts every other device of that account fully: any device can remove " +
 		"another, ask for pairing codes and read the access details of every shared folder of the account. A device " +
 		"can always remove itself."},

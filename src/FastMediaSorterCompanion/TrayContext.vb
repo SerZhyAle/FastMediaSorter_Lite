@@ -247,13 +247,6 @@ Friend NotInheritable Class TrayContext
 
         menu.Items.Add(New ToolStripSeparator())
 
-        ' Interface language. It lives in the tray menu as well as in the window because
-        ' Companion is usually tray-resident: someone who cannot read the tray menu must
-        ' still be able to reach the picker without first finding the window.
-        Dim miLang As New ToolStripMenuItem(Localization.T("Язык интерфейса"))
-        UiLanguage.AddLanguageItems(miLang.DropDownItems)
-        menu.Items.Add(miLang)
-
         ' Suite cross-link: open the viewer. Hidden when there is no viewer to
         ' open - the Server edition installs the Share Manager alone, so next to THAT
         ' exe there is none. Deciding on Opening rather than here: the menu is built
@@ -265,25 +258,9 @@ Friend NotInheritable Class TrayContext
         menu.Items.Add(miViewer)
         AddHandler menu.Opening, Sub() miViewer.Visible = ViewerExePath().Length > 0
 
-        ' The log the failure the user just saw was written to, sent from here - not from
-        ' the viewer's settings, which a Share Manager user may never open (ticket 028 Ф-3,
-        ' APP-BEHAVIOUR rule 6). Centred on the main window when it is on screen.
-        Dim miSendLog As New ToolStripMenuItem(Localization.T("Отправить журнал автору.."))
-        AddHandler miSendLog.Click,
-            Async Sub()
-                Dim owner As IWin32Window = Nothing
-                If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed AndAlso _mainWindow.Visible Then owner = _mainWindow
-                Await SendLogsFlow.RunAsync(owner)
-            End Sub
-        menu.Items.Add(miSendLog)
-
-        Dim miOpenLog As New ToolStripMenuItem(Localization.T("Открыть журнал событий в редакторе"))
-        AddHandler miOpenLog.Click, Sub() Share_Settings_Form.OpenManagementLog(_mainWindow, False)
-        menu.Items.Add(miOpenLog)
-        Dim miLogFolder As New ToolStripMenuItem(Localization.T("Папка журнала событий.."))
-        AddHandler miLogFolder.Click, Sub() Share_Settings_Form.OpenManagementLog(_mainWindow, True)
-        menu.Items.Add(miLogFolder)
-
+        ' The language picker and the log commands (open, folder, export for the author) are not
+        ' here on purpose: the tray stays short, and they live in the Manager's settings -
+        ' "Startup" (language), "Help" (open the log, its folder) and "About" (export the logs).
         Dim miExit As New ToolStripMenuItem(Localization.T("Выход"))
         AddHandler miExit.Click, Sub() ExitApplication()
         menu.Items.Add(miExit)
@@ -361,10 +338,9 @@ Friend NotInheritable Class TrayContext
         Try
             Dim old As ContextMenuStrip = _notifyIcon.ContextMenuStrip
             _notifyIcon.ContextMenuStrip = BuildMenu()
-            ' Released POSTED, not here: the switch may have been chosen from this very
-            ' menu (its "Язык интерфейса" submenu), whose click is still being dismissed -
-            ' a synchronous Dispose pulls the strip out from under that dispatch and the
-            ' dismissal crashes (ObjectDisposedException, the same defect the window
+            ' Released POSTED, not here: a switch made while this menu is open (or being dismissed)
+            ' must not lose the strip under that dispatch - a synchronous Dispose pulls it out and
+            ' the dismissal crashes (ObjectDisposedException, the same defect the window
             ' language menu had - UiLanguage.ShowLanguageMenu, companion.log 2026-10-03).
             If old IsNot Nothing Then
                 Dim sync As System.Threading.SynchronizationContext = System.Threading.SynchronizationContext.Current

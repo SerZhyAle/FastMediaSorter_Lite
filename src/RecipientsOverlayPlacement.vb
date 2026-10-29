@@ -54,31 +54,39 @@ Friend NotInheritable Class RecipientsOverlayPlacement
         Return New Point(ToDevice(logical.X, factor), ToDevice(logical.Y, factor))
     End Function
 
+    ''' <summary>The reader rule of the table's free place (L0281 T-6, owner answer Q281-3), in one pure function.
+    ''' A valid <paramref name="placeText"/> (<c>RecipientsOverlayPlace</c>, the shared <c>corner:dx,dy</c> shape) wins;
+    ''' otherwise an old 219 triple (<paramref name="hasLegacyPoint"/> with its X and Y, logical px from the media area's
+    ''' top-left) is read as <c>TL:x,y</c> (a negative coordinate - a 219 drop outside the area - reads as 0);
+    ''' otherwise there is no free place and the panel stands at its corner choice (False, <paramref name="place"/> is a
+    ''' zero place). A garbled or future value is "no value", never an error.</summary>
+    Public Shared Function TryReadPlace(placeText As String, hasLegacyPoint As Boolean, legacyX As Integer, legacyY As Integer,
+                                        ByRef place As PanelPlace) As Boolean
+        If FloatingPanelPlacement.TryDecode(placeText, place) Then Return True
+        If hasLegacyPoint Then
+            place = FloatingPanelPlacement.FromTopLeftPoint(New Point(Math.Max(0, legacyX), Math.Max(0, legacyY)))
+            Return True
+        End If
+        place = New PanelPlace(PanelCorner.TopLeft, 0, 0)
+        Return False
+    End Function
+
     ''' <summary>True when the panel counts as stranded (219 §6): the header strip - the grip, the
-    ''' only thing that can bring it back - is not fully inside the media area.</summary>
+    ''' only thing that can bring it back - is not fully inside the media area. A measurement only since L0281 T-6:
+    ''' placement no longer repairs and writes back (the live clamp keeps the panel inside), see
+    ''' <see cref="FloatingPanelPlacement.Effective"/>.</summary>
     Public Shared Function HeaderInside(location As Point, panelSize As Size, headerHeight As Integer,
                                         area As Rectangle) As Boolean
         Return area.Contains(New Rectangle(location, New Size(panelSize.Width, headerHeight)))
     End Function
 
     ''' <summary>The shortest translation that puts the whole panel inside <paramref name="bounds"/>
-    ''' (the media area, margins already applied), in the direction it left (219 §6): the panel keeps
+    ''' (the media area, margins already applied), in the direction it left (219 §6; since L0281 T-6 the same
+    ''' <see cref="FloatingPanelPlacement.Fit"/> every free panel uses, applied live and at every placement): the panel keeps
     ''' its side of the area, only the offending axis moves. A panel larger than the bounds keeps its
     ''' top-left corner at the bounds' origin, so the header stays reachable.</summary>
     Public Shared Function PullInside(location As Point, panelSize As Size, bounds As Rectangle) As Point
-        Dim x As Integer = location.X
-        Dim y As Integer = location.Y
-        If panelSize.Width <= bounds.Width Then
-            x = Math.Max(bounds.X, Math.Min(x, bounds.Right - panelSize.Width))
-        Else
-            x = bounds.X
-        End If
-        If panelSize.Height <= bounds.Height Then
-            y = Math.Max(bounds.Y, Math.Min(y, bounds.Bottom - panelSize.Height))
-        Else
-            y = bounds.Y
-        End If
-        Return New Point(x, y)
+        Return FloatingPanelPlacement.Fit(New Rectangle(location, panelSize), bounds, startIsRight:=False).Location
     End Function
 
     ''' <summary>The reveal hot zone of a placed panel (219 §7, Q219-4): the panel's own rectangle
@@ -87,36 +95,15 @@ Friend NotInheritable Class RecipientsOverlayPlacement
     ''' the panel's centre is in, which reproduces the anchored-corner zones of 117 Ф-2 exactly
     ''' wherever the corner choice still places the panel.</summary>
     Public Shared Function HotZone(panel As Rectangle, area As Rectangle, reach As Integer) As Rectangle
-        Dim zone As Rectangle = panel
-        If reach <= 0 Then Return zone
-        Dim growLeft As Boolean = panel.Left + panel.Width \ 2 < area.Left + area.Width \ 2
-        Dim growUp As Boolean = panel.Top + panel.Height \ 2 < area.Top + area.Height \ 2
-        If growLeft Then
-            zone.X -= reach
-            zone.Width += reach
-        Else
-            zone.Width += reach
-        End If
-        If growUp Then
-            zone.Y -= reach
-            zone.Height += reach
-        Else
-            zone.Height += reach
-        End If
-        Return zone
+        Return FloatingPanelPlacement.HotZone(panel, area, reach)
     End Function
 
     Private Shared Function ToLogical(device As Integer, factor As Single) As Integer
-        If Single.IsNaN(factor) OrElse factor <= 0.0F Then factor = 1.0F
-        Return CInt(Math.Round(device / CDbl(factor), MidpointRounding.AwayFromZero))
+        Return FloatingPanelPlacement.ToLogical(device, factor)
     End Function
 
     Private Shared Function ToDevice(logical As Integer, factor As Single) As Integer
-        If Single.IsNaN(factor) OrElse factor <= 0.0F Then factor = 1.0F
-        Dim scaled As Double = Math.Round(logical * CDbl(factor), MidpointRounding.AwayFromZero)
-        If scaled > 100000.0R Then Return 100000
-        If scaled < -100000.0R Then Return -100000
-        Return CInt(scaled)
+        Return FloatingPanelPlacement.ToDevice(logical, factor)
     End Function
 
 End Class

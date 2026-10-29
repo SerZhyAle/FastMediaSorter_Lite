@@ -13,27 +13,27 @@ Partial Public NotInheritable Class Localization
         Add("Хостинг: служба Windows",
             "Hosting: Windows service", "Хостинг: служба Windows", "Hosting: Windows-Dienst",
             "Hosting: servizio Windows", "Alojamiento: servicio de Windows",
-            "Hébergement : service Windows", "Alojamento: serviço do Windows",
+            "Hébergement : service Windows", "Hospedagem: serviço do Windows",
             "الاستضافة: خدمة Windows", "होस्टिंग: विंडोज़ सेवा", "হোস্টিং: উইন্ডোজ সার্ভিস",
             "ہوسٹنگ: ونڈوز سروس", "托管方式：Windows 服务")
 
         Add("Хостинг: раздаёт эта программа",
             "Hosting: this program", "Хостинг: роздає ця програма", "Hosting: dieses Programm",
             "Hosting: questo programma", "Alojamiento: este programa",
-            "Hébergement : ce programme", "Alojamento: este programa",
+            "Hébergement : ce programme", "Hospedagem: este programa",
             "الاستضافة: هذا البرنامج", "होस्टिंग: यही प्रोग्राम", "হোস্টিং: এই প্রোগ্রাম",
             "ہوسٹنگ: یہی پروگرام", "托管方式：本程序")
 
         Add("Управление хостингом..",
             "Manage hosting..", "Керування хостингом..", "Hosting verwalten..",
             "Gestisci hosting..", "Gestionar alojamiento..", "Gérer l'hébergement..",
-            "Gerir alojamento..", "إدارة الاستضافة..", "होस्टिंग प्रबंधित करें..",
+            "Gerenciar hospedagem..", "إدارة الاستضافة..", "होस्टिंग प्रबंधित करें..",
             "হোস্টিং পরিচালনা..", "ہوسٹنگ کا انتظام..", "管理托管方式..")
 
         Add("Хостинг общего доступа",
             "Folder-share hosting", "Хостинг спільного доступу", "Hosting der Ordnerfreigabe",
             "Hosting della condivisione cartelle", "Alojamiento del uso compartido de carpetas",
-            "Hébergement du partage de dossiers", "Alojamento da partilha de pastas",
+            "Hébergement du partage de dossiers", "Hospedagem do compartilhamento de pastas",
             "استضافة مشاركة المجلدات", "फ़ोल्डर साझाकरण की होस्टिंग", "ফোল্ডার শেয়ারিং হোস্টিং",
             "فولڈر شیئرنگ ہوسٹنگ", "文件夹共享的托管")
 
@@ -44,7 +44,7 @@ Partial Public NotInheritable Class Localization
             "Un servizio di Windows sta condividendo le cartelle. Si avvia con Windows e funziona senza alcun utente connesso. Questa finestra è solo una console: chiuderla non interrompe la condivisione.",
             "Un servicio de Windows está compartiendo las carpetas. Se inicia con Windows y funciona sin que nadie haya iniciado sesión. Esta ventana es solo una consola: cerrarla no detiene el uso compartido.",
             "Un service Windows partage les dossiers. Il démarre avec Windows et fonctionne sans session ouverte. Cette fenêtre n'est qu'une console : la fermer n'arrête pas le partage.",
-            "Um serviço do Windows está a partilhar as pastas. Arranca com o Windows e funciona sem ninguém com sessão iniciada. Esta janela é apenas uma consola: fechá-la não pára a partilha.",
+            "Um serviço do Windows está compartilhando as pastas. Ele inicia com o Windows e funciona sem ninguém conectado. Esta janela é apenas um console: fechá-la não interrompe o compartilhamento.",
             "تقوم خدمة Windows بمشاركة المجلدات. تبدأ مع Windows وتعمل دون تسجيل دخول أي مستخدم. هذه النافذة مجرد لوحة تحكم: إغلاقها لا يوقف المشاركة.",
             "एक विंडोज़ सेवा फ़ोल्डर साझा कर रही है। यह विंडोज़ के साथ शुरू होती है और बिना किसी के साइन इन किए चलती है। यह विंडो केवल एक कंसोल है - इसे बंद करने से साझाकरण नहीं रुकता।",
             "একটি উইন্ডোজ সার্ভিস ফোল্ডারগুলি শেয়ার করছে। এটি উইন্ডোজের সঙ্গে চালু হয় এবং কেউ সাইন ইন না করলেও চলে। এই উইন্ডোটি কেবল একটি কনসোল - এটি বন্ধ করলে শেয়ারিং থামে না।",
@@ -58,7 +58,7 @@ Partial Public NotInheritable Class Localization
             "Questo programma sta condividendo le cartelle. La condivisione funziona finché sei connesso e il manager è in esecuzione. L'edizione Server installa un servizio di Windows che condivide le cartelle fin dall'avvio, anche senza utenti connessi.",
             "Este programa está compartiendo las carpetas. El uso compartido funciona mientras tengas la sesión iniciada y el gestor esté en ejecución. La edición Servidor instala un servicio de Windows que comparte las carpetas desde el arranque, incluso sin nadie conectado.",
             "Ce programme partage les dossiers. Le partage fonctionne tant que vous êtes connecté et que le gestionnaire est lancé. L'édition Serveur installe un service Windows qui partage les dossiers dès le démarrage, même sans session ouverte.",
-            "Este programa está a partilhar as pastas. A partilha funciona enquanto tiver sessão iniciada e o gestor estiver a correr. A edição Servidor instala um serviço do Windows que partilha as pastas desde o arranque, mesmo sem ninguém com sessão iniciada.",
+            "Este programa está compartilhando as pastas. O compartilhamento funciona enquanto você estiver conectado e o gerenciador estiver em execução. A edição Servidor instala um serviço do Windows que compartilha as pastas desde a inicialização, mesmo sem ninguém conectado.",
             "هذا البرنامج يشارك المجلدات. تعمل المشاركة ما دمت مسجّل الدخول والمدير قيد التشغيل. تُثبّت إصدارة الخادم خدمة Windows تشارك المجلدات منذ الإقلاع، حتى دون تسجيل دخول أحد.",
             "यह प्रोग्राम फ़ोल्डर साझा कर रहा है। जब तक आप साइन इन हैं और मैनेजर चल रहा है, तब तक साझाकरण चलता है। सर्वर संस्करण एक विंडोज़ सेवा स्थापित करता है जो बूट से ही फ़ोल्डर साझा करती है - भले ही कोई साइन इन न हो।",
             "এই প্রোগ্রামটি ফোল্ডারগুলি শেয়ার করছে। আপনি সাইন ইন থাকা ও ম্যানেজার চালু থাকা পর্যন্ত শেয়ারিং চলে। সার্ভার সংস্করণ একটি উইন্ডোজ সার্ভিস ইনস্টল করে যা বুট থেকেই ফোল্ডার শেয়ার করে - কেউ সাইন ইন না করলেও।",
@@ -68,7 +68,7 @@ Partial Public NotInheritable Class Localization
         Add("Служба работает",
             "The service is running", "Служба працює", "Der Dienst läuft",
             "Il servizio è in esecuzione", "El servicio está en ejecución",
-            "Le service fonctionne", "O serviço está a correr",
+            "Le service fonctionne", "O serviço está em execução",
             "الخدمة قيد التشغيل", "सेवा चल रही है", "সার্ভিস চলছে", "سروس چل رہی ہے", "服务正在运行")
 
         Add("Служба установлена, но остановлена",
@@ -82,14 +82,14 @@ Partial Public NotInheritable Class Localization
         Add("Служба запускается..",
             "The service is starting..", "Служба запускається..", "Der Dienst wird gestartet..",
             "Il servizio si sta avviando..", "El servicio se está iniciando..",
-            "Le service démarre..", "O serviço está a arrancar..",
+            "Le service démarre..", "O serviço está iniciando..",
             "جارٍ بدء الخدمة..", "सेवा शुरू हो रही है..", "সার্ভিস চালু হচ্ছে..",
             "سروس شروع ہو رہی ہے..", "服务正在启动..")
 
         Add("Служба останавливается..",
             "The service is stopping..", "Служба зупиняється..", "Der Dienst wird beendet..",
             "Il servizio si sta arrestando..", "El servicio se está deteniendo..",
-            "Le service s'arrête..", "O serviço está a parar..",
+            "Le service s'arrête..", "O serviço está parando..",
             "جارٍ إيقاف الخدمة..", "सेवा रुक रही है..", "সার্ভিস বন্ধ হচ্ছে..",
             "سروس رک رہی ہے..", "服务正在停止..")
 
@@ -111,14 +111,14 @@ Partial Public NotInheritable Class Localization
         Add("Раздача SFTP выключена",
             "SFTP sharing is off", "Роздача SFTP вимкнена", "SFTP-Freigabe ist aus",
             "La condivisione SFTP è disattivata", "El uso compartido SFTP está desactivado",
-            "Le partage SFTP est désactivé", "A partilha SFTP está desligada",
+            "Le partage SFTP est désactivé", "O compartilhamento SFTP está desativado",
             "مشاركة SFTP متوقفة", "SFTP साझाकरण बंद है", "SFTP শেয়ারিং বন্ধ",
             "SFTP شیئرنگ بند ہے", "SFTP 共享已关闭")
 
         Add("Раздача SFTP работает",
             "SFTP sharing is on", "Роздача SFTP працює", "SFTP-Freigabe läuft",
             "La condivisione SFTP è attiva", "El uso compartido SFTP está activo",
-            "Le partage SFTP est actif", "A partilha SFTP está ligada",
+            "Le partage SFTP est actif", "O compartilhamento SFTP está ativado",
             "مشاركة SFTP تعمل", "SFTP साझाकरण चालू है", "SFTP শেয়ারিং চালু",
             "SFTP شیئرنگ چالو ہے", "SFTP 共享已开启")
 
@@ -129,7 +129,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio è in esecuzione, ma nessuna cartella è selezionata: non c'è nulla da condividere",
             "El servicio está en ejecución, pero no hay ninguna carpeta seleccionada: no hay nada que compartir",
             "Le service fonctionne, mais aucun dossier n'est sélectionné : il n'y a rien à partager",
-            "O serviço está a correr, mas nenhuma pasta está selecionada: não há nada para partilhar",
+            "O serviço está em execução, mas nenhuma pasta está selecionada: não há nada para compartilhar",
             "الخدمة تعمل، لكن لم يُحدَّد أي مجلد - لا يوجد ما يُشارَك",
             "सेवा चल रही है, पर कोई फ़ोल्डर चुना नहीं गया - साझा करने को कुछ नहीं है",
             "সার্ভিস চলছে, কিন্তু কোনো ফোল্ডার নির্বাচন করা হয়নি - শেয়ার করার কিছু নেই",
@@ -143,7 +143,7 @@ Partial Public NotInheritable Class Localization
             "Al momento nessuno risponde sul canale di controllo",
             "Ahora mismo nadie responde en el canal de control",
             "Pour l'instant, personne ne répond sur le canal de contrôle",
-            "De momento ninguém responde no canal de controlo",
+            "No momento, ninguém responde no canal de controle",
             "لا أحد يستجيب على قناة التحكم الآن",
             "अभी नियंत्रण चैनल पर कोई उत्तर नहीं दे रहा",
             "এই মুহূর্তে কন্ট্রোল চ্যানেলে কেউ সাড়া দিচ্ছে না",
@@ -154,7 +154,7 @@ Partial Public NotInheritable Class Localization
             "Answering now: the Windows service", "Зараз відповідає: служба Windows",
             "Antwortet jetzt: der Windows-Dienst", "Risponde ora: il servizio Windows",
             "Responde ahora: el servicio de Windows", "Répond actuellement : le service Windows",
-            "A responder agora: o serviço do Windows", "المستجيب الآن: خدمة Windows",
+            "Respondendo agora: o serviço do Windows", "المستجيب الآن: خدمة Windows",
             "अभी उत्तर दे रही है: विंडोज़ सेवा", "এখন সাড়া দিচ্ছে: উইন্ডোজ সার্ভিস",
             "اب جواب دے رہی ہے: ونڈوز سروس", "当前响应者：Windows 服务")
 
@@ -165,7 +165,7 @@ Partial Public NotInheritable Class Localization
             "Risponde ora: il processo in background di questo programma",
             "Responde ahora: el proceso en segundo plano de este programa",
             "Répond actuellement : le processus d'arrière-plan de ce programme",
-            "A responder agora: o processo em segundo plano deste programa",
+            "Respondendo agora: o processo em segundo plano deste programa",
             "المستجيب الآن: العملية الخلفية لهذا البرنامج",
             "अभी उत्तर दे रही है: इस प्रोग्राम की पृष्ठभूमि प्रक्रिया",
             "এখন সাড়া দিচ্ছে: এই প্রোগ্রামের ব্যাকগ্রাউন্ড প্রসেস",
@@ -178,7 +178,7 @@ Partial Public NotInheritable Class Localization
             "Archivio condiviso di impostazioni e chiave: {0}",
             "Almacén compartido de ajustes y clave: {0}",
             "Stockage partagé des paramètres et de la clé : {0}",
-            "Armazenamento partilhado de definições e chave: {0}",
+            "Armazenamento compartilhado de configurações e chave: {0}",
             "مخزن الإعدادات والمفتاح المشترك: {0}",
             "साझा सेटिंग और कुंजी संग्रह: {0}",
             "শেয়ার্ড সেটিংস ও কী সংরক্ষণ: {0}",
@@ -198,7 +198,7 @@ Partial Public NotInheritable Class Localization
             "Concedi al servizio l'accesso alle cartelle condivise",
             "Conceder al servicio acceso a las carpetas compartidas",
             "Accorder au service l'accès aux dossiers partagés",
-            "Conceder ao serviço acesso às pastas partilhadas",
+            "Conceder ao serviço acesso às pastas compartilhadas",
             "منح الخدمة حق الوصول إلى المجلدات المُشارَكة",
             "सेवा को साझा फ़ोल्डरों तक पहुँच दें",
             "সার্ভিসকে শেয়ার করা ফোল্ডারে অ্যাক্সেস দিন",
@@ -289,7 +289,7 @@ Partial Public NotInheritable Class Localization
             "Return to the User edition..", "Повернутися до користувацької редакції..",
             "Zurück zur Benutzer-Edition..", "Torna all'edizione Utente..",
             "Volver a la edición de Usuario..", "Revenir à l'édition Utilisateur..",
-            "Voltar à edição de Utilizador..", "العودة إلى إصدارة المستخدم..",
+            "Voltar à edição de Usuário..", "العودة إلى إصدارة المستخدم..",
             "उपयोक्ता संस्करण पर लौटें..", "ইউজার সংস্করণে ফিরুন..",
             "یوزر ایڈیشن پر واپس جائیں..", "返回用户版..")
 
@@ -316,9 +316,9 @@ Partial Public NotInheritable Class Localization
             "Rendre le partage à ce programme ?" & vbCrLf & vbCrLf &
             "Le service Windows sera arrêté et supprimé, vos paramètres, dossiers et clé d'hôte reviennent au magasin de l'utilisateur, et la règle du pare-feu pointera vers ce programme. Les téléphones n'auront pas à être réappairés - la clé d'hôte est conservée." & vbCrLf & vbCrLf &
             "Le partage fonctionnera à nouveau tant que vous êtes connecté et que le gestionnaire tourne. Windows demandera une confirmation d'administrateur une fois.",
-            "Devolver a partilha a este programa?" & vbCrLf & vbCrLf &
-            "O serviço Windows será parado e removido, as suas definições, pastas e chave de anfitrião voltam ao arquivo do utilizador, e a regra da firewall passará a apontar para este programa. Os telemóveis não terão de ser emparelhados de novo - a chave de anfitrião mantém-se." & vbCrLf & vbCrLf &
-            "A partilha voltará a funcionar enquanto tiver sessão iniciada e o gestor estiver em execução. O Windows pedirá confirmação de administrador uma vez.",
+            "Devolver o compartilhamento a este programa?" & vbCrLf & vbCrLf &
+            "O serviço do Windows será parado e removido, suas configurações, pastas e a chave do host voltarão ao armazenamento do usuário, e a regra de firewall passará a apontar para este programa. Os celulares não precisarão ser pareados novamente - a chave do host é mantida." & vbCrLf & vbCrLf &
+            "O compartilhamento voltará a funcionar enquanto você estiver conectado e o gerenciador estiver em execução. O Windows pedirá a confirmação do administrador uma vez.",
             "إعادة المشاركة إلى هذا البرنامج؟" & vbCrLf & vbCrLf &
             "سيتم إيقاف خدمة Windows وإزالتها، وتعود إعداداتك والمجلدات ومفتاح المضيف إلى مخزن المستخدم، وستشير قاعدة جدار الحماية إلى هذا البرنامج. لن تحتاج الهواتف إلى إعادة الاقتران - فمفتاح المضيف محفوظ." & vbCrLf & vbCrLf &
             "ستعمل المشاركة مرة أخرى طالما أنت مسجل الدخول والمدير يعمل. سيطلب Windows تأكيد المسؤول مرة واحدة.",
@@ -350,7 +350,7 @@ Partial Public NotInheritable Class Localization
             "Repair the service registration", "Відновити реєстрацію служби",
             "Dienstregistrierung reparieren", "Ripara la registrazione del servizio",
             "Reparar el registro del servicio", "Réparer l'enregistrement du service",
-            "Reparar o registo do serviço", "إصلاح تسجيل الخدمة",
+            "Reparar o registro do serviço", "إصلاح تسجيل الخدمة",
             "सेवा पंजीकरण की मरम्मत करें", "সার্ভিস নিবন্ধন মেরামত করুন",
             "سروس رجسٹریشن کی مرمت کریں", "修复服务注册")
 
@@ -367,7 +367,7 @@ Partial Public NotInheritable Class Localization
             "L'edizione Server è un download separato: dal sito o tramite winget. Il suo installer migra chiave host, password, elenco cartelle e porta, quindi i telefoni già associati non vanno riassociati. Questo programma non scarica né avvia mai un installer da solo.",
             "La edición Servidor es una descarga aparte: desde el sitio web o mediante winget. Su instalador migra la clave de host, la contraseña, la lista de carpetas y el puerto, así que los teléfonos ya emparejados no hay que volver a emparejarlos. Este programa nunca descarga ni ejecuta un instalador por su cuenta.",
             "L'édition Serveur est un téléchargement distinct : depuis le site web ou via winget. Son installeur migre la clé d'hôte, le mot de passe, la liste des dossiers et le port, si bien que les téléphones appairés n'ont pas à l'être de nouveau. Ce programme ne télécharge ni ne lance jamais un installeur de lui-même.",
-            "A edição Servidor é uma transferência separada - do site ou através do winget. O seu instalador migra a chave de anfitrião, a palavra-passe, a lista de pastas e a porta, pelo que os telemóveis emparelhados não precisam de novo emparelhamento. Este programa nunca transfere nem executa um instalador por si próprio.",
+            "A edição Servidor é um download separado - do site ou pelo winget. O instalador dela migra a chave do host, a senha, a lista de pastas e a porta, então os celulares pareados não precisam ser pareados novamente. Este programa nunca baixa nem executa um instalador por conta própria.",
             "إصدارة الخادم تُنزَّل بشكل منفصل - من الموقع أو عبر winget. يقوم مثبّتها بنقل مفتاح المضيف وكلمة المرور وقائمة المجلدات والمنفذ، فلا حاجة لإعادة إقران الهواتف. لا يقوم هذا البرنامج أبدًا بتنزيل مثبّت أو تشغيله من تلقاء نفسه.",
             "सर्वर संस्करण अलग से डाउनलोड होता है - वेबसाइट से या winget के ज़रिये। उसका इंस्टॉलर होस्ट कुंजी, पासवर्ड, फ़ोल्डर सूची और पोर्ट स्थानांतरित कर देता है, इसलिए जुड़े फ़ोन दोबारा जोड़ने की ज़रूरत नहीं। यह प्रोग्राम कभी स्वयं इंस्टॉलर डाउनलोड या चालू नहीं करता।",
             "সার্ভার সংস্করণ আলাদাভাবে ডাউনলোড হয় - ওয়েবসাইট থেকে বা winget দিয়ে। এর ইনস্টলার হোস্ট কী, পাসওয়ার্ড, ফোল্ডার তালিকা ও পোর্ট স্থানান্তর করে, তাই যুক্ত ফোনগুলি আবার যুক্ত করতে হয় না। এই প্রোগ্রাম কখনও নিজে থেকে ইনস্টলার ডাউনলোড বা চালু করে না।",
@@ -381,7 +381,7 @@ Partial Public NotInheritable Class Localization
             "Le cartelle sono servite da un servizio di Windows, che gira con un account proprio - e a queste cartelle non ha ancora accesso:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Concederlo ora? Windows chiederà conferma.",
             "Las carpetas las sirve un servicio de Windows, que se ejecuta con una cuenta propia y todavía no tiene acceso a estas carpetas:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "¿Concederlo ahora? Windows pedirá confirmación.",
             "Les dossiers sont servis par un service Windows, qui s'exécute avec son propre compte - lequel n'a pas encore accès à ces dossiers :" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "L'accorder maintenant ? Windows demandera une confirmation.",
-            "As pastas são servidas por um serviço do Windows, que corre com uma conta própria - e ainda não tem acesso a estas pastas:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Conceder agora? O Windows vai pedir confirmação.",
+            "As pastas são servidas por um serviço do Windows, que é executado com uma conta própria - e ainda não tem acesso a estas pastas:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Conceder agora? O Windows vai pedir confirmação.",
             "تقدّم المجلدات خدمة Windows تعمل بحساب خاص بها - وهي لا تملك بعد صلاحية الوصول إلى هذه المجلدات:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "هل تمنحها الآن؟ سيطلب Windows تأكيدًا.",
             "फ़ोल्डर एक Windows सेवा साझा करती है, और वह अपने अलग खाते से चलती है - इन फ़ोल्डरों तक उसकी पहुँच अभी नहीं है:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "अभी दें? Windows पुष्टि माँगेगा।",
             "ফোল্ডারগুলো একটি Windows সার্ভিস শেয়ার করে, আর সেটি নিজের আলাদা অ্যাকাউন্টে চলে - এই ফোল্ডারগুলোতে তার এখনও অনুমতি নেই:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "এখনই দেবেন? Windows নিশ্চিত করতে বলবে।",
@@ -395,7 +395,7 @@ Partial Public NotInheritable Class Localization
             "Senza accesso il servizio non può aprire queste cartelle sul telefono. Puoi concederlo più tardi - «Impostazioni del gestore..», gruppo «Hosting».",
             "Sin acceso el servicio no puede abrir estas carpetas en el teléfono. Puede concederlo más tarde - «Ajustes del gestor..», grupo «Alojamiento».",
             "Sans accès, le service ne peut pas ouvrir ces dossiers sur le téléphone. Vous pouvez l'accorder plus tard - «Paramètres du gestionnaire..», groupe «Hébergement».",
-            "Sem acesso o serviço não consegue abrir estas pastas no telefone. Pode concedê-lo mais tarde - «Definições do gestor..», grupo «Alojamento».",
+            "Sem acesso, o serviço não consegue abrir estas pastas no telefone. Você pode concedê-lo mais tarde - «Configurações do gerenciador..», grupo «Hospedagem».",
             "بدون صلاحية الوصول لن تتمكن الخدمة من فتح هذه المجلدات على الهاتف. يمكنك منحها لاحقًا - «إعدادات المدير..»، مجموعة «الاستضافة».",
             "पहुँच के बिना सेवा इन फ़ोल्डरों को फ़ोन पर नहीं खोल पाएगी। आप इसे बाद में दे सकते हैं - «मैनेजर सेटिंग्स..», समूह «होस्टिंग»।",
             "অনুমতি ছাড়া সার্ভিসটি এই ফোল্ডারগুলো ফোনে খুলতে পারবে না। আপনি পরে দিতে পারেন - «ম্যানেজার সেটিংস..», গ্রুপ «হোস্টিং»।",
@@ -409,7 +409,7 @@ Partial Public NotInheritable Class Localization
             "Concessione dell'accesso al servizio..",
             "Concediendo acceso al servicio..",
             "Attribution de l'accès au service..",
-            "A conceder acesso ao serviço..",
+            "Concedendo acesso ao serviço..",
             "جارٍ منح الخدمة صلاحية الوصول إلى المجلدات..",
             "सेवा को फ़ोल्डरों तक पहुँच दी जा रही है..",
             "সার্ভিসকে ফোল্ডারে অনুমতি দেওয়া হচ্ছে..",
@@ -423,7 +423,7 @@ Partial Public NotInheritable Class Localization
             "La condivisione è attiva, ma il servizio non ha accesso alle cartelle: {0}",
             "El uso compartido está activo, pero el servicio no tiene acceso a carpetas: {0}",
             "Le partage est actif, mais le service n'a pas accès aux dossiers : {0}",
-            "A partilha está ativa, mas o serviço não tem acesso a pastas: {0}",
+            "O compartilhamento está ativo, mas o serviço não tem acesso a pastas: {0}",
             "المشاركة مفعّلة، لكن الخدمة لا تملك صلاحية الوصول إلى مجلدات: {0}",
             "साझाकरण चालू है, पर सेवा को फ़ोल्डरों तक पहुँच नहीं: {0}",
             "শেয়ারিং চালু, কিন্তু সার্ভিসের ফোল্ডারে অনুমতি নেই: {0}",
@@ -451,7 +451,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio viene eseguito come LOCAL SERVICE, non come te. Ogni cartella condivisa richiede l'accesso per quell'account: lettura e, se la cartella è condivisa in scrittura, anche scrittura. Il pulsante li concede in base all'elenco attuale delle cartelle. I percorsi di rete - percorsi UNC come \\server\condivisione e unità di rete mappate (ad esempio Z:) - non funzionano in questo modo.",
             "El servicio se ejecuta como LOCAL SERVICE, no como usted. Cada carpeta compartida necesita acceso para esa cuenta: lectura y, si la carpeta se comparte con escritura, también escritura. El botón los concede según la lista actual de carpetas. Las rutas de red - rutas UNC como \\servidor\recurso y unidades de red asignadas (por ejemplo, Z:) - no funcionan así.",
             "Le service s'exécute en tant que LOCAL SERVICE, pas en votre nom. Chaque dossier partagé a besoin d'un accès pour ce compte : lecture, et écriture si le dossier est partagé en écriture. Le bouton les accorde d'après la liste actuelle des dossiers. Les chemins réseau - chemins UNC comme \\serveur\partage et lecteurs réseau mappés (Z: par exemple) - ne fonctionnent pas ainsi.",
-            "O serviço é executado como LOCAL SERVICE, não em seu nome. Cada pasta partilhada precisa de acesso para essa conta: leitura e, se a pasta for partilhada com escrita, também escrita. O botão concede-os a partir da lista atual de pastas. Os caminhos de rede - caminhos UNC como \\servidor\partilha e unidades de rede mapeadas (por exemplo, Z:) - não funcionam desta forma.",
+            "O serviço é executado como LOCAL SERVICE, e não como você. Cada pasta compartilhada precisa de acesso para essa conta: leitura e, se a pasta for compartilhada com escrita, também escrita. O botão os concede a partir da lista atual de pastas. Os caminhos de rede - caminhos UNC como \\servidor\compartilhamento e unidades de rede mapeadas (por exemplo, Z:) - não funcionam dessa forma.",
             "تعمل الخدمة باسم LOCAL SERVICE وليس باسمك. يحتاج كل مجلد مُشارَك إلى صلاحيات لهذا الحساب: القراءة، وكذلك الكتابة إذا كان المجلد مُشارَكًا مع إمكانية الكتابة. يمنحها الزر وفق قائمة المجلدات الحالية. مسارات الشبكة - مسارات UNC مثل \\server\share ومحركات أقراص الشبكة المعيّنة (مثل Z:) - لن تعمل بهذه الطريقة.",
             "सेवा आपके नाम से नहीं, LOCAL SERVICE के रूप में चलती है। साझा की गई हर फ़ोल्डर को उस खाते के लिए अनुमति चाहिए: पढ़ना, और यदि फ़ोल्डर लिखने की अनुमति के साथ साझा है तो लिखना भी। बटन उन्हें मौजूदा फ़ोल्डर सूची के अनुसार देता है। नेटवर्क पथ - \\server\share जैसे UNC पथ और मैप किए गए नेटवर्क ड्राइव (जैसे Z:) - इस तरह काम नहीं करेंगे।",
             "সার্ভিসটি আপনার নামে নয়, LOCAL SERVICE হিসেবে চলে। শেয়ার করা প্রতিটি ফোল্ডারের জন্য ওই অ্যাকাউন্টের অনুমতি দরকার: পড়া, আর ফোল্ডারটি লেখার অনুমতিসহ শেয়ার করা থাকলে লেখাও। বোতামটি বর্তমান ফোল্ডার তালিকা অনুযায়ী তা দেয়। নেটওয়ার্ক পাথ - \\server\share ধরনের UNC পাথ এবং ম্যাপ করা নেটওয়ার্ক ড্রাইভ (যেমন Z:) - এভাবে কাজ করবে না।",
@@ -465,7 +465,7 @@ Partial Public NotInheritable Class Localization
             "La rimozione del ruolo server arresta ed elimina il servizio. Chiave host, password ed elenco cartelle restano al loro posto: tornando alla modalità Utente i telefoni si connettono come prima.",
             "Quitar el rol de servidor detiene y elimina el servicio. La clave de host, la contraseña y la lista de carpetas se conservan: al volver al modo de Usuario los teléfonos se conectan como antes.",
             "Supprimer le rôle serveur arrête et supprime le service. La clé d'hôte, le mot de passe et la liste des dossiers restent en place : après le retour en mode Utilisateur, les téléphones se connectent comme avant.",
-            "Remover a função de servidor pára e elimina o serviço. A chave de anfitrião, a palavra-passe e a lista de pastas mantêm-se - ao voltar ao modo de Utilizador os telemóveis ligam-se como antes.",
+            "Remover a função de servidor interrompe e exclui o serviço. A chave do host, a senha e a lista de pastas permanecem onde estão - ao voltar ao modo de Usuário, os celulares se conectam como antes.",
             "إزالة دور الخادم توقف الخدمة وتحذفها. يبقى مفتاح المضيف وكلمة المرور وقائمة المجلدات في مكانها - وبعد العودة إلى وضع المستخدم تتصل الهواتف كما كانت.",
             "सर्वर भूमिका हटाने से सेवा रुकती है और हट जाती है। होस्ट कुंजी, पासवर्ड और फ़ोल्डर सूची यथावत रहती है - उपयोक्ता मोड में लौटने पर फ़ोन पहले की तरह जुड़ते हैं।",
             "সার্ভার ভূমিকা সরালে সার্ভিসটি বন্ধ হয়ে মুছে যায়। হোস্ট কী, পাসওয়ার্ড ও ফোল্ডার তালিকা যেমন আছে তেমনই থাকে - ইউজার মোডে ফিরলে ফোনগুলি আগের মতোই যুক্ত হয়।",
@@ -479,7 +479,7 @@ Partial Public NotInheritable Class Localization
             "Gestione del servizio non disponibile: questa è un'installazione dell'edizione Utente.",
             "La gestión del servicio no está disponible: esta es una instalación de la edición de Usuario.",
             "Gestion du service indisponible : il s'agit d'une installation de l'édition Utilisateur.",
-            "Gestão do serviço indisponível: esta é uma instalação da edição de Utilizador.",
+            "Gerenciamento do serviço indisponível: esta é uma instalação da edição de Usuário.",
             "إدارة الخدمة غير متاحة: هذا تثبيت لإصدارة المستخدم.",
             "सेवा प्रबंधन उपलब्ध नहीं: यह उपयोक्ता संस्करण की स्थापना है।",
             "সার্ভিস ব্যবস্থাপনা অনুপলব্ধ: এটি ইউজার সংস্করণের ইনস্টল।",
@@ -493,7 +493,7 @@ Partial Public NotInheritable Class Localization
             "In corso.. approva la richiesta di amministratore.",
             "En curso.. aprueba la solicitud de administrador.",
             "En cours.. approuvez l'invite d'administrateur.",
-            "Em curso.. aprove o pedido de administrador.",
+            "Em andamento.. aprove a solicitação de administrador.",
             "جارٍ التنفيذ.. وافق على طلب صلاحيات المسؤول.",
             "चल रहा है.. व्यवस्थापक अनुरोध स्वीकार करें।",
             "চলছে.. প্রশাসক অনুরোধ অনুমোদন করুন।",
@@ -511,7 +511,7 @@ Partial Public NotInheritable Class Localization
             "Non eseguito: i diritti di amministratore non sono stati concessi.",
             "No realizado: no se concedieron derechos de administrador.",
             "Non effectué : les droits d'administrateur n'ont pas été accordés.",
-            "Não efetuado: não foram concedidos direitos de administrador.",
+            "Não realizado: os direitos de administrador não foram concedidos.",
             "لم يتم التنفيذ: لم تُمنح صلاحيات المسؤول.",
             "नहीं हुआ: व्यवस्थापक अधिकार नहीं मिले।",
             "হয়নি: প্রশাসক অধিকার দেওয়া হয়নি।",
@@ -525,7 +525,7 @@ Partial Public NotInheritable Class Localization
             "Azione non riuscita. I dettagli sono nel log del servizio.",
             "La acción falló. Los detalles están en el registro del servicio.",
             "L'action a échoué. Les détails figurent dans le journal du service.",
-            "A ação falhou. Os detalhes estão no registo do serviço.",
+            "A ação falhou. Os detalhes estão no registro do serviço.",
             "فشل تنفيذ الإجراء. التفاصيل في سجل الخدمة.",
             "कार्रवाई विफल रही। विवरण सेवा लॉग में हैं।",
             "কাজটি ব্যর্থ হয়েছে। বিস্তারিত সার্ভিস লগে আছে।",
@@ -605,7 +605,7 @@ Partial Public NotInheritable Class Localization
         Add("Проверяю доступ к папкам..",
             "Checking folder access..", "Перевіряю доступ до тек..", "Prüfe den Ordnerzugriff..",
             "Controllo l'accesso alle cartelle..", "Comprobando el acceso a las carpetas..",
-            "Vérification de l'accès aux dossiers..", "A verificar o acesso às pastas..",
+            "Vérification de l'accès aux dossiers..", "Verificando o acesso às pastas..",
             "جارٍ فحص الوصول إلى المجلدات..", "फ़ोल्डर पहुँच जाँची जा रही है..",
             "ফোল্ডারের অনুমতি পরীক্ষা করা হচ্ছে..", "فولڈر تک رسائی جانچی جا رہی ہے..",
             "正在检查文件夹访问权限..")
@@ -619,7 +619,7 @@ Partial Public NotInheritable Class Localization
             "Il servizio di condivisione ha risposto in un formato che l'app non sa leggere. Aggiorna l'app e il servizio alla stessa versione.",
             "El servicio de uso compartido respondió en un formato que esta aplicación no puede leer. Actualice la aplicación y el servicio a la misma versión.",
             "Le service de partage a répondu dans un format que cette application ne sait pas lire. Mettez l'application et le service à la même version.",
-            "O serviço de partilha respondeu num formato que esta aplicação não consegue ler. Atualize a aplicação e o serviço para a mesma versão.",
+            "O serviço de compartilhamento respondeu em um formato que este aplicativo não consegue ler. Atualize o aplicativo e o serviço para a mesma versão.",
             "ردّت خدمة المشاركة بتنسيق لا يستطيع هذا التطبيق قراءته. حدّث التطبيق والخدمة إلى الإصدار نفسه.",
             "साझा करने वाली सेवा ने ऐसे प्रारूप में उत्तर दिया जिसे यह ऐप नहीं पढ़ सकता। ऐप और सेवा को एक ही संस्करण पर अपडेट करें।",
             "শেয়ারিং সার্ভিস এমন ফরম্যাটে উত্তর দিয়েছে যা এই অ্যাপ পড়তে পারে না। অ্যাপ ও সার্ভিস একই সংস্করণে হালনাগাদ করুন।",
@@ -633,7 +633,7 @@ Partial Public NotInheritable Class Localization
             "Questo account non può gestire la condivisione su questo PC: la gestisce un altro account.",
             "Esta cuenta no puede administrar el uso compartido en este PC: lo administra otra cuenta.",
             "Ce compte n'est pas autorisé à gérer le partage sur ce PC - un autre compte le gère.",
-            "Esta conta não tem permissão para gerir a partilha neste PC - outra conta gere-a.",
+            "Esta conta não tem permissão para gerenciar o compartilhamento neste PC - outra conta o gerencia.",
             "لا يُسمح لهذا الحساب بإدارة المشاركة على هذا الكمبيوتر - يديرها حساب آخر.",
             "इस खाते को इस PC पर साझाकरण प्रबंधित करने की अनुमति नहीं है - इसे कोई दूसरा खाता प्रबंधित करता है।",
             "এই অ্যাকাউন্টকে এই পিসিতে শেয়ারিং পরিচালনার অনুমতি দেওয়া হয়নি - অন্য একটি অ্যাকাউন্ট এটি পরিচালনা করে।",
@@ -647,7 +647,7 @@ Partial Public NotInheritable Class Localization
             "Il canale di controllo della condivisione è occupato da un altro programma. Non gli è stato inviato nulla e la condivisione non è stata avviata. Riavvia il PC o chiudi quel programma.",
             "El canal de control del uso compartido está ocupado por otro programa. No se le envió nada y el uso compartido no se inició. Reinicie el PC o cierre ese programa.",
             "Le canal de contrôle du partage est occupé par un autre programme. Rien ne lui a été transmis et le partage n'a pas démarré. Redémarrez le PC ou fermez ce programme.",
-            "O canal de controlo da partilha está ocupado por outro programa. Nada lhe foi enviado e a partilha não foi iniciada. Reinicie o PC ou feche esse programa.",
+            "O canal de controle do compartilhamento está ocupado por outro programa. Nada foi enviado a ele e o compartilhamento não foi iniciado. Reinicie o PC ou feche esse programa.",
             "قناة التحكم في المشاركة يشغلها برنامج آخر. لم يُرسَل إليه شيء ولم تبدأ المشاركة. أعد تشغيل الكمبيوتر أو أغلق ذلك البرنامج.",
             "साझाकरण का नियंत्रण चैनल किसी दूसरे प्रोग्राम के पास है। उसे कुछ नहीं भेजा गया और साझाकरण शुरू नहीं हुआ। PC को फिर से चालू करें या उस प्रोग्राम को बंद करें।",
             "শেয়ারিংয়ের নিয়ন্ত্রণ চ্যানেল অন্য একটি প্রোগ্রাম দখল করে আছে। তাকে কিছু পাঠানো হয়নি এবং শেয়ারিং শুরু হয়নি। পিসি রিস্টার্ট করুন বা সেই প্রোগ্রামটি বন্ধ করুন।",

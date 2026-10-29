@@ -174,7 +174,7 @@ Public NotInheritable Class File_Details_Form
                 Await Task.Run(Function() FileDetails.BuildSections(filePath)).ConfigureAwait(True)
             If IsDisposed Then Return
             RenderSections(sections)
-            status.Text = Path.GetFileName(filePath)
+            status.Text = Localization.LtrValue(Path.GetFileName(filePath))
 
             If mediaSectionProvider IsNot Nothing AndAlso
                (FileDetails.IsAudioFile(filePath) OrElse FileDetails.IsVideoFile(filePath)) Then
@@ -185,7 +185,7 @@ Public NotInheritable Class File_Details_Form
         Catch ex As Exception
             ' The rows already rendered stay: a details window that lost only one source
             ' still answers for the rest.
-            status.Text = Path.GetFileName(filePath)
+            status.Text = Localization.LtrValue(Path.GetFileName(filePath))
 #If Not NETFRAMEWORK Then
             ' Nothing rendered at all: say so instead of leaving an empty body (124 UX-208).
             If box.TextLength = 0 Then box.Text = Localization.T("Не удалось прочитать сведения о файле.")
@@ -203,7 +203,7 @@ Public NotInheritable Class File_Details_Form
                 If row.Value.Length = 0 Then
                     AppendLine(Localization.T(row.LabelKey))
                 Else
-                    AppendLine(Localization.TF("{0}: {1}", Localization.T(row.LabelKey), row.Value))
+                    AppendLine(Localization.TF("{0}: {1}", Localization.T(row.LabelKey), Localization.LtrValue(row.Value)))
                 End If
             Next
             AppendLine("")
@@ -237,7 +237,7 @@ Public NotInheritable Class File_Details_Form
         ' content rather than being replaced with an empty string or throwing.
         If box.Text.Length = 0 Then Return
         Try
-            Clipboard.SetText(box.Text)
+            Clipboard.SetText(Localization.PlainValue(box.Text))
             status.Text = Localization.T("Скопировано в буфер обмена")
         Catch ex As Exception
 #If Not NETFRAMEWORK Then

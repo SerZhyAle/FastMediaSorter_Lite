@@ -315,6 +315,11 @@ Partial Public Class Image_Panel_Form
         If Me.RightToLeft <> direction Then Me.RightToLeft = direction
         grid.RightToLeft = RightToLeft.No
         details.RightToLeft = RightToLeft.No
+        ' The right-aligned selection counter sits at the end of the toolbar, which is where the help badge lies (the right
+        ' corner, the left one under right-to-left reading): the strip keeps that much room free so the counter is not covered.
+        toolbar.Padding = If(direction = RightToLeft.Yes,
+                             New Padding(LogicalToDeviceUnits(ContextHelpUi.BadgeEdge), 0, 1, 0),
+                             New Padding(0, 0, LogicalToDeviceUnits(ContextHelpUi.BadgeEdge), 0))
 
         Dim prefs As ModernViewerPreferences = Main_Form.GetModernPreferences()
         view_Is_List = String.Equals(prefs.PanelViewMode, "list", StringComparison.Ordinal)

@@ -187,7 +187,7 @@ Partial Public NotInheritable Class Localization
             "Il documento non si legge come codice di connessione o file di impostazioni della risorsa",
             "El documento no se lee como código de conexión ni como archivo de configuración del recurso",
             "Le document ne se lit ni comme code de connexion ni comme fichier de paramètres de ressource",
-            "O documento não se lê como código de conexão nem como arquivo de configurações do recurso",
+            "O documento não é reconhecido como código de conexão nem como arquivo de configurações do recurso",
             "لا يمكن قراءة المستند كرمز اتصال أو ملف إعدادات مورد",
             "दस्तावेज़ कनेक्शन कोड या संसाधन सेटिंग फ़ाइल के रूप में नहीं पढ़ा जा सकता",
             "নথিটি সংযোগ কোড বা রিসোর্স সেটিংস ফাইল হিসেবে পড়া যায় না",

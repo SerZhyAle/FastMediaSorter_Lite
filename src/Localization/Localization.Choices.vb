@@ -86,7 +86,7 @@ Partial Public NotInheritable Class Localization
             "Symbol- und Statusleiste ausblenden", "Nascondi barra strumenti e barra di stato",
             "Ocultar la barra de herramientas y la de estado",
             "Masquer la barre d'outils et la barre d'état",
-            "Ocultar a barra de ferramentas e a de estado", "إخفاء شريط الأدوات وشريط الحالة",
+            "Ocultar a barra de ferramentas e a barra de status", "إخفاء شريط الأدوات وشريط الحالة",
             "टूलबार और स्टेटस बार छिपाएँ", "টুলবার ও স্ট্যাটাস বার লুকান",
             "ٹول بار اور اسٹیٹس بار چھپائیں", "隐藏工具栏和状态栏")
 
@@ -110,7 +110,7 @@ Partial Public NotInheritable Class Localization
         Add("Автопереход к следующему",
             "Advance to the next file", "Автоперехід до наступного файлу", "Automatisch zur nächsten Datei",
             "Passa automaticamente al file successivo", "Pasar automáticamente al archivo siguiente",
-            "Passer automatiquement au fichier suivant", "Avançar automaticamente para o ficheiro seguinte",
+            "Passer automatiquement au fichier suivant", "Avançar automaticamente para o arquivo seguinte",
             "الانتقال تلقائيًا إلى الملف التالي", "अगली फ़ाइल पर अपने-आप जाएँ", "পরবর্তী ফাইলে স্বয়ংক্রিয়ভাবে যান",
             "خود بخود اگلی فائل پر جائیں", "自动播放下一个文件")
 
@@ -155,7 +155,7 @@ Partial Public NotInheritable Class Localization
             "Solo se il file non finirà nel Cestino",
             "Solo si el archivo no irá a la Papelera",
             "Seulement si le fichier n'ira pas à la Corbeille",
-            "Só quando o ficheiro não for para a Reciclagem",
+            "Só quando o arquivo não for para a Lixeira",
             "فقط إذا لم ينتقل الملف إلى سلة المحذوفات",
             "केवल जब फ़ाइल रीसायकल बिन में नहीं जाएगी",
             "শুধু যখন ফাইলটি রিসাইকেল বিনে যাবে না",
@@ -171,7 +171,7 @@ Partial Public NotInheritable Class Localization
         Add("Остаться на текущем",
             "Stay on the current file", "Залишитися на поточному", "Bei der aktuellen Datei bleiben",
             "Resta sul file corrente", "Quedarse en el archivo actual",
-            "Rester sur le fichier actuel", "Ficar no ficheiro atual",
+            "Rester sur le fichier actuel", "Ficar no arquivo atual",
             "البقاء على الملف الحالي", "वर्तमान फ़ाइल पर रहें", "বর্তমান ফাইলেই থাকুন",
             "موجودہ فائل پر رہیں", "停留在当前文件")
 
@@ -179,7 +179,7 @@ Partial Public NotInheritable Class Localization
             "Close when no files are left", "Закрити, якщо файлів не лишилося",
             "Schließen, wenn keine Dateien mehr da sind", "Chiudi se non restano file",
             "Cerrar si no quedan archivos", "Fermer s'il ne reste aucun fichier",
-            "Fechar se não restarem ficheiros", "الإغلاق إذا لم تبقَ ملفات",
+            "Fechar se não restarem arquivos", "الإغلاق إذا لم تبقَ ملفات",
             "यदि कोई फ़ाइल न बचे तो बंद करें", "কোনো ফাইল না থাকলে বন্ধ করুন",
             "اگر کوئی فائل باقی نہ رہے تو بند کریں", "没有文件时关闭")
 
@@ -197,7 +197,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Последний файл",
             "The last file", "Останній файл", "Die letzte Datei", "L'ultimo file",
-            "El último archivo", "Le dernier fichier", "O último ficheiro",
+            "El último archivo", "Le dernier fichier", "O último arquivo",
             "آخر ملف", "अंतिम फ़ाइल", "শেষ ফাইল", "آخری فائل", "上次的文件")
 
     End Sub

@@ -630,7 +630,11 @@ foreach ($it in $capItems) {
     foreach ($ev in $evs) {
         $spec = [regex]::Match($ev, '^specification (?<n>\d+)$')
         if ($spec.Success) {
-            if (-not @(Get-ChildItem -Path (Join-Path $Root 'docs/specifications') -Recurse -File -Filter "$($spec.Groups['n'].Value)_*" -ErrorAction SilentlyContinue).Count) { Problem "capability '$cid' cites $ev, which has no file under docs/specifications" }
+            # A ticket file is named either NNN_.. (the archive's historical names) or L0NNN_.. (the catalog form).
+            $n = $spec.Groups['n'].Value
+            $specFiles = @(Get-ChildItem -Path (Join-Path $Root 'docs/specifications') -Recurse -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -like "${n}_*" -or $_.Name -like ('L{0:D4}_*' -f [int]$n) })
+            if (-not $specFiles.Count) { Problem "capability '$cid' cites $ev, which has no file under docs/specifications" }
         }
         elseif (-not (Test-Path -LiteralPath (Join-Path $Root $ev))) { Problem "capability '$cid' cites the evidence '$ev', which is not a file or folder of the tree" }
     }

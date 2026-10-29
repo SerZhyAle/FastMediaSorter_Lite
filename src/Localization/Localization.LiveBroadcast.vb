@@ -11,9 +11,9 @@ Partial Public NotInheritable Class Localization
             "Open live broadcast..", "Відкрити live-трансляцію..",
             "Live-Übertragung öffnen..", "Apri trasmissione live..",
             "Abrir transmisión en vivo..", "Ouvrir la diffusion en direct..",
-            "Abrir transmissão ao vivo..", "..فتح البث المباشر",
+            "Abrir transmissão ao vivo..", "فتح البث المباشر..",
             "लाइव प्रसारण खोलें..", "লাইভ সম্প্রচার খুলুন..",
-            "..لائیو نشریات کھولیں", "打开实时直播..")
+            "لائیو نشریات کھولیں..", "打开实时直播..")
 
         Add("Открыть live-трансляцию",
             "Open Live Broadcast", "Відкрити live-трансляцію",
@@ -27,17 +27,17 @@ Partial Public NotInheritable Class Localization
             "Paste FMSBCAST1: code, link, or stream URL:", "Вставте код FMSBCAST1:, посилання або URL потоку:",
             "FMSBCAST1:-Code, Link oder Stream-URL einfügen:", "Incolla il codice FMSBCAST1:, il link o l'URL dello streaming:",
             "Pegue el código FMSBCAST1:, enlace o URL de transmisión:", "Collez le code FMSBCAST1:, le lien ou l'URL du flux :",
-            "Cole o código FMSBCAST1:, link ou URL do stream:", ":أو رابط أو عنوان بث FMSBCAST1: الصق رمز",
+            "Cole o código FMSBCAST1:, link ou URL do stream:", "الصق رمز FMSBCAST1: أو رابط أو عنوان بث:",
             "FMSBCAST1: कोड, लिंक या स्ट्रीम URL चिपकाएँ:", "FMSBCAST1: কোড, লিঙ্ক বা স্ট্রিম URL পেস্ট করুন:",
-            ":کوڈ، لنک یا اسٹریم یو آر ایل چسپاں کریں FMSBCAST1:", "粘贴 FMSBCAST1: 代码、链接或流 URL：")
+            "FMSBCAST1: کوڈ، لنک یا اسٹریم یو آر ایل چسپاں کریں:", "粘贴 FMSBCAST1: 代码、链接或流 URL：")
 
         Add("Файл .fmsbcast..",
             ".fmsbcast file..", "Файл .fmsbcast..",
             ".fmsbcast-Datei..", "File .fmsbcast..",
             "Archivo .fmsbcast..", "Fichier .fmsbcast..",
-            "Arquivo .fmsbcast..", "..fmsbcast. ملف",
+            "Arquivo .fmsbcast..", "ملف ‎.fmsbcast..",
             ".fmsbcast फ़ाइल..", ".fmsbcast ফাইল..",
-            "..fmsbcast. فائل", ".fmsbcast 文件..")
+            "‎.fmsbcast فائل..", ".fmsbcast 文件..")
 
         Add("Это live-трансляция",
             "This is a live broadcast", "Це live-трансляція",
@@ -55,7 +55,7 @@ Partial Public NotInheritable Class Localization
             "La PC y el dispositivo emisor deben estar en la misma red local (Wi-Fi / Ethernet).",
             "Le PC et l'appareil émetteur doivent être sur le même réseau local (Wi-Fi / Ethernet).",
             "O PC e o dispositivo transmissor devem estar na mesma rede local (Wi-Fi / Ethernet).",
-            ".(Wi-Fi / Ethernet) يجب أن يكون الكمبيوتر وجهاز البث في نفس الشبكة المحلية",
+            "يجب أن يكون الكمبيوتر وجهاز البث في نفس الشبكة المحلية (Wi-Fi / Ethernet).",
             "पीसी और प्रसारण उपकरण एक ही स्थानीय नेटवर्क (Wi-Fi / Ethernet) पर होने चाहिए।",
             "পিসি এবং সম্প্রচারকারী ডিভাইস একই স্থানীয় নেটওয়ার্কে (Wi-Fi / Ethernet) থাকতে হবে।",
             "پی سی اور براڈکاسٹنگ ڈیوائس ایک ہی لوکل نیٹ ورک (وائی فائی / ایتھرنیٹ) پر ہونی چاہئیں۔",
@@ -65,9 +65,9 @@ Partial Public NotInheritable Class Localization
             "Recent broadcasts:", "Нещодавні трансляції:",
             "Kürzliche Übertragungen:", "Trasmissioni recenti:",
             "Transmisiones recientes:", "Diffusions récentes :",
-            "Transmissões recentes:", ":عمليات البث الأخيرة",
+            "Transmissões recentes:", "عمليات البث الأخيرة:",
             "हाल के प्रसारण:", "সাম্প্রতিক সম্প্রচার:",
-            ":حالیہ نشریات", "最近的直播：")
+            "حالیہ نشریات:", "最近的直播：")
 
         Add("Устройство / Название",
             "Device / Title", "Пристрій / Назва",
@@ -96,9 +96,9 @@ Partial Public NotInheritable Class Localization
             "Select .fmsbcast File", "Вибрати файл .fmsbcast",
             ".fmsbcast-Datei auswählen", "Seleziona file .fmsbcast",
             "Seleccionar archivo .fmsbcast", "Sélectionner le fichier .fmsbcast",
-            "Selecionar arquivo .fmsbcast", "fmsbcast. تحديد ملف",
+            "Selecionar arquivo .fmsbcast", "تحديد ملف ‎.fmsbcast",
             ".fmsbcast फ़ाइल चुनें", ".fmsbcast ফাইল নির্বাচন করুন",
-            "fmsbcast. فائل منتخب کریں", "选择 .fmsbcast 文件")
+            "‎.fmsbcast فائل منتخب کریں", "选择 .fmsbcast 文件")
 
         Add("Введите адрес или код трансляции",
             "Enter broadcast address or code", "Введіть адресу або код трансляції",
@@ -223,17 +223,17 @@ Partial Public NotInheritable Class Localization
             "LIVE - {0}", "LIVE - {0}",
             "LIVE - {0}", "LIVE - {0}",
             "EN VIVO - {0}", "EN DIRECT - {0}",
-            "AO VIVO - {0}", "{0} - بث مباشر",
+            "AO VIVO - {0}", "بث مباشر - {0}",
             "लाइव - {0}", "লাইভ - {0}",
-            "{0} - لائیو", "直播 - {0}")
+            "لائیو - {0}", "直播 - {0}")
 
         Add("Переподключение {0}/5..",
             "Reconnecting {0}/5..", "Перепідключення {0}/5..",
             "Wiederverbindung {0}/5..", "Riconnessione {0}/5..",
             "Reconectando {0}/5..", "Reconnexion {0}/5..",
-            "Reconectando {0}/5..", "..إعادة الاتصال {0}/5",
+            "Reconectando {0}/5..", "إعادة الاتصال {0}/5..",
             "पुनः कनेक्ट हो रहा है {0}/5..", "পুনরায় সংযোগ করা হচ্ছে {0}/5..",
-            "..دوبارہ منسلک ہو رہا ہے {0}/5", "正在重新连接 {0}/5..")
+            "دوبارہ منسلک ہو رہا ہے {0}/5..", "正在重新连接 {0}/5..")
 
         Add("Остановить",
             "Stop", "Зупинити",
@@ -259,10 +259,10 @@ Partial Public NotInheritable Class Localization
             "Las direcciones de la lista son las últimas conocidas: el dispositivo puede haber dejado de emitir o haber cambiado de puerto.",
             "Les adresses de la liste sont les dernières connues : l'appareil a pu cesser d'émettre ou changer de port.",
             "Os endereços da lista são os últimos conhecidos: o dispositivo pode ter parado de transmitir ou mudado de porta.",
-            ".العناوين في القائمة هي آخر عناوين معروفة: ربما توقف الجهاز عن البث أو غيّر المنفذ",
+            "العناوين في القائمة هي آخر عناوين معروفة: ربما توقف الجهاز عن البث أو غيّر المنفذ.",
             "सूची के पते अंतिम ज्ञात पते हैं: उपकरण ने प्रसारण बंद कर दिया हो या पोर्ट बदल लिया हो सकता है।",
             "তালিকার ঠিকানাগুলি সর্বশেষ জানা ঠিকানা: ডিভাইসটি সম্প্রচার বন্ধ করে থাকতে পারে বা পোর্ট বদলাতে পারে।",
-            ".فہرست میں موجود پتے آخری معلوم پتے ہیں: ہو سکتا ہے ڈیوائس نے نشریات بند کر دی ہوں یا پورٹ بدل لیا ہو",
+            "فہرست میں موجود پتے آخری معلوم پتے ہیں: ہو سکتا ہے ڈیوائس نے نشریات بند کر دی ہوں یا پورٹ بدل لیا ہو۔",
             "列表中的地址是最后已知的地址：设备可能已停止广播或更换了端口。")
 
         Add("Трансляция остановлена",
@@ -280,7 +280,7 @@ Partial Public NotInheritable Class Localization
             "Archivos .fmsbcast (transmisiones en vivo)", "Fichiers .fmsbcast (diffusions en direct)",
             "Arquivos .fmsbcast (transmissões ao vivo)", "ملفات ‎.fmsbcast (بث مباشر)",
             ".fmsbcast फ़ाइलें (लाइव प्रसारण)", ".fmsbcast ফাইল (লাইভ সম্প্রচার)",
-            ".fmsbcast فائلیں (لائیو نشریات)", ".fmsbcast 文件（实时直播）")
+            "‎.fmsbcast فائلیں (لائیو نشریات)", ".fmsbcast 文件（实时直播）")
 
         Add("Файлы .fmsbcast присылают телефон и часы, когда вещают звук. Если у них ещё нет программы по умолчанию, их будет открывать эта; чужую запись она не заменяет, а только появляется в меню «Открыть с помощью».",
             "Phones and watches send .fmsbcast files when they broadcast sound. If these files have no default program yet, this one will open them; it never replaces someone else's entry and then only appears in the Open with menu.",
@@ -290,10 +290,10 @@ Partial Public NotInheritable Class Localization
             "Los teléfonos y relojes envían archivos .fmsbcast cuando emiten sonido. Si estos archivos aún no tienen un programa predeterminado, los abrirá este; nunca reemplaza la entrada de otro programa y solo aparece en el menú «Abrir con».",
             "Les téléphones et les montres envoient des fichiers .fmsbcast lorsqu'ils diffusent du son. Si ces fichiers n'ont pas encore de programme par défaut, celui-ci les ouvrira ; il ne remplace jamais l'entrée d'un autre programme et apparaît alors seulement dans le menu «Ouvrir avec».",
             "Telefones e relógios enviam arquivos .fmsbcast quando transmitem som. Se esses arquivos ainda não têm um programa padrão, este os abrirá; ele nunca substitui a entrada de outro programa e, nesse caso, só aparece no menu «Abrir com».",
-            ".ترسل الهواتف والساعات ملفات ‎.fmsbcast عندما تبث الصوت. إذا لم يكن لهذه الملفات برنامج افتراضي بعد فسيفتحها هذا البرنامج، ولا يستبدل أبدًا إدخال برنامج آخر بل يظهر فقط في قائمة «فتح باستخدام»",
+            "ترسل الهواتف والساعات ملفات ‎.fmsbcast عندما تبث الصوت. إذا لم يكن لهذه الملفات برنامج افتراضي بعد فسيفتحها هذا البرنامج، ولا يستبدل أبدًا إدخال برنامج آخر بل يظهر فقط في قائمة «فتح باستخدام».",
             ".fmsbcast फ़ाइलें फ़ोन और घड़ियाँ तब भेजते हैं जब वे ध्वनि प्रसारित करते हैं। यदि इन फ़ाइलों का अभी कोई डिफ़ॉल्ट प्रोग्राम नहीं है, तो इन्हें यह प्रोग्राम खोलेगा; यह किसी और की प्रविष्टि को कभी नहीं बदलता, केवल «इसके साथ खोलें» मेनू में दिखाई देता है।",
             "ফোন ও ঘড়ি শব্দ সম্প্রচার করার সময় .fmsbcast ফাইল পাঠায়। এই ফাইলগুলির এখনও কোনো ডিফল্ট প্রোগ্রাম না থাকলে এই প্রোগ্রামটি সেগুলি খুলবে; এটি অন্য কারও এন্ট্রি কখনও প্রতিস্থাপন করে না, শুধু «এর সাহায্যে খুলুন» মেনুতে দেখা যায়।",
-            ".فون اور گھڑیاں آواز نشر کرتے وقت ‎.fmsbcast فائلیں بھیجتی ہیں۔ اگر ان فائلوں کا ابھی کوئی ڈیفالٹ پروگرام نہیں ہے تو انہیں یہ پروگرام کھولے گا؛ یہ کسی اور کی اندراج کو کبھی تبدیل نہیں کرتا بلکہ صرف «اس کے ساتھ کھولیں» مینو میں ظاہر ہوتا ہے",
+            "فون اور گھڑیاں آواز نشر کرتے وقت ‎.fmsbcast فائلیں بھیجتی ہیں۔ اگر ان فائلوں کا ابھی کوئی ڈیفالٹ پروگرام نہیں ہے تو انہیں یہ پروگرام کھولے گا؛ یہ کسی اور کی اندراج کو کبھی تبدیل نہیں کرتا بلکہ صرف «اس کے ساتھ کھولیں» مینو میں ظاہر ہوتا ہے۔",
             ".fmsbcast 文件由手机和手表在广播声音时发送。如果这些文件还没有默认程序，将由本程序打开；它绝不会替换其他程序的设置，只会出现在「打开方式」菜单中。")
 
         Add("Устройство ответило: HTTP {0}",

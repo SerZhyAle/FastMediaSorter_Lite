@@ -35,6 +35,7 @@ Partial Public NotInheritable Class Localization
         AddDocumentReaderStrings()
         AddHtmlViewerStrings()      ' 275: the HTML viewer, its settings and its refusals
         AddHtmlSettingsStrings()    ' 275: the Documents page HTML groups and rows
+        AddTextReaderStrings()      ' 277: the full text reader - status line, search, go to line
         AddActivationStrings()  ' 105/108: the Share Manager hand-off - unreachable, too old to ask first
         AddSettingsImportStrings()  ' 103/105: the import preview names merge as well as replace; unsaved import
         AddStreamStrings()          ' 022: the stream catalog producer and validator

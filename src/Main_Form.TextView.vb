@@ -74,21 +74,34 @@ Partial Public Class Main_Form
         text_Scroll_Offset = 0
         text_Font_Scale = 1.0F
 
-        Dim maxKb As Integer = If(modern_Preferences IsNot Nothing, modern_Preferences.TextPreviewMaxKb, 2048)
-        text_Current_Result = TextFileReader.Read(filePath, maxKb)
+        ' Specification 277: the full reader replaces the bounded preview only while its opt-in is on.
+        Dim fullReader As Boolean = FullTextReaderOn()
+        If fullReader Then
+            text_Current_Result = ReadFullTextDocument(filePath)
+        Else
+            Dim maxKb As Integer = If(modern_Preferences IsNot Nothing, modern_Preferences.TextPreviewMaxKb, 2048)
+            text_Current_Result = TextFileReader.Read(filePath, maxKb)
+        End If
 
         If Not text_Current_Result.Success Then
             ReleaseTextDocument()
             ShowContentPlaceholder(filePath)
             lbl_Status.Text = Localization.TF("{0} - {1}", Path.GetFileName(filePath), If(text_Current_Result.IsBinary, Localization.T("Бинарный файл"), text_Current_Result.ErrorMessage))
+            ' VM-08: the reader says why a binary file is not shown as text, so nothing invites an edit of it.
+            If fullReader AndAlso text_Current_Result.IsBinary Then
+                Notify(Localization.TF("{0} - двоичные данные, файл не показан как текст", Path.GetFileName(filePath)), NotifyLevel.Warning)
+            End If
             Return
         End If
+        text_Full_Reader = fullReader
 
         SetMediaDisplayKind(MediaKind.Document)
         ResetZoomViewport()
         SetViewSizes()
 
-        If text_Current_Result.IsTruncated Then
+        If fullReader Then
+            AnnounceFullTextDocument(filePath)
+        ElseIf text_Current_Result.IsTruncated Then
             lbl_Status.Text = Localization.TF("{0} - показаны первые {1} из {2}",
                 Path.GetFileName(filePath),
                 FormatFileSize(text_Current_Result.ReadBytes),
@@ -113,11 +126,16 @@ Partial Public Class Main_Form
         text_Selection = Nothing
         text_Press = Nothing
         text_Selecting = False
+        ReleaseFullTextReader()
     End Sub
 
     Friend Sub PaintTextDocument(box As PictureBox, e As PaintEventArgs)
         If Not IsTextDocumentShown() OrElse box IsNot GetActivePictureBox() Then Return
         If text_Current_Result.Lines Is Nothing OrElse text_Current_Result.Lines.Length = 0 Then Return
+        If FullTextReaderShown() Then
+            PaintFullTextDocument(box, e)
+            Return
+        End If
 
         Dim g As Graphics = e.Graphics
         Dim bounds As Rectangle = box.ClientRectangle
@@ -282,6 +300,7 @@ Partial Public Class Main_Form
 
     Friend Sub ScrollTextLines(deltaLines As Integer)
         If Not IsTextDocumentShown() Then Return
+        If TryCrossTextWindow(deltaLines) Then Return
         text_Scroll_Offset += deltaLines
         If text_Scroll_Offset < 0 Then text_Scroll_Offset = 0
         Dim maxScroll As Integer = Math.Max(0, text_Total_Lines_Cached - text_Visible_Lines_Cached)
@@ -345,6 +364,7 @@ Partial Public Class Main_Form
     ''' and says how to select: copying a whole file nobody pointed at would put it over what is on the clipboard.
     ''' </summary>
     Private Function TryHandleTextSelectionKey(e As KeyEventArgs) As Boolean
+        If TryHandleFullReaderKey(e) Then Return True
         If Not e.Control OrElse e.Alt OrElse e.Shift Then Return False
         If e.KeyCode <> Keys.A AndAlso e.KeyCode <> Keys.C Then Return False
         If Not IsTextDocumentShown() OrElse text_Current_Result.Lines Is Nothing Then Return False

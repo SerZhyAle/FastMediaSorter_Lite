@@ -238,8 +238,13 @@ Partial Public Class Main_Form
         html_View_Toolbar.Items.Add(html_View_Blocked)
         HtmlViewButton("Настройки", AddressOf ShowSettingsWindow)
         HtmlViewButton("Вернуться к файлам", AddressOf LeaveHtmlViewInteraction)
-        html_View_Context = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.Never}
-        html_View_Toolbar.Items.Add(html_View_Context)
+        ' AsNeeded, never Never: with an Overflow.Never item on the strip, a UI Automation walk of the open
+        ' overflow drop-down (a screen reader, at high DPI where the commands overflow) loops on the UI thread
+        ' and the viewer stops responding (275 scene S9, 2026-10-29; reproduced in a bare WinForms strip).
+        ' Inserted first instead: a strip overflows from the end of its item list, so the label that says
+        ' where the keys go is the last to leave the strip, and Right alignment still draws it on the right.
+        html_View_Context = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.AsNeeded}
+        html_View_Toolbar.Items.Insert(0, html_View_Context)
         html_View_Title = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.AsNeeded}
         html_View_Toolbar.Items.Add(html_View_Title)
         panel_Media.Controls.Add(html_View_Toolbar)

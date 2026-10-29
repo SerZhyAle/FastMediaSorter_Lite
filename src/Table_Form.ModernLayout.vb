@@ -300,7 +300,8 @@ Partial Public Class Table_Form
                 End Using
             End Using
         End If
-        e.DrawFocusRectangle()
+        ' The system focus rectangle is white on a dark list (spec 285): drawn in the row's own ink and back instead.
+        If (e.State And DrawItemState.Focus) <> 0 Then ControlPaint.DrawFocusRectangle(e.Graphics, e.Bounds, fore, back)
     End Sub
 
     Private Shared Function IsDarkColor(c As Color) As Boolean
@@ -1172,6 +1173,7 @@ Partial Public Class Table_Form
             Case "chrome_size" : Return Localization.T("Размер панелей")
             Case "chrome_opacity" : Return Localization.T("Непрозрачность панели")
             Case "chrome_corners" : Return Localization.T("Скругление углов панелей")
+            Case "chrome_reset_places" : Return Localization.T("Вернуть панели на места")
             Case "chrome_pinned" : Return Localization.T("Не скрывать плавающие панели")
             Case "section_slideshow_behavior" : Return Localization.T("Поведение слайд-шоу")
             Case "slideshow_random_order" : Return Localization.T("Порядок показа")
@@ -1312,6 +1314,7 @@ Partial Public Class Table_Form
 
     Private Function ModernSettingDescription(key As String) As String
         If key = "doc_FullEpubReader" AndAlso Not Main_Form.EpubReaderHostAvailable Then Return Localization.T("Чтение EPUB недоступно")
+        If key.StartsWith("doc_converter_", StringComparison.Ordinal) Then Return DocumentConverterSettingDescription(key)
         If key.StartsWith("doc_", StringComparison.Ordinal) Then Return Localization.T("Настройки чтения не изменяют исходный файл. Сброс оформления сохраняет закладки.")
         If key.StartsWith("html_", StringComparison.Ordinal) Then Return HtmlSettingDescription(key)
         Select Case key
@@ -1341,6 +1344,7 @@ Partial Public Class Table_Form
             Case "chrome_size" : Return Localization.T("Малые, средние или крупные; адаптивный следит и за шириной окна.")
             Case "chrome_opacity" : Return Localization.T("Чем меньше значение, тем прозрачнее плавающие панели. Ниже 50 % надписи и значки инвертируются: чёрное становится белым.")
             Case "chrome_corners" : Return Localization.T("Скругление углов панелей")
+            Case "chrome_reset_places" : Return Localization.T("Возвращает перемещённые панели на места по умолчанию, в том числе потерянную. Кнопки и закрепление не меняются.")
             Case "chrome_pinned" : Return Localization.T("Панели не исчезают сами и остаются над изображением постоянно.")
             Case "slideshow_random_order" : Return Localization.T("Выберите обычный, случайный или перемешанный порядок.")
             Case "stop_slideshow_manual" : Return Localization.T("Ручной переход останавливает таймер слайд-шоу.")
@@ -2018,7 +2022,7 @@ Partial Public Class Table_Form
                 Return "action.export"
             Case "settings_import"
                 Return "action.import"
-            Case "settings_defaults", "profile_reset_all", "recipients_position_reset", "html_reset_appearance"
+            Case "settings_defaults", "profile_reset_all", "recipients_position_reset", "chrome_reset_places", "html_reset_appearance"
                 Return "action.reset"
             Case "html_clear_history", "html_clear_runtime"
                 Return "action.clear-all"

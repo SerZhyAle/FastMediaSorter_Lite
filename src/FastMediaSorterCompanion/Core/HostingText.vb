@@ -271,7 +271,7 @@ Public Module HostingText
             Case ServiceControl.ManageResult.Unavailable
                 Return ManageUnavailable()
             Case Else
-                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..».")
+                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа».")
         End Select
     End Function
 

@@ -26,11 +26,14 @@ Public Structure TextReadResult
     Public Module TextFileReader
 
         Private ReadOnly MonospaceExtensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
-            ".log", ".csv", ".json", ".xml", ".tsv", ".yaml", ".yml", ".toml", ".ini", ".conf", ".sql", ".sh", ".bat", ".cmd", ".ps1"
+            ".log", ".csv", ".json", ".xml", ".tsv", ".yaml", ".yml", ".toml", ".ini", ".conf", ".sql", ".sh", ".bat", ".cmd", ".ps1",
+            ".cs", ".vb", ".cpp", ".h", ".c", ".py", ".js", ".css"
         }
 
+        ' Source files are shown as text and never executed; .ts stays a video (MEDIA-CLASSIFICATION rule 1).
         Private ReadOnly TextExtensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
-            ".txt", ".md", ".log", ".csv", ".json", ".xml", ".tsv", ".yaml", ".yml", ".toml", ".ini", ".conf", ".html", ".htm", ".sql", ".sh", ".bat", ".cmd", ".ps1"
+            ".txt", ".md", ".log", ".csv", ".json", ".xml", ".tsv", ".yaml", ".yml", ".toml", ".ini", ".conf", ".html", ".htm", ".sql", ".sh", ".bat", ".cmd", ".ps1",
+            ".cs", ".vb", ".cpp", ".h", ".c", ".py", ".js", ".css"
         }
 
         Private Function ExtensionOf(value As String) As String
@@ -173,92 +176,12 @@ Public Structure TextReadResult
             Return result
         End Function
 
+        ' Specification 277 section 6.1: the tiers live in TextEncodingDetector; this signature stays for
+        ' the preview, the file details panel and the tests that call it.
         Public Function DetectEncoding(bytes As Byte(), readLength As Integer, ByRef isBinary As Boolean, Optional isTruncated As Boolean = False, Optional ansiCodePage As Integer = 0) As Encoding
-            isBinary = False
-            If bytes Is Nothing OrElse readLength <= 0 Then
-                Return New UTF8Encoding(True, True)
-            End If
-
-            ' 1. Check BOM first
-            If readLength >= 4 Then
-                If bytes(0) = &HFF AndAlso bytes(1) = &HFE AndAlso bytes(2) = 0 AndAlso bytes(3) = 0 Then
-                    Return New UTF32Encoding(False, True, True)
-                ElseIf bytes(0) = 0 AndAlso bytes(1) = 0 AndAlso bytes(2) = &HFE AndAlso bytes(3) = &HFF Then
-                    Return New UTF32Encoding(True, True, True)
-                End If
-            End If
-
-            If readLength >= 2 Then
-                If bytes(0) = &HFF AndAlso bytes(1) = &HFE Then
-                    Return New UnicodeEncoding(False, True, True)
-                ElseIf bytes(0) = &HFE AndAlso bytes(1) = &HFF Then
-                    Return New UnicodeEncoding(True, True, True)
-                End If
-            End If
-
-            If readLength >= 3 Then
-                If bytes(0) = &HEF AndAlso bytes(1) = &HBB AndAlso bytes(2) = &HBF Then
-                    Return New UTF8Encoding(True, True)
-                End If
-            End If
-
-            ' 2. Check UTF-8 validity over the first 64 KB
-            Dim probeLength As Integer = Math.Min(readLength, 65536)
-
-            ' Check for null bytes without BOM
-            For i As Integer = 0 To probeLength - 1
-                If bytes(i) = 0 Then
-                    isBinary = True
-                    Return Nothing
-                End If
-            Next
-
-            ' Test strict UTF-8 decoding
-            Dim strictUtf8 As New UTF8Encoding(False, True)
-            Try
-                Dim decoder As Decoder = strictUtf8.GetDecoder()
-                Dim chars(probeLength - 1) As Char
-                decoder.GetChars(bytes, 0, probeLength, chars, 0, probeLength = readLength AndAlso Not isTruncated)
-                ' If strict UTF-8 succeeds, verify control character density
-                If HasBinaryControlChars(bytes, probeLength) Then
-                    isBinary = True
-                    Return Nothing
-                End If
-                Return New UTF8Encoding(True, True)
-            Catch ex As DecoderFallbackException
-                ' Not valid UTF-8, fall through to ANSI
-            End Try
-
-            ' 3. Test system ANSI code page
-#If Not NETFRAMEWORK Then
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-#End If
-            Dim ansi As Encoding = Encoding.GetEncoding(ansiCodePage,
-                EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback)
-            Try
-                Dim decoded As String = ansi.GetString(bytes, 0, probeLength)
-                If HasBinaryControlChars(bytes, probeLength) Then
-                    isBinary = True
-                    Return Nothing
-                End If
-                Return ansi
-            Catch
-                isBinary = True
-                Return Nothing
-            End Try
-        End Function
-
-        Private Function HasBinaryControlChars(bytes As Byte(), count As Integer) As Boolean
-            Dim controlCount As Integer = 0
-            For i As Integer = 0 To count - 1
-                Dim b As Byte = bytes(i)
-                ' Control chars other than TAB(9), LF(10), CR(13), FF(12), ESC(27)
-                If (b < 9) OrElse (b = 11) OrElse (b > 13 AndAlso b < 27) OrElse (b > 27 AndAlso b < 32) Then
-                    controlCount += 1
-                End If
-            Next
-            ' If more than 0.5% or more than 2 invalid control characters, consider binary
-            Return (controlCount > 2 AndAlso (controlCount * 100.0 / count) > 0.5)
+            Dim detection As EncodingDetectionResult = TextEncodingDetector.Detect(bytes, readLength, isTruncated, ansiCodePage)
+            isBinary = detection.IsBinary
+            Return detection.Encoding
         End Function
 
     End Module

@@ -262,7 +262,7 @@ Partial Public NotInheritable Class Localization
             "Elenco flottante delle cartelle di destinazione, in alto a sinistra sopra immagine/video. Clic su una riga per spostare/copiare lì il file corrente (o eliminarlo). Disattivo per impostazione predefinita.",
             "Lista flotante de carpetas de destino, arriba a la izquierda sobre la imagen o el vídeo. Haga clic en una fila para mover o copiar allí el archivo actual (o eliminarlo). Desactivado de forma predeterminada.",
             "Liste flottante des dossiers de destination, en haut à gauche par-dessus l'image/la vidéo. Cliquez sur une ligne pour y déplacer/copier le fichier courant (ou le supprimer). Désactivé par défaut.",
-            "Lista flutuante de pastas de destino, no canto superior esquerdo sobre a imagem/vídeo. Clique numa linha para mover/copiar o arquivo atual para lá (ou excluí-lo). Desligado por padrão.",
+            "Lista flutuante de pastas de destino, no canto superior esquerdo sobre a imagem/vídeo. Clique em uma linha para mover/copiar o arquivo atual para lá (ou excluí-lo). Desligado por padrão.",
             "قائمة عائمة بمجلدات الوجهة أعلى اليسار فوق الصورة/الفيديو. انقر صفًا لنقل/نسخ الملف الحالي إليه (أو حذفه). معطّل افتراضيًا.",
             "गंतव्य फ़ोल्डरों की तैरती सूची, छवि/वीडियो के ऊपर बाईं ओर। किसी पंक्ति पर क्लिक कर मौजूदा फ़ाइल वहाँ ले जाएँ/कॉपी करें (या हटाएँ)। डिफ़ॉल्ट रूप से बंद।",
             "গন্তব্য ফোল্ডারের ভাসমান তালিকা, ছবি/ভিডিওর উপরে বাঁ দিকে। সারিতে ক্লিক করে বর্তমান ফাইল সেখানে সরান/কপি করুন (বা মুছুন)। ডিফল্টে বন্ধ।",
@@ -309,7 +309,7 @@ Partial Public NotInheritable Class Localization
             "Doppio clic su un numero di tasto per eseguire l'azione. Doppio clic su un percorso per scegliere una cartella.",
             "Doble clic en un número de tecla para ejecutar la acción. Doble clic en una ruta para elegir carpeta.",
             "Double-cliquez sur un numéro de touche pour exécuter l'action. Double-cliquez sur un chemin pour choisir un dossier.",
-            "Clique duas vezes num número de tecla para executar a ação. Clique duas vezes num caminho para escolher a pasta.",
+            "Clique duas vezes em um número de tecla para executar a ação. Clique duas vezes em um caminho para escolher a pasta.",
             "انقر نقرًا مزدوجًا على رقم المفتاح لتنفيذ الإجراء. وعلى المسار لاختيار مجلد.",
             "क्रिया चलाने के लिए कुंजी संख्या पर डबल-क्लिक करें। फ़ोल्डर चुनने के लिए पथ पर डबल-क्लिक करें।",
             "কাজ চালাতে কী নম্বরে ডাবল-ক্লিক করুন। ফোল্ডার বাছতে পাথে ডাবল-ক্লিক করুন।",
@@ -324,7 +324,7 @@ Partial Public NotInheritable Class Localization
             "Doppio clic su un numero di tasto per spostare il file, Shift + doppio clic per copiarlo. Doppio clic su un percorso per scegliere una cartella.",
             "Doble clic en un número de tecla para mover el archivo, Shift + doble clic para copiarlo. Doble clic en una ruta para elegir carpeta.",
             "Double-cliquez sur un numéro de touche pour déplacer le fichier, Shift + double clic pour le copier. Double-cliquez sur un chemin pour choisir un dossier.",
-            "Clique duas vezes num número de tecla para mover o arquivo, Shift + clique duplo para copiá-lo. Clique duas vezes num caminho para escolher a pasta.",
+            "Clique duas vezes em um número de tecla para mover o arquivo, Shift + clique duplo para copiá-lo. Clique duas vezes em um caminho para escolher a pasta.",
             "انقر نقرًا مزدوجًا على رقم المفتاح لنقل الملف، وShift + نقر مزدوج لنسخه. وانقر نقرًا مزدوجًا على المسار لاختيار مجلد.",
             "फ़ाइल ले जाने के लिए कुंजी संख्या पर डबल-क्लिक करें, कॉपी के लिए Shift + डबल-क्लिक। फ़ोल्डर चुनने के लिए पथ पर डबल-क्लिक करें।",
             "ফাইল সরাতে কী নম্বরে ডাবল-ক্লিক করুন, কপি করতে Shift + ডাবল-ক্লিক। ফোল্ডার বাছতে পাথে ডাবল-ক্লিক করুন।",
@@ -342,7 +342,7 @@ Partial Public NotInheritable Class Localization
             "Por borda", "حسب الحافة", "किनारे से", "প্রান্ত অনুযায়ী", "کنارے کے حساب سے", "按边缘")
         Add("По верху", "By top", "За верхом", "Nach oben", "Dall'alto", "Por arriba", "Par le haut",
             "Pelo topo", "من الأعلى", "ऊपर से", "উপর থেকে", "اوپر سے", "按顶部")
-        Add("По низу", "By buttom", "За низом", "Nach unten", "Dal basso", "Por abajo", "Par le bas",
+        Add("По низу", "By bottom", "За низом", "Nach unten", "Dal basso", "Por abajo", "Par le bas",
             "Pela base", "من الأسفل", "नीचे से", "নিচ থেকে", "نیچے سے", "按底部")
         Add("Перспектива", "Perspective", "Перспектива", "Perspektive", "Prospettiva", "Perspectiva",
             "Perspective", "Perspectiva", "منظور", "परिप्रेक्ष्य", "পরিপ্রেক্ষিত", "تناظر", "透视")

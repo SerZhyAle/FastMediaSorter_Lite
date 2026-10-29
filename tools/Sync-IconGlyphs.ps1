@@ -67,11 +67,17 @@ $glyphIds = @(
     # The recipients table's and the chrome panels' pin button: the catalog's push-pin, filled while pinned and
     # its outlined state variant while free (a line-drawn tilted pin read as a second pencil next to action.edit).
     'action.pin', 'action.pin--off',
+    # The move handle of a movable floating panel (specification L0281 T-3): the catalog's drag handle, in the pin's rest ink.
+    'action.reorder',
     'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.disk-container', 'content.folder', 'content.image',
     'content.video', 'content.document', 'device.phone', 'view.screen',
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',
     'media.play', 'media.previous', 'media.random', 'media.slideshow', 'media.volume',
     'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent', 'source.resource',
+    # BUTTONS 2.0 section 2 rule 3: a menu carries a trailing downward marker and child navigation a trailing
+    # reading-direction chevron, both from ICON-SET (specification 279 T-3): the chrome's menu button and path list
+    # draw nav.dropdown, a submenu row draws nav.go-to (rtl "mirror" in the vocabulary).
+    'nav.dropdown', 'nav.go-to',
     # The site header's theme switch (BUTTONS 2.0: a header command carries its glyph; PAGE-STYLE 3.1).
     'app.theme',
     'status.error', 'status.locked', 'status.ok', 'status.unknown', 'status.warning',

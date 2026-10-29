@@ -55,6 +55,9 @@ Friend NotInheritable Class ChromeMetrics
     Public Const PinButtonSize As Integer = 20
     ''' <summary>How far past a panel the pointer still counts as "near it" - the reveal zone.</summary>
     Public Const HotZoneMargin As Integer = 48
+    ''' <summary>How near its anchored place a dropped floating panel snaps back to it and is anchored again
+    ''' (L0281 Q281-6).</summary>
+    Public Const AnchorSnap As Integer = 12
     ''' <summary>Extra padding around the window-controls panel's buttons (188 §3.1): the free
     ''' background is the panel's drag grip, so it breathes wider than the toolbar rows do.</summary>
     Public Const WindowControlsExtraPadding As Integer = 4
@@ -65,10 +68,14 @@ Friend NotInheritable Class ChromeMetrics
     ' tracking size is built from these, so the window can never be asked to hold less than
     ' the panel shows.
 
+    ''' <summary>The panel's width at the floor: the padding, the pin's slot, the move handle's slot (L0281 T-5: the
+    ''' window commands are movable, so the panel carries a handle slot of its own beside the pin, apart from the
+    ''' commands), the drag grip, the three commands and their gaps. The window's minimum tracking size is built
+    ''' from it (<c>WM_GETMINMAXINFO</c>), so the extra slot never lets the panel outgrow the window.</summary>
     Public Shared Function WindowControlsLogicalWidth() As Integer
         Dim button As Integer = Math.Max(ItemHeight, MinTarget)
         Dim pad As Integer = PanelPadding + WindowControlsExtraPadding
-        Return 2 * pad + (MinTarget + Gap) + 4 * button + 3 * Gap
+        Return 2 * pad + (MinTarget + Gap) + (MinTarget + Gap) + 4 * button + 3 * Gap
     End Function
 
     Public Shared Function WindowControlsLogicalHeight() As Integer
@@ -90,8 +97,14 @@ Friend NotInheritable Class ChromeMetrics
     Public Const CheckedMarkLength As Integer = 16
     Public Const CheckedMarkThickness As Integer = 2
     Public Const CheckedMarkInset As Integer = 5
-    ''' <summary>The room a menu button keeps at its end for its ▾ (125 UX-305), and a submenu row for its ▸.</summary>
+    ''' <summary>The room a menu button keeps at its end for its downward marker (125 UX-305), and a submenu row for its chevron.</summary>
     Public Const ChevronWidth As Integer = 14
+    ''' <summary>The catalog glyph at the end of a menu button and of the path list (BUTTONS 2.0 section 2 rule 3; ICON-SET
+    ''' <c>nav.dropdown</c>, "this field opens a short list of choices", fixed in a right-to-left UI; 279 T-3).</summary>
+    Public Const MenuMarkerGlyph As String = "nav.dropdown"
+    ''' <summary>The catalog glyph at the end of a submenu row: child navigation, a chevron in the reading direction (ICON-SET
+    ''' <c>nav.go-to</c>, mirrored in a right-to-left UI; 279 T-3).</summary>
+    Public Const SubmenuMarkerGlyph As String = "nav.go-to"
     ''' <summary>The corner mark of an item that has a secondary action (the right click); it was 4 px (125 UX-306).</summary>
     Public Const SecondaryMarkSize As Integer = 6
     ''' <summary>How far a submenu overlaps its parent's edge, so the pointer can slide across.</summary>

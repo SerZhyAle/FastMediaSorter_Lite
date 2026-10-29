@@ -15,7 +15,7 @@ func TestTheStatementSaysWhatTheContractSaysTheOperatorCanSee(t *testing.T) {
 		"tunnel-broadcast-plain": {"tunnel", "RTSP", "HTTP", "operator"},
 		"access-visible":         {"access details", "memory", "operator", "never written to disk", "never logged"},
 		"sftp-opaque":            {"SSH", "cannot read"},
-		"multi-user-limit":       {"other people's accounts", "limit", "end to end", "open"},
+		"multi-user-limit":       {"other people's accounts", "operator", "points above"},
 		"flat-trust":             {"every other device", "remove", "pairing codes", "access details", "remove itself"},
 		// ticket 229 (22 items BU and CC): the operator sees a clipboard value in the clear, in
 		// memory only, and it is one per account within its limit
@@ -51,6 +51,12 @@ func TestTheStatementIsPlainText(t *testing.T) {
 		}
 		if len(p.Text) > 500 || p.ID == "" || strings.ContainsAny(p.ID, " ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
 			t.Errorf("%s: a short text under a kebab-case id", p.ID)
+		}
+		// canon invariant 17: a statement is a present-tense fact, never a promise of work to come
+		for _, promise := range []string{"open work", "not yet", "coming", "planned"} {
+			if strings.Contains(strings.ToLower(p.Text), promise) {
+				t.Errorf("%s: a statement carries no promise (%q): %s", p.ID, promise, p.Text)
+			}
 		}
 	}
 	if !strings.Contains(Text(), "\n\n") {

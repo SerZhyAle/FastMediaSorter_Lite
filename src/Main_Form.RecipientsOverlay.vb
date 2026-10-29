@@ -696,24 +696,41 @@ Partial Public Class Main_Form
         If Not recipients_Overlay.Visible AndAlso recipients_Overlay.IsHandleCreated Then recipients_Overlay.Visible = True
 #End If
 
+        ' L0281 T-6 (Q281-3): a placement only PLACES. The effective rectangle of a free table is the intended place
+        ' fitted into the allowed area as it is now; nothing is written back (219 §6's repair is retired), so a
+        ' window made smaller and larger again returns the table to where the user left it.
         Dim onScreen As Point = RecipientsOverlayPlacedRect().Location
         If recipients_Overlay.Location <> onScreen Then recipients_Overlay.Location = onScreen
-#If Not NETFRAMEWORK Then
-        PersistRecipientsOverlayRepairedPosition(onScreen)
-#End If
     End Sub
 
     ''' <summary>Where the overlay sits over the media surface, in screen coordinates - the one
     ''' geometry <see cref="PositionRecipientsOverlay"/> places by and the modern build's reveal
     ''' hot zone grows from. No visibility side effects: the overlay's window may be hidden while
-    ''' this runs.</summary>
+    ''' this runs, and NOTHING is written (L0281 T-6, Q281-3): a free table is its intended place resolved and
+    ''' fitted afresh in the allowed area; the anchored table is <see cref="RecipientsOverlayAnchoredRect"/>.</summary>
     Private Function RecipientsOverlayPlacedRect() As Rectangle
         If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return Rectangle.Empty
 #If Not NETFRAMEWORK Then
         ' Mid-drag the window is the truth (219 §2): the tick's containment checks and the reveal
         ' zone follow the pointer, and nothing re-places the panel out from under it.
         If recipients_Drag_Active Then Return New Rectangle(recipients_Overlay.Location, recipients_Overlay.Size)
+        ' A free table (L0281 T-6): the stored place - the shared corner:dx,dy value, or an old 219 point read as
+        ' TL:x,y - resolved in the allowed area as it is NOW and fitted, at every placement. The place is the
+        ' intended one; the fit is the effective one and never goes back into the preferences.
+        Dim place As PanelPlace
+        If RecipientsOverlayFreePlace(place) Then
+            Dim factor As Single = ChromeScale()
+            Return FloatingPanelPlacement.Effective(place, RecipientsOverlayAllowedArea(factor), recipients_Overlay.Size,
+                                                    factor, Localization.IsRightToLeft())
+        End If
 #End If
+        Return RecipientsOverlayAnchoredRect()
+    End Function
+
+    ''' <summary>Where the corner choice puts the table over the media surface, in screen coordinates: the anchored
+    ''' state (219 §3), the coarse move. net48 only ever has this one.</summary>
+    Private Function RecipientsOverlayAnchoredRect() As Rectangle
+        If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return Rectangle.Empty
         Dim margin As Integer = RecipientPx(8)
         Dim topOffset As Integer = margin
         ' In full-screen (not super) the floating toolbar sits over the top strip;
@@ -737,17 +754,6 @@ Partial Public Class Main_Form
             panel_Media.ClientSize, recipients_Overlay.Size, margin, topOffset)
         x = offset.X
         y = offset.Y
-        ' The first drop of a real drag wrote a custom point (219 §3): logical px relative to
-        ' the media area's top-left, back through the same scale seam the corner offsets were
-        ' measured by. It overrides the anchor until the next corner pick, the reset row or
-        ' the profile reset.
-        If modern_Preferences IsNot Nothing AndAlso modern_Preferences.RecipientsOverlayHasCustomPosition Then
-            Dim custom As Point = RecipientsOverlayPlacement.ToDeviceOffset(
-                New Point(modern_Preferences.RecipientsOverlayCustomX, modern_Preferences.RecipientsOverlayCustomY),
-                ChromeScale())
-            x = custom.X
-            y = custom.Y
-        End If
 #Else
         Select Case RecipientsOverlayPosition()
             Case "topRight"
@@ -765,12 +771,9 @@ Partial Public Class Main_Form
         Dim areaOrigin As Point = panel_Media.PointToScreen(New Point(0, 0))
         Dim location As New Point(areaOrigin.X + x, areaOrigin.Y + y)
 #If Not NETFRAMEWORK Then
-        ' The recovery clamp (219 §6): every placement validates the placed rectangle against
-        ' the media area's CURRENT on-screen rectangle - startup, settings close, form resize,
-        ' DPI or monitor change, form move. The panel is a free window over a moving world.
-        ' Out of bounds means the header strip (the grip, the only thing that can bring it
-        ' back) is not fully inside the area; the panel is then pulled back by the shortest
-        ' translation that fits it, margins included.
+        ' The anchored table stays as it was (L0281 T-6): a corner anchor whose header would fall outside the media
+        ' area (chrome rows taller than a short window) is still carried inside by the shortest translation, margins
+        ' included - computed afresh at every placement and, unlike 219 §6, never written anywhere.
         Dim area As New Rectangle(areaOrigin, panel_Media.ClientSize)
         If Not RecipientsOverlayPlacement.HeaderInside(location, recipients_Overlay.Size,
                                                        RecipientPx(ChromeMetrics.MinTarget), area) Then
@@ -800,65 +803,115 @@ Partial Public Class Main_Form
     ''' whole drag and nothing re-places the panel out from under it.</summary>
     Private recipients_Drag_Active As Boolean
 
-    ''' <summary>The grip's press (219 §2): the whole window follows the pointer through Windows'
+    ''' <summary>The allowed rectangle a drag in progress is clamped into (screen coordinates), taken once at the
+    ''' press: nothing resizes the window while the native move loop owns the pointer.</summary>
+    Private recipients_Drag_Allowed As Rectangle
+    Private recipients_Drag_StartIsRight As Boolean
+
+    ''' <summary>The allowed rectangle of the table (L0281 §3.3, T-6): exactly the chrome panels' one,
+    ''' <see cref="ChromeAllowedArea"/> - the media area inside the window's client area, inside the visible part of
+    ''' the screen, inset by <see cref="ChromeMetrics.PanelEdgeInset"/> (0, flush against any edge like the rows and
+    ''' the status strip). 219's 8 px margin (<c>RecipientPx(8)</c>) stays the margin of the ANCHORED corners only; it
+    ''' existed in the free state only inside the repair pull-back, which this slice retires. Keeping the area
+    ''' un-inset also keeps an old 219 point (measured from the media area's top-left) reading as <c>TL:x,y</c> at
+    ''' the very same visual spot. One place to change if the owner wants air at the edges.</summary>
+    Private Function RecipientsOverlayAllowedArea(factor As Single) As Rectangle
+        Return ChromeAllowedArea(factor)
+    End Function
+
+    ''' <summary>True and the table's intended free place; False when the table stands at its corner choice. The
+    ''' reader rule of <see cref="RecipientsOverlayPlacement.TryReadPlace"/> applied to the stored preferences.</summary>
+    Private Function RecipientsOverlayFreePlace(ByRef place As PanelPlace) As Boolean
+        place = New PanelPlace(PanelCorner.TopLeft, 0, 0)
+        Dim prefs As ModernViewerPreferences = modern_Preferences
+        If prefs Is Nothing Then Return False
+        Return RecipientsOverlayPlacement.TryReadPlace(prefs.RecipientsOverlayPlace, prefs.RecipientsOverlayHasCustomPosition,
+                                                       prefs.RecipientsOverlayCustomX, prefs.RecipientsOverlayCustomY, place)
+    End Function
+
+    ''' <summary>One proposed rectangle of the native move loop (WM_MOVING) through the fit, BEFORE the window is
+    ''' placed: no pixel of the table is ever outside the allowed rectangle, not even for a frame (R2, Q281-3).</summary>
+    Private Function RecipientsOverlayFitMoving(proposed As Rectangle) As Rectangle
+        Return FloatingPanelPlacement.Fit(proposed, recipients_Drag_Allowed, recipients_Drag_StartIsRight)
+    End Function
+
+    ''' <summary>The grip's press (219 §2, L0281 T-6): the whole window follows the pointer through Windows'
     ''' own move loop - the same drag the window-commands panel's grip runs - never activating it,
-    ''' so the viewer keeps the keyboard. The reveal rule of 117 Ф-2 holds for the whole drag and
-    ''' the pin state is not changed; the auto-hide cycle resumes from where it was on drop.</summary>
+    ''' so the viewer keeps the keyboard. The loop is CONSTRAINED, not replaced: the overlay window answers
+    ''' WM_MOVING by fitting every proposed rectangle into the allowed area (live no-pixel-outside clamp). The
+    ''' reveal rule of 117 Ф-2 holds for the whole drag and the pin state is not changed; the drop is decided
+    ''' once, here, when the loop returns (<see cref="RecipientsOverlayFinishDrag"/>).</summary>
     Private Sub RecipientsOverlayBeginDrag()
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse
            Not recipients_Overlay.IsHandleCreated Then Return
-        Dim before As Point = recipients_Overlay.Location
+        Dim host As RecipientsOverlayWindow = recipients_Overlay
+        Dim started As New Rectangle(host.Location, host.Size)
+        recipients_Drag_Allowed = RecipientsOverlayAllowedArea(ChromeScale())
+        recipients_Drag_StartIsRight = Localization.IsRightToLeft()
         recipients_Drag_Active = True
+        host.MovingFit = AddressOf RecipientsOverlayFitMoving
         Try
             ReleaseCapture()
             Dim pointer As Point = Cursor.Position
             Dim lParam As New IntPtr((pointer.Y << 16) Or (pointer.X And &HFFFF))
-            SendMessage(recipients_Overlay.Handle, WmNcLButtonDown, New IntPtr(HtCaption), lParam)
+            SendMessage(host.Handle, WmNcLButtonDown, New IntPtr(HtCaption), lParam)
         Finally
             recipients_Drag_Active = False
+            host.MovingFit = Nothing
         End Try
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
-        ' Saved on drop, not per pixel - and a drag that ends where it began writes nothing (219 §3).
-        If recipients_Overlay.Location <> before Then
-            SaveRecipientsOverlayDraggedPosition()
-            PositionRecipientsOverlay()
-        End If
+        RecipientsOverlayFinishDrag(started, New Rectangle(recipients_Overlay.Location, recipients_Overlay.Size))
     End Sub
 
-    ''' <summary>Writes the dropped position as the custom point (219 §3): logical px relative to the
-    ''' media area's top-left, so a DPI or monitor change re-places it at the same visual spot instead
-    ''' of compounding device pixels. The drop may sit outside the media area - the drag never clips
-    ''' mid-air - and the recovery clamp of 219 §6 repairs it at the next placement.</summary>
-    Private Sub SaveRecipientsOverlayDraggedPosition()
-        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse panel_Media Is Nothing Then Return
+    ''' <summary>A finished drag decided like every floating panel's (L0281 §3.5): nothing to write when it ended where
+    ''' it began, the place cleared when it ended within the snap distance of the corner anchor, a refusal when no free
+    ''' fit clear of the window commands and the visible transport bar exists (the table returns to where the drag began,
+    ''' nothing written), otherwise the new place - stored once. The window is placed afresh in every case, so a refused
+    ''' or unchanged drag puts it back where it was.</summary>
+    Private Sub RecipientsOverlayFinishDrag(started As Rectangle, dropped As Rectangle)
+        Try
+            Dim factor As Single = ChromeScale()
+            Dim allowed As Rectangle = RecipientsOverlayAllowedArea(factor)
+            Dim result As Rectangle
+            Select Case FloatingPanelPlacement.DecideDrop(started, dropped, RecipientsOverlayAnchoredRect(), allowed,
+                                                          ChromeProtectedRects(), UiScale.Px(ChromeMetrics.AnchorSnap, factor),
+                                                          Localization.IsRightToLeft(), result)
+                Case PanelDropOutcome.Placed
+                    StoreRecipientsOverlayPlace(result, allowed, factor)
+                Case PanelDropOutcome.Anchor
+                    ClearRecipientsOverlayPlace()
+            End Select
+        Catch ex As Exception
+            AppFileLogger.LogException("Recipients overlay: deciding a drop", ex)
+        End Try
+        PositionRecipientsOverlay()
+    End Sub
+
+    ''' <summary>Writes a dropped table's place (L0281 §5, Q281-3): the shared <c>corner:dx,dy</c> value, and the old
+    ''' triple kept meaningful for an older build - HasCustomPosition = True with X and Y the dropped rectangle's top-left
+    ''' in logical px from the media area (219 §3). One write per drop; the same place again writes nothing.</summary>
+    Private Sub StoreRecipientsOverlayPlace(rect As Rectangle, allowed As Rectangle, factor As Single)
+        If panel_Media Is Nothing Then Return
         Dim prefs As ModernViewerPreferences = GetModernPreferences()
+        Dim text As String = FloatingPanelPlacement.Encode(FloatingPanelPlacement.FromRectangle(rect, allowed, factor))
         Dim origin As Point = panel_Media.PointToScreen(New Point(0, 0))
-        Dim dropped As Point = RecipientsOverlayPlacement.ToLogicalPoint(
-            New Point(recipients_Overlay.Location.X - origin.X, recipients_Overlay.Location.Y - origin.Y),
-            ChromeScale())
-        prefs.RecipientsOverlayCustomX = dropped.X
-        prefs.RecipientsOverlayCustomY = dropped.Y
+        Dim legacy As Point = RecipientsOverlayPlacement.ToLogicalPoint(New Point(rect.X - origin.X, rect.Y - origin.Y), factor)
+        If prefs.RecipientsOverlayPlace = text AndAlso prefs.RecipientsOverlayHasCustomPosition AndAlso
+           prefs.RecipientsOverlayCustomX = legacy.X AndAlso prefs.RecipientsOverlayCustomY = legacy.Y Then Return
+        prefs.RecipientsOverlayPlace = text
+        prefs.RecipientsOverlayCustomX = legacy.X
+        prefs.RecipientsOverlayCustomY = legacy.Y
         prefs.RecipientsOverlayHasCustomPosition = True
         SaveRecipientsOverlayPreferences()
     End Sub
 
-    ''' <summary>The repair half of the recovery (219 §6): when a placement pulled the panel back,
-    ''' the pulled-back point is what stays saved - a lost position never survives a run and never
-    ''' needs a second repair on the next start. Silent: no dialog, no toast, nothing beyond the
-    ''' ordinary trace; the panel is simply where the user last saw it work.</summary>
-    Private Sub PersistRecipientsOverlayRepairedPosition(applied As Point)
-        If recipients_Drag_Active Then Return
-        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse panel_Media Is Nothing Then Return
-        Dim prefs As ModernViewerPreferences = modern_Preferences
-        If prefs Is Nothing OrElse Not prefs.RecipientsOverlayHasCustomPosition Then Return
-        Dim origin As Point = panel_Media.PointToScreen(New Point(0, 0))
-        Dim stored As Point = RecipientsOverlayPlacement.ToDeviceOffset(
-            New Point(prefs.RecipientsOverlayCustomX, prefs.RecipientsOverlayCustomY), ChromeScale())
-        If origin.X + stored.X = applied.X AndAlso origin.Y + stored.Y = applied.Y Then Return   ' no repair fired
-        Dim repaired As Point = RecipientsOverlayPlacement.ToLogicalPoint(
-            New Point(applied.X - origin.X, applied.Y - origin.Y), ChromeScale())
-        prefs.RecipientsOverlayCustomX = repaired.X
-        prefs.RecipientsOverlayCustomY = repaired.Y
+    ''' <summary>The table is anchored at its corner choice again: the place and the old triple are cleared together
+    ''' (nothing is written when there was nothing to clear).</summary>
+    Private Sub ClearRecipientsOverlayPlace()
+        Dim prefs As ModernViewerPreferences = GetModernPreferences()
+        If Not prefs.RecipientsOverlayHasCustomPosition AndAlso String.IsNullOrEmpty(prefs.RecipientsOverlayPlace) Then Return
+        prefs.RecipientsOverlayHasCustomPosition = False
+        prefs.RecipientsOverlayPlace = ""
         SaveRecipientsOverlayPreferences()
     End Sub
 
@@ -891,14 +944,16 @@ Partial Public Class Main_Form
 
     Private recipients_Edit_Active As Boolean
 
-    ''' <summary>The settings' reset row (219 §5): clears the custom point and repositions the
-    ''' overlay at once - no restart, no settings reopen - from any state (visible, auto-hidden,
-    ''' dragged somewhere the user forgot). Idempotent: with the panel already at its anchor it is
+    ''' <summary>The settings' reset row (219 §5): clears the custom point - and, since L0281 T-6, the shared place
+    ''' with it - and repositions the overlay at once - no restart, no settings reopen - from any state (visible,
+    ''' auto-hidden, dragged somewhere the user forgot). Idempotent: with the panel already at its anchor it is
     ''' an honest no-op that still says so through the Notify line.</summary>
     Friend Sub ResetRecipientsOverlayPosition()
         Dim prefs As ModernViewerPreferences = GetModernPreferences()
-        Dim hadCustom As Boolean = prefs.RecipientsOverlayHasCustomPosition
+        Dim hadCustom As Boolean = prefs.RecipientsOverlayHasCustomPosition OrElse
+            Not String.IsNullOrEmpty(prefs.RecipientsOverlayPlace)
         prefs.RecipientsOverlayHasCustomPosition = False
+        prefs.RecipientsOverlayPlace = ""
         SaveRecipientsOverlayPreferences()
         ApplyRecipientsOverlay()
         Notify(Localization.T(If(hadCustom, "Позиция панели получателей сброшена.",
@@ -1295,8 +1350,55 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
     Private NotInheritable Class RecipientsOverlayWindow
         Inherits ChromeHost
+
+        Private Const WM_MOVING As Integer = &H216
+
+        <StructLayout(LayoutKind.Sequential)>
+        Private Structure MovingRect
+            Public Left As Integer
+            Public Top As Integer
+            Public Right As Integer
+            Public Bottom As Integer
+        End Structure
+
+        Private movingFaultLogged As Boolean
+
         Public Sub New()
             MyBase.New(False)
+        End Sub
+
+        ''' <summary>The fit the native move loop's proposed rectangles pass through while a header drag runs (L0281 T-6):
+        ''' set by the owner for the length of the drag, Nothing otherwise - a window move that is not the header drag
+        ''' (none exists today) is never constrained.</summary>
+        Public Property MovingFit As Func(Of Rectangle, Rectangle)
+
+        ''' <summary>WM_MOVING is sent by the system's move loop with a pointer to the rectangle the window is ABOUT to
+        ''' take (screen coordinates); rewriting it before returning TRUE makes the loop place the window there instead,
+        ''' so a pixel outside the allowed area is never drawn, even for one frame.</summary>
+        Protected Overrides Sub WndProc(ByRef m As Message)
+            Dim fit As Func(Of Rectangle, Rectangle) = MovingFit
+            If m.Msg = WM_MOVING AndAlso fit IsNot Nothing AndAlso m.LParam <> IntPtr.Zero Then
+                Try
+                    Dim r As MovingRect = Marshal.PtrToStructure(Of MovingRect)(m.LParam)
+                    Dim proposed As New Rectangle(r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top)
+                    Dim fitted As Rectangle = fit(proposed)
+                    If fitted <> proposed Then
+                        Marshal.StructureToPtr(New MovingRect With {
+                            .Left = fitted.Left, .Top = fitted.Top, .Right = fitted.Right, .Bottom = fitted.Bottom},
+                            m.LParam, False)
+                    End If
+                    m.Result = New IntPtr(1)
+                    Return
+                Catch ex As Exception
+                    ' A fault must not end the drag: the rectangle stays as proposed and the drop decision
+                    ' (DecideDrop) fits it once more. Logged once per window, not per mouse move.
+                    If Not movingFaultLogged Then
+                        movingFaultLogged = True
+                        AppFileLogger.LogException("Recipients overlay: constraining the move", ex)
+                    End If
+                End Try
+            End If
+            MyBase.WndProc(m)
         End Sub
     End Class
 #Else

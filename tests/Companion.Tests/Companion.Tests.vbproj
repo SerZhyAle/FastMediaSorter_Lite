@@ -36,6 +36,8 @@
   <ItemGroup>
     <Compile Include="..\Lite.Tests\TfCallSiteScanner.vb" Link="Linked\TfCallSiteScanner.vb" />
     <Compile Include="..\Lite.Tests\ExceptionTextScanner.vb" Link="Linked\ExceptionTextScanner.vb" />
+    <!-- Script and reading-order rules of the string tables (ticket L0290), shared with Lite.Tests. -->
+    <Compile Include="..\Lite.Tests\LocaleScriptRules.vb" Link="Linked\LocaleScriptRules.vb" />
     <!-- tools/site-addresses.jsonl reader (ticket 150), shared with Lite.Tests. -->
     <Compile Include="..\Lite.Tests\SiteAddressList.vb" Link="Linked\SiteAddressList.vb" />
     <!-- Ticket 182 L-7: the archive's sources, the unreadable-source rule, the [hosting] block, the state line and

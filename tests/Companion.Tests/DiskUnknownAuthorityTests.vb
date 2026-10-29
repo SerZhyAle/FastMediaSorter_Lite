@@ -111,7 +111,7 @@ Public Class DiskUnknownAuthorityTests
                 Assert.Equal(Localization.T("Текущий сеанс"), Share_Disks_Form.HolderText("session"))
             Next
             Localization.CurrentCode = "en"
-            Assert.Equal("No", Share_Disks_Form.HolderText("none"))
+            Assert.Equal("Nobody", Share_Disks_Form.HolderText("none"))
             Assert.Equal("Unknown", Share_Disks_Form.HolderText("ghost"))
         Finally
             Localization.CurrentCode = saved

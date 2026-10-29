@@ -142,6 +142,30 @@ Public Class IconographyContractTests
     End Sub
 
     <Fact>
+    Public Sub The_chrome_menu_markers_are_catalog_glyphs_and_a_font_character_only_stands_in()
+        ' BUTTONS 2.0 section 2 rule 3 (279 T-3): a menu carries ICON-SET's downward marker and a submenu row its
+        ' reading-direction chevron. Both ids are the vocabulary's own, active and vendored; the dropdown is fixed in a
+        ' right-to-left UI and the chevron mirrors, which the paint sites must pass on.
+        Dim ids = VocabularyIds()
+        For Each id As String In {ChromeMetrics.MenuMarkerGlyph, ChromeMetrics.SubmenuMarkerGlyph}
+            Assert.True(ids.ContainsKey(id), id & " is not in the vendored vocabulary")
+            Assert.Contains("""status"": ""active""", ids(id))
+            Assert.True(File.Exists(Path.Combine(GlyphDir, id & ".svg")), id & ".svg is not vendored")
+        Next
+        Assert.Contains("""rtl"": ""fixed""", ids(ChromeMetrics.MenuMarkerGlyph))
+        Assert.Contains("""rtl"": ""mirror""", ids(ChromeMetrics.SubmenuMarkerGlyph))
+
+        Dim root As String = FindRepoRoot()
+        Dim surface As String = File.ReadAllText(Path.Combine(root, "src", "Chrome", "ChromeSurface.vb"))
+        Dim pathBox As String = File.ReadAllText(Path.Combine(root, "src", "Chrome", "ChromePathBox.vb"))
+        Assert.Matches("PaintMarker\(g, ChromeMetrics\.MenuMarkerGlyph,[^\r\n]*, False, ChrW\(&H25BE\)\)", surface)
+        Assert.Matches("PaintMarker\(g, ChromeMetrics\.SubmenuMarkerGlyph,[^\r\n]*, isRightToLeft, arrow\)", surface)
+        Assert.DoesNotContain("PaintAccessory(g, ChrW(&H25BE)", surface)
+        Assert.DoesNotContain("PaintAccessory(g, arrow", surface)
+        Assert.Equal(2, Regex.Matches(pathBox, "PaintMarkerGlyph\([^\r\n]*ChromeMetrics\.MenuMarkerGlyph").Count)
+    End Sub
+
+    <Fact>
     Public Sub One_glyph_never_stands_for_two_meanings()
         ' ICON-SET rule 1: controls that share a glyph must share its name too (the two
         ' overflow buttons are one meaning on two rows).

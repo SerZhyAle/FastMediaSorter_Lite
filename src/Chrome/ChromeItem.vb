@@ -98,6 +98,13 @@ Friend NotInheritable Class ChromeItem
     ''' never focusable and never enters an overflow menu.</summary>
     Public Property IsMoveGrip As Boolean
 
+    ''' <summary>The move handle of a movable floating panel (L0281 T-3a): a button-sized slot beside the pin,
+    ''' laid out apart from the row so overflow never takes it. A press on it is NOT an action: the surface
+    ''' turns it into the panel-handle events (press, drag, release, click) and takes mouse capture, so the
+    ''' panel's owner moves the host; the arrow keys move it from the F10 ring. Painted as an ordinary button
+    ''' (hover, pressed, focus) with its glyph in the pin's rest ink.</summary>
+    Public Property IsPanelHandle As Boolean
+
     ''' <summary>A menu row that is a dividing line: no caption, no action, never focused or hit (125 UX-320).</summary>
     Public Property IsSeparator As Boolean
 
@@ -133,6 +140,10 @@ Friend NotInheritable Class ChromeItem
     ''' thing a row that runs out of width gives up, before the path box shrinks or anything collapses into the
     ''' "more" menu - and one with no visible item after it is not kept at all (nothing to hold in place).</summary>
     Public Property KeepsSlotWhenHidden As Boolean
+
+    ''' <summary>The item belongs to its row's priority core and never collapses into the "more" menu (280 section 3.6: the
+    ''' document panel's page or chapter box and page find). The rows' own core is still named by id in the surface.</summary>
+    Public Property NeverOverflows As Boolean
 
     ''' <summary>True when caption text should align to the start/left edge rather than centered.</summary>
     Public Property AlignLeft As Boolean

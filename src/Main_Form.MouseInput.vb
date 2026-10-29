@@ -200,6 +200,8 @@ Partial Public Class Main_Form
         If IsTextDocumentShown() Then
             If (Control.ModifierKeys And Keys.Control) = Keys.Control Then
                 If e.Delta <> 0 Then ZoomText(If(e.Delta > 0, 0.1F, -0.1F))
+            ElseIf (Control.ModifierKeys And Keys.Shift) = Keys.Shift AndAlso TryScrollTextHorizontally(e.Delta) Then
+                ' 277: the full reader with wrap off moves sideways.
             Else
                 If e.Delta <> 0 Then ScrollTextLines(If(e.Delta > 0, -3, 3))
             End If

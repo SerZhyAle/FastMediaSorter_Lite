@@ -365,7 +365,7 @@ Public Module ShareText
     End Function
 
     Public Function ServerEnableFailed() As String
-        Return Localization.T("Не удалось настроить брандмауэр. Попробуйте ещё раз; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..».")
+        Return Localization.T("Не удалось настроить брандмауэр. Попробуйте ещё раз; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа».")
     End Function
 
     ''' <summary>Worker payload missing - nothing to enable (a fresh clone / a build

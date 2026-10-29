@@ -189,8 +189,10 @@ Partial Friend NotInheritable Class Image_Editor_Form
     ''' static GIF or an 8-bit PNG would open and then throw on the first stroke. Copying
     ''' through an explicit 32bppArgb surface settles that at load time.
     '''
-    ''' <c>SourceCopy</c> + unscaled: the pixels must arrive exactly as decoded, not
-    ''' blended onto the transparent surface underneath and not resampled. A throw here
+    ''' <c>SourceCopy</c> + pixel-sized draw: the pixels must arrive exactly as decoded, not
+    ''' blended onto the transparent surface underneath and not resampled. The destination
+    ''' is the decoded pixel size, not <c>DrawImageUnscaled</c>, which sizes the picture by
+    ''' its DPI tag - a 72-dpi JPEG came out 1.33x larger and cropped. A throw here
     ''' disposes the copy before re-raising, like <see cref="EditorImageOps.CropTo"/>:
     ''' the caller aborts the open, so no one else could ever reach the half-made surface.
     ''' </summary>
@@ -199,7 +201,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Try
             Using g As Graphics = Graphics.FromImage(copy)
                 g.CompositingMode = CompositingMode.SourceCopy
-                g.DrawImageUnscaled(decoded, 0, 0)
+                g.DrawImage(decoded, 0, 0, decoded.Width, decoded.Height)
             End Using
         Catch
             copy.Dispose()

@@ -238,6 +238,51 @@ Public Class ChromeAutoHideTests
         Assert.True(ChromeAutoHide.PanelPinned(state, "recipients_Overlay"))
     End Sub
 
+    ' --- the document panel is an explicit surface of the same algebra (280) --------------------
+
+    <Fact>
+    Public Sub The_document_panel_answers_from_its_own_pin_never_from_the_status_fallback()
+        Dim state As New ChromeAutoHide.ChromePinState With {.StatusPinned = True}
+        Assert.False(ChromeAutoHide.OwnPin(state, "chrome_Document"))
+        Assert.False(ChromeAutoHide.PanelPinned(state, "chrome_Document"))
+        state = New ChromeAutoHide.ChromePinState With {.DocumentPinned = True}
+        Assert.True(ChromeAutoHide.OwnPin(state, "chrome_Document"))
+        Assert.True(ChromeAutoHide.PanelPinned(state, "chrome_Document"))
+        ' Its switch speaks for it alone.
+        Assert.False(ChromeAutoHide.PanelPinned(state, "chrome_Status"))
+        Assert.False(ChromeAutoHide.PanelPinned(state, "chrome_Row1"))
+        Assert.False(ChromeAutoHide.PanelPinned(state, "chrome_Row2"))
+        Assert.False(ChromeAutoHide.PanelPinned(state, "chrome_WindowControls"))
+    End Sub
+
+    <Fact>
+    Public Sub A_pin_click_on_the_document_panel_turns_only_its_own_switch()
+        Dim state As New ChromeAutoHide.ChromePinState
+        state = ChromeAutoHide.TogglePin(state, "chrome_Document")
+        Assert.True(state.DocumentPinned)
+        Assert.False(state.StatusPinned)
+        Assert.False(state.GlobalPinned)
+        state = ChromeAutoHide.TogglePin(state, "chrome_Document")
+        Assert.False(state.DocumentPinned)
+        Assert.False(state.StatusPinned)
+    End Sub
+
+    <Fact>
+    Public Sub The_global_switch_holds_the_document_panel_and_a_split_keeps_it_pinned()
+        Dim state As New ChromeAutoHide.ChromePinState With {.GlobalPinned = True}
+        Assert.True(ChromeAutoHide.PanelPinned(state, "chrome_Document"))
+        ' Unpinning another surface converts the all-switch into every own pin minus the clicked one.
+        Dim split = ChromeAutoHide.TogglePin(state, "chrome_Row1")
+        Assert.False(split.GlobalPinned)
+        Assert.True(split.DocumentPinned)
+        Assert.True(ChromeAutoHide.PanelPinned(split, "chrome_Document"))
+        ' Unpinning the document panel itself leaves the others up.
+        Dim own = ChromeAutoHide.TogglePin(state, "chrome_Document")
+        Assert.False(own.DocumentPinned)
+        Assert.False(ChromeAutoHide.PanelPinned(own, "chrome_Document"))
+        Assert.True(own.Row1Pinned AndAlso own.Row2Pinned AndAlso own.StatusPinned AndAlso own.WindowControlsPinned)
+    End Sub
+
     ' --- a window with no media holds its panels (125 UX-313m) -------------------------------
 
     <Fact>

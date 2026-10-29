@@ -11,9 +11,9 @@ Partial Public NotInheritable Class Localization
             "Build stream catalog (.zip)..", "Зібрати каталог потоків (.zip)..",
             "Stream-Katalog erstellen (.zip)..", "Crea catalogo streaming (.zip)..",
             "Crear catálogo de transmisiones (.zip)..", "Créer le catalogue de flux (.zip)..",
-            "Criar catálogo de streams (.zip)..", "..(.zip) إنشاء كتالوج البث",
+            "Criar catálogo de streams (.zip)..", "إنشاء كتالوج البث (‎.zip)..",
             "स्ट्रीम कैटलॉग बनाएं (.zip)..", "স্ট্রিম ক্যাটালগ তৈরি করুন (.zip)..",
-            "..(.zip) اسٹریم کیٹلاگ بنائیں", "构建流媒体目录 (.zip)..")
+            "اسٹریم کیٹلاگ بنائیں (‎.zip)..", "构建流媒体目录 (.zip)..")
 
         Add("Создать stream-catalog.zip из плейлистов в этой папке",
             "Create stream-catalog.zip from playlists in this folder",
@@ -72,7 +72,7 @@ Partial Public NotInheritable Class Localization
             "La sostituzione del catalogo comporterà la perdita di {0} su {1} indirizzi ({2:F1}%). Continuare a scrivere?",
             "Reemplazar el catálogo provocará la pérdida de {0} de {1} direcciones ({2:F1}%). ¿Continuar escribiendo?",
             "Le remplacement du catalogue entraînera la perte de {0} sur {1} adresses ({2:F1}%). Continuer l'écriture ?",
-            "A substituição do catálogo resultará na perda de {0} de {1} endereços ({2:F1}%). Continuar a gravação?",
+            "A substituição do catálogo resultará na perda de {0} de {1} endereços ({2:F1}%). Continuar salvando?",
             "استبدال الكتالوج سيؤدي إلى فقدان {0} من أصل {1} عنوانًا ({2:F1}%). متابعة الكتابة؟",
             "कैटलॉग बदलने से {1} में से {0} पते ({2:F1}%) नष्ट हो जाएंगे। लिखना जारी रखें?",
             "ক্যাটালগ প্রতিস্থাপন করলে {1} টির মধ্যে {0} টি ঠিকানা ({2:F1}%) হারিয়ে যাবে। লেখা চালিয়ে যাবেন?",

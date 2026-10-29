@@ -225,48 +225,48 @@ Partial Public NotInheritable Class Localization
 
         Add("Первый файл",
             "First file", "Перший файл", "Erste Datei", "Primo file", "Primer archivo",
-            "Premier fichier", "Primeiro ficheiro", "الملف الأول", "पहली फ़ाइल", "প্রথম ফাইল",
+            "Premier fichier", "Primeiro arquivo", "الملف الأول", "पहली फ़ाइल", "প্রথম ফাইল",
             "پہلی فائل", "第一个文件")
 
         Add("Назад на 10 файлов",
             "Back 10 files", "Назад на 10 файлів", "10 Dateien zurück", "Indietro di 10 file",
-            "Retroceder 10 archivos", "Reculer de 10 fichiers", "Voltar 10 ficheiros",
+            "Retroceder 10 archivos", "Reculer de 10 fichiers", "Voltar 10 arquivos",
             "الرجوع 10 ملفات", "10 फ़ाइल पीछे", "১০ ফাইল পিছনে", "10 فائلیں پیچھے", "后退 10 个文件")
 
         Add("Вперёд на 10 файлов",
             "Forward 10 files", "Уперед на 10 файлів", "10 Dateien vorwärts", "Avanti di 10 file",
-            "Avanzar 10 archivos", "Avancer de 10 fichiers", "Avançar 10 ficheiros",
+            "Avanzar 10 archivos", "Avancer de 10 fichiers", "Avançar 10 arquivos",
             "التقدم 10 ملفات", "10 फ़ाइल आगे", "১০ ফাইল সামনে", "10 فائلیں آگے", "前进 10 个文件")
 
         Add("Назад на 100 файлов",
             "Back 100 files", "Назад на 100 файлів", "100 Dateien zurück", "Indietro di 100 file",
-            "Retroceder 100 archivos", "Reculer de 100 fichiers", "Voltar 100 ficheiros",
+            "Retroceder 100 archivos", "Reculer de 100 fichiers", "Voltar 100 arquivos",
             "الرجوع 100 ملف", "100 फ़ाइल पीछे", "১০০ ফাইল পিছনে", "100 فائلیں پیچھے", "后退 100 个文件")
 
         Add("Вперёд на 100 файлов",
             "Forward 100 files", "Уперед на 100 файлів", "100 Dateien vorwärts", "Avanti di 100 file",
-            "Avanzar 100 archivos", "Avancer de 100 fichiers", "Avançar 100 ficheiros",
+            "Avanzar 100 archivos", "Avancer de 100 fichiers", "Avançar 100 arquivos",
             "التقدم 100 ملف", "100 फ़ाइल आगे", "১০০ ফাইল সামনে", "100 فائلیں آگے", "前进 100 个文件")
 
         Add("Выбрать файл",
             "Choose a file", "Вибрати файл", "Datei wählen", "Scegli un file", "Elegir archivo",
-            "Choisir un fichier", "Escolher ficheiro", "اختيار ملف", "फ़ाइल चुनें", "ফাইল বাছুন",
+            "Choisir un fichier", "Escolher arquivo", "اختيار ملف", "फ़ाइल चुनें", "ফাইল বাছুন",
             "فائل منتخب کریں", "选择文件")
 
         Add("Перейти к номеру файла",
             "Go to a file number", "Перейти до номера файлу", "Zu einer Dateinummer springen",
             "Vai al numero di file", "Ir al número de archivo", "Aller au numéro de fichier",
-            "Ir para o número do ficheiro", "الانتقال إلى رقم ملف", "फ़ाइल संख्या पर जाएँ",
+            "Ir para o número do arquivo", "الانتقال إلى رقم ملف", "फ़ाइल संख्या पर जाएँ",
             "ফাইল নম্বরে যান", "فائل نمبر پر جائیں", "跳转到文件编号")
 
         Add("Переименовать файл",
             "Rename the file", "Перейменувати файл", "Datei umbenennen", "Rinomina il file",
-            "Renombrar el archivo", "Renommer le fichier", "Renomear o ficheiro",
+            "Renombrar el archivo", "Renommer le fichier", "Renomear o arquivo",
             "إعادة تسمية الملف", "फ़ाइल का नाम बदलें", "ফাইলের নাম বদলান", "فائل کا نام بدلیں", "重命名文件")
 
         Add("Удалить файл",
             "Delete the file", "Видалити файл", "Datei löschen", "Elimina il file",
-            "Eliminar el archivo", "Supprimer le fichier", "Excluir o ficheiro",
+            "Eliminar el archivo", "Supprimer le fichier", "Excluir o arquivo",
             "حذف الملف", "फ़ाइल हटाएँ", "ফাইল মুছুন", "فائل حذف کریں", "删除文件")
 
         Add("Удалить безвозвратно",
@@ -304,7 +304,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Полноэкранный режим",
             "Full screen", "Повноекранний режим", "Vollbildmodus", "Schermo intero",
-            "Pantalla completa", "Plein écran", "Ecrã inteiro", "وضع ملء الشاشة",
+            "Pantalla completa", "Plein écran", "Tela cheia", "وضع ملء الشاشة",
             "पूर्ण स्क्रीन", "পূর্ণ পর্দা", "فل اسکرین", "全屏模式")
 
         Add("Справка", "Help", "Довідка", "Hilfe", "Aiuto", "Ayuda", "Aide", "Ajuda",
@@ -339,7 +339,7 @@ Partial Public NotInheritable Class Localization
         Add("Недавние файлы и папки",
             "Recent files and folders", "Нещодавні файли та теки", "Zuletzt verwendete Dateien und Ordner",
             "File e cartelle recenti", "Archivos y carpetas recientes", "Fichiers et dossiers récents",
-            "Ficheiros e pastas recentes", "الملفات والمجلدات الأخيرة",
+            "Arquivos e pastas recentes", "الملفات والمجلدات الأخيرة",
             "हाल की फ़ाइलें और फ़ोल्डर", "সাম্প্রতিক ফাইল ও ফোল্ডার",
             "حالیہ فائلیں اور فولڈرز", "最近的文件和文件夹")
 
@@ -412,7 +412,7 @@ Partial Public NotInheritable Class Localization
             "Eliminare i risultati di riconoscimento salvati? Le impostazioni OCR non cambiano.",
             "¿Eliminar los resultados de reconocimiento guardados? Los ajustes de OCR no cambian.",
             "Supprimer les résultats de reconnaissance enregistrés ? Les réglages OCR restent inchangés.",
-            "Excluir os resultados de reconhecimento guardados? As configurações de OCR não mudam.",
+            "Excluir os resultados de reconhecimento salvos? As configurações de OCR não mudam.",
             "حذف نتائج التعرّف المحفوظة؟ لن تتغيّر إعدادات OCR.",
             "क्या सहेजे गए पहचान परिणाम हटाएँ? OCR सेटिंग्स नहीं बदलेंगी।",
             "সংরক্ষিত শনাক্তকরণ ফলাফল মুছবেন? OCR সেটিংস বদলাবে না।",
@@ -593,7 +593,7 @@ Partial Public NotInheritable Class Localization
             "Un file che è cambiato riparte sempre dall'inizio.",
             "Un archivo que ha cambiado siempre empieza desde el principio.",
             "Un fichier qui a changé recommence toujours au début.",
-            "Um ficheiro que mudou recomeça sempre do início.",
+            "Um arquivo que mudou recomeça sempre do início.",
             "الملف الذي تغيّر يبدأ دائمًا من البداية.",
             "बदली हुई फ़ाइल हमेशा शुरुआत से चलती है।",
             "পরিবর্তিত ফাইল সবসময় শুরু থেকে চলে।",
@@ -615,7 +615,7 @@ Partial Public NotInheritable Class Localization
             "La cronologia delle cartelle e le posizioni di riproduzione finiscono nel file. Chiavi API e password mai.",
             "El historial de carpetas y las posiciones de reproducción van al archivo. Las claves API y contraseñas nunca.",
             "L'historique des dossiers et les positions de lecture vont dans le fichier. Jamais les clés d'API ni les mots de passe.",
-            "O histórico de pastas e as posições de reprodução vão para o ficheiro. Chaves de API e palavras-passe nunca.",
+            "O histórico de pastas e as posições de reprodução vão para o arquivo. Chaves de API e senhas nunca.",
             "يدخل سجل المجلدات ومواضع التشغيل في الملف. أما مفاتيح API وكلمات المرور فلا أبدًا.",
             "फ़ोल्डर इतिहास और प्लेबैक स्थिति फ़ाइल में जाती हैं। API कुंजियाँ और पासवर्ड कभी नहीं।",
             "ফোল্ডার ইতিহাস ও প্লেব্যাক অবস্থান ফাইলে যায়। API কী ও পাসওয়ার্ড কখনও নয়।",
@@ -629,7 +629,7 @@ Partial Public NotInheritable Class Localization
             "Aggiunge al file la cronologia delle cartelle e le posizioni dei video. Chiavi API e password non vengono mai esportate.",
             "Añade al archivo el historial de carpetas y las posiciones de vídeo. Las claves API y contraseñas nunca se exportan.",
             "Ajoute au fichier l'historique des dossiers et les positions des vidéos. Les clés d'API et les mots de passe ne sont jamais exportés.",
-            "Adiciona ao ficheiro o histórico de pastas e as posições dos vídeos. Chaves de API e palavras-passe nunca são exportadas.",
+            "Adiciona ao arquivo o histórico de pastas e as posições dos vídeos. Chaves de API e senhas nunca são exportadas.",
             "يضيف إلى الملف سجل المجلدات ومواضع تشغيل الفيديو. لا تُصدَّر مفاتيح API وكلمات المرور أبدًا.",
             "फ़ाइल में फ़ोल्डर इतिहास और वीडियो प्लेबैक स्थिति जोड़ता है। API कुंजियाँ और पासवर्ड कभी निर्यात नहीं होते।",
             "ফাইলে ফোল্ডার ইতিহাস ও ভিডিও প্লেব্যাক অবস্থান যোগ করে। API কী ও পাসওয়ার্ড কখনও রপ্তানি হয় না।",
@@ -643,7 +643,7 @@ Partial Public NotInheritable Class Localization
             "Nel file finiranno i percorsi delle tue cartelle e le posizioni di riproduzione. Continuare?",
             "En el archivo irán las rutas de sus carpetas y las posiciones de reproducción. ¿Continuar?",
             "Les chemins de vos dossiers et les positions de lecture iront dans le fichier. Continuer ?",
-            "Os caminhos das suas pastas e as posições de reprodução irão para o ficheiro. Continuar?",
+            "Os caminhos das suas pastas e as posições de reprodução irão para o arquivo. Continuar?",
             "ستدخل مسارات مجلداتك ومواضع التشغيل في الملف. المتابعة؟",
             "आपके फ़ोल्डर पथ और प्लेबैक स्थिति फ़ाइल में जाएँगे। जारी रखें?",
             "আপনার ফোল্ডার পথ ও প্লেব্যাক অবস্থান ফাইলে যাবে। চালিয়ে যাবেন?",
@@ -657,7 +657,7 @@ Partial Public NotInheritable Class Localization
             "File letto. Non ci sono differenze rispetto alle impostazioni attuali.",
             "Se leyó el archivo. No hay diferencias con los ajustes actuales.",
             "Le fichier a été lu. Aucune différence avec les réglages actuels.",
-            "O ficheiro foi lido. Não há diferenças em relação às configurações atuais.",
+            "O arquivo foi lido. Não há diferenças em relação às configurações atuais.",
             "تمت قراءة الملف. لا توجد فروق عن الإعدادات الحالية.",
             "फ़ाइल पढ़ ली गई। मौजूदा सेटिंग्स से कोई अंतर नहीं।",
             "ফাইলটি পড়া হয়েছে। বর্তমান সেটিংসের সাথে কোনো পার্থক্য নেই।",
@@ -671,7 +671,7 @@ Partial Public NotInheritable Class Localization
             "File letto. Impostazioni che cambieranno: {0}.",
             "Se leyó el archivo. Ajustes que cambiarán: {0}.",
             "Le fichier a été lu. Réglages qui changeront : {0}.",
-            "O ficheiro foi lido. Definições que vão mudar: {0}.",
+            "O arquivo foi lido. Configurações que vão mudar: {0}.",
             "تمت قراءة الملف. عدد الإعدادات التي ستتغيّر: {0}.",
             "फ़ाइल पढ़ ली गई। बदलने वाली सेटिंग्स: {0}.",
             "ফাইলটি পড়া হয়েছে। যেসব সেটিংস বদলাবে: {0}.",
@@ -707,7 +707,7 @@ Partial Public NotInheritable Class Localization
             "La scala dell'interfaccia e la modalità di avvio si applicano dopo un riavvio.",
             "La escala de la interfaz y el modo de inicio se aplican tras reiniciar.",
             "L'échelle de l'interface et le mode de démarrage s'appliquent après un redémarrage.",
-            "A escala da interface e o modo de arranque aplicam-se após reiniciar.",
+            "A escala da interface e o modo de inicialização entram em vigor após reiniciar.",
             "يُطبَّق مقياس الواجهة ووضع البدء بعد إعادة التشغيل.",
             "इंटरफ़ेस स्केल और स्टार्टअप मोड पुनः आरंभ के बाद लागू होते हैं।",
             "ইন্টারফেস স্কেল ও শুরুর মোড পুনরায় চালুর পর কার্যকর হয়।",

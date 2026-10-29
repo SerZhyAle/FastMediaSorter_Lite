@@ -215,7 +215,7 @@ Friend NotInheritable Class Exchange_Account_Form
 
         ' the autostart offer: default off
         _chkStart = New CheckBox With {.AutoSize = True, .Checked = False,
-            .Text = Localization.TF("Запускать {0} при входе в Windows", ProductNames.ShareManager)}
+            .Text = Localization.TF("Запускать {0} при входе в Windows", ProductNames.ShareManagerForLabel)}
         Dim startRow As OptionRowHost = OptionRows.InFlow(_chkStart, Note(Localization.T("Без этого другие устройства не смогут отправить сюда трансляцию, пока менеджер не запущен.")))
         startRow.Margin = New Padding(0, 10, 0, 0)
         body.Controls.Add(startRow)

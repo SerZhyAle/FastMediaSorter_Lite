@@ -72,7 +72,8 @@ Partial Public Class Main_Form
             .Row2Pinned = modern_Preferences.ChromeRow2Pinned,
             .StatusPinned = modern_Preferences.ChromeStatusPinned,
             .OverlayPinned = modern_Preferences.RecipientsOverlayPinned,
-            .WindowControlsPinned = modern_Preferences.ChromeWindowControlsPinned}
+            .WindowControlsPinned = modern_Preferences.ChromeWindowControlsPinned,
+            .DocumentPinned = modern_Preferences.ChromeDocumentPinned}
     End Function
 
     ''' <summary>Whether this panel stays up: pinned for all, or pinned on its own.</summary>
@@ -96,6 +97,8 @@ Partial Public Class Main_Form
         ' The global switch may have flipped (the split) - the overlay's own lifecycle follows it,
         ' so re-evaluate it now, not on the next tick.
         ChromeSyncRecipientsOverlayLifecycle()
+        ' A reader's side pane starts below the lowest pinned top panel, which this click may have changed (L0280).
+        DocumentPaneFollowsChrome()
         Try
             modern_Preferences.Save()
         Catch ex As Exception
@@ -112,6 +115,7 @@ Partial Public Class Main_Form
         modern_Preferences.ChromeStatusPinned = updated.StatusPinned
         modern_Preferences.RecipientsOverlayPinned = updated.OverlayPinned
         modern_Preferences.ChromeWindowControlsPinned = updated.WindowControlsPinned
+        modern_Preferences.ChromeDocumentPinned = updated.DocumentPinned
     End Sub
 
     ''' <summary>The recipients overlay's own pin button (2026-10-04 revision of 117 Ф-2). The same
@@ -161,6 +165,8 @@ Partial Public Class Main_Form
         chrome_Last_Tick = chrome_Clock.ElapsedMilliseconds
         chrome_Timer.Start()
         RefreshResourceButton()
+        ' A document opened before the chrome existed (a file given on the command line) gets its panel now (L0280).
+        ReshowDocumentPanel()
     End Sub
 
     Private Sub BuildChromePanels()
@@ -228,6 +234,11 @@ Partial Public Class Main_Form
         panel.Pin.Action = Sub() ChromeTogglePin(panel)
         SyncChromePin(panel)
         panel.Host.Surface.PinItem = panel.Pin
+        ' The move handle (L0281 T-5, owner answer Q281-1: the window commands are movable). A slot of its own on the pin's
+        ' row-side, laid out apart from the row like the pin - with PinAtStart the strip reads pin, handle, the empty
+        ' drag grip, then Minimize, Maximize / Restore and Close, so the handle never breaks the commands' one PHYSICAL
+        ' order and stands a grip's width clear of them. The grip below keeps dragging the WINDOW.
+        AddChromePanelHandle(panel)
         panel.Host.Surface.SetItems(items)
         AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
         AddHandler panel.Host.Surface.MouseWheel, Sub(sender, args) MouseUse(args)
@@ -375,6 +386,9 @@ Partial Public Class Main_Form
         panel.Pin.Action = Sub() ChromeTogglePin(panel)
         SyncChromePin(panel)
         panel.Host.Surface.PinItem = panel.Pin
+        ' The move handle (L0281): a row or the strip can be put where the user likes. The surface only reports the
+        ' gesture; the fit, the host's bounds and the stored place are the "movable panels" region below.
+        AddChromePanelHandle(panel)
         panel.Host.Surface.StatusLayout = name = "chrome_Status"
         panel.Host.Surface.SetItems(items)
         AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
@@ -612,6 +626,10 @@ Partial Public Class Main_Form
             End Try
         Next
         chrome_Panels.Clear()
+        TearDownDocumentPanel()
+        chrome_Move_Panel = Nothing
+        chrome_Move_Live = Rectangle.Empty
+        chrome_Move_Keyboard = False
         chrome_Path = Nothing
         RemoveHandler chrome_Timer.Tick, AddressOf Chrome_Timer_Tick
         RemoveHandler ChromeMenu.FocusKeyConsumed, AddressOf ChromePopupFocusKeyConsumed
@@ -735,6 +753,7 @@ Partial Public Class Main_Form
             p.Host.Surface.SetAnimationEnabled(Not ReduceMotionActive())
             p.AppliedOpacity = -1.0R
             SyncChromePin(p)
+            SyncChromeHandle(p)
             If p.Name = Window_Controls_Panel_Name Then ChromeSyncWindowControlsItems(p)
             For Each pair In p.Legacy
                 SyncChromeItem(pair.Key, pair.Value)
@@ -750,11 +769,12 @@ Partial Public Class Main_Form
         If previousSymbolFont IsNot Nothing Then previousSymbolFont.Dispose()
     End Sub
 
-    Private Shared Function ChromePanelTitle(panelName As String) As String
+    Private Function ChromePanelTitle(panelName As String) As String
         Select Case panelName
             Case "chrome_Row1" : Return Localization.T("Панель инструментов, строка 1")
             Case "chrome_Row2" : Return Localization.T("Панель инструментов, строка 2")
             Case Window_Controls_Panel_Name : Return Localization.T("Панель управления окном")
+            Case Document_Panel_Name : Return DocumentPanelTitle()
             Case Else : Return Localization.T("Строка состояния")
         End Select
     End Function
@@ -986,6 +1006,17 @@ Partial Public Class Main_Form
 
     ''' <summary>Where a panel goes, in screen coordinates. Different panels have different placement.</summary>
     Private Function ChromePanelRect(p As ChromePanel) As Rectangle
+        ' Mid-gesture the live rectangle is the truth (the role recipients_Drag_Active plays for the recipients table):
+        ' the tick, the resize pass and the reveal all see the panel where the user's hand holds it.
+        If ChromeMoving(p) Then Return chrome_Move_Live
+        Dim place As PanelPlace
+        If ChromePanelFree(p, place) Then Return ChromeFreeRect(p, place, p.Host.Surface.ScaleFactor)
+        Return ChromeAnchoredRect(p)
+    End Function
+
+    ''' <summary>Where a panel stands by the default rules (flush at the start edge, stacked from the top, the strip at
+    ''' the bottom) - today's placement, unchanged. Also what a drop is measured against for the snap back to the anchor.</summary>
+    Private Function ChromeAnchoredRect(p As ChromePanel) As Rectangle
         Dim factor As Single = p.Host.Surface.ScaleFactor
         Dim media As Rectangle = panel_Media.RectangleToScreen(panel_Media.ClientRectangle)
         media = Rectangle.Intersect(media, Me.RectangleToScreen(Me.ClientRectangle))
@@ -1005,9 +1036,14 @@ Partial Public Class Main_Form
             ' Fixed (121 UX-415): while a video or a track is open the strip stands above the bar's slot whether the bar
             ' is up or not. It used to drop by the bar's height every time the bar went away and rise when it came back.
             top = TransportRules.StatusTop(media.Bottom, size.Height, inset, margin, UiScale.Px(ChromeMetrics.TransportHeight, factor),
-                                           is_Vlc_Playing AndAlso Not is_Super_Full_Screen_Mode)
-        ElseIf p.Name = "chrome_Row2" AndAlso chrome_Panels.Count > 0 Then
-            top += chrome_Panels(0).Host.Surface.PreferredPanelSize().Height + UiScale.Px(ChromeMetrics.Gap, factor)
+                                           TransportRules.StatusReservesBarSlot(is_Vlc_Playing, is_Super_Full_Screen_Mode, TransportPlaceIsFree()))
+        ElseIf p.Name = "chrome_Row2" AndAlso chrome_Panels.Count > 0 AndAlso Not ChromePanelIsFree(chrome_Panels(0)) Then
+            ' Under row 1 only while row 1 is anchored: a free row 1 leaves its top slot to row 2 (L0281 §3.8). Under row 1
+            ' WHERE IT STANDS: the window commands can be anywhere now (T-5), so row 1 may have wrapped below them, and row 2
+            ' follows its real bottom. Row 1 not wrapped, this is exactly media.Top + inset + its height + gap, as it was.
+            top = ChromeAnchoredRect(chrome_Panels(0)).Bottom + UiScale.Px(ChromeMetrics.Gap, factor)
+        ElseIf p.Name = Document_Panel_Name Then
+            top = DocumentPanelTop(media, inset, factor)
         End If
         Dim left As Integer = If(Localization.IsRightToLeft(), media.Right - inset - size.Width, media.Left + inset)
 
@@ -1019,14 +1055,18 @@ Partial Public Class Main_Form
             Return New Rectangle(left, top, size.Width, size.Height)
         End If
 
-        If p.Name = "chrome_Row1" OrElse p.Name = "chrome_Row2" Then
+        If p.Name = "chrome_Row1" OrElse p.Name = "chrome_Row2" OrElse p.Name = Document_Panel_Name Then
             ' The top rows share their band with the window-controls panel: capped to the width left
-            ' of it, or wrapped locally below it when their priority core no longer fits (188 §3.5).
+            ' of it, or wrapped locally below it when their priority core no longer fits (188 §3.5). The panel is asked
+            ' for where it ACTUALLY stands (L0281 §3.8, T-5: in the corner by default, at the user's own place when it
+            ' was moved); a rectangle that does not meet the row's band reserves nothing, and one that does is cleared
+            ' on its near side (ChromeLayout.BandObstacle - in the corner the very rectangle this has always passed).
             Dim controls As ChromePanel = ChromeWindowControlsPanel()
             If controls IsNot Nothing Then
-                Dim controlsSize As Size = controls.Host.Surface.PreferredPanelSize()
-                Dim controlsMedia As New Rectangle(media.Right - inset - controlsSize.Width - media.Left, inset,
-                                                   controlsSize.Width, controlsSize.Height)
+                Dim controlsScreen As Rectangle = ChromeControlsBandRect(controls)
+                Dim controlsMedia As Rectangle = ChromeLayout.BandObstacle(
+                    New Rectangle(controlsScreen.X - media.X, controlsScreen.Y - media.Y, controlsScreen.Width, controlsScreen.Height),
+                    media.Width, inset)
                 Dim placement As ChromeLayout.RowBandPlacement = ChromeLayout.PlaceRowBesideCornerPanel(
                     top - media.Top, size.Height, p.Host.Surface.MinimumRowWidth(), controlsMedia, media.Width,
                     UiScale.Px(ChromeMetrics.Gap, factor), inset)
@@ -1047,6 +1087,389 @@ Partial Public Class Main_Form
         Return Nothing
     End Function
 
+    ''' <summary>The window commands' rectangle as the anchored top rows see it, in screen coordinates (L0281 §3.8): where
+    ''' the panel stands now. While the user is dragging it the rows keep the band they had at the press - they do not
+    ''' reflow at every pointer step, and they take the drop's rectangle in the one placement pass that follows it.</summary>
+    Private Function ChromeControlsBandRect(controls As ChromePanel) As Rectangle
+        If ChromeMoving(controls) Then Return chrome_Move_Start
+        Return ChromePanelRect(controls)
+    End Function
+
+    ' --- movable panels (L0281 T-3b) ------------------------------------------------------------------------
+    ' Rows 1 and 2, the status strip and the window commands (T-5) are anchored (ChromeAnchoredRect, today's rules) or
+    ' free (ChromeFreeRect, a stored place resolved afresh at every placement, so a resize never writes anything back).
+    ' The surface's handle only reports a gesture; this region fits every step into the allowed area BEFORE the host's
+    ' bounds are set (no pixel outside, ever), decides the drop once and stores one place per drop. The transport bar
+    ' (T-5b) is movable too, by a handle of its own and a gesture of its own (Main_Form.TransportMove.vb) over the same
+    ' pure model and the same ways back; the recipients table has its own model (T-6).
+
+    ''' <summary>The panel a handle gesture is working on. After a press it only remembers the press; it is moving once
+    ''' <see cref="chrome_Move_Live"/> is set (the pointer passed the drag size, or the keyboard move mode began).</summary>
+    Private chrome_Move_Panel As ChromePanel
+    ''' <summary>The panel's rectangle when the gesture began - where a refused or canceled move returns to.</summary>
+    Private chrome_Move_Start As Rectangle
+    ''' <summary>The pointer's screen position at the press, the origin of the drag's offset.</summary>
+    Private chrome_Move_Press As Point
+    ''' <summary>Where the host stands right now during a move (already fitted); empty while nothing is moving.</summary>
+    Private chrome_Move_Live As Rectangle
+    ''' <summary>The move is the keyboard's (the handle's move mode), not the pointer's.</summary>
+    Private chrome_Move_Keyboard As Boolean
+
+    <System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint:="SetWindowPos")>
+    Private Shared Function ChromeSetWindowPos(hWnd As IntPtr, hWndInsertAfter As IntPtr, x As Integer, y As Integer,
+                                               cx As Integer, cy As Integer, flags As UInteger) As Boolean
+    End Function
+
+    ''' <summary>SWP_NOSIZE Or SWP_NOMOVE Or SWP_NOACTIVATE: a z-order change only, and the viewer keeps the keyboard.</summary>
+    Private Const Chrome_Swp_Raise As UInteger = &H13UI
+
+    ''' <summary>The panels a user can move today: the two rows, the status strip and the window commands (T-5).</summary>
+    Private Shared Function ChromePanelMovable(p As ChromePanel) As Boolean
+        Return p.Name = "chrome_Row1" OrElse p.Name = "chrome_Row2" OrElse p.Name = "chrome_Status" OrElse
+               p.Name = Window_Controls_Panel_Name
+    End Function
+
+    ''' <summary>Gives a movable panel its handle and subscribes its surface's handle events (L0281): the one wiring for the
+    ''' rows, the strip and the window commands. The surface only reports a gesture; the fit, the host's bounds and the
+    ''' stored place are the functions of this region.</summary>
+    Private Sub AddChromePanelHandle(panel As ChromePanel)
+        panel.Host.Surface.PanelHandleItem = ChromeSurface.CreatePanelHandleItem(panel.Name)
+        AddHandler panel.Host.Surface.PanelHandlePress, Sub(sender, args) ChromeMovePress(panel, args)
+        AddHandler panel.Host.Surface.PanelHandleDrag, Sub(sender, args) ChromeMoveDrag(panel, args)
+        AddHandler panel.Host.Surface.PanelHandleRelease, Sub(sender, args) ChromeMoveRelease(panel, args)
+        AddHandler panel.Host.Surface.PanelHandleKeyMove, Sub(sender, args) ChromeMoveKey(panel, args)
+        AddHandler panel.Host.Surface.PanelHandleMoveModeChanged, Sub(sender, args) ChromeMoveModeChanged(panel)
+        ' A press on the handle that did not travel (and its accessible default action) opens the way back: the handle's menu.
+        AddHandler panel.Host.Surface.PanelHandleClick, Sub(sender, args) ChromeMoveClick(panel)
+    End Sub
+
+    ''' <summary>Whether the oversize alignment of the fit starts at the right edge for this panel: the reading direction
+    ''' for the rows and the strip, never for the window commands (they hold one PHYSICAL order and corner in every
+    ''' language, 188 §3.1).</summary>
+    Private Shared Function ChromeStartIsRight(p As ChromePanel) As Boolean
+        Return Localization.IsRightToLeft() AndAlso p.Name <> Window_Controls_Panel_Name
+    End Function
+
+    ''' <summary>The stored place of a movable panel as text; empty = anchored (also for any panel that cannot move).</summary>
+    Private Function ChromePanelPlaceText(p As ChromePanel) As String
+        If modern_Preferences Is Nothing Then Return ""
+        Select Case p.Name
+            Case "chrome_Row1" : Return modern_Preferences.ChromeRow1Place
+            Case "chrome_Row2" : Return modern_Preferences.ChromeRow2Place
+            Case "chrome_Status" : Return modern_Preferences.ChromeStatusPlace
+            Case Window_Controls_Panel_Name : Return modern_Preferences.ChromeWindowControlsPlace
+            Case Else : Return ""
+        End Select
+    End Function
+
+    Private Sub SetChromePanelPlaceText(p As ChromePanel, text As String)
+        If modern_Preferences Is Nothing Then Return
+        Select Case p.Name
+            Case "chrome_Row1" : modern_Preferences.ChromeRow1Place = text
+            Case "chrome_Row2" : modern_Preferences.ChromeRow2Place = text
+            Case "chrome_Status" : modern_Preferences.ChromeStatusPlace = text
+            Case Window_Controls_Panel_Name : modern_Preferences.ChromeWindowControlsPlace = text
+        End Select
+    End Sub
+
+    ''' <summary>True and the place when the panel is free; a missing, unreadable or future value is anchored.</summary>
+    Private Function ChromePanelFree(p As ChromePanel, ByRef place As PanelPlace) As Boolean
+        place = New PanelPlace(PanelCorner.TopLeft, 0, 0)
+        If Not ChromePanelMovable(p) Then Return False
+        Return FloatingPanelPlacement.TryDecode(ChromePanelPlaceText(p), place)
+    End Function
+
+    Private Function ChromePanelIsFree(p As ChromePanel) As Boolean
+        Dim place As PanelPlace
+        Return ChromePanelFree(p, place)
+    End Function
+
+    ''' <summary>A handle gesture has moved the host: its live rectangle is the placement until the gesture ends.</summary>
+    Private Function ChromeMoving(p As ChromePanel) As Boolean
+        Return p Is chrome_Move_Panel AndAlso Not chrome_Move_Live.IsEmpty
+    End Function
+
+    ''' <summary>The allowed rectangle of L0281 §3.3, in screen coordinates: the media area inside the window's client area
+    ''' (never under the resize frame), inside the visible part of the screen the window is on (the whole monitor in
+    ''' full screen, its working area otherwise), inset by <see cref="ChromeMetrics.PanelEdgeInset"/>.</summary>
+    Private Function ChromeAllowedArea(factor As Single) As Rectangle
+        Dim media As Rectangle = panel_Media.RectangleToScreen(panel_Media.ClientRectangle)
+        Dim client As Rectangle = Me.RectangleToScreen(Me.ClientRectangle)
+        Dim current As Screen = Screen.FromControl(Me)
+        Dim visible As Rectangle = If(is_Full_Screen_Mode, current.Bounds, current.WorkingArea)
+        Return FloatingPanelPlacement.AllowedArea(media, client, visible, UiScale.Px(ChromeMetrics.PanelEdgeInset, factor))
+    End Function
+
+    ''' <summary>A free panel's effective rectangle: its stored place resolved in the allowed area as it is now and fitted
+    ''' (L0281 §3.4). The size is today's - the natural width capped to the area, the status strip across it - so the strip
+    ''' (and any panel as wide as the area) moves vertically only. A free row ignores the corner band of the window
+    ''' commands: the fit and the drop's push-out keep it clear of them.</summary>
+    Private Function ChromeFreeRect(p As ChromePanel, place As PanelPlace, factor As Single) As Rectangle
+        Dim allowed As Rectangle = ChromeAllowedArea(factor)
+        Dim size As Size = p.Host.Surface.PreferredPanelSize()
+        Dim maxWidth As Integer = Math.Max(UiScale.Px(ChromeMetrics.MinTarget, factor), allowed.Width)
+        If size.Width > maxWidth Then size.Width = maxWidth
+        If p.Name = "chrome_Status" Then size.Width = maxWidth
+        Return FloatingPanelPlacement.Effective(place, allowed, size, factor, ChromeStartIsRight(p))
+    End Function
+
+    ''' <summary>The surfaces no dropped panel may cover: the window commands (always - they stand where their rule puts
+    ''' them whether or not an unpinned panel is up right now, in the corner or at the user's own place) and the transport
+    ''' bar while it is shown. The panel being dropped is never judged against ITSELF (<paramref name="moved"/>): the
+    ''' window commands are movable too, and are measured against the transport bar alone (L0281 T-5).</summary>
+    Private Function ChromeProtectedRects(Optional moved As ChromePanel = Nothing, Optional excludeTransport As Boolean = False) As List(Of Rectangle)
+        Dim guarded As New List(Of Rectangle)()
+        Dim controls As ChromePanel = ChromeWindowControlsPanel()
+        If controls IsNot Nothing AndAlso controls IsNot moved Then guarded.Add(ChromePanelRect(controls))
+        If Not excludeTransport AndAlso video_Chrome_Host IsNot Nothing AndAlso Not video_Chrome_Host.IsDisposed AndAlso video_Chrome_Host.Visible Then
+            guarded.Add(video_Chrome_Host.Bounds)
+        End If
+        Return guarded
+    End Function
+
+    ''' <summary>The handle's words follow the language (ChromeConfigure runs on a switch).</summary>
+    Private Sub SyncChromeHandle(p As ChromePanel)
+        Dim handle As ChromeItem = p.Host.Surface.PanelHandleItem
+        If handle Is Nothing Then Return
+        Dim words As String = Localization.T("Переместить панель")
+        handle.AccessibleName = words
+        handle.Tooltip = words
+    End Sub
+
+    ''' <summary>A moved panel stays up while the hand is on it: shown, and the countdown restarted.</summary>
+    Private Sub ChromeHoldMovedPanel(p As ChromePanel)
+        p.Wanted = True
+        p.LastActivity = chrome_Clock.ElapsedMilliseconds
+    End Sub
+
+    ''' <summary>A press on a handle: the viewer takes the keyboard (the panel is never activated), the press and the
+    ''' panel's rectangle are remembered, the panel is held up. Nothing moves until the pointer passes the drag size - a
+    ''' press that does not travel is a click (the handle's menu, T-4).</summary>
+    Private Sub ChromeMovePress(p As ChromePanel, e As PanelHandleEventArgs)
+        ChromeTakeKeyboardForViewer()
+        chrome_Move_Panel = p
+        chrome_Move_Keyboard = False
+        chrome_Move_Live = Rectangle.Empty
+        chrome_Move_Press = e.ScreenPoint
+        chrome_Move_Start = If(p.Host.Visible, p.Host.Bounds, ChromePanelRect(p))
+        ChromeHoldMovedPanel(p)
+    End Sub
+
+    ''' <summary>The pointer moved with the handle held: the panel is the start rectangle offset by the pointer's travel,
+    ''' passed through the fit BEFORE the host's bounds are set.</summary>
+    Private Sub ChromeMoveDrag(p As ChromePanel, e As PanelHandleEventArgs)
+        If p IsNot chrome_Move_Panel OrElse chrome_Move_Keyboard Then Return
+        If chrome_Move_Live.IsEmpty Then
+            chrome_Move_Live = chrome_Move_Start
+            ChromeRaiseMovedPanel(p)
+        End If
+        Dim moved As Rectangle = chrome_Move_Start
+        moved.Offset(e.ScreenPoint.X - chrome_Move_Press.X, e.ScreenPoint.Y - chrome_Move_Press.Y)
+        ChromeSetMoveLive(p, FloatingPanelPlacement.Fit(moved, ChromeAllowedArea(p.Host.Surface.ScaleFactor), ChromeStartIsRight(p)))
+    End Sub
+
+    Private Sub ChromeSetMoveLive(p As ChromePanel, r As Rectangle)
+        chrome_Move_Live = r
+        If p.Host.Bounds <> r Then p.Host.Bounds = r
+        ChromeHoldMovedPanel(p)
+    End Sub
+
+    ''' <summary>The button went up after a drag, or the capture was lost mid-drag (canceled: back to where it began).</summary>
+    Private Sub ChromeMoveRelease(p As ChromePanel, e As PanelHandleEventArgs)
+        If p IsNot chrome_Move_Panel OrElse chrome_Move_Keyboard Then Return
+        ChromeFinishMove(p, Not e.Canceled)
+    End Sub
+
+    ''' <summary>An arrow key in the handle's move mode: whole steps through the same fit as a drag.</summary>
+    Private Sub ChromeMoveKey(p As ChromePanel, e As PanelHandleEventArgs)
+        If p IsNot chrome_Move_Panel OrElse Not chrome_Move_Keyboard OrElse chrome_Move_Live.IsEmpty Then Return
+        ChromeSetMoveLive(p, FloatingPanelPlacement.Nudge(chrome_Move_Live, e.StepsX, e.StepsY, p.Host.Surface.PanelMoveStepPixels(),
+                                                          ChromeAllowedArea(p.Host.Surface.ScaleFactor), ChromeStartIsRight(p)))
+    End Sub
+
+    ''' <summary>The move mode began (the rectangle now is where the move starts) or ended (decided exactly as a drop).</summary>
+    Private Sub ChromeMoveModeChanged(p As ChromePanel)
+        If p.Host.Surface.IsPanelMoveMode Then
+            chrome_Move_Panel = p
+            chrome_Move_Keyboard = True
+            chrome_Move_Press = Point.Empty
+            chrome_Move_Start = If(p.Host.Visible, p.Host.Bounds, ChromePanelRect(p))
+            chrome_Move_Live = chrome_Move_Start
+            ChromeHoldMovedPanel(p)
+            ChromeRaiseMovedPanel(p)
+        ElseIf p Is chrome_Move_Panel AndAlso chrome_Move_Keyboard Then
+            ChromeFinishMove(p, True)
+        End If
+    End Sub
+
+    ''' <summary>Ends a move: the gesture's state is cleared first (the placement is the ordinary one again), a committed
+    ''' move is decided and stored once, and every panel is placed afresh - the moved one included, which returns to its
+    ''' start when nothing was stored.</summary>
+    Private Sub ChromeFinishMove(p As ChromePanel, commit As Boolean)
+        Dim start As Rectangle = chrome_Move_Start
+        Dim dropped As Rectangle = chrome_Move_Live
+        chrome_Move_Panel = Nothing
+        chrome_Move_Live = Rectangle.Empty
+        chrome_Move_Keyboard = False
+        Try
+            If commit AndAlso Not dropped.IsEmpty Then ChromeStoreDrop(p, start, dropped)
+        Catch ex As Exception
+            AppFileLogger.LogException("Chrome: finishing a panel move", ex)
+        End Try
+        ChromeHoldMovedPanel(p)
+        PlaceChromePanels()
+        ChromeRaiseMovedPanel(p)
+    End Sub
+
+    ''' <summary>The drop decision of L0281 §3.5 against the anchored rectangle, the protected surfaces and the snap
+    ''' distance: nothing to write, the place cleared, or a new place stored (one write per drop).</summary>
+    Private Sub ChromeStoreDrop(p As ChromePanel, start As Rectangle, dropped As Rectangle)
+        Dim factor As Single = p.Host.Surface.ScaleFactor
+        Dim allowed As Rectangle = ChromeAllowedArea(factor)
+        Dim result As Rectangle
+        Dim stored As String
+        Dim snapped As Boolean
+        Select Case FloatingPanelPlacement.DecideDrop(start, dropped, ChromeAnchoredRect(p), allowed, ChromeProtectedRects(p),
+                                                      UiScale.Px(ChromeMetrics.AnchorSnap, factor), ChromeStartIsRight(p), result)
+            Case PanelDropOutcome.Anchor
+                stored = ""
+                snapped = True
+            Case PanelDropOutcome.Placed
+                stored = FloatingPanelPlacement.Encode(FloatingPanelPlacement.FromRectangle(result, allowed, factor))
+            Case Else
+                Return
+        End Select
+        ' A drop near the anchor is the third way back (L0281 §3.7): it answers like the other two, moved or already there.
+        If stored = ChromePanelPlaceText(p) Then
+            If snapped Then ChromeSayPlaces(False)
+            Return
+        End If
+        ChromeWritePlace(p, stored)
+        If snapped Then ChromeSayPlaces(True)
+    End Sub
+
+    ''' <summary>Stores a panel's place the way a pin toggle stores its switch: save now, and on a failed write the settings
+    ''' flush retries.</summary>
+    Private Sub ChromeWritePlace(p As ChromePanel, text As String)
+        If modern_Preferences Is Nothing Then Return
+        SetChromePanelPlaceText(p, text)
+        ChromeSavePlaces()
+    End Sub
+
+    ''' <summary>One save for however many place keys just changed (a drop changes one, a reset up to five).</summary>
+    Private Sub ChromeSavePlaces()
+        If modern_Preferences Is Nothing Then Return
+        Try
+            modern_Preferences.Save()
+        Catch ex As Exception
+            AppFileLogger.LogException("Chrome: persisting a panel place", ex)
+            MarkSettingsDirty()
+        End Try
+    End Sub
+
+    ' --- the ways back (L0281 T-4, section 3.7) ----------------------------------------------------------------
+    ' Three ways, all idempotent and all answering through the Notify line: the handle's menu (this panel or all), the
+    ' settings button (all) and a drop near the anchor (ChromeStoreDrop). The first two end here.
+
+    ''' <summary>The answer of every way back: something moved, or every panel was already where it belongs.</summary>
+    Private Sub ChromeSayPlaces(moved As Boolean)
+        Notify(If(moved, Localization.T("Панели возвращены на свои места."), Localization.T("Панели уже на своих местах.")), NotifyLevel.Info)
+    End Sub
+
+    ''' <summary>Ends a handle gesture without storing anything. The gesture's state is cleared FIRST, so the surface's own
+    ''' events (a keyboard move mode ending, a drag released) find nothing to finish; a pointer drag cannot be running when a
+    ''' command is clicked, and this keeps a programmatic call safe all the same.</summary>
+    Private Sub ChromeAbandonMove()
+        chrome_Move_Panel = Nothing
+        chrome_Move_Live = Rectangle.Empty
+        chrome_Move_Keyboard = False
+        For Each p As ChromePanel In chrome_Panels
+            If p.Host.Surface.IsPanelMoveMode Then p.Host.Surface.LeavePanelMoveMode()
+        Next
+        ' The transport bar's own gesture (L0281 T-5b) ends with theirs: no ring stop is left in a move after a reset.
+        TransportAbandonMove()
+    End Sub
+
+    ''' <summary>Returns one panel (<paramref name="onlyPanel"/>) or every panel (Nothing) to the anchored place: the stored
+    ''' places are cleared - for all, the five keys, whatever later slices make movable - saved ONCE, and the panels are
+    ''' placed afresh (rows, strip and, through <c>PlaceChromePanels</c>, the transport bar). A panel that is auto-hidden
+    ''' takes its anchored rectangle when it next appears. True when a place was cleared; the Notify line answers either way.</summary>
+    Private Function ChromeResetPlaces(onlyPanel As ChromePanel) As Boolean
+        Dim prefs As ModernViewerPreferences = GetModernPreferences()
+        ChromeAbandonMove()
+        Dim changed As Boolean
+        If onlyPanel Is Nothing Then
+            changed = prefs.ClearChromePlaces()
+        ElseIf ChromePanelPlaceText(onlyPanel).Length > 0 Then
+            SetChromePanelPlaceText(onlyPanel, "")
+            changed = True
+        End If
+        If changed Then ChromeSavePlaces()
+        PlaceChromePanels()
+        ChromeSayPlaces(changed)
+        Return changed
+    End Function
+
+    ''' <summary>The way back for every panel, for the settings window's button (the recipients table's reset reaches the
+    ''' viewer the same way). The panel type is private to the chrome, so the one-panel form stays inside it.</summary>
+    Friend Function ResetChromePanelPlaces() As Boolean
+        Return ChromeResetPlaces(Nothing)
+    End Function
+
+    ''' <summary>A press on the handle that did not travel, or its accessible default action: the press is forgotten and the
+    ''' handle's menu opens under it.</summary>
+    Private Sub ChromeMoveClick(p As ChromePanel)
+        If p Is chrome_Move_Panel AndAlso Not chrome_Move_Keyboard AndAlso chrome_Move_Live.IsEmpty Then chrome_Move_Panel = Nothing
+        ChromeHoldMovedPanel(p)
+        ChromeShowHandleMenu(p)
+    End Sub
+
+    ''' <summary>The handle's menu: this panel back to its place (shown but unavailable while it is anchored, like any row
+    ''' that cannot act now) and all panels back. It opens under the handle, or above it when the panel stands low, through
+    ''' the chrome's own popup: the host is never activated and Escape closes it before it reaches the viewer.</summary>
+    Private Sub ChromeShowHandleMenu(p As ChromePanel)
+        Dim entries As New List(Of ChromeMenuItem) From {
+            New ChromeMenuItem("chrome_places_one") With {
+                .Caption = Localization.T("Вернуть панель на место"), .Enabled = ChromePanelIsFree(p),
+                .Action = Sub() ChromeResetPlaces(p)},
+            New ChromeMenuItem("chrome_places_all") With {
+                .Caption = Localization.T("Вернуть все панели на места"),
+                .Action = Sub() ChromeResetPlaces(Nothing)}}
+        Dim handle As ChromeItem = p.Host.Surface.PanelHandleItem
+        Dim location As Point
+        Dim anchorTop As Integer = Integer.MinValue
+        If handle IsNot Nothing AndAlso Not handle.Bounds.IsEmpty Then
+            location = p.Host.Surface.PointToScreen(New Point(handle.Bounds.Left, handle.Bounds.Bottom))
+            anchorTop = p.Host.Surface.PointToScreen(New Point(handle.Bounds.Left, handle.Bounds.Top)).Y
+        Else
+            location = p.Host.PointToScreen(New Point(0, p.Host.Height))
+        End If
+        ' The ring on the first row only when the keyboard (the F10 ring) or a reader opened it, as for every chrome menu.
+        ChromeMenu.ShowPopup(Me, location, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+                             focusFirstRow:=chrome_Keyboard_Mode, anchorTop:=anchorTop)
+    End Sub
+
+    ''' <summary>Puts a window at the top of its z-order band without activating it.</summary>
+    Private Sub ChromeRaiseWindow(window As Form)
+        If window Is Nothing OrElse window.IsDisposed OrElse Not window.IsHandleCreated OrElse Not window.Visible Then Return
+        ChromeSetWindowPos(window.Handle, IntPtr.Zero, 0, 0, 0, 0, Chrome_Swp_Raise)
+    End Sub
+
+    ''' <summary>The window commands, the transport bar and the recipients table stand above every movable panel
+    ''' (L0281 §3.5): raised again after a movable one was.</summary>
+    Private Sub ChromeRaiseProtectedSurfaces()
+        Dim controls As ChromePanel = ChromeWindowControlsPanel()
+        If controls IsNot Nothing Then ChromeRaiseWindow(controls.Host)
+        ChromeRaiseWindow(video_Chrome_Host)
+        ChromeRaiseWindow(recipients_Overlay)
+    End Sub
+
+    ''' <summary>The panel just moved is raised above the other movable ones; the protected surfaces keep the top.</summary>
+    Private Sub ChromeRaiseMovedPanel(p As ChromePanel)
+        ChromeRaiseWindow(p.Host)
+        ChromeRaiseProtectedSurfaces()
+    End Sub
+
     Private Sub PlaceChromePanels()
         If panel_Media Is Nothing OrElse Not Me.IsHandleCreated Then Return
         PositionVideoControls()
@@ -1055,6 +1478,7 @@ Partial Public Class Main_Form
             Dim r As Rectangle = ChromePanelRect(p)
             If p.Host.Bounds <> r Then p.Host.Bounds = r
         Next
+        DocumentPaneFollowsChrome()
     End Sub
 
     ''' <summary>The pointer reveals a panel from a band across the appropriate edge.</summary>
@@ -1063,6 +1487,12 @@ Partial Public Class Main_Form
         Dim media As Rectangle = panel_Media.RectangleToScreen(panel_Media.ClientRectangle)
         Dim r As Rectangle = ChromePanelRect(p)
         Dim zoneHeight As Integer = UiScale.Px(ChromeMetrics.HotZoneMargin, factor)
+        ' A free panel reveals alone, from its own rectangle grown toward the nearest edges of the allowed area (L0281 §3.8).
+        ' The window commands keep their own zone below whether they are free or in the corner (T-5): their rectangle grown
+        ' by the margin on every side and kept inside the media - it already holds for a place of the user's own.
+        If p.Name <> Window_Controls_Panel_Name AndAlso ChromePanelIsFree(p) Then
+            Return FloatingPanelPlacement.HotZone(r, ChromeAllowedArea(factor), zoneHeight)
+        End If
 
         Select Case p.Name
             Case "chrome_Status"
@@ -1079,10 +1509,13 @@ Partial Public Class Main_Form
             Case Else
                 ' The top rows are summoned together: the zone is measured from the bottom of the LOWEST of them
                 ' (row 2), for both - from each row's own bottom, row 2 hung alone in the band between the two
-                ' (125 UX-308). The window-controls panel keeps out of it: its zone is its own corner (188 §4).
+                ' (125 UX-308). The window-controls panel keeps out of it: its zone is its own corner (188 §4). Together
+                ' only while both rows are anchored: a free row is not in the band, so it neither lengthens this zone nor
+                ' is summoned by it (L0281 §3.8).
                 Dim bottoms As New List(Of Integer)()
                 For Each other As ChromePanel In chrome_Panels
-                    If other.Name <> "chrome_Status" AndAlso other.Name <> Window_Controls_Panel_Name Then bottoms.Add(ChromePanelRect(other).Bottom)
+                    If other.Name <> "chrome_Status" AndAlso other.Name <> Window_Controls_Panel_Name AndAlso
+                       Not ChromePanelIsFree(other) Then bottoms.Add(ChromePanelRect(other).Bottom)
                 Next
                 Dim bottom As Integer = ChromeAutoHide.TopHotZoneBottom(bottoms, zoneHeight)
                 Return New Rectangle(media.Left, media.Top, media.Width, Math.Max(0, bottom - media.Top))
@@ -1104,6 +1537,7 @@ Partial Public Class Main_Form
     Private Function ChromeWindowActive() As Boolean
         Return Me.ContainsFocus OrElse (Form.ActiveForm Is Me) OrElse
                (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus) OrElse
+               DocumentEditHasFocus() OrElse
                ChromeMenu.PopupVisible OrElse
                (Form.ActiveForm IsNot Nothing AndAlso Form.ActiveForm.Owner Is Me)
     End Function
@@ -1132,7 +1566,8 @@ Partial Public Class Main_Form
             Dim active As Boolean = ChromeWindowActive()
             ' The toolbar panels' holds: an open chrome popup, path editing, the F10 keyboard mode (117 §2.6).
             Dim hold As Boolean = ChromeMenu.PopupVisible OrElse chrome_Keyboard_Mode OrElse
-                                  (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+                                  (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus) OrElse
+                                  DocumentEditHasFocus()
             ' A window with no media (the first run, an emptied folder) has nothing for a panel to cover and its
             ' commands are ON the panels: they stay up while the window is in use (125 UX-313m).
             If ChromeAutoHide.HoldsForEmptyWindow(ChromeMediaOnScreen(), now, chrome_Empty_Since) Then hold = True
@@ -1170,6 +1605,8 @@ Partial Public Class Main_Form
                     ' LastActivity is left alone on purpose: the ordinary countdown must not add its own five seconds
                     ' behind the hold, so the panel goes a fixed time after the LAST operation.
                     If active AndAlso p.Name = "chrome_Status" AndAlso FileOperationRevealHeld(now) Then p.Wanted = True
+                    ' A panel under the user's hand (a handle drag or the keyboard move) is held up whatever the countdown says.
+                    If ChromeMoving(p) Then ChromeHoldMovedPanel(p)
 
                     Dim target As Double = If(p.Wanted, 1.0R, 0.0R)
                     Dim fadeElapsed As Integer = elapsed
@@ -1277,6 +1714,9 @@ Partial Public Class Main_Form
             p.Host.InkOpacity = 0.0R
             p.Host.Visible = True
             p.AppliedOpacity = 0.0R
+            ' A free panel is fitted by ChromePanelRect above, so it is whole the moment it appears; a window shown after
+            ' the protected surfaces would stand over them, so they take the top again (L0281 §3.5).
+            If ChromePanelIsFree(p) OrElse TransportPlaceIsFree() Then ChromeRaiseProtectedSurfaces()
         Else
             Dim r As Rectangle = ChromePanelRect(p)
             If p.Host.Bounds <> r Then p.Host.Bounds = r
@@ -1456,8 +1896,15 @@ Partial Public Class Main_Form
 
         Dim rtl As Boolean = Localization.IsRightToLeft()
         ChromeEnsureFocusValid()
+        ' The move handle's keys (L0281 §3.6): with the handle focused, Enter or Space starts the keyboard move, the arrows
+        ' move the panel and Enter, Space or Escape end it. The key is then the handle's and goes no further - Escape neither
+        ' leaves the ring nor reaches the viewer. Never on the transport bar's stop.
+        If Not ChromeFocusOnTransport() AndAlso chrome_Focus_Panel >= 0 AndAlso chrome_Focus_Panel < chrome_Panels.Count AndAlso
+           chrome_Panels(chrome_Focus_Panel).Host.Surface.HandlePanelMoveKey(keyData) Then Return True
         ' On a slider of the transport the vertical arrows and the page keys adjust it (121 UX-403); the bar is pinned
         ' left-to-right, so Right is forward there whatever the language.
+        ' The transport bar's own move handle is the ring's last stop (L0281 T-5b): the same keys, handled by the bar.
+        If ChromeFocusOnTransport() AndAlso TransportMoveKey(keyData) Then Return True
         If ChromeFocusOnTransport() AndAlso TransportRingAdjust(code) Then Return True
         If keyData = (Keys.Shift Or Keys.F10) OrElse code = Keys.Apps Then
             If Not ChromeFocusOnTransport() Then chrome_Panels(chrome_Focus_Panel).Host.Surface.ActivateFocusedSecondary()

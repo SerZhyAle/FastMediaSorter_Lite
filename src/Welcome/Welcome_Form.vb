@@ -322,6 +322,12 @@ Friend NotInheritable Class Welcome_Form
         Return String.Join(If(Localization.IsRightToLeft(), " ← ", " → "), parts)
     End Function
 
+    ''' <summary>Where the ten destination folders are set: the Settings window's Destinations page. Composed from the
+    ''' same two captions the settings window renders, in the direction of the language, like <see cref="WherePath"/>.</summary>
+    Private Function DestinationsPath() As String
+        Return String.Join(If(Localization.IsRightToLeft(), " ← ", " → "), Localization.T("Настройки"), Localization.T("Получатели"))
+    End Function
+
     Private Sub AddPart(panel As FlowLayoutPanel, heading As Func(Of String), text As Func(Of String))
         Dim head As New Label With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0)}
         headings.Add(head)
@@ -427,8 +433,8 @@ Friend NotInheritable Class Welcome_Form
             Function() Localization.T("Цифры 0-9 переносят открытый файл в папку, закреплённую за этой клавишей."),
             Function() Localization.T("Сортировка одним нажатием - основной приём медиа- и файлового менеджера. Папки назначаются заранее, поэтому нажатие не требует раздумий."),
             Function() Localization.T("Цифра переносит файл. Shift с цифрой верхнего ряда копирует его в ту же папку вместо переноса."),
-            Function() Localization.TF("Папки назначаются {0}; переход после копирования - {1}.",
-                                       Localization.T("в меню папок программы"), WherePath("advance_after_copy")))
+            Function() Localization.TF("Папки назначаются здесь: {0}; переход после копирования - {1}.",
+                                       DestinationsPath(), WherePath("advance_after_copy")))
 
         panel.Controls.Add(Chips("0-9", "->", "@content.folder"))
         panel.Controls.Add(Chips("Shift", "+", "1-9", "->", "@action.copy"))
@@ -472,7 +478,7 @@ Friend NotInheritable Class Welcome_Form
         panel.Controls.Add(row)
 
         Dim note As New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .UseMnemonic = False, .Margin = New Padding(0, 8, 0, 0)}
-        Localize(Sub() note.Text = Localization.T("Остальные девять папок задаются в меню папок."))
+        Localize(Sub() note.Text = Localization.TF("Остальные девять папок задаются здесь: {0}.", DestinationsPath()))
         panel.Controls.Add(note)
     End Sub
 
@@ -718,7 +724,7 @@ Friend NotInheritable Class Welcome_Form
                                                "Колесо переходит к следующему или предыдущему файлу, а Ctrl с колесом меняет масштаб.")), WherePath("wheel_zooms")),
             Localization.TF("{0}: {1} - {2}", Localization.TF("Папка для клавиши {0}", 1),
                             If(String.IsNullOrEmpty(openedKeyOne), Localization.T("Не выбрана"), openedKeyOne),
-                            Localization.T("в меню папок программы")),
+                            DestinationsPath()),
             Localization.TF("{0}: {1} - {2}", Localization.T("Удалять в Корзину"),
                             Localization.T(If(openedDeleteBin, "Файлы после Del уходят в Корзину.",
                                               "Файлы после Del удаляются окончательно.")), WherePath("delete_to_recycle_bin"))})

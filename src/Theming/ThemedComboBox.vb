@@ -102,7 +102,8 @@ Friend NotInheritable Class ThemedComboBox
             If combo.RightToLeft = RightToLeft.Yes Then flags = flags Or TextFormatFlags.RightToLeft Or TextFormatFlags.Right
             TextRenderer.DrawText(e.Graphics, combo.GetItemText(combo.Items(e.Index)), combo.Font, e.Bounds, ink, flags)
         End If
-        e.DrawFocusRectangle()
+        ' The system focus rectangle is white on a dark list (spec 285): drawn in the theme's own ink and back instead.
+        If (e.State And DrawItemState.Focus) <> 0 Then ControlPaint.DrawFocusRectangle(e.Graphics, e.Bounds, ink, back)
     End Sub
 End Class
 #End If

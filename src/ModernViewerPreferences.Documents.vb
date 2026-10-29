@@ -62,6 +62,11 @@ Partial Public NotInheritable Class ModernViewerPreferences
     Public Property DocumentDiskCacheMb As Integer = 512
     Public Property DocumentBookmarks As String = "[]"
     Public Property DocumentAppearanceHistory As String = "[]"
+    ' Specification 276 section 5: the document command of doc-html-translate. Off keeps today's handoff.
+    Public Property DocumentConverterEnabled As Boolean
+    ''' <summary>An explicit doc-html-translate.exe; empty means automatic discovery.</summary>
+    Public Property DocumentConverterLocation As String = ""
+    Public Property DocumentProcessingMode As String = DocHtmlJobArguments.ModeBrowser
 
     ' An explicit allow-list keeps unrelated preference keys out of this plumbing.
     Private Shared ReadOnly documentPreferenceNames As String() = (
@@ -70,7 +75,8 @@ Partial Public NotInheritable Class ModernViewerPreferences
         "PdfThumbnailPanel PdfOutlinePanel PdfPanelWidth PdfSearchScope PdfSearchCase PdfRenderQuality PdfRenderCacheMb PdfPrefetchPages " &
         "EpubLayout EpubTheme EpubFontFamily EpubFontSize EpubLineHeight EpubParagraphSpacing EpubHorizontalMargin EpubColumnWidth EpubAlignment " &
         "EpubHyphenation EpubUseBookStyles EpubUseEmbeddedFonts EpubTocDepth EpubSearchScope DocumentMemoryCacheMb " &
-        "DocumentDiskCacheMb DocumentBookmarks DocumentAppearanceHistory").Split(" "c)
+        "DocumentDiskCacheMb DocumentBookmarks DocumentAppearanceHistory DocumentConverterEnabled DocumentConverterLocation " &
+        "DocumentProcessingMode").Split(" "c)
 
     Private Sub LoadDocumentPreferences()
         For Each name In documentPreferenceNames
@@ -147,6 +153,10 @@ Partial Public NotInheritable Class ModernViewerPreferences
         EpubHyphenation = ChoiceValue(EpubHyphenation, "book", "book", "on", "off")
         EpubTocDepth = Clamp(EpubTocDepth, 1, 32)
         EpubSearchScope = ChoiceValue(EpubSearchScope, "whole", "whole", "chapter")
+        DocumentProcessingMode = ChoiceValue(DocumentProcessingMode, DocHtmlJobArguments.ModeBrowser,
+            DocHtmlJobArguments.ModeBrowser, DocHtmlJobArguments.ModeConvert, DocHtmlJobArguments.ModeLocal)
+        DocumentConverterLocation = If(DocumentConverterLocation, "").Trim()
+        If DocumentConverterLocation.Length > 1024 Then DocumentConverterLocation = ""
         DocumentBookmarks = JsonSerializer.Serialize(ReadDocumentBookmarks())
         DocumentAppearanceHistory = JsonSerializer.Serialize(ReadDocumentAppearances())
     End Sub

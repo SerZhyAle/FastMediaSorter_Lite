@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Dar acceso externo - Fast Media Sorter</title>
+  <title>Dar acesso externo - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Dar acceso externo</h1>
+  <h1 id="title">Dar acesso externo</h1>
   <section id="purpose">
     <h2>Finalidade</h2>
-    <p>Controla o acesso a uma pasta partilhada para pessoas fora dos seus pr&#243;prios dispositivos: um convite de convidado ou um link com palavra-passe que n&#227;o precisa de conta. Abre-se a partir do bot&#227;o &#171;Dar acceso externo..&#187; da janela principal do Share Manager para a pasta selecionada. Nesta vers&#227;o, os controlos que criam novo acesso est&#227;o desativados e a janela mostra o motivo, enquanto o acesso j&#225; existente ainda pode ser retirado.</p>
+    <p>Controla o acesso a uma pasta compartilhada para pessoas fora dos seus pr&#243;prios dispositivos: um convite de convidado ou um link com senha que n&#227;o precisa de conta. Ela se abre a partir do bot&#227;o &#171;Dar acesso externo..&#187; da janela principal do Share Manager para a pasta selecionada. Nesta vers&#227;o, os controles que criam novo acesso est&#227;o desativados e a janela mostra o motivo, enquanto o acesso j&#225; existente ainda pode ser retirado.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="folder-outside-access-light.png" alt="Dar acceso externo">
-    <img class="shot dark" src="folder-outside-access-dark.png" alt="Dar acceso externo">
+    <img class="shot light" src="folder-outside-access-light.png" alt="Dar acesso externo">
+    <img class="shot dark" src="folder-outside-access-dark.png" alt="Dar acesso externo">
   </figure>
   <section id="order">
     <h2>Nesta ordem</h2>
@@ -26,11 +26,11 @@
   </section>
   <section id="elements">
     <h2>Os elementos</h2>
-<details id="header"><summary>Pasta e estado</summary><p>A linha a negrito indica a pasta e o seu caminho. A linha de estado em baixo indica o &#250;ltimo resultado. Quando o servi&#231;o de publica&#231;&#227;o n&#227;o est&#225; em execu&#231;&#227;o, a janela diz &#171;Servi&#231;o de publica&#231;&#227;o indispon&#237;vel.&#187; e os seus bot&#245;es ficam desativados.</p></details>
-<details id="guest-invitation"><summary>Convite de convidado</summary><p>O grupo tem &#171;Criar convite de convidado..&#187;, &#171;Revogar selecionado&#187; e uma lista com Tipo, Criado e Utilizado para os convites de convidado desta pasta. Revogar remove o convite; a pasta e os seus ficheiros n&#227;o s&#227;o apagados.</p></details>
-<details id="password-link"><summary>Link com senha (sem conta)</summary><p>O estado diz &#171;Link n&#227;o criado.&#187; ou &#171;O link est&#225; ativo.&#187; A caixa &#171;Palavra-passe do link:&#187; est&#225; mascarada e &#171;Gerar&#187; preenche-a. &#171;Criar link&#187; passa a &#171;Atualizar link&#187; enquanto houver um link ativo. &#171;Revogar link&#187; pergunta primeiro, porque todas as sess&#245;es ativas no link terminam. &#171;Mostrar QR / C&#243;digo..&#187; mostra o link como um c&#243;digo.</p></details>
-<details id="availability"><summary>Porque a cria&#231;&#227;o est&#225; desativada</summary><p>Cada grupo mostra uma linha com o motivo: o servidor de ficheiros do programa n&#227;o consegue limitar um in&#237;cio de sess&#227;o a uma s&#243; pasta. Enquanto ela for mostrada, todos os controlos que criam convites ou links ficam desativados. Retirar o acesso existente depende apenas do que existe.</p></details>
-    <p><a href="share-settings.html">Defini&#231;&#245;es do gestor</a> · <a href="sftp-settings.html">Defini&#231;&#245;es de partilha SFTP</a> · <a href="exchange-server-settings.html">Defini&#231;&#245;es do servidor de troca</a></p>
+<details id="header"><summary>Pasta e estado</summary><p>A linha em negrito indica a pasta e o seu caminho. A linha de estado abaixo indica o &#250;ltimo resultado. Quando o servi&#231;o de publica&#231;&#227;o n&#227;o est&#225; em execu&#231;&#227;o, a janela diz &#171;Servi&#231;o de publica&#231;&#227;o indispon&#237;vel.&#187; e os seus bot&#245;es ficam desativados.</p></details>
+<details id="guest-invitation"><summary>Convite de convidado</summary><p>O grupo tem &#171;Criar convite de convidado..&#187;, &#171;Revogar selecionado&#187; e uma lista com Tipo, Criado e Usado para os convites de convidado desta pasta. Revogar remove o convite; a pasta e os seus arquivos n&#227;o s&#227;o apagados.</p></details>
+<details id="password-link"><summary>Link com senha (sem conta)</summary><p>O estado diz &#171;Link n&#227;o criado.&#187; ou &#171;O link est&#225; ativo.&#187; A caixa &#171;Senha do link:&#187; est&#225; mascarada e &#171;Gerar&#187; a preenche. &#171;Criar link&#187; passa a &#171;Atualizar link&#187; enquanto houver um link ativo. &#171;Revogar link&#187; pergunta primeiro, porque todas as sess&#245;es ativas no link terminam. &#171;Mostrar QR / C&#243;digo..&#187; mostra o link como um c&#243;digo.</p></details>
+<details id="availability"><summary>Por que a cria&#231;&#227;o est&#225; desativada</summary><p>Cada grupo mostra uma linha com o motivo: o servidor de arquivos do programa n&#227;o consegue limitar um login a uma s&#243; pasta. Enquanto ela for mostrada, todos os controles que criam convites ou links ficam desativados. Retirar o acesso existente depende apenas do que existe.</p></details>
+    <p><a href="share-settings.html">Configura&#231;&#245;es do gerenciador</a> · <a href="sftp-settings.html">Configura&#231;&#245;es de compartilhamento SFTP</a> · <a href="exchange-server-settings.html">Configura&#231;&#245;es do servidor de troca</a></p>
   </section>
   <nav id="related">
     <h2>Tópicos relacionados</h2>

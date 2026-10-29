@@ -156,6 +156,10 @@ Partial Public Class Main_Form
         video_Controls.Controls.Add(btn_Video_Menu)
         SetVideoGlyph(btn_Video_Menu, "nav.more")
 
+        ' The move handle at the row's end (L0281 T-5b): the bar is movable like the other panels; the gesture is in
+        ' Main_Form.TransportMove.vb. Built before the mouse-move hook below so it keeps the bar up like any other part.
+        BuildTransportMoveHandle(bar_H)
+
         lbl_Video_Time = New BarLabel With {
             .Name = "lbl_Video_Time",
             .BackColor = video_Controls.BackColor,
@@ -279,7 +283,8 @@ Partial Public Class Main_Form
             .TimeWidth = ClockWidth(),
             .BadgeWidth = If(badge.Length = 0, 0, MeasureBarText(badge, lbl_Video_Ab.Font) + 2 * UiScale.Px(ChromeMetrics.CaptionPadding, factor)),
             .VolumeWidth = UiScale.Px(ChromeMetrics.TransportVolumeWidth, factor),
-            .SeekMinimum = UiScale.Px(ChromeMetrics.TransportSeekMinimum, factor)}
+            .SeekMinimum = UiScale.Px(ChromeMetrics.TransportSeekMinimum, factor),
+            .HandleWidth = If(btn_Video_Move Is Nothing, 0, UiScale.Px(ChromeMetrics.MinTarget, factor))}
         Dim row As TransportRules.RowLayout = TransportRules.ArrangeRow(input)
 
         PlaceBarPart(btn_Video_Play, row.Play, False)
@@ -291,25 +296,23 @@ Partial Public Class Main_Form
         PlaceBarPart(btn_Video_Mute, row.Mute, True)
         PlaceBarPart(video_Volume, row.Volume, True)
         PlaceBarPart(btn_Video_Menu, row.More, False)
+        If btn_Video_Move IsNot Nothing Then PlaceBarPart(btn_Video_Move, row.Handle, False)
     End Sub
 
-    ''' <summary>Pins the bar to the bottom of the media panel. Called from
-    ''' SyncMediaSurface, so it follows every resize and full-screen switch.</summary>
+    ''' <summary>Pins the bar to the bottom of the media panel, or stands it at the user's own height (L0281 T-5b, the stored
+    ''' <c>ChromeTransportPlace</c>: the bar keeps its width and horizontal position and moves vertically only). Called from
+    ''' SyncMediaSurface, so it follows every resize and full-screen switch; a free bar is fitted afresh each time, whether
+    ''' it is shown or not, and nothing is written back (Main_Form.TransportMove.vb).</summary>
     Friend Sub PositionVideoControls()
         If is_Super_Full_Screen_Mode Then
             HideVideoControls()
             Return
         End If
         If video_Controls Is Nothing OrElse panel_Media Is Nothing Then Return
-        Dim margin As Integer = UiScale.Px(ChromeMetrics.TransportMargin, ChromeScale())
-        Dim w As Integer = panel_Media.ClientSize.Width - margin * 2
-        If w < UiScale.Px(ChromeMetrics.TransportMinimumWidth, ChromeScale()) Then w = Math.Max(0, panel_Media.ClientSize.Width)
-        video_Controls.Width = w
+        Dim placed As Rectangle = TransportPlacedRect(TransportAnchoredRect())
+        video_Controls.Width = placed.Width
         video_Controls.Location = Point.Empty
-        If video_Chrome_Host IsNot Nothing Then
-            video_Chrome_Host.Bounds = New Rectangle(panel_Media.PointToScreen(New Point((panel_Media.ClientSize.Width - w) \ 2,
-                                            panel_Media.ClientSize.Height - video_Controls.Height - margin)), video_Controls.Size)
-        End If
+        If video_Chrome_Host IsNot Nothing Then video_Chrome_Host.Bounds = placed
         LayoutVideoControlsRow(UiScale.Px(ChromeMetrics.ScreenMargin, ChromeScale()))
         If video_Controls.Visible Then video_Controls.BringToFront()
     End Sub
@@ -346,6 +349,7 @@ Partial Public Class Main_Form
         video_Volume.AccessibleName = volume_Text
         lbl_Video_Time.AccessibleName = Localization.T("Время")
         lbl_Video_Time.AccessibleDescription = clock_Tip
+        LocalizeTransportMoveHandle()
         RefreshBarAccessibleNames()
     End Sub
 
@@ -417,7 +421,7 @@ Partial Public Class Main_Form
         ' file exists to remove. One rule (TransportRules.ShouldKeepBarUp), so the speed menu and
         ' the video menu are covered by the same test (121 UX-402).
         Dim hold As New TransportRules.HoldState With {
-            .SliderHeld = video_Seek.IsDragging OrElse video_Volume.IsDragging,
+            .SliderHeld = video_Seek.IsDragging OrElse video_Volume.IsDragging OrElse TransportMoving(),
             .PointerOnBar = video_Chrome_Host IsNot Nothing AndAlso video_Chrome_Host.Bounds.Contains(Cursor.Position),
             .PopupOpen = ChromeMenu.PopupVisible,
             .KeyboardRingOn = chrome_Keyboard_Mode,
@@ -842,7 +846,8 @@ Partial Public Class Main_Form
     Private Function TransportRingStops() As List(Of Control)
         Dim stops As New List(Of Control)()
         If video_Controls Is Nothing OrElse Not video_Controls.Visible Then Return stops
-        For Each part As Control In New Control() {btn_Video_Play, video_Seek, lbl_Video_Time, btn_Video_Speed, btn_Video_Mute, video_Volume, btn_Video_Menu}
+        ' The move handle is the last stop, after "more" (L0281 T-5b): Enter on it starts the keyboard move of the bar.
+        For Each part As Control In New Control() {btn_Video_Play, video_Seek, lbl_Video_Time, btn_Video_Speed, btn_Video_Mute, video_Volume, btn_Video_Menu, btn_Video_Move}
             If part.Visible AndAlso part.Enabled Then stops.Add(part)
         Next
         Return stops
@@ -880,6 +885,8 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub SetRingControl(part As Control)
+        ' The keyboard move of the bar lasts while the ring stands on its handle; the ring moving off, or leaving the bar, ends it.
+        If Not Object.ReferenceEquals(part, btn_Video_Move) Then TransportEndKeyboardMove()
         If video_Ring_Control IsNot Nothing Then SetBarRing(video_Ring_Control, False)
         video_Ring_Control = part
         If part IsNot Nothing Then SetBarRing(part, True)

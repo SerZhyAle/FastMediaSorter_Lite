@@ -407,6 +407,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `chrome_size` | general / interface | ModernViewerPreferences.ChromeSize; String; default "medium"; Load/Save key ChromeSize | tokens: small, medium, large, adaptive, touch |
 | `chrome_opacity` | general / interface | ModernViewerPreferences.ChromeOpacityPercent; Integer; default 86; Load/Save key ChromeOpacityPercent | range: 0, 100 |
 | `chrome_corners` | general / interface | ModernViewerPreferences.ChromeCornerRadius; Integer; default 6; Load/Save key ChromeCornerRadius | range: 0, 16 |
+| `chrome_reset_places` | general / interface | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `show_info_overlay` | general / interface | Main_Form.Lifecycle; key ShowInfoOverlay; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
 | `video_hide_cursor` | general / interface | ModernViewerPreferences.HideCursorAfterSec; Integer; default 3; Load/Save key HideCursorAfterSec | range: 0, 30 |
 | `startup_open` | general / startup | ModernViewerPreferences.StartupOpenMode; String; default "home"; Load/Save key StartupOpenMode | tokens: home, lastFolder, lastFile |

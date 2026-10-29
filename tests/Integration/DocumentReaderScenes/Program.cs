@@ -99,11 +99,11 @@ static class Program
                         Call(window, "ApplyDocumentReaderPreferences", previous);
                         Call(window, "ApplyPdfReaderTheme", ThemeService.Palette);
                         await Task.Delay(600);
-                        var toolbar = (ToolStrip)Get(window, "pdf_Reader_Toolbar");
-                        var media = (Panel)Get(window, "panel_Media");
-                        Console.WriteLine($"DocumentReaderScenes: {scenario.Item3}, toolbar={toolbar.Bounds}, parent={media.Name}, index={media.Controls.GetChildIndex(toolbar)}, top={media.GetChildAtPoint(new Point(10, 10))?.Name}");
-                        Check(media.GetChildAtPoint(new Point(10, 10)) == toolbar, "Reader toolbar is occluded");
-                        Check(toolbar.Right <= media.ClientSize.Width, "Reader toolbar overflow escaped the viewport");
+                        // L0280: the reader's commands are on the floating document panel, not on a ToolStrip inside the media area.
+                        var items = (System.Collections.IDictionary)Get(window, "document_Items");
+                        Console.WriteLine($"DocumentReaderScenes: {scenario.Item3}, document panel present={Call(window, "DocumentPanelPresent")}, items={items?.Count}");
+                        Check((bool)Call(window, "DocumentPanelPresent"), "The document panel is not on screen with the PDF reader");
+                        Check(items != null && items.Contains("doc_PagePosition") && items.Contains("doc_NextPage"), "The panel lacks the page box or the next-page button");
                         using var bitmap = new Bitmap(window.Width, window.Height);
                         using (var graphics = Graphics.FromImage(bitmap))
                         {
@@ -146,7 +146,7 @@ static class Program
                     Call(window, "ApplyDocumentReaderPreferences", previousReader);
                     await Until(() => (bool)Call(window, "IsPdfDocumentShown"), "Disabled baseline preview");
                     Check(!(bool)Call(window, "FullPdfReaderActive"), "Reader remained active after disabling");
-                    Check(Get(window, "pdf_Reader_Toolbar") == null, "Disabled reader retained its toolbar");
+                    Check(!(bool)Call(window, "DocumentPanelPresent"), "Disabled reader retained its document panel");
                     Check(preferences.ReadDocumentBookmarks().Count == 1, "Disabling erased bookmarks");
                     preferences.DocumentTtsEnabled = true;
                     preferences.Save();
@@ -158,7 +158,7 @@ static class Program
                 {
                     verdict = 1;
                     Console.WriteLine("DocumentReaderScenes: FAIL " + error);
-                    Console.WriteLine($"Reader state: source={Get(window, "pdf_Current_Source") != null}, toolbar={Get(window, "pdf_Reader_Toolbar") != null}, text={Get(window, "pdf_Reader_TextPage") != null}, image={picture.Image != null}, error={Get(window, "pdf_Page_Error")}, status={((Label)Get(window, "lbl_Status")).Text}");
+                    Console.WriteLine($"Reader state: source={Get(window, "pdf_Current_Source") != null}, panel={Call(window, "DocumentPanelPresent")}, text={Get(window, "pdf_Reader_TextPage") != null}, image={picture.Image != null}, error={Get(window, "pdf_Page_Error")}, status={((Label)Get(window, "lbl_Status")).Text}");
                     try
                     {
                         using var logStream = new FileStream((string)logger.GetProperty("LogFilePath", Static).GetValue(null), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);

@@ -38,6 +38,7 @@ Friend NotInheritable Class Exchange_Connection_String_Form
     Private ReadOnly _signInLink As Func(Of String, String)
     Private _lblResult As Label
     Private _body As FlowLayoutPanel
+    Private _heading As Label
     Private _answerRow As DialogButtonRow
     Private _fittingRows As Boolean
     Private _iconHandle As IntPtr
@@ -106,7 +107,8 @@ Friend NotInheritable Class Exchange_Connection_String_Form
         Dim body As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 6)}
         _body = body
-        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
+        _heading = ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset)
+        body.Controls.Add(_heading)
         body.Controls.Add(Note(ExchangeConnectionStringText.Intro()))
 
         body.Controls.Add(Caption(ExchangeConnectionStringText.NameLabel()))
@@ -188,9 +190,13 @@ Friend NotInheritable Class Exchange_Connection_String_Form
             Dim width As Integer = Math.Max(1, _body.ClientSize.Width - _body.Padding.Horizontal)
             For Each row As Control In _body.Controls
                 Dim available As Integer = Math.Max(1, width - row.Margin.Horizontal)
+                ' The heading stays clear of the help badge in the corner (it reads on the badge's side, the row is aligned to the
+                ' other one) and keeps the minimum height its mark gave it: resetting that to 0 left the row measured at its text
+                ' height, so the mark's height grew over the intro and the answer row was cut at the bottom.
+                If row Is _heading Then available = Math.Max(1, available - Me.LogicalToDeviceUnits(ContextHelpUi.BadgeEdge))
                 Dim minimumHeight As Integer = If(row Is _txtString, Me.LogicalToDeviceUnits(76), 0)
                 row.MaximumSize = New Size(available, minimumHeight)
-                row.MinimumSize = New Size(available, minimumHeight)
+                row.MinimumSize = New Size(available, If(row Is _heading, row.MinimumSize.Height, minimumHeight))
                 row.Width = available
                 If row Is _txtString Then row.Height = minimumHeight
                 ' The answer row sizes its own height from the width it is given (a longer caption wraps whole buttons).

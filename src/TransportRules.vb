@@ -27,6 +27,8 @@ Friend Module TransportRules
         Friend BadgeWidth As Integer
         Friend VolumeWidth As Integer
         Friend SeekMinimum As Integer
+        ''' <summary>The bar's move handle at the row's end (L0281 T-5b); 0 = the bar has none (the row is then exactly as it was).</summary>
+        Friend HandleWidth As Integer
     End Structure
 
     ''' <summary>Where each part of the row goes; <see cref="Rectangle.Empty"/> = left out because it does not fit.</summary>
@@ -39,12 +41,16 @@ Friend Module TransportRules
         Friend Mute As Rectangle
         Friend Volume As Rectangle
         Friend More As Rectangle
+        ''' <summary>The move handle, after "more" at the row's end; <see cref="Rectangle.Empty"/> = the bar has none.</summary>
+        Friend Handle As Rectangle
     End Structure
 
     ''' <summary>
-    ''' The row, left to right: play | seek (stretches) | clock | A-B badge | speed | mute | volume | more.
-    ''' The bar is pinned left-to-right (APP-BEHAVIOUR rule 8), so the order never mirrors. Play, seek and the
-    ''' "more" button are always there - the menu behind the latter carries every other operation. When the seek
+    ''' The row, left to right: play | seek (stretches) | clock | A-B badge | speed | mute | volume | more | move handle.
+    ''' The bar is pinned left-to-right (APP-BEHAVIOUR rule 8), so the order never mirrors. Play, seek, the
+    ''' "more" button and the move handle (when the bar has one, L0281 T-5b: it is never dropped, like the panels'
+    ''' handles it is a slot of its own that nothing takes) are always there - the menu behind "more" carries every
+    ''' other operation. When the seek
     ''' track would be narrower than its minimum, parts are dropped in the order of least loss: the volume slider
     ''' (the keys, the wheel and the menu still reach it), the clock, the badge, the speed button, the mute button.
     ''' The two sliders and the clock take the bar's FULL height as their hit target (UX-409: 18 px of a 38 px bar
@@ -64,6 +70,11 @@ Friend Module TransportRules
         Dim result As New RowLayout()
         Do
             Dim right As Integer = width
+            result.Handle = Rectangle.Empty
+            If input.HandleWidth > 0 Then
+                result.Handle = New Rectangle(right - input.HandleWidth, 0, input.HandleWidth, height)
+                right = result.Handle.Left
+            End If
             result.More = New Rectangle(right - input.ButtonWidth, 0, input.ButtonWidth, height)
             right = result.More.Left
             result.Volume = Rectangle.Empty
@@ -290,6 +301,60 @@ Friend Module TransportRules
                               barHeight As Integer, reserveBarSlot As Boolean) As Integer
         If reserveBarSlot Then Return mediaBottom - barHeight - panelHeight - margin * 2
         Return mediaBottom - panelHeight - inset
+    End Function
+
+    ''' <summary>
+    ''' Whether the anchored status strip stands above the bar's slot (L0281 section 3.8): while a video or a track is open
+    ''' and the bar is itself anchored. A free bar is somewhere the user put it, its slot at the bottom is empty, and it
+    ''' does not lift the anchored strip - the strip then stands at the bottom edge, by the same "anchored panels only"
+    ''' rule that stacks the rows.
+    ''' </summary>
+    Friend Function StatusReservesBarSlot(mediaOpen As Boolean, superFullScreen As Boolean, barIsFree As Boolean) As Boolean
+        Return mediaOpen AndAlso Not superFullScreen AndAlso Not barIsFree
+    End Function
+
+    ' --- the movable bar (L0281 T-5b) ------------------------------------------------------------
+
+    ''' <summary>
+    ''' The strip of the allowed area a free bar stands in: exactly as wide as the bar and as tall as the area, so "vertical
+    ''' movement only" is a property of the geometry and not of a check that could be forgotten. The bar keeps its anchored
+    ''' width (capped to the area) and its anchored horizontal position (pulled inside the area when the window is partly
+    ''' off screen). Every fit, nudge and drop decision of the free bar runs in this strip, through the shared
+    ''' <see cref="FloatingPanelPlacement"/> functions.
+    ''' </summary>
+    Friend Function FreeBarBand(anchored As Rectangle, allowed As Rectangle) As Rectangle
+        Dim width As Integer = Math.Max(0, Math.Min(anchored.Width, allowed.Width))
+        Dim x As Integer = Math.Max(allowed.X, Math.Min(anchored.X, allowed.Right - width))
+        Return New Rectangle(x, allowed.Y, width, allowed.Height)
+    End Function
+
+    ''' <summary>The free bar's effective rectangle (section 3.4): the stored place resolved in the strip and fitted - computed
+    ''' afresh at every placement, never written back. Its width and horizontal position are the strip's, whatever the place says.</summary>
+    Friend Function FreeBarRect(place As PanelPlace, anchored As Rectangle, allowed As Rectangle, factor As Single) As Rectangle
+        Dim band As Rectangle = FreeBarBand(anchored, allowed)
+        Return FloatingPanelPlacement.Effective(place, band, New Size(band.Width, anchored.Height), factor, False)
+    End Function
+
+    ''' <summary>The bar while the handle is dragged: the pointer's vertical travel only, through the fit before the host's
+    ''' bounds are set (no pixel outside the area, ever). The horizontal travel does not exist.</summary>
+    Friend Function DragFreeBar(start As Rectangle, travelY As Integer, band As Rectangle) As Rectangle
+        Return FloatingPanelPlacement.Fit(New Rectangle(band.X, start.Y + travelY, band.Width, start.Height), band, False)
+    End Function
+
+    ''' <summary>The keyboard move mode's step: whole steps up or down through the same fit as a drag.</summary>
+    Friend Function NudgeFreeBar(current As Rectangle, stepsY As Integer, stepPixels As Integer, band As Rectangle) As Rectangle
+        Return FloatingPanelPlacement.Nudge(New Rectangle(band.X, current.Y, band.Width, current.Height), 0, stepsY, stepPixels, band, False)
+    End Function
+
+    ''' <summary>What a finished move of the bar comes to (section 3.5), by the shared <see cref="FloatingPanelPlacement.DecideDrop"/>
+    ''' in the bar's strip: nothing to write, the place cleared (a drop within <paramref name="snap"/> of the anchored rectangle),
+    ''' refused (a push-out that finds no free fit) or a new place. The window commands are the protected rectangles the caller
+    ''' passes; the bar itself is never one of them. A push-out cannot go sideways: the strip has no room there.</summary>
+    Friend Function DropFreeBar(start As Rectangle, dropped As Rectangle, anchored As Rectangle, allowed As Rectangle,
+                                protectedRects As IList(Of Rectangle), snap As Integer, ByRef result As Rectangle) As PanelDropOutcome
+        Dim band As Rectangle = FreeBarBand(anchored, allowed)
+        Return FloatingPanelPlacement.DecideDrop(start, New Rectangle(band.X, dropped.Y, band.Width, dropped.Height), anchored, band,
+                                                 protectedRects, snap, False, result)
     End Function
 
     ' --- the keyboard ring (UX-403) -------------------------------------------------------------

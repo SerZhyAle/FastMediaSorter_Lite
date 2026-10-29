@@ -49,6 +49,18 @@ Public Class MediaKindClassifierTests
         Assert.Equal(expected, MediaKindClassifier.KindOf(extension))
     End Sub
 
+    ' Ticket 277 section 4.1: source text is a local Document alias; .ts stays VIDEO (rule 1).
+    <Theory>
+    <InlineData(".sql"), InlineData(".sh"), InlineData(".bat"), InlineData(".cmd"), InlineData(".ps1"), InlineData(".cs"), InlineData(".vb")>
+    <InlineData(".cpp"), InlineData(".h"), InlineData(".c"), InlineData(".py"), InlineData(".js"), InlineData(".css")>
+    Public Sub Source_text_aliases_are_documents_and_ts_stays_video(extension As String)
+        Assert.Equal(MediaKind.Document, MediaKindClassifier.KindOf(extension))
+        Assert.True(TextFileReader.IsTextExtension(extension))
+        Assert.True(TextFileReader.IsMonospace(extension))
+        Assert.Equal(MediaKind.Video, MediaKindClassifier.KindOf(".ts"))
+        Assert.False(TextFileReader.IsTextExtension(".ts"))
+    End Sub
+
     <Fact>
     Public Sub Audiobook_requires_positive_book_evidence()
         Assert.Equal(MediaKind.Audio, MediaKindClassifier.KindOf("speech.m4b"))

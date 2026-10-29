@@ -17,7 +17,7 @@ Partial Public NotInheritable Class Localization
             "Avvio del gestore, tema e lingua.",
             "Inicio del gestor, tema e idioma.",
             "Démarrage du gestionnaire, thème et langue.",
-            "Arranque do gestor, tema e idioma.",
+            "Inicialização do gerenciador, tema e idioma.",
             "بدء تشغيل المدير والمظهر ولغة الواجهة.",
             "मैनेजर का स्टार्टअप, थीम और इंटरफ़ेस भाषा।",
             "ম্যানেজার চালু করা, থিম ও ইন্টারফেসের ভাষা।",
@@ -30,7 +30,7 @@ Partial Public NotInheritable Class Localization
             "Connessioni e accesso alle cartelle condivise.",
             "Conexiones y acceso a carpetas compartidas.",
             "Connexions et accès aux dossiers partagés.",
-            "Ligações e acesso às pastas partilhadas.",
+            "Conexões e acesso às pastas compartilhadas.",
             "الاتصالات والوصول إلى المجلدات المشتركة.",
             "कनेक्शन और साझा फ़ोल्डर तक पहुँच।",
             "সংযোগ ও শেয়ার করা ফোল্ডারে প্রবেশাধিকার।",
@@ -43,7 +43,7 @@ Partial Public NotInheritable Class Localization
             "Modalità di hosting e servizio di condivisione.",
             "Modo de alojamiento y servicio para compartir.",
             "Mode d’hébergement et service de partage.",
-            "Modo de alojamento e serviço de partilha.",
+            "Modo de hospedagem e serviço de compartilhamento.",
             "وضع الاستضافة وخدمة المشاركة.",
             "होस्टिंग मोड और शेयरिंग सेवा।",
             "হোস্টিং মোড ও শেয়ারিং পরিষেবা।",
@@ -56,7 +56,7 @@ Partial Public NotInheritable Class Localization
             "Server di scambio, porte e account.",
             "Servidor de intercambio, puertos y cuentas.",
             "Serveur d’échange, ports et comptes.",
-            "Servidor de intercâmbio, portas e contas.",
+            "Servidor de troca, portas e contas.",
             "خادم التبادل والمنافذ والحسابات.",
             "एक्सचेंज सर्वर, पोर्ट और खाते।",
             "এক্সচেঞ্জ সার্ভার, পোর্ট ও অ্যাকাউন্ট।",
@@ -69,7 +69,7 @@ Partial Public NotInheritable Class Localization
             "Collega questo PC a un server di scambio.",
             "Conecta este PC a un servidor de intercambio.",
             "Connectez ce PC à un serveur d’échange.",
-            "Ligue este PC a um servidor de intercâmbio.",
+            "Conecte este PC a um servidor de troca.",
             "توصيل هذا الحاسوب بخادم تبادل.",
             "इस पीसी को एक्सचेंज सर्वर से जोड़ें।",
             "এই পিসিকে এক্সচেঞ্জ সার্ভারে সংযুক্ত করুন।",
@@ -82,7 +82,7 @@ Partial Public NotInheritable Class Localization
             "Documentazione e configurazione del router.",
             "Documentación y configuración del router.",
             "Documentation et configuration du routeur.",
-            "Documentação e configuração do router.",
+            "Documentação e configuração do roteador.",
             "الوثائق وإعداد الموجّه.",
             "दस्तावेज़ और राउटर सेटअप।",
             "নথি ও রাউটার সেটআপ।",
@@ -98,7 +98,7 @@ Partial Public NotInheritable Class Localization
             "Apri le cartelle di questo PC sul telefono, via Wi-Fi o internet.",
             "Abre las carpetas de este PC en tu teléfono, por Wi-Fi o por internet.",
             "Ouvrez les dossiers de ce PC sur votre téléphone - en Wi-Fi ou via internet.",
-            "Abra as pastas deste PC no telemóvel - por Wi-Fi ou pela internet.",
+            "Abra as pastas deste PC no celular - por Wi-Fi ou pela internet.",
             "افتح مجلدات هذا الحاسوب على هاتفك - عبر Wi-Fi أو الإنترنت.",
             "इस पीसी के फ़ोल्डर अपने फ़ोन पर खोलें - Wi-Fi या इंटरनेट के ज़रिए।",
             "এই পিসির ফোল্ডারগুলি আপনার ফোনে খুলুন - Wi-Fi বা ইন্টারনেটের মাধ্যমে।",
@@ -106,7 +106,7 @@ Partial Public NotInheritable Class Localization
             "在手机上打开这台电脑的文件夹 - 通过 Wi-Fi 或互联网。")
 
         Add("Поделиться",
-            "Share", "Поділитися", "Teilen", "Condividi", "Compartir", "Partager", "Partilhar",
+            "Share", "Поділитися", "Teilen", "Condividi", "Compartir", "Partager", "Compartilhar",
             "مشاركة", "साझा करें", "শেয়ার করুন", "شیئر کریں", "共享")
 
         ' The Android product's name is not settled (ticket 111 Q-4): user text says "the Android app".
@@ -114,7 +114,7 @@ Partial Public NotInheritable Class Localization
             "Android app", "Застосунок для Android",
             "Android-App", "App per Android",
             "Aplicación para Android", "Application Android",
-            "Aplicação para Android", "تطبيق Android",
+            "Aplicativo para Android", "تطبيق Android",
             "Android ऐप", "Android অ্যাপ",
             "Android ایپ", "Android 应用")
 
@@ -160,7 +160,7 @@ Partial Public NotInheritable Class Localization
             "How to delete an account (portal)", "Як видалити обліковий запис (портал)",
             "Konto löschen (Portal)", "Come eliminare un account (portale)",
             "Cómo eliminar una cuenta (portal)", "Comment supprimer un compte (portail)",
-            "Como eliminar uma conta (portal)", "كيفية حذف الحساب (البوابة)",
+            "Como excluir uma conta (portal)", "كيفية حذف الحساب (البوابة)",
             "खाता कैसे हटाएँ (पोर्टल)", "কীভাবে অ্যাকাউন্ট মুছবেন (পোর্টাল)",
             "اکاؤنٹ کیسے حذف کریں (پورٹل)", "如何删除账户（门户）")
 
@@ -168,7 +168,7 @@ Partial Public NotInheritable Class Localization
             "Guide for my router model", "Інструкція для моєї моделі роутера",
             "Anleitung für mein Routermodell", "Guida per il mio modello di router",
             "Guía para mi modelo de router", "Guide pour mon modèle de routeur",
-            "Guia para o meu modelo de router", "دليل لطراز الموجّه لديّ",
+            "Guia para o meu modelo de roteador", "دليل لطراز الموجّه لديّ",
             "मेरे राउटर मॉडल के लिए मार्गदर्शिका", "আমার রাউটার মডেলের নির্দেশিকা",
             "میرے روٹر ماڈل کے لیے رہنما", "适用于我的路由器型号的指南")
 
@@ -196,16 +196,16 @@ Partial Public NotInheritable Class Localization
 
         Add("Ключ узла:",
             "Host key:", "Ключ вузла:", "Hostschlüssel:", "Chiave host:", "Clave del host:",
-            "Clé de l'hôte :", "Chave do anfitrião:", "مفتاح المضيف:", "होस्ट कुंजी:",
+            "Clé de l'hôte :", "Chave do host:", "مفتاح المضيف:", "होस्ट कुंजी:",
             "হোস্ট কী:", "ہوسٹ کی:", "主机密钥：")
 
         Add("Логин:",
             "Login:", "Логін:", "Benutzername:", "Utente:", "Usuario:", "Identifiant :",
-            "Utilizador:", "اسم المستخدم:", "लॉगिन:", "লগইন:", "لاگ ان:", "用户名：")
+            "Usuário:", "اسم المستخدم:", "लॉगिन:", "লগইন:", "لاگ اِن:", "用户名：")
 
         Add("Пароль:",
             "Password:", "Пароль:", "Kennwort:", "Password:", "Contraseña:", "Mot de passe :",
-            "Palavra-passe:", "كلمة المرور:", "पासवर्ड:", "পাসওয়ার্ড:", "پاس ورڈ:", "密码：")
+            "Senha:", "كلمة المرور:", "पासवर्ड:", "পাসওয়ার্ড:", "پاس ورڈ:", "密码：")
 
         Add("Проверить доступ из интернета",
             "Test internet access", "Перевірити доступ з інтернету", "Internetzugriff testen",
@@ -226,19 +226,19 @@ Partial Public NotInheritable Class Localization
 
         Add("Начать раздачу",
             "Start sharing", "Почати роздачу", "Freigabe starten", "Avvia la condivisione",
-            "Iniciar el uso compartido", "Démarrer le partage", "Iniciar a partilha",
+            "Iniciar el uso compartido", "Démarrer le partage", "Iniciar o compartilhamento",
             "بدء المشاركة", "साझाकरण शुरू करें", "শেয়ারিং শুরু করুন", "شیئرنگ شروع کریں", "开始共享")
 
         Add("Остановить раздачу",
             "Stop sharing", "Зупинити роздачу", "Freigabe stoppen", "Ferma la condivisione",
-            "Detener el uso compartido", "Arrêter le partage", "Parar a partilha",
+            "Detener el uso compartido", "Arrêter le partage", "Parar o compartilhamento",
             "إيقاف المشاركة", "साझाकरण रोकें", "শেয়ারিং বন্ধ করুন", "شیئرنگ روکیں", "停止共享")
 
         Add("Запускать при входе в Windows",
             "Start at Windows logon", "Запускати при вході в Windows",
             "Beim Windows-Anmelden starten", "Avvia all'accesso a Windows",
             "Iniciar al iniciar sesión en Windows", "Démarrer à l'ouverture de session Windows",
-            "Iniciar ao iniciar sessão no Windows", "التشغيل عند تسجيل الدخول إلى Windows",
+            "Iniciar ao entrar no Windows", "التشغيل عند تسجيل الدخول إلى Windows",
             "Windows लॉगऑन पर शुरू करें", "Windows লগঅনে চালু করুন",
             "Windows لاگ اِن پر شروع کریں", "Windows 登录时启动")
 
@@ -246,7 +246,7 @@ Partial Public NotInheritable Class Localization
             "Open the manager window at startup", "Відкривати вікно менеджера під час запуску",
             "Managerfenster beim Start öffnen", "Apri la finestra del gestore all'avvio",
             "Abrir la ventana del gestor al iniciar", "Ouvrir la fenêtre du gestionnaire au démarrage",
-            "Abrir a janela do gestor no arranque", "فتح نافذة المدير عند بدء التشغيل",
+            "Abrir a janela do gerenciador na inicialização", "فتح نافذة المدير عند بدء التشغيل",
             "स्टार्टअप पर प्रबंधक विंडो खोलें", "চালুর সময় ম্যানেজার উইন্ডো খুলুন",
             "اسٹارٹ اپ پر مینیجر ونڈو کھولیں", "启动时打开管理器窗口")
 
@@ -257,7 +257,7 @@ Partial Public NotInheritable Class Localization
             "Se disattivato, ogni avvio del programma lascia solo l'icona nell'area di notifica: doppio clic per aprire la finestra. Se attivo, la finestra si apre subito.",
             "Si está desactivado, cualquier arranque del programa deja solo el icono de la bandeja: haz doble clic para abrir la ventana. Si está activado, la ventana se abre de inmediato.",
             "Sans cette case, tout démarrage du programme ne laisse que l'icône dans la zone de notification - double-cliquez pour ouvrir la fenêtre. Avec la case, la fenêtre s'ouvre aussitôt.",
-            "Sem esta opção, qualquer arranque do programa deixa apenas o ícone na área de notificação - faça duplo clique para abrir a janela. Com ela, a janela abre logo.",
+            "Sem esta opção, qualquer inicialização do programa deixa apenas o ícone na área de notificação - dê um clique duplo nele para abrir a janela. Com ela, a janela abre imediatamente.",
             "بدون هذا الخيار، يترك كل تشغيل للبرنامج أيقونة شريط المهام فقط - انقر عليها نقرًا مزدوجًا لفتح النافذة. ومع تفعيله تُفتح النافذة فورًا.",
             "यह बंद होने पर कार्यक्रम का कोई भी आरंभ केवल ट्रे आइकन छोड़ता है - विंडो खोलने के लिए उस पर डबल-क्लिक करें। चालू होने पर विंडो तुरंत खुल जाती है।",
             "এটি বন্ধ থাকলে প্রোগ্রামের যেকোনো সূচনা কেবল ট্রে আইকন রেখে যায় - উইন্ডো খুলতে সেটিতে ডাবল-ক্লিক করুন। চালু থাকলে উইন্ডো সঙ্গে সঙ্গে খোলে।",
@@ -268,7 +268,7 @@ Partial Public NotInheritable Class Localization
             "Max simultaneous connections:", "Макс. одночасних з'єднань:",
             "Max. gleichzeitige Verbindungen:", "Connessioni simultanee max:",
             "Máx. de conexiones simultáneas:", "Connexions simultanées max :",
-            "Máx. de ligações simultâneas:", "الحد الأقصى للاتصالات المتزامنة:",
+            "Máx. de conexões simultâneas:", "الحد الأقصى للاتصالات المتزامنة:",
             "अधिकतम एक साथ कनेक्शन:", "সর্বাধিক একযোগে সংযোগ:",
             "زیادہ سے زیادہ بیک وقت کنکشنز:", "最大并发连接数：")
 
@@ -279,7 +279,7 @@ Partial Public NotInheritable Class Localization
             "Quanti dispositivi possono essere connessi contemporaneamente. Predefinito 10; da 1 a 99999. Sotto 2 la riconnessione del telefono può essere brevemente rifiutata.",
             "Cuántos dispositivos pueden estar conectados a la vez. Por defecto 10; de 1 a 99999. Por debajo de 2 puede rechazar brevemente la reconexión del teléfono.",
             "Combien d'appareils peuvent être connectés en même temps. Par défaut 10 ; de 1 à 99999. En dessous de 2, la reconnexion du téléphone peut être brièvement refusée.",
-            "Quantos dispositivos podem estar ligados ao mesmo tempo. Predefinição 10; de 1 a 99999. Abaixo de 2 a reconexão do telemóvel pode ser recusada por breves instantes.",
+            "Quantos dispositivos podem estar conectados ao mesmo tempo. Padrão: 10; de 1 a 99999. Abaixo de 2, a reconexão do celular pode ser recusada por breves instantes.",
             "عدد الأجهزة التي يمكن أن تتصل في الوقت نفسه. القيمة الافتراضية 10؛ ويسمح بالقيم من 1 إلى 99999. وأقل من 2 قد يرفض إعادة اتصال الهاتف لفترة قصيرة.",
             "एक साथ कितने उपकरण जुड़े रह सकते हैं। डिफ़ॉल्ट 10; 1 से 99999 तक। 2 से कम होने पर फ़ोन का पुनः कनेक्शन थोड़ी देर के लिए अस्वीकृत हो सकता है।",
             "একসাথে কতগুলি ডিভাইস সংযুক্ত থাকতে পারে। ডিফল্ট ১০; ১ থেকে ৯৯৯৯৯ পর্যন্ত। ২-এর কম হলে ফোনের পুনঃসংযোগ কিছুক্ষণের জন্য প্রত্যাখ্যাত হতে পারে।",
@@ -300,20 +300,20 @@ Partial Public NotInheritable Class Localization
 
         Add("Статистика раздачи",
             "Usage", "Статистика роздачі", "Nutzung", "Utilizzo", "Uso", "Utilisation",
-            "Utilização", "الاستخدام", "उपयोग", "ব্যবহার", "استعمال", "使用统计")
+            "Uso", "الاستخدام", "उपयोग", "ব্যবহার", "استعمال", "使用统计")
 
         Add("Последнее подключение:",
             "Last connection:", "Останнє підключення:", "Letzte Verbindung:", "Ultima connessione:",
-            "Última conexión:", "Dernière connexion :", "Última ligação:",
+            "Última conexión:", "Dernière connexion :", "Última conexão:",
             "آخر اتصال:", "अंतिम कनेक्शन:", "সর্বশেষ সংযোগ:", "آخری کنکشن:", "最近连接：")
 
         Add("Подключений:",
             "Connections:", "З'єднань:", "Verbindungen:", "Connessioni:", "Conexiones:",
-            "Connexions :", "Ligações:", "الاتصالات:", "कनेक्शन:", "সংযোগ:", "کنکشنز:", "连接数：")
+            "Connexions :", "Conexões:", "الاتصالات:", "कनेक्शन:", "সংযোগ:", "کنکشنز:", "连接数：")
 
         Add("Файлов отдано:",
             "Files served:", "Файлів віддано:", "Ausgelieferte Dateien:", "File serviti:",
-            "Archivos servidos:", "Fichiers servis :", "Ficheiros servidos:",
+            "Archivos servidos:", "Fichiers servis :", "Arquivos servidos:",
             "الملفات المُقدَّمة:", "भेजी गई फ़ाइलें:", "প্রদত্ত ফাইল:", "بھیجی گئی فائلیں:", "已提供文件数：")
 
         Add("Считается каждый сеанс связи. Один телефон может подключаться несколько раз (проверка доступа, просмотр файла, переподключение).",
@@ -323,7 +323,7 @@ Partial Public NotInheritable Class Localization
             "Viene contata ogni sessione di connessione. Un solo telefono può connettersi più volte (verifica di raggiungibilità, apertura di un file, riconnessioni).",
             "Se cuenta cada sesión de conexión. Un mismo teléfono puede conectarse varias veces (comprobación de acceso, abrir un archivo, reconexiones).",
             "Chaque session de connexion est comptée. Un même téléphone peut se connecter plusieurs fois (test d'accessibilité, ouverture d'un fichier, reconnexions).",
-            "Conta-se cada sessão de ligação. Um mesmo telemóvel pode ligar-se várias vezes (verificação de acesso, abertura de um ficheiro, reconexões).",
+            "Cada sessão de conexão é contada. Um mesmo celular pode se conectar várias vezes (verificação de acesso, abertura de um arquivo, reconexões).",
             "تُحتسب كل جلسة اتصال. وقد يتصل هاتف واحد عدة مرات (فحص إمكانية الوصول، فتح ملف، إعادة الاتصال).",
             "हर कनेक्शन सत्र गिना जाता है। एक ही फ़ोन कई बार जुड़ सकता है (पहुँच जाँच, फ़ाइल खोलना, पुनः कनेक्शन)।",
             "প্রতিটি সংযোগ সেশন গণনা করা হয়। একই ফোন একাধিকবার সংযুক্ত হতে পারে (অ্যাক্সেস যাচাই, ফাইল খোলা, পুনঃসংযোগ)।",
@@ -346,7 +346,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Общие папки",
             "Shared folders", "Спільні папки", "Freigegebene Ordner", "Cartelle condivise",
-            "Carpetas compartidas", "Dossiers partagés", "Pastas partilhadas",
+            "Carpetas compartidas", "Dossiers partagés", "Pastas compartilhadas",
             "المجلدات المشتركة", "साझा फ़ोल्डर", "শেয়ার করা ফোল্ডার", "مشترکہ فولڈرز", "共享文件夹")
 
         Add("Добавить папку..",
@@ -386,7 +386,7 @@ Partial Public NotInheritable Class Localization
             "Choose the folder to open on the phone", "Виберіть папку, яку хочете відкрити на телефоні",
             "Wählen Sie den Ordner, der auf dem Telefon geöffnet werden soll",
             "Scegli la cartella da aprire sul telefono", "Elige la carpeta que quieres abrir en el teléfono",
-            "Choisissez le dossier à ouvrir sur le téléphone", "Escolha a pasta a abrir no telemóvel",
+            "Choisissez le dossier à ouvrir sur le téléphone", "Escolha a pasta a abrir no celular",
             "اختر المجلد الذي تريد فتحه على الهاتف", "वह फ़ोल्डर चुनें जिसे फ़ोन पर खोलना है",
             "ফোনে যে ফোল্ডারটি খুলতে চান তা বেছে নিন", "وہ فولڈر منتخب کریں جسے فون پر کھولنا ہے",
             "选择要在手机上打开的文件夹")
@@ -415,7 +415,7 @@ Partial Public NotInheritable Class Localization
             "La condivisione delle cartelle avvia un server SFTP locale e richiede un'eccezione nel Windows Firewall (una volta, come amministratore). Finché non è attiva, non viene condiviso nulla.",
             "El uso compartido de carpetas levanta un servidor SFTP local y necesita una excepción en el Firewall de Windows (una vez, como administrador). Hasta activarlo, no se comparte nada.",
             "Le partage de dossiers lance un serveur SFTP local et nécessite une exception dans le pare-feu Windows (une seule fois, en tant qu'administrateur). Tant qu'il n'est pas activé, rien n'est partagé.",
-            "A partilha de pastas arranca um servidor SFTP local e precisa de uma exceção na Firewall do Windows (uma vez, como administrador). Até ser ativada, nada é partilhado.",
+            "O compartilhamento de pastas inicia um servidor SFTP local e precisa de uma exceção no Firewall do Windows (uma vez, como administrador). Até ser ativado, nada é compartilhado.",
             "تشغّل مشاركة المجلدات خادم SFTP محليًا وتحتاج إلى استثناء واحد في جدار حماية Windows (مرة واحدة، بصلاحيات المسؤول). وإلى أن تُفعَّل، لا تتم مشاركة أي شيء.",
             "फ़ोल्डर साझाकरण एक स्थानीय SFTP सर्वर चलाता है और Windows फ़ायरवॉल में एक अपवाद माँगता है (एक बार, व्यवस्थापक के रूप में)। सक्षम होने तक कुछ भी साझा नहीं होता।",
             "ফোল্ডার শেয়ারিং একটি স্থানীয় SFTP সার্ভার চালায় এবং Windows ফায়ারওয়ালে একটি ব্যতিক্রম প্রয়োজন (একবার, প্রশাসক হিসেবে)। চালু না হওয়া পর্যন্ত কিছুই শেয়ার হয় না।",
@@ -445,7 +445,7 @@ Partial Public NotInheritable Class Localization
 
         Add("определяется..",
             "detecting..", "визначається..", "wird ermittelt..", "rilevamento..",
-            "detectando..", "détection..", "a detetar..",
+            "detectando..", "détection..", "detectando..",
             "جارٍ التحديد..", "पहचाना जा रहा है..", "শনাক্ত করা হচ্ছে..", "معلوم کیا جا رہا ہے..", "检测中..")
 
         Add("за CGNAT (недоступно)",
@@ -467,7 +467,7 @@ Partial Public NotInheritable Class Localization
             "Il componente di condivisione manca: reinstalla l'applicazione.",
             "Falta el componente de uso compartido: reinstala la aplicación.",
             "Le composant de partage est absent - réinstallez l'application.",
-            "Falta o componente de partilha - reinstale a aplicação.",
+            "O componente de compartilhamento está ausente - reinstale o aplicativo.",
             "مكوّن المشاركة مفقود - أعد تثبيت التطبيق.",
             "साझाकरण घटक अनुपस्थित है - एप्लिकेशन दोबारा स्थापित करें।",
             "শেয়ারিং উপাদানটি অনুপস্থিত - অ্যাপ্লিকেশনটি পুনরায় ইনস্টল করুন।",
@@ -477,7 +477,7 @@ Partial Public NotInheritable Class Localization
         Add("Запуск компаньона..",
             "Starting companion..", "Запуск компаньйона..", "Companion wird gestartet..",
             "Avvio del componente companion..", "Iniciando el componente complementario..",
-            "Démarrage du composant compagnon..", "A iniciar o componente companion..",
+            "Démarrage du composant compagnon..", "Iniciando o componente companion..",
             "جارٍ تشغيل المكوّن المرافق..", "साथी घटक शुरू हो रहा है..",
             "সহযোগী উপাদান চালু হচ্ছে..", "معاون جزو شروع ہو رہا ہے..", "正在启动配套组件..")
 
@@ -485,7 +485,7 @@ Partial Public NotInheritable Class Localization
             "Could not reach the companion worker.", "Не вдалося зв'язатися з компаньйоном.",
             "Der Companion-Dienst war nicht erreichbar.", "Impossibile contattare il processo companion.",
             "No se pudo contactar con el proceso complementario.",
-            "Impossible de joindre le processus compagnon.", "Não foi possível contactar o processo companion.",
+            "Impossible de joindre le processus compagnon.", "Não foi possível contatar o processo companion.",
             "تعذّر الوصول إلى العملية المرافقة.", "साथी प्रक्रिया से संपर्क नहीं हो सका।",
             "সহযোগী প্রক্রিয়ার সাথে যোগাযোগ করা যায়নি।", "معاون عمل سے رابطہ نہ ہو سکا۔",
             "无法与配套进程通信。")
@@ -497,7 +497,7 @@ Partial Public NotInheritable Class Localization
             "L'avvio automatico è gestito da Windows (pacchetto dello Store).",
             "El inicio automático lo gestiona Windows (paquete de la Store).",
             "Le démarrage automatique est géré par Windows (paquet du Store).",
-            "O arranque automático é gerido pelo Windows (pacote da Store).",
+            "A inicialização automática é gerenciada pelo Windows (pacote da Store).",
             "يدير Windows التشغيل التلقائي (حزمة من المتجر).",
             "स्वतः-प्रारंभ Windows द्वारा नियंत्रित है (Store पैकेज)।",
             "স্বয়ংক্রিয় সূচনা Windows দ্বারা নিয়ন্ত্রিত (Store প্যাকেজ)।",
@@ -506,7 +506,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Роутер: не определён",
             "Router: unknown", "Роутер: не визначено", "Router: unbekannt", "Router: sconosciuto",
-            "Router: desconocido", "Routeur : inconnu", "Router: desconhecido",
+            "Router: desconocido", "Routeur : inconnu", "Roteador: desconhecido",
             "الموجّه: غير معروف", "राउटर: अज्ञात", "রাউটার: অজানা", "روٹر: نامعلوم", "路由器：未知")
 
         Add("Не удалось определить адрес роутера.",
@@ -515,7 +515,7 @@ Partial Public NotInheritable Class Localization
             "Impossibile determinare l'indirizzo del router.",
             "No se pudo determinar la dirección del router.",
             "Impossible de déterminer l'adresse du routeur.",
-            "Não foi possível determinar o endereço do router.",
+            "Não foi possível determinar o endereço do roteador.",
             "تعذّر تحديد عنوان الموجّه.", "राउटर का पता निर्धारित नहीं हो सका।",
             "রাউটারের ঠিকানা নির্ধারণ করা যায়নি।", "روٹر کا پتہ معلوم نہ ہو سکا۔", "无法确定路由器地址。")
 
@@ -559,7 +559,7 @@ Partial Public NotInheritable Class Localization
             "Nessuna risposta da questo PC. Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
             "Sin respuesta desde este PC. El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
             "Aucune réponse depuis ce PC. Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
-            "Sem resposta a partir deste PC. O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
+            "Sem resposta a partir deste PC. O roteador pode bloquear o próprio endereço a partir de dentro - teste com o celular em dados móveis.",
             "لا استجابة من هذا الحاسوب. قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
             "इस पीसी से कोई उत्तर नहीं। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
             "এই পিসি থেকে কোনো সাড়া নেই। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
@@ -590,7 +590,7 @@ Partial Public NotInheritable Class Localization
             "La richiesta è partita da questo PC verso l'indirizzo esterno del router ed è rientrata subito: così si verifica la regola di inoltro, non se il provider accetta connessioni in ingresso dall'esterno. Solo il telefono può dirlo con certezza: spegni il Wi-Fi, lascia i dati mobili e apri il codice QR.",
             "La petición salió de este PC hacia la dirección externa del router y volvió adentro: eso comprueba la regla de reenvío, no si tu proveedor permite conexiones entrantes desde fuera. Solo el teléfono lo confirma: apaga su Wi-Fi, deja los datos móviles y abre el código QR.",
             "La requête est partie de ce PC vers l'adresse externe du routeur et est revenue à l'intérieur - cela teste la règle de redirection, pas le fait que votre fournisseur laisse entrer les connexions depuis l'extérieur. Seul le téléphone peut trancher : coupez son Wi-Fi, laissez les données mobiles et ouvrez le code QR.",
-            "O pedido saiu deste PC para o endereço externo do router e voltou logo para dentro - isso testa a regra de encaminhamento, não se o seu operador deixa entrar ligações vindas de fora. Só o telemóvel confirma: desligue o Wi-Fi, deixe os dados móveis e abra o código QR.",
+            "A solicitação saiu deste PC para o endereço externo do roteador e voltou logo para dentro - isso testa a regra de encaminhamento, não se o seu provedor permite a entrada de conexões vindas de fora. Só o celular confirma: desligue o Wi-Fi, deixe os dados móveis ligados e abra o código QR.",
             "خرج الطلب من هذا الحاسوب إلى العنوان الخارجي للموجّه وعاد إلى الداخل مباشرة - وهذا يختبر قاعدة التوجيه، لا ما إذا كان المزوّد يسمح بالاتصالات الواردة من الخارج. الهاتف وحده يحسم الأمر: أوقف Wi-Fi عليه، وأبقِ بيانات الجوال، وافتح رمز QR.",
             "अनुरोध इस पीसी से राउटर के बाहरी पते पर गया और सीधे भीतर लौट आया - इससे फ़ॉरवर्डिंग नियम की जाँच होती है, यह नहीं कि आपका प्रदाता बाहर से आने वाले कनेक्शन भीतर आने देता है या नहीं। निर्णय केवल फ़ोन कर सकता है: उसका Wi-Fi बंद करें, मोबाइल डेटा चालू रखें और QR कोड खोलें।",
             "অনুরোধটি এই পিসি থেকে রাউটারের বাহ্যিক ঠিকানায় গিয়ে সরাসরি ভেতরে ফিরে এসেছে - এতে ফরওয়ার্ডিং নিয়ম যাচাই হয়, আপনার প্রোভাইডার বাইরে থেকে আসা সংযোগ ঢুকতে দেয় কি না তা নয়। কেবল ফোনই এটি নিশ্চিত করতে পারে: তার Wi-Fi বন্ধ করুন, মোবাইল ডেটা চালু রাখুন এবং QR কোড খুলুন।",
@@ -604,7 +604,7 @@ Partial Public NotInheritable Class Localization
             "La porta è aperta dall'esterno, ma non ha risposto il nostro programma. Di solito la regola di inoltro sul router punta a un altro dispositivo, oppure un altro servizio occupa quella porta. Controlla la regola: la porta esterna deve portare a questo PC e alla porta della condivisione.",
             "El puerto está abierto desde fuera, pero quien respondió no es nuestro programa. Normalmente la regla de redirección del router apunta a otro dispositivo, o ese puerto lo ocupa otro servicio. Revisa la regla: el puerto externo debe llevar a este PC y al puerto del uso compartido.",
             "Le port est ouvert depuis l'extérieur, mais ce n'est pas notre programme qui a répondu. En général, la règle de redirection du routeur pointe vers un autre appareil, ou un autre service occupe ce port. Vérifiez la règle : le port externe doit mener à ce PC et au port du partage.",
-            "A porta está aberta do exterior, mas quem respondeu não foi o nosso programa. Normalmente a regra de encaminhamento no router aponta para outro dispositivo, ou outro serviço ocupa essa porta. Verifique a regra: a porta externa deve levar a este PC e à porta da partilha.",
+            "A porta está aberta de fora, mas quem respondeu não foi o nosso programa. Normalmente a regra de encaminhamento no roteador aponta para outro dispositivo, ou outro serviço ocupa essa porta. Verifique a regra: a porta externa deve levar a este PC e à porta do compartilhamento.",
             "المنفذ مفتوح من الخارج، لكن الذي استجاب ليس برنامجنا. غالبًا ما تشير قاعدة إعادة التوجيه في الموجّه إلى جهاز آخر، أو تشغل خدمة أخرى هذا المنفذ. تحقّق من القاعدة: يجب أن يقود المنفذ الخارجي إلى هذا الحاسوب وإلى منفذ المشاركة.",
             "पोर्ट बाहर से खुला है, पर उत्तर हमारे कार्यक्रम ने नहीं दिया। आमतौर पर राउटर का फ़ॉरवर्डिंग नियम किसी दूसरे उपकरण की ओर जाता है, या उस पोर्ट पर कोई दूसरी सेवा चल रही है। नियम जाँचें: बाहरी पोर्ट इसी पीसी और साझाकरण के पोर्ट तक जाना चाहिए।",
             "পোর্টটি বাইরে থেকে খোলা, কিন্তু সাড়া দিয়েছে আমাদের প্রোগ্রাম নয়। সাধারণত রাউটারের ফরওয়ার্ডিং নিয়ম অন্য ডিভাইসের দিকে যায়, অথবা ওই পোর্টে অন্য কোনো পরিষেবা চলছে। নিয়মটি যাচাই করুন: বাহ্যিক পোর্টটি এই পিসি ও শেয়ারিং পোর্টে যাওয়া উচিত।",
@@ -618,7 +618,7 @@ Partial Public NotInheritable Class Localization
             "La verifica parte da questo stesso PC, quindi non è definitiva: molti router rifiutano dall'interno della rete di casa una richiesta al proprio indirizzo esterno. Il modo affidabile è aprire il codice QR sul telefono con il Wi-Fi spento e la rete mobile attiva. Se anche così non si collega, configura l'inoltro della porta - pulsante «Come configurare l'accesso da internet».",
             "La comprobación se hace desde este mismo PC, por lo que no es concluyente: muchos routers rechazan desde la red doméstica una petición a su propia dirección externa. Lo fiable es abrir el código QR en el teléfono con el Wi-Fi apagado y los datos móviles activos. Si aun así no conecta, configura la redirección de puerto - botón «Cómo configurar el acceso desde internet».",
             "Le test part de ce même PC, il n'est donc pas concluant : beaucoup de routeurs refusent, depuis le réseau domestique, une requête vers leur propre adresse externe. La méthode fiable est d'ouvrir le code QR sur le téléphone, Wi-Fi coupé et données mobiles activées. Si la connexion échoue encore, configurez la redirection de port - bouton « Comment configurer l'accès internet ».",
-            "O teste parte deste mesmo PC, por isso não é conclusivo: muitos routers recusam, a partir da rede doméstica, um pedido ao seu próprio endereço externo. O modo fiável é abrir o código QR no telemóvel com o Wi-Fi desligado e os dados móveis ligados. Se mesmo assim não ligar, configure o encaminhamento de porta - botão «Como configurar o acesso pela internet».",
+            "O teste parte deste mesmo PC, por isso não é conclusivo: muitos roteadores recusam, a partir da rede doméstica, uma solicitação ao seu próprio endereço externo. A forma confiável é abrir o código QR no celular com o Wi-Fi desligado e os dados móveis ligados. Se mesmo assim não conectar, configure o encaminhamento de porta - botão «Como configurar o acesso pela internet».",
             "يجري الاختبار من هذا الحاسوب نفسه، لذا فهو غير حاسم: كثير من الموجّهات ترفض من داخل الشبكة المنزلية أي طلب إلى عنوانها الخارجي. الطريقة الموثوقة هي فتح رمز QR على الهاتف مع إيقاف Wi-Fi وتشغيل بيانات الجوال. وإذا لم يتصل حتى حينها، فاضبط إعادة توجيه المنفذ - زر «كيفية إعداد الوصول من الإنترنت».",
             "जाँच इसी पीसी से चलती है, इसलिए यह अंतिम नहीं है: कई राउटर घरेलू नेटवर्क के भीतर से अपने ही बाहरी पते पर आया अनुरोध नहीं मानते। भरोसेमंद तरीका यह है कि फ़ोन पर Wi-Fi बंद करके और मोबाइल डेटा चालू रखकर QR कोड खोलें। तब भी न जुड़े, तो पोर्ट फ़ॉरवर्डिंग सेट करें - बटन «इंटरनेट पहुँच कैसे सेट करें»।",
             "পরীক্ষাটি এই পিসি থেকেই চলে, তাই এটি চূড়ান্ত নয়: অনেক রাউটার বাড়ির নেটওয়ার্কের ভেতর থেকে নিজের বাহ্যিক ঠিকানায় আসা অনুরোধ গ্রহণ করে না। নির্ভরযোগ্য উপায় হলো ফোনের Wi-Fi বন্ধ রেখে ও মোবাইল ডেটা চালু রেখে QR কোডটি খোলা। তাতেও সংযোগ না হলে পোর্ট ফরওয়ার্ডিং সেট করুন - «কীভাবে ইন্টারনেট অ্যাক্সেস সেট করবেন» বোতাম।",
@@ -630,7 +630,7 @@ Partial Public NotInheritable Class Localization
         Add("Обновляю список папок..",
             "Updating the folder list..", "Оновлюю список папок..", "Ordnerliste wird aktualisiert..",
             "Aggiornamento dell'elenco cartelle..", "Actualizando la lista de carpetas..",
-            "Mise à jour de la liste des dossiers..", "A atualizar a lista de pastas..",
+            "Mise à jour de la liste des dossiers..", "Atualizando a lista de pastas..",
             "جارٍ تحديث قائمة المجلدات..", "फ़ोल्डर सूची अपडेट हो रही है..",
             "ফোল্ডার তালিকা হালনাগাদ হচ্ছে..", "فولڈر فہرست اپ ڈیٹ ہو رہی ہے..", "正在更新文件夹列表..")
 
@@ -642,20 +642,20 @@ Partial Public NotInheritable Class Localization
         Add("Останавливаю раздачу..",
             "Stopping sharing..", "Зупиняю роздачу..", "Freigabe wird gestoppt..",
             "Arresto della condivisione..", "Deteniendo el uso compartido..",
-            "Arrêt du partage..", "A parar a partilha..",
+            "Arrêt du partage..", "Parando o compartilhamento..",
             "جارٍ إيقاف المشاركة..", "साझाकरण रोका जा रहा है..",
             "শেয়ারিং বন্ধ করা হচ্ছে..", "شیئرنگ روکی جا رہی ہے..", "正在停止共享..")
 
         Add("Раздача остановлена.",
             "Sharing stopped.", "Роздачу зупинено.", "Freigabe gestoppt.", "Condivisione arrestata.",
-            "Uso compartido detenido.", "Partage arrêté.", "Partilha parada.",
+            "Uso compartido detenido.", "Partage arrêté.", "Compartilhamento parado.",
             "تم إيقاف المشاركة.", "साझाकरण रुक गया।", "শেয়ারিং বন্ধ হয়েছে।", "شیئرنگ رک گئی۔", "共享已停止。")
 
         Add("Сначала добавьте папку и отметьте её галочкой.",
             "Add a folder and tick it first.", "Спершу додайте папку й позначте її галочкою.",
             "Fügen Sie zuerst einen Ordner hinzu und setzen Sie das Häkchen.",
             "Aggiungi prima una cartella e spuntala.", "Primero añade una carpeta y márcala.",
-            "Ajoutez d'abord un dossier et cochez-le.", "Adicione primeiro uma pasta e assinale-a.",
+            "Ajoutez d'abord un dossier et cochez-le.", "Primeiro adicione uma pasta e marque-a.",
             "أضف مجلدًا أولاً وحدّده بعلامة.", "पहले एक फ़ोल्डर जोड़ें और उस पर निशान लगाएँ।",
             "প্রথমে একটি ফোল্ডার যোগ করে তাতে টিক দিন।", "پہلے ایک فولڈر شامل کریں اور اس پر نشان لگائیں۔",
             "请先添加文件夹并勾选它。")
@@ -663,13 +663,13 @@ Partial Public NotInheritable Class Localization
         Add("Включаю раздачу..",
             "Starting sharing..", "Вмикаю роздачу..", "Freigabe wird gestartet..",
             "Avvio della condivisione..", "Iniciando el uso compartido..",
-            "Démarrage du partage..", "A iniciar a partilha..",
+            "Démarrage du partage..", "Iniciando o compartilhamento..",
             "جارٍ بدء المشاركة..", "साझाकरण शुरू हो रहा है..",
             "শেয়ারিং শুরু হচ্ছে..", "شیئرنگ شروع ہو رہی ہے..", "正在开始共享..")
 
         Add("Раздача запущена.",
             "Sharing started.", "Роздачу запущено.", "Freigabe gestartet.", "Condivisione avviata.",
-            "Uso compartido iniciado.", "Partage démarré.", "Partilha iniciada.",
+            "Uso compartido iniciado.", "Partage démarré.", "Compartilhamento iniciado.",
             "بدأت المشاركة.", "साझाकरण शुरू हो गया।", "শেয়ারিং শুরু হয়েছে।", "شیئرنگ شروع ہو گئی۔", "共享已开始。")
 
         Add("Запущено, адрес не подтверждён - проверьте брандмауэр/сеть.",
@@ -679,7 +679,7 @@ Partial Public NotInheritable Class Localization
             "Avviata, indirizzo non confermato: controlla firewall/rete.",
             "Iniciado, dirección sin confirmar: revisa el cortafuegos o la red.",
             "Démarré, adresse non confirmée - vérifiez le pare-feu/le réseau.",
-            "Iniciada, endereço por confirmar - verifique a firewall/rede.",
+            "Iniciado, endereço não confirmado - verifique o firewall/rede.",
             "بدأت، والعنوان غير مؤكَّد - تحقّق من جدار الحماية/الشبكة.",
             "शुरू हुआ, पता अपुष्ट - फ़ायरवॉल/नेटवर्क जाँचें।",
             "শুরু হয়েছে, ঠিকানা অনিশ্চিত - ফায়ারওয়াল/নেটওয়ার্ক যাচাই করুন।",
@@ -690,14 +690,14 @@ Partial Public NotInheritable Class Localization
             "Sharing from this PC is on", "Роздача з цього ПК працює",
             "Die Freigabe von diesem PC läuft", "La condivisione da questo PC è attiva",
             "El uso compartido desde este PC está activo", "Le partage depuis ce PC est actif",
-            "A partilha a partir deste PC está ativa", "المشاركة من هذا الحاسوب مفعّلة",
+            "O compartilhamento a partir deste PC está ativo", "المشاركة من هذا الحاسوب مفعّلة",
             "इस पीसी से साझाकरण चालू है", "এই পিসি থেকে শেয়ারিং চালু আছে",
             "اس پی سی سے شیئرنگ آن ہے", "本机共享已开启")
 
         Add("Раздача выключена",
             "Sharing is off", "Роздачу вимкнено", "Die Freigabe ist aus",
             "La condivisione è disattivata", "El uso compartido está desactivado",
-            "Le partage est désactivé", "A partilha está desativada",
+            "Le partage est désactivé", "O compartilhamento está desativado",
             "المشاركة متوقفة", "साझाकरण बंद है", "শেয়ারিং বন্ধ", "شیئرنگ بند ہے", "共享已关闭")
 
         ' --- iconography: names of the state glyph and the section chevrons (spec 027) ---
@@ -746,7 +746,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Видеотека",
             "Video library", "Відеотека", "Videothek", "Videoteca", "Videoteca",
-            "Vidéothèque", "Videoteca", "مكتبة فيديو", "वीडियो लाइब्रेरी",
+            "Vidéothèque", "Biblioteca de vídeo", "مكتبة فيديو", "वीडियो लाइब्रेरी",
             "ভিডিও লাইব্রেরি", "ویڈیو لائبریری", "视频库")
 
         Add("Фотохранилище",
@@ -760,7 +760,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Все файлы",
             "All files", "Усі файли", "Alle Dateien", "Tutti i file", "Todos los archivos",
-            "Tous les fichiers", "Todos os ficheiros", "كل الملفات", "सभी फ़ाइलें",
+            "Tous les fichiers", "Todos os arquivos", "كل الملفات", "सभी फ़ाइलें",
             "সব ফাইল", "تمام فائلیں", "所有文件")
 
         ' --- the compact window: section headers, header strip, settings ----------
@@ -770,12 +770,12 @@ Partial Public NotInheritable Class Localization
 
         Add("Общие ресурсы",
             "Shared resources", "Загальні ресурси", "Freigegebene Ressourcen", "Risorse condivise",
-            "Recursos compartidos", "Ressources partagées", "Recursos partilhados",
+            "Recursos compartidos", "Ressources partagées", "Recursos compartilhados",
             "الموارد المشتركة", "साझा संसाधन", "শেয়ার করা রিসোর্স", "شیئرڈ وسائل", "共享资源")
 
         Add("Доступ с телефона",
             "Phone access", "Доступ з телефона", "Zugriff vom Telefon", "Accesso dal telefono",
-            "Acceso desde el teléfono", "Accès depuis le téléphone", "Acesso pelo telemóvel",
+            "Acceso desde el teléfono", "Accès depuis le téléphone", "Acesso pelo celular",
             "الوصول من الهاتف", "फ़ोन से पहुँच", "ফোন থেকে অ্যাক্সেস", "فون سے رسائی", "手机访问")
 
         Add("Доступ из интернета",
@@ -793,7 +793,7 @@ Partial Public NotInheritable Class Localization
             "Sharing is on - {0}, port {1}", "Роздача працює - {0}, порт {1}",
             "Freigabe aktiv - {0}, Port {1}", "Condivisione attiva - {0}, porta {1}",
             "Compartición activa - {0}, puerto {1}", "Partage actif - {0}, port {1}",
-            "Partilha ativa - {0}, porta {1}", "المشاركة تعمل - {0}، المنفذ {1}",
+            "Compartilhamento ativo - {0}, porta {1}", "المشاركة تعمل - {0}، المنفذ {1}",
             "साझाकरण चालू है - {0}, पोर्ट {1}", "শেয়ারিং চালু - {0}, পোর্ট {1}",
             "شیئرنگ چالو ہے - {0}، پورٹ {1}", "共享已开启 - {0}，端口 {1}")
 
@@ -818,7 +818,7 @@ Partial Public NotInheritable Class Localization
             "{0} connections, {1} files", "{0} підключень, {1} файлів",
             "{0} Verbindungen, {1} Dateien", "{0} connessioni, {1} file",
             "{0} conexiones, {1} archivos", "{0} connexions, {1} fichiers",
-            "{0} ligações, {1} ficheiros", "{0} اتصالات، {1} ملفات",
+            "{0} conexões, {1} arquivos", "{0} اتصالات، {1} ملفات",
             "{0} कनेक्शन, {1} फ़ाइलें", "{0} সংযোগ, {1} ফাইল",
             "{0} کنکشنز، {1} فائلیں", "{0} 次连接，{1} 个文件")
 
@@ -837,34 +837,34 @@ Partial Public NotInheritable Class Localization
 
         Add("Показать пароль",
             "Show password", "Показати пароль", "Passwort anzeigen", "Mostra la password",
-            "Mostrar la contraseña", "Afficher le mot de passe", "Mostrar a palavra-passe",
+            "Mostrar la contraseña", "Afficher le mot de passe", "Mostrar a senha",
             "إظهار كلمة المرور", "पासवर्ड दिखाएँ", "পাসওয়ার্ড দেখান",
             "پاس ورڈ دکھائیں", "显示密码")
 
         Add("Скрыть пароль",
             "Hide password", "Сховати пароль", "Passwort verbergen", "Nascondi la password",
-            "Ocultar la contraseña", "Masquer le mot de passe", "Ocultar a palavra-passe",
+            "Ocultar la contraseña", "Masquer le mot de passe", "Ocultar a senha",
             "إخفاء كلمة المرور", "पासवर्ड छिपाएँ", "পাসওয়ার্ড লুকান",
             "پاس ورڈ چھپائیں", "隐藏密码")
 
         Add("Настройки",
             "Settings", "Налаштування", "Einstellungen", "Impostazioni", "Configuración",
-            "Paramètres", "Definições", "الإعدادات", "सेटिंग्स", "সেটিংস", "ترتیبات", "设置")
+            "Paramètres", "Configurações", "الإعدادات", "सेटिंग्स", "সেটিংস", "ترتیبات", "设置")
 
         Add("Настройки менеджера..",
             "Manager settings..", "Налаштування менеджера..", "Manager-Einstellungen..",
             "Impostazioni del gestore..", "Ajustes del gestor..",
-            "Paramètres du gestionnaire..", "Definições do gestor..", "إعدادات المدير..",
+            "Paramètres du gestionnaire..", "Configurações do gerenciador..", "إعدادات المدير..",
             "मैनेजर सेटिंग्स..", "ম্যানেজার সেটিংস..", "مینیجر کی ترتیبات..", "管理器设置..")
 
         Add("Настройки менеджера",
             "Manager settings", "Налаштування менеджера", "Manager-Einstellungen",
             "Impostazioni del gestore", "Ajustes del gestor", "Paramètres du gestionnaire",
-            "Definições do gestor", "إعدادات المدير", "मैनेजर सेटिंग्स",
+            "Configurações do gerenciador", "إعدادات المدير", "मैनेजर सेटिंग्स",
             "ম্যানেজার সেটিংস", "مینیجر کی ترتیبات", "管理器设置")
 
         Add("Запуск",
-            "Startup", "Запуск", "Start", "Avvio", "Inicio", "Démarrage", "Arranque",
+            "Startup", "Запуск", "Start", "Avvio", "Inicio", "Démarrage", "Inicialização",
             "بدء التشغيل", "स्टार्टअप", "স্টার্টআপ", "اسٹارٹ اپ", "启动")
 
         Add("Сеть",
@@ -873,18 +873,18 @@ Partial Public NotInheritable Class Localization
 
         Add("Хостинг",
             "Hosting", "Хостинг", "Hosting", "Hosting", "Alojamiento", "Hébergement",
-            "Alojamento", "الاستضافة", "होस्टिंग", "হোস্টিং", "ہوسٹنگ", "托管")
+            "Hospedagem", "الاستضافة", "होस्टिंग", "হোস্টিং", "ہوسٹنگ", "托管")
 
         ' The settings groups' folded summaries - the answer without unfolding anything.
         Add("Автозапуск включён",
             "Autostart on", "Автозапуск увімкнено", "Autostart ein", "Avvio automatico attivo",
-            "Inicio automático activado", "Démarrage automatique activé", "Arranque automático ativado",
+            "Inicio automático activado", "Démarrage automatique activé", "Inicialização automática ativada",
             "التشغيل التلقائي مفعّل", "ऑटोस्टार्ट चालू", "অটোস্টার্ট চালু",
             "آٹو اسٹارٹ آن", "自动启动：开")
 
         Add("Автозапуск выключен",
             "Autostart off", "Автозапуск вимкнено", "Autostart aus", "Avvio automatico disattivo",
-            "Inicio automático desactivado", "Démarrage automatique désactivé", "Arranque automático desativado",
+            "Inicio automático desactivado", "Démarrage automatique désactivé", "Inicialização automática desativada",
             "التشغيل التلقائي معطّل", "ऑटोस्टार्ट बंद", "অটোস্টার্ট বন্ধ",
             "آٹو اسٹارٹ آف", "自动启动：关")
 
@@ -892,7 +892,7 @@ Partial Public NotInheritable Class Localization
             "Autostart blocked by Windows", "Автозапуск заблоковано Windows",
             "Autostart von Windows blockiert", "Avvio automatico bloccato da Windows",
             "Inicio automático bloqueado por Windows", "Démarrage automatique bloqué par Windows",
-            "Arranque automático bloqueado pelo Windows", "التشغيل التلقائي محجوب بواسطة Windows",
+            "Inicialização automática bloqueada pelo Windows", "التشغيل التلقائي محجوب بواسطة Windows",
             "ऑटोस्टार्ट Windows द्वारा अवरुद्ध", "অটোস্টার্ট Windows দ্বারা অবরুদ্ধ",
             "آٹو اسٹارٹ Windows نے روک دیا", "自动启动被 Windows 阻止")
 
@@ -903,7 +903,7 @@ Partial Public NotInheritable Class Localization
             "Windows ha disattivato questa voce di avvio automatico (Gestione attività - App di avvio), quindi l'icona non compare all'accesso. Rimetti il segno di spunta per riattivarla.",
             "Windows ha desactivado esta entrada de inicio (Administrador de tareas - Aplicaciones de inicio), por lo que el icono no aparece al iniciar sesión. Vuelve a marcar la casilla para activarla.",
             "Windows a désactivé cette entrée de démarrage (Gestionnaire des tâches - Applications de démarrage), l'icône n'apparaît donc pas à l'ouverture de session. Cochez à nouveau la case pour la réactiver.",
-            "O Windows desativou esta entrada de arranque (Gestor de Tarefas - Aplicações de arranque), por isso o ícone não aparece ao iniciar sessão. Volte a marcar a caixa para a reativar.",
+            "O Windows desativou esta entrada de inicialização (Gerenciador de Tarefas - Aplicativos de inicialização), por isso o ícone não aparece ao entrar no Windows. Marque a caixa novamente para reativá-la.",
             "أوقف Windows عنصر بدء التشغيل هذا (إدارة المهام - تطبيقات بدء التشغيل)، لذلك لا تظهر الأيقونة عند تسجيل الدخول. حدّد المربع مرة أخرى لإعادة تشغيله.",
             "Windows ने इस स्टार्टअप प्रविष्टि को बंद कर दिया है (टास्क मैनेजर - स्टार्टअप ऐप्स), इसलिए लॉगऑन पर आइकन दिखाई नहीं देता। इसे फिर चालू करने के लिए बॉक्स पर दोबारा टिक करें।",
             "Windows এই স্টার্টআপ এন্ট্রিটি বন্ধ করে দিয়েছে (টাস্ক ম্যানেজার - স্টার্টআপ অ্যাপস), তাই লগঅনে আইকনটি দেখা যায় না। এটি আবার চালু করতে বক্সে পুনরায় টিক দিন।",
@@ -919,7 +919,7 @@ Partial Public NotInheritable Class Localization
             "L'avvio automatico punta a un file che non esiste più - l'icona non comparirà all'accesso. Rimetti il segno di spunta per ripristinarlo.",
             "El inicio automático apunta a un archivo que ya no existe: el icono no aparecerá al iniciar sesión. Vuelve a marcar la casilla para restaurarlo.",
             "Le démarrage automatique pointe vers un fichier qui n'existe plus - l'icône n'apparaîtra pas à l'ouverture de session. Cochez à nouveau la case pour le rétablir.",
-            "O arranque automático aponta para um ficheiro que já não existe - o ícone não aparecerá ao iniciar sessão. Volte a marcar a caixa para o restaurar.",
+            "A inicialização automática aponta para um arquivo que não existe mais - o ícone não aparecerá ao entrar no Windows. Marque a caixa novamente para restaurá-la.",
             "يشير بدء التشغيل التلقائي إلى ملف لم يعد موجودًا - لن تظهر الأيقونة عند تسجيل الدخول. حدّد المربع مرة أخرى لاستعادته.",
             "ऑटोस्टार्ट उस फ़ाइल की ओर इशारा करता है जो अब मौजूद नहीं है - लॉगऑन पर आइकन नहीं दिखेगा। इसे वापस लाने के लिए बॉक्स पर दोबारा टिक करें।",
             "অটোস্টার্ট এমন একটি ফাইলের দিকে নির্দেশ করে যা আর নেই - লগঅনে আইকনটি দেখা যাবে না। এটি ফিরিয়ে আনতে বক্সে পুনরায় টিক দিন।",
@@ -943,7 +943,7 @@ Partial Public NotInheritable Class Localization
             "Si applica all'intera condivisione, non a un solo codice: finché è attivo, il programma non chiede al router di aprire la porta (UPnP/NAT-PMP) e non offre indirizzi Internet. Un indirizzo Internet già incluso nei codici consegnati smette di funzionare; sulla rete locale tutto funziona come prima.",
             "Se aplica a todo el uso compartido, no a un solo código: mientras esté activado, el programa no pide al router que abra el puerto (UPnP/NAT-PMP) ni ofrece dirección de internet. Una dirección de internet ya incluida en los códigos entregados deja de funcionar; en la red local todo sigue funcionando como antes.",
             "Concerne le partage entier, pas un seul code : tant qu'il est activé, le programme ne demande pas au routeur d'ouvrir le port (UPnP/NAT-PMP) et ne propose aucune adresse Internet. Une adresse Internet déjà inscrite dans les codes remis cesse de fonctionner ; sur le réseau local, tout fonctionne comme avant.",
-            "Aplica-se a toda a partilha, não a um só código: enquanto estiver ativado, o programa não pede ao router para abrir a porta (UPnP/NAT-PMP) e não fornece endereço de Internet. Um endereço de Internet já incluído nos códigos entregues deixa de funcionar; na rede local tudo funciona como antes.",
+            "Vale para todo o compartilhamento, não para um único código: enquanto estiver ativado, o programa não pede ao roteador para abrir a porta (UPnP/NAT-PMP) e não fornece endereço de Internet. Um endereço de Internet já incluído nos códigos entregues deixa de funcionar; na rede local tudo funciona como antes.",
             "ينطبق على المشاركة بالكامل لا على رمز واحد: أثناء تشغيله، لا يطلب البرنامج من الموجّه فتح المنفذ (UPnP/NAT-PMP) ولا يقدّم عنوان إنترنت. عنوان الإنترنت المضمّن بالفعل في الرموز المُسلَّمة يتوقف عن العمل؛ على الشبكة المحلية يعمل كل شيء كما كان.",
             "पूरी साझा करने की सेटिंग पर लागू होता है, किसी एक कोड पर नहीं: जब तक यह चालू है, प्रोग्राम राउटर से पोर्ट खोलने (UPnP/NAT-PMP) की अनुरोध नहीं करता और कोई इंटरनेट पता नहीं देता। बाँटे गए कोड में पहले से शामिल इंटरनेट पता काम करना बंद कर देता है; स्थानीय नेटवर्क पर सब पहले जैसा काम करता है।",
             "পুরো শেয়ারে প্রযোজ্য, একটি কোডে নয়: চালু থাকা অবস্থায় প্রোগ্রাম রাউটারকে পোর্ট খুলতে (UPnP/NAT-PMP) বলে না এবং ইন্টারনেট ঠিকানা দেয় না। আগে থেকেই বিতরণ করা কোডে যাওয়া ইন্টারনেট ঠিকানা কাজ করা বন্ধ করে দেয়; স্থানীয় নেটওয়ার্কে সব আগের মতোই কাজ করে।",
@@ -965,7 +965,7 @@ Partial Public NotInheritable Class Localization
             "Activer le mode « réseau local uniquement » ?" & vbCrLf & vbCrLf &
             "Le programme cessera de demander au routeur d'ouvrir le port (UPnP/NAT-PMP) et ne fournira plus d'adresse Internet. Les adresses Internet déjà inscrites dans les codes remis cesseront de fonctionner ; sur le réseau local, tout continue de fonctionner. Un partage en cours redémarre.",
             "Ativar o modo ""só rede local""?" & vbCrLf & vbCrLf &
-            "O programa deixará de pedir ao router para abrir a porta (UPnP/NAT-PMP) e não fornecerá endereços de Internet. Os endereços de Internet já incluídos nos códigos entregues deixarão de funcionar; na rede local tudo continua a funcionar. Uma partilha em execução reinicia.",
+            "O programa deixará de pedir ao roteador para abrir a porta (UPnP/NAT-PMP) e não fornecerá endereços de Internet. Os endereços de Internet já incluídos nos códigos entregues deixarão de funcionar; na rede local tudo continua funcionando. Um compartilhamento em execução será reiniciado.",
             "تشغيل وضع ""الشبكة المحلية فقط""؟" & vbCrLf & vbCrLf &
             "سيتوقف البرنامج عن طلب فتح المنفذ من الموجّه (UPnP/NAT-PMP) ولن يقدّم أي عنوان إنترنت. عناوين الإنترنت المضمّنة بالفعل في الرموز المُسلَّمة ستتوقف عن العمل؛ على الشبكة المحلية يستمر كل شيء بالعمل. تُعاد تشغيل المشاركة النشطة.",
             """केवल स्थानीय नेटवर्क"" मोड चालू करें?" & vbCrLf & vbCrLf &
@@ -981,14 +981,14 @@ Partial Public NotInheritable Class Localization
             "up to {0} connections, port {1}", "до {0} підключень, порт {1}",
             "bis zu {0} Verbindungen, Port {1}", "fino a {0} connessioni, porta {1}",
             "hasta {0} conexiones, puerto {1}", "jusqu'à {0} connexions, port {1}",
-            "até {0} ligações, porta {1}", "حتى {0} اتصالات، المنفذ {1}",
+            "até {0} conexões, porta {1}", "حتى {0} اتصالات، المنفذ {1}",
             "अधिकतम {0} कनेक्शन, पोर्ट {1}", "সর্বোচ্চ {0} সংযোগ, পোর্ট {1}",
             "زیادہ سے زیادہ {0} کنکشنز، پورٹ {1}", "最多 {0} 个连接，端口 {1}")
 
         Add("до {0} подключений",
             "up to {0} connections", "до {0} підключень", "bis zu {0} Verbindungen",
             "fino a {0} connessioni", "hasta {0} conexiones", "jusqu'à {0} connexions",
-            "até {0} ligações", "حتى {0} اتصالات", "अधिकतम {0} कनेक्शन",
+            "até {0} conexões", "حتى {0} اتصالات", "अधिकतम {0} कनेक्शन",
             "সর্বোচ্চ {0} সংযোগ", "زیادہ سے زیادہ {0} کنکشنز", "最多 {0} 个连接")
 
     End Sub

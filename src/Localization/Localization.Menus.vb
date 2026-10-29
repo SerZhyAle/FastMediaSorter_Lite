@@ -65,7 +65,7 @@ Partial Public NotInheritable Class Localization
         Add("Копировать путь к файлу",
             "Copy the file path", "Копіювати шлях до файлу", "Dateipfad kopieren",
             "Copia il percorso del file", "Copiar la ruta del archivo",
-            "Copier le chemin du fichier", "Copiar o caminho do ficheiro",
+            "Copier le chemin du fichier", "Copiar o caminho do arquivo",
             "نسخ مسار الملف", "फ़ाइल पथ कॉपी करें", "ফাইলের পথ কপি করুন",
             "فائل کا راستہ کاپی کریں", "复制文件路径")
 
@@ -105,38 +105,38 @@ Partial Public NotInheritable Class Localization
 
         Add("Удалить (Del)",
             "Delete (Del)", "Видалити (Del)", "Löschen (Entf)", "Elimina (Canc)", "Eliminar (Supr)",
-            "Supprimer (Suppr)", "Eliminar (Del)", "حذف (Del)", "हटाएँ (Del)", "মুছুন (Del)",
+            "Supprimer (Suppr)", "Excluir (Del)", "حذف (Del)", "हटाएँ (Del)", "মুছুন (Del)",
             "حذف کریں (Del)", "删除 (Del)")
 
         Add("Во весь экран (F7)",
             "Full screen (F7)", "Повний екран (F7)", "Vollbild (F7)", "Schermo intero (F7)",
-            "Pantalla completa (F7)", "Plein écran (F7)", "Ecrã inteiro (F7)",
+            "Pantalla completa (F7)", "Plein écran (F7)", "Tela cheia (F7)",
             "ملء الشاشة (F7)", "पूर्ण स्क्रीन (F7)", "পূর্ণ স্ক্রিন (F7)", "پوری اسکرین (F7)", "全屏 (F7)")
 
         Add("Выйти из полноэкранного режима",
             "Exit full screen", "Вийти з повноекранного режиму", "Vollbild verlassen",
             "Esci da schermo intero", "Salir de pantalla completa", "Quitter le plein écran",
-            "Sair do ecrã inteiro", "الخروج من ملء الشاشة", "पूर्ण स्क्रीन से बाहर निकलें",
+            "Sair da tela cheia", "الخروج من ملء الشاشة", "पूर्ण स्क्रीन से बाहर निकलें",
             "পূর্ণ স্ক্রিন থেকে বের হন", "پوری اسکرین سے باہر نکلیں", "退出全屏")
 
         Add("Во весь экран без панелей (F11)",
             "Full screen, no panels (F11)", "Повний екран без панелей (F11)",
             "Vollbild ohne Leisten (F11)", "Schermo intero senza barre (F11)",
             "Pantalla completa sin barras (F11)", "Plein écran sans barres (F11)",
-            "Ecrã inteiro sem barras (F11)", "ملء الشاشة بدون أشرطة (F11)",
+            "Tela cheia sem barras (F11)", "ملء الشاشة بدون أشرطة (F11)",
             "बिना पट्टियों के पूर्ण स्क्रीन (F11)", "প্যানেল ছাড়া পূর্ণ স্ক্রিন (F11)",
             "پٹیوں کے بغیر پوری اسکرین (F11)", "全屏，无面板 (F11)")
 
         Add("Следующий файл (Space)",
             "Next file (Space)", "Наступний файл (Space)", "Nächste Datei (Leertaste)",
             "File successivo (Spazio)", "Archivo siguiente (Espacio)", "Fichier suivant (Espace)",
-            "Ficheiro seguinte (Espaço)", "الملف التالي (Space)", "अगली फ़ाइल (Space)",
+            "Arquivo seguinte (Espaço)", "الملف التالي (Space)", "अगली फ़ाइल (Space)",
             "পরবর্তী ফাইল (Space)", "اگلی فائل (Space)", "下一个文件（空格）")
 
         Add("Предыдущий файл (B)",
             "Previous file (B)", "Попередній файл (B)", "Vorherige Datei (B)",
             "File precedente (B)", "Archivo anterior (B)", "Fichier précédent (B)",
-            "Ficheiro anterior (B)", "الملف السابق (B)", "पिछली फ़ाइल (B)",
+            "Arquivo anterior (B)", "الملف السابق (B)", "पिछली फ़ाइल (B)",
             "পূর্ববর্তী ফাইল (B)", "پچھلی فائل (B)", "上一个文件 (B)")
 
         ' --- video context menu ----------------------------------------------------
@@ -162,7 +162,7 @@ Partial Public NotInheritable Class Localization
             "Open in the default player", "Відкрити у зовнішньому плеєрі",
             "Im Standard-Player öffnen", "Apri nel lettore predefinito",
             "Abrir en el reproductor predeterminado", "Ouvrir dans le lecteur par défaut",
-            "Abrir no leitor predefinido", "فتح في المشغّل الافتراضي",
+            "Abrir no reprodutor padrão", "فتح في المشغّل الافتراضي",
             "डिफ़ॉल्ट प्लेयर में खोलें", "ডিফল্ট প্লেয়ারে খুলুন",
             "ڈیفالٹ پلیئر میں کھولیں", "在默认播放器中打开")
 
@@ -175,7 +175,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Выбрать файл..",
             "Choose file..", "Вибрати файл..", "Datei wählen..", "Scegli file..",
-            "Elegir archivo..", "Choisir un fichier..", "Escolher ficheiro..",
+            "Elegir archivo..", "Choisir un fichier..", "Escolher arquivo..",
             "اختيار ملف..", "फ़ाइल चुनें..", "ফাইল বাছুন..", "فائل منتخب کریں..", "选择文件..")
 
         Add("Выбрать папку..",
@@ -191,7 +191,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Полный экран",
             "Fullscreen", "Повний екран", "Vollbild", "Schermo intero", "Pantalla completa",
-            "Plein écran", "Ecrã inteiro", "ملء الشاشة", "पूर्ण स्क्रीन", "পূর্ণ স্ক্রিন",
+            "Plein écran", "Tela cheia", "ملء الشاشة", "पूर्ण स्क्रीन", "পূর্ণ স্ক্রিন",
             "پوری اسکرین", "全屏")
 
         ' Was the bilingual "Язык / Language" while there were exactly two languages.
@@ -206,22 +206,22 @@ Partial Public NotInheritable Class Localization
 
         Add("Недавние файлы",
             "Recent files", "Нещодавні файли", "Zuletzt verwendete Dateien", "File recenti",
-            "Archivos recientes", "Fichiers récents", "Ficheiros recentes",
+            "Archivos recientes", "Fichiers récents", "Arquivos recentes",
             "الملفات الأخيرة", "हाल की फ़ाइलें", "সাম্প্রতিক ফাইল", "حالیہ فائلیں", "最近的文件")
 
         Add("Предыдущий файл",
             "Previous file", "Попередній файл", "Vorherige Datei", "File precedente",
-            "Archivo anterior", "Fichier précédent", "Ficheiro anterior",
+            "Archivo anterior", "Fichier précédent", "Arquivo anterior",
             "الملف السابق", "पिछली फ़ाइल", "পূর্ববর্তী ফাইল", "پچھلی فائل", "上一个文件")
 
         Add("Следующий файл",
             "Next file", "Наступний файл", "Nächste Datei", "File successivo",
-            "Archivo siguiente", "Fichier suivant", "Ficheiro seguinte",
+            "Archivo siguiente", "Fichier suivant", "Arquivo seguinte",
             "الملف التالي", "अगली फ़ाइल", "পরবর্তী ফাইল", "اگلی فائل", "下一个文件")
 
         Add("Случайный файл",
             "Random file", "Випадковий файл", "Zufällige Datei", "File casuale",
-            "Archivo aleatorio", "Fichier aléatoire", "Ficheiro aleatório",
+            "Archivo aleatorio", "Fichier aléatoire", "Arquivo aleatório",
             "ملف عشوائي", "यादृच्छिक फ़ाइल", "এলোমেলো ফাইল", "بے ترتیب فائل", "随机文件")
 
         Add("Случайное слайд-шоу",
@@ -237,7 +237,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Настройки..",
             "Settings..", "Налаштування..", "Einstellungen..", "Impostazioni..", "Ajustes..",
-            "Paramètres..", "Definições..", "الإعدادات..", "सेटिंग्स..", "সেটিংস..",
+            "Paramètres..", "Configurações..", "الإعدادات..", "सेटिंग्स..", "সেটিংস..",
             "ترتیبات..", "设置..")
 
         Add("Переименовать",
@@ -245,7 +245,7 @@ Partial Public NotInheritable Class Localization
             "Mudar o nome", "إعادة التسمية", "नाम बदलें", "নাম পরিবর্তন", "نام تبدیل کریں", "重命名")
 
         Add("Удалить",
-            "Delete", "Видалити", "Löschen", "Elimina", "Eliminar", "Supprimer", "Eliminar",
+            "Delete", "Видалити", "Löschen", "Elimina", "Eliminar", "Supprimer", "Excluir",
             "حذف", "हटाएँ", "মুছুন", "حذف کریں", "删除")
 
         Add("Перевод в браузере",
@@ -260,42 +260,42 @@ Partial Public NotInheritable Class Localization
 
         Add("+10 файлов",
             "+10 files", "+10 файлів", "+10 Dateien", "+10 file", "+10 archivos",
-            "+10 fichiers", "+10 ficheiros", "+10 ملفات", "+10 फ़ाइलें", "+১০ ফাইল",
+            "+10 fichiers", "+10 arquivos", "+10 ملفات", "+10 फ़ाइलें", "+১০ ফাইল",
             "+10 فائلیں", "+10 个文件")
 
         Add("-10 файлов",
             "-10 files", "-10 файлів", "-10 Dateien", "-10 file", "-10 archivos",
-            "-10 fichiers", "-10 ficheiros", "-10 ملفات", "-10 फ़ाइलें", "-১০ ফাইল",
+            "-10 fichiers", "-10 arquivos", "-10 ملفات", "-10 फ़ाइलें", "-১০ ফাইল",
             "-10 فائلیں", "-10 个文件")
 
         Add("+100 файлов",
             "+100 files", "+100 файлів", "+100 Dateien", "+100 file", "+100 archivos",
-            "+100 fichiers", "+100 ficheiros", "+100 ملف", "+100 फ़ाइलें", "+১০০ ফাইল",
+            "+100 fichiers", "+100 arquivos", "+100 ملف", "+100 फ़ाइलें", "+১০০ ফাইল",
             "+100 فائلیں", "+100 个文件")
 
         Add("-100 файлов",
             "-100 files", "-100 файлів", "-100 Dateien", "-100 file", "-100 archivos",
-            "-100 fichiers", "-100 ficheiros", "-100 ملف", "-100 फ़ाइलें", "-১০০ ফাইল",
+            "-100 fichiers", "-100 arquivos", "-100 ملف", "-100 फ़ाइलें", "-১০০ ফাইল",
             "-100 فائلیں", "-100 个文件")
 
         Add("+1000 файлов",
             "+1000 files", "+1000 файлів", "+1000 Dateien", "+1000 file", "+1000 archivos",
-            "+1000 fichiers", "+1000 ficheiros", "+1000 ملف", "+1000 फ़ाइलें", "+১০০০ ফাইল",
+            "+1000 fichiers", "+1000 arquivos", "+1000 ملف", "+1000 फ़ाइलें", "+১০০০ ফাইল",
             "+1000 فائلیں", "+1000 个文件")
 
         Add("-1000 файлов",
             "-1000 files", "-1000 файлів", "-1000 Dateien", "-1000 file", "-1000 archivos",
-            "-1000 fichiers", "-1000 ficheiros", "-1000 ملف", "-1000 फ़ाइलें", "-১০০০ ফাইল",
+            "-1000 fichiers", "-1000 arquivos", "-1000 ملف", "-1000 फ़ाइलें", "-১০০০ ফাইল",
             "-1000 فائلیں", "-1000 个文件")
 
         Add("первый файл",
             "first file", "перший файл", "erste Datei", "primo file", "primer archivo",
-            "premier fichier", "primeiro ficheiro", "الملف الأول", "पहली फ़ाइल",
+            "premier fichier", "primeiro arquivo", "الملف الأول", "पहली फ़ाइल",
             "প্রথম ফাইল", "پہلی فائل", "第一个文件")
 
         Add("последний файл",
             "last file", "останній файл", "letzte Datei", "ultimo file", "último archivo",
-            "dernier fichier", "último ficheiro", "الملف الأخير", "अंतिम फ़ाइल",
+            "dernier fichier", "último arquivo", "الملف الأخير", "अंतिम फ़ाइल",
             "শেষ ফাইল", "آخری فائل", "最后一个文件")
 
         Add("Авто-перевод включён",
@@ -333,7 +333,7 @@ Partial Public NotInheritable Class Localization
             "Vuoi davvero eliminare definitivamente il file '{0}'? Dopo non lo convinci a tornare.",
             "¿Seguro que quieres borrar definitivamente el archivo '{0}'? Después no hay forma de convencerlo de volver.",
             "Voulez-vous vraiment supprimer définitivement le fichier '{0}' ? Impossible de le faire revenir ensuite.",
-            "Tem a certeza de que quer eliminar definitivamente o ficheiro '{0}'? Depois já não há como o convencer a voltar.",
+            "Tem certeza de que quer excluir definitivamente o arquivo '{0}'? Depois não há como convencê-lo a voltar.",
             "هل تريد بالتأكيد حذف الملف '{0}' نهائيًا؟ لن يعود بعد ذلك مهما أقنعته.",
             "क्या आप वाकई फ़ाइल '{0}' को स्थायी रूप से हटाना चाहते हैं? इसके बाद उसे मनाकर वापस नहीं लाया जा सकता।",
             "আপনি কি নিশ্চিতভাবে '{0}' ফাইলটি স্থায়ীভাবে মুছতে চান? এরপর তাকে আর ফেরানো যাবে না।",
@@ -347,7 +347,7 @@ Partial Public NotInheritable Class Localization
             "Vuoi davvero eliminare definitivamente {0} file?",
             "¿Seguro que quieres borrar definitivamente {0} archivo(s)?",
             "Voulez-vous vraiment supprimer définitivement {0} fichier(s) ?",
-            "Tem a certeza de que quer eliminar definitivamente {0} ficheiro(s)?",
+            "Tem certeza de que quer excluir definitivamente {0} arquivo(s)?",
             "هل تريد بالتأكيد حذف {0} ملف نهائيًا؟",
             "क्या आप वाकई {0} फ़ाइल(ें) स्थायी रूप से हटाना चाहते हैं?",
             "আপনি কি নিশ্চিতভাবে {0}টি ফাইল স্থায়ীভাবে মুছতে চান?",
@@ -366,7 +366,7 @@ Partial Public NotInheritable Class Localization
             "Spostare il file '{0}' nel Cestino?",
             "¿Mover el archivo '{0}' a la Papelera?",
             "Déplacer le fichier '{0}' vers la Corbeille ?",
-            "Mover o ficheiro '{0}' para a Reciclagem?",
+            "Mover o arquivo '{0}' para a Lixeira?",
             "نقل الملف '{0}' إلى سلة المحذوفات؟",
             "फ़ाइल '{0}' को रीसायकल बिन में भेजें?",
             "'{0}' ফাইলটি রিসাইকেল বিনে পাঠাবেন?",
@@ -380,7 +380,7 @@ Partial Public NotInheritable Class Localization
             "Eliminare definitivamente il file '{0}', senza passare dal Cestino?",
             "¿Borrar definitivamente el archivo '{0}', sin pasar por la Papelera?",
             "Supprimer définitivement le fichier '{0}', sans passer par la Corbeille ?",
-            "Eliminar definitivamente o ficheiro '{0}', sem passar pela Reciclagem?",
+            "Excluir definitivamente o arquivo '{0}', sem passar pela Lixeira?",
             "حذف الملف '{0}' نهائيًا دون المرور بسلة المحذوفات؟",
             "फ़ाइल '{0}' को रीसायकल बिन में भेजे बिना स्थायी रूप से हटाएँ?",
             "'{0}' ফাইলটি রিসাইকেল বিন এড়িয়ে স্থায়ীভাবে মুছবেন?",
@@ -394,7 +394,7 @@ Partial Public NotInheritable Class Localization
             "Il file '{0}' sarà eliminato definitivamente: su un'unità di rete non esiste il Cestino.",
             "El archivo '{0}' se borrará definitivamente: una unidad de red no tiene Papelera.",
             "Le fichier '{0}' sera supprimé définitivement : un lecteur réseau n'a pas de Corbeille.",
-            "O ficheiro '{0}' será eliminado definitivamente: uma unidade de rede não tem Reciclagem.",
+            "O arquivo '{0}' será excluído definitivamente: uma unidade de rede não tem Lixeira.",
             "سيُحذف الملف '{0}' نهائيًا: لا توجد سلة محذوفات على محرك الشبكة.",
             "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: नेटवर्क ड्राइव पर रीसायकल बिन नहीं होता।",
             "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: নেটওয়ার্ক ড্রাইভে রিসাইকেল বিন নেই।",
@@ -408,7 +408,7 @@ Partial Public NotInheritable Class Localization
             "Il file '{0}' sarà eliminato definitivamente: su un supporto rimovibile non esiste il Cestino.",
             "El archivo '{0}' se borrará definitivamente: un medio extraíble no tiene Papelera.",
             "Le fichier '{0}' sera supprimé définitivement : un support amovible n'a pas de Corbeille.",
-            "O ficheiro '{0}' será eliminado definitivamente: um suporte amovível não tem Reciclagem.",
+            "O arquivo '{0}' será excluído definitivamente: mídias removíveis não têm Lixeira.",
             "سيُحذف الملف '{0}' نهائيًا: لا توجد سلة محذوفات على وسائط قابلة للإزالة.",
             "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: हटाने योग्य मीडिया पर रीसायकल बिन नहीं होता।",
             "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: অপসারণযোগ্য মিডিয়ায় রিসাইকেল বিন নেই।",
@@ -422,7 +422,7 @@ Partial Public NotInheritable Class Localization
             "Il file '{0}' sarà eliminato definitivamente: il Cestino è disattivato per questa unità.",
             "El archivo '{0}' se borrará definitivamente: la Papelera está desactivada para esta unidad.",
             "Le fichier '{0}' sera supprimé définitivement : la Corbeille est désactivée pour ce lecteur.",
-            "O ficheiro '{0}' será eliminado definitivamente: a Reciclagem está desativada para esta unidade.",
+            "O arquivo '{0}' será excluído definitivamente: a Lixeira está desativada para esta unidade.",
             "سيُحذف الملف '{0}' نهائيًا: سلة المحذوفات معطّلة لهذا القرص.",
             "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: इस ड्राइव के लिए रीसायकल बिन बंद है।",
             "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: এই ড্রাইভের জন্য রিসাইকেল বিন বন্ধ।",
@@ -436,7 +436,7 @@ Partial Public NotInheritable Class Localization
             "Il file '{0}' sarà eliminato definitivamente: è più grande della capacità del Cestino.",
             "El archivo '{0}' se borrará definitivamente: es mayor de lo que cabe en la Papelera.",
             "Le fichier '{0}' sera supprimé définitivement : il dépasse la capacité de la Corbeille.",
-            "O ficheiro '{0}' será eliminado definitivamente: é maior do que a Reciclagem comporta.",
+            "O arquivo '{0}' será excluído definitivamente: é maior do que a Lixeira comporta.",
             "سيُحذف الملف '{0}' نهائيًا: حجمه أكبر مما تتسع له سلة المحذوفات.",
             "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: यह रीसायकल बिन की क्षमता से बड़ी है।",
             "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: এটি রিসাইকেল বিনের ধারণক্ষমতার চেয়ে বড়।",
@@ -450,7 +450,7 @@ Partial Public NotInheritable Class Localization
             "Il file '{0}' sarà eliminato definitivamente: questa posizione non supporta il Cestino.",
             "El archivo '{0}' se borrará definitivamente: esta ubicación no admite la Papelera.",
             "Le fichier '{0}' sera supprimé définitivement : cet emplacement ne prend pas en charge la Corbeille.",
-            "O ficheiro '{0}' será eliminado definitivamente: esta localização não suporta a Reciclagem.",
+            "O arquivo '{0}' será excluído definitivamente: este local não oferece suporte à Lixeira.",
             "سيُحذف الملف '{0}' نهائيًا: هذا الموقع لا يدعم سلة المحذوفات.",
             "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: यह स्थान रीसायकल बिन का समर्थन नहीं करता।",
             "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: এই অবস্থান রিসাইকেল বিন সমর্থন করে না।",
@@ -467,7 +467,7 @@ Partial Public NotInheritable Class Localization
             "Spostare {0} file nel Cestino?",
             "¿Mover {0} archivo(s) a la Papelera?",
             "Déplacer {0} fichier(s) vers la Corbeille ?",
-            "Mover {0} ficheiro(s) para a Reciclagem?",
+            "Mover {0} arquivo(s) para a Lixeira?",
             "نقل {0} ملف إلى سلة المحذوفات؟",
             "{0} फ़ाइल(ें) रीसायकल बिन में भेजें?",
             "{0}টি ফাইল রিসাইকেল বিনে পাঠাবেন?",
@@ -481,7 +481,7 @@ Partial Public NotInheritable Class Localization
             "Eliminare definitivamente {0} file, senza passare dal Cestino?",
             "¿Borrar definitivamente {0} archivo(s), sin pasar por la Papelera?",
             "Supprimer définitivement {0} fichier(s), sans passer par la Corbeille ?",
-            "Eliminar definitivamente {0} ficheiro(s), sem passar pela Reciclagem?",
+            "Excluir definitivamente {0} arquivo(s), sem passar pela Lixeira?",
             "حذف {0} ملف نهائيًا دون المرور بسلة المحذوفات؟",
             "{0} फ़ाइल(ें) रीसायकल बिन में भेजे बिना स्थायी रूप से हटाएँ?",
             "{0}টি ফাইল রিসাইকেল বিন এড়িয়ে স্থায়ীভাবে মুছবেন?",
@@ -495,7 +495,7 @@ Partial Public NotInheritable Class Localization
             "{0} file saranno eliminati definitivamente: qui non c'è il Cestino.",
             "{0} archivo(s) se borrarán definitivamente: aquí no hay Papelera.",
             "{0} fichier(s) seront supprimés définitivement : il n'y a pas de Corbeille ici.",
-            "{0} ficheiro(s) serão eliminados definitivamente: aqui não há Reciclagem.",
+            "{0} arquivo(s) serão excluídos definitivamente: aqui não há Lixeira.",
             "سيُحذف {0} ملف نهائيًا: لا توجد سلة محذوفات هنا.",
             "{0} फ़ाइल(ें) स्थायी रूप से हट जाएँगी: यहाँ रीसायकल बिन नहीं है।",
             "{0}টি ফাইল স্থায়ীভাবে মুছে যাবে: এখানে রিসাইকেল বিন নেই।",
@@ -509,7 +509,7 @@ Partial Public NotInheritable Class Localization
             "Vuoi davvero {0} {1} file in '{2}'?",
             "¿Seguro que quieres {0} {1} archivo(s) en '{2}'?",
             "Voulez-vous vraiment {0} {1} fichier(s) vers '{2}' ?",
-            "Tem a certeza de que quer {0} {1} ficheiro(s) para '{2}'?",
+            "Tem certeza de que quer {0} {1} arquivo(s) para '{2}'?",
             "هل تريد بالتأكيد {0} {1} ملف إلى '{2}'؟",
             "क्या आप वाकई {1} फ़ाइल(ें) '{2}' में {0} चाहते हैं?",
             "আপনি কি নিশ্চিতভাবে {1}টি ফাইল '{2}'-এ {0} চান?",
@@ -528,7 +528,7 @@ Partial Public NotInheritable Class Localization
             "{0} of {1} files processed.", "{0} з {1} файлів оброблено.",
             "{0} von {1} Dateien verarbeitet.", "{0} di {1} file elaborati.",
             "{0} de {1} archivos procesados.", "{0} fichier(s) sur {1} traités.",
-            "{0} de {1} ficheiros processados.", "تمت معالجة {0} من {1} ملفًا.",
+            "{0} de {1} arquivos processados.", "تمت معالجة {0} من {1} ملفًا.",
             "{1} में से {0} फ़ाइलें संसाधित हुईं।", "{1}টির মধ্যে {0}টি ফাইল প্রক্রিয়া হয়েছে।",
             "{1} میں سے {0} فائلیں پروسیس ہوئیں۔", "已处理 {1} 个文件中的 {0} 个。")
 
@@ -539,7 +539,7 @@ Partial Public NotInheritable Class Localization
             "Prima indica una cartella con file multimediali.. Ottimo programma, ma non legge nel pensiero.",
             "Primero indícame una carpeta con archivos multimedia.. Buena aplicación, pero no adivina el pensamiento.",
             "Indiquez d'abord un dossier contenant des médias.. Excellente application, mais pas télépathe.",
-            "Indique primeiro uma pasta com ficheiros multimédia.. Ótima aplicação, mas não lê pensamentos.",
+            "Indique primeiro uma pasta com arquivos de mídia.. Ótimo aplicativo, mas não lê pensamentos.",
             "أشِر أولاً إلى مجلد يحتوي على ملفات وسائط.. البرنامج جيد، لكنه لا يقرأ الأفكار.",
             "पहले मीडिया फ़ाइलों वाला फ़ोल्डर बताइए.. कार्यक्रम अच्छा है, पर मन नहीं पढ़ सकता।",
             "প্রথমে মিডিয়া ফাইল আছে এমন একটি ফোল্ডার দেখান.. প্রোগ্রামটি ভালো, তবে মন পড়তে পারে না।",
@@ -553,7 +553,7 @@ Partial Public NotInheritable Class Localization
             "Gestore di media e file: visualizza e ordina foto e video con un tasto, gestisci i file in cartelle, su server e su dispositivi." & vbCrLf & "Versione {0}",
             "Gestor de medios y archivos: ve y ordena fotos y vídeos con una tecla, gestiona archivos en carpetas, en servidores y en dispositivos." & vbCrLf & "Versión {0}",
             "Gestionnaire de médias et fichiers : affichez et triez photos et vidéos d'une touche, gérez les fichiers dans des dossiers, sur des serveurs et sur des appareils." & vbCrLf & "Version {0}",
-            "Gestor de média e ficheiros: veja e ordene fotos e vídeos com uma tecla, gira ficheiros em pastas, em servidores e em dispositivos." & vbCrLf & "Versão {0}",
+            "Gerenciador de mídia e arquivos: veja e organize fotos e vídeos com uma tecla, gerencie arquivos em pastas, em servidores e em dispositivos." & vbCrLf & "Versão {0}",
             "مدير وسائط وملفات: اعرض الصور والفيديو ورتّبها بمفتاح واحد، وأدِر الملفات في المجلدات وعلى الخوادم والأجهزة." & vbCrLf & "الإصدار {0}",
             "मीडिया और फ़ाइल मैनेजर: एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें, फ़ोल्डरों, सर्वरों और उपकरणों पर फ़ाइलें प्रबंधित करें।" & vbCrLf & "संस्करण {0}",
             "মিডিয়া ও ফাইল ম্যানেজার: এক কী-তে ছবি ও ভিডিও দেখুন ও সাজান, ফোল্ডার, সার্ভার ও ডিভাইসে ফাইল পরিচালনা করুন।" & vbCrLf & "সংস্করণ {0}",
@@ -586,7 +586,7 @@ Partial Public NotInheritable Class Localization
             "Il runtime OCR non è ancora installato. Scaricarlo e installarlo ora?",
             "El motor de OCR aún no está instalado. ¿Descargarlo e instalarlo ahora?",
             "Le moteur OCR n'est pas encore installé. Le télécharger et l'installer maintenant ?",
-            "O motor de OCR ainda não está instalado. Transferir e instalar agora?",
+            "O mecanismo de OCR ainda não está instalado. Baixar e instalar agora?",
             "لم يُثبَّت محرك OCR بعد. هل تريد تنزيله وتثبيته الآن؟",
             "OCR इंजन अभी स्थापित नहीं है। इसे अभी डाउनलोड करके स्थापित करें?",
             "OCR ইঞ্জিন এখনও ইনস্টল করা হয়নি। এখনই ডাউনলোড করে ইনস্টল করবেন?",
@@ -600,7 +600,7 @@ Partial Public NotInheritable Class Localization
             "Il supporto VLC non è ancora installato. Scaricarlo e installarlo ora?",
             "La compatibilidad con VLC aún no está instalada. ¿Descargarla e instalarla ahora?",
             "La prise en charge de VLC n'est pas encore installée. La télécharger et l'installer maintenant ?",
-            "O suporte a VLC ainda não está instalado. Transferir e instalar agora?",
+            "O suporte a VLC ainda não está instalado. Baixar e instalar agora?",
             "لم يُثبَّت دعم VLC بعد. هل تريد تنزيله وتثبيته الآن؟",
             "VLC समर्थन अभी स्थापित नहीं है। इसे अभी डाउनलोड करके स्थापित करें?",
             "VLC সমর্থন এখনও ইনস্টল করা হয়নি। এখনই ডাউনলোড করে ইনস্টল করবেন?",
@@ -616,7 +616,7 @@ Partial Public NotInheritable Class Localization
             "{0} richiede il Microsoft Visual C++ Redistributable ({1}), che su questo computer manca. È un programma di installazione di Microsoft e chiede da sé i diritti di amministratore, quindi questo programma non lo avvia. Scaricarlo dal sito di Microsoft nel browser? Eseguite il file scaricato, poi riprovate.",
             "{0} necesita el Microsoft Visual C++ Redistributable ({1}), y este equipo no lo tiene. Es un instalador de Microsoft que pide por sí mismo permisos de administrador, así que este programa no lo ejecuta. ¿Descargarlo desde el sitio de Microsoft en el navegador? Ejecuta el archivo descargado y vuelve a intentarlo.",
             "{0} nécessite le Microsoft Visual C++ Redistributable ({1}), absent de cet ordinateur. C'est un programme d'installation de Microsoft qui demande lui-même les droits administrateur, ce programme ne le lance donc pas. Le télécharger depuis le site de Microsoft dans le navigateur ? Lancez le fichier téléchargé, puis réessayez.",
-            "{0} requer o Microsoft Visual C++ Redistributable ({1}), que não está instalado neste computador. É um instalador da Microsoft que pede ele próprio direitos de administrador, por isso este programa não o executa. Transferi-lo do site da Microsoft no navegador? Execute o ficheiro transferido e tente novamente.",
+            "{0} requer o Microsoft Visual C++ Redistributable ({1}), que não está instalado neste computador. É um instalador da Microsoft que pede os direitos de administrador por conta própria, por isso este programa não o executa. Baixá-lo do site da Microsoft no navegador? Execute o arquivo baixado e tente novamente.",
             "يحتاج {0} إلى Microsoft Visual C++ Redistributable ({1})، وهو غير موجود على هذا الكمبيوتر. إنه مثبّت من Microsoft يطلب صلاحيات المسؤول بنفسه، لذلك لا يشغّله هذا البرنامج. هل تريد تنزيله من موقع Microsoft في المتصفح؟ شغّل الملف الذي نزّلته ثم حاول مرة أخرى.",
             "{0} के लिए Microsoft Visual C++ Redistributable ({1}) चाहिए, और यह इस कंप्यूटर पर नहीं है। यह Microsoft का इंस्टॉलर है और प्रशासक अधिकार ख़ुद माँगता है, इसलिए यह प्रोग्राम उसे नहीं चलाता। क्या इसे ब्राउज़र में Microsoft की साइट से डाउनलोड करें? डाउनलोड की गई फ़ाइल चलाएँ, फिर दोबारा कोशिश करें।",
             "{0}-এর জন্য Microsoft Visual C++ Redistributable ({1}) প্রয়োজন, আর এই কম্পিউটারে তা নেই। এটি Microsoft-এর ইনস্টলার এবং প্রশাসক অধিকার নিজেই চায়, তাই এই প্রোগ্রাম এটি চালায় না। ব্রাউজারে Microsoft-এর সাইট থেকে এটি ডাউনলোড করবেন? ডাউনলোড করা ফাইলটি চালান, তারপর আবার চেষ্টা করুন।",
@@ -637,7 +637,7 @@ Partial Public NotInheritable Class Localization
             "{0} formati registrati:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "Le modifiche valgono per l'utente corrente.",
             "{0} formatos registrados:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "Los cambios se aplican al usuario actual.",
             "{0} formats enregistrés :" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "Les modifications s'appliquent à l'utilisateur actuel.",
-            "{0} formatos registados:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "As alterações aplicam-se ao utilizador atual.",
+            "{0} formatos registrados:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "As alterações se aplicam ao usuário atual.",
             "تم تسجيل {0} صيغة:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "طُبِّقت التغييرات على المستخدم الحالي.",
             "{0} प्रारूप पंजीकृत:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "परिवर्तन वर्तमान उपयोगकर्ता पर लागू हैं।",
             "{0}টি ফরম্যাট নিবন্ধিত:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "পরিবর্তনগুলি বর্তমান ব্যবহারকারীর জন্য প্রযোজ্য।",
@@ -652,7 +652,7 @@ Partial Public NotInheritable Class Localization
             "Alternar", "تبديل", "टॉगल करें", "টগল করুন", "ٹوگل کریں", "切换")
         Add("Нажать",
             "Press", "Натиснути", "Drücken", "Premi", "Pulsar", "Appuyer",
-            "Premir", "اضغط", "दबाएँ", "চাপুন", "دبائیں", "按下")
+            "Pressionar", "اضغط", "दबाएँ", "চাপুন", "دبائیں", "按下")
 
         ' The sort button: the order in words, an arrow after it says the direction (125 UX-304).
         Add("Дата",
@@ -668,7 +668,7 @@ Partial Public NotInheritable Class Localization
         ' Rows of the shared "File" block of both media menus (125 UX-324, UX-330).
         Add("Нечего отменять",
             "Nothing to undo", "Нічого скасовувати", "Nichts rückgängig zu machen", "Niente da annullare", "Nada que deshacer", "Rien à annuler",
-            "Nada para anular", "لا شيء للتراجع عنه", "पूर्ववत करने के लिए कुछ नहीं", "পূর্বাবস্থায় ফেরানোর কিছু নেই", "واپس کرنے کے لیے کچھ نہیں", "没有可撤销的操作")
+            "Nada para desfazer", "لا شيء للتراجع عنه", "पूर्ववत करने के लिए कुछ नहीं", "পূর্বাবস্থায় ফেরানোর কিছু নেই", "واپس کرنے کے لیے کچھ نہیں", "没有可撤销的操作")
         Add("Показать в проводнике",
             "Show in Explorer", "Показати в Провіднику", "Im Explorer anzeigen", "Mostra in Esplora risorse", "Mostrar en el Explorador", "Afficher dans l'Explorateur",
             "Mostrar no Explorador", "إظهار في مستكشف الملفات", "एक्सप्लोरर में दिखाएँ", "এক্সপ্লোরারে দেখান", "ایکسپلورر میں دکھائیں", "在资源管理器中显示")
@@ -696,7 +696,7 @@ Partial Public NotInheritable Class Localization
             "Right button - menu: folder, file, archive, resources, sharing", "Права кнопка - меню: тека, файл, архів, ресурси, роздача",
             "Rechte Taste - Menü: Ordner, Datei, Archiv, Ressourcen, Freigabe", "Tasto destro - menu: cartella, file, archivio, risorse, condivisione",
             "Botón derecho - menú: carpeta, archivo, archivo comprimido, recursos, compartir", "Clic droit - menu : dossier, fichier, archive, ressources, partage",
-            "Botão direito - menu: pasta, ficheiro, arquivo, recursos, partilha", "الزر الأيمن - قائمة: المجلد، الملف، الأرشيف، الموارد، المشاركة",
+            "Botão direito - menu: pasta, arquivo, arquivo compactado, recursos, compartilhamento", "الزر الأيمن - قائمة: المجلد، الملف، الأرشيف، الموارد، المشاركة",
             "दायाँ बटन - मेनू: फ़ोल्डर, फ़ाइल, संग्रह, संसाधन, साझाकरण", "ডান বোতাম - মেনু: ফোল্ডার, ফাইল, আর্কাইভ, রিসোর্স, শেয়ারিং",
             "دایاں بٹن - مینو: فولڈر، فائل، آرکائیو، وسائل، شیئرنگ", "右键 - 菜单：文件夹、文件、压缩包、资源、共享")
 
@@ -709,7 +709,7 @@ Partial Public NotInheritable Class Localization
             "Barra de ferramentas, linha 2", "شريط الأدوات، الصف 2", "टूलबार, पंक्ति 2", "টুলবার, সারি ২", "ٹول بار، قطار 2", "工具栏，第 2 行")
         Add("Строка состояния",
             "Status bar", "Рядок стану", "Statusleiste", "Barra di stato", "Barra de estado", "Barre d'état",
-            "Barra de estado", "شريط الحالة", "स्थिति पट्टी", "স্ট্যাটাস বার", "اسٹیٹس بار", "状态栏")
+            "Barra de status", "شريط الحالة", "स्थिति पट्टी", "স্ট্যাটাস বার", "اسٹیٹس بار", "状态栏")
 
         ' The panel size that makes every target 44 px (125 Q125-4): for a touch screen or a pen.
         Add("Крупные цели (касание)",
@@ -720,7 +720,7 @@ Partial Public NotInheritable Class Localization
             "To the Recycle Bin. {0} - permanently, bypassing the Recycle Bin", "У Кошик. {0} - назавжди, повз Кошик",
             "In den Papierkorb. {0} - endgültig, am Papierkorb vorbei", "Nel Cestino. {0} - definitivamente, senza passare dal Cestino",
             "A la Papelera. {0} - de forma permanente, sin pasar por la Papelera", "Vers la Corbeille. {0} - définitivement, sans passer par la Corbeille",
-            "Para a Reciclagem. {0} - permanentemente, sem passar pela Reciclagem", "إلى سلة المحذوفات. {0} - نهائيًا دون المرور بسلة المحذوفات",
+            "Para a Lixeira. {0} - permanentemente, sem passar pela Lixeira", "إلى سلة المحذوفات. {0} - نهائيًا دون المرور بسلة المحذوفات",
             "रीसायकल बिन में। {0} - स्थायी रूप से, रीसायकल बिन को छोड़कर", "রিসাইকেল বিনে। {0} - স্থায়ীভাবে, রিসাইকেল বিন এড়িয়ে",
             "ری سائیکل بن میں۔ {0} - مستقل طور پر، ری سائیکل بن کو چھوڑ کر", "移入回收站。{0} - 永久删除，绕过回收站")
 

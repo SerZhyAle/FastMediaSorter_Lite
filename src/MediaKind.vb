@@ -31,7 +31,7 @@ Public Module MediaKindClassifier
         AddCategory(result, MediaKind.Book, ".epub .pdf .cbz .cbr .fb2 .mobi")
         AddCategory(result, MediaKind.Stream, ".m3u .m3u8 .pls .xspf .fmsbcast")
         AddCategory(result, MediaKind.Container, ".fd-sec .zip .rar .7z .tar .gz .bz2 .xz .cab .arj .lzh .iso .dmg .img .vhd .vdi .qcow2 .vmdk")
-        AddCategory(result, MediaKind.Document, ".doc .docx .rtf .odt .xls .xlsx .ods .ppt .pptx .odp .txt .md .json .xml .csv .tsv .yaml .yml .toml .ini .conf .log .html .htm")
+        AddCategory(result, MediaKind.Document, ".doc .docx .rtf .odt .xls .xlsx .ods .ppt .pptx .odp .txt .md .json .xml .csv .tsv .yaml .yml .toml .ini .conf .log .html .htm .sql .sh .bat .cmd .ps1 .cs .vb .cpp .h .c .py .js .css")
         Return result
     End Function
 
@@ -42,8 +42,9 @@ Public Module MediaKindClassifier
     End Sub
 
     ''' <summary>Classify an extension or filename. No I/O; .m4b defaults to AUDIO unless
-    ''' the caller supplies chapter/container evidence (rule 2). Local aliases .tif/.exif
-    ''' and .log/.html/.htm remain supported. This table never expands navigation.</summary>
+    ''' the caller supplies chapter/container evidence (rule 2). Local aliases .tif/.exif,
+    ''' .log/.html/.htm and the source-text extensions of ticket 277 (never .ts, which rule 1
+    ''' keeps in VIDEO) remain supported. This table never expands navigation.</summary>
     Friend Function KindOf(nameOrExtension As String, Optional hasBookCues As Boolean = False) As MediaKind
         Dim extension As String = ExtensionOf(nameOrExtension)
         If extension = ".m4b" AndAlso hasBookCues Then Return MediaKind.Book

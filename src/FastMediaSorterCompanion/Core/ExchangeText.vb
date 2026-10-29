@@ -1,5 +1,12 @@
 Option Strict On
 
+''' <summary>Whose password a generated-password dialog shows (ticket 287): the sentences around it name the person who reads it.</summary>
+Friend Enum ExchangePasswordSubject
+    Account
+    Administrator
+    SharedInvitation
+End Enum
+
 ''' <summary>
 ''' The words of the "Media Exchange Server" group, in one place (ticket 142; the sibling of
 ''' <see cref="HostingText"/>): status lines, notes, questions and results.
@@ -120,6 +127,31 @@ Friend Module ExchangeText
 
     Friend Function GenerateIntro() As String
         Return Localization.T("Это единственный раз, когда пароль показан. Скопируйте его и передайте владельцу учётной записи: с ним он войдёт со всех своих устройств.")
+    End Function
+
+    ''' <summary>The title of the generated-password dialog for whose password it shows: the account owner is not the person who
+    ''' reads the administrator's password, nor the people who receive the shared invitation one.</summary>
+    Friend Function GenerateTitle(subject As ExchangePasswordSubject) As String
+        Select Case subject
+            Case ExchangePasswordSubject.Administrator
+                Return Localization.T("Новый пароль администратора")
+            Case ExchangePasswordSubject.SharedInvitation
+                Return Localization.T("Общий пароль приглашения")
+            Case Else
+                Return GenerateTitle()
+        End Select
+    End Function
+
+    ''' <summary>The one-time sentence for whose password the dialog shows; it names who the password goes to.</summary>
+    Friend Function GenerateIntro(subject As ExchangePasswordSubject) As String
+        Select Case subject
+            Case ExchangePasswordSubject.Administrator
+                Return Localization.T("Это единственный раз, когда пароль показан. Скопируйте его и сохраните: с ним вы войдёте в администрирование сервера.")
+            Case ExchangePasswordSubject.SharedInvitation
+                Return Localization.T("Это единственный раз, когда пароль показан. Скопируйте его и передайте тем, кого приглашаете: с ним они зарегистрируются на сервере.")
+            Case Else
+                Return GenerateIntro()
+        End Select
     End Function
 
     ''' <summary>The same password, kept on this PC: it is shown again by the account's own button, so the one-time sentence would be false.</summary>
@@ -251,7 +283,7 @@ Friend Module ExchangeText
             Case ExchangeElevation.ElevatedOutcome.Unavailable
                 Return Localization.T("Файл сервера обмена или его помощник не найден.")
             Case Else
-                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..».")
+                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа».")
         End Select
     End Function
 
@@ -291,7 +323,7 @@ Friend Module ExchangeText
             Case ServiceControl.ManageResult.Unavailable
                 Return Localization.T("Файл сервера обмена или его помощник не найден.")
             Case Else
-                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..».")
+                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа».")
         End Select
     End Function
 

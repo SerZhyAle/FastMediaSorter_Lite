@@ -89,21 +89,21 @@ Public NotInheritable Class Share_Broadcasts_Form
         }
         lblGatewayDesc = New Label With {
             .AutoSize = True,
-            .ForeColor = Color.DimGray,
+            .ForeColor = ThemeService.Palette.TextMuted,
             .MaximumSize = New Size(700, 0),
             .Text = Localization.T("Ваш ПК будет отвечать на HTTP-запросы к транслируемым файлам, пока действует трансляция.")
         }
         lblGatewayStatus = New Label With {
             .AutoSize = True,
             .Margin = New Padding(0, 4, 0, 0),
-            .ForeColor = Color.DarkSlateGray,
+            .ForeColor = ThemeService.Palette.TextPrimary,
             .Text = Localization.T("Шлюз трансляций выключен")
         }
         ' The page's one place for a refusal or a failure: an inline line, never a dialog (spec 159 section 3.3).
         lblNotice = New Label With {
             .AutoSize = True,
             .Margin = New Padding(0, 4, 0, 0),
-            .ForeColor = Color.Firebrick,
+            .ForeColor = ThemeService.Palette.Danger,
             .MaximumSize = New Size(700, 0),
             .Visible = False
         }
@@ -199,7 +199,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .AutoSize = True,
             .Padding = New Padding(10, 4, 10, 4),
             .Margin = New Padding(0, 0, 6, 0),
-            .ForeColor = Color.Firebrick,
+            .ForeColor = ThemeService.Palette.Danger,
             .Text = Localization.T("Отозвать"),
             .Enabled = False
         }
@@ -312,10 +312,10 @@ Public NotInheritable Class Share_Broadcasts_Form
             If _status.BroadcastEnabled Then
                 Dim port As Integer = _status.BroadcastPort
                 lblGatewayStatus.Text = Localization.TF("Шлюз трансляций включён (порт {0})", port)
-                lblGatewayStatus.ForeColor = Color.DarkGreen
+                lblGatewayStatus.ForeColor = ThemeService.Palette.Success
             Else
                 lblGatewayStatus.Text = Localization.T("Шлюз трансляций выключен")
-                lblGatewayStatus.ForeColor = Color.DarkSlateGray
+                lblGatewayStatus.ForeColor = ThemeService.Palette.TextMuted
             End If
 
             Dim listResp As WorkerResponse = Await BroadcastController.ListBroadcastsAsync()
@@ -345,7 +345,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             Dim isFolder As Boolean = String.Equals(b.Kind, "folder", StringComparison.OrdinalIgnoreCase)
             Dim typeStr As String = If(isFolder, Localization.TF("Папка ({0})", b.ItemCount), Localization.T("Файл"))
             item.SubItems.Add(typeStr)
-            item.SubItems.Add(b.CreatedAt)
+            item.SubItems.Add(BroadcastMessages.FormatStamp(b.CreatedAt))
 
             item.SubItems.Add(BroadcastMessages.ExpiryCell(b))
             item.SubItems.Add(b.Hits.ToString())

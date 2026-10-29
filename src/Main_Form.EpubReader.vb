@@ -166,8 +166,11 @@ Partial Public Class Main_Form
             ApplyEpubReaderPreferences()
             MarkSettingsDirty()
         End Sub)
-        epub_Reader_Context = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.Never}
-        epub_Reader_Toolbar.Items.Add(epub_Reader_Context)
+        ' AsNeeded, never Never: an Overflow.Never item hangs the UI thread when UI Automation walks the open
+        ' overflow drop-down; inserted first so it is the last item to overflow (see the same label in
+        ' Main_Form.HtmlView.vb).
+        epub_Reader_Context = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.AsNeeded}
+        epub_Reader_Toolbar.Items.Insert(0, epub_Reader_Context)
         epub_Reader_Pane = New TabControl With {.Dock = DockStyle.None, .Width = CInt(240 * GetCurrentDpiScale()), .Visible = False}
         For Each title In {"Оглавление", "Поиск", "Закладки"}
             epub_Reader_Pane.TabPages.Add(New TabPage(Localization.T(title)))

@@ -129,7 +129,7 @@ Friend NotInheritable Class ChromeAutoHide
         Return alpha
     End Function
 
-    ''' <summary>The six persisted pin switches, as one value - the algebra below and the tests
+    ''' <summary>The persisted pin switches, as one value - the algebra below and the tests
     ''' both read and write it as a whole.</summary>
     Public Structure ChromePinState
         Public GlobalPinned As Boolean
@@ -142,6 +142,10 @@ Friend NotInheritable Class ChromeAutoHide
         ''' <summary>The window-controls panel's own pin (188 §4): a fifth floating surface,
         ''' mapped explicitly below - the unknown-name fallback must never reach it.</summary>
         Public WindowControlsPinned As Boolean
+        ''' <summary>The document panel's own pin (specification 280): a sixth floating surface for
+        ''' the PDF, EPUB, HTML and text readers, mapped explicitly below - the unknown-name fallback
+        ''' must never reach it.</summary>
+        Public DocumentPinned As Boolean
     End Structure
 
     ''' <summary>A panel's own pin - the corner button's switch - by the panel's name. The
@@ -152,6 +156,7 @@ Friend NotInheritable Class ChromeAutoHide
             Case "chrome_Row2" : Return state.Row2Pinned
             Case "recipients_Overlay" : Return state.OverlayPinned
             Case "chrome_WindowControls" : Return state.WindowControlsPinned
+            Case "chrome_Document" : Return state.DocumentPinned
             Case Else : Return state.StatusPinned
         End Select
     End Function
@@ -162,6 +167,7 @@ Friend NotInheritable Class ChromeAutoHide
             Case "chrome_Row2" : state.Row2Pinned = value
             Case "recipients_Overlay" : state.OverlayPinned = value
             Case "chrome_WindowControls" : state.WindowControlsPinned = value
+            Case "chrome_Document" : state.DocumentPinned = value
             Case Else : state.StatusPinned = value
         End Select
     End Sub
@@ -185,6 +191,7 @@ Friend NotInheritable Class ChromeAutoHide
                 result.Row2Pinned = True
                 result.StatusPinned = True
                 result.WindowControlsPinned = True
+                result.DocumentPinned = True
             End If
             SetOwnPin(result, panelName, False)
         Else

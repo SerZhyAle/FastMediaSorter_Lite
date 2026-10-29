@@ -113,6 +113,8 @@ Public Class Live_Broadcast_Form
         MyBase.OnLoad(e)
         ' The three boolean rows are laid out once the window has its scale (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a).
         OptionRows.ArrangeAll(Me)
+        ' The scaled first size can be taller than a small monitor: cap it first, so the fit below scrolls what does not fit.
+        DpiLayout.ClampToWorkingArea(Me)
         FitToContent()
     End Sub
 
@@ -425,6 +427,7 @@ Public Class Live_Broadcast_Form
 
         Me.Controls.Add(pnl)
         LoadSettingsIntoUi()
+        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
     End Sub
 
     Private Sub UpdateGainLabel()
@@ -1073,7 +1076,8 @@ Public Class Live_Broadcast_Form
             Me.TopMost = True
             Me.StartPosition = FormStartPosition.Manual
             Me.BackColor = Color.Firebrick
-            Me.Size = New Size(120, 34)
+            ' Its caption is drawn in the scaled UI font, so the box is scaled too (a 96-DPI box clips it at 175%).
+            Me.Size = New Size(LogicalToDeviceUnits(120), LogicalToDeviceUnits(34))
             PositionBottomRight()
         End Sub
 

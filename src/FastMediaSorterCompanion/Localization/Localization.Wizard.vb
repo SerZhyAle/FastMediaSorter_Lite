@@ -11,7 +11,7 @@ Partial Public NotInheritable Class Localization
         Add("Поделиться - код доступа",
             "Share - access code", "Поділитися - код доступу", "Teilen - Zugangscode",
             "Condividi - codice di accesso", "Compartir: código de acceso",
-            "Partager - code d'accès", "Partilhar - código de acesso",
+            "Partager - code d'accès", "Compartilhar - código de acesso",
             "مشاركة - رمز الوصول", "साझा करें - एक्सेस कोड", "শেয়ার করুন - অ্যাক্সেস কোড",
             "شیئر کریں - رسائی کوڈ", "共享 - 访问码")
 
@@ -20,7 +20,7 @@ Partial Public NotInheritable Class Localization
             "Ordner und Einstellungen für diesen Zugangscode",
             "Cartelle e impostazioni di questo codice di accesso",
             "Carpetas y ajustes de este código de acceso",
-            "Dossiers et réglages de ce code d'accès", "Pastas e definições deste código de acesso",
+            "Dossiers et réglages de ce code d'accès", "Pastas e configurações deste código de acesso",
             "المجلدات وإعدادات رمز الوصول هذا", "इस एक्सेस कोड के फ़ोल्डर और सेटिंग्स",
             "এই অ্যাক্সেস কোডের ফোল্ডার ও সেটিং", "اس رسائی کوڈ کے فولڈرز اور ترتیبات",
             "此访问码的文件夹与设置")
@@ -32,7 +32,7 @@ Partial Public NotInheritable Class Localization
             "Fai clic su una cella per cambiarne il valore. I valori provengono dalle impostazioni della cartella; le modifiche valgono solo per questo codice.",
             "Haz clic en cualquier celda para cambiar su valor. Los valores provienen de los ajustes de cada carpeta; los cambios solo afectan a este código.",
             "Cliquez sur une cellule pour en modifier la valeur. Les valeurs viennent des réglages du dossier ; les modifications ne concernent que ce code.",
-            "Clique numa célula para alterar o valor. Os valores vêm das definições de cada pasta; as alterações aplicam-se apenas a este código.",
+            "Clique em uma célula para alterar o valor. Os valores vêm das configurações de cada pasta; as alterações se aplicam apenas a este código.",
             "انقر على أي خلية لتغيير قيمتها. القيم مأخوذة من إعدادات المجلد؛ والتعديلات تخص هذا الرمز فقط.",
             "किसी भी सेल पर क्लिक करके मान बदलें। मान फ़ोल्डर की सेटिंग्स से आते हैं; बदलाव केवल इसी कोड पर लागू होते हैं।",
             "মান পরিবর্তন করতে যেকোনো ঘরে ক্লিক করুন। মানগুলি ফোল্ডারের সেটিং থেকে আসে; পরিবর্তন শুধু এই কোডের জন্য প্রযোজ্য।",
@@ -43,7 +43,7 @@ Partial Public NotInheritable Class Localization
             "Common transfer settings:", "Загальні налаштування передачі:",
             "Allgemeine Übertragungseinstellungen:", "Impostazioni di trasferimento comuni:",
             "Ajustes comunes de transferencia:", "Réglages de transfert communs :",
-            "Definições comuns de transferência:", "إعدادات النقل المشتركة:",
+            "Configurações comuns de transferência:", "إعدادات النقل المشتركة:",
             "सामान्य स्थानांतरण सेटिंग्स:", "সাধারণ স্থানান্তর সেটিং:",
             "عمومی منتقلی ترتیبات:", "通用传输设置：")
 
@@ -64,7 +64,7 @@ Partial Public NotInheritable Class Localization
             "Si applica solo a questo codice: il telefono si connetterà tramite la rete locale. Non spegne il server - l'accesso da Internet per l'intera condivisione si chiude a parte: Impostazioni gestore - Rete.",
             "Se aplica solo a este código: el teléfono se conectará por la red local. No apaga el servidor: el acceso desde internet para todo el uso compartido se cierra aparte, en Configuración del gestor - Red.",
             "Concerne uniquement ce code : le téléphone se connectera par le réseau local. Cela n'éteint pas le serveur - l'accès Internet de tout le partage se ferme à part, dans Paramètres du gestionnaire - Réseau.",
-            "Aplica-se apenas a este código: o telefone ligar-se-á pela rede local. Não desliga o servidor - o acesso à Internet de toda a partilha fecha-se à parte, em Definições do gestor - Rede.",
+            "Aplica-se apenas a este código: o telefone se conectará pela rede local. Não desliga o servidor - o acesso à Internet de todo o compartilhamento é fechado separadamente, em Configurações do gerenciador - Rede.",
             "ينطبق على هذا الرمز فقط: سيتصل الهاتف عبر الشبكة المحلية. لا يوقف الخادم نفسه - الوصول من الإنترنت للمشاركة بالكامل يُغلق بشكل منفصل في: إعدادات المدير - الشبكة.",
             "केवल इस कोड पर लागू: फ़ोन स्थानीय नेटवर्क से जुड़ेगा। यह सर्वर को बंद नहीं करता - पूरी साझा करने की सेटिंग के लिए इंटरनेट पहुँच अलग से बंद होती है: मैनेजर सेटिंग - नेटवर्क।",
             "শুধু এই কোডে প্রযোজ্য: ফোনটি স্থানীয় নেটওয়ার্কের মাধ্যমে সংযোগ করবে। এটি সার্ভার বন্ধ করে না - পুরো শেয়ারের জন্য ইন্টারনেট অ্যাক্সেস আলাদাভাবে বন্ধ হয়: ম্যানেজার সেটিং - নেটওয়ার্ক।",
@@ -80,7 +80,7 @@ Partial Public NotInheritable Class Localization
             "La password resta fuori dal file/QR: comunicala separatamente. Se il telefono accetti un codice senza password dipende dalla versione dell'app.",
             "La contraseña no se incluye en el archivo/QR: compártela por separado. Que el teléfono acepte un código sin contraseña depende de la versión de la aplicación.",
             "Le mot de passe reste hors du fichier/QR - transmettez-le séparément. L'acceptation d'un code sans mot de passe par le téléphone dépend de la version de l'application.",
-            "A palavra-passe fica fora do ficheiro/QR - transmita-a em separado. Se o telemóvel aceita um código sem palavra-passe depende da versão da aplicação.",
+            "A senha fica fora do arquivo/QR - transmita-a separadamente. Se o celular aceita ou não um código sem senha depende da versão do aplicativo.",
             "لن تُدرج كلمة المرور في الملف/رمز QR - أرسلها بشكل منفصل. قبول الهاتف لرمز بلا كلمة مرور يعتمد على إصدار التطبيق.",
             "पासवर्ड फ़ाइल/QR में नहीं जाएगा - उसे अलग से भेजें। फ़ोन बिना पासवर्ड वाला कोड स्वीकार करेगा या नहीं, यह ऐप के संस्करण पर निर्भर है।",
             "পাসওয়ার্ড ফাইল/QR-এ যাবে না - সেটি আলাদাভাবে পাঠান। ফোন পাসওয়ার্ড ছাড়া কোড গ্রহণ করবে কি না, তা অ্যাপের সংস্করণের উপর নির্ভর করে।",
@@ -95,7 +95,7 @@ Partial Public NotInheritable Class Localization
             "Il codice QR e il file .fmscfg contengono la password (e il PIN, se impostato): conservali e consegnali come una chiave.",
             "El código QR y el archivo .fmscfg contienen la contraseña (y el PIN, si se ha definido): guárdalos y entrégalos como una llave.",
             "Le code QR et le fichier .fmscfg contiennent le mot de passe (et le PIN, s'il est défini) - conservez-les et transmettez-les comme une clé.",
-            "O código QR e o ficheiro .fmscfg contêm a palavra-passe (e o PIN, se definido) - guarde-os e entregue-os como uma chave.",
+            "O código QR e o arquivo .fmscfg contêm a senha (e o PIN, se definido) - guarde-os e entregue-os como uma chave.",
             "يحتوي رمز QR وملف ‎.fmscfg‎ على كلمة المرور (ورمز PIN إن وُجد) - احفظهما وسلّمهما كما تُسلَّم المفاتيح.",
             "QR कोड और .fmscfg फ़ाइल में पासवर्ड (और PIN, यदि सेट है) होता है - इन्हें चाबी की तरह रखें और सौंपें।",
             "QR কোড ও .fmscfg ফাইলে পাসওয়ার্ড (এবং PIN, যদি সেট থাকে) থাকে - এগুলো চাবির মতো রাখুন ও হস্তান্তর করুন।",
@@ -109,7 +109,7 @@ Partial Public NotInheritable Class Localization
             "Il codice QR e il file .fmscfg danno accesso alle cartelle (e contengono il PIN, se impostato): conservali e consegnali come una chiave.",
             "El código QR y el archivo .fmscfg dan acceso a las carpetas (y contienen el PIN, si se ha definido): guárdalos y entrégalos como una llave.",
             "Le code QR et le fichier .fmscfg ouvrent l'accès aux dossiers (et contiennent le PIN, s'il est défini) - conservez-les et transmettez-les comme une clé.",
-            "O código QR e o ficheiro .fmscfg dão acesso às pastas (e contêm o PIN, se definido) - guarde-os e entregue-os como uma chave.",
+            "O código QR e o arquivo .fmscfg dão acesso às pastas (e contêm o PIN, se definido) - guarde-os e entregue-os como uma chave.",
             "يفتح رمز QR وملف ‎.fmscfg‎ الوصول إلى المجلدات (ويحتويان على رمز PIN إن وُجد) - احفظهما وسلّمهما كما تُسلَّم المفاتيح.",
             "QR कोड और .fmscfg फ़ाइल फ़ोल्डरों तक पहुँच खोलते हैं (और PIN, यदि सेट है, रखते हैं) - इन्हें चाबी की तरह रखें और सौंपें।",
             "QR কোড ও .fmscfg ফাইল ফোল্ডারে প্রবেশাধিকার দেয় (এবং PIN, যদি সেট থাকে, ধারণ করে) - এগুলো চাবির মতো রাখুন ও হস্তান্তর করুন।",
@@ -123,7 +123,7 @@ Partial Public NotInheritable Class Localization
             "Questo file dà accesso alle cartelle: non inoltrarlo ed eliminalo dopo l'importazione.",
             "Este archivo da acceso a las carpetas: no lo reenvíes y elimínalo después de importarlo.",
             "Ce fichier ouvre l'accès aux dossiers : ne le transférez pas et supprimez-le après l'import.",
-            "Este ficheiro dá acesso às pastas: não o reencaminhe e elimine-o depois de importar.",
+            "Este arquivo dá acesso às pastas: não o encaminhe e exclua-o depois de importar.",
             "يفتح هذا الملف الوصول إلى المجلدات: لا تُعِد توجيهه واحذفه بعد الاستيراد.",
             "यह फ़ाइल फ़ोल्डरों तक पहुँच खोलती है: इसे आगे न भेजें और आयात के बाद हटा दें।",
             "এই ফাইলটি ফোল্ডারে প্রবেশাধিকার দেয়: এটি ফরওয়ার্ড করবেন না এবং আমদানির পরে মুছে ফেলুন।",
@@ -138,7 +138,7 @@ Partial Public NotInheritable Class Localization
             "Non vale per una cartella di destinazione: è sempre scrivibile.",
             "No se aplica a una carpeta de destino: siempre admite escritura.",
             "Ne s'applique pas à un dossier de destination : il est toujours accessible en écriture.",
-            "Não se aplica a uma pasta de destino: tem sempre acesso de escrita.",
+            "Não se aplica a uma pasta de destino: ela é sempre gravável.",
             "لا ينطبق على مجلد الوجهة: فهو قابل للكتابة دائمًا.",
             "गंतव्य फ़ोल्डर पर लागू नहीं होता: उसमें हमेशा लिखा जा सकता है।",
             "গন্তব্য ফোল্ডারে প্রযোজ্য নয়: সেখানে সবসময় লেখা যায়।",
@@ -153,14 +153,14 @@ Partial Public NotInheritable Class Localization
         Add("Скопировать логин/пароль",
             "Copy login/password", "Скопіювати логін/пароль", "Benutzername/Kennwort kopieren",
             "Copia utente/password", "Copiar usuario/contraseña", "Copier identifiant/mot de passe",
-            "Copiar utilizador/palavra-passe", "نسخ اسم المستخدم/كلمة المرور",
+            "Copiar usuário/senha", "نسخ اسم المستخدم/كلمة المرور",
             "लॉगिन/पासवर्ड कॉपी करें", "লগইন/পাসওয়ার্ড কপি করুন",
-            "لاگ ان/پاس ورڈ کاپی کریں", "复制用户名/密码")
+            "لاگ اِن/پاس ورڈ کاپی کریں", "复制用户名/密码")
 
         Add("Сохранить файл .fmscfg..",
             "Save .fmscfg file..", "Зберегти файл .fmscfg..", ".fmscfg-Datei speichern..",
             "Salva il file .fmscfg..", "Guardar el archivo .fmscfg..", "Enregistrer le fichier .fmscfg..",
-            "Guardar o ficheiro .fmscfg..", "حفظ ملف ‎.fmscfg‎..", ".fmscfg फ़ाइल सहेजें..",
+            "Salvar o arquivo .fmscfg..", "حفظ ملف ‎.fmscfg‎..", ".fmscfg फ़ाइल सहेजें..",
             ".fmscfg ফাইল সংরক্ষণ করুন..", "‎.fmscfg‎ فائل محفوظ کریں..", "保存 .fmscfg 文件..")
 
         Add("Отправить по почте..",
@@ -172,17 +172,17 @@ Partial Public NotInheritable Class Localization
         ' --- the per-folder grid columns ------------------------------------------
 
         Add("Вкл",
-            "On", "Увімк", "Ein", "On", "Sí", "Actif", "Lig",
+            "On", "Увімк", "Ein", "On", "Sí", "Actif", "Ativo",
             "مفعّل", "चालू", "চালু", "آن", "开")
 
         Add("Имя на телефоне",
             "Name on phone", "Ім'я на телефоні", "Name am Telefon", "Nome sul telefono",
-            "Nombre en el teléfono", "Nom sur le téléphone", "Nome no telemóvel",
+            "Nombre en el teléfono", "Nom sur le téléphone", "Nome no celular",
             "الاسم على الهاتف", "फ़ोन पर नाम", "ফোনে নাম", "فون پر نام", "手机上的名称")
 
         Add("Типы медиа",
             "Media types", "Типи медіа", "Medientypen", "Tipi di media", "Tipos de medios",
-            "Types de médias", "Tipos de multimédia", "أنواع الوسائط", "मीडिया प्रकार",
+            "Types de médias", "Tipos de mídia", "أنواع الوسائط", "मीडिया प्रकार",
             "মিডিয়ার ধরন", "میڈیا اقسام", "媒体类型")
 
         Add("Скан подпапок",
@@ -204,7 +204,7 @@ Partial Public NotInheritable Class Localization
 
         Add("Только чтение",
             "Read-only", "Лише читання", "Schreibgeschützt", "Sola lettura", "Solo lectura",
-            "Lecture seule", "Só leitura", "للقراءة فقط", "केवल पढ़ने योग्य",
+            "Lecture seule", "Somente leitura", "للقراءة فقط", "केवल पढ़ने योग्य",
             "শুধু পঠনযোগ্য", "صرف پڑھنے کے لیے", "只读")
 
         Add("RO-подсказка",
@@ -243,7 +243,7 @@ Partial Public NotInheritable Class Localization
             "L'app nasconde i pulsanti di modifica, ma il server non blocca la scrittura. Non vale per una cartella di destinazione.",
             "La aplicación oculta los botones de edición, pero el servidor no bloquea la escritura. No se aplica a una carpeta de destino.",
             "L'application masque les boutons d'édition, mais le serveur n'empêche pas l'écriture. Ne s'applique pas à un dossier de destination.",
-            "A aplicação esconde os botões de edição, mas o servidor não bloqueia a escrita. Não se aplica a uma pasta de destino.",
+            "O aplicativo oculta os botões de edição, mas o servidor não bloqueia a gravação. Não se aplica a uma pasta de destino.",
             "يخفي التطبيق أزرار التعديل، لكن الخادم لا يمنع الكتابة. لا ينطبق على مجلد الوجهة.",
             "ऐप संपादन बटन छिपा देता है, पर सर्वर लिखने से नहीं रोकता। गंतव्य फ़ोल्डर पर लागू नहीं होता।",
             "অ্যাপ সম্পাদনার বোতাম লুকায়, কিন্তু সার্ভার লেখা আটকায় না। গন্তব্য ফোল্ডারে প্রযোজ্য নয়।",
@@ -257,7 +257,7 @@ Partial Public NotInheritable Class Localization
             "Cartella di destinazione: il telefono può copiarci/spostarci dentro (rende la cartella scrivibile).",
             "Carpeta de destino: el teléfono puede copiar o mover archivos a ella (la hace escribible).",
             "Dossier de destination : le téléphone peut y copier/déplacer des fichiers (rend le dossier accessible en écriture).",
-            "Pasta de destino: o telemóvel pode copiar/mover para ela (torna a pasta gravável).",
+            "Pasta de destino: o celular pode copiar/mover para ela (torna a pasta gravável).",
             "مجلد الوجهة: يمكن للهاتف النسخ/النقل إليه (يجعل المجلد قابلاً للكتابة).",
             "गंतव्य फ़ोल्डर: फ़ोन इसमें कॉपी/मूव कर सकता है (फ़ोल्डर लिखने योग्य बन जाता है)।",
             "গন্তব্য ফোল্ডার: ফোন এতে কপি/সরাতে পারে (ফোল্ডারটি লেখার যোগ্য হয়)।",
@@ -281,7 +281,7 @@ Partial Public NotInheritable Class Localization
         Add("Получение состояния..",
             "Fetching state..", "Отримання стану..", "Status wird abgerufen..",
             "Recupero dello stato..", "Obteniendo el estado..", "Récupération de l'état..",
-            "A obter o estado..", "جارٍ جلب الحالة..", "स्थिति प्राप्त की जा रही है..",
+            "Obtendo o status..", "جارٍ جلب الحالة..", "स्थिति प्राप्त की जा रही है..",
             "স্ট্যাটাস আনা হচ্ছে..", "حالت حاصل کی جا رہی ہے..", "正在获取状态..")
 
         Add("Сервер не запущен.",
@@ -299,7 +299,7 @@ Partial Public NotInheritable Class Localization
             "Check at least one folder.", "Позначте хоча б одну папку.",
             "Wählen Sie mindestens einen Ordner aus.", "Seleziona almeno una cartella.",
             "Marca al menos una carpeta.", "Cochez au moins un dossier.",
-            "Assinale pelo menos uma pasta.", "حدّد مجلدًا واحدًا على الأقل.",
+            "Marque pelo menos uma pasta.", "حدّد مجلدًا واحدًا على الأقل.",
             "कम से कम एक फ़ोल्डर चुनें।", "অন্তত একটি ফোল্ডার নির্বাচন করুন।",
             "کم از کم ایک فولڈر منتخب کریں۔", "请至少勾选一个文件夹。")
 
@@ -307,7 +307,7 @@ Partial Public NotInheritable Class Localization
             "No usable address to share.", "Немає доступної адреси для роздачі.",
             "Keine nutzbare Adresse für die Freigabe.", "Nessun indirizzo utilizzabile per la condivisione.",
             "No hay una dirección utilizable para compartir.", "Aucune adresse utilisable pour le partage.",
-            "Nenhum endereço utilizável para partilhar.", "لا يوجد عنوان صالح للمشاركة.",
+            "Nenhum endereço utilizável para compartilhar.", "لا يوجد عنوان صالح للمشاركة.",
             "साझा करने के लिए कोई उपयोगी पता नहीं।", "শেয়ার করার মতো কোনো ব্যবহারযোগ্য ঠিকানা নেই।",
             "شیئر کرنے کے لیے کوئی قابلِ استعمال پتہ نہیں۔", "没有可用于共享的地址。")
 
@@ -318,7 +318,7 @@ Partial Public NotInheritable Class Localization
             "Troppo grande per un QR: salva il file .fmscfg e condividi quello.",
             "Demasiado grande para un QR: guarda el archivo .fmscfg y comparte ese.",
             "Trop volumineux pour un QR - enregistrez le fichier .fmscfg et transmettez-le.",
-            "Demasiado grande para um QR - guarde o ficheiro .fmscfg e partilhe-o.",
+            "Grande demais para um QR - salve o arquivo .fmscfg e compartilhe-o.",
             "أكبر من أن يتسع في رمز QR - احفظ ملف ‎.fmscfg‎ وشاركه بدلاً من ذلك.",
             "QR के लिए बहुत बड़ा - .fmscfg फ़ाइल सहेजकर उसे साझा करें।",
             "QR-এর জন্য অনেক বড় - .fmscfg ফাইল সংরক্ষণ করে সেটি শেয়ার করুন।",
@@ -329,20 +329,20 @@ Partial Public NotInheritable Class Localization
             "Login and password copied.", "Логін і пароль скопійовано.",
             "Benutzername und Kennwort kopiert.", "Utente e password copiati.",
             "Usuario y contraseña copiados.", "Identifiant et mot de passe copiés.",
-            "Utilizador e palavra-passe copiados.", "تم نسخ اسم المستخدم وكلمة المرور.",
+            "Usuário e senha copiados.", "تم نسخ اسم المستخدم وكلمة المرور.",
             "लॉगिन और पासवर्ड कॉपी हो गए।", "লগইন ও পাসওয়ার্ড কপি হয়েছে।",
-            "لاگ ان اور پاس ورڈ کاپی ہو گئے۔", "用户名和密码已复制。")
+            "لاگ اِن اور پاس ورڈ کاپی ہو گئے۔", "用户名和密码已复制。")
 
         Add("Файл сохранён.",
             "File saved.", "Файл збережено.", "Datei gespeichert.", "File salvato.",
-            "Archivo guardado.", "Fichier enregistré.", "Ficheiro guardado.",
+            "Archivo guardado.", "Fichier enregistré.", "Arquivo salvo.",
             "تم حفظ الملف.", "फ़ाइल सहेजी गई।", "ফাইল সংরক্ষিত হয়েছে।", "فائل محفوظ ہو گئی۔", "文件已保存。")
 
         Add("Не удалось сохранить файл.",
             "Could not save the file.", "Не вдалося зберегти файл.",
             "Die Datei konnte nicht gespeichert werden.", "Impossibile salvare il file.",
             "No se pudo guardar el archivo.", "Impossible d'enregistrer le fichier.",
-            "Não foi possível guardar o ficheiro.", "تعذّر حفظ الملف.",
+            "Não foi possível salvar o arquivo.", "تعذّر حفظ الملف.",
             "फ़ाइल सहेजी नहीं जा सकी।", "ফাইল সংরক্ষণ করা যায়নি।", "فائل محفوظ نہ ہو سکی۔", "无法保存文件。")
 
         ' {0} = ProductNames.Compact (a mail subject is plain text, so a single ampersand).
@@ -361,7 +361,7 @@ Partial Public NotInheritable Class Localization
             "Importa il file .fmscfg allegato nell'app per Android.",
             "Importa el archivo .fmscfg adjunto en la aplicación para Android.",
             "Importez le fichier .fmscfg joint dans l'application pour Android.",
-            "Importe o ficheiro .fmscfg anexado na aplicação para Android.",
+            "Importe o arquivo .fmscfg anexado no aplicativo para Android.",
             "استورد ملف ‎.fmscfg‎ المرفق في تطبيق Android.",
             "संलग्न .fmscfg फ़ाइल को Android ऐप में आयात करें।",
             "সংযুক্ত .fmscfg ফাইলটি Android অ্যাপে আমদানি করুন।",
@@ -392,7 +392,7 @@ Partial Public NotInheritable Class Localization
             "Codice QR - il clic ingrandisce, salva e copia; Esc chiude",
             "Código QR: el clic amplía, guarda y copia; Esc cierra",
             "Code QR - le clic agrandit, enregistre et copie ; Échap ferme",
-            "Código QR - o clique amplia, guarda e copia; Esc fecha",
+            "Código QR - clique para ampliar, salvar e copiar; Esc fecha",
             "رمز QR - النقر يكبّر ويحفظ وينسخ؛ Esc يغلق",
             "QR कोड - क्लिक बड़ा करता है, सहेजता और कॉपी करता है; बंद करने के लिए Esc",
             "QR কোড - ক্লিক বড় করে, সংরক্ষণ ও কপি করে; বন্ধ করতে Esc",
@@ -418,7 +418,7 @@ Partial Public NotInheritable Class Localization
             "Could not save the image", "Не вдалося зберегти зображення",
             "Das Bild konnte nicht gespeichert werden", "Impossibile salvare l'immagine",
             "No se pudo guardar la imagen", "Impossible d'enregistrer l'image",
-            "Não foi possível guardar a imagem", "تعذّر حفظ الصورة",
+            "Não foi possível salvar a imagem", "تعذّر حفظ الصورة",
             "छवि सहेजी नहीं जा सकी", "ছবিটি সংরক্ষণ করা যায়নি",
             "تصویر محفوظ نہ ہو سکی", "无法保存图片")
 
@@ -442,29 +442,29 @@ Partial Public NotInheritable Class Localization
             "Password (pass separately): {0}", "Пароль (передайте окремо): {0}",
             "Kennwort (separat weitergeben): {0}", "Password (comunicala a parte): {0}",
             "Contraseña (compártela aparte): {0}", "Mot de passe (à transmettre séparément) : {0}",
-            "Palavra-passe (transmita à parte): {0}", "كلمة المرور (أرسلها بشكل منفصل): {0}",
+            "Senha (transmita separadamente): {0}", "كلمة المرور (أرسلها بشكل منفصل): {0}",
             "पासवर्ड (अलग से भेजें): {0}", "পাসওয়ার্ড (আলাদাভাবে পাঠান): {0}",
             "پاس ورڈ (الگ سے بھیجیں): {0}", "密码（请另行传达）：{0}")
 
         Add("Логин: {0}",
             "Login: {0}", "Логін: {0}", "Benutzername: {0}", "Utente: {0}", "Usuario: {0}",
-            "Identifiant : {0}", "Utilizador: {0}", "اسم المستخدم: {0}", "लॉगिन: {0}",
-            "লগইন: {0}", "لاگ ان: {0}", "用户名：{0}")
+            "Identifiant : {0}", "Usuário: {0}", "اسم المستخدم: {0}", "लॉगिन: {0}",
+            "লগইন: {0}", "لاگ اِن: {0}", "用户名：{0}")
 
         Add("Пароль: {0}",
             "Password: {0}", "Пароль: {0}", "Kennwort: {0}", "Password: {0}", "Contraseña: {0}",
-            "Mot de passe : {0}", "Palavra-passe: {0}", "كلمة المرور: {0}", "पासवर्ड: {0}",
+            "Mot de passe : {0}", "Senha: {0}", "كلمة المرور: {0}", "पासवर्ड: {0}",
             "পাসওয়ার্ড: {0}", "پاس ورڈ: {0}", "密码：{0}")
 
         Add("Сохранено и скопировано: {0}",
             "Saved and copied: {0}", "Збережено й скопійовано: {0}", "Gespeichert und kopiert: {0}",
             "Salvato e copiato: {0}", "Guardado y copiado: {0}", "Enregistré et copié : {0}",
-            "Guardado e copiado: {0}", "تم الحفظ والنسخ: {0}", "सहेजा और कॉपी किया गया: {0}",
+            "Salvo e copiado: {0}", "تم الحفظ والنسخ: {0}", "सहेजा और कॉपी किया गया: {0}",
             "সংরক্ষণ ও কপি করা হয়েছে: {0}", "محفوظ اور کاپی ہو گیا: {0}", "已保存并复制：{0}")
 
         Add("Сохранено: {0}",
             "Saved: {0}", "Збережено: {0}", "Gespeichert: {0}", "Salvato: {0}", "Guardado: {0}",
-            "Enregistré : {0}", "Guardado: {0}", "تم الحفظ: {0}", "सहेजा गया: {0}",
+            "Enregistré : {0}", "Salvo: {0}", "تم الحفظ: {0}", "सहेजा गया: {0}",
             "সংরক্ষণ করা হয়েছে: {0}", "محفوظ ہو گیا: {0}", "已保存：{0}")
 
         Add("Папка «Изображения» недоступна - сохранено в {0}",
@@ -474,7 +474,7 @@ Partial Public NotInheritable Class Localization
             "La cartella «Immagini» non è disponibile - salvato in {0}",
             "La carpeta «Imágenes» no está disponible: guardado en {0}",
             "Le dossier « Images » n'est pas disponible - enregistré dans {0}",
-            "A pasta «Imagens» não está disponível - guardado em {0}",
+            "A pasta «Imagens» não está disponível - salvo em {0}",
             "مجلد الصور غير متاح - تم الحفظ في {0}",
             "«चित्र» फ़ोल्डर उपलब्ध नहीं है - {0} में सहेजा गया",
             "«ছবি» ফোল্ডার উপলব্ধ নয় - {0}-এ সংরক্ষণ করা হয়েছে",

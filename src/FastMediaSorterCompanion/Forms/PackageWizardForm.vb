@@ -775,7 +775,12 @@ Public NotInheritable Class PackageWizardForm
         EnableExport(CanOfferNow()) ' A QR overflow still permits a verified file export.
         If btnRetryCheck IsNot Nothing Then btnRetryCheck.Visible = _config IsNot Nothing AndAlso _preflight.CanRetry
         Dim hint As String = PreflightHint()
-        If hint.Length > 0 Then SetHint(hint)
+        If hint.Length > 0 Then
+            SetHint(hint)
+        ElseIf lblHint.Text = HostingText.CheckingAccessHint() Then
+            ' The check is over and passed: the progress line set by StartScan must not outlive it.
+            SetHint("")
+        End If
     End Sub
 
     ''' <summary>What the current state asks the user to know ("" = nothing to add).</summary>

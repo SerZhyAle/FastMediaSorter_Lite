@@ -156,7 +156,7 @@ Partial Public NotInheritable Class Localization
             "Report dell'operazione", "Informe de la operación", "Rapport de l'opération",
             "Relatório da operação", "تقرير العملية", "कार्रवाई की रिपोर्ट", "কাজের প্রতিবেদন",
             "عمل کی رپورٹ", "操作报告")
-        Add("Состояние", "Status", "Стан", "Status", "Stato", "Estado", "État", "Estado",
+        Add("Состояние", "Status", "Стан", "Status", "Stato", "Estado", "État", "Status",
             "الحالة", "स्थिति", "অবস্থা", "حالت", "状态")
         Add("Подробности", "Details", "Подробиці", "Details", "Dettagli", "Detalles", "Détails",
             "Detalhes", "التفاصيل", "विवरण", "বিস্তারিত", "تفصیلات", "详细信息")

@@ -65,6 +65,10 @@ Partial Public Class Main_Form
             Return
         End If
         SlideShowStop()
+        If GetModernPreferences().DocumentConverterEnabled Then
+            BeginDocumentConversion(path)
+            Return
+        End If
         Dim exe = DocHtmlTranslate.FindExe()
         If exe.Length = 0 Then
             OfferInstallCompanion()
