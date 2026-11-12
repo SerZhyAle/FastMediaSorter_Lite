@@ -754,6 +754,7 @@ Friend NotInheritable Class Resource_List_Panel
         ElseIf ResourceOrigin.IsExchange(resource) Then
             ' Ticket 171: a resource attached from "My devices" says whose it is, what it is now and - once - that its access was updated
             typeText = ExchangeResourceText.TypeOfDevice(resource.ExchangeDeviceName)
+            If resource.Kind = ResourceKind.Drive Then typeText &= " - " & Localization.T("через GD")
             Dim stateText As String = If(devices Is Nothing, "", ExchangeResourceText.ListState(devices.StateOf(resource)))
             If stateText.Length > 0 Then typeText &= " - " & stateText
             If resource.ExchangeNotice.GetValueOrDefault() Then typeText &= " - " & ExchangeResourceText.AccessUpdatedCell()
@@ -939,6 +940,11 @@ Friend NotInheritable Class Resource_List_Panel
         Dim current As ResourceDescriptor = Selected()
         If current Is Nothing Then Return
         If HandOverToShareManager(current) Then Return
+        ' a folder through Google Drive has nothing to edit: no address and no credential, the form below would only ask for them
+        If current.Kind = ResourceKind.Drive Then
+            Say(ExchangeResourceText.DriveEditRefused(), ResourceStatusSeverity.Warning)
+            Return
+        End If
         AddOrEdit(current, Nothing)
     End Sub
 
@@ -1063,7 +1069,12 @@ Friend NotInheritable Class Resource_List_Panel
         Try
             Dim sentence As String
             Dim severity As ResourceStatusSeverity
-            If current.Kind = ResourceKind.Sftp Then
+            If current.Kind = ResourceKind.Drive Then
+                ' There is nothing to probe but the road itself: a real listing, which takes as long as the other device takes to answer (item CQ).
+                Dim failure As ResourceFailure = Await TestDriveAsync(current, cancel.Token)
+                sentence = If(failure Is Nothing, ExchangeResourceText.DriveAnswered(), ResourceMessages.ForFailure(failure))
+                severity = If(failure Is Nothing, ResourceStatusSeverity.Success, ResourceStatusSeverity.Danger)
+            ElseIf current.Kind = ResourceKind.Sftp Then
                 ' Every address is asked, in the producer's order: a stale LAN address next to a live
                 ' port forward is the ordinary state of an imported resource, and saying only the
                 ' first verdict would call a working resource broken. The overall severity is the
@@ -1093,6 +1104,17 @@ Friend NotInheritable Class Resource_List_Panel
             If testCancel Is cancel Then SetSelectionState(testButton, Selected() IsNot Nothing)
         End Try
     End Sub
+
+    ''' <summary>One listing of a folder through Google Drive, off the UI thread. Nothing when the other device answered.</summary>
+    Private Shared Async Function TestDriveAsync(resource As ResourceDescriptor, ct As CancellationToken) As Task(Of ResourceFailure)
+        Try
+            Dim provider As New DriveProvider(New ExchangeAgentDriveChannel(), resource.ExchangeResourceId, resource.ExchangeDeviceName)
+            Await Task.Run(Sub() provider.ListEntries(resource.RootPath, ct)).ConfigureAwait(True)
+            Return Nothing
+        Catch ex As Exception When TypeOf ex Is ResourceFailureException OrElse TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is IO.IOException
+            Return ResourceFailure.FromException(ex)
+        End Try
+    End Function
 
     ''' <summary>A sentence and the severity it is said with: the status line's glyph must
     ''' match the outcome, so the test carries both back instead of the caller parsing text.</summary>
@@ -1149,6 +1171,8 @@ Friend NotInheritable Class Resource_List_Panel
         ' Exporting a managed share is the Share Manager's job (its wizard builds the phone's
         ' .fmscfg), so the row is refused with the handover as the reason.
         Dim managedNote As String = If(hasSelection AndAlso WorkerShares.IsManaged(Selected()), Localization.T(ManagedNoteKey), "")
+        ' A folder through Google Drive has no address a phone could be given.
+        If hasSelection AndAlso Selected().Kind = ResourceKind.Drive Then managedNote = ExchangeResourceText.DriveExportRefused()
         Dim exportReason As String = If(managedNote.Length > 0, managedNote, reason)
         Dim export As New ChromeMenuItem("res_Export") With {
             .GlyphId = "action.share", .Caption = Localization.T("Экспорт.."),
@@ -1267,8 +1291,9 @@ Friend NotInheritable Class Resource_List_Panel
         End Using
     End Sub
 
-    Private Sub OnImportClipboard(sender As Object, e As EventArgs)
-        Dim read As FmsConfigReadResult = PhoneConnectionIntake.ReadClipboard()
+    Private Async Sub OnImportClipboard(sender As Object, e As EventArgs)
+        Dim read As FmsConfigReadResult = Await PhoneConnectionIntake.ReadClipboardAsync()
+        If IsDisposed Then Return
         If read Is Nothing OrElse (Not read.Succeeded AndAlso read.Failure = FmsConfigFailure.Empty) Then
             ' An image that held no QR, or too many, carries the decoder's own sentence in Detail; only a
             ' clipboard with neither text nor a picture gets the generic one.

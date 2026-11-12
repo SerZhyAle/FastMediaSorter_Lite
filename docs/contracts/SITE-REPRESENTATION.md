@@ -26,11 +26,12 @@
 3. **Declare the public editions with one name each** (rule 4): the full-package edition
    (`Fast Media Sorter & Sharing for Windows`) and the Server edition (`Fast Media Sorter & Sharing: Folder
    Share Server`), declared in `tools/site-facts.json`; a colon-form edition name the file does not declare fails
-   the gate. The Media Exchange Server is the third component: **built, its shipping gate shut, so in no package**.
+   the gate. The Media Exchange Server is the fourth component (the third until specification L0297 of
+   2026-11-10): **built, its shipping gate shut, so in no package**.
    **Dated local exception to rule 4 as the catalog words it (owner decision 2026-10-26, specification 273 Q273-4;
    it replaces the decision of 2026-10-20, specification 249, which named the server only within reach of a
    development marker, and before it the Q155-2 ruling of 2026-10-06, which allowed one future-tense mention in
-   door 3):** the server is named wherever the three components are listed, in the present tense, as what it does,
+   door 3):** the server is named wherever the components are listed, in the present tense, as what it does,
    with no promise marker at all (canon invariant 17: no surface carries one in any language - the list is
    `retiredPhrases` in `tools/site-facts.json`), never inside a link to a download, an installer, a release, a store or a winget
    command, never with a date, and its door carries no call to action; the availability matrix says "Not in this
@@ -53,6 +54,15 @@
 ## Where the evidence is
 
 Specification 147 (`done/`), specification 155 (rules 1 to 4) and the catalog registry; specification 156 (`done/`, the browser run and the reading of the ten pages) and its follow-ups 157 (the function pages) and 158 (the browser findings and what is still not run).
+
+## State on 2026-11-10 (specification L0297)
+
+The positioning has four components (owner decision 2026-11-10): the media and file manager, local sharing,
+scheduled file operations (installed together with the Share Manager, one payload, no service) and the Media
+Exchange Server, now fourth and still gated. The rules of the contract are unchanged - one positioning source, the
+components in its order on every declared surface, the editions declared once - so no catalog amendment is needed;
+only this product's data (`tools/site-facts.json`, POSITIONING.md) and its surfaces changed, and the landing has four
+doors (the exchange door is door 4).
 
 ## State on 2026-10-26 (specification 273)
 

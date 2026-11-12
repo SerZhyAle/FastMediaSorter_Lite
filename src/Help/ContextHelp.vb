@@ -28,6 +28,8 @@ Public NotInheritable Class ContextHelp
         Public Property form As String = ""
         Public Property help As String = ""
         Public Property parent As String = ""
+        ''' <summary>"off" on an inherit row whose surface may take no added control (CONTEXT-HELP 0.2 section 7 item B).</summary>
+        Public Property ask As String = ""
         Public Property reason As String = ""
         Public Property pages As List(Of SubordinatePage)
     End Class

@@ -79,11 +79,36 @@ Friend NotInheritable Class ExchangeFirstRunActions
     Public Function Suggest(port As Integer) As String Implements IExchangeFirstRunActions.Suggest
         Return ExchangeOperatorEndpoint.Suggest("", NetworkInfo.LocalIPv4(), port)
     End Function
+    ''' <summary>The window with the browser sign-in link beside the string (WEB-BINDING page-served-by-the-server 3). The link needs
+    ''' the server's report, so the report is read on a pool thread while the window opens, and each string request waits for it on its
+    ''' own pool thread: the string and the link arrive together and the UI thread never runs the binary.</summary>
     Public Sub ConnectionString(owner As Form) Implements IExchangeFirstRunActions.ConnectionString
-        Using dialog As New Exchange_Connection_String_Form()
+        Dim report As Task(Of ExchangeProcess.InspectReport) = Task.Run(AddressOf InspectForSignInLink)
+        Dim make As Func(Of String, String, ExchangeProcess.ConnectionStringResult) =
+                   Function(name As String, login As String) As ExchangeProcess.ConnectionStringResult
+                       Task.WhenAny(report).Wait()
+                       Return ExchangeProcess.ConnectionString(name, login)
+                   End Function
+        Dim link As Func(Of String, String) =
+                   Function(text As String) As String
+                       Return If(report.Status = TaskStatus.RanToCompletion, ExchangeProcess.BrowserSignInUrl(report.Result, text), "")
+                   End Function
+        Using dialog As New Exchange_Connection_String_Form(make, link)
             dialog.ShowDialog(owner)
         End Using
     End Sub
+
+    Private Shared Function InspectForSignInLink() As ExchangeProcess.InspectReport
+        Try
+            Using ports As New ExchangeFirstRunWizardPorts(Nothing)
+                Return ports.Inspect()
+            End Using
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException OrElse TypeOf ex Is System.ComponentModel.Win32Exception
+            ' No report means no link: the window still makes, copies, saves and shows the string.
+            AppFileLogger.LogException("Exchange: the report for the sign-in link", ex)
+            Return New ExchangeProcess.InspectReport()
+        End Try
+    End Function
 End Class
 
 ''' <summary>The same account/start/check/enroll engine, with service-aware start and a transient typed-password choice.</summary>

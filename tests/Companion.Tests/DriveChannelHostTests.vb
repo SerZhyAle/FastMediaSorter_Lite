@@ -187,6 +187,44 @@ Public Class DriveChannelHostTests
         Return host
     End Function
 
+    ' ------------------------------------------------------------------------------------------ one clipboard action (ticket 269 P4)
+
+    <Fact>
+    Public Sub One_clipboard_action_builds_a_service_and_starts_nothing()
+        Using rig As New Rig()
+            rig.StoreSignIn()
+            Dim host As DriveChannelHost = rig.NewHost()
+
+            Dim first As ExchangeDriveService = host.ServiceForOneAction()
+
+            Assert.NotNull(first)
+            Assert.Same(first, host.ServiceForOneAction())
+            Assert.Equal(1, rig.Created)
+            ' No poller asked for a wait, and nothing was listed or answered: a desktop shortcut's run stays one action.
+            Assert.Empty(rig.Gate.Asked())
+            Assert.Equal(0, rig.Drive.RequestCount)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub One_clipboard_action_gets_no_service_without_a_stored_sign_in()
+        Using rig As New Rig()
+            Dim host As DriveChannelHost = rig.NewHost()
+            Assert.Null(host.ServiceForOneAction())
+            Assert.Equal(0, rig.Created)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Async Function One_clipboard_action_uses_the_service_that_runs() As Task
+        Using rig As New Rig()
+            Dim host As DriveChannelHost = Await SignedInHost(rig)
+            Dim created As Integer = rig.Created
+            Assert.Same(host.Service, host.ServiceForOneAction())
+            Assert.Equal(created, rig.Created)
+        End Using
+    End Function
+
     ' ------------------------------------------------------------------------------------------ no client
 
     <Fact>
@@ -198,7 +236,8 @@ Public Class DriveChannelHostTests
         Try
             Environment.SetEnvironmentVariable(idName, Nothing)
             Environment.SetEnvironmentVariable(secretName, Nothing)
-            ' this assembly carries no FmsDriveClientId / FmsDriveClientSecret metadata yet (specification 203 section 5.9)
+            ' a test build carries no FmsDriveClientId / FmsDriveClientSecret metadata: only a build whose environment holds both
+            ' values emits it (specification 269, Q269-7 - the release workflow sets them from its secrets)
             Assert.False(ExchangeDriveClientConfig.Resolve().IsConfigured)
 
             Environment.SetEnvironmentVariable(idName, "x")

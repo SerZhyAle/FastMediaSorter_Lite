@@ -32,7 +32,7 @@ Partial Public Class Main_Form
     Private Sub ChromeShowToolStripMenu(items As ToolStripItemCollection, atScreen As Point, Optional fromKeyboard As Boolean = False,
                                         Optional anchorTop As Integer = Integer.MinValue)
         Dim entries As List(Of ChromeMenuItem) = BuildChromeMenuEntries(items)
-        ChromeMenu.ShowPopup(Me, atScreen, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+        ChromeMenu.ShowPopup(Me, atScreen, entries, ChromeTheme.ForMenu(ThemeService.Palette), ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
                              focusFirstRow:=fromKeyboard, anchorTop:=anchorTop)
     End Sub
 

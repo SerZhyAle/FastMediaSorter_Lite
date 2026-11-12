@@ -50,12 +50,16 @@ change**:
    (or another available variant). The Store name does not follow the product's renamed
    inscriptions (owner decision, 2026-10-03): the manifest `DisplayName` stays `FastMediaSorter LITE`,
    exactly the reserved name.
-3. Open **Product ▸ Product identity** and copy the three values Microsoft assigned:
-   - **Package/Identity/Name** → pass as `-IdentityName`
-   - **Package/Identity/Publisher** (e.g. `CN=ABCD1234-…`) → pass as `-Publisher`
-   - **Package/Properties/PublisherDisplayName** → pass as `-PublisherDisplayName`
+3. Open **Product ▸ Product identity** and copy the values Microsoft assigned into [identity.json](identity.json):
+   - **Package/Identity/Name** → `IdentityName`
+   - **Package/Identity/Publisher** (e.g. `CN=ABCD1234-…`) → `Publisher`
+   - **Package/Properties/PublisherDisplayName** → `PublisherDisplayName`
 
-These **must match exactly**, or the Store rejects the upload.
+   The same file records the product's `StoreId`, its `PackageFamilyName` and the `IarcRatingId` of its filed age rating.
+
+These **must match exactly**, or the Store rejects the upload. `build-msix.ps1` reads the file and stops before it builds
+when the file is missing or lacks one of the three package values; `-IdentityName`, `-Publisher` and
+`-PublisherDisplayName` override one value of it for a single run.
 
 ## Build a Store-ready package
 
@@ -64,11 +68,7 @@ Visual Studio 2022 / MSBuild for the Release build, **and the .NET 10 SDK** - th
 the Companion are `dotnet publish` outputs, not MSBuild ones.
 
 ```powershell
-.\build-msix.ps1 `
-  -ReleaseVersion       "<the release tag's YY.M.D.HHmm>" `
-  -IdentityName         "<Package/Identity/Name from Partner Center>" `
-  -Publisher            "<Package/Identity/Publisher from Partner Center>" `
-  -PublisherDisplayName "<PublisherDisplayName from Partner Center>"
+.\build-msix.ps1 -ReleaseVersion "<the release tag's YY.M.D.HHmm>"
 ```
 
 `-ReleaseVersion` pins the packaged exes to the version of the release this package belongs to: it is
@@ -115,6 +115,22 @@ Then in Partner Center: create a submission, upload the `.msix`, fill the listin
 [STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md)), add a privacy-policy URL
 ([docs/privacy.html](../../docs/privacy.html) on GitHub Pages), add a screenshot (`publishing/store/make-screenshot.ps1`),
 set the age rating, and submit. Certification typically takes a few business days.
+
+The submission is a manual step in Partner Center; this repository's release flow starts none. The Store Developer
+CLI shows the live state read-only: `msstore apps list`, `msstore submission status <StoreId>` and
+`msstore submission get <StoreId>` (the id is in [identity.json](identity.json)). With no pending submission
+`submission get` returns the last published one, so read its `Status`, not the existence of JSON. A write through the
+CLI (publish, update, delete, rollout) is made only on the owner's instruction that names the product and the package
+version, and a submission created in Partner Center is changed only in Partner Center.
+
+Before the tag, `tools\Release.ps1` (step 7) calls the shared read-only Store preflight of the canon (`WINDOWS-STORE` 0.4
+section D, rules 21 and 23): the release stops with the reason when a Store submission is already pending, when the package
+version (the tag's version in the Store's four-part form) is not strictly above the live one, or when the price is not `Free`. With the
+channel unconfigured, its credential expired or its token refused, the release prints one line that the Store step is manual
+and goes on exactly as without the channel. After the tag is pushed, one evidence line per release (the Store ID, the package
+version and the preflight's answer, no account identifier or credential) is appended to
+`publishing/store/channel-evidence.jsonl`. `SZA_STORE_CREDENTIAL_EXPIRY` can carry the owner's recorded expiry
+date of the channel's credential.
 
 ## Test locally before submitting (self-signed)
 

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>计划操作历史记录 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -14,7 +15,7 @@
   <h1 id="title">计划操作历史记录</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>显示日志中记录的计划文件操作的近期运行和备注。它从 Share Manager 设置的「计划文件操作」页面上的「历史记录..」打开。</p>
+    <p>显示日志中记录的计划文件操作的近期运行和备注。计划文件操作与 Share Manager 一同安装（同一个安装包，无需单独下载，也没有 Windows 服务），并在 Share Manager 于您已登录的会话中运行期间执行；它们不需要文件夹共享、服务器、开放端口或管理员权限。它从「计划操作」窗口和 Share Manager 设置的「计划文件操作」页面上的「历史记录..」打开。</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="scheduled-history-light.png" alt="计划操作历史记录">
@@ -27,7 +28,7 @@
   <section id="elements">
     <h2>界面元素</h2>
 <details id="columns"><summary>列</summary><p>时间、操作（其名称）、启动和结果。启动为按计划、手动、全部运行或延迟，对备注则为空。窗口在打开时和点击「刷新」时读取最近 200 条日志记录；它不会自动更新。</p></details>
-<details id="results"><summary>运行结果</summary><p>「已完成：N 个文件」，如有文件被略过则追加「，已跳过：M」，删除时追加「（放入回收站）」。「有错误：N；已完成：M 个文件」，后面跟第一个原因，例如文件正被使用、无法访问、文件未找到或已更改，或磁盘已满。「已停止：..」表示某道障碍使运行终止，例如无法访问的文件夹、没有保存密码或服务器密钥未确认的资源，或离线的设备。「未启动：..」表示定义被拒绝，另有「已跳过：..」和「已中断」。日志保存的是代码而不是原始错误文本，因此措辞会跟随当前语言。</p></details>
+<details id="results"><summary>运行结果</summary><p>「已完成：N 个文件」，如有文件被略过则追加「，已跳过：M」，删除时追加「（放入回收站）」。「有错误：N；已完成：M 个文件」，后面跟第一个原因，例如文件正被使用、无法访问、文件未找到或已更改，或磁盘已满。「已停止：..」表示某道障碍使运行终止，例如无法访问的文件夹、没有保存密码或服务器密钥未确认的资源，或离线的设备。「未启动：..」表示定义被拒绝，另有「已跳过：..」和「已中断」。日志保存的是代码而不是原始错误文本，因此措辞会跟随当前语言。 当一侧为 Google Drive 时，原因也可能是无法连接 Google Drive、其空间不足、已退出 Google Drive，或文件超过数据包上限。</p></details>
 <details id="notes"><summary>备注</summary><p>没有启动值的行是备注：「已跳过：运行时间（..）在管理器关闭期间已过」、「延迟运行：原定于 .. 运行」、「已拒绝：此操作已在运行或正在排队等待」以及「已恢复：停止原因已消除」。</p></details>
 <details id="clear"><summary>清除历史记录</summary><p>询问：要清除计划操作的历史记录吗？操作及其计划不会改变。默认答案为「否」。它只清空此日志；操作及其计划保留。历史记录为空时，该按钮不可用。</p></details>
     <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>

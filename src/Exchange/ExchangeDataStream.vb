@@ -244,6 +244,11 @@ Friend NotInheritable Class ExchangeEnvelopeTypes
     Public Const Grant As String = "grant"
     Public Const Granted As String = "granted"
     Public Const Ungrant As String = "ungrant"
+    ' ticket L0296 / DEVICE-EXCHANGE 1.12 items EN-ER: the application settings standard (snake case as filed)
+    Public Const SettingsSaveStandard As String = "settings_save_standard"
+    Public Const SettingsSaved As String = "settings_saved"
+    Public Const SettingsGetStandard As String = "settings_get_standard"
+    Public Const SettingsStandardPayload As String = "settings_standard_payload"
 
 End Class
 
@@ -316,6 +321,17 @@ Friend NotInheritable Class ExchangeMessages
     ''' `password-changed` with this device's fresh token, or one refusal; every OTHER device of the account is signed out.</summary>
     Public Shared Function PasswordChange(oldPassword As String, newPassword As String) As ExchangeEnvelope
         Return New ExchangeEnvelope(ExchangeEnvelopeTypes.PasswordChange).SetText("oldPassword", oldPassword).SetText("newPassword", newPassword)
+    End Function
+
+    ''' <summary>Item EO: a save of the standard of this device's account and program; `timestamp` is informational only.</summary>
+    Public Shared Function SettingsSaveStandard(appId As String, formatVersion As Integer, settingsPayload As String, timestamp As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.SettingsSaveStandard).SetText("appId", appId).
+            SetNumber("formatVersion", formatVersion).SetText("settingsPayload", settingsPayload).SetText("timestamp", If(timestamp, ""))
+    End Function
+
+    ''' <summary>Item EO: a read of the standard of this device's account and program.</summary>
+    Public Shared Function SettingsGetStandard(appId As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.SettingsGetStandard).SetText("appId", appId)
     End Function
 
     Public Shared Function Publish(resourceJson As String) As ExchangeEnvelope

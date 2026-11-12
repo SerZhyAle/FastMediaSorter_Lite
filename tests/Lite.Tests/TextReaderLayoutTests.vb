@@ -14,6 +14,27 @@ Imports Xunit
 Public Class TextReaderLayoutTests
 
     <Fact>
+    Public Sub A_binary_view_shows_every_control_character_as_a_sign_of_the_same_length()
+        Dim source As String = "a" & ChrW(0) & ChrW(1) & ChrW(31) & vbTab & "b" & vbCr & vbLf & ChrW(127) & ChrW(128) & ChrW(159) & ChrW(160) & "z"
+        Dim shown As String = TextReaderLayout.EscapeControlCharacters(source)
+        Assert.Equal(source.Length, shown.Length)
+        Assert.Equal("a" & ChrW(&H2400) & ChrW(&H2401) & ChrW(&H241F) & vbTab & "b" & vbCr & vbLf & ChrW(&H2421) & ChrW(&HB7) & ChrW(&HB7) & ChrW(160) & "z", shown)
+        Assert.Equal("", TextReaderLayout.EscapeControlCharacters(""))
+        Assert.Null(TextReaderLayout.EscapeControlCharacters(Nothing))
+    End Sub
+
+    <Fact>
+    Public Sub A_binary_view_reads_one_byte_as_one_character()
+        Dim encoding = TextEncodingDetector.CreateEncoding(TextReaderLayout.BinaryViewCodePage, False)
+        Dim bytes(255) As Byte
+        For index As Integer = 0 To 255
+            bytes(index) = CByte(index)
+        Next
+        Assert.Equal(256, encoding.GetString(bytes).Length)
+        Assert.Equal(bytes, encoding.GetBytes(encoding.GetString(bytes)))
+    End Sub
+
+    <Fact>
     Public Sub Lines_split_on_every_terminator_and_count_them()
         Dim lines = TextReaderLayout.BuildLines("a" & vbCrLf & "b" & vbLf & "c" & vbCr & "d", 4, False, False)
         Assert.Equal(New String() {"a", "b", "c", "d"}, lines.CopyLines)

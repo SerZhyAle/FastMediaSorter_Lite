@@ -29,6 +29,31 @@ Public Class QrImageOutputTests
         Return bmp
     End Function
 
+    ''' <summary>The window is the code, edge to edge (CONTEXT-HELP 0.2 section 7 item B): the shared help attach puts
+    ''' no button on it. The real window with the real shipped map - this is the line that once covered the code.</summary>
+    <Fact>
+    Public Sub TheWindowTakesNoHelpButtonOverTheCode()
+        Dim failure As Exception = Nothing
+        Dim worker As New System.Threading.Thread(
+            Sub()
+                Try
+                    Using code As Bitmap = FakeCode(200)
+                        Using window As New Qr_Zoom_Form(code, 200, "", False)
+                            ContextHelpUi.Attach(window)
+                            Assert.Null(ContextHelpUi.AttachedButton(window))
+                            Assert.Empty(window.Controls.Find("contextHelp", True))
+                        End Using
+                    End Using
+                Catch ex As Exception
+                    failure = ex
+                End Try
+            End Sub)
+        worker.SetApartmentState(System.Threading.ApartmentState.STA)
+        worker.Start()
+        Assert.True(worker.Join(10000))
+        If failure IsNot Nothing Then Throw failure
+    End Sub
+
     <Theory>
     <InlineData(120, 600)>      ' x5
     <InlineData(240, 720)>      ' x3

@@ -26,6 +26,11 @@ const (
 
 func intp(n int) *int { return &n }
 
+func strp(s string) *string { return &s }
+
+// sampleSettings is the payload of the settings standard vectors 01 and 04 (DEVICE-EXCHANGE 1.12 item EO).
+const sampleSettings = `{"version":1,"groups":{"appearance":{"theme":"dark","density":"compact"},"general":{"confirmDelete":true}}}`
+
 const (
 	sampleResource  = `{"resourceId":"` + idB + `","deviceId":"` + idA + `","kind":"sftp-share","name":"Photos","access":{"descriptor":"FMSSFTP2.secret","root":"/"},"future":{"a":{"b":{"c":1}}}}`
 	sampleBroadcast = `{"broadcastId":"` + idC + `","deviceId":"` + idA + `","mode":"AUDIO_ONLY","title":"Mic","descriptor":{"endpoints":[]}}`
@@ -59,6 +64,7 @@ func samples() []struct {
 		{"refused", Refuse(ReasonBadCredentials)},
 		{"keepalive", &Keepalive{}},
 		{"bye", &Bye{}},
+		{"bye-time-limit", &Bye{OfflineReason: OfflineReasonTimeLimit}},
 		{"list", &List{}},
 		{"directory", &Directory{Revision: 7, Devices: []json.RawMessage{json.RawMessage(sampleDevice)},
 			Resources: []json.RawMessage{json.RawMessage(sampleResource)}, Broadcasts: []json.RawMessage{json.RawMessage(sampleBroadcast)}}},
@@ -119,6 +125,10 @@ func samples() []struct {
 		{"admin-auth-ok", &AdminAuthOK{Token: tok, ExpiresSeconds: 900}},
 		{"admin-request", &AdminRequest{ID: 1, Token: tok, Op: "status"}},
 		{"admin-reply", &AdminReply{ID: 1, OK: true, Data: json.RawMessage(`{}`)}},
+		{"settings_save_standard", &SettingsSaveStandard{AppID: "fms_win", FormatVersion: intp(1), SettingsPayload: strp(sampleSettings), Timestamp: "2026-11-10T02:00:00Z"}},
+		{"settings_saved", &SettingsSaved{AppID: "fms_win", Version: 1, UpdatedAt: "2026-11-10T02:00:00Z"}},
+		{"settings_get_standard", &SettingsGetStandard{AppID: "fms_win"}},
+		{"settings_standard_payload", &SettingsStandardPayload{AppID: "fms_win", FormatVersion: 1, SettingsPayload: sampleSettings, UpdatedAt: "2026-11-10T02:00:00Z"}},
 	}
 }
 
@@ -300,6 +310,7 @@ func TestDecodeRefusals(t *testing.T) {
 		{"enroll with both secrets", `{"schemaVersion":2,"type":"enroll","login":"a","password":"p","pairingCode":"c","deviceId":"` + idA + `","deviceName":"n","product":"x"}`, ErrMalformed},
 		{"enroll with a bad device id", `{"schemaVersion":2,"type":"enroll","login":"a","password":"p","deviceId":"short","deviceName":"n","product":"x"}`, ErrMalformed},
 		{"enroll with a control character", `{"schemaVersion":2,"type":"enroll","login":"a","password":"p","deviceId":"` + idA + `","deviceName":"n\u0001","product":"x"}`, ErrMalformed},
+		{"enroll with a C1 control character", `{"schemaVersion":2,"type":"enroll","login":"a","password":"p","deviceId":"` + idA + `","deviceName":"n\u0085","product":"x"}`, ErrMalformed},
 		{"enroll with a long device name", `{"schemaVersion":2,"type":"enroll","login":"a","password":"p","deviceId":"` + idA + `","deviceName":"` + strings.Repeat("n", 65) + `","product":"x"}`, ErrMalformed},
 		{"enroll with an oversize receiver list", `{"schemaVersion":2,"type":"enroll","login":"a","password":"p","deviceId":"` + idA + `","deviceName":"n","product":"x","receiver":{"modes":["1","2","3","4","5","6","7","8","9"]}}`, ErrMalformed},
 		{"hello without a token", `{"schemaVersion":2,"type":"hello","deviceId":"` + idA + `"}`, ErrMalformed},
@@ -419,12 +430,12 @@ func TestVersionRefusalCarriesTheServersOwnSchemaVersion(t *testing.T) {
 	}
 }
 
-func TestReasonsAreTheSeventeenOfTheContract(t *testing.T) {
+func TestReasonsAreTheTwentyOneOfTheContract(t *testing.T) {
 	want := []string{"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision",
 		"capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
 		"invitation-invalid", "login-taken", "password-policy", "limit-reached", "not-permitted", "signed-out",
-		"admin-disabled"}
-	if len(AllReasons) != 17 {
+		"admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible"}
+	if len(AllReasons) != 21 {
 		t.Fatalf("%d reasons", len(AllReasons))
 	}
 	for i, r := range AllReasons {
@@ -437,7 +448,7 @@ func TestReasonsAreTheSeventeenOfTheContract(t *testing.T) {
 	}
 	defer func() {
 		if recover() == nil {
-			t.Error("Refuse accepted a reason outside the seventeen")
+			t.Error("Refuse accepted a reason outside the twenty-one")
 		}
 	}()
 	Refuse(Reason("nope"))

@@ -560,7 +560,7 @@ Public Class ChromeMenuRulesTests
     End Sub
 
     <Fact>
-    Public Sub The_small_size_never_goes_under_the_28_pixel_floor_and_the_touch_size_reaches_44()
+    Public Sub The_small_size_never_goes_under_the_28_pixel_floor_and_the_touch_size_reaches_48()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
                       Dim font As New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Pixel)
@@ -569,12 +569,12 @@ Public Class ChromeMenuRulesTests
                       Dim wide As New ChromeItem("w", ChromeItemKind.Button) With {.Caption = "x"}
                       Assert.True(surface.MeasureItemWidth(New ChromeItem("g", ChromeItemKind.Button) With {.GlyphId = "media.next"}) >= ChromeMetrics.MinTarget)
                       surface.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), UiScale.SizeMultiplier("touch", 0.0F), False, font, font)
-                      Assert.True(surface.ItemHeight() >= 44, "touch: " & surface.ItemHeight().ToString())
-                      Assert.True(surface.MeasureItemWidth(New ChromeItem("g", ChromeItemKind.Button) With {.GlyphId = "media.next"}) >= 44)
+                      Assert.True(surface.ItemHeight() >= UiSizing.TouchTarget, "touch: " & surface.ItemHeight().ToString())
+                      Assert.True(surface.MeasureItemWidth(New ChromeItem("g", ChromeItemKind.Button) With {.GlyphId = "media.next"}) >= UiSizing.TouchTarget)
                   End Using
               End Sub)
         Assert.Equal(1.0F, UiScale.SizeMultiplier("medium", 0.0F))
-        Assert.True(UiScale.Px(ChromeMetrics.MinTarget, UiScale.TouchPreset) >= 44)
+        Assert.True(UiScale.Px(ChromeMetrics.MinTarget, UiScale.TouchPreset) >= UiSizing.TouchTarget)
     End Sub
 
     <Fact>

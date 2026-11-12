@@ -342,7 +342,7 @@ Public NotInheritable Class PackageWizardForm
         dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "dest", .HeaderText = Localization.T("Приёмник")})
 
         dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "comment", .HeaderText = Localization.T("Комментарий"), .MinimumWidth = 140})
-        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "pin", .HeaderText = "PIN", .MinimumWidth = 70})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "pin", .HeaderText = "PIN", .[ReadOnly] = True})
         dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "slide", .HeaderText = Localization.T("Слайд-шоу, сек"), .MinimumWidth = 80})
 
         ' Hard read-only and "destination" are what the SERVER enforces for the folder, set
@@ -358,6 +358,7 @@ Public NotInheritable Class PackageWizardForm
         dgv.Columns("softro").ToolTipText = Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает. На папку-получатель не действует.")
         dgv.Columns("dest").ToolTipText = Localization.T("Папка-получатель: в неё можно копировать/переносить с телефона (делает папку доступной на запись).")
         dgv.Columns("media").ToolTipText = Localization.T("Нажмите, чтобы выбрать точный набор типов. Пусто = решает тип.")
+        dgv.Columns("pin").ToolTipText = Localization.T("Нажмите, чтобы задать или изменить PIN. Пусто = без PIN.")
 
         AddHandler dgv.CurrentCellDirtyStateChanged, AddressOf OnGridDirty
         AddHandler dgv.CellValueChanged, AddressOf OnCellValueChanged
@@ -421,7 +422,8 @@ Public NotInheritable Class PackageWizardForm
                     row.Cells("dest").Value = p.IsDestination
                     SyncSoftReadOnlyCell(row, p.IsDestination)
                     row.Cells("comment").Value = p.Comment
-                    row.Cells("pin").Value = p.AccessPin
+                    row.Cells("pin").Value = Not String.IsNullOrEmpty(p.AccessPin)
+                    row.Cells("pin").ToolTipText = dgv.Columns("pin").ToolTipText
                     row.Cells("slide").Value = p.SlideshowInterval.ToString()
                     row.Tag = New RowState(host, folderName, p)
                 Next
@@ -479,15 +481,13 @@ Public NotInheritable Class PackageWizardForm
                 SyncSoftReadOnlyCell(row, p.IsDestination)
             Case "comment"
                 p.Comment = CellText(row, "comment")
-            Case "pin"
-                p.AccessPin = CellText(row, "pin")
             Case "slide"
                 Dim secs As Integer
                 If Integer.TryParse(CellText(row, "slide"), secs) AndAlso secs >= 0 AndAlso secs <= 3600 Then
                     p.SlideshowInterval = secs
                 End If
             Case Else
-                ' "inc" / "folder" / "media" have no direct scalar to sync here.
+                ' "inc" / "folder" / "media" have no direct scalar to sync here; "pin" only shows AskRowPin's result.
         End Select
 
         ScheduleRebuild()
@@ -495,8 +495,27 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub OnCellClick(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then Return
-        If dgv.Columns(e.ColumnIndex).Name <> "media" Then Return
-        ShowMediaPicker(dgv.Rows(e.RowIndex))
+        Select Case dgv.Columns(e.ColumnIndex).Name
+            Case "media" : ShowMediaPicker(dgv.Rows(e.RowIndex))
+            Case "pin" : AskRowPin(dgv.Rows(e.RowIndex))
+        End Select
+    End Sub
+
+    ''' <summary>The PIN's value never stands in the grid: the cell only ticks that one is set. Setting, changing or
+    ''' clearing it (an empty answer) goes through a masked question and, like every cell here, applies to this code only.</summary>
+    Private Sub AskRowPin(row As DataGridViewRow)
+        Dim st As RowState = TryCast(row.Tag, RowState)
+        If st Is Nothing Then Return
+        Dim spec As New PromptSpec(If(String.IsNullOrWhiteSpace(st.P.Label), st.FolderName, st.P.Label),
+                                   Localization.T("PIN для ресурса:"), st.P.AccessPin, "OK", Nothing,
+                                   hint:=Localization.T("если задан - приложение попросит его при открытии")) With {.IsPassword = True}
+        Dim typed As String = ManagerBox.Prompt(Me, spec)
+        If typed Is Nothing Then Return
+        Dim pin As String = typed.Trim()
+        If String.Equals(pin, If(st.P.AccessPin, ""), StringComparison.Ordinal) Then Return
+        st.P.AccessPin = pin
+        SetCellBool(row, "pin", pin.Length > 0)
+        ScheduleRebuild()
     End Sub
 
     ''' <summary>Media set is multi-value, so its cell is a button that drops a checkable menu.</summary>

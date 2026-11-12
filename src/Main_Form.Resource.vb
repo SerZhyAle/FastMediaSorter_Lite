@@ -55,6 +55,8 @@ Partial Public Class Main_Form
         directory = ""
         Dim resource As ResourceSession = ActiveResourceSession()
         If resource IsNot Nothing AndAlso resource.Resource IsNot Nothing Then
+            ' a folder through Google Drive is not a place of the file manager (item CO: a read-only listing, no thumbnails): it starts where it would with nothing open
+            If resource.Provider.Kind = ResourceKind.Drive Then Return
             resourceId = resource.Resource.Id
             directory = If(String.IsNullOrEmpty(resource.CurrentDirectory), resource.Resource.RootPath, resource.CurrentDirectory)
             Return
@@ -176,6 +178,7 @@ Partial Public Class Main_Form
             While Not listing.IsCompleted
                 If generation <> resource_Open_Generation OrElse IsDisposed Then Exit While
                 ShowLoadingStatus(resource.DisplayName)
+                ShowDriveWaiting(provider)
                 ShowLoadingBadge(resource.DisplayName, 0, watch.Elapsed, frame)
                 frame += 1
                 Await Task.WhenAny(listing, Task.Delay(loading_Badge_Frame_Ms))
@@ -227,7 +230,22 @@ Partial Public Class Main_Form
         If sftp IsNot Nothing AndAlso sftp.WasTruncated Then
             lbl_Status.Text = Localization.TF("Показаны первые {0} записей", session.Entries.Count.ToString())
         End If
+        ' item CO: the folder says it is opened through Drive and with what delay
+        If session.Provider.Kind = ResourceKind.Drive Then lbl_Status.Text = ExchangeResourceText.OpenedViaDrive(session.Resource.DisplayName)
     End Sub
+
+    ''' <summary>Item CQ's waiting line while a request through Google Drive is out; nothing for any other provider.</summary>
+    Private Sub ShowDriveWaiting(provider As IFileSystemProvider)
+        Dim drive As DriveProvider = TryCast(provider, DriveProvider)
+        If drive IsNot Nothing Then lbl_Status.Text = ExchangeResourceText.WaitingViaDrive(drive.DeviceName, drive.LastRecordAt)
+    End Sub
+
+    ''' <summary>What the status line says when a file did not arrive: the refusal of the Google Drive channel when there is one (the session
+    ''' reports a failed fetch as an outcome only), else the general sentence.</summary>
+    Private Shared Function FetchFailureText(session As ResourceSession) As String
+        Dim failure As ResourceFailure = TryCast(session.Provider, DriveProvider)?.LastFailure
+        Return If(failure Is Nothing, Localization.T("Не удалось получить файл с ресурса"), ResourceMessages.ForFailure(failure))
+    End Function
 
     ''' <summary>
     ''' Closes the open resource and its cache directory. Called before ANY change of
@@ -342,6 +360,7 @@ Partial Public Class Main_Form
                 End If
                 If watch.ElapsedMilliseconds >= loading_Badge_Delay_Ms Then
                     If savedStatus Is Nothing Then savedStatus = ShowLoadingStatus(filePath)
+                    ShowDriveWaiting(session.Provider)
                     If totalBytes <= 0 Then totalBytes = If(session.EntryAt(filePath)?.Length, 0L)
                     ShowLoadingBadge(filePath, totalBytes, watch.Elapsed, frame, Interlocked.Read(loadedBytes))
                     frame += 1
@@ -352,14 +371,14 @@ Partial Public Class Main_Form
             If generation <> media_Generation OrElse session IsNot ActiveResourceSession() OrElse IsDisposed Then Return False
             If outcome = EnsureLocalOutcome.Ready OrElse outcome = EnsureLocalOutcome.NotOurs Then Return True
             BlankActiveMediaSurface()
-            lbl_Status.Text = Localization.T("Не удалось получить файл с ресурса")
+            lbl_Status.Text = FetchFailureText(session)
             savedStatus = Nothing
             Return False
         Catch ex As Exception
             AppFileLogger.LogException("Resource: fetching for display", ex)
             If generation = media_Generation AndAlso Not IsDisposed Then
                 BlankActiveMediaSurface()
-                lbl_Status.Text = Localization.T("Не удалось получить файл с ресурса")
+                lbl_Status.Text = FetchFailureText(session)
                 savedStatus = Nothing
             End If
             Return False
@@ -421,7 +440,7 @@ Partial Public Class Main_Form
         If session Is Nothing OrElse Not session.NeedsMaterialisation Then Return filePath
         Dim entry As ResourceEntry = session.EntryAt(filePath)
         If entry Is Nothing Then Return filePath
-        If session.Resource IsNot Nothing AndAlso session.Resource.Kind = ResourceKind.Sftp Then
+        If session.Resource IsNot Nothing AndAlso (session.Resource.Kind = ResourceKind.Sftp OrElse session.Resource.Kind = ResourceKind.Drive) Then
             Return ResourceLocator.AppendName(ResourceLocator.Build(session.Resource, ResourceTransfer.ParentOf(entry.FullPath)), entry.Name)
         End If
         Return entry.FullPath

@@ -3,6 +3,12 @@
 {"path": "AGENTS.md", "topic": "AGENTS", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
 {"path": "CHANGELOG.md", "topic": "CHANGELOG", "area": "engineering", "triggers": ["User-visible behavior changes and releases"], "role": "source"}
 {"path": "CLAUDE.md", "topic": "CLAUDE", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
+{"path": "lang/ru/glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ru/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ru/topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "README.md", "topic": "README", "area": "engineering", "triggers": ["Changes to product features, installation or support information"], "role": "source"}
 {"path": "README_RU.md", "topic": "README RU", "area": "engineering", "triggers": ["Changes to product features, installation or support information"], "role": "source"}
 {"path": "README_UK.md", "topic": "README UK", "area": "engineering", "triggers": ["Changes to product features, installation or support information"], "role": "source"}
@@ -61,19 +67,20 @@
 {"path": "docs/guides/POSITIONING.md", "topic": "POSITIONING", "area": "website", "triggers": ["Changes to what the product says it is: the family sentence, the three components and their order, the two install intents, the availability matrix (a packaging change that moves a default or a channel), the public editions, the language count or the platform floor"], "role": "source"}
 {"path": "docs/guides/STORE_PUBLISHING.md", "topic": "STORE PUBLISHING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/TESTING.md", "topic": "TESTING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-filedo-disks.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/index.html", "topic": "docs-index-forwarder", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/how-to-filedo-disks.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "docs/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "exchange-server/README.md", "topic": "exchange-server README", "area": "engineering", "triggers": ["Changes to the exchange server's layout, build, tests or settled behaviour"], "role": "source"}
 {"path": "exchange-server/testdata/manual-winscp.md", "topic": "exchange-server manual WinSCP proof", "area": "engineering", "triggers": ["Changes to the exchange server's per-session port or the fake-producer proof tool"], "role": "source"}
-{"path": "glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
@@ -108,17 +115,20 @@
 {"path": "lang/ur/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "lang/zh/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "lang/zh/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
-{"path": "publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "publishing/msix/README.md", "topic": "README", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
 {"path": "publishing/store/LOCALES.md", "topic": "LOCALES", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
 {"path": "publishing/store/STORE_PUBLISHING_PROMPT.md", "topic": "STORE PUBLISHING PROMPT", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
 {"path": "publishing/store/screenshots/README.md", "topic": "README", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
 {"path": "robots.txt", "topic": "Site discovery and crawling", "area": "website", "triggers": ["Changes to public page inventory or canonical URLs"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
-{"path": "server.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "server.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "sitemap.xml", "topic": "Site discovery and crawling", "area": "website", "triggers": ["Changes to public page inventory or canonical URLs"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "support.html", "topic": "support", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "tools/audit-slice-template.md", "topic": "audit-slice-template", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
-{"path": "topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "tools/site-pages/glossary.src.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "tools/site-pages/privacy.src.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "tools/site-pages/topics.src.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "whats-new.html", "topic": "whats-new", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "docs/contracts/DISK-SHARE.md", "topic": "DISK-SHARE", "area": "contracts", "triggers": ["Adoption, disk lifecycle, ownership, bundle, hosting or conformance changes for DISK-SHARE"], "role": "source"}
@@ -150,3 +160,39 @@
 {"path": "docs/guides/PORTAL_HONEST_TEXT_234.md", "topic": "Exchange privacy portal hand-off", "area": "sharing", "triggers": ["Changes to sealed exchange content, operator visibility or the portal privacy disclosure"], "role": "source"}
 {"role":"source","triggers":["Changes to document reader controls, preferences, history, bookmarks, permissions, speech or local snapshots"],"topic":"PDF reading and Documents settings","path":"docs/guides/DOCUMENT_READING.md","area":"viewer"}
 {"path": "docs/guides/HTML_PAGE_VIEWER.md", "topic": "HTML page viewer", "area": "viewer", "triggers": ["Changes to the HTML page viewer, its WebView2 host, sanitizer, online pages, HTML settings or stored HTML state"], "role": "source"}
+{"path": "docs/guides/TEXT_READING.md", "topic": "Text reading and editing", "area": "viewer", "triggers": ["Changes to the text reader, its editor, encodings, drafts, Open as text or the Text files settings"], "role": "source"}
+{"path": "docs/contracts/CLI-EVENT-STREAM.md", "topic": "CLI-EVENT-STREAM", "area": "contracts", "triggers": ["Adoption, verdict, stop-file, numbers or conformance changes for CLI-EVENT-STREAM (the scheduled fill free space operation)"], "role": "source"}
+{"path": "lang/ru/how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-archives.src.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-keys.src.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-editor.src.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-ocr.src.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-resources.src.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-viewer.src.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-setup.src.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/how-to-filedo-disks.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/how-to-filedo-disks.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/how-to-filedo-disks.src.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/server.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/server.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/server.src.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/site-pages/publish-folders-android.src.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ru/support.html", "topic": "support", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/support.html", "topic": "support", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ru/whats-new.html", "topic": "whats-new", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/whats-new.html", "topic": "whats-new", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}

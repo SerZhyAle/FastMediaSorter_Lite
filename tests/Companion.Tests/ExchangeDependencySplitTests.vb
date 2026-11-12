@@ -143,6 +143,7 @@ Public Class ExchangeDependencySplitTests
             Dim channels As Integer = 0
             Dim ports As New ExchangeAgentPorts With {
                 .Accounts = New ExchangeAccountStore(settings),
+                .DriveSignedIn = Function() False,
                 .StartLocalChannel = Function(h)
                                          channels += 1
                                          Return Nothing

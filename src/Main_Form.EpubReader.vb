@@ -20,23 +20,21 @@ Partial Public Class Main_Form
     Private epub_Reader_Host As HtmlRestrictedHost
     Private epub_Reader_Cts As CancellationTokenSource
     Private epub_Reader_SearchCts As CancellationTokenSource
-    Private epub_Reader_Toolbar As ToolStrip
     Private epub_Reader_Pane As TabControl
-    Private epub_Reader_Context As ToolStripLabel
+    ''' <summary>The context readout of the document panel (280): which side the keys are on, or the search result count.</summary>
+    Private epub_Reader_ContextText As String = ""
     Private epub_Reader_Query As TextBox
     Private epub_Reader_Results As ListBox
     Private epub_Reader_Bookmarks As ListBox
-    Private epub_Reader_Chapter As NumericUpDown
     Private epub_Reader_Preferences As ModernViewerPreferences
     Private epub_Reader_Position As New DocumentReadingPosition With {.Format = "epub"}
     Private epub_Reader_Restore As DocumentReadingPosition
     Private epub_Reader_Interaction As Boolean
-    Private epub_Reader_Updating As Boolean
     Private epub_Reader_PositionBusy As Boolean
     Private epub_Reader_SearchQuery As String = ""
     Private epub_Reader_Voice As DocumentSpeech
+    ''' <summary>Samples the reading position only; the strip it used to hide is the document panel now (280 T-0 correction 2).</summary>
     Private epub_Reader_Timer As System.Windows.Forms.Timer
-    Private epub_Reader_LastActivity As DateTime
     Private ReadOnly epub_Reader_Back As New Stack(Of DocumentReadingPosition)()
     Private epub_Reader_Navigation As Integer
 
@@ -130,47 +128,66 @@ Partial Public Class Main_Form
         End Function, token)
     End Function
 
-    Private Sub EpubReaderButton(key As String, action As Action)
-        Dim button As New ToolStripButton(Localization.T(key)) With {.Tag = key, .DisplayStyle = ToolStripItemDisplayStyle.Text}
-        AddHandler button.Click, Sub() action()
-        epub_Reader_Toolbar.Items.Add(button)
+    ''' <summary>The 1-based chapter the reader is on (the spine position of the current reading position).</summary>
+    Private Function EpubReaderChapterNumber() As Integer
+        If epub_Reader_Book Is Nothing Then Return 1
+        Dim key = epub_Reader_Position.SpineKey
+        Return Math.Max(1, epub_Reader_Book.Spine.FindIndex(Function(item) item.Key = key) + 1)
+    End Function
+
+    Private Function EpubReaderChapterCount() As Integer
+        Return If(epub_Reader_Book Is Nothing, 0, epub_Reader_Book.Spine.Count)
+    End Function
+
+    Private Sub EpubReaderGoBack()
+        If epub_Reader_Back.Count > 0 Then NavigateEpubReader(epub_Reader_Back.Pop(), False)
     End Sub
 
+    Private Sub ResetEpubReaderAppearance()
+        If Not IsEpubReaderShown() Then Return
+        modern_Preferences.ClearDocumentAppearance(epub_Reader_Snapshot.Identity)
+        ApplyEpubReaderPreferences()
+        MarkSettingsDirty()
+    End Sub
+
+    ''' <summary>What the EPUB reader puts on the document panel, by item id (the order is the panel's: <see cref="DocumentPanelRules"/>).
+    ''' Previous / next file and the settings button are not here - the rows carry them.</summary>
+    Private Function EpubReaderCommands() As Dictionary(Of String, DocumentCommand)
+        Dim commands As New Dictionary(Of String, DocumentCommand)(StringComparer.Ordinal)
+        commands(DocumentPanelRules.IdBack) = New DocumentCommand With {.Action = AddressOf EpubReaderGoBack}
+        commands(DocumentPanelRules.IdPrevChapter) = New DocumentCommand With {.Action = Sub() StepEpubReader(-1)}
+        commands(DocumentPanelRules.IdChapterPosition) = New DocumentCommand With {
+            .Action = Sub() BeginDocumentPositionEdit(DocumentPanelRules.IdChapterPosition, EpubReaderChapterNumber(), EpubReaderChapterCount(),
+                Sub(chapter)
+                    If Not IsEpubReaderShown() OrElse chapter = EpubReaderChapterNumber() Then Return
+                    NavigateEpubReader(New DocumentReadingPosition With {.Format = "epub", .SpineKey = epub_Reader_Book.Spine(chapter - 1).Key})
+                End Sub),
+            .Text = Function() DocumentPanelRules.PositionReadout(EpubReaderChapterNumber(), EpubReaderChapterCount(), DocumentPanelRules.PositionReadoutFormat),
+            .Reserved = Function() New String() {DocumentPanelRules.PositionReadoutReserved(EpubReaderChapterCount(), DocumentPanelRules.PositionReadoutFormat)}}
+        commands(DocumentPanelRules.IdNextChapter) = New DocumentCommand With {.Action = Sub() StepEpubReader(1)}
+        For Each pane As KeyValuePair(Of String, Integer) In New KeyValuePair(Of String, Integer)() {
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneOutline, 0),
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneSearch, 1),
+                New KeyValuePair(Of String, Integer)(DocumentPanelRules.IdPaneBookmarks, 2)}
+            Dim index As Integer = pane.Value
+            commands(pane.Key) = New DocumentCommand With {
+                .Action = Sub() ToggleEpubReaderPane(index),
+                .IsChecked = Function() epub_Reader_Pane IsNot Nothing AndAlso epub_Reader_Pane.Visible AndAlso epub_Reader_Pane.SelectedIndex = index}
+        Next
+        commands(DocumentPanelRules.IdAddBookmark) = New DocumentCommand With {.Action = AddressOf AddEpubReaderBookmark}
+        commands(DocumentPanelRules.IdCopy) = New DocumentCommand With {.Action = AddressOf CopyEpubReaderSelection}
+        commands(DocumentPanelRules.IdSpeak) = New DocumentCommand With {.Action = AddressOf SpeakEpubReader}
+        commands(DocumentPanelRules.IdStopSpeech) = New DocumentCommand With {.Action = Sub() epub_Reader_Voice?.Stop()}
+        commands(DocumentPanelRules.IdResetAppearance) = New DocumentCommand With {.Action = AddressOf ResetEpubReaderAppearance}
+        commands(DocumentPanelRules.IdOpenWith) = New DocumentCommand With {.Action = Sub() ManagerShellOpen.OpenWithPicker(Handle, epub_Reader_File)}
+        commands(DocumentPanelRules.IdTranslate) = New DocumentCommand With {.Action = Sub() OpenDocumentConversion(epub_Reader_File)}
+        commands(DocumentPanelRules.IdContext) = New DocumentCommand With {
+            .Text = Function() epub_Reader_ContextText,
+            .Reserved = Function() New String() {Localization.T("Просмотр: клавиши сортируют файлы"), Localization.T("Документ: клавиши работают с текстом")}}
+        Return commands
+    End Function
+
     Private Sub BuildEpubReaderUi()
-        epub_Reader_Toolbar = New ToolStrip With {.Dock = DockStyle.None, .AutoSize = False, .Height = CInt(32 * GetCurrentDpiScale()), .GripStyle = ToolStripGripStyle.Hidden, .TabStop = True,
-            .AccessibleName = Localization.T("Полное чтение EPUB"), .RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)}
-        EpubReaderButton("Предыдущий файл", Sub() ReadShowMediaFile(Mode_Prev))
-        EpubReaderButton("Следующий файл", Sub() ReadShowMediaFile(Mode_Next))
-        EpubReaderButton("Назад", Sub()
-            If epub_Reader_Back.Count > 0 Then NavigateEpubReader(epub_Reader_Back.Pop(), False)
-        End Sub)
-        EpubReaderButton("Предыдущая глава", Sub() StepEpubReader(-1))
-        epub_Reader_Chapter = New NumericUpDown With {.Minimum = 1, .Maximum = epub_Reader_Book.Spine.Count, .Width = CInt(80 * GetCurrentDpiScale()), .AccessibleName = Localization.T("Номер главы")}
-        epub_Reader_Toolbar.Items.Add(New ToolStripControlHost(epub_Reader_Chapter))
-        AddHandler epub_Reader_Chapter.ValueChanged, Sub()
-            If Not epub_Reader_Updating Then NavigateEpubReader(New DocumentReadingPosition With {.Format = "epub", .SpineKey = epub_Reader_Book.Spine(CInt(epub_Reader_Chapter.Value) - 1).Key})
-        End Sub
-        EpubReaderButton("Следующая глава", Sub() StepEpubReader(1))
-        EpubReaderButton("Оглавление", Sub() ToggleEpubReaderPane(0))
-        EpubReaderButton("Поиск", Sub() ToggleEpubReaderPane(1))
-        EpubReaderButton("Закладки", Sub() ToggleEpubReaderPane(2))
-        EpubReaderButton("Добавить закладку", AddressOf AddEpubReaderBookmark)
-        EpubReaderButton("Копировать", AddressOf CopyEpubReaderSelection)
-        EpubReaderButton("Чтение вслух", AddressOf SpeakEpubReader)
-        EpubReaderButton("Остановить", Sub() epub_Reader_Voice?.Stop())
-        EpubReaderButton("doc-html-translate", Sub() OpenDocumentConversion(epub_Reader_File))
-        EpubReaderButton("Открыть с помощью", Sub() ManagerShellOpen.OpenWithPicker(Handle, epub_Reader_File))
-        EpubReaderButton("Настройки", AddressOf ShowSettingsWindow)
-        EpubReaderButton("Сбросить оформление", Sub()
-            modern_Preferences.ClearDocumentAppearance(epub_Reader_Snapshot.Identity)
-            ApplyEpubReaderPreferences()
-            MarkSettingsDirty()
-        End Sub)
-        ' AsNeeded, never Never: an Overflow.Never item hangs the UI thread when UI Automation walks the open
-        ' overflow drop-down; inserted first so it is the last item to overflow (see the same label in
-        ' Main_Form.HtmlView.vb).
-        epub_Reader_Context = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.AsNeeded}
-        epub_Reader_Toolbar.Items.Insert(0, epub_Reader_Context)
         epub_Reader_Pane = New TabControl With {.Dock = DockStyle.None, .Width = CInt(240 * GetCurrentDpiScale()), .Visible = False}
         For Each title In {"Оглавление", "Поиск", "Закладки"}
             epub_Reader_Pane.TabPages.Add(New TabPage(Localization.T(title)))
@@ -225,7 +242,6 @@ Partial Public Class Main_Form
         End Sub
         epub_Reader_Pane.TabPages(2).Controls.AddRange({epub_Reader_Bookmarks, remove, rename})
         panel_Media.Controls.Add(epub_Reader_Pane)
-        panel_Media.Controls.Add(epub_Reader_Toolbar)
         AddHandler panel_Media.SizeChanged, AddressOf LayoutEpubReader
         AddHandler epub_Reader_Host.LinkRequested, Sub(key, anchor) NavigateEpubReader(New DocumentReadingPosition With {.Format = "epub", .SpineKey = key, .Anchor = anchor})
         AddHandler epub_Reader_Host.ExternalLinkRequested, Sub(uri)
@@ -246,31 +262,28 @@ Partial Public Class Main_Form
             SlideShowStop()
             UpdateEpubReaderContext()
         End Sub
-        epub_Reader_Toolbar.AllowDrop = True
-        AddHandler epub_Reader_Toolbar.DragEnter, AddressOf Form1_DragEnter
-        AddHandler epub_Reader_Toolbar.DragDrop, AddressOf Form1_DragDrop
         RefreshEpubReaderBookmarks()
-        ThemeApplier.ApplyTree(epub_Reader_Toolbar, ThemeService.Palette)
         ThemeApplier.ApplyTree(epub_Reader_Pane, ThemeService.Palette)
         epub_Reader_Timer = New System.Windows.Forms.Timer With {.Interval = 500}
         AddHandler epub_Reader_Timer.Tick, AddressOf TickEpubReader
-        epub_Reader_LastActivity = DateTime.UtcNow
         epub_Reader_Timer.Start()
         LayoutEpubReader(Me, EventArgs.Empty)
-        UpdateEpubReaderContext()
+        epub_Reader_ContextText = Localization.T("Просмотр: клавиши сортируют файлы")
+        ShowDocumentCommands(DocumentReaderKind.Epub, EpubReaderCommands())
     End Sub
 
     Private Sub LayoutEpubReader(sender As Object, e As EventArgs)
-        If Not IsEpubReaderShown() OrElse epub_Reader_Toolbar Is Nothing Then Return
-        Dim top = If(epub_Reader_Toolbar.Visible, epub_Reader_Toolbar.Height, 0)
-        epub_Reader_Toolbar.Bounds = New Rectangle(0, 0, panel_Media.Width, epub_Reader_Toolbar.Height)
-        epub_Reader_Pane.Bounds = New Rectangle(0, top, epub_Reader_Pane.Width, Math.Max(1, panel_Media.Height - top))
+        If Not IsEpubReaderShown() OrElse epub_Reader_Pane Is Nothing Then Return
+        ' The page fills the whole area and the document panel floats over it; the side pane starts below the lowest
+        ' pinned top panel so its tabs are never hidden (280 Q280-1 default).
+        document_Pane_Top = DocumentPaneTop()
+        Dim paneTop = Math.Min(document_Pane_Top, Math.Max(0, panel_Media.Height - 1))
+        epub_Reader_Pane.Bounds = New Rectangle(0, paneTop, epub_Reader_Pane.Width, Math.Max(1, panel_Media.Height - paneTop))
         Dim left = If(epub_Reader_Pane.Visible, epub_Reader_Pane.Width, 0)
         epub_Reader_Host.Dock = DockStyle.None
-        epub_Reader_Host.Bounds = New Rectangle(left, top, Math.Max(1, panel_Media.Width - left), Math.Max(1, panel_Media.Height - top))
+        epub_Reader_Host.Bounds = New Rectangle(left, 0, Math.Max(1, panel_Media.Width - left), Math.Max(1, panel_Media.Height))
         epub_Reader_Host.BringToFront()
         epub_Reader_Pane.BringToFront()
-        epub_Reader_Toolbar.BringToFront()
     End Sub
 
     Private Sub ToggleEpubReaderPane(index As Integer)
@@ -284,21 +297,14 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub UpdateEpubReaderContext()
-        If epub_Reader_Context IsNot Nothing Then epub_Reader_Context.Text = Localization.T(If(epub_Reader_Interaction, "Документ: клавиши работают с текстом", "Просмотр: клавиши сортируют файлы"))
+        If epub_Reader_Pane Is Nothing Then Return
+        epub_Reader_ContextText = Localization.T(If(epub_Reader_Interaction, "Документ: клавиши работают с текстом", "Просмотр: клавиши сортируют файлы"))
+        SyncDocumentPanel()
     End Sub
 
     Private Async Sub TickEpubReader(sender As Object, e As EventArgs)
         If Not IsEpubReaderShown() Then Return
         Dim host = epub_Reader_Host
-        Dim pointer = panel_Media.PointToClient(Cursor.Position)
-        Dim visible = Not (is_Full_Screen_Mode OrElse is_Super_Full_Screen_Mode) OrElse modern_Preferences.DocumentFullscreenChrome = "visible" OrElse
-            epub_Reader_Toolbar.ContainsFocus OrElse epub_Reader_Pane.Visible OrElse (pointer.X >= 0 AndAlso pointer.X < panel_Media.Width AndAlso pointer.Y >= 0 AndAlso pointer.Y < epub_Reader_Toolbar.Height)
-        If visible Then epub_Reader_LastActivity = DateTime.UtcNow
-        Dim wanted = visible OrElse (DateTime.UtcNow - epub_Reader_LastActivity).TotalSeconds < 3
-        If epub_Reader_Toolbar.Visible <> wanted Then
-            epub_Reader_Toolbar.Visible = wanted
-            LayoutEpubReader(Me, EventArgs.Empty)
-        End If
         If epub_Reader_PositionBusy OrElse epub_Reader_Restore IsNot Nothing Then Return
         epub_Reader_PositionBusy = True
         Dim navigation = epub_Reader_Navigation
@@ -318,9 +324,8 @@ Partial Public Class Main_Form
         Dim host = epub_Reader_Host
         Dim navigation = epub_Reader_Navigation
         Dim position = epub_Reader_Restore
-        epub_Reader_Updating = True
-        epub_Reader_Chapter.Value = Math.Max(1, epub_Reader_Book.Spine.FindIndex(Function(item) item.Key = epub_Reader_Position.SpineKey) + 1)
-        epub_Reader_Updating = False
+        ' The chapter readout of the panel follows the chapter that has just loaded.
+        SyncDocumentPanel()
         Try
             If position IsNot Nothing AndAlso position.HasViewport AndAlso position.Anchor.Length = 0 Then Await host.RestoreAsync(position)
             If host IsNot epub_Reader_Host OrElse navigation <> epub_Reader_Navigation Then Return
@@ -389,10 +394,14 @@ Partial Public Class Main_Form
             For Each hit In result
                 epub_Reader_Results.Items.Add(New EpubSearchDisplay With {.Hit = hit})
             Next
-            epub_Reader_Context.Text = Localization.TF("Найдено: {0}", result.Count)
+            epub_Reader_ContextText = Localization.TF("Найдено: {0}", result.Count)
+            SyncDocumentPanel()
             Await host.FindAsync(query)
         Catch ex As OperationCanceledException
-            If host Is epub_Reader_Host Then epub_Reader_Context.Text = Localization.T("Поиск отменён")
+            If host Is epub_Reader_Host Then
+                epub_Reader_ContextText = Localization.T("Поиск отменён")
+                SyncDocumentPanel()
+            End If
         Catch ex As Exception
             If host Is epub_Reader_Host AndAlso Not token.IsCancellationRequested Then Notify(Localization.T("Не удалось прочитать текст страницы"), NotifyLevel.Warning)
         End Try
@@ -473,14 +482,13 @@ Partial Public Class Main_Form
 
     Private Function EpubReaderOwnsInput(e As KeyEventArgs) As Boolean
         If Not IsEpubReaderShown() Then Return False
-        epub_Reader_LastActivity = DateTime.UtcNow
-        If Not epub_Reader_Toolbar.Visible Then
-            epub_Reader_Toolbar.Visible = True
-            LayoutEpubReader(Me, EventArgs.Empty)
-        End If
-        Dim owns = epub_Reader_Interaction OrElse epub_Reader_Host.ContainsFocus OrElse epub_Reader_Toolbar.ContainsFocus OrElse epub_Reader_Pane.ContainsFocus
+        ' A key counts as activity for the document panel through the chrome's own stamp; the F10 ring on the panel is the
+        ' reader's input, as the old strip's focus was.
+        ' The pane does not exist yet while the web view starts: the book is shown from the moment it was read.
+        Dim paneReady As Boolean = epub_Reader_Pane IsNot Nothing
+        Dim owns = epub_Reader_Interaction OrElse epub_Reader_Host.ContainsFocus OrElse ChromeKeyboardOnDocumentPanel() OrElse (paneReady AndAlso epub_Reader_Pane.ContainsFocus)
         If e.KeyCode = Keys.Escape AndAlso owns Then
-            If epub_Reader_Pane.Visible Then
+            If paneReady AndAlso epub_Reader_Pane.Visible Then
                 epub_Reader_Pane.Visible = False
                 LayoutEpubReader(Me, EventArgs.Empty)
             Else
@@ -511,12 +519,35 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>The wheel over the page (or over the document panel that floats on it) scrolls the chapter; it never also
+    ''' flips the file. Without the strip the wheel reaches the window over the panel, where it would page files (280 T-0
+    ''' correction 3). The native web view takes the wheel over the page itself, so only the panel's share comes here.</summary>
+    Private Function EpubReaderOwnsWheel(e As MouseEventArgs) As Boolean
+        If Not IsEpubReaderShown() Then Return False
+        Dim host = epub_Reader_Host
+        ' The panel can float over an open side pane, beside the page: the wheel over any part of it is still the book's.
+        Dim overPanel As Boolean = DocumentPanelPresent() AndAlso chrome_Document_Panel.Host.Visible AndAlso chrome_Document_Panel.Host.Bounds.Contains(Cursor.Position)
+        If Not overPanel AndAlso Not host.RectangleToScreen(host.ClientRectangle).Contains(Cursor.Position) Then Return False
+        ScrollEpubReaderBy(-e.Delta)
+        Return True
+    End Function
+
+    Private Async Sub ScrollEpubReaderBy(pixels As Integer)
+        Dim host = epub_Reader_Host
+        Try
+            Await host.ScrollByAsync(pixels)
+        Catch ex As Exception When Not TypeOf ex Is OutOfMemoryException
+        End Try
+    End Sub
+
     Private Sub ReleaseEpubReader()
         If epub_Reader_Snapshot IsNot Nothing AndAlso modern_Preferences IsNot Nothing AndAlso Not Is_slide_show_mode Then
             modern_Preferences.RecordDocumentPosition(epub_Reader_Snapshot.Identity, epub_Reader_Position)
             MarkSettingsDirty()
         End If
         epub_Reader_Navigation += 1
+        ' Other readers' load paths release this one too: the panel goes only when it is this reader's.
+        If document_Panel_Kind = DocumentReaderKind.Epub OrElse document_Wanted_Kind = DocumentReaderKind.Epub Then HideDocumentPanel()
         epub_Reader_Cts?.Cancel()
         epub_Reader_SearchCts?.Cancel()
         epub_Reader_Timer?.Dispose()
@@ -526,8 +557,6 @@ Partial Public Class Main_Form
         epub_Reader_Voice = Nothing
         epub_Reader_Host?.Dispose()
         epub_Reader_Host = Nothing
-        epub_Reader_Toolbar?.Dispose()
-        epub_Reader_Toolbar = Nothing
         epub_Reader_Pane?.Dispose()
         epub_Reader_Pane = Nothing
         epub_Reader_Snapshot?.Dispose()
@@ -535,6 +564,7 @@ Partial Public Class Main_Form
         epub_Reader_Book = Nothing
         epub_Reader_File = ""
         epub_Reader_Interaction = False
+        epub_Reader_ContextText = ""
         epub_Reader_PositionBusy = False
         epub_Reader_Back.Clear()
         epub_Reader_SearchQuery = ""

@@ -23,7 +23,6 @@ Partial Public Class Table_Form
         New String() {"DocumentTtsEnabled", "Чтение вслух"},
         New String() {"DocumentTtsVoice", "Голос"},
         New String() {"DocumentTtsRate", "Скорость чтения", "0.5", "2"},
-        New String() {"DocumentFullscreenChrome", "Панель чтения в полноэкранном режиме", "auto", "Скрывать автоматически", "visible", "Всегда показывать"},
         New String() {"DocumentMemoryCacheMb", "Кэш документов в памяти", "64", "1024"},
         New String() {"PdfLayout", "Режим просмотра", "single", "Одна страница", "continuous", "Непрерывно", "spread", "Разворот"},
         New String() {"PdfFirstPageAlone", "Первая страница отдельно"},
@@ -138,7 +137,248 @@ Partial Public Class Table_Form
         End Sub)
         RegisterHtmlSettings(flow)
         RegisterDocumentConverterSettings(flow)
+        RegisterTextDocumentSettings(flow)
     End Sub
+
+    ' ---- Text files: specification 277 section 12.1 -----------------------------------------------------
+    ' Building a row only creates editors over the stored preferences; the remembered-history stores are opened by the
+    ' button that clears them. The two translation values have no row: they have no consumer until step P5.2.
+
+    Private textDocumentClearResult As String = ""
+    Private textDocumentEditingFollow As Action
+    ' A choice row rebuilds its list on every refresh of the window; the families are asked for once per window.
+    Private textDocumentInstalledFonts As List(Of String)
+
+    Private Sub RegisterTextDocumentSettings(flow As FlowLayoutPanel)
+        AddSettingsGroup("documents", "text.basic", "Текстовые файлы", True,
+            "textdoc_reader", "textdoc_editing", "textdoc_remember_position", "textdoc_remember_encoding", "textdoc_clear_history")
+        AddSettingsGroup("documents", "text.appearance", "Оформление текстовых файлов", False,
+            "textdoc_font_proportional", "textdoc_font_monospace", "textdoc_font_size", "textdoc_theme", "textdoc_wrap",
+            "textdoc_line_numbers", "textdoc_tab_width", "textdoc_line_spacing", "textdoc_whitespace", "textdoc_status_bar",
+            "textdoc_syntax", "textdoc_markdown")
+        AddSettingsGroup("documents", "text.encoding", "Кодировка и поиск в текстовых файлах", False,
+            "textdoc_fallback_encoding", "textdoc_find_case", "textdoc_find_word", "textdoc_find_regex", "textdoc_read_window")
+        AddSettingsGroup("documents", "text.safety", "Правка и восстановление текстовых файлов", False,
+            "textdoc_edit_limit", "textdoc_recovery", "textdoc_recovery_interval", "textdoc_backup", "textdoc_backup_versions")
+
+        RegisterHtmlCheck(flow, "textdoc_reader", Function(p) p.FullTextReaderEnabled,
+            Sub(p, v)
+                p.FullTextReaderEnabled = v
+                textDocumentEditingFollow?.Invoke()
+            End Sub)
+        RegisterSettingsRow("textdoc_editing",
+            Sub()
+                AddPreferenceCheck(flow, "textdoc_editing",
+                    Function() Main_Form.GetModernPreferences().TextEditingEnabled,
+                    Sub(value) Main_Form.GetModernPreferences().TextEditingEnabled = value)
+                Dim row As ModernSettingRow = modernSettingsRows.Last(Function(item) item.Key = "textdoc_editing")
+                textDocumentEditingFollow = Sub() row.Editor.Enabled = Main_Form.GetModernPreferences().FullTextReaderEnabled
+                textDocumentEditingFollow.Invoke()
+                expandedRefreshActions.Add(textDocumentEditingFollow)
+            End Sub)
+        RegisterHtmlCheck(flow, "textdoc_remember_position", Function(p) p.TextRememberPosition, Sub(p, v) p.TextRememberPosition = v)
+        RegisterHtmlCheck(flow, "textdoc_remember_encoding", Function(p) p.TextRememberEncoding, Sub(p, v) p.TextRememberEncoding = v)
+        RegisterHtmlButton(flow, "textdoc_clear_history", "Очистить", AddressOf ClearTextDocumentHistoryClicked)
+
+        RegisterHtmlChoice(flow, "textdoc_font_proportional", Function() TextFontChoices(Main_Form.GetModernPreferences().TextFontFamilyProportional),
+            Function(p) p.TextFontFamilyProportional, Sub(p, v) p.TextFontFamilyProportional = v)
+        RegisterHtmlChoice(flow, "textdoc_font_monospace", Function() TextFontChoices(Main_Form.GetModernPreferences().TextFontFamilyMonospace),
+            Function(p) p.TextFontFamilyMonospace, Sub(p, v) p.TextFontFamilyMonospace = v)
+        RegisterTextDecimal(flow, "textdoc_font_size", ModernViewerPreferences.TextFontSizeMin, ModernViewerPreferences.TextFontSizeMax, 0.5D,
+            Function(p) p.TextFontSize, Sub(p, v) p.TextFontSize = v)
+        RegisterHtmlChoice(flow, "textdoc_theme",
+            Function() {Choice("system", "Как в системе"), Choice("light", "Светлая"), Choice("dark", "Тёмная"), Choice("sepia", "Сепия"), Choice("black", "Чёрная")},
+            Function(p) p.TextTheme, Sub(p, v) p.TextTheme = v)
+        RegisterHtmlCheck(flow, "textdoc_wrap", Function(p) p.TextWrap, Sub(p, v) p.TextWrap = v)
+        RegisterHtmlCheck(flow, "textdoc_line_numbers", Function(p) p.TextLineNumbers, Sub(p, v) p.TextLineNumbers = v)
+        RegisterHtmlNumber(flow, "textdoc_tab_width", ModernViewerPreferences.TextTabWidthMin, ModernViewerPreferences.TextTabWidthMax,
+            Function(p) p.TextTabWidth, Sub(p, v) p.TextTabWidth = v)
+        RegisterTextDecimal(flow, "textdoc_line_spacing", ModernViewerPreferences.TextLineSpacingMin, ModernViewerPreferences.TextLineSpacingMax, 0.1D,
+            Function(p) p.TextLineSpacing, Sub(p, v) p.TextLineSpacing = v)
+        RegisterHtmlCheck(flow, "textdoc_whitespace", Function(p) p.TextWhitespace, Sub(p, v) p.TextWhitespace = v)
+        RegisterHtmlCheck(flow, "textdoc_status_bar", Function(p) p.TextStatusBar, Sub(p, v) p.TextStatusBar = v)
+        RegisterHtmlCheck(flow, "textdoc_syntax", Function(p) p.TextSyntaxHighlighting, Sub(p, v) p.TextSyntaxHighlighting = v)
+        RegisterHtmlChoice(flow, "textdoc_markdown",
+            Function() {Choice("source", "Исходный текст"), Choice("rendered", "Оформленный вид")},
+            Function(p) p.TextMarkdownPresentation, Sub(p, v) p.TextMarkdownPresentation = v)
+
+        RegisterHtmlChoice(flow, "textdoc_fallback_encoding", AddressOf TextFallbackEncodingChoices,
+            Function(p) p.TextEncodingFallbackCodePage.ToString(CultureInfo.InvariantCulture),
+            Sub(p, v)
+                Dim codePage As Integer
+                If Integer.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, codePage) Then p.TextEncodingFallbackCodePage = codePage
+            End Sub)
+        RegisterHtmlCheck(flow, "textdoc_find_case", Function(p) p.TextSearchCase, Sub(p, v) p.TextSearchCase = v)
+        RegisterHtmlCheck(flow, "textdoc_find_word", Function(p) p.TextSearchWholeWord, Sub(p, v) p.TextSearchWholeWord = v)
+        RegisterHtmlCheck(flow, "textdoc_find_regex", Function(p) p.TextRegexSearch, Sub(p, v) p.TextRegexSearch = v)
+        RegisterHtmlNumber(flow, "textdoc_read_window", ModernViewerPreferences.TextReadWindowMbMin, ModernViewerPreferences.TextReadWindowMbMax,
+            Function(p) p.TextReadWindowMb, Sub(p, v) p.TextReadWindowMb = v)
+
+        RegisterHtmlNumber(flow, "textdoc_edit_limit", ModernViewerPreferences.TextEditingMaxMbMin, ModernViewerPreferences.TextEditingMaxMbMax,
+            Function(p) p.TextEditingMaxMb, Sub(p, v) p.TextEditingMaxMb = v)
+        RegisterHtmlCheck(flow, "textdoc_recovery", Function(p) p.TextRecoveryAutosave, Sub(p, v) p.TextRecoveryAutosave = v)
+        RegisterHtmlNumber(flow, "textdoc_recovery_interval", ModernViewerPreferences.TextRecoveryIntervalSecondsMin, ModernViewerPreferences.TextRecoveryIntervalSecondsMax,
+            Function(p) p.TextRecoveryIntervalSeconds, Sub(p, v) p.TextRecoveryIntervalSeconds = v)
+        RegisterHtmlCheck(flow, "textdoc_backup", Function(p) p.TextBackupOnSave, Sub(p, v) p.TextBackupOnSave = v)
+        RegisterHtmlNumber(flow, "textdoc_backup_versions", ModernViewerPreferences.TextBackupVersionsMin, ModernViewerPreferences.TextBackupVersionsMax,
+            Function(p) p.TextBackupVersions, Sub(p, v) p.TextBackupVersions = v)
+    End Sub
+
+    ''' <summary>A decimal row on the pattern of the HTML line height; the control keeps its step whatever the user's decimal
+    ''' separator is.</summary>
+    Private Sub RegisterTextDecimal(flow As FlowLayoutPanel, key As String, minimum As Single, maximum As Single, increment As Decimal,
+                                    read As Func(Of ModernViewerPreferences, Single),
+                                    write As Action(Of ModernViewerPreferences, Single))
+        RegisterSettingsRow(key,
+            Sub()
+                Dim number As New NumericUpDown With {.DecimalPlaces = 1, .Increment = increment, .Minimum = CDec(minimum), .Maximum = CDec(maximum), .Width = Sp(100)}
+                Dim refreshing As Boolean
+                Dim refresh As Action =
+                    Sub()
+                        If number.Focused Then Return
+                        refreshing = True
+                        Try
+                            Dim stored As Decimal = CDec(Math.Round(read(Main_Form.GetModernPreferences()), 1))
+                            number.Value = Math.Max(number.Minimum, Math.Min(number.Maximum, stored))
+                        Finally
+                            refreshing = False
+                        End Try
+                    End Sub
+                refresh()
+                expandedRefreshActions.Add(refresh)
+                AddHandler number.ValueChanged,
+                    Sub()
+                        If refreshing Then Return
+                        write(Main_Form.GetModernPreferences(), CSng(number.Value))
+                        ApplyExpandedPreferences()
+                    End Sub
+                AddSettingRow(flow, key, number, 130, True)
+            End Sub)
+    End Sub
+
+    ''' <summary>The installed families, then the stored name when it is none of them: an imported choice stays visible instead
+    ''' of quietly turning into the first font.</summary>
+    Private Function TextFontChoices(current As String) As PreferenceChoice()
+        If textDocumentInstalledFonts Is Nothing Then
+            textDocumentInstalledFonts = New List(Of String)()
+            Using installed As New Drawing.Text.InstalledFontCollection()
+                For Each family As Drawing.FontFamily In installed.Families
+                    textDocumentInstalledFonts.Add(family.Name)
+                Next
+            End Using
+        End If
+        Dim names As New List(Of String)(textDocumentInstalledFonts)
+        If Not names.Contains(current) Then names.Insert(0, current)
+        Return names.Select(Function(name) New PreferenceChoice(name, name)).ToArray()
+    End Function
+
+    Private Function TextFallbackEncodingChoices() As PreferenceChoice()
+        Dim list As New List(Of PreferenceChoice) From {Choice("0", "Системная (ANSI)")}
+        For Each candidate As EncodingCandidate In TextEncodingDetector.ManualCandidates
+            list.Add(New PreferenceChoice(candidate.CodePage.ToString(CultureInfo.InvariantCulture), candidate.Name))
+        Next
+        Return list.ToArray()
+    End Function
+
+    ''' <summary>Forgets the encodings and places remembered per file, off the UI thread. The files stay as they are; the
+    ''' answer becomes the row's explanation.</summary>
+    Private Async Sub ClearTextDocumentHistoryClicked(sender As Object, e As EventArgs)
+        Dim button As Button = TryCast(sender, Button)
+        If button IsNot Nothing Then button.Enabled = False
+        Dim answer As String
+        Try
+            Dim problem As String = Await Task.Run(
+                Function()
+                    Dim encodings As TextEncodingMemory = TextEncodingMemory.Current
+                    encodings.Clear()
+                    Dim places As TextPositionMemory = TextPositionMemory.Current
+                    places.Clear()
+                    places.Save()
+                    Return encodings.Diagnostic & places.Diagnostic
+                End Function).ConfigureAwait(True)
+            If problem.Length > 0 Then AppFileLogger.LogMessage("Clearing the text file history: " & problem)
+            answer = If(problem.Length = 0, Localization.T("История текстовых файлов очищена."),
+                        Localization.T("Историю не удалось очистить: файл записей недоступен для записи."))
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings: clearing the text file history", ex)
+            answer = Localization.T("Историю не удалось очистить: файл записей недоступен для записи.")
+        End Try
+        If IsDisposed OrElse Disposing Then Return
+        If button IsNot Nothing AndAlso Not button.IsDisposed Then button.Enabled = True
+        textDocumentClearResult = answer
+        Dim row As ModernSettingRow = modernSettingsRows.FirstOrDefault(Function(item) item.Key = "textdoc_clear_history")
+        If row Is Nothing OrElse row.Description Is Nothing Then Return
+        row.Description.Text = answer
+        If button IsNot Nothing Then button.AccessibleDescription = answer
+        SizeModernSettingRow(row)
+    End Sub
+
+    Private Function TextDocumentSettingTitle(key As String) As String
+        Select Case key
+            Case "textdoc_reader" : Return Localization.T("Полное чтение текстовых файлов")
+            Case "textdoc_editing" : Return Localization.T("Правка текстовых файлов")
+            Case "textdoc_remember_position" : Return Localization.T("Запоминать позицию в текстовых файлах")
+            Case "textdoc_remember_encoding" : Return Localization.T("Запоминать выбранную кодировку")
+            Case "textdoc_clear_history" : Return Localization.T("Очистить историю текстовых файлов")
+            Case "textdoc_font_proportional" : Return Localization.T("Шрифт обычного текста")
+            Case "textdoc_font_monospace" : Return Localization.T("Шрифт кода и данных")
+            Case "textdoc_font_size" : Return Localization.T("Размер текста")
+            Case "textdoc_theme" : Return Localization.T("Тема документа")
+            Case "textdoc_wrap" : Return Localization.T("Переносить длинные строки")
+            Case "textdoc_line_numbers" : Return Localization.T("Номера строк")
+            Case "textdoc_tab_width" : Return Localization.T("Ширина табуляции")
+            Case "textdoc_line_spacing" : Return Localization.T("Межстрочный интервал")
+            Case "textdoc_whitespace" : Return Localization.T("Показывать пробелы и табуляции")
+            Case "textdoc_status_bar" : Return Localization.T("Строка состояния")
+            Case "textdoc_syntax" : Return Localization.T("Подсветка синтаксиса")
+            Case "textdoc_markdown" : Return Localization.T("Вид Markdown")
+            Case "textdoc_fallback_encoding" : Return Localization.T("Кодировка, если определить не удалось")
+            Case "textdoc_find_case" : Return Localization.T("Учитывать регистр")
+            Case "textdoc_find_word" : Return Localization.T("Только слова целиком")
+            Case "textdoc_find_regex" : Return Localization.T("Регулярные выражения")
+            Case "textdoc_read_window" : Return Localization.T("Размер части большого файла, МБ")
+            Case "textdoc_edit_limit" : Return Localization.T("Наибольший размер файла для правки, МБ")
+            Case "textdoc_recovery" : Return Localization.T("Черновики несохранённых правок")
+            Case "textdoc_recovery_interval" : Return Localization.T("Интервал черновиков, с")
+            Case "textdoc_backup" : Return Localization.T("Резервная копия при сохранении")
+            Case "textdoc_backup_versions" : Return Localization.T("Резервных копий на файл")
+            Case Else : Return key
+        End Select
+    End Function
+
+    Private Function TextDocumentSettingDescription(key As String) As String
+        Select Case key
+            Case "textdoc_reader" : Return Localization.T("Открывает текстовые файлы в читателе со шрифтами, темами, номерами строк и поиском. Пока параметр выключен, показывается быстрый просмотр для сортировки.")
+            Case "textdoc_editing" : Return Localization.T("Разрешает править файлы этого компьютера и общих папок: кнопка «Править» или Ctrl+E. Действует при включённом полном чтении.")
+            Case "textdoc_remember_position" : Return Localization.T("Открывает файл там, где вы остановились.")
+            Case "textdoc_remember_encoding" : Return Localization.T("Помнит кодировку, выбранную вручную для файла, пока файл не изменится.")
+            Case "textdoc_clear_history" : Return If(textDocumentClearResult.Length > 0, textDocumentClearResult,
+                Localization.T("Удаляет запомненные позиции и кодировки. Сами файлы и общие настройки не меняются."))
+            Case "textdoc_font_proportional" : Return Localization.T("Для простого текста и Markdown.")
+            Case "textdoc_font_monospace" : Return Localization.T("Для журналов, JSON, XML, CSV и исходного кода.")
+            Case "textdoc_font_size" : Return Localization.T("Размер шрифта в пунктах; учитывает масштаб экрана.")
+            Case "textdoc_theme" : Return Localization.T("Цвета текста и фона. «Как в системе» следует теме Windows.")
+            Case "textdoc_wrap" : Return Localization.T("Без переноса длинная строка прокручивается в сторону.")
+            Case "textdoc_line_numbers" : Return Localization.T("Показывает номера строк слева от текста.")
+            Case "textdoc_tab_width" : Return Localization.T("Сколько колонок занимает символ табуляции на экране. Файл не меняется.")
+            Case "textdoc_line_spacing" : Return Localization.T("Расстояние между строками при чтении.")
+            Case "textdoc_whitespace" : Return Localization.T("Делает видимыми пробелы, табуляции и концы строк при чтении.")
+            Case "textdoc_status_bar" : Return Localization.T("Показывает под текстом строку, столбец, кодировку и концы строк.")
+            Case "textdoc_syntax" : Return Localization.T("Выделяет цветом JSON, XML, YAML, Markdown, INI и журналы. Большие файлы показываются без подсветки.")
+            Case "textdoc_markdown" : Return Localization.T("С чего начинать файл Markdown. Ctrl+Shift+M переключает вид во время чтения.")
+            Case "textdoc_fallback_encoding" : Return Localization.T("Какой считать кодировку файла, когда по содержимому её определить нельзя.")
+            Case "textdoc_find_case" : Return Localization.T("Поиск по файлу различает заглавные и строчные буквы.")
+            Case "textdoc_find_word" : Return Localization.T("Поиск по файлу находит только слова целиком.")
+            Case "textdoc_find_regex" : Return Localization.T("Считает строку поиска регулярным выражением. Слишком долгий поиск останавливается.")
+            Case "textdoc_read_window" : Return Localization.T("Файл больше предела правки читается частями такого размера.")
+            Case "textdoc_edit_limit" : Return Localization.T("Файл больше этого размера открывается только для чтения.")
+            Case "textdoc_recovery" : Return Localization.T("Периодически сохраняет зашифрованный черновик, чтобы правки пережили сбой. Для общих папок черновики не ведутся.")
+            Case "textdoc_recovery_interval" : Return Localization.T("Как часто записывается черновик.")
+            Case "textdoc_backup" : Return Localization.T("Перед перезаписью оставляет прежнюю версию рядом с файлом.")
+            Case "textdoc_backup_versions" : Return Localization.T("Сколько прежних версий хранится рядом с файлом.")
+            Case Else : Return key
+        End Select
+    End Function
 
     ' ---- doc-html-translate: specification 276 section 5 (T-2 rows) ----------------------------------------
     ' Building the rows starts nothing: the converter is looked for and asked its version only on Check.
@@ -148,7 +388,10 @@ Partial Public Class Table_Form
 
     Private Sub RegisterDocumentConverterSettings(flow As FlowLayoutPanel)
         AddSettingsGroup("documents", "converter", "doc-html-translate", False,
-            "doc_converter_enabled", "doc_converter_mode", "doc_converter_location", "doc_converter_check")
+            "doc_converter_enabled", "doc_converter_mode", "doc_converter_location", "doc_converter_check",
+            "doc_converter_destination", "doc_converter_auto_open", "doc_converter_ocr", "doc_converter_ocr_langs", "doc_converter_src", "doc_converter_dst",
+            "doc_converter_model", "doc_converter_timeout", "doc_converter_reuse", "doc_converter_cache", "doc_converter_retention", "doc_converter_keep",
+            "doc_converter_clear")
         RegisterSettingsRow("doc_converter_enabled", Sub() AddPreferenceCheck(flow, "doc_converter_enabled",
             Function() Main_Form.GetModernPreferences().DocumentConverterEnabled,
             Sub(value) Main_Form.GetModernPreferences().DocumentConverterEnabled = value))
@@ -174,6 +417,94 @@ Partial Public Class Table_Form
                 AddSettingRow(flow, "doc_converter_location", text, 230, True)
             End Sub)
         RegisterHtmlButton(flow, "doc_converter_check", "Проверить", AddressOf CheckDocumentConverterClicked)
+        ' Step 3.2: the owned job's choices (section 5). Empty text fields mean the converter's own default.
+        RegisterSettingsRow("doc_converter_destination", Sub() AddPreferenceChoice(flow, "doc_converter_destination",
+            Function() {Choice("browser", "В браузере"), Choice("viewer", "В просмотрщике")},
+            Function() Main_Form.GetModernPreferences().DocumentResultDestination,
+            Sub(value) Main_Form.GetModernPreferences().DocumentResultDestination = value))
+        RegisterSettingsRow("doc_converter_auto_open", Sub() AddPreferenceCheck(flow, "doc_converter_auto_open",
+            Function() Main_Form.GetModernPreferences().DocumentOpenResultAutomatically,
+            Sub(value) Main_Form.GetModernPreferences().DocumentOpenResultAutomatically = value))
+        RegisterSettingsRow("doc_converter_ocr", Sub() AddPreferenceChoice(flow, "doc_converter_ocr",
+            Function() {Choice("auto", "Автоматически, для сканов"), Choice("force", "Всегда распознавать")},
+            Function() Main_Form.GetModernPreferences().DocumentOcrMode,
+            Sub(value) Main_Form.GetModernPreferences().DocumentOcrMode = value))
+        RegisterConverterText(flow, "doc_converter_ocr_langs", 64, AddressOf DocHtmlJobArguments.IsLanguageList,
+            Function() Main_Form.GetModernPreferences().DocumentOcrLanguages, Sub(value) Main_Form.GetModernPreferences().DocumentOcrLanguages = value)
+        RegisterConverterText(flow, "doc_converter_src", 64, AddressOf DocHtmlJobArguments.IsLanguageList,
+            Function() Main_Form.GetModernPreferences().DocumentSourceLanguage, Sub(value) Main_Form.GetModernPreferences().DocumentSourceLanguage = value)
+        RegisterConverterText(flow, "doc_converter_dst", 64, AddressOf DocHtmlJobArguments.IsLanguageList,
+            Function() Main_Form.GetModernPreferences().DocumentTargetLanguage, Sub(value) Main_Form.GetModernPreferences().DocumentTargetLanguage = value)
+        RegisterConverterText(flow, "doc_converter_model", 128, AddressOf DocHtmlJobArguments.IsModelName,
+            Function() Main_Form.GetModernPreferences().DocumentLocalModel, Sub(value) Main_Form.GetModernPreferences().DocumentLocalModel = value)
+        RegisterSettingsRow("doc_converter_timeout", Sub() AddPreferenceNumber(flow, "doc_converter_timeout", 1, 240,
+            Function() Main_Form.GetModernPreferences().DocumentJobTimeoutMinutes,
+            Sub(value) Main_Form.GetModernPreferences().DocumentJobTimeoutMinutes = value))
+        RegisterSettingsRow("doc_converter_reuse", Sub() AddPreferenceCheck(flow, "doc_converter_reuse",
+            Function() Main_Form.GetModernPreferences().DocumentReuseResults,
+            Sub(value) Main_Form.GetModernPreferences().DocumentReuseResults = value))
+        RegisterSettingsRow("doc_converter_cache", Sub() AddPreferenceNumber(flow, "doc_converter_cache", 128, 8192,
+            Function() Main_Form.GetModernPreferences().DocumentResultCacheMb,
+            Sub(value) Main_Form.GetModernPreferences().DocumentResultCacheMb = value))
+        RegisterSettingsRow("doc_converter_retention", Sub() AddPreferenceNumber(flow, "doc_converter_retention", 1, 90,
+            Function() Main_Form.GetModernPreferences().DocumentResultRetentionDays,
+            Sub(value) Main_Form.GetModernPreferences().DocumentResultRetentionDays = value))
+        RegisterSettingsRow("doc_converter_keep", Sub() AddPreferenceCheck(flow, "doc_converter_keep",
+            Function() Main_Form.GetModernPreferences().DocumentKeepCompletedResults,
+            Sub(value) Main_Form.GetModernPreferences().DocumentKeepCompletedResults = value))
+        RegisterHtmlButton(flow, "doc_converter_clear", "Очистить", AddressOf ClearDocumentResultsClicked)
+    End Sub
+
+    ''' <summary>A free-form value of the converter's command line: a value the argument builder would refuse is not
+    ''' stored, and the field returns to the stored one.</summary>
+    Private Sub RegisterConverterText(flow As FlowLayoutPanel, key As String, maxLength As Integer, accept As Func(Of String, Boolean),
+                                      getter As Func(Of String), apply As Action(Of String))
+        RegisterSettingsRow(key,
+            Sub()
+                Dim text As New TextBox With {.Text = getter(), .MaxLength = maxLength}
+                expandedRefreshActions.Add(Sub() If Not text.Focused Then text.Text = getter())
+                AddHandler text.Validated,
+                    Sub()
+                        Dim value As String = text.Text.Trim()
+                        If value.Length > 0 AndAlso Not accept(value) Then
+                            text.Text = getter()
+                            Return
+                        End If
+                        apply(value)
+                        ApplyExpandedPreferences()
+                    End Sub
+                AddSettingRow(flow, key, text, 230, True)
+            End Sub)
+    End Sub
+
+    Private documentResultsClearText As String = ""
+    Private documentResultsClearing As Boolean
+
+    ''' <summary>Section 6 Clear: every page of doc-html-translate kept by the viewer except the one a running job is
+    ''' writing. The answer becomes the row's explanation.</summary>
+    Private Async Sub ClearDocumentResultsClicked(sender As Object, e As EventArgs)
+        If documentResultsClearing Then Return
+        Dim button As Button = TryCast(sender, Button)
+        documentResultsClearing = True
+        If button IsNot Nothing Then button.Enabled = False
+        Dim answer As String
+        Try
+            Dim cleared = Await Main_Form.ClearDocumentResultsAsync().ConfigureAwait(True)
+            answer = If(cleared.Kept > 0, Localization.TF("Удалено готовых страниц: {0}; заняты и оставлены: {1}.", cleared.Removed, cleared.Kept),
+                        Localization.TF("Удалено готовых страниц: {0}.", cleared.Removed))
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings: clearing doc-html-translate results", ex)
+            answer = Localization.T("Не удалось очистить готовые страницы.")
+        End Try
+        documentResultsClearing = False
+        If IsDisposed OrElse Disposing Then Return
+        If button IsNot Nothing AndAlso Not button.IsDisposed Then button.Enabled = True
+        documentResultsClearText = answer
+        Dim statusRow As ModernSettingRow = modernSettingsRows.FirstOrDefault(Function(item) item.Key = "doc_converter_clear")
+        If statusRow Is Nothing OrElse statusRow.Description Is Nothing Then Return
+        statusRow.Description.Text = answer
+        If button IsNot Nothing Then button.AccessibleDescription = answer
+        SizeModernSettingRow(statusRow)
     End Sub
 
     ''' <summary>The explicit readiness check: discovery and the version query off the UI thread; nothing is
@@ -218,6 +549,20 @@ Partial Public Class Table_Form
             Case "doc_converter_location" : Return Localization.T("Полный путь к doc-html-translate.exe. Пустое поле - найти программу автоматически.")
             Case "doc_converter_check" : Return If(documentConverterStatusText.Length > 0, documentConverterStatusText,
                 Localization.T("Проверка выполняется только по кнопке: ничего не устанавливается и не скачивается."))
+            Case "doc_converter_destination" : Return Localization.T("В просмотрщике страница открывается поверх документа, с командами возврата к нему, сохранения и повторной обработки. Для этого нужен включённый просмотр HTML; без него страница открывается в браузере.")
+            Case "doc_converter_auto_open" : Return Localization.T("Готовая страница сразу открывается, если вы всё ещё смотрите этот документ. Иначе программа сообщает, где лежит страница.")
+            Case "doc_converter_ocr" : Return Localization.T("Автоматически: doc-html-translate распознаёт текст только там, где его нет, например в сканах. Всегда: распознаются все страницы, это дольше.")
+            Case "doc_converter_ocr_langs" : Return Localization.T("Языки распознавания, например rus+eng. Пустое поле - языки выбирает doc-html-translate.")
+            Case "doc_converter_src" : Return Localization.T("Язык документа для перевода через Ollama, например en. Пустое поле - определяется автоматически.")
+            Case "doc_converter_dst" : Return Localization.T("На какой язык переводить через Ollama, например uk. Пустое поле - язык интерфейса программы.")
+            Case "doc_converter_model" : Return Localization.T("Модель Ollama для перевода, например llama3.1:8b. Пустое поле - модель, настроенная в doc-html-translate.")
+            Case "doc_converter_timeout" : Return Localization.T("Обработка, которая идёт дольше, останавливается; незаконченная страница не открывается.")
+            Case "doc_converter_reuse" : Return Localization.T("Если документ не менялся и параметры те же, открывается готовая страница без новой обработки.")
+            Case "doc_converter_cache" : Return Localization.T("Сколько места занимают готовые страницы. Перед новой обработкой старые удаляются; страницы, открытые в браузере, остаются до очистки.")
+            Case "doc_converter_retention" : Return Localization.T("Страницы старше этого срока удаляются перед новой обработкой, кроме открытых в браузере.")
+            Case "doc_converter_keep" : Return Localization.T("Готовые страницы не удаляются по сроку хранения и по месту, только кнопкой «Очистить». Сохранённая вами копия - ваш файл, её очистка не трогает.")
+            Case "doc_converter_clear" : Return If(documentResultsClearText.Length > 0, documentResultsClearText,
+                Localization.T("Удаляет все готовые страницы doc-html-translate, кроме той, что делается сейчас. Исходные документы не меняются."))
             Case Else : Return key
         End Select
     End Function
@@ -228,6 +573,19 @@ Partial Public Class Table_Form
             Case "doc_converter_mode" : Return Localization.T("Что делать с документом")
             Case "doc_converter_location" : Return Localization.T("Программа doc-html-translate")
             Case "doc_converter_check" : Return Localization.T("Проверить doc-html-translate")
+            Case "doc_converter_destination" : Return Localization.T("Где открывать готовую страницу")
+            Case "doc_converter_auto_open" : Return Localization.T("Открывать готовую страницу сразу")
+            Case "doc_converter_ocr" : Return Localization.T("Распознавание текста")
+            Case "doc_converter_ocr_langs" : Return Localization.T("Языки распознавания")
+            Case "doc_converter_src" : Return Localization.T("Язык документа")
+            Case "doc_converter_dst" : Return Localization.T("Язык перевода")
+            Case "doc_converter_model" : Return Localization.T("Модель Ollama")
+            Case "doc_converter_timeout" : Return Localization.T("Наибольшее время обработки, мин")
+            Case "doc_converter_reuse" : Return Localization.T("Открывать готовую страницу повторно")
+            Case "doc_converter_cache" : Return Localization.T("Место для готовых страниц, МБ")
+            Case "doc_converter_retention" : Return Localization.T("Хранить готовые страницы, дней")
+            Case "doc_converter_keep" : Return Localization.T("Не удалять готовые страницы")
+            Case "doc_converter_clear" : Return Localization.T("Очистить готовые страницы")
         End Select
         If key = "doc_clear_history" Then Return Localization.T("Очистить историю чтения")
         If key.StartsWith("doc_reset_", StringComparison.Ordinal) Then Return Localization.T("Сбросить оформление")

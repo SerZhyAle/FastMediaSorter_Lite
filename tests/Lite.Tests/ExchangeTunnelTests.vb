@@ -185,12 +185,13 @@ Public Class ExchangeTunnelTests
 
         Public Opened As Integer
         Public Result As ExchangeTunnelOpen
+        Public Opener As IExchangeDataOpener
         Public Leases As New List(Of ExchangeTunnelLease)
 
         Public Function OpenAsync(ct As CancellationToken) As Task(Of ExchangeTunnelOpen) Implements IExchangeTunnelSource.OpenAsync
             Interlocked.Increment(Opened)
             If Result IsNot Nothing Then Return Task.FromResult(Result)
-            Dim lease As New ExchangeTunnelLease(New FailingOpener(), 0)
+            Dim lease As New ExchangeTunnelLease(If(Opener, New FailingOpener()), 0)
             lease.Start()
             Leases.Add(lease)
             Return Task.FromResult(New ExchangeTunnelOpen(lease, ExchangeTunnelFailure.None))
@@ -282,6 +283,48 @@ Public Class ExchangeTunnelTests
             Assert.True(result.Failure.IsFatalForAttempt)                    ' a changed certificate ends the whole round, never raced past
             Assert.NotEqual(ResourceMessages.ForFailure(New ResourceFailure(ResourceFailureKind.KeyMismatch)), ResourceMessages.ForFailure(result.Failure))   ' its own sentence, not the SSH key one
         End If
+    End Function
+
+    Private NotInheritable Class RefusingOpener
+        Implements IExchangeDataOpener
+
+        Public Refusal As ExchangeRefusal
+
+        Public Function OpenAsync(ct As CancellationToken) As Task(Of ExchangeOpenResult) Implements IExchangeDataOpener.OpenAsync
+            Return Task.FromResult(ExchangeOpenResult.Failed(ExchangeOpenOutcome.Refused, Refusal))
+        End Function
+    End Class
+
+    ''' <summary>An inner dialer that knocks on the lease's loopback port, so the forwarder asks the exchange, and fails once the
+    ''' exchange has answered - what the SFTP dialer sees when the server refuses the tunnel.</summary>
+    Private NotInheritable Class KnockingDialer
+        Implements IEndpointDialer
+
+        Public Source As CountingSource
+
+        Public Async Function DialAsync(endpoint As FmsEndpoint, ct As CancellationToken) As Task(Of DialResult) Implements IEndpointDialer.DialAsync
+            Using client As New TcpClient()
+                Await client.ConnectAsync(IPAddress.Loopback, endpoint.Port)
+                Await WaitUntilAsync(Function() Source.Leases(0).LastOpenOutcome = ExchangeOpenOutcome.Refused)
+            End Using
+            Return DialResult.Failed(New ResourceFailure(ResourceFailureKind.Transport))
+        End Function
+    End Class
+
+    ''' <summary>Ticket 239 CR-1 residue (items AT, BR): a server that refuses the tunnel's `open` because the account's password was
+    ''' changed elsewhere is a refusal to sign in again, never "the server does not answer"; a revoked device keeps its own detail.</summary>
+    <Theory>
+    <InlineData("SignedOut", "signed-out")>
+    <InlineData("DeviceRevoked", "device-revoked")>
+    <InlineData("BadCredentials", "device-revoked")>
+    Public Async Function A_refused_tunnel_open_fails_the_candidate_as_a_sign_in_refusal_with_its_reason(refusalName As String, expectedDetail As String) As Task
+        Dim refusal As ExchangeRefusal = CType([Enum].Parse(GetType(ExchangeRefusal), refusalName), ExchangeRefusal)
+        Dim source As New CountingSource() With {.Opener = New RefusingOpener() With {.Refusal = refusal}}
+        Dim result As DialResult = Await New ExchangeTunnelDialer(New KnockingDialer() With {.Source = source}, source).DialAsync(ExchangeTunnelRules.Candidate(), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(15))
+        Assert.Null(result.Session)
+        Assert.Equal(ResourceFailureKind.Auth, result.Failure.Kind)
+        Assert.Equal(expectedDetail, result.Failure.Detail)
+        Assert.True(source.Leases(0).IsDisposed)
     End Function
 
     <Fact>

@@ -91,7 +91,7 @@ Public Class ExchangeConsumerTests
 
             ' rule 5: the one role of this device is the consumer; the device name is the machine and "(viewer)"
             Assert.Equal({"resource-consumer"}, acc.EnrollRolesSeen().Single().Split(","c))
-            Assert.Equal({"pin-v1"}, acc.EnrollCapabilitiesSeen().Single().Split(","c))
+            Assert.Equal({"pin-v1", "e2e-v1"}, acc.EnrollCapabilitiesSeen().Single().Split(","c))
             Assert.Equal("OFFICE-PC (viewer)", acc.EnrollNamesSeen().Single())
         End Using
     End Function
@@ -265,7 +265,7 @@ Public Class ExchangeConsumerTests
             acc.Resources.Add("{""resourceId"":""R2"",""deviceId"":""HOSTPC"",""kind"":""sftp-share"",""name"":""Offline""}")
             Using hub As New ExchangeEntryHub(ports)
                 Dim session As ExchangeEntrySession = hub.SessionFor(joined.Entry)
-                ' spec 234 item DP: a clear `access` that came through the server is never used, and this session holds no device key.
+                ' spec 234 item DP: a clear `access` that came through the server is never used, not even by a session that holds a key.
                 ' The stub lists no `sealed`, so the typed state is `server-no-e2e`; the secret is not handed on.
                 Dim ok As ExchangeAgentAccessResult = Await session.GetAccessAsync("R1", CancellationToken.None)
                 Assert.False(ok.Reply.IsOk)
@@ -282,7 +282,7 @@ Public Class ExchangeConsumerTests
     End Function
 
     <Fact>
-    Public Async Function On_a_sealed_server_a_clear_access_and_a_box_both_say_e2e_missing_to_a_session_without_a_key() As Task
+    Public Async Function On_a_sealed_server_a_clear_access_and_a_box_both_say_e2e_missing_while_the_producer_has_no_key() As Task
         Using acc As New ExchangeStubAccount()
             acc.Features = {"directory", "tunnel", "pairing", ExchangeSealedNames.FeatureSealed}
             Dim ports As ExchangeConsumerPorts = MakePorts()

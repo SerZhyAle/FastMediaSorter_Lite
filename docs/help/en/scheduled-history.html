@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Scheduled operations history - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -14,7 +15,7 @@
   <h1 id="title">Scheduled operations history</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Shows the recent runs and notes of scheduled file operations as recorded in the journal. It opens from &#39;History..&#39; on the &#39;Scheduled file operations&#39; page of the Share Manager settings.</p>
+    <p>Shows the recent runs and notes of scheduled file operations as recorded in the journal. Scheduled file operations are installed together with the Share Manager - one payload, no separate download and no Windows service - and run while the Share Manager runs in your signed-in session; they need no folder sharing, no server, no open port and no administrator rights. The window opens from &#39;History..&#39; in the Scheduled operations window and on the &#39;Scheduled file operations&#39; page of the Share Manager settings.</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="scheduled-history-light.png" alt="Scheduled operations history">
@@ -27,7 +28,7 @@
   <section id="elements">
     <h2>The elements</h2>
 <details id="columns"><summary>Columns</summary><p>Time, Operation (its name), Startup and Result. Startup is On schedule, Manual, Run all or Late, and stays empty for a note. The window reads the latest 200 journal entries when it opens and on &#39;Refresh&#39;; it does not update by itself.</p></details>
-<details id="results"><summary>Results of a run</summary><p>&#39;Completed: N file(s)&#39;, with &#39;, skipped: M&#39; when some were left out and &#39;(to the Recycle Bin)&#39; for deletions. &#39;With errors: N; completed: M file(s)&#39; followed by the first cause, such as a file in use, no access, a file not found or changed, or a full disk. &#39;Stopped: ..&#39; when a wall ends a run, for example an unreachable folder, a resource without a stored password or with an unconfirmed server key, or a device that is offline. &#39;Not started: ..&#39; when the definition is refused, &#39;Skipped: ..&#39; and &#39;Interrupted&#39;. The journal keeps codes, not raw error text, so the wording follows the current language.</p></details>
+<details id="results"><summary>Results of a run</summary><p>&#39;Completed: N file(s)&#39;, with &#39;, skipped: M&#39; when some were left out and &#39;(to the Recycle Bin)&#39; for deletions. &#39;With errors: N; completed: M file(s)&#39; followed by the first cause, such as a file in use, no access, a file not found or changed, or a full disk. &#39;Stopped: ..&#39; when a wall ends a run, for example an unreachable folder, a resource without a stored password or with an unconfirmed server key, or a device that is offline. &#39;Not started: ..&#39; when the definition is refused, &#39;Skipped: ..&#39; and &#39;Interrupted&#39;. The journal keeps codes, not raw error text, so the wording follows the current language. With Google Drive as a side, the cause can also be no connection with Google Drive, no room on it, a sign-out from it, or a file larger than a packet may be.</p></details>
 <details id="notes"><summary>Notes</summary><p>A row without Startup is a note: &#39;Skipped: the run time (..) passed while the manager was closed&#39;, &#39;Running late: the run was due at ..&#39;, &#39;Refused: this operation is already running or waiting in the queue&#39; and &#39;Resumed: the cause of the stop is gone&#39;.</p></details>
 <details id="clear"><summary>Clear history</summary><p>Asks &#39;Clear the history of scheduled operations? The operations and their schedules do not change.&#39; with No as the default answer. It empties this journal only; the operations and their schedules stay. The button is disabled while the history is empty.</p></details>
     <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>

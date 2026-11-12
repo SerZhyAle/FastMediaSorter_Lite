@@ -48,7 +48,6 @@ Partial Public Class Share_Root_Params_Form
             PrepareHostedControl(control, width, dpi)
         Next
         root.Controls.Add(advanced)
-        txtPin.UseSystemPasswordChar = True
         Return root
     End Function
 

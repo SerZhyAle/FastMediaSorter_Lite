@@ -74,6 +74,11 @@ Partial Public Class Main_Form
 
     Private Sub UpdateContentWindowTitle()
         If content_Base_Title Is Nothing Then content_Base_Title = Me.Text
+        Dim editedText As String = TextEditWindowTitle()
+        If editedText IsNot Nothing Then
+            Me.Text = content_Base_Title & " - " & editedText
+            Return
+        End If
         Dim kind As MediaKind = KindOf(Current_File_Name)
         If IsContentPlaceholderShown() OrElse (kind = MediaKind.Audio AndAlso IsAudioNowPlaying()) Then
             Me.Text = content_Base_Title & " - " & Localization.TF("{0} - {1}", Path.GetFileName(CurrentFileDisplayName(Current_File_Name)), ContentKindLabel(Current_File_Name))

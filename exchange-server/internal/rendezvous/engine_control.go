@@ -80,6 +80,7 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 		e.cfg.Accounts.Touch(dev)
 		return cs.Send(&wire.Keepalive{}) == nil
 	case *wire.Bye:
+		e.cfg.Dir.NoteOfflineReason(acct, dev, cs, m.OfflineReason)
 		return false
 	case *wire.List:
 		if e.cfg.Accounts.IsGuest(acct) {
@@ -223,6 +224,16 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			st = &wire.ClipboardState{}
 		}
 		return cs.Send(st) == nil
+	case *wire.SettingsSaveStandard:
+		if e.cfg.Settings == nil {
+			return true // `settings` is not in features: ignored like an unknown type (item EO, 7.1)
+		}
+		return e.handleSettingsSave(cs, sess, m)
+	case *wire.SettingsGetStandard:
+		if e.cfg.Settings == nil {
+			return true
+		}
+		return e.handleSettingsGet(cs, sess, m)
 	}
 	return false // a known envelope that is invalid on a control stream closes it
 }

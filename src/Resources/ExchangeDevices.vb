@@ -27,7 +27,7 @@ Friend Enum ExchangeDevicesAvailability
     Hidden = 0
     ''' <summary>The Share Manager is installed and nobody answers on the agent's channel.</summary>
     NotRunning = 1
-    ''' <summary>The agent runs and no account is configured.</summary>
+    ''' <summary>The agent runs and neither an account nor a Drive listing is there to read.</summary>
     NotSignedIn = 2
     ''' <summary>An account is configured and the agent has no directory yet (connecting, reconnecting, stopped, signed out).</summary>
     Offline = 3
@@ -201,7 +201,7 @@ Friend NotInheritable Class ExchangeDevicesFeed
 
     Private Shared Function SameAgent(a As ExchangeAgentStateInfo, b As ExchangeAgentStateInfo) As Boolean
         If a Is Nothing OrElse b Is Nothing Then Return a Is b
-        Return a.State = b.State AndAlso a.Configured = b.Configured AndAlso String.Equals(a.LastReason, b.LastReason, StringComparison.Ordinal)
+        Return a.State = b.State AndAlso a.Configured = b.Configured AndAlso a.Drive = b.Drive AndAlso String.Equals(a.LastReason, b.LastReason, StringComparison.Ordinal)
     End Function
 
     ''' <summary>One look: the agent's state and, when it is online, its directory (no waiting). A directory request that fails leaves NO
@@ -219,11 +219,12 @@ Friend NotInheritable Class ExchangeDevicesFeed
         Dim state As ExchangeDevicesState
         If Not stateResult.Reply.IsOk OrElse stateResult.Info Is Nothing Then
             state = New ExchangeDevicesState(ExchangeDevicesAvailability.NotRunning, Nothing, Nothing)
-        ElseIf Not stateResult.Info.Configured Then
+        ElseIf Not stateResult.Info.Configured AndAlso Not stateResult.Info.Drive Then
             state = New ExchangeDevicesState(ExchangeDevicesAvailability.NotSignedIn, stateResult.Info, Nothing)
-        ElseIf stateResult.Info.State <> ExchangeAgentState.Online Then
+        ElseIf stateResult.Info.Configured AndAlso stateResult.Info.State <> ExchangeAgentState.Online Then
             state = New ExchangeDevicesState(ExchangeDevicesAvailability.Offline, stateResult.Info, Nothing)
         Else
+            ' Online, or no account at all but a Drive listing (ticket 269 P2.4): the directory is read the same way, and its answer is Ready
             Dim dir As ExchangeAgentDirectoryResult = Await _api.GetDirectoryAsync(_revision, waitMs, ct).ConfigureAwait(False)
             If dir.Reply.IsOk AndAlso dir.Snapshot IsNot Nothing Then
                 _revision = dir.Snapshot.Revision
@@ -346,11 +347,18 @@ Friend NotInheritable Class ExchangeSync
         Return Not String.Equals(opened, record.HostKeyFingerprint, StringComparison.Ordinal)
     End Function
 
+    ''' <summary>False when this entry's device presents, or already presented, its key by itself (ExchangeKeyUpgrade): signing in again would
+    ''' then change nothing, and the person is not sent there. The agent's road keeps its answer: it has no such question to ask.</summary>
+    Private Function SignInCuresMissingAccess() As Boolean
+        Dim viaEntry As ExchangeEntryApi = TryCast(_api, ExchangeEntryApi)
+        Return viaEntry Is Nothing OrElse viaEntry.Session.SignInCuresMissingAccess
+    End Function
+
     ''' <summary>The user ticked a resource: ask the agent for its access, build the resource, store it (the credential through the DPAPI blob).</summary>
     Friend Async Function AttachAsync(record As ExchangeResourceRecord, deviceName As String, ct As CancellationToken, Optional resourcePin As String = Nothing,
                                      Optional reportFailure As Action(Of ResourceFailure) = Nothing) As Task(Of ExchangeAttachOutcome)
         If record Is Nothing OrElse Not record.IsSupportedKind OrElse Not record.CanAuthorize Then Return ExchangeAttachOutcome.Unusable
-        If ExchangeAttach.NeedsPinEnrollment(record) Then Return ExchangeAttachOutcome.SignInAgain
+        If ExchangeAttach.NeedsPinEnrollment(record) AndAlso SignInCuresMissingAccess() Then Return ExchangeAttachOutcome.SignInAgain
         If record.IsProtected AndAlso String.IsNullOrEmpty(resourcePin) Then
             reportFailure?.Invoke(New ResourceFailure(ResourceFailureKind.Auth))
             Return ExchangeAttachOutcome.ConnectionFailed
@@ -360,7 +368,7 @@ Friend NotInheritable Class ExchangeSync
         If Not access.Reply.IsOk Then
             Select Case access.Reply.Error
                 Case ExchangeAgentPipe.ErrorNoAccess
-                    Return If(record.IsProtected AndAlso String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal),
+                    Return If(record.IsProtected AndAlso String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal) AndAlso SignInCuresMissingAccess(),
                               ExchangeAttachOutcome.SignInAgain, ExchangeAttachOutcome.NoAccess)
                 Case ExchangeAgentPipe.ErrorUnknownResource : Return ExchangeAttachOutcome.NoAccess
                 Case ExchangeAgentPipe.ErrorE2eMissing : Return ExchangeAttachOutcome.E2eMissing

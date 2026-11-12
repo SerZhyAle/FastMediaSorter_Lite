@@ -110,6 +110,9 @@ Public NotInheritable Class ContextHelpUi
         Dim fullName = form.GetType().FullName
         Dim row = ContextHelp.Inventory.surfaces.FirstOrDefault(Function(s) String.Equals(s.type, fullName, StringComparison.Ordinal))
         If row Is Nothing OrElse row.form = "none" Then Return
+        ' CONTEXT-HELP 0.2 section 7 item B: a surface that is one control (the QR window is the code, edge to edge) takes no
+        ' added control, so neither the button nor the key is wired; its parent's page explains it.
+        If String.Equals(row.ask, "off", StringComparison.Ordinal) Then Return
 
         Dim host As IContextHelpHost = TryCast(form, IContextHelpHost)
         If host IsNot Nothing AndAlso Not host.CanHostHelpButton Then Return

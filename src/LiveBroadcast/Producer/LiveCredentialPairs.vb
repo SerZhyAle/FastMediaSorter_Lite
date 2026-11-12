@@ -245,6 +245,23 @@ Friend NotInheritable Class LiveCredentialPairs
         End SyncLock
     End Function
 
+    ''' <summary>Gives a held user a new password in one locked step (ticket 263 Q263-5: rotating the link password on air). The pair keeps
+    ''' its user and its place, so the descriptor's `auth.user` stays right; the old password leaves the Digest lookup at once and the next
+    ''' wire list carries a fresh verifier for this pair alone. False (and no change) for a user not held, an empty password, or the
+    ''' password the pair already has.</summary>
+    Public Function Replace(user As String, password As String) As Boolean
+        If user Is Nothing OrElse String.IsNullOrEmpty(password) Then Return False
+        SyncLock _gate
+            For i As Integer = 0 To _pairs.Count - 1
+                If Not String.Equals(_pairs(i).User, user, StringComparison.Ordinal) Then Continue For
+                If String.Equals(_pairs(i).Password, password, StringComparison.Ordinal) Then Return False
+                _pairs(i) = New Pair(user, password, _iterations)
+                Return True
+            Next
+            Return False
+        End SyncLock
+    End Function
+
     ''' <summary>The verifiers of the pairs held now, as the wire objects of item BF in the order of the pairs; an empty list for a set
     ''' with no pair (item DV: that is sent as `[]`). The first call pays the PBKDF2 of every pair that has none yet, in parallel -
     ''' call it off the UI thread; a later call is free. The result is a snapshot: a pair revoked afterwards is absent from the next one.</summary>

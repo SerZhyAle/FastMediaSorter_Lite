@@ -179,9 +179,10 @@ Friend NotInheritable Class Phone_Code_Intake_Form
         RelayAsync(Function() _relay.RelayDocumentFile(path))
     End Sub
 
-    Private Sub OnFromClipboard(sender As Object, e As EventArgs)
+    Private Async Sub OnFromClipboard(sender As Object, e As EventArgs)
         If _busy Then Return
-        Dim qr As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+        Dim qr As QrDecodeResult = Await QrCodeDecoder.DecodeClipboardAsync()
+        If IsDisposed OrElse _busy Then Return
         If Not qr.Succeeded Then
             _status.Text = qr.FailureMessage
             Return

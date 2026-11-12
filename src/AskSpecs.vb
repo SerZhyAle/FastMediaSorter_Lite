@@ -140,6 +140,114 @@ Friend NotInheritable Class AskSpecs
             defaultIndex:=EditorCloseCancel, cancelIndex:=EditorCloseCancel)
     End Function
 
+    Friend Const TextEditUnsavedSave As Integer = 0
+    Friend Const TextEditUnsavedDiscard As Integer = 1
+    Friend Const TextEditUnsavedCancel As Integer = 2
+
+    ''' <summary>Leaving a text with unsaved edits (277 section 7.1 item 3): every way out of the document asks this one
+    ''' question. Keeps the image editor's shape: the default and Escape stay in the text.</summary>
+    Friend Shared Function TextEditUnsaved(fileName As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Правки не сохранены"),
+            Localization.TF("В файле {0} есть несохранённые правки.", fileName),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Сохранить"), destructive:=True, role:=ButtonGlyphRole.Affirmative, glyphId:="action.save"),
+                New AskButton(Localization.T("Не сохранять"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.revert"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=TextEditUnsavedCancel, cancelIndex:=TextEditUnsavedCancel)
+    End Function
+
+    Friend Const TextEditConflictReload As Integer = 0
+    Friend Const TextEditConflictSaveAs As Integer = 1
+    Friend Const TextEditConflictOverwrite As Integer = 2
+    Friend Const TextEditConflictCancel As Integer = 3
+
+    ''' <summary>Another program changed the file under the editor (277 section 7.3 item 1): nothing was written. The body
+    ''' says what each acting answer costs, so the named answer is the confirmation itself.</summary>
+    Friend Shared Function TextEditConflict(fileName As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Файл изменён другой программой"),
+            Localization.TF("Файл {0} изменился на диске после открытия. Загрузка с диска отбросит ваши правки, перезапись заменит ту версию.", fileName),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Загрузить с диска"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.refresh"),
+                New AskButton(Localization.T("Сохранить как.."), glyphId:="action.save"),
+                New AskButton(Localization.T("Перезаписать"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.replace"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=TextEditConflictCancel, cancelIndex:=TextEditConflictCancel)
+    End Function
+
+    Friend Const TextEditMissingWrite As Integer = 0
+    Friend Const TextEditMissingSaveAs As Integer = 1
+    Friend Const TextEditMissingCancel As Integer = 2
+
+    ''' <summary>The file is gone from the disk while the editor holds its text: nothing was written.</summary>
+    Friend Shared Function TextEditMissing(fileName As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Файла больше нет"),
+            Localization.TF("Файл {0} удалён или перемещён другой программой. Ваши правки целы.", fileName),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Записать заново"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.save"),
+                New AskButton(Localization.T("Сохранить как.."), glyphId:="action.save"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=TextEditMissingCancel, cancelIndex:=TextEditMissingCancel)
+    End Function
+
+    Friend Const TextEditUnencodableUtf8 As Integer = 0
+    Friend Const TextEditUnencodableReplace As Integer = 1
+    Friend Const TextEditUnencodableCancel As Integer = 2
+
+    ''' <summary>A character of the text is not in the file's encoding (277 section 6.2): nothing was written, and nothing is
+    ''' ever replaced silently - the substitution is its own named answer with its count on it.</summary>
+    Friend Shared Function TextEditUnencodable(encodingName As String, characters As IReadOnlyList(Of String), count As Integer) As AskSpec
+        Return New AskSpec(
+            Localization.T("Символы не помещаются в кодировку"),
+            Localization.TF("Символов вне кодировки {0}: {1}. Файл не записан.", encodingName, count),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Сохранить в UTF-8"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.save"),
+                New AskButton(Localization.TF("Заменить на ? ({0})", count), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.replace"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=TextEditUnencodableCancel, cancelIndex:=TextEditUnencodableCancel,
+            detail:=String.Join(" ", characters))
+    End Function
+
+    Friend Const TextOpenBinaryShow As Integer = 0
+    Friend Const TextOpenBinaryCancel As Integer = 1
+
+    ''' <summary>"Open as Text" on a file that looks binary (277 section 4.1, VM-08): it says so before anything is shown. Only
+    ''' looking follows, so the default is the answer the user asked for.</summary>
+    Friend Shared Function TextOpenBinary(fileName As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Бинарный файл"),
+            Localization.TF("Файл {0} похож на двоичные данные, а не на текст. Он откроется только для просмотра: управляющие байты будут показаны значками, править его будет нельзя.", fileName),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Показать как текст"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.show-code"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=TextOpenBinaryShow, cancelIndex:=TextOpenBinaryCancel)
+    End Function
+
+    Friend Const TextDraftRestore As Integer = 0
+    Friend Const TextDraftDelete As Integer = 1
+    Friend Const TextDraftLater As Integer = 2
+
+    ''' <summary>A file opens that has a recovery draft saying something else (277 section 7.4 item 2). Escape keeps the
+    ''' draft for the next open: a draft goes only by a confirmed save or by the user's own answer.</summary>
+    Friend Shared Function TextDraftFound(fileName As String, savedAt As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Найден черновик правок"),
+            Localization.TF("Для файла {0} сохранён черновик несохранённых правок от {1}.", fileName, savedAt),
+            AskIcon.Question,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Восстановить черновик"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.undo"),
+                New AskButton(Localization.T("Удалить черновик"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.delete"),
+                New AskButton(Localization.T("Не сейчас"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=TextDraftRestore, cancelIndex:=TextDraftLater)
+    End Function
+
     ''' <summary>Put every shortcut back to the factory binding. The default is the way out.</summary>
     Friend Shared Function ResetHotkeys() As AskSpec
         Return New AskSpec(
@@ -274,8 +382,10 @@ Friend NotInheritable Class AskSpecs
 
     ''' <summary>276 T-2: the job panel of the document command. Names the source and the converter that will run,
     ''' offers the three modes the producer supports without a cost decision; the remembered mode is the default
-    ''' and Escape cancels. The converter opens its own result in the browser.</summary>
-    Friend Shared Function DocumentConvertPanel(fileName As String, converterVersion As String, rememberedMode As String) As AskSpec
+    ''' and Escape cancels. The detail names where the verified page opens (Step 4.1) and the recognition the job asks for,
+    ''' never more than the request says (OCR-INVOCATION 1.2 item D).</summary>
+    Friend Shared Function DocumentConvertPanel(fileName As String, converterVersion As String, rememberedMode As String,
+                                                Optional opensInViewer As Boolean = False, Optional recognitionForced As Boolean = False) As AskSpec
         Dim defaultIndex As Integer = DocumentConvertBrowser
         If rememberedMode = DocHtmlJobArguments.ModeConvert Then defaultIndex = DocumentConvertOnly
         If rememberedMode = DocHtmlJobArguments.ModeLocal Then defaultIndex = DocumentConvertLocal
@@ -284,13 +394,17 @@ Friend NotInheritable Class AskSpecs
             Localization.TF("Сделать из «{0}» HTML-страницу в doc-html-translate?", fileName),
             AskIcon.Question,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Открыть в браузере"), role:=ButtonGlyphRole.Affirmative),
-                New AskButton(Localization.T("Только преобразовать")),
-                New AskButton(Localization.T("Перевести через Ollama")),
+                New AskButton(Localization.T("Открыть в браузере"), role:=ButtonGlyphRole.Affirmative, glyphId:="nav.open-external"),
+                New AskButton(Localization.T("Только преобразовать"), glyphId:="action.convert"),
+                New AskButton(Localization.T("Перевести через Ollama"), glyphId:="action.translate"),
                 New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=defaultIndex, cancelIndex:=DocumentConvertCancel,
             detail:=Localization.TF("Программа: {0}", converterVersion) & Environment.NewLine &
-                Localization.T("Страница откроется в браузере; перевести её можно командой браузера «Перевести». «Только преобразовать» не переводит текст, «Перевести через Ollama» переводит его локальной моделью Ollama, настроенной в doc-html-translate. Сканы распознаются автоматически, исходный файл не изменяется."))
+                If(opensInViewer, Localization.T("Страница откроется в просмотрщике поверх документа."),
+                   Localization.T("Страница откроется в браузере; перевести её можно командой браузера «Перевести».")) & " " &
+                Localization.T("«Только преобразовать» не переводит текст, «Перевести через Ollama» переводит его локальной моделью Ollama, настроенной в doc-html-translate.") & " " &
+                If(recognitionForced, Localization.T("Распознавание текста запрашивается для всех страниц, исходный файл не изменяется."),
+                   Localization.T("Распознавание текста запрашивается для сканов, исходный файл не изменяется.")))
     End Function
 
     Friend Const DocumentConverterInstall As Integer = 0
@@ -315,11 +429,45 @@ Friend NotInheritable Class AskSpecs
             Localization.T("Для этой команды нужна бесплатная программа doc-html-translate: она делает из документа HTML-страницу, распознаёт текст сканов и может перевести его."),
             AskIcon.Info,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Установить"), role:=ButtonGlyphRole.Affirmative),
-                New AskButton(Localization.T("Выбрать программу..")),
-                New AskButton(Localization.T("Проверить снова")),
+                New AskButton(Localization.T("Установить"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.install"),
+                New AskButton(Localization.T("Выбрать программу.."), glyphId:="action.choose-file"),
+                New AskButton(Localization.T("Проверить снова"), glyphId:="action.refresh"),
                 New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=DocumentConverterInstall, cancelIndex:=DocumentConverterCancel, detail:=detail)
+    End Function
+
+    Friend Const DocumentJobStop As Integer = 0
+    Friend Const DocumentJobContinue As Integer = 1
+
+    ''' <summary>276 T-3: the command pressed while the viewer's own job still runs. Continue is the default and the
+    ''' answer of Escape; Stop ends only the process the viewer started (section 6).</summary>
+    Friend Shared Function DocumentJobRunning(fileName As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Обработать в doc-html-translate"),
+            Localization.TF("doc-html-translate ещё обрабатывает «{0}».", fileName),
+            AskIcon.Question,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Остановить"), destructive:=True, role:=ButtonGlyphRole.Caution, glyphId:="action.cancel"),
+                New AskButton(Localization.T("Продолжить"), glyphId:="action.run")},
+            defaultIndex:=DocumentJobContinue, cancelIndex:=DocumentJobContinue,
+            detail:=Localization.T("Если остановить, незаконченная страница не откроется; следующий запуск сделает её заново."))
+    End Function
+
+    Friend Const DocumentResultsClear As Integer = 0
+    Friend Const DocumentResultsCancel As Integer = 1
+
+    ''' <summary>276 Step 3.2, section 6 quota: the pages a browser may still show fill the space, and the viewer never
+    ''' deletes such a page by itself. Clear is the user's own decision; Escape cancels the new job.</summary>
+    Friend Shared Function DocumentResultsFull(usedMb As Long, budgetMb As Integer) As AskSpec
+        Return New AskSpec(
+            Localization.T("Обработать в doc-html-translate"),
+            Localization.TF("Место для готовых страниц занято: {0} из {1} МБ.", usedMb, budgetMb),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Очистить готовые страницы"), destructive:=True, role:=ButtonGlyphRole.Caution, glyphId:="action.clear-all"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=DocumentResultsCancel, cancelIndex:=DocumentResultsCancel,
+            detail:=Localization.T("Страницы, открытые в браузере, сами не удаляются. Очистка удалит все готовые страницы doc-html-translate; исходные документы не меняются."))
     End Function
 
     ''' <summary>Every call-site question that has a fixed shape, for the test that walks them all.</summary>
@@ -333,9 +481,17 @@ Friend NotInheritable Class AskSpecs
             ResetHotkeys(),
             ProfileResetConfirm(),
             EditorUnsavedClose(),
+            TextEditUnsaved("note.txt"),
+            TextEditConflict("note.txt"),
+            TextEditMissing("note.txt"),
+            TextEditUnencodable("Windows-1251", New String() {"U+5B57"}, 1),
+            TextDraftFound("note.txt", "14:32"),
             HtmlHistoryClear(),
             DocumentConvertPanel("book.epub", "doc-html-translate 1.0", DocHtmlJobArguments.ModeBrowser),
+            DocumentConvertPanel("book.epub", "doc-html-translate 1.0", DocHtmlJobArguments.ModeLocal, opensInViewer:=True, recognitionForced:=True),
             DocumentConverterMissing(False, ""),
+            DocumentJobRunning("book.epub"),
+            DocumentResultsFull(1100, 1024),
             CloseWithUnfinishedFileOperations(2)}
     End Function
 

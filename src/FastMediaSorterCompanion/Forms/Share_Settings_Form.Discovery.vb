@@ -21,8 +21,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         _settingsHeader.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
         _settingsHeader.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 48))
         _settingsHeader.Controls.Add(tools, 0, 0)
-        _pageHost.Controls.Add(_settingsHeader)
-        _settingsHeader.SendToBack()
+        If _remoteTop IsNot Nothing Then
+            _settingsHeader.Dock = DockStyle.Fill
+            _remoteTop.Controls.Add(_settingsHeader, 0, 0)
+        Else
+            _pageHost.Controls.Add(_settingsHeader)
+            _settingsHeader.SendToBack()
+        End If
     End Sub
 
     Private Sub AddSettingsHeaderCommand(host As Control, name As String, action As Action)

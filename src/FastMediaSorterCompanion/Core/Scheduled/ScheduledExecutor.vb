@@ -84,6 +84,16 @@ Friend NotInheritable Class ScheduledServices
     Friend Property BeforeItem As Action(Of String)
     ''' <summary>Called with the archive's path after it is written and before it is read back. A test hook.</summary>
     Friend Property AfterArchiveWritten As Action(Of String)
+    ''' <summary>Fill of free space (ticket L0299): where FileDO is, what the volume holds, and the launch itself.</summary>
+    Friend Property LocateFileDo As Func(Of String) = AddressOf FileDoLocator.Find
+    Friend Property FillVolume As Func(Of String, FillVolumeInfo) = AddressOf FillVolumeInfo.Read
+    Friend Property LaunchFill As Func(Of FillLaunch, CancellationToken, FillLaunchOutcome) = AddressOf FillProcess.Run
+    ''' <summary>Backup (ticket L0298): the stored password of a sealed backup, "" when there is none on this PC.</summary>
+    Friend Property BackupPassword As Func(Of String, String) =
+        Function(id As String) New ScheduledBackupCredentialStore(ScheduledStore.DefaultFolder()).Read(id)
+    ''' <summary>Whether the FileDO found can run a numbered generation set. False until the generation and stem options are
+    ''' published by FileDO (L0298 blocker B-1b); the argument builder of step P4.1 is written against that spelling.</summary>
+    Friend Property FileDoHasBackupGenerations As Func(Of String, Boolean) = Function(exe As String) False
 
     Friend Shared Function ForProduct(journal As ScheduledJournal) As ScheduledServices
         Dim services As New ScheduledServices With {.Protection = ProtectedFolders.ForThisMachine()}
@@ -128,6 +138,8 @@ Friend NotInheritable Class ScheduledRunResult
     Friend Property Duration As TimeSpan
     Friend Property SourceDescription As String = ""
     Friend Property DestinationDescription As String = ""
+    ''' <summary>The mark the next run through Google Drive starts from, set only by a clean run; "" when there is none.</summary>
+    Friend Property DriveMark As String = ""
 End Class
 
 ''' <summary>One file of a plan.</summary>
@@ -153,6 +165,8 @@ Friend NotInheritable Class ScheduledPreview
     Friend Property Bytes As Long
     Friend Property Lines As New List(Of String)()
     Friend Property Truncated As Boolean
+    ''' <summary>The source is Google Drive: what would run is known only to the run itself (asking would take files off Drive).</summary>
+    Friend Property DriveSource As Boolean
 End Class
 
 Friend NotInheritable Class ScheduledExecutor
@@ -188,6 +202,29 @@ Friend NotInheritable Class ScheduledExecutor
     End Function
 
     Private Sub RunCore(op As ScheduledOperation, result As ScheduledRunResult, ct As CancellationToken)
+        If op.Action = ScheduledAction.FillFreeSpace Then
+            ' Selects no files and has no destination: the definition, then FileDO (ticket L0299).
+            result.SourceDescription = op.Source.Describe()
+            Dim refusal As Resolution = CheckDefinition(op, forRun:=True)
+            If refusal IsNot Nothing Then
+                Adopt(result, refusal.StopResult)
+            Else
+                ExecuteFill(op, result, ct)
+            End If
+            Return
+        End If
+        If op.Action = ScheduledAction.Backup Then
+            ' The folder is one unit and FileDO does the whole job (ticket L0298, Q298-1).
+            result.SourceDescription = op.Source.Describe()
+            result.DestinationDescription = op.Destination.Describe()
+            Dim refusal As Resolution = CheckDefinition(op, forRun:=True)
+            If refusal IsNot Nothing Then
+                Adopt(result, refusal.StopResult)
+            Else
+                ExecuteBackup(op, result)
+            End If
+            Return
+        End If
         Dim resolved As Resolution = Resolve(op, result.StartedAt, forRun:=True, ct)
         result.SourceDescription = op.Source.Describe()
         result.DestinationDescription = If(op.NeedsDestination, op.Destination.Describe(), "")
@@ -196,6 +233,7 @@ Friend NotInheritable Class ScheduledExecutor
             Return
         End If
 
+        Dim completed As Boolean = False
         Try
             Select Case op.Action
                 Case ScheduledAction.Copy, ScheduledAction.Move
@@ -205,7 +243,14 @@ Friend NotInheritable Class ScheduledExecutor
                 Case ScheduledAction.Archive
                     ExecuteArchive(op, resolved, result, ct)
             End Select
+            completed = True
+        Catch ex As ScheduledSideException
+            ' The destination went away under a packet: the same skip or wall as if it had been gone from the start.
+            Dim firstError As String = result.FirstError
+            Adopt(result, FromProblem(ex.Problem, "destination").StopResult)
+            result.FirstError = firstError
         Finally
+            TryCast(resolved.Source, IScheduledRunAwareSource)?.RunEnded(result, completed)
             resolved.Source?.Dispose()
             resolved.Destination?.Dispose()
         End Try
@@ -230,6 +275,8 @@ Friend NotInheritable Class ScheduledExecutor
         Friend Source As IScheduledSide
         Friend Destination As IScheduledSide
         Friend Items As List(Of PlannedItem)
+        ''' <summary>A preview of a Drive source: valid, and nothing more can be said without taking files off Drive.</summary>
+        Friend DriveSource As Boolean
         Friend ReadOnly Property Stopped As Boolean
             Get
                 Return StopResult IsNot Nothing
@@ -263,18 +310,10 @@ Friend NotInheritable Class ScheduledExecutor
     Private Function ResolveCore(op As ScheduledOperation, now As DateTime, forRun As Boolean, ct As CancellationToken,
                                  opened As List(Of IScheduledSide)) As Resolution
         ' 1. The definition. A definition that is refused is refused before any side is touched.
-        Dim issues As List(Of ScheduledIssue) = ScheduledValidation.Validate(op, services.Protection, services.ResourceFacts)
-        If op.Halt = ScheduledHalt.InvalidDefinition Then
-            Return Stopping(ScheduledRunOutcome.Refused, "invalid definition: " & op.HaltDetail)
-        End If
-        If issues.Count > 0 Then
-            If forRun AndAlso issues(0).Code = ScheduledIssueCode.ResourcePinLocked Then
-                Return Stopping(ScheduledRunOutcome.Wall, "pin-locked|" & issues(0).Detail, ScheduledHalt.Wall)
-            End If
-            Dim refused As Resolution = Stopping(ScheduledRunOutcome.Refused, "issue-" & issues(0).Code.ToString() & "|" & issues(0).Detail)
-            refused.StopResult.Issues = issues
-            Return refused
-        End If
+        Dim refusal As Resolution = CheckDefinition(op, forRun)
+        If refusal IsNot Nothing Then Return refusal
+
+        If Not forRun AndAlso op.Source.Kind = ScheduledLocationKind.Drive Then Return New Resolution With {.DriveSource = True}
 
         ' 2. The source.
         Dim sourceOpen As ScheduledSideOpen = services.OpenSide.Invoke(op.Source)
@@ -285,6 +324,7 @@ Friend NotInheritable Class ScheduledExecutor
         If readable.IsProblem Then Return FromProblem(readable, "source")
 
         ' 3. Scan, then filter - the whole list, before anything is acted on.
+        TryCast(source, IScheduledRunAwareSource)?.RunStarting(op)
         Dim entries As List(Of SideEntry)
         Try
             entries = source.List(op.Source.Recursive, ct)
@@ -318,14 +358,34 @@ Friend NotInheritable Class ScheduledExecutor
         Return New Resolution With {.Source = source, .Destination = destination, .Items = items}
     End Function
 
+    ''' <summary>Step 1 of a run or a preview: the refusal of the definition, or Nothing when it may go on.</summary>
+    Private Function CheckDefinition(op As ScheduledOperation, forRun As Boolean) As Resolution
+        Dim issues As List(Of ScheduledIssue) = ScheduledValidation.Validate(op, services.Protection, services.ResourceFacts,
+            Function(id As String) services.BackupPassword.Invoke(id).Length > 0)
+        If op.Halt = ScheduledHalt.InvalidDefinition Then
+            Return Stopping(ScheduledRunOutcome.Refused, "invalid definition: " & op.HaltDetail)
+        End If
+        If issues.Count = 0 Then Return Nothing
+        If forRun AndAlso issues(0).Code = ScheduledIssueCode.BackupPasswordMissing Then
+            ' A password this PC never had (an import) or can no longer read: the operation waits for it, it is not refused.
+            Return Stopping(ScheduledRunOutcome.Wall, ShareSettingsTransfer.BackupNoPasswordCode, ScheduledHalt.Wall)
+        End If
+        If forRun AndAlso issues(0).Code = ScheduledIssueCode.ResourcePinLocked Then
+            Return Stopping(ScheduledRunOutcome.Wall, "pin-locked|" & issues(0).Detail, ScheduledHalt.Wall)
+        End If
+        Dim refused As Resolution = Stopping(ScheduledRunOutcome.Refused, "issue-" & issues(0).Code.ToString() & "|" & issues(0).Detail)
+        refused.StopResult.Issues = issues
+        Return refused
+    End Function
+
     Private Shared Function FromProblem(problem As SideProblem, which As String) As Resolution
         Select Case problem.Kind
             Case SideProblemKind.ResourceRemoved
                 ' Not a wall: the operation is halted until the user re-points it (4.3).
                 Return Stopping(ScheduledRunOutcome.Refused, "resource-removed|" & problem.Detail, ScheduledHalt.ResourceRemoved)
-            Case SideProblemKind.Offline
+            Case SideProblemKind.Offline, SideProblemKind.DriveUnavailable
                 ' An offline target or network skips the run without halting the operation (ticket 231, 3.5).
-                Return Stopping(ScheduledRunOutcome.Skipped, which & "-offline|" & problem.Detail, ScheduledHalt.None)
+                Return Stopping(ScheduledRunOutcome.Skipped, which & "-" & ProblemCode(problem.Kind) & "|" & problem.Detail, ScheduledHalt.None)
             Case Else
                 ' "source-unreachable|D:\Photos" - a code and the place; the words come at display time.
                 Return Stopping(ScheduledRunOutcome.Wall, which & "-" & ProblemCode(problem.Kind) & "|" & problem.Detail, ScheduledHalt.Wall)
@@ -342,6 +402,8 @@ Friend NotInheritable Class ScheduledExecutor
             Case SideProblemKind.SignedOut : Return "signed-out"
             Case SideProblemKind.PinLocked : Return "pin-locked"
             Case SideProblemKind.Offline : Return "offline"
+            Case SideProblemKind.DriveFull : Return "drive-full"
+            Case SideProblemKind.DriveUnavailable : Return "drive-unavailable"
             Case Else : Return "unreachable"
         End Select
     End Function
@@ -395,6 +457,12 @@ Friend NotInheritable Class ScheduledExecutor
     ' --- copy and move ----------------------------------------------------------------------------
 
     Private Sub ExecuteTransfers(op As ScheduledOperation, resolved As Resolution, result As ScheduledRunResult, ct As CancellationToken)
+        Dim packets As IScheduledPacketTarget = TryCast(resolved.Destination, IScheduledPacketTarget)
+        If packets IsNot Nothing Then
+            ExecutePacketTransfers(op, packets, resolved, result, ct)
+            Return
+        End If
+
         ' Ticket 231, 3.2: when "via Google Drive" is the source, the picked-up item is removed from the
         ' exchange channel on Drive once the destination copy is verified (Drive is a channel, not a second copy).
         Dim moving As Boolean = op.Action = ScheduledAction.Move OrElse IsDriveSide(resolved.Source, op.Source)
@@ -414,8 +482,8 @@ Friend NotInheritable Class ScheduledExecutor
                         Case MoveOutcome.Moved
                             result.Files += 1
                             result.Bytes += item.Entry.Length
-                            Journal(op, If(op.Action = ScheduledAction.Move, "move", "drive-pickup"),
-                                    resolved.Source.Combine(item.Entry.RelativePath),
+                            Journal(op, If(op.Action = ScheduledAction.Move AndAlso Not IsDriveSide(resolved.Source, op.Source), "move", "drive-pickup"),
+                                    JournalPlace(resolved.Source, item.Entry.RelativePath),
                                     resolved.Destination.Combine(item.TargetRelative), "")
                         Case MoveOutcome.SourceChanged
                             ' Not an error: the file is still where it was and the next run sees it as it is.
@@ -445,6 +513,138 @@ Friend NotInheritable Class ScheduledExecutor
         Next
     End Sub
 
+    ''' <summary>The destination takes whole packets (the Drive channel, item CO). A packet names its files by base name, so the source's
+    ''' folders flatten and a repeated name starts the next packet; a packet holds at most what the target allows. A file of the person's
+    ''' is touched only after the packet carrying it landed.</summary>
+    Private Sub ExecutePacketTransfers(op As ScheduledOperation, target As IScheduledPacketTarget, resolved As Resolution, result As ScheduledRunResult, ct As CancellationToken)
+        Dim batch As New List(Of PlannedItem)()
+        Dim names As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim batchBytes As Long = 0
+        For Each item As PlannedItem In resolved.Items
+            If item.Skip Then
+                result.Skipped += 1
+                Continue For
+            End If
+            ct.ThrowIfCancellationRequested()
+            services.BeforeItem?.Invoke(item.Entry.RelativePath)
+            If Not target.AcceptsName(item.Entry.Name) Then
+                Fail(result, item, "invalid")
+                Continue For
+            End If
+            If item.Entry.Length > target.MaxPacketBytes Then
+                Fail(result, item, "too-large")
+                Continue For
+            End If
+            If batch.Count > 0 AndAlso (names.Contains(item.Entry.Name) OrElse batch.Count >= target.MaxPacketFiles OrElse
+                                        batchBytes + item.Entry.Length > target.MaxPacketBytes) Then
+                SendPacketBatch(op, target, batch, resolved, result, ct)
+                batch.Clear()
+                names.Clear()
+                batchBytes = 0
+            End If
+            batch.Add(item)
+            names.Add(item.Entry.Name)
+            batchBytes += item.Entry.Length
+        Next
+        If batch.Count > 0 Then SendPacketBatch(op, target, batch, resolved, result, ct)
+    End Sub
+
+    Private Sub SendPacketBatch(op As ScheduledOperation, target As IScheduledPacketTarget, batch As List(Of PlannedItem), resolved As Resolution,
+                                result As ScheduledRunResult, ct As CancellationToken)
+        Dim source As IScheduledSide = resolved.Source
+        Dim scratch As String = ""
+        Try
+            Dim going As New List(Of PlannedItem)(batch.Count)
+            Dim files As New List(Of ScheduledPacketFile)(batch.Count)
+            For Each item As PlannedItem In batch
+                ct.ThrowIfCancellationRequested()
+                Try
+                    Dim path As String
+                    If source.IsLocalPath Then
+                        path = source.Combine(item.Entry.RelativePath)
+                        If Not LocalTransfer.SameAsListed(path, item.Entry) Then
+                            result.Skipped += 1
+                            Continue For
+                        End If
+                        ' Opened now, so that a locked file is this file's failure and not the whole packet's.
+                        Using probe As New FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete, 1)
+                        End Using
+                    Else
+                        If scratch.Length = 0 Then
+                            scratch = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "fms-scheduled-packet-" & Guid.NewGuid().ToString("N"))
+                            Directory.CreateDirectory(scratch)
+                        End If
+                        Dim local As New LocalSide(scratch)
+                        services.TransferFor.Invoke(source, local).CopyFile(source, item.Entry, local, item.Entry.Name, False, ct)
+                        path = local.Combine(item.Entry.Name)
+                    End If
+                    files.Add(New ScheduledPacketFile(item.Entry.Name, path))
+                    going.Add(item)
+                Catch ex As OperationCanceledException
+                    Throw
+                Catch ex As SourceChangedException
+                    result.Skipped += 1
+                Catch ex As Exception
+                    AppFileLogger.LogException("Scheduled operations: " & item.Entry.RelativePath, ex)
+                    Fail(result, item, ScheduledFailure.PerFileCode(ex))
+                End Try
+            Next
+            If files.Count = 0 Then Return
+
+            Try
+                target.SendPacket(files, ct)
+            Catch ex As Exception When Not (TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is ScheduledSideException)
+                AppFileLogger.LogException("Scheduled operations: a packet of " & files.Count.ToString(Globalization.CultureInfo.InvariantCulture) & " files", ex)
+                For Each item As PlannedItem In going
+                    Fail(result, item, ScheduledFailure.PerFileCode(ex))
+                Next
+                Return
+            End Try
+
+            For Each item As PlannedItem In going
+                If op.Action = ScheduledAction.Move AndAlso Not RemoveSent(op, item, resolved, result, ct) Then Continue For
+                result.Files += 1
+                result.Bytes += item.Entry.Length
+            Next
+        Finally
+            If scratch.Length > 0 Then
+                Try
+                    Directory.Delete(scratch, True)
+                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+                    AppFileLogger.LogException("Scheduled operations: removing a packet's temporary folder", ex)
+                End Try
+            End If
+        End Try
+    End Sub
+
+    ''' <summary>The packet landed, so the original of a move goes - when it is still the file that was sent. If not, both stay and the run says so.</summary>
+    Private Function RemoveSent(op As ScheduledOperation, item As PlannedItem, resolved As Resolution, result As ScheduledRunResult, ct As CancellationToken) As Boolean
+        Dim source As IScheduledSide = resolved.Source
+        Dim place As String = source.Combine(item.Entry.RelativePath)
+        Try
+            Dim verdict As String
+            If source.IsLocalPath Then
+                If Not LocalTransfer.SameAsListed(place, item.Entry) Then Throw New SourceChangedException(place)
+                verdict = DeleteOne(place, item.Entry.Length)
+            Else
+                verdict = services.TransferFor.Invoke(source, source).DeleteFile(source, item.Entry, ct)
+            End If
+            Journal(op, "move", place, resolved.Destination.Describe() & ": " & item.Entry.Name, verdict)
+            Return True
+        Catch ex As OperationCanceledException
+            Throw
+        Catch ex As Exception
+            AppFileLogger.LogException("Scheduled operations: " & item.Entry.RelativePath, ex)
+            Fail(result, item, "kept-both")
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>The journal's word for a file of a side: a Drive source's staged copy is a temporary path nobody can use.</summary>
+    Private Shared Function JournalPlace(side As IScheduledSide, relative As String) As String
+        If TypeOf side Is DriveScheduledSide Then Return side.Describe() & ": " & relative
+        Return side.Combine(relative)
+    End Function
 
     ''' <summary>
     ''' Is this failure a LOST side rather than one bad file? A disk that is full is the destination's, whatever
@@ -609,7 +809,7 @@ Friend NotInheritable Class ScheduledExecutor
                     verdict = services.TransferFor.Invoke(resolved.Source, resolved.Source).DeleteFile(resolved.Source, record.Entry, ct)
                 End If
                 tally.Add(verdict)
-                Journal(op, "archive-delete", path, written.ArchivePath, verdict)
+                Journal(op, "archive-delete", JournalPlace(resolved.Source, record.Entry.RelativePath), written.ArchivePath, verdict)
             Catch ex As OperationCanceledException
                 Throw
             Catch ex As SourceChangedException
@@ -622,6 +822,145 @@ Friend NotInheritable Class ScheduledExecutor
         Next
         result.Verdict = tally.Summary()
     End Sub
+
+    ' --- fill free space (ticket L0299) -------------------------------------------------------------
+
+    ''' <summary>
+    ''' FileDO's `fill &lt;MB&gt; del` in a work folder this run creates and owns (Q299-4). Earlier work folders of this
+    ''' operation are cleared first; one that cannot be cleared stops the operation as a wall, because its files still
+    ''' hold the space. The verdict is the event file's (CLI-EVENT-STREAM rules 10, 11 and 15), never the exit code alone.
+    ''' </summary>
+    Private Sub ExecuteFill(op As ScheduledOperation, result As ScheduledRunResult, ct As CancellationToken)
+        Dim place As String = CompanionCommand.CanonicalFolder(op.Source.Path)
+        Dim volume As FillVolumeInfo = services.FillVolume.Invoke(place)
+        If volume.IsNetwork Then
+            HitWall(result, "fill-network-drive|" & place)
+            Return
+        End If
+        If Not Directory.Exists(place) Then
+            HitWall(result, "source-unreachable|" & place)
+            Return
+        End If
+        Dim exe As String = services.LocateFileDo.Invoke()
+        If exe.Length = 0 Then
+            HitWall(result, "filedo-missing")
+            Return
+        End If
+        Dim left As List(Of String) = FillWorkFolders.RecoverEarlier(place, op.Id)
+        If left.Count > 0 Then
+            HitWall(result, "fill-leftovers|" & left(0))
+            Return
+        End If
+        ct.ThrowIfCancellationRequested()
+
+        Dim workFolder As String
+        Try
+            workFolder = FillWorkFolders.Create(place, op.Id, result.StartedAt)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            AppFileLogger.LogException("Scheduled operations: fill work folder in " & place, ex)
+            HitWall(result, If(TypeOf ex Is UnauthorizedAccessException, "source-denied|", "source-unreachable|") & place)
+            Return
+        End Try
+
+        Dim eventsFile As String = Path.Combine(workFolder, FillWorkFolders.EventsName)
+        Dim launch As New FillLaunch With {.Exe = exe, .StopFile = Path.Combine(workFolder, FillWorkFolders.StopName)}
+        launch.Arguments = FillCommandLine.Arguments(workFolder, op.ChunkSizeMb, eventsFile, launch.StopFile)
+        Dim outcome As FillLaunchOutcome = services.LaunchFill.Invoke(launch, ct)
+        Dim events As FillEvents = FillEvents.Parse(ReadEvents(eventsFile))
+        Dim judged As FillJudgement = events.Judge(outcome.ExitCode, outcome.StopRequested)
+        Dim cleared As Boolean = FillWorkFolders.Clear(workFolder, op.Id)
+
+        result.Files = CInt(Math.Min(Integer.MaxValue, events.DoneItems))
+        result.Bytes = events.DoneBytes
+        result.Verdict = FillCommandLine.Verdict(If(volume.Known, volume.FreeBytes, 0L), events.DoneBytes, outcome.ExitCode)
+        Journal(op, "fill-free-space", workFolder, "", If(outcome.Started, judged.ToString(), "not-started"))
+
+        If Not cleared Then
+            ' The space is still held, and the next run must not stack a second fill on top of it.
+            HitWall(result, "fill-leftovers|" & workFolder)
+        ElseIf Not outcome.Started Then
+            HitWall(result, "filedo-start|" & exe)
+        ElseIf judged = FillJudgement.Passed Then
+            result.Outcome = ScheduledRunOutcome.Ok
+        ElseIf judged = FillJudgement.Stopped AndAlso outcome.StopRequested Then
+            result.Outcome = ScheduledRunOutcome.Cancelled
+        Else
+            result.Outcome = ScheduledRunOutcome.Failed
+            result.Failed = 1
+            result.FirstError = ScheduledFailure.Coded(If(judged = FillJudgement.Failed, "fill-failed", "fill-not-proven"), place)
+        End If
+    End Sub
+
+    Private Shared Function ReadEvents(eventsFile As String) As String
+        Try
+            Using stream As New FileStream(eventsFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+                Using reader As New StreamReader(stream, System.Text.Encoding.UTF8)
+                    Return reader.ReadToEnd()
+                End Using
+            End Using
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            ' No event file is a run that said nothing: not proven (rule 10).
+            Return ""
+        End Try
+    End Function
+
+    ''' <summary>A walled fill comes back when FileDO is there, the place is a reachable local folder and every earlier
+    ''' work folder of the operation can be cleared.</summary>
+    Private Function FillPreflight(op As ScheduledOperation) As SideProblem
+        Dim place As String = CompanionCommand.CanonicalFolder(op.Source.Path)
+        If place.Length = 0 OrElse Not Directory.Exists(place) Then Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+        If services.FillVolume.Invoke(place).IsNetwork Then Return New SideProblem(SideProblemKind.Unreachable, place)
+        If services.LocateFileDo.Invoke().Length = 0 Then Return New SideProblem(SideProblemKind.Unreachable, place)
+        For Each folder As String In FillWorkFolders.OwnFolders(place, op.Id)
+            If Not FillWorkFolders.IsClearable(folder, op.Id) Then Return New SideProblem(SideProblemKind.Unreachable, folder)
+        Next
+        Return SideProblem.Ok
+    End Function
+
+    ' --- backup (ticket L0298) -----------------------------------------------------------------------
+
+    ''' <summary>
+    ''' FileDO's `backup` of the source folder into the operation's own generation set. What is checked here holds for every
+    ''' run: both folders reachable, FileDO present and able to number generations. The launch and the reading of its
+    ''' `result` (generation, retiredGeneration; CLI-EVENT-STREAM 0.17 items D-F) are step P4.1, written against the option
+    ''' spelling FileDO publishes; until then a FileDO without the generation set is a wall the operation waits at.
+    ''' </summary>
+    Private Sub ExecuteBackup(op As ScheduledOperation, result As ScheduledRunResult)
+        Dim problem As SideProblem = BackupPreflight(op)
+        If problem.IsProblem Then
+            HitWall(result, BackupWallCode(op, problem))
+            Return
+        End If
+        HitWall(result, "backup-filedo-unsupported")
+    End Sub
+
+    ''' <summary>The wall a backup's preflight problem stands for, in the order the preflight checks them.</summary>
+    Private Function BackupWallCode(op As ScheduledOperation, problem As SideProblem) As String
+        Dim exe As String = services.LocateFileDo.Invoke()
+        If exe.Length = 0 Then Return "filedo-missing"
+        If Not services.FileDoHasBackupGenerations.Invoke(exe) Then Return "backup-filedo-unsupported"
+        If op.BackupSealed AndAlso services.BackupPassword.Invoke(op.Id).Length = 0 Then Return ShareSettingsTransfer.BackupNoPasswordCode
+        Dim source As String = CompanionCommand.CanonicalFolder(op.Source.Path)
+        If source.Length = 0 OrElse Not Directory.Exists(source) Then Return "source-unreachable|" & op.Source.Describe()
+        Return "destination-unreachable|" & op.Destination.Describe()
+    End Function
+
+    ''' <summary>A walled backup comes back when FileDO can number generations, the password is stored and both folders are
+    ''' there. Read-only and silent.</summary>
+    Private Function BackupPreflight(op As ScheduledOperation) As SideProblem
+        Dim exe As String = services.LocateFileDo.Invoke()
+        If exe.Length = 0 OrElse Not services.FileDoHasBackupGenerations.Invoke(exe) Then
+            Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+        End If
+        If op.BackupSealed AndAlso services.BackupPassword.Invoke(op.Id).Length = 0 Then
+            Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+        End If
+        Dim source As String = CompanionCommand.CanonicalFolder(op.Source.Path)
+        If source.Length = 0 OrElse Not Directory.Exists(source) Then Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+        Dim destination As String = CompanionCommand.CanonicalFolder(op.Destination.Path)
+        If destination.Length = 0 OrElse Not Directory.Exists(destination) Then Return New SideProblem(SideProblemKind.Unreachable, op.Destination.Describe())
+        Return SideProblem.Ok
+    End Function
 
     Private Sub Journal(op As ScheduledOperation, verb As String, source As String, destination As String, verdict As String)
         If services.ItemJournal Is Nothing Then Return
@@ -640,6 +979,12 @@ Friend NotInheritable Class ScheduledExecutor
         Dim view As New ScheduledPreview()
         Dim op As ScheduledOperation = operation.Clone()
         ScheduledValidation.Normalize(op)
+        If op.Action = ScheduledAction.FillFreeSpace OrElse op.Action = ScheduledAction.Backup Then
+            ' Nothing is listed: a fill and a backup select no files, and the editor shows its own note instead.
+            Dim refusal As Resolution = CheckDefinition(op, forRun:=False)
+            If refusal IsNot Nothing Then view.Issues = refusal.StopResult.Issues
+            Return view
+        End If
         Dim resolved As Resolution
         Try
             resolved = Resolve(op, services.Clock.Invoke(), forRun:=False, ct)
@@ -650,6 +995,10 @@ Friend NotInheritable Class ScheduledExecutor
             view.Problem = New SideProblem(SideProblemKind.Unreachable, operation.Source.Describe())
             Return view
         End Try
+        If resolved.DriveSource Then
+            view.DriveSource = True
+            Return view
+        End If
         If resolved.Stopped Then
             view.Issues = resolved.StopResult.Issues
             If resolved.StopResult.Outcome = ScheduledRunOutcome.Wall OrElse resolved.StopResult.Halt <> ScheduledHalt.None Then
@@ -683,6 +1032,8 @@ Friend NotInheritable Class ScheduledExecutor
     Friend Function Preflight(operation As ScheduledOperation) As SideProblem
         Dim op As ScheduledOperation = operation.Clone()
         ScheduledValidation.Normalize(op)
+        If op.Action = ScheduledAction.FillFreeSpace Then Return FillPreflight(op)
+        If op.Action = ScheduledAction.Backup Then Return BackupPreflight(op)
         Dim sourceOpen As ScheduledSideOpen = services.OpenSide.Invoke(op.Source)
         If sourceOpen.Problem.IsProblem Then Return sourceOpen.Problem
         Using sourceSide As IScheduledSide = sourceOpen.Side

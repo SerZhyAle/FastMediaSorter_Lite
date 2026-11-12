@@ -62,6 +62,14 @@ Public NotInheritable Class ConnectionDiagnosisMessages
     Public Shared ReadOnly LimitReached As New ConnectionDiagnosisMessage("limit-reached", ConnectionDiagnosisKind.Wire, ConnectionDiagnosisStep.Operator, False)
     Public Shared ReadOnly LimitReachedClipboard As New ConnectionDiagnosisMessage("limit-reached-clipboard", ConnectionDiagnosisKind.Wire, Nothing, False)
     Public Shared ReadOnly NotPermitted As New ConnectionDiagnosisMessage("not-permitted", ConnectionDiagnosisKind.Wire, Nothing, False)
+    ' contract-exception E-278-2 (L0278): the row is a native-surface wording of the web-binding sentence, kind wire, step `-`; held until
+    ' PROPOSAL-2026-10-30-fmsw-native-remote-admin-client.md (ask 2) is decided. The wire reason is `admin-disabled` (an admin-auth refusal).
+    Public Shared ReadOnly AdminDisabled As New ConnectionDiagnosisMessage("admin-disabled", ConnectionDiagnosisKind.Wire, Nothing, False)
+    ' DEVICE-EXCHANGE 1.12 item EP (ticket L0296): the four reasons of the application settings standard.
+    Public Shared ReadOnly NotFound As New ConnectionDiagnosisMessage("not-found", ConnectionDiagnosisKind.Wire, Nothing, False)
+    Public Shared ReadOnly InvalidPayload As New ConnectionDiagnosisMessage("invalid-payload", ConnectionDiagnosisKind.Wire, Nothing, False)
+    Public Shared ReadOnly AppIdMismatch As New ConnectionDiagnosisMessage("app-id-mismatch", ConnectionDiagnosisKind.Wire, ConnectionDiagnosisStep.Operator, False)
+    Public Shared ReadOnly VersionIncompatible As New ConnectionDiagnosisMessage("version-incompatible", ConnectionDiagnosisKind.Wire, ConnectionDiagnosisStep.Operator, False)
 
     Public Shared ReadOnly Declined As New ConnectionDiagnosisMessage("declined", ConnectionDiagnosisKind.Cast, Nothing, False)
     Public Shared ReadOnly Timeout As New ConnectionDiagnosisMessage("timeout", ConnectionDiagnosisKind.Cast, Nothing, False)
@@ -99,7 +107,8 @@ Public NotInheritable Class ConnectionDiagnosisMessages
         LimitReachedClipboard, NotPermitted, Declined, Timeout, Unsupported,
         UnreachableServer, UnreachableDevice, Unanswered, TlsFailed, CertificateChanged,
         EmptyCredential, ServerOffline, ResourceLocked, ClipboardEmpty,
-        SharePaused, E2eMissing, KeyChanged, ServerNoE2e, SealedFailed, FormatUnsupported, Refused
+        SharePaused, E2eMissing, KeyChanged, ServerNoE2e, SealedFailed, FormatUnsupported, AdminDisabled,
+        NotFound, InvalidPayload, AppIdMismatch, VersionIncompatible, Refused
     }
 
     Public Shared Function OfCode(code As String) As ConnectionDiagnosisMessage
@@ -152,6 +161,16 @@ Public NotInheritable Class ConnectionDiagnosisMessages
                 Return If(clipboardSend, LimitReachedClipboard, LimitReached)
             Case "not-permitted"
                 Return NotPermitted
+            Case "admin-disabled"
+                Return AdminDisabled
+            Case "not-found"
+                Return NotFound
+            Case "invalid-payload"
+                Return InvalidPayload
+            Case "app-id-mismatch"
+                Return AppIdMismatch
+            Case "version-incompatible"
+                Return VersionIncompatible
             Case Else
                 Return Refused
         End Select

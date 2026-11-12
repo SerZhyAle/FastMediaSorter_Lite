@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Публикация папок для Android | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Откройте папки ПК приложению для Android по локальной сети или через интернет. Пошаговая инструкция по Менеджеру общего доступа.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/publish-folders-android.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/publish-folders-android.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/publish-folders-android.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Публикация папок для Android | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Откройте папки ПК приложению для Android по локальной сети или через интернет. Пошаговая инструкция по Менеджеру общего доступа.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/publish-folders-android.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Публикация папок для Android | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Откройте папки ПК приложению для Android по локальной сети или через интернет. Пошаговая инструкция по Менеджеру общего доступа.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Публикация папок для Android | Fast Media Sorter & Sharing","description":"Откройте папки ПК приложению для Android по локальной сети или через интернет. Пошаговая инструкция по Менеджеру общего доступа.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/publish-folders-android.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr;gap:0 44px}
+  @media(min-width:760px){.steps{grid-template-columns:1fr 1fr}}
+  @media(min-width:1200px){.steps{grid-template-columns:repeat(3,1fr)}}
+  .steps li{position:relative;padding:12px 0 12px 46px;border-bottom:1px solid var(--border)}
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:12px;width:30px;height:30px;
+    display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-weight:700;font-size:14px}
+  .warn{background:var(--card);border-left:3px solid var(--gold);padding:14px 18px;border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+  .contract-icon{width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:.28em;fill:currentColor}
+  .shot{margin:.7rem 0 0}
+  .shot img{max-width:100%;height:auto;border:1px solid var(--border);border-radius:var(--radius-sm);display:block}
+  .shot [data-l]{font-size:.9rem;color:var(--text-2);margin-top:.45rem}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a>
+<div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label">
+  <a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="../../assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
+  <div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="publish-folders-android.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../publish-folders-android.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/publish-folders-android.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button>
+  <a class="btn btn-primary" href="./#get">Скачать</a>
+</nav></header>
+
+<main class="container" id="main" tabindex="-1">
+  <section class="hero">
+    <span class="eyebrow">HOW TO · Android</span>
+    <h1>
+      Как публиковать свои папки для Android
+    </h1>
+    <p class="lead">
+      Делитесь папками этого ПК с приложением FastMediaSorter на телефоне Android - по домашней сети или через интернет. Без облака и аккаунтов: телефон подключается прямо к вашему ПК по зашифрованному соединению SFTP. Раздачей занимается отдельная программа <b>Share Manager</b>, которая идёт вместе с просмотрщиком. Она ставится с типом установки <b>Полная</b> (в типе <b>Компактная</b> её нет) и работает с 64-битным просмотрщиком (<code>FastMediaSorter_LITE.exe</code>) на Windows 10 версии 1607 и новее; в 32-битном просмотрщике для Windows 7/8.1 её нет.
+    </p>
+  </section>
+
+  <div class="pill-row">
+    <span class="pill">ПК Windows + телефон Android</span>
+    <span class="pill">Одна Wi-Fi = сразу</span>
+    <span class="pill">По умолчанию с записью; «Только чтение» - по выбору</span>
+  </div>
+
+  <!-- Android app CTA -->
+  <div class="card card-bar">
+    <div>
+      <b><img class="contract-icon" src="../../assets/glyphs/device.phone.svg" alt=""> <span>Нужно приложение для телефона?</span></b>
+      <span class="muted muted-block">
+        Приложение для Android - бесплатный просмотрщик/сортировщик, который импортирует эти папки.
+      </span>
+    </div>
+    <div class="button-group">
+      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener noreferrer">Приложение для Android<span class="sr-only"> (откроется в новой вкладке)</span></a>
+      <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=com.sza.fastmediasorter" target="_blank" rel="noopener noreferrer">Google Play<span class="sr-only"> (откроется в новой вкладке)</span></a>
+    </div>
+  </div>
+
+  <!-- BEFORE YOU START: what the steps below do, said before the step that does it -->
+  <section class="section">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Прежде чем начать</span></h2>
+    </div>
+    <div class="warn">
+      <ul class="flush-list">
+        <li><b>Одно подтверждение администратора и одно правило брандмауэра.</b> В первый раз кнопка <b>Включить функции сервера..</b> один раз запрашивает у Windows права администратора (окно UAC) и добавляет правило брандмауэра Windows только для программы раздачи. Это же можно включить галочкой при установке. Пока этого не сделано, ничего не раздаётся. Отменить: <b>Настройки менеджера..</b> - Сеть - «Выключить функции сервера..».</li>
+        <li><b>Путь через интернет.</b> Когда раздача запускается, если не отмечено <b>Только локальная сеть (без доступа из интернета)</b> (<b>Настройки менеджера..</b> - Сеть; по умолчанию галочки нет), Share Manager просит роутер открыть порт (UPnP/NAT-PMP) и проверяет через внешний сервис <b>check-host.net</b>, виден ли этот порт из интернета. Отметьте её, чтобы всё оставалось внутри локальной сети.</li>
+        <li><b>Что может телефон.</b> Пока раздача включена, отмеченные папки можно читать по сети, а по умолчанию телефон может и добавлять, переименовывать и удалять в них файлы. Чтобы папка только просматривалась, выберите в <b>Редактировать</b> настоящий запрет («Недоступно для записи на уровне сервера»).</li>
+        <li><b>QR-код и файл <code>.fmscfg</code> - это ключ.</b> Они содержат автоматически созданный пароль (и PIN, если он задан) - не публикуйте их. В окне <b>Поделиться - код доступа</b> можно поставить галочку <b>Не включать пароль в файл/QR</b> и передать пароль отдельно; примет ли телефон код без пароля, зависит от версии Android-приложения. <b>Отправить по почте..</b> предупреждает получателя в письме и не оставляет копию файла на компьютере; сохранённый <code>.fmscfg</code> доступен только вашей учётной записи Windows.</li>
+        <li><b>Остановите, когда закончите.</b> Нажмите <b>Остановить раздачу</b> или выйдите из Share Manager через трей. Соединение шифруется, а телефон запоминает ключ вашего ПК при первом подключении - позднее предупреждение "ключ изменился" важно.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- STEPS -->
+  <section class="section">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Пошагово</span></h2>
+    </div>
+    <div class="card">
+      <ol class="steps">
+        <li>
+          <span>В Fast Media Sorter &amp; Sharing for Windows щёлкните правой кнопкой по строке каталога и выберите <b>Поделиться этой папкой с Android..</b>, либо откройте <b>Настройки</b> (<kbd>F2</kbd>) &rarr; <b>Сервер и ресурсы</b> &rarr; <b>Android / SFTP</b> и нажмите <b>Управление SFTP</b>. Любой из способов открывает отдельную программу <b>Share Manager</b>.</span>
+          <figure class="shot"><img src="../../assets/guides/settings-sftp.png" alt="The Android / SFTP settings page with the Manage SFTP button, the connection guide link and the Android application link" width="738" height="459" loading="lazy"><span>Настройки: кнопка <b>Управление SFTP</b> открывает Share Manager.</span></figure>
+        </li>
+        <li>
+          В первый раз Share Manager сообщает <b>Функции сервера выключены</b>: нажмите <b>Включить функции сервера..</b> и подтвердите запрос администратора (см. «Прежде чем начать»). До этого ничего не раздаётся; сам просмотрщик остаётся обычной локальной программой.
+        </li>
+        <li>
+          Share Manager откроется с уже добавленной папкой, и <b>раздача запустится</b> - на панели <b>Доступ с Android</b> будет виден адрес ПК. Добавляйте другие папки кнопкой <b><svg class="glyph" data-glyph="action.add" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>Добавить папку..</b> и отмечайте галочками только те, что должны быть видны на телефоне; кнопка <b>Редактировать</b> задаёт настоящий запрет записи, PIN, разрешённые типы медиа, папку-приёмник для копий и другое.
+        </li>
+        <li>
+          Нажмите большую кнопку <b><svg class="glyph" data-glyph="action.share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M18,16.08c-0.76,0 -1.44,0.3 -1.96,0.77L8.91,12.7c0.05,-0.23 0.09,-0.46 0.09,-0.7s-0.04,-0.47 -0.09,-0.7l7.05,-4.11c0.54,0.5 1.25,0.81 2.04,0.81 1.66,0 3,-1.34 3,-3s-1.34,-3 -3,-3 -3,1.34 -3,3c0,0.24 0.04,0.47 0.09,0.7L8.04,9.81C7.5,9.31 6.79,9 6,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3c0.79,0 1.5,-0.31 2.04,-0.81l7.12,4.16c-0.05,0.21 -0.08,0.43 -0.08,0.65 0,1.61 1.31,2.92 2.92,2.92 1.61,0 2.92,-1.31 2.92,-2.92s-1.31,-2.92 -2.92,-2.92z" fill="currentColor"/></svg>Поделиться</b>. В окне <b>Поделиться - код доступа</b> появятся <b>QR-код</b> и кнопки <b>Показать QR-код</b>, <b>Сохранить файл .fmscfg..</b>, <b>Отправить по почте..</b> и <b>Скопировать логин/пароль</b>. (Если вы начали с правого клика по папке, это окно откроется само.)
+        </li>
+        <li>
+          На телефоне откройте FastMediaSorter &rarr; <b>Добавить ресурс</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Импорт из компаньона</b>, затем отсканируйте QR-код (или откройте сохранённый файл <code>.fmscfg</code>).
+        </li>
+        <li>
+          Готово - общие папки открываются на телефоне. Раздача продолжает работать из трея, даже когда просмотрщик закрыт; закрытие окна Share Manager просто сворачивает его в трей, пока идёт раздача.
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- LAN vs INTERNET -->
+  <section class="section">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Локальная сеть или интернет</span></h2>
+      <p class="section-desc">
+        Один <b>QR-код / один файл <code>.fmscfg</code></b> содержит все способы связаться с ПК: локальную Wi-Fi, IPv6 и адрес из интернета. Телефон пробует их все и подключается по тому, что доступен, предпочитая быстрый локальный. <b>Одно сканирование работает и дома, и вне дома</b> - выбирать "сеть" заранее больше не нужно.
+      </p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3 class="flush-top"><img class="contract-icon" src="../../assets/glyphs/system.wifi.svg" alt=""> <span>Локальная сеть</span></h3>
+        <p>Когда телефон в той же Wi-Fi, что и ПК, всё работает сразу - настраивать нечего. Это вариант по умолчанию и самый приватный.</p>
+      </div>
+      <div class="card">
+        <h3 class="flush-top"><img class="contract-icon" src="../../assets/glyphs/system.internet.svg" alt=""> <span>Интернет</span></h3>
+        <p>Когда раздача запускается, Share Manager пробует открыть порт автоматически (UPnP/NAT-PMP), а затем <b>проверяет снаружи, действительно ли он отвечает</b> (через check-host.net). Если отмечено <b>Только локальная сеть (без доступа из интернета)</b>, ни то ни другое не выполняется. Строка <b>Через интернет</b> честно показывает адрес - или сообщает, что вы за CGNAT. Если порт не открыт, откройте <b>Как настроить доступ через интернет</b> - инструкцию проброса порта под ваш роутер, и <b>Проверить доступ из интернета</b> для проверки. Если у ПК есть <b>IPv6</b>, его адрес добавляется тоже и работает даже за CGNAT.</p>
+        <p class="flush-bottom"><span>Пошаговые инструкции проброса портов по моделям: </span>
+          <a href="https://portforward.com/router.htm" target="_blank" rel="noopener noreferrer">portforward.com<span class="sr-only"> (откроется в новой вкладке)</span></a>.</p>
+      </div>
+      <div class="card">
+        <h3 class="flush-top"><img class="contract-icon" src="../../assets/glyphs/action.search.svg" alt=""> <span>Находит ваш ПК сам</span></h3>
+        <p class="flush-bottom">В той же Wi-Fi телефон дополнительно находит ПК по отпечатку его ключа. Поэтому даже если локальный адрес ПК изменился после сканирования кода (новая аренда, переподключение), телефон переподключится сам - пересканировать не нужно.</p>
+      </div>
+    </div>
+    <p class="lead-narrow lead-small">
+      <span>Поддержка производителей:</span>
+      <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener noreferrer">TP-Link<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://www.asus.com/support/" target="_blank" rel="noopener noreferrer">ASUS<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://help.keenetic.com/" target="_blank" rel="noopener noreferrer">Keenetic<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://support.dlink.com/" target="_blank" rel="noopener noreferrer">D-Link<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://www.netgear.com/support/" target="_blank" rel="noopener noreferrer">NETGEAR<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener noreferrer">Huawei<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://www.mi.com/global/service/" target="_blank" rel="noopener noreferrer">Xiaomi<span class="sr-only"> (откроется в новой вкладке)</span></a> ·
+      <a href="https://help.mikrotik.com/" target="_blank" rel="noopener noreferrer">MikroTik<span class="sr-only"> (откроется в новой вкладке)</span></a>
+    </p>
+  </section>
+
+  <!-- OTHER WAYS TO CONNECT: the shared portal explains them; this page keeps only the way it documents -->
+  <section class="section" id="schemes">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Другие способы соединить ваши устройства</span></h2>
+      <p>Эта страница об одном способе: ваш ПК раздаёт папки, а телефон подключается к нему - дома или через ваш роутер. Портал <i>Обмен медиа между вашими устройствами</i> ставит рядом все способы: что нужно каждому, что он делает и какая программа в нём участвует.</p>
+    </div>
+    <div class="card">
+      <ul class="flush-list">
+        <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-ru.html" target="_blank" rel="noopener noreferrer">Стартовая страница портала<span class="sr-only"> (откроется в новой вкладке)</span></a> - все способы и что делает каждая программа.</li>
+        <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-ru.html" target="_blank" rel="noopener noreferrer">Домашняя сеть<span class="sr-only"> (откроется в новой вкладке)</span></a> - ваш роутер и никакого сервера посередине, способ, который настраивает эта страница.</li>
+        <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener noreferrer">Серверы на Windows<span class="sr-only"> (откроется в новой вкладке)</span></a> - какая программа Windows раздаёт ваши папки и чем отличается серверная редакция, которая работает круглосуточно.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- TROUBLESHOOT -->
+  <section class="section">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Если телефон не подключается</span></h2>
+    </div>
+    <div class="card">
+      <ul class="flush-list">
+        <li><b>Одна сеть?</b> Локальный путь работает только когда телефон в той же Wi-Fi, что и ПК.</li>
+        <li><b>Раздача запущена?</b> Кнопка запуска и остановки должна показывать <b>Остановить раздачу</b>. Откройте Share Manager снова и проверьте показанный адрес и статус.</li>
+        <li><b>Брандмауэр:</b> порт SFTP должен быть разрешён в брандмауэре Windows. Правило добавляет <b>Включить функции сервера..</b> (или галочка в установщике) - см. «Прежде чем начать».</li>
+        <li><b>CGNAT:</b> некоторые провайдеры делят один публичный адрес между многими - проброс портов не поможет. Пользуйтесь локальной сетью, адресом <b>IPv6</b> (если он есть с обеих сторон), VPN/ретранслятором или попросите публичный "белый" IP.</li>
+        <li><b>IP сменился:</b> домашние адреса меняются. В той же Wi-Fi телефон находит ПК сам; из интернета - откройте Share Manager снова, чтобы увидеть текущий адрес, или настройте Dynamic DNS на роутере.</li>
+      </ul>
+    </div>
+  </section>
+
+
+  <!-- RELATED FUNCTIONS: one owner each, one sentence and a link here -->
+  <section class="section">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Рядом по теме</span></h2>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3 class="flush-top">Доступ круглосуточно</h3>
+        <p class="flush-bottom">Раздача выше работает, пока вы вошли в систему и Share Manager запущен. Серверная редакция поднимает ту же раздачу как службу Windows, которая стартует с загрузкой и работает без входа в систему - тот же SFTP, та же привязка по QR, то же приложение Android. <a href="server.html">Серверная редакция (всегда доступна)</a>.</p>
+      </div>
+      <div class="card">
+        <h3 class="flush-top">Диски FileDO</h3>
+        <p class="flush-bottom">Виртуальный диск FileDO <code>.fdd</code> раздаётся через тот же Share Manager и ту же привязку по QR или <code>.fmscfg</code>. <a href="how-to-filedo-disks.html">Общий доступ к виртуальным дискам FileDO .fdd</a>.</p>
+      </div>
+      <div class="card">
+        <h3 class="flush-top">В другую сторону</h3>
+        <p class="flush-bottom">Чтобы открыть сервер, NAS или общую папку другого ПК в самом просмотрщике, см. <a href="how-to-resources.html">Открыть сервер или сетевую папку как обычную папку</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span>Другие инструкции HOW TO</span></h2>
+    </div>
+    <div class="tools-grid">
+      <a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+      <a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавиши, масштаб и полный экран</span></a>
+      <a href="how-to-setup.html"><b>HOW TO · Setup</b><span>Просмотрщик по умолчанию, язык, правила для файлов</span></a>
+      <a href="how-to-ocr.html"><b>HOW TO · OCR</b><span>Распознать и перевести текст на картинке</span></a>
+      <a href="how-to-editor.html"><b>HOW TO · Editor</b><span>Порисовать на фото и обрезать его</span></a>
+      <a href="how-to-archives.html"><b>HOW TO · Archives</b><span>Читать ZIP или CBZ как папку</span></a>
+      <a href="how-to-resources.html"><b>HOW TO · Resources</b><span>Открыть сервер или сетевую папку как обычную папку</span></a>
+      <a href="how-to-filedo-disks.html"><b>HOW TO · FileDO</b><span>Общий доступ к дискам FileDO .fdd</span></a>
+      <a href="server.html"><b>SERVER · Always-on</b><span>Раздача папок с загрузки, без входа в систему</span></a>
+      <a href="topics.html"><b>TOPICS</b><span>Все страницы сайта по темам</span></a>
+      <a href="glossary.html"><b>GLOSSARY</b><span>Что значат термины сайта</span></a>
+    </div>
+  </section>
+<section id="sharing-settings-windows">
+<h2>Где находятся настройки общего доступа</h2>
+<p>Настройки находятся в двух окнах. В настройках менеджера есть группа «Общий доступ SFTP» - порт SFTP, локальная сеть и страница хостинга; она видна, пока установлен этот компонент, - рядом с общими параметрами, удалённой учётной записью, публикацией и расписаниями. Установленный локальный сервер обмена настраивается в отдельном окне. Ссылка слева внизу открывает второе окно, сохраняя текущее. Открытие настроек не запускает сервер. В прежних сборках общий доступ SFTP был в отдельном окне.</p>
+<p><a href="../../docs/help/ru/sftp-settings.html">SFTP</a> · <a href="../../docs/help/ru/share-settings.html">Справка настроек менеджера</a></p>
+</section>
+</main>
+<footer class="site-footer"><div class="container">
+  <div class="footer-bottom">
+    <span>© 2026 Serhii Zhyhunenko</span>
+    <span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="https://sza.od.ua">sza.od.ua</a> · <a href="https://github.com/SerZhyAle">GitHub</a> · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
+  </div>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+
+<button class="to-top" id="toTop" aria-label="Scroll to top"><svg class="glyph" data-glyph="nav.scroll-top" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M8,11h3v10h2V11h3l-4,-4 -4,4zM4,3v2h16V3H4z" fill="currentColor"/></svg></button>
+
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+<script>
+(function(){
+  var toTop=document.getElementById('toTop');
+  function onScroll(){ if(window.scrollY>600) toTop.classList.add('show'); else toTop.classList.remove('show'); }
+  window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+  if(toTop) toTop.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+})();
+</script>
+</body>
+</html>

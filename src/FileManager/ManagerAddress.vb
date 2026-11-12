@@ -114,7 +114,7 @@ Friend Module ManagerAddress
 
         ' The configured resource that owns the path wins over the bare drive/share: it carries the connection (SMB) and the root.
         For Each r As ResourceDescriptor In list
-            If r.Kind = ResourceKind.Sftp Then Continue For
+            If r.Kind = ResourceKind.Sftp OrElse r.Kind = ResourceKind.Drive Then Continue For
             Dim place As ManagerPlace = ManagerPlace.ForResource(r)
             If place.RootPath.Length > 0 AndAlso ManagerPathRules.Contains(place.Kind, place.RootPath, local) Then
                 Return New ManagerAddressResult(ManagerAddressKind.Ok, New ManagerLocation(place, local))

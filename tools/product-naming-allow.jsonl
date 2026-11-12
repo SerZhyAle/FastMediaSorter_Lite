@@ -4,7 +4,7 @@
 {"path":"tools/product-naming-allow.jsonl","pattern":".","reason":"The allow-list quotes the forms it permits."}
 {"path":"docs/guides/PRODUCT_NAMING.md","pattern":"LITE|Lite|for Windows|Exchange Server","reason":"The standard defines the forbidden forms and the frozen identifiers that still carry them."}
 {"path":"CHANGELOG.md","pattern":"FastMediaSorter LITE|for Windows","reason":"Past entries are history, and the Unreleased entry names the old product and the frozen package name once."}
-{"path":"whats-new.html","pattern":"FastMediaSorter LITE|Fast Media Sorter for Windows","reason":"Generated from the released sections of CHANGELOG.md (Build-SitePages.ps1, ticket 207): past entries are history and keep the name they were written with, the same allowance CHANGELOG.md has; an entry may also state the frozen Add/Remove Programs and winget name."}
+{"path":"*whats-new.html","pattern":"FastMediaSorter LITE|Fast Media Sorter for Windows","reason":"Generated from the released sections of CHANGELOG.md (Build-SitePages.ps1, ticket 207): past entries are history and keep the name they were written with, the same allowance CHANGELOG.md has; an entry may also state the frozen Add/Remove Programs and winget name."}
 {"path":"README.md","pattern":"FastMediaSorter LITE","reason":"States once that Add/Remove Programs and winget keep the frozen package name FastMediaSorter LITE."}
 {"path":"README_RU.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Russian."}
 {"path":"README_UK.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Ukrainian."}
@@ -22,6 +22,8 @@
 {"path":"lang/*/trust.html","pattern":"FastMediaSorter LITE","reason":"The same sentence in the 12 translations; the frozen Add/Remove Programs and winget name stays Latin and identical in every language."}
 {"path":"tools/trust-copy.json","pattern":"FastMediaSorter LITE","reason":"Copy source of the trust-page sentences above, in the same 13-language form."}
 {"path":"glossary.html","pattern":"FastMediaSorter LITE","reason":"States that Add/Remove Programs and winget still show the earlier name, which is the frozen update-correlation string."}
+{"path":"lang/*/glossary.html","pattern":"FastMediaSorter LITE","reason":"The same glossary sentence on the Russian and Ukrainian glossary pages (ticket 207 F16); the frozen Add/Remove Programs and winget name stays Latin and identical."}
+{"path":"tools/site-pages/glossary.src.html","pattern":"FastMediaSorter LITE","reason":"Source of the three glossary pages above (en, ru, ua blocks), rendered by tools/Build-SitePages.ps1."}
 {"path":"publishing/msix/AppxManifest.xml","pattern":"FastMediaSorter LITE","reason":"The Store name is frozen (the reserved name is the update anchor); owner decision 2026-10-03: only the inscriptions change."}
 {"path":"publishing/msix/README.md","pattern":"FastMediaSorter LITE","reason":"Documents the frozen reserved Store name and the Partner Center step for it."}
 {"path":"publishing/store/listingData.csv","pattern":"FastMediaSorter LITE","reason":"The frozen Store listing title and the true 'published as' sentence in the descriptions."}

@@ -219,6 +219,12 @@ Friend NotInheritable Class HtmlRestrictedHost
         Await view.CoreWebView2.ExecuteScriptAsync("window.scrollBy({left:" & If(forward, "1", "-1") & "*innerWidth,top:" & If(forward, "1", "-1") & "*innerHeight*0.85,behavior:'instant'})")
     End Function
 
+    ''' <summary>A wheel notch's worth of scrolling (the document panel's share of the wheel, 280), vertical only.</summary>
+    Public Async Function ScrollByAsync(pixels As Integer) As Task
+        If Not ready OrElse pixels = 0 Then Return
+        Await view.CoreWebView2.ExecuteScriptAsync("window.scrollBy({left:0,top:" & pixels.ToString(Globalization.CultureInfo.InvariantCulture) & ",behavior:'instant'})")
+    End Function
+
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing Then
             lifetime.Cancel()

@@ -92,6 +92,9 @@ Friend NotInheritable Class ChromeSurface
         End Set
     End Property
     Private pinButton As ChromeItem
+    ''' <summary>Asked before an item's action runs, from the mouse and from the keyboard; False: the action does not run now.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property ActionGate As Func(Of ChromeItem, Action, Boolean)
     ''' <summary>The move handle of a movable floating panel (L0281 T-3a), or Nothing for a panel that cannot be moved
     ''' (the default: such a panel is laid out exactly as it always was). A <see cref="ChromeMetrics.MinTarget"/>-wide
     ''' slot beside the corner pin - on the row's side of it, in the corner itself when the panel has no pin - laid out
@@ -1289,6 +1292,7 @@ Friend NotInheritable Class ChromeSurface
     Private Sub RunAction(item As ChromeItem, act As Action)
         If act Is Nothing Then Return
         Try
+            If ActionGate IsNot Nothing AndAlso Not ActionGate(item, act) Then Return
             act()
         Catch ex As Exception
             AppFileLogger.LogException("Chrome item " & item.Id, ex)

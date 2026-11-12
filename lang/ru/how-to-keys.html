@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Клавиши, масштаб, полный экран | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Все клавиши и действия мыши в Fast Media Sorter &amp; Sharing for Windows: переходы, сортировка, масштаб, полный экран, слайдшоу и видео.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-keys.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-keys.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-keys.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Клавиши, масштаб, полный экран | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Все клавиши и действия мыши в Fast Media Sorter &amp; Sharing for Windows: переходы, сортировка, масштаб, полный экран, слайдшоу и видео.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-keys.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Клавиши, масштаб, полный экран | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Все клавиши и действия мыши в Fast Media Sorter &amp; Sharing for Windows: переходы, сортировка, масштаб, полный экран, слайдшоу и видео.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Клавиши, масштаб, полный экран | Fast Media Sorter & Sharing","description":"Все клавиши и действия мыши в Fast Media Sorter & Sharing for Windows: переходы, сортировка, масштаб, полный экран, слайдшоу и видео.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-keys.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.keys{display:grid;gap:1rem}@media(min-width:860px){.keys{grid-template-columns:1fr 1fr}}.keyset{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.3rem}.keyset h2{font-size:1.1rem;margin:0 0 .7rem}.keyset table{width:100%;border-collapse:collapse}.keyset td{padding:.3rem 0;vertical-align:top;color:var(--text-2);border-top:1px solid var(--border)}.keyset tr:first-child td{border-top:0}.keyset td:first-child{width:11.5rem;padding-right:.8rem;white-space:nowrap;color:var(--text)}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="how-to-keys.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-keys.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/how-to-keys.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="./#get">Скачать</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · KEYS &amp; VIEW</span><h1>Все клавиши и как показать картинку во весь экран</h1><p class="lead">Программа построена на одиночных клавишах, поэтому папку можно разобрать одной рукой. Запоминать всё сразу не нужно - <kbd>F1</kbd> в любой момент покажет краткую версию прямо в программе.</p></section>
+<section class="section keys">
+
+<div class="keyset"><h2>Перемещение по папке</h2><table>
+<tr><td><kbd>Space</kbd> <kbd>→</kbd> <kbd>PgDn</kbd></td><td>Следующий файл</td></tr>
+<tr><td><kbd>P</kbd> <kbd>←</kbd> <kbd>PgUp</kbd> <kbd>Backspace</kbd></td><td>Предыдущий файл</td></tr>
+<tr><td><kbd>Space</kbd> / <kbd>←</kbd> / <kbd>→</kbd></td><td>Пока играет видео или звуковая дорожка: пауза или продолжение и перемотка на 10 секунд - только в 64-битном просмотрщике</td></tr>
+<tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>На 10 файлов назад или вперёд</td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td><td>На 100 файлов назад или вперёд</td></tr>
+<tr><td><kbd>H</kbd> / <kbd>E</kbd></td><td>Первый файл / последний файл</td></tr>
+<tr><td><kbd>N</kbd></td><td>Перейти к файлу по номеру</td></tr>
+<tr><td><kbd>F4</kbd></td><td>Выбрать файл из списка</td></tr>
+<tr><td><kbd>Y</kbd></td><td>Случайный файл из папки</td></tr>
+</table></div>
+
+<div class="keyset"><h2>Разбор текущего файла</h2><table>
+<tr><td><kbd>1</kbd>..<kbd>9</kbd>, <kbd>0</kbd></td><td>Переместить в папку-получатель под этим номером</td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>1</kbd>..<kbd>0</kbd></td><td>Скопировать в ту же папку - только цифры верхнего ряда - только в 64-битном просмотрщике</td></tr>
+<tr><td><kbd>Del</kbd> or <kbd>D</kbd></td><td>В Корзину</td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>Del</kbd></td><td>Удалить насовсем, мимо Корзины</td></tr>
+<tr><td><kbd>U</kbd></td><td>Отменить последние операции</td></tr>
+<tr><td><kbd>F6</kbd></td><td>Переименовать файл</td></tr>
+</table></div>
+
+<div class="keyset"><h2>Рассмотреть подробнее</h2><table>
+<tr><td><span>серый</span> <kbd>+</kbd> / <kbd>−</kbd></td><td>Приблизить и отдалить от курсора мыши - только в 64-битном просмотрщике</td></tr>
+<tr><td><span>серый</span> <kbd>/</kbd></td><td>Вписать картинку в окно - только в 64-битном просмотрщике</td></tr>
+<tr><td><span>серый</span> <kbd>*</kbd></td><td>Показать в масштабе 100% - только в 64-битном просмотрщике</td></tr>
+<tr><td>Колесо мыши</td><td>По умолчанию листает файлы; <b>Масштабирование колёсиком</b> (Настройки → Изображения / Основные настройки) переключает его на масштаб - только в 64-битном просмотрщике</td></tr>
+<tr><td><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></td><td>Повернуть показ по часовой / против часовой</td></tr>
+<tr><td><kbd>T</kbd></td><td>Распознать и перевести текст, когда включён OCR</td></tr>
+</table></div>
+
+<div class="keyset"><h2>Во весь экран</h2><table>
+<tr><td><kbd>F7</kbd></td><td>Полный экран - панель инструментов остаётся поверх картинки; в 64-битном просмотрщике то же делает <kbd>F</kbd></td></tr>
+<tr><td><kbd>F11</kbd></td><td>Только картинка - совсем без панели</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Выйти из полного экрана; повторно - закрыть программу</td></tr>
+<tr><td><kbd>S</kbd></td><td>Слайдшоу; повторное нажатие сокращает интервал</td></tr>
+<tr><td><kbd>I</kbd> or <kbd>F5</kbd></td><td>Слайдшоу в случайном порядке</td></tr>
+<tr><td><kbd>F3</kbd></td><td>Панель эскизов папки; в 64-битном просмотрщике её открывает и <kbd>G</kbd></td></tr>
+</table></div>
+
+<div class="keyset"><h2>Видео</h2><table>
+<tr><td>Клик по картинке</td><td>Пауза и продолжение</td></tr>
+<tr><td>Правая кнопка мыши</td><td>Меню всех действий над видео</td></tr>
+<tr><td><kbd>A</kbd></td><td>Следующая звуковая дорожка - только в 64-битном просмотрщике</td></tr>
+<tr><td><kbd>V</kbd></td><td>Следующие субтитры - только в 64-битном просмотрщике</td></tr>
+</table></div>
+
+<div class="keyset"><h2>Окна и справка</h2><table>
+<tr><td><kbd>F1</kbd></td><td>Краткая справка поверх картинки</td></tr>
+<tr><td><kbd>F2</kbd></td><td>Настройки</td></tr>
+<tr><td>Средняя кнопка мыши</td><td>По картинке: меню всех действий - поворот, масштаб, правка, переименование, перенос, удаление - только в 64-битном просмотрщике</td></tr>
+</table></div>
+
+</section>
+<section class="section two"><div class="callout"><b>Сделайте клавиши своими</b><p>В 64-битной программе (Windows 10 1607+; в 32-битной резервной сборке этого нет) <kbd>F2</kbd> → <b><svg class="glyph" data-glyph="content.folder" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10,4H4c-1.1,0 -1.99,0.9 -1.99,2L2,18c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V8c0,-1.1 -0.9,-2 -2,-2h-8l-2,-2z" fill="currentColor"/></svg>Файлы</b> → <b>Клавиши и ассоциации</b> → <b>Сочетания клавиш</b> позволяет переназначить действия на удобные вам клавиши. Системные сочетания, <kbd>F11</kbd> и <kbd>Esc</kbd> остаются за программой.</p></div><div class="callout"><b>Чего нет в 32-битной сборке</b><p>Масштаб на серых клавишах, копирование по <kbd>Shift</kbd>+цифра, клавиши дорожек и субтитров, меню мыши и редактор сочетаний есть только в 64-битной сборке (Windows 10 1607+, включая 11). Сборка для Windows 7 и 8.1 сохраняет исторические клавиши, и её собственная справка <kbd>F1</kbd> не обещает лишнего.</p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-setup.html"><b>HOW TO · Setup</b><span>Просмотрщик по умолчанию, язык, настройки</span></a>
+<a href="how-to-editor.html"><b>HOW TO · Editor</b><span>Рисование на фото и сохранение</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Все страницы сайта по темам</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Что значат термины сайта</span></a>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

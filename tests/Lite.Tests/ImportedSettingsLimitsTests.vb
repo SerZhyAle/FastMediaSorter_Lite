@@ -218,7 +218,9 @@ Public Class ImportedSettingsLimitsTests
             New ChoiceSpec("TextTheme", "system", "system", "light", "dark", "sepia", "black"),
             New ChoiceSpec("TextMarkdownPresentation", "source", "source", "rendered"),
             New ChoiceSpec("TextTranslationScope", "selection_or_buffer", "selection_or_buffer", "file"),
-            New ChoiceSpec("DocumentProcessingMode", "browser", "browser", "convert", "local")
+            New ChoiceSpec("DocumentProcessingMode", "browser", "browser", "convert", "local"),
+            New ChoiceSpec("DocumentOcrMode", "auto", "auto", "force"),
+            New ChoiceSpec("DocumentResultDestination", "browser", "browser", "viewer")
         }
     End Function
 
@@ -308,7 +310,10 @@ Public Class ImportedSettingsLimitsTests
             New NumericSpec("TextReadWindowMb", 1, 16),
             New NumericSpec("TextEditingMaxMb", 1, 100),
             New NumericSpec("TextRecoveryIntervalSeconds", 10, 300),
-            New NumericSpec("TextBackupVersions", 1, 10)
+            New NumericSpec("TextBackupVersions", 1, 10),
+            New NumericSpec("DocumentJobTimeoutMinutes", 1, 240),
+            New NumericSpec("DocumentResultCacheMb", 128, 8192),
+            New NumericSpec("DocumentResultRetentionDays", 1, 90)
         }
     End Function
 
@@ -501,7 +506,7 @@ Public Class ImportedSettingsLimitsTests
             "IncludedExtensions", "DocumentExtensions", "OtherExtensions", "PreferredAudioLanguage", "PreferredSubtitleLanguage",
             "CustomHotkeysJson", "FolderZoomHistory", "VideoPositionHistory", "DocumentPageHistory", "FileManagerPlaceSorts",
             "DocumentBookmarks", "DocumentAppearanceHistory", "DocumentTtsVoice", "EpubFontFamily", "HtmlFontFamily",
-            "TextFontFamilyProportional", "TextFontFamilyMonospace", "DocumentConverterLocation",
+            "TextFontFamilyProportional", "TextFontFamilyMonospace", "DocumentConverterLocation", "DocumentOcrLanguages", "DocumentSourceLanguage", "DocumentTargetLanguage", "DocumentLocalModel",
             "ChromeRow1Place", "ChromeRow2Place", "ChromeStatusPlace", "ChromeWindowControlsPlace", "ChromeTransportPlace",
             "RecipientsOverlayPlace"}   ' L0281 T-6: the recipients table's place on the shared model (a free-form corner:dx,dy text like the panels')
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
@@ -546,7 +551,7 @@ Public Class ImportedSettingsLimitsTests
             "HtmlViewerEnabled", "HtmlOnlinePagesEnabled", "HtmlWrapWideContent", "HtmlRememberPosition", "HtmlRememberAppearance", "HtmlFindCase", "HtmlFindWholeWord",
             "FullTextReaderEnabled", "TextEditingEnabled", "TextTranslationEnabled", "TextWrap", "TextLineNumbers", "TextWhitespace", "TextStatusBar",
             "TextRememberEncoding", "TextRememberPosition", "TextSearchCase", "TextSearchWholeWord", "TextRegexSearch", "TextSyntaxHighlighting",
-            "TextRecoveryAutosave", "TextBackupOnSave", "DocumentConverterEnabled"}
+            "TextRecoveryAutosave", "TextBackupOnSave", "DocumentConverterEnabled", "DocumentOpenResultAutomatically", "DocumentReuseResults", "DocumentKeepCompletedResults"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Boolean)).
                                              Select(Function(prop) prop.Name))
@@ -621,7 +626,10 @@ Public Class ImportedSettingsLimitsTests
             .TextReadWindowMb = 8, .TextEditingMaxMb = 32, .TextSyntaxHighlighting = False, .TextMarkdownPresentation = "rendered",
             .TextRecoveryAutosave = False, .TextRecoveryIntervalSeconds = 60, .TextBackupOnSave = False, .TextBackupVersions = 3,
             .TextTranslationScope = "file",
-            .DocumentConverterEnabled = True, .DocumentProcessingMode = "local", .DocumentConverterLocation = "C:\Tools\doc-html-translate.exe"}
+            .DocumentConverterEnabled = True, .DocumentProcessingMode = "local", .DocumentConverterLocation = "C:\Tools\doc-html-translate.exe",
+            .DocumentOpenResultAutomatically = False, .DocumentOcrMode = "force", .DocumentOcrLanguages = "rus+eng", .DocumentSourceLanguage = "en",
+            .DocumentTargetLanguage = "uk", .DocumentLocalModel = "llama3.1:8b", .DocumentJobTimeoutMinutes = 90, .DocumentResultCacheMb = 2048,
+            .DocumentResultRetentionDays = 30, .DocumentReuseResults = False, .DocumentResultDestination = "viewer", .DocumentKeepCompletedResults = True}
         p.DocumentBookmarks = System.Text.Json.JsonSerializer.Serialize(New DocumentBookmark() {
             New DocumentBookmark With {.Identity = New DocumentIdentity With {.Path = "book.pdf", .Length = 1}, .Position = New DocumentReadingPosition With {.PageNumber = 4}, .Label = "chapter"}})
         p.DocumentAppearanceHistory = System.Text.Json.JsonSerializer.Serialize(New ModernViewerPreferences.DocumentAppearanceEntry() {

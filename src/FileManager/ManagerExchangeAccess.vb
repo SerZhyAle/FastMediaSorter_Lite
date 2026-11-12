@@ -55,6 +55,7 @@ Friend Module ManagerExchangeAccess
         If Not record.IsSupportedKind OrElse Not record.CanAuthorize Then Throw New ManagerExchangeException(ManagerExchangeAvailability.Unsupported)
         If record.IsProtected Then Throw New ManagerExchangeException(ManagerExchangeAvailability.Locked)
         Dim device As ExchangeDeviceRecord = snapshot.Devices.FirstOrDefault(Function(d) d.DeviceId = place.ExchangeDeviceId)
+        If device IsNot Nothing AndAlso device.IsSharePaused Then Throw New ManagerExchangeException(ManagerExchangeAvailability.SharePaused)
         If device Is Nothing OrElse Not device.IsOnline OrElse record.Presence <> ExchangeWire.PresenceOnline Then Throw New ManagerExchangeException(ManagerExchangeAvailability.Offline)
         If record.HostKeyFingerprint.Length > 0 AndAlso record.HostKeyFingerprint <> descriptor.PinnedFingerprint Then Throw New ManagerExchangeException(ManagerExchangeAvailability.Removed)
         ' Clear metadata, when supplied, is used only to detect a changed root, never to replace access.

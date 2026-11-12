@@ -319,6 +319,57 @@ Public Class UiSizingTests
         Assert.Equal(1.0F, UiSizing.TextScaleFromPercent(Integer.MinValue))
     End Sub
 
+    ' --- the text size composed into a window (ticket 279, T-2) ---------------------------------
+
+    <Fact>
+    Public Sub The_ordinary_text_size_leaves_the_96_dpi_layout_base_and_the_font_untouched()
+        Assert.Equal(96.0F, UiSizing.LayoutBaseDpi(1.0F))
+        Assert.Equal(8.25F, UiSizing.TextPoints(8.25F, 1.0F))
+        For Each bad As Single In Garbage
+            Assert.Equal(96.0F, UiSizing.LayoutBaseDpi(bad))
+            Assert.Equal(9.0F, UiSizing.TextPoints(9.0F, bad))
+        Next
+        Assert.Equal(96.0F, UiSizing.LayoutBaseDpi(0.5F))
+        Assert.Equal(9.0F, UiSizing.TextPoints(9.0F, 0.5F))
+    End Sub
+
+    <Theory>
+    <InlineData(1.25F)>
+    <InlineData(1.5F)>
+    <InlineData(2.0F)>
+    <InlineData(2.25F)>
+    Public Sub A_text_enlargement_grows_the_scaling_factor_of_every_display_by_exactly_that_factor(text As Single)
+        ' WinForms scales a 96-dpi layout by DeviceDpi / AutoScaleDimensions, so the base is what carries the text factor.
+        For Each dpi As Integer In New Integer() {96, 120, 144, 168, 192}
+            Dim withText As Double = dpi / CDbl(UiSizing.LayoutBaseDpi(text))
+            Assert.InRange(withText, dpi / 96.0R * text - 0.0001R, dpi / 96.0R * text + 0.0001R)
+        Next
+        Assert.Equal(CDbl(9.0F * text), CDbl(UiSizing.TextPoints(9.0F, text)), 3)
+    End Sub
+
+    <Fact>
+    Public Sub The_text_enlargement_is_bounded_at_the_maximum_and_the_current_factor_is_always_in_range()
+        Assert.Equal(CDbl(96.0F / UiSizing.MaxTextFactor), CDbl(UiSizing.LayoutBaseDpi(10.0F)), 3)
+        Assert.Equal(CDbl(9.0F * UiSizing.MaxTextFactor), CDbl(UiSizing.TextPoints(9.0F, 10.0F)), 3)
+        Assert.InRange(UiSizing.CurrentTextFactor(), 1.0F, UiSizing.MaxTextFactor)
+    End Sub
+
+    <Fact>
+    Public Sub A_hit_target_takes_the_interface_factor_only_and_never_a_text_factor()
+        ' UI-SIZING section 2 rules 3 and 4: the text factor enters the layout through the window's scaling base
+        ' (LayoutBaseDpi), so the target resolver must stay a function of profile, density and interface factor.
+        Dim target As System.Reflection.MethodInfo = GetType(UiSizing).GetMethod("TargetPx")
+        Assert.NotNull(target)
+        Dim parameters As System.Reflection.ParameterInfo() = target.GetParameters()
+        Assert.Equal(3, parameters.Length)
+        Assert.DoesNotContain(parameters, Function(p) p.Name.IndexOf("text", StringComparison.OrdinalIgnoreCase) >= 0)
+        For Each profile As UiInputProfile In Profiles
+            For Each density As UiDensity In Densities
+                Assert.Equal(UiSizing.Tokens(profile, density).Target, UiSizing.TargetPx(profile, density, 1.0F))
+            Next
+        Next
+    End Sub
+
     ' --- the adopters and the chrome are held to the table --------------------------------------
 
     <Fact>
@@ -346,11 +397,13 @@ Public Class UiSizingTests
     <Fact>
     Public Sub The_viewer_chrome_constants_are_pinned_to_the_table_until_the_chrome_slice_adopts_it()
         ' T-9 owns the chrome; until then these three equalities are the only coupling, and they fail loudly
-        ' when either side moves alone. UiScale.TouchPreset (44 / 28) is a known deviation from the 48 touch row.
+        ' when either side moves alone. UiScale.TouchPreset is 48 / 28 (owner decision 2026-10-30, ticket 279 T-2):
+        ' the chrome's "large targets" size reaches exactly the touch row, so no deviation is recorded.
         Dim t As UiSizeTokens = UiSizing.Tokens(UiInputProfile.Pointer, UiDensity.Ordinary)
         Assert.Equal(t.Target, ChromeMetrics.ItemHeight)
         Assert.Equal(t.GlyphTier, ChromeMetrics.GlyphSize)
         Assert.Equal(UiSizing.CompactTargetFloor, ChromeMetrics.MinTarget)
+        Assert.Equal(UiSizing.TouchTarget, UiScale.Px(ChromeMetrics.MinTarget, UiScale.TouchPreset))
     End Sub
 
 End Class

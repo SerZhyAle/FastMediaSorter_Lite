@@ -100,6 +100,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If section IsNot Nothing Then list.Add(section)
         Next
         If _secExchange IsNot Nothing Then list.Add(_secExchange)
+        If _secRemote IsNot Nothing Then list.Add(_secRemote)
         ' Scheduled file operations (ticket 222): a page of every Share Manager, after hosting and the exchange server
         ' and before Help - it is not behind the exchange component or the Share opt-in.
         If _secScheduled IsNot Nothing Then list.Add(_secScheduled)

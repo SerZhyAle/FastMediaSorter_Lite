@@ -14,6 +14,21 @@ zoom belong to the document. Original, night and sepia change page colors indepe
 theme. The contents panel follows the document's outline; Back returns to the previous linked page.
 The thumbnail panel renders pages as they become visible.
 
+## The document panel
+
+The reading commands stand on the document panel, a floating panel at the top of the window under
+the file rows, shown only while a PDF, an EPUB, an HTML page or a text is open. It hides and reveals
+like the other floating panels and keeps its place in the F10 keyboard ring; its corner pin holds it
+on screen, and the pin is off by default. The document fills the whole window and a pinned panel
+covers its top lines, as a pinned row covers a picture; the side pane (contents, search, text,
+bookmarks, thumbnails) opens below a pinned panel. For a PDF the panel carries Back, Previous page,
+the page box, Next page; the pane buttons, Add bookmark and Read aloud; Rotate, view mode, page
+colour and Reset appearance; Open with and doc-html-translate; and the line that says where the keys
+go. Press the page box to type a page number in place: Enter goes there, a number outside the
+document is pulled to its first or last page, and Escape leaves the old page. An EPUB has the same
+panel with a chapter box. When the window is narrow the last commands collect behind the » button,
+in reading order; the page box, the chapter box and the page find never do.
+
 ## Search, text and bookmarks
 
 Search the current page or the whole PDF, with optional case matching. Results name their page and
@@ -23,8 +38,8 @@ text are counted separately. Opening a scanned document starts no automatic OCR.
 
 Select native page text with the mouse, or open the Text panel for a separate text reading view. Copy
 respects PDF permissions. Text controls own their keystrokes: B, N, digits and Delete do not sort files
-while a document control has focus. Escape dismisses the document panel and returns to the canvas.
-The visible file buttons remain available.
+while a document control has focus. Escape closes an open side pane first and then returns the keys
+to the canvas. The visible file buttons remain available.
 
 Add bookmark asks for a name. Select a bookmark to jump to it, press F2 to rename it or Delete to
 remove it. Appearance reset preserves bookmarks and positions. Clear reading history is a separate

@@ -8,13 +8,13 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/",
     "lang": "en",
-    "title": "Photo & video sorting | Fast Media Sorter & Sharing",
-    "description": "Media and file manager: sort photos and videos with one key per file. Local sharing and scheduling over SFTP; your own Media Exchange Server."
+    "title": "File manager for Windows | Fast Media Sorter & Sharing",
+    "description": "Media and file manager: sort photos and videos with one key per file. Folder sharing over SFTP and scheduled file operations."
   },
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html",
     "lang": "en",
-    "title": "Publish folders for Android - Fast Media Sorter & Sharing",
+    "title": "Publish folders for Android | Fast Media Sorter & Sharing",
     "description": "Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app."
   },
   {
@@ -104,7 +104,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/",
     "lang": "ru",
-    "title": "Сортировка фото и видео | Fast Media Sorter & Sharing",
+    "title": "Файловый менеджер для Windows | Fast Media Sorter & Sharing",
     "description": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши."
   },
   {
@@ -116,7 +116,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/",
     "lang": "uk",
-    "title": "Сортування фото та відео | Fast Media Sorter & Sharing",
+    "title": "Файловий менеджер для Windows | Fast Media Sorter & Sharing",
     "description": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші."
   },
   {
@@ -128,7 +128,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/",
     "lang": "de",
-    "title": "Fotos & Videos sortieren | Fast Media Sorter & Sharing",
+    "title": "Dateimanager für Windows | Fast Media Sorter & Sharing",
     "description": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste."
   },
   {
@@ -140,7 +140,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/",
     "lang": "it",
-    "title": "Ordina foto e video | Fast Media Sorter & Sharing",
+    "title": "File manager per Windows | Fast Media Sorter & Sharing",
     "description": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto."
   },
   {
@@ -152,7 +152,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/",
     "lang": "es",
-    "title": "Ordena fotos y vídeos | Fast Media Sorter & Sharing",
+    "title": "Gestor de archivos en Windows | Fast Media Sorter & Sharing",
     "description": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla."
   },
   {
@@ -164,7 +164,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/",
     "lang": "fr",
-    "title": "Triez photos et vidéos | Fast Media Sorter & Sharing",
+    "title": "Gestion de fichiers Windows | Fast Media Sorter & Sharing",
     "description": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche."
   },
   {
@@ -176,7 +176,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/",
     "lang": "pt",
-    "title": "Organize fotos e vídeos | Fast Media Sorter & Sharing",
+    "title": "Gerenciar arquivos no Windows | Fast Media Sorter & Sharing",
     "description": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla."
   },
   {
@@ -188,7 +188,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/",
     "lang": "ar",
-    "title": "فرز الصور والفيديو | Fast Media Sorter & Sharing",
+    "title": "مدير ملفات لنظام Windows | Fast Media Sorter & Sharing",
     "description": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد."
   },
   {
@@ -200,7 +200,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/",
     "lang": "hi",
-    "title": "फ़ोटो और वीडियो छाँटें | Fast Media Sorter & Sharing",
+    "title": "Windows के लिए फ़ाइल मैनेजर | Fast Media Sorter & Sharing",
     "description": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।"
   },
   {
@@ -212,7 +212,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/",
     "lang": "bn",
-    "title": "ছবি ও ভিডিও সাজান | Fast Media Sorter & Sharing",
+    "title": "Windows-এর জন্য ফাইল ম্যানেজার | Fast Media Sorter & Sharing",
     "description": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।"
   },
   {
@@ -224,7 +224,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/",
     "lang": "ur",
-    "title": "تصاویر اور ویڈیو ترتیب دیں | Fast Media Sorter & Sharing",
+    "title": "Windows کے لیے فائل مینیجر | Fast Media Sorter & Sharing",
     "description": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔"
   },
   {
@@ -236,7 +236,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/",
     "lang": "zh",
-    "title": "整理照片和视频 | Fast Media Sorter & Sharing",
+    "title": "Windows 文件管理器 | Fast Media Sorter & Sharing",
     "description": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。"
   },
   {
@@ -244,5 +244,185 @@
     "lang": "zh",
     "title": "为什么 Windows 会对这个下载发出警告",
     "description": "Fast Media Sorter & Sharing 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/privacy.html",
+    "lang": "ru",
+    "title": "Политика конфиденциальности | Fast Media Sorter & Sharing",
+    "description": "Политика конфиденциальности Fast Media Sorter & Sharing for Windows: работает на вашем устройстве, без персональных данных и телеметрии; сеть - только для функций, которые вы включаете."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/privacy.html",
+    "lang": "uk",
+    "title": "Політика конфіденційності | Fast Media Sorter & Sharing",
+    "description": "Політика конфіденційності Fast Media Sorter & Sharing for Windows: працює на вашому пристрої, без персональних даних і телеметрії; мережа - лише для функцій, які ви вмикаєте."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/topics.html",
+    "lang": "ru",
+    "title": "Темы: любая задача на одной странице | Fast Media Sorter & Sharing",
+    "description": "Все инструкции и справочные страницы Fast Media Sorter & Sharing for Windows: от первого знакомства с просмотрщиком до раздачи по SFTP и серверной редакции, которая работает постоянно."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html",
+    "lang": "uk",
+    "title": "Теми: будь-яке завдання на одній сторінці | Fast Media Sorter & Sharing",
+    "description": "Усі посібники та довідкові сторінки Fast Media Sorter & Sharing for Windows: від першого знайомства з переглядачем до роздачі по SFTP і серверної редакції, що працює постійно."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/glossary.html",
+    "lang": "ru",
+    "title": "Глоссарий: слова, которыми мы пользуемся | Fast Media Sorter & Sharing",
+    "description": "Что Fast Media Sorter & Sharing for Windows называет Менеджером общего доступа, папкой-получателем, NumPad и другими терминами - одни и те же слова на всех языках."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/glossary.html",
+    "lang": "uk",
+    "title": "Глосарій: слова, якими ми користуємося | Fast Media Sorter & Sharing",
+    "description": "Що Fast Media Sorter & Sharing for Windows називає Менеджером спільного доступу, текою-отримувачем, NumPad та іншими термінами - одні й ті самі слова всіма мовами."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-archives.html",
+    "lang": "ru",
+    "title": "ZIP, CBZ, 7z, RAR как папка | Fast Media Sorter & Sharing",
+    "description": "Откройте ZIP, CBZ, 7z, RAR или CBR в Fast Media Sorter & Sharing for Windows и листайте картинки внутри, не распаковывая архив."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-archives.html",
+    "lang": "uk",
+    "title": "ZIP, CBZ, 7z, RAR як тека | Fast Media Sorter & Sharing",
+    "description": "Відкрийте ZIP, CBZ, 7z, RAR або CBR у Fast Media Sorter & Sharing for Windows і гортайте зображення всередині, не розпаковуючи архів."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-keys.html",
+    "lang": "ru",
+    "title": "Клавиши, масштаб, полный экран | Fast Media Sorter & Sharing",
+    "description": "Все клавиши и действия мыши в Fast Media Sorter & Sharing for Windows: переходы, сортировка, масштаб, полный экран, слайдшоу и видео."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-keys.html",
+    "lang": "uk",
+    "title": "Клавіші, масштаб, повний екран | Fast Media Sorter & Sharing",
+    "description": "Усі клавіші та дії миші у Fast Media Sorter & Sharing for Windows: переходи, сортування, масштаб, повний екран, слайд-шоу та відео."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-editor.html",
+    "lang": "ru",
+    "title": "Пометки и обрезка фото | Fast Media Sorter & Sharing",
+    "description": "Пометьте картинку, обрежьте её и сохраните результат на диск во встроенном редакторе Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-editor.html",
+    "lang": "uk",
+    "title": "Позначки й обрізання фото | Fast Media Sorter & Sharing",
+    "description": "Позначте зображення, обріжте його й збережіть результат на диск у вбудованому редакторі Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-ocr.html",
+    "lang": "ru",
+    "title": "Перевод текста на картинке | Fast Media Sorter & Sharing",
+    "description": "Распознайте текст на фото или скриншоте и покажите его перевод поверх изображения - переводчиком, который работает на вашем ПК."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-ocr.html",
+    "lang": "uk",
+    "title": "Переклад тексту на зображенні | Fast Media Sorter & Sharing",
+    "description": "Розпізнайте текст на фото чи знімку екрана й покажіть його переклад поверх зображення - перекладачем, що працює на вашому ПК."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-resources.html",
+    "lang": "ru",
+    "title": "Сервер как обычная папка | Fast Media Sorter & Sharing",
+    "description": "Откройте SFTP-сервер или сетевую папку с паролем как обычную папку в Fast Media Sorter & Sharing for Windows; ключ сервера закреплён."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-resources.html",
+    "lang": "uk",
+    "title": "Сервер як звичайна тека | Fast Media Sorter & Sharing",
+    "description": "Відкрийте SFTP-сервер або мережеву теку з паролем як звичайну теку у Fast Media Sorter & Sharing for Windows; ключ сервера закріплено."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-viewer.html",
+    "lang": "ru",
+    "title": "Просмотр и сортировка | Fast Media Sorter & Sharing",
+    "description": "Практическое руководство: просмотр, сортировка и работа с фото и видео в Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-viewer.html",
+    "lang": "uk",
+    "title": "Перегляд і сортування | Fast Media Sorter & Sharing",
+    "description": "Практичний посібник: перегляд, сортування й робота з фото та відео у Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-setup.html",
+    "lang": "ru",
+    "title": "Настройка: язык и правила | Fast Media Sorter & Sharing",
+    "description": "Сделайте Fast Media Sorter просмотрщиком картинок и видео по умолчанию, выберите язык интерфейса и решите, что происходит с файлами при разборе."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-setup.html",
+    "lang": "uk",
+    "title": "Налаштування: мова й правила | Fast Media Sorter & Sharing",
+    "description": "Зробіть Fast Media Sorter типовим переглядачем зображень і відео, виберіть мову інтерфейсу й вирішіть, що відбувається з файлами під час розбору."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-filedo-disks.html",
+    "lang": "ru",
+    "title": "Диски FileDO .fdd на телефоне | Fast Media Sorter & Sharing",
+    "description": "Как открыть виртуальные диски FileDO .fdd сопряжённым телефонам по SFTP в Fast Media Sorter & Sharing for Windows: настройка, автозапуск, неполадки."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-filedo-disks.html",
+    "lang": "uk",
+    "title": "Диски FileDO .fdd на телефоні | Fast Media Sorter & Sharing",
+    "description": "Як відкрити віртуальні диски FileDO .fdd сполученим телефонам через SFTP у Fast Media Sorter & Sharing for Windows: налаштування, автозапуск, негаразди."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/server.html",
+    "lang": "ru",
+    "title": "Постоянная раздача папок | Fast Media Sorter & Sharing",
+    "description": "Раздайте папки этого ПК на Android по SFTP: при входе в систему с полным пакетом или постоянно с серверной редакцией - службой Windows, работающей с загрузки."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/server.html",
+    "lang": "uk",
+    "title": "Постійна роздача тек | Fast Media Sorter & Sharing",
+    "description": "Роздайте теки цього ПК на Android через SFTP: під час входу з повним пакетом або постійно із серверною редакцією - службою Windows, що працює від завантаження."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/publish-folders-android.html",
+    "lang": "ru",
+    "title": "Публикация папок для Android | Fast Media Sorter & Sharing",
+    "description": "Откройте папки ПК приложению для Android по локальной сети или через интернет. Пошаговая инструкция по Менеджеру общего доступа."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/publish-folders-android.html",
+    "lang": "uk",
+    "title": "Публікація тек для Android | Fast Media Sorter & Sharing",
+    "description": "Відкрийте теки ПК застосунку для Android у локальній мережі або через інтернет. Покрокова інструкція з Менеджером спільного доступу."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/support.html",
+    "lang": "ru",
+    "title": "Поддержка | Fast Media Sorter & Sharing",
+    "description": "Как получить помощь по Fast Media Sorter & Sharing for Windows: трекер задач, почта, что приложить и чего ждать."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/support.html",
+    "lang": "uk",
+    "title": "Підтримка | Fast Media Sorter & Sharing",
+    "description": "Як отримати допомогу щодо Fast Media Sorter & Sharing for Windows: трекер задач, пошта, що додати та чого чекати."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/whats-new.html",
+    "lang": "ru",
+    "title": "Что нового | Fast Media Sorter & Sharing",
+    "description": "Что добавили, изменили и исправили последние версии Fast Media Sorter & Sharing for Windows: заметки о выпуске десяти последних версий."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/whats-new.html",
+    "lang": "uk",
+    "title": "Що нового | Fast Media Sorter & Sharing",
+    "description": "Що додали, змінили й виправили останні версії Fast Media Sorter & Sharing for Windows: нотатки про випуск десяти останніх версій."
   }
 ]

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>ZIP, CBZ, 7z, RAR как папка | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Откройте ZIP, CBZ, 7z, RAR или CBR в Fast Media Sorter &amp; Sharing for Windows и листайте картинки внутри, не распаковывая архив.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-archives.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-archives.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-archives.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="ZIP, CBZ, 7z, RAR как папка | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Откройте ZIP, CBZ, 7z, RAR или CBR в Fast Media Sorter &amp; Sharing for Windows и листайте картинки внутри, не распаковывая архив.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-archives.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ZIP, CBZ, 7z, RAR как папка | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Откройте ZIP, CBZ, 7z, RAR или CBR в Fast Media Sorter &amp; Sharing for Windows и листайте картинки внутри, не распаковывая архив.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ZIP, CBZ, 7z, RAR как папка | Fast Media Sorter & Sharing","description":"Откройте ZIP, CBZ, 7z, RAR или CBR в Fast Media Sorter & Sharing for Windows и листайте картинки внутри, не распаковывая архив.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-archives.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="how-to-archives.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-archives.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/how-to-archives.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="./#get">Скачать</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · ARCHIVES</span><h1>Листать ZIP или комикс, не распаковывая его</h1><p class="lead">Скан книги, скачанная галерея, комикс в CBZ: откройте архив, и просмотрщик покажет его как папку - стрелки, масштаб, слайдшоу и перевод поверх картинки работают ровно так же, как на диске. Просмотр архивов есть только в 64-битном просмотрщике (Windows 10 версии 1607 и новее).</p></section>
+<section class="section"><div class="steps">
+<article class="step"><h2>Откройте архив</h2><p>Перетащите файл <b>.zip</b>, <b>.cbz</b>, <b>.7z</b>, <b>.rar</b> или <b>.cbr</b> в окно, откройте его из Проводника через <b>Открыть с помощью</b> (программа не назначает себя приложением по умолчанию для архивов), либо щёлкните правой кнопкой по полю каталога и выберите <b>«Открыть архив..»</b>. Шага «распаковать» нет в любом случае: поле каталога начинает показывать путь самого архива, а строка состояния сообщает, сколько файлов найдено внутри.</p></article>
+<article class="step"><h2>Листайте как обычно</h2><p>Записями становятся только поддерживаемые изображения и видео; служебное, что оставляет архиватор - ресурсные ветки Mac, Thumbs.db, пустые записи - пропускается, а вложенный архив не предлагается как тупик. Очень большие архивы показываются до двадцати тысяч записей, и строка состояния предупредит, если пришлось остановиться на этом.</p></article>
+<article class="step"><h2>Выйдите, когда закончите</h2><p>Щёлкните правой кнопкой по полю каталога и выберите <b>«Закрыть архив»</b>, чтобы сразу вернуться в папку, откуда пришёл архив, - либо укажите в поле каталога любую другую папку, откройте другой файл или просто закройте программу. Каждая запись, которую вы действительно смотрели, попадала в отдельный временный каталог и удаляется в этот момент; всё, что осталось после аварийного завершения, вычищается при следующем открытии архива.</p></article>
+</div></section>
+<section class="section two"><div class="callout"><b>Разбор внутри архива недоступен</b><p>Клавиши папок-получателей и <kbd>Del</kbd> здесь ничего не делают, и строка состояния объясняет почему: файлы лежат внутри архива, а программа его не переписывает. Сначала просмотрите архив, а разбирайте ту папку, где картинки лежат по-настоящему.</p></div><div class="callout"><b>Когда архив не открывается</b><p>Архив под паролем - работа для архиватора: сначала откройте его там. Запись больше 512 МБ и архив, степень сжатия которого похожа на «архив-бомбу», получают внятный отказ, а не тишину, - как и повреждённый архив. Открываются ZIP, CBZ, 7z, RAR и CBR; солидный архив распаковывается один раз, со строкой прогресса, и Esc отменяет это. Файл с именем архива, но другого устройства (TAR, GZip и подобные), получает отказ с названием типа; файлы с другими расширениями, например .tar, архивами не считаются вовсе.</p></div></section>
+<section class="section two"><div class="callout"><b>Только 64-битная программа</b><p>Просмотр архивов входит в современную 64-битную сборку для Windows 10 и 11. В 32-битной сборке архив - просто неподдерживаемый файл.</p></div><div class="callout"><b>Комиксы и на телефоне</b><p>Папку с архивами можно опубликовать на Android через встроенный SFTP-сервис, чтобы та же коллекция читалась с дивана.</p><a class="btn btn-ghost" href="publish-folders-android.html">Инструкция по SFTP</a></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавиши, масштаб и полный экран</span></a>
+<a href="how-to-ocr.html"><b>HOW TO · OCR</b><span>Распознавание и перевод текста</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Все страницы сайта по темам</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Что значат термины сайта</span></a>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

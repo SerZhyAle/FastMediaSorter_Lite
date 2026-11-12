@@ -72,8 +72,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         section.AddBodyRow(_aboutStart)
 
         Dim description As New Label With {.AutoSize = True, .Dock = DockStyle.Top, .Name = "managerDescription"}
-        BindAboutText(description, Function() Localization.T("Локальная служба раздачи и расписаний: раздаёт папки этого компьютера телефонам и SFTP-клиентам, выполняет операции по расписанию и подключает компьютер к учётной записи обмена."))
+        BindAboutText(description, Function() Localization.T("Локальная служба раздачи: раздаёт папки этого компьютера телефонам и SFTP-клиентам и подключает компьютер к учётной записи обмена."))
         section.AddBodyRow(description)
+
+        ' The third part of the product (L0297): scheduled file operations. Not an AboutItems.Required row - the page's inventory
+        ' stays the twelve contract items - but the same kind of line, placed right after the sharing line.
+        Dim scheduled As New Label With {.AutoSize = True, .Dock = DockStyle.Top, .Name = "managerScheduledDescription"}
+        BindAboutText(scheduled, Function() Localization.T("Файловые операции по расписанию: копируют, перемещают, удаляют и архивируют файлы в заданное время. Устанавливаются вместе с Менеджером общего доступа и выполняются, пока он работает в вашем сеансе входа."))
+        section.AddBodyRow(scheduled)
 
         Dim version As New Label With {.AutoSize = True, .Dock = DockStyle.Top, .Name = "managerVersion"}
         BindAboutText(version, Function() Localization.TF("Версия: {0}", AboutVersion()))

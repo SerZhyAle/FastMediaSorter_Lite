@@ -4,6 +4,7 @@ Option Infer On
 Option Compare Binary
 
 Imports System.Collections.Generic
+Imports System.Linq
 
 ' Scheduled file operations (ticket 222) - the model.
 '
@@ -22,6 +23,12 @@ Friend Enum ScheduledAction
     Move = 1
     Delete = 2
     Archive = 3
+    ''' <summary>Overwrites the free space of a local volume with FileDO's temporary files, then deletes them (ticket L0299).
+    ''' Selects no files: the source is only the place the work folder is made in.</summary>
+    FillFreeSpace = 4
+    ''' <summary>FileDO's backup of the source folder as one unit into a numbered generation set in the destination, optionally
+    ''' sealed (ticket L0298). Selects no files and never touches the source; only the set's own oldest generation is retired.</summary>
+    Backup = 5
 End Enum
 
 ''' <summary>What happens when the destination name is taken (D5). Skip is the default.</summary>
@@ -115,6 +122,11 @@ Friend NotInheritable Class ScheduledLocation
     Friend Property ResourceName As String = ""
     ''' <summary>A property of the SOURCE (4.1), never of the operation. Ignored on a destination.</summary>
     Friend Property Recursive As Boolean = True
+    ''' <summary>Through Google Drive (ticket 269 P4): the resource a source asks another device for; <see cref="ResourceId"/> then holds
+    ''' that device's id. Empty on a source that picks up what other devices send to this PC, and on a destination.</summary>
+    Friend Property DriveResourceId As String = ""
+    ''' <summary>Through Google Drive: the device's name as it was when the operation was saved - for its packets and for showing only.</summary>
+    Friend Property DriveDeviceName As String = ""
 
     Friend ReadOnly Property IsEmpty As Boolean
         Get
@@ -126,13 +138,16 @@ Friend NotInheritable Class ScheduledLocation
 
     Friend Function Clone() As ScheduledLocation
         Return New ScheduledLocation With {.Kind = Kind, .Path = Path, .ResourceId = ResourceId,
-            .ResourceName = ResourceName, .Recursive = Recursive}
+            .ResourceName = ResourceName, .Recursive = Recursive, .DriveResourceId = DriveResourceId, .DriveDeviceName = DriveDeviceName}
     End Function
+
+    ''' <summary>What a Drive location's spelling starts with, in every language: the product name stays Latin.</summary>
+    Friend Const DriveLabel As String = "Google Drive"
 
     ''' <summary>A short human spelling for notes and rows: the path, or "name: folder".</summary>
     Friend Function Describe() As String
         If Kind = ScheduledLocationKind.Drive Then
-            Dim label As String = If(String.IsNullOrEmpty(ResourceName), "Google Drive", ResourceName)
+            Dim label As String = If(String.IsNullOrEmpty(ResourceName), DriveLabel, DriveLabel & ": " & ResourceName)
             Return If(String.IsNullOrEmpty(Path), label, label & ": " & Path)
         End If
         If Kind = ScheduledLocationKind.Resource Then
@@ -191,12 +206,15 @@ Friend NotInheritable Class ScheduledRunRecord
     Friend Property NextRunAt As DateTime?
     ''' <summary>True when at least one run has been skipped since the last successful run (ticket 231, 3.5).</summary>
     Friend Property SkippedSinceSuccess As Boolean
+    ''' <summary>A source through Google Drive (ticket 269 P4, item CO): "&lt;device&gt;/&lt;resource&gt;/&lt;folder&gt;|&lt;asOf&gt;", the
+    ''' producer's own instant the last clean run ended at, bound to the source it was read from: a re-pointed operation starts over.</summary>
+    Friend Property DriveMark As String = ""
 
     Friend Function Clone() As ScheduledRunRecord
         Return New ScheduledRunRecord With {.LastRunAt = LastRunAt, .LastSuccessAt = LastSuccessAt,
             .LastOutcome = LastOutcome, .LastTrigger = LastTrigger, .LastFileCount = LastFileCount,
             .LastFailedCount = LastFailedCount, .LastError = LastError, .NextRunAt = NextRunAt,
-            .SkippedSinceSuccess = SkippedSinceSuccess}
+            .SkippedSinceSuccess = SkippedSinceSuccess, .DriveMark = DriveMark}
     End Function
 
 End Class
@@ -224,6 +242,21 @@ Friend NotInheritable Class ScheduledOperation
     Friend Property Conflict As ScheduledConflict = ScheduledConflict.Skip
     ''' <summary>Archive only (D4): delete the originals once the archive has been read back and matched.</summary>
     Friend Property DeleteOriginalsAfterVerify As Boolean
+    ''' <summary>Fill free space only (L0299, Q299-1): the size of each temporary file FileDO writes, one of
+    ''' <see cref="ChunkSizesMb"/>.</summary>
+    Friend Property ChunkSizeMb As Integer = DefaultChunkSizeMb
+    Friend Const DefaultChunkSizeMb As Integer = 1000
+    ''' <summary>The chunk sizes the editor offers (owner decision Q299-1).</summary>
+    Friend Shared ReadOnly ChunkSizesMb As Integer() = {500, 1000, 2000, 5000}
+    ''' <summary>Backup only (L0298, Q298-2): how many numbered generations the destination keeps, 1..999.</summary>
+    Friend Property BackupKeepCount As Integer = DefaultBackupKeepCount
+    ''' <summary>One week of daily runs.</summary>
+    Friend Const DefaultBackupKeepCount As Integer = 7
+    Friend Const MinBackupKeepCount As Integer = 1
+    Friend Const MaxBackupKeepCount As Integer = 999
+    ''' <summary>Backup only (L0298, Q298-3): seal each generation as a FileDO container. Its password lives in
+    ''' <see cref="ScheduledBackupCredentialStore"/>, never in this model.</summary>
+    Friend Property BackupSealed As Boolean
     Private _retryMissedRunsAtStart As Boolean = True
     ''' <summary>Per-operation missed-run rule (ticket 231, 3.4): run once at start when a slot was missed. Default On.</summary>
     Friend Property RetryMissedRunsAtStart As Boolean
@@ -259,7 +292,8 @@ Friend NotInheritable Class ScheduledOperation
         Return New ScheduledOperation With {.Id = Id, .Name = Name, .Enabled = Enabled, .Action = Action,
             .Source = Source.Clone(), .Destination = Destination.Clone(), .Conditions = Conditions.Clone(),
             .AnchorMinutes = AnchorMinutes, .StartDate = StartDate, .IntervalMinutes = IntervalMinutes,
-            .Conflict = Conflict, .DeleteOriginalsAfterVerify = DeleteOriginalsAfterVerify,
+            .Conflict = Conflict, .DeleteOriginalsAfterVerify = DeleteOriginalsAfterVerify, .ChunkSizeMb = ChunkSizeMb,
+            .BackupKeepCount = BackupKeepCount, .BackupSealed = BackupSealed,
             .RetryMissedRunsAtStart = RetryMissedRunsAtStart, .HasExplicitRetryMissedRuns = HasExplicitRetryMissedRuns,
             .ShowBalloonOnError = ShowBalloonOnError, .Halt = Halt,
             .HaltDetail = HaltDetail, .CreatedAt = CreatedAt, .Record = Record.Clone()}
@@ -271,20 +305,53 @@ Friend NotInheritable Class ScheduledOperation
         Return Source.Describe()
     End Function
 
-    ''' <summary>A destructive action takes something away from the source.</summary>
+    ''' <summary>A destructive action takes something away from the source; filling free space destroys what deleted
+    ''' files left in the unallocated space.</summary>
     Friend ReadOnly Property IsDestructive As Boolean
         Get
             Return Action = ScheduledAction.Move OrElse Action = ScheduledAction.Delete OrElse
+                   Action = ScheduledAction.FillFreeSpace OrElse
                    (Action = ScheduledAction.Archive AndAlso DeleteOriginalsAfterVerify)
         End Get
     End Property
 
-    ''' <summary>Copy, move and archive have a destination; delete has none.</summary>
+    ''' <summary>Copy, move and archive have a destination; delete and fill free space have none.</summary>
     Friend ReadOnly Property NeedsDestination As Boolean
         Get
-            Return Action <> ScheduledAction.Delete
+            Return Action <> ScheduledAction.Delete AndAlso Action <> ScheduledAction.FillFreeSpace
         End Get
     End Property
+
+    ''' <summary>Fill free space and backup select no files: no conditions, no conflict mode (L0299, L0298 - a backup takes the
+    ''' folder as one unit).</summary>
+    Friend ReadOnly Property SelectsFiles As Boolean
+        Get
+            Return Action <> ScheduledAction.FillFreeSpace AndAlso Action <> ScheduledAction.Backup
+        End Get
+    End Property
+
+    ''' <summary>The stem of this operation's generation names, "&lt;stem&gt;_&lt;NNN&gt;.zip" (CLI-EVENT-STREAM 0.17 item D1): built from
+    ''' the operation's own id, so two operations never share a generation set, and a single file-name part.</summary>
+    Friend ReadOnly Property BackupStem As String
+        Get
+            Dim folderName As String = ""
+            Try
+                folderName = System.IO.Path.GetFileName(If(Source.Path, "").TrimEnd("\"c, "/"c))
+            Catch ex As ArgumentException
+            End Try
+            Dim tag As String = New String(If(Id, "").Where(Function(c) Uri.IsHexDigit(c)).Take(8).ToArray()).ToLowerInvariant()
+            Dim stem As String = SafeStemPart(folderName)
+            If stem.Length = 0 Then stem = "backup"
+            Return If(tag.Length > 0, stem & "-" & tag, stem)
+        End Get
+    End Property
+
+    ''' <summary>Letters, digits, "-" and "." kept; everything else (separators, reserved characters, "_" which ends the stem) becomes "-".</summary>
+    Private Shared Function SafeStemPart(text As String) As String
+        Dim chars As Char() = If(text, "").Select(Function(c) If(Char.IsLetterOrDigit(c) OrElse c = "-"c OrElse c = "."c, c, "-"c)).ToArray()
+        Dim result As String = New String(chars).Trim("-"c, "."c)
+        Return If(result.Length > 40, result.Substring(0, 40).TrimEnd("-"c, "."c), result)
+    End Function
 
 End Class
 

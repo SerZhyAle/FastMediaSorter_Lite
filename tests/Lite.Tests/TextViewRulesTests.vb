@@ -20,6 +20,25 @@ Public Class TextViewRulesTests
 
     ' --- positions and selections --------------------------------------------------------------------
 
+    <Theory>
+    <InlineData(0, 0, 0)>
+    <InlineData(0, 4, 0)>
+    <InlineData(0, 5, 1)>
+    <InlineData(0, 99, 1)>
+    <InlineData(1, 0, 2)>
+    <InlineData(2, 3, 3)>
+    <InlineData(50, 0, 3)>
+    Public Sub A_remembered_place_finds_the_row_that_shows_it(line As Integer, column As Integer, expectedRow As Integer)
+        Dim rows As New List(Of TextRow) From {
+            New TextRow(0, 0, "alpha"), New TextRow(0, 5, " beta"), New TextRow(1, 0, ""), New TextRow(2, 0, "gamma")}
+        Assert.Equal(expectedRow, TextViewRules.RowOfPlace(rows, New TextPosition(line, column)))
+    End Sub
+
+    <Fact>
+    Public Sub A_place_in_a_text_with_no_rows_is_the_first_row()
+        Assert.Equal(0, TextViewRules.RowOfPlace(New List(Of TextRow)(), New TextPosition(7, 2)))
+    End Sub
+
     <Fact>
     Public Sub A_selection_dragged_backwards_is_the_same_selection()
         Dim forward As TextSelection = Sel(0, 2, 2, 3)

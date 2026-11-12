@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+    <title>Privacy Policy | Fast Media Sorter &amp; Sharing</title>
+    <meta name="description" content="Privacy policy of Fast Media Sorter &amp; Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.">
+    <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">
+    <link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+    <meta property="og:title" content="Privacy Policy | Fast Media Sorter &amp; Sharing">
+    <meta property="og:description" content="Privacy policy of Fast Media Sorter &amp; Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.">
+    <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">
+    <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Privacy Policy | Fast Media Sorter &amp; Sharing">
+    <meta name="twitter:description" content="Privacy policy of Fast Media Sorter &amp; Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.">
+    <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+    <meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Privacy Policy | Fast Media Sorter & Sharing","description":"Privacy policy of Fast Media Sorter & Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","inLanguage":["en","ru","uk"],"isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"}}</script>
+<link rel="icon" href="../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="stylesheet" href="../assets/sza-kit.css">
+<link rel="stylesheet" href="../assets/fms-site.css">
+<link rel="stylesheet" href="../assets/fms-buttons.css">
+<style>
+html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+.site-header>.brand{margin-right:auto}
+main h1{margin:.4rem 0 .6rem}
+main h2{font-size:1.2rem;margin:1.6rem 0 .5rem}
+main ul{padding-inline-start:1.25em}
+main li{margin-bottom:.5rem}
+main code{overflow-wrap:anywhere}
+main,main a{overflow-wrap:anywhere}
+main:focus{outline:none}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="../" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button><button data-setlang="ua">UA</button></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span><span data-l="en">Dark theme</span><span data-l="ru">Тёмная тема</span><span data-l="ua">Темна тема</span></span></button><a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+        <h1><span data-l="en">Privacy Policy</span><span data-l="ru">Политика конфиденциальности</span><span data-l="ua">Політика конфіденційності</span></h1>
+        <div data-l="en">
+        <p class="note">Last updated: 8 November 2026</p>
+
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows collects no personal data.</strong> There is no advertising,
+        and no telemetry or analytics. It runs entirely on your own device, and the developer
+        receives no data about you or your use of the app - unless you choose to send your logs yourself (see
+        <a href="#logs">Diagnostic logs</a>) - honestly, we wouldn't know what to do with it anyway. Where the app
+        signs in anywhere - the password of a share server, an exchange account, a translation provider's key -
+        it signs in to a server or service <em>you</em> chose; no account is ever created with, or reported to,
+        the developer.</p>
+
+        <h2>What the app accesses, and why</h2>
+        <ul>
+            <li><strong>Your media files.</strong> The app reads, displays, copies, moves, renames and
+            deletes the image and video files in the folders you open - that is its core purpose. It only
+            ever touches files and folders you point it at (including network shares you browse to). It has
+            seen your meme folder and judged nothing.</li>
+
+            <li><strong>Servers and network shares you add yourself.</strong> A folder on an SFTP server, or a
+            network share that needs a login, is opened only after you add it (by hand, or by importing the
+            file the Share Manager makes). The app then opens a direct, outbound connection to the address you
+            gave it and to nothing else - it never listens for connections for this and never contacts the
+            developer. Three small things are kept on your PC, in your Windows account: the server's address and
+            user name, the server's SSH key fingerprint (so a server pretending to be yours is refused), and the
+            password, encrypted with Windows (DPAPI) so it can be read only by you on this PC. If you untick
+            &quot;Remember the password (protected by Windows)&quot;, the password is held in memory until the program closes and is never written
+            anywhere. Files you open from a server are copied into a private cache folder that is deleted when
+            you leave the resource or close the program. Passwords are never included in the logs package you may
+            choose to send.</li>
+
+            <li><strong>Folder sharing - optional, opt-in.</strong> If you enable it, the bundled Share
+            Manager companion runs a local SFTP server so your own phone can browse the folders you choose.
+            The access password and the server host key are generated and kept only on your PC, and files
+            are served directly between your own devices - never through us or any third party. While a
+            share is on, any device on your current network (home, office, or a public Wi-Fi) can reach the
+            PC on the share port; access needs the password embedded in the QR/config you share, so treat
+            that code as a key and do not post it publicly. A <em>LAN only</em> switch keeps the share off
+            the internet; idle connections close after a few hours, and you can cap how many devices connect
+            at once. Starting a share also reaches out, with no extra switch to turn on: the worker asks
+            two public services, <a href="https://api.ipify.org">api.ipify.org</a> and
+            <a href="https://icanhazip.com">icanhazip.com</a>, which address the internet sees for your PC
+            (they see your public IP address and nothing else), and this happens even with <em>LAN only</em>
+            on. Unless <em>LAN only</em> is on (it is off by default), the worker also asks your own router
+            to forward the share port (UPnP or NAT-PMP) and, once a forwarded port exists, asks
+            <a href="https://check-host.net">check-host.net</a> to confirm that it answers from outside,
+            which reveals your public address and port to that service for the check. While a share runs
+            the PC announces itself on your local network (mDNS) so a paired phone can find it
+            again when its address changes; that stays inside your network. Turning folder sharing on needs
+            one administrator approval, either in the installer or the first time you enable it in the app
+            (Windows asks): it adds a firewall rule that lets only the sharing program accept connections,
+            and uninstalling removes it (the Microsoft Store package declares that rule in its manifest
+            instead). The app keeps local-only connection counters (this is not telemetry and never leaves
+            your PC).</li>
+
+            <li><strong>Broadcasts for StreamsPlayer.</strong> In the 64-bit viewer, right-click a video or audio file or its folder and choose Broadcast. Share Manager exports a .spres file, QR code or quick link for import in StreamsPlayer. A folder is one playlist channel with a frozen list; Refresh replaces that list and Revoke stops its link. The HTTP gateway has its own switch, off by default. Each token grants read-only access to one broadcast and normally expires after 24 hours. HTTP is unencrypted: share the document privately and keep internet access off unless you need it.</li>
+
+            <li><strong>Live broadcast and the camera - only after you start them.</strong> The Share Manager's live
+            broadcast captures the one source you choose: a screen, one window, a camera, the microphone or the system
+            audio. Nothing is captured before you press &quot;Start the broadcast&quot;; &quot;Stop the broadcast&quot;
+            ends it, and closing a captured window ends its broadcast too. Everything visible or audible in that source
+            reaches the listeners, private content included, so pick one window rather than the whole screen when other
+            things are open. The listeners are viewers on your own network when &quot;Allow viewers on my network&quot;
+            is ticked and, when this PC is joined to an exchange account, listeners reached through that account's
+            exchange server (see the exchange account item below); nothing goes to the developer. Treat the broadcast's
+            link, code or .fmsbcast file, and the listener password you set, as a key; &quot;New link password&quot;
+            gives the link a new password while you are on air. &quot;Scan with camera..&quot; in the phone code window
+            and the exchange account window reads a phone's QR code through the first camera of this PC: its frames
+            stay in memory, and that window saves and sends nothing. Windows itself decides whether programs may use
+            the camera and the microphone (Settings &rarr; Privacy &amp; security &rarr; Camera, Microphone); the
+            Microsoft Store package declares the camera and microphone capabilities for these features.</li>
+
+            <li><strong>FileDO disks - optional, opt-in.</strong> If you connect a .fdd container for sharing,
+            the server mounts it on this PC and publishes its contents to authorized SFTP clients.
+            A selected Windows drive letter is a local alias for the current signed-in session; it does
+            not create an SMB share. An encrypted disk is unlocked on the PC. Its password is sent only
+            to the verified local worker and FileDO, never in command arguments or logs. Disk autostart
+            is a separate choice: only after explicit consent is its credential stored in protected
+            Windows storage on this PC. Disabling autostart or removing the disk from sharing deletes
+            that stored key. Mounting requires administrator rights; enabling ordinary folder sharing
+            does not silently elevate the server or change a service account. See the
+            <a href="how-to-filedo-disks.html">FileDO disk sharing guide</a>.</li>
+
+            <li><strong>Always-on sharing - a Windows service, only if you ask for it.</strong> It comes
+            either from the separate Server edition download or from the Share Manager's own "Switch sharing to
+            a Windows service.." (Manager settings &rarr; Hosting); it is never installed by default, and
+            either way Windows asks for administrator approval first. The same folder sharing is then hosted
+            by a Windows service instead of by your signed-in session, so the folders you chose stay reachable
+            from boot even when nobody is logged on. Nothing about what is collected changes - there is still
+            no telemetry, and files still go straight between your own devices - but the exposure window does:
+            the share is up whenever the machine is, not only while you are using it. The service runs as
+            <code>LOCAL SERVICE</code>, which is given read access to each folder you share (and write access
+            only where you allowed writing) and nothing else. Its host key, password and settings live in a
+            machine folder, <code>%ProgramData%\FastMediaSorterCompanion</code>, that only administrators, the
+            service and your account can open. "Remove the server role" in the Share Manager, or uninstalling
+            the Server edition, stops and removes the service, takes back those folder permissions and removes
+            the firewall rule; uninstalling the ordinary edition offers to do the same for a service its Share
+            Manager set up (a silent uninstall, such as <code>winget uninstall</code>, cannot ask and leaves it
+            in place). The host key is kept unless you delete that folder, so your paired phones still work if
+            you reinstall.</li>
+
+            <li><strong>An exchange account - a server somebody runs; normally, you.</strong> The 64-bit viewer and
+            the Share Manager can join an exchange account on an exchange server, so that every device of one
+            account sees the folders the others publish. The server is not ours: it is a small program
+            somebody runs - normally you, on your own PC or a machine you control. Until you sign in with the
+            login and password of an account on that server (or with a pairing code that one of its devices made
+            for you), nothing happens: no exchange connection, no listening port, nothing written. The password
+            is typed once and is not kept - unless you switch on keeping it, and then it is encrypted with
+            Windows (DPAPI) for your Windows account in one local file, while the server itself stores only a
+            hash of it, never the password. An enrolled device keeps a device token instead of the password,
+            encrypted the same way on your PC; the server stores only a hash of the token. The app remembers the
+            server's address and its certificate fingerprint, and refuses a server whose certificate ever
+            changes. A connection string that another device of the account can show you is that address with
+            the fingerprint: it carries no password and no token, and it never enters the logs or the support
+            archive. <strong>What the exchange server sees, and what it does not.</strong>
+            The exchange server connects your devices, so it knows the names of your account, devices, folders and broadcasts, sees which devices are online, and how much is sent and when. It cannot open what goes through it: folders and their files, broadcasts and the clipboard are encrypted on your device and opened only on your other devices or by the people you gave access to. To look inside, whoever runs the server would have to add a device of their own to your account, and it would appear in your list of devices.
+            Via Google Drive, files and the clipboard are kept in your own Google account, like your other files on Google Drive; no exchange server takes part.
+            The server stores password and token hashes, device public keys and published-share records
+            on disk. Sealed share access, broadcast/access-grant key boxes and clipboard values stay in
+            memory; sealed payloads and keys do not belong in its logs.
+            <strong>Clipboard transfers.</strong> Choose "Send the clipboard to the server" in Share
+            Manager, its tray menu or its desktop shortcut to send the current text, image or one file
+            to each joined member account. "Get the clipboard from the server" retrieves its newest value.
+            This transfer is explicit, not continuous clipboard monitoring. What is sent is exactly what
+            is on the clipboard at that moment, a password you copied included: the program does not
+            inspect, filter or mask it. The server holds only the
+            last complete value in memory, never on disk. A new complete upload replaces it; an interrupted
+            upload leaves the previous value. Restarting the server or deleting the account clears it.
+            Logs record only the kind and size class, never the clipboard contents or file name.
+            <strong>Outside visibility check.</strong> "Is my server visible from outside" explicitly
+            asks <a href="https://check-host.net">check-host.net</a> to check the public host and port;
+            that third party receives the endpoint you asked it to check.</li>
+
+            <li id="exchange-account-deletion-en"><strong>Leaving or deleting an exchange account.</strong>
+            "Sign out on this device" in Share Manager's exchange account settings forgets this PC's
+            sign-in; it does not delete the account or sign out its other devices. To delete the account,
+            use "Delete my account" on its server card in the Android app's My devices page and confirm
+            with the account password, or ask the server operator to remove it. If you run the server,
+            remove the account from its administration page in Share Manager. Deletion erases the password hash, enrolled devices and token
+            hashes (including revoked-device records), published folder and broadcast records, outstanding
+            pairing codes, access grants to and from the account, and its in-memory clipboard. Active
+            sessions end. Source files and copies already delivered are not erased; files in your
+            Google Drive and operational logs kept for the operator's configured retention period remain.
+            Uninstalling the app does not delete an account.</li>
+
+            <li><strong>Network - only when you use a feature that needs it.</strong> The on-image translation
+            feature is off until you enable and configure it. When you use it, the app sends the recognized text
+            to the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>
+            model on your own machine, or a <a href="https://libretranslate.com">LibreTranslate</a> server
+            you specify - to receive the translated text. <strong>OCR (text recognition) runs fully offline.</strong>
+            Apart from that, the app makes no network requests except to fetch an optional component you ask
+            for: additional OCR language packs from the public Tesseract data repository; the OCR and video
+            playback runtimes from <a href="https://www.nuget.org">nuget.org</a>, when a build did not bring
+            them along; <a href="https://ffmpeg.org">FFmpeg</a> - the video encoder behind "Replace with video" -
+            from its published Windows builds; the Ollama installer from ollama.com, and translation models
+            through your own Ollama, when you press the button for them; and doc-html-translate through
+            <code>winget</code>, when you press its install button. Each happens only after you press that
+            button or say yes to a prompt that names what is being fetched; nothing about your files, your
+            paths or your usage is sent with any of them. If a runtime needs the Microsoft Visual C++
+            Redistributable and it is missing, the app says so and can open Microsoft's download in your
+            browser - it never downloads or runs that installer itself.</li>
+
+            <li><strong>API keys (if you set one).</strong> If a translation provider you configure needs an
+            API key, it is stored encrypted on your device using Windows DPAPI and is sent only to that
+            provider's endpoint when translating.</li>
+        </ul>
+
+        <h2>Local files the app writes</h2>
+        <ul>
+            <li><strong>Settings.</strong> Preferences and hotkeys are stored in the Windows registry (in the
+            Microsoft Store build these live inside the app's package container).</li>
+            <li><strong>Settings import backups (64-bit program).</strong> Before importing a profile,
+            the app saves your current preferences, including folder histories and playback positions,
+            in a protected folder under <code>%LOCALAPPDATA%\SZA\FastMediaSorter\settings-backups</code>
+            (inside the app's local data root in the Microsoft Store build). These local rollback copies
+            exclude passwords and API keys. The import stops if a private backup cannot be created;
+            nothing is saved beside the imported file or in a shared temporary folder. Backups are not
+            deleted automatically. You can restore one through Settings &rarr; Import settings, or delete
+            old copies yourself when you no longer need them.</li>
+            <li><strong>OCR data and caches.</strong> Downloaded Tesseract language packs, a downloaded copy
+            of FFmpeg, the translation cache and the decode cache (decoded copies of the WEBP, AVIF and HEIC
+            files you have opened, kept so the second view is instant) are stored under
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. These never leave your device, and both caches
+            can be emptied or switched off in Settings.</li>
+            <li><strong>Viewing history (64-bit program).</strong> In the same registry place as the settings, the
+            viewer keeps the lists of recent files and folders (up to the limits you set), the zoom of a folder when
+            you choose to remember zoom per folder, and, for video, the playback position of each file - its path,
+            size, modification time and position - so a video resumes where you stopped. &quot;Remember the playback
+            position&quot; switches the last one off. A file opened from an archive or from a server is never
+            remembered by its temporary copy.</li>
+            <li><strong>Archives (64-bit program).</strong> A ZIP, CBZ, 7z or RAR you open is shown as a folder: its
+            pictures and videos are unpacked one by one into a private folder under
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter\archive-cache</code> while you browse it. The folder is deleted
+            when you leave the archive or close the program, and anything a crash left behind is swept the next
+            time you open an archive.</li>
+            <li><strong>Editing a picture (64-bit program).</strong> When the editor saves over the original, it first
+            writes the result beside it under a temporary name that contains <code>.fms-tmp</code>
+            (for example <code>photo.fms-tmp.jpg</code>) and swaps it in only when it is complete, so a failure
+            cannot leave half a photo. The rest of the original's EXIF is carried over except the embedded preview
+            thumbnail, which would show the picture from before the edit.</li>
+            <li><strong>Exports that carry a key.</strong> &quot;Export..&quot; in the Resource Manager (64-bit
+            program) writes a <code>.fmscfg</code> file to the place you choose, readable only by your account;
+            it holds the server's address and user name, and the password only if you pick that option. The Share
+            Manager's &quot;Send by email..&quot; hands its <code>.fmscfg</code> (the share's access key) to your mail
+            program through a temporary copy in a private folder that exists only for that call and is deleted
+            right after. Treat such a file as you would a password.</li>
+        </ul>
+
+        <h2>Data sharing</h2>
+        <p>None with the developer - the kind of "none" that is actually none, and no telemetry or analytics
+        ever. The only things that leave your device do so at your explicit choice and go where you direct them,
+        not to us: the text you translate goes to the translation endpoint you configured; shared files go
+        directly to your own phone over SFTP; the folders of an exchange account, and the clipboard value when you press its send button, pass through the exchange
+        server you chose, exactly as described above; when a share starts, your public IP address is seen by
+        api.ipify.org and icanhazip.com (which return it to the program) and, unless LAN only is on, your public address
+        and port are shown to check-host.net solely to test reachability; and the log archive reaches the developer only
+        if you send it yourself from your own mail program.</p>
+
+        <h2 id="website">This website</h2>
+        <p>The program itself contacts none of the addresses below. They belong to the product website - the home
+        page, the guides and the install-trust page - and your browser contacts them when it opens those pages.
+        This privacy page loads nothing from any of them. No analytics, tag-manager or advertising address is
+        contacted by any page of the site.</p>
+        <ul>
+            <li><strong>fonts.googleapis.com</strong> and <strong>fonts.gstatic.com</strong> (Google Fonts) - the
+            stylesheet and the two font files of the site's lettering, loaded on the pages that use it. They receive your IP address and your browser's user agent, as any
+            web server does; nothing else is sent.</li>
+        </ul>
+
+        <h2 id="logs">Diagnostic logs</h2>
+        <p>The app writes a plain-text log of its own work next to the program (or, when that folder is not
+        writable, under your local application data). It never leaves your device on its own. Settings &rarr;
+        About has a "Send the logs to the author" button: it packs those logs and a report of your version,
+        Windows details and settings into an archive, shows you what went in, and opens a new message in your
+        own mail program with the archive attached. Nothing is transmitted until you send that message
+        yourself, and you can open the archive and inspect it first. The logs contain the paths and names of
+        the files you opened; your translation API key is never included.</p>
+
+        <h2>Children's privacy</h2>
+        <p>The app collects no data from anyone, including children.</p>
+
+        <h2>Open source</h2>
+        <p>Fast Media Sorter &amp; Sharing for Windows is open source - you can review exactly what it does, no hidden surprises, at
+        <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">github.com/SerZhyAle/FastMediaSorter_Lite</a>.</p>
+
+        <h2>Changes to this policy</h2>
+        <p>If this policy changes, the updated version will be posted on this page with a new
+        "Last updated" date.</p>
+
+        <h2>Contact</h2>
+        <p>Questions about this policy: <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</p>
+        </div>
+        <div data-l="ru">
+        <p class="note">Последнее обновление: 8 ноября 2026 г.</p>
+
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows не собирает персональные данные.</strong> В нём нет рекламы,
+        телеметрии и аналитики. Программа работает целиком на вашем устройстве, и разработчик
+        не получает никаких данных ни о вас, ни о том, как вы пользуетесь программой - если только вы сами не решите отправить свои логи (см.
+        <a href="#logs-ru">Диагностические логи</a>) - честно говоря, мы бы всё равно не знали, что с ними делать. Там, где программа
+        куда-то входит - пароль сервера общих папок, учётная запись обмена, ключ переводчика, - она входит на сервер или в службу,
+        <em>которые выбрали вы</em>; учётная запись создаётся там, где она живёт, и разработчику о ней не сообщается никогда.</p>
+
+        <h2>К чему обращается программа и зачем</h2>
+        <ul>
+            <li><strong>Ваши медиафайлы.</strong> Программа читает, показывает, копирует, перемещает, переименовывает и
+            удаляет файлы изображений и видео в открытых вами папках - в этом её главное назначение. Она
+            трогает только те файлы и папки, на которые вы ей указали (включая сетевые папки, которые вы открываете). Она
+            видела вашу папку с мемами и ни в чём вас не осудила.</li>
+
+            <li><strong>Серверы и сетевые папки, которые вы добавляете сами.</strong> Папка на SFTP-сервере или
+            сетевая папка, требующая вход, открывается только после того, как вы её добавите (вручную или импортом
+            файла, который создаёт Менеджер общего доступа). После этого программа открывает прямое исходящее соединение с адресом, который
+            вы указали, и больше ни с чем - она никогда не принимает для этого входящие соединения и никогда не связывается
+            с разработчиком. На вашем ПК, в вашей учётной записи Windows, хранятся три небольшие вещи: адрес сервера и
+            имя пользователя, отпечаток SSH-ключа сервера (чтобы сервер, выдающий себя за ваш, был отклонён) и
+            пароль, зашифрованный средствами Windows (DPAPI), так что прочитать его можете только вы на этом ПК. Если снять флажок
+            &quot;Запомнить пароль (защищён средствами Windows)&quot;, пароль хранится в памяти до закрытия программы и нигде
+            не записывается. Файлы, которые вы открываете с сервера, копируются в закрытую папку кэша, которая удаляется, когда
+            вы выходите из ресурса или закрываете программу. Пароли никогда не попадают в пакет логов, который вы можете
+            решить отправить.</li>
+
+            <li><strong>Общий доступ к папкам - по желанию, только по вашему согласию.</strong> Если вы его включите, встроенный
+            Менеджер общего доступа запускает локальный SFTP-сервер, чтобы ваш собственный телефон мог просматривать выбранные вами папки.
+            Пароль доступа и ключ хоста сервера создаются и хранятся только на вашем ПК, а файлы
+            передаются напрямую между вашими устройствами - никогда не через нас и не через третьих лиц. Пока
+            общий доступ включён, любое устройство в вашей текущей сети (домашней, офисной или общественного Wi-Fi) может обратиться к
+            ПК на порт общего доступа; для доступа нужен пароль, встроенный в QR-код или конфигурацию, которыми вы делитесь, поэтому относитесь к
+            этому коду как к ключу и не публикуйте его. Переключатель <em>Только локальная сеть</em> не выпускает общий доступ
+            в интернет; неактивные соединения закрываются через несколько часов, а число одновременно подключённых
+            устройств можно ограничить. Запуск общего доступа также обращается наружу без отдельного переключателя: рабочая программа
+            спрашивает у двух публичных сервисов, <a href="https://api.ipify.org">api.ipify.org</a> и
+            <a href="https://icanhazip.com">icanhazip.com</a>, какой адрес видит интернет у вашего ПК
+            (они видят ваш публичный IP-адрес и больше ничего), и это происходит даже при включённом режиме <em>Только локальная сеть</em>.
+            Если этот режим не включён (по умолчанию он выключен), рабочая программа также просит ваш собственный роутер
+            пробросить порт общего доступа (UPnP или NAT-PMP) и, когда проброшенный порт есть, просит
+            <a href="https://check-host.net">check-host.net</a> проверить, что он отвечает снаружи;
+            на время проверки этот сервис узнаёт ваш публичный адрес и порт. Пока
+            общий доступ работает, ПК объявляет о себе в локальной сети (mDNS), чтобы сопряжённый телефон мог найти его
+            снова, когда адрес изменится; это не выходит за пределы вашей сети. Для включения общего доступа к папкам
+            нужно одно подтверждение администратора - в установщике или при первом включении в программе (спросит Windows):
+            оно добавляет правило брандмауэра, которое разрешает принимать подключения только программе общего доступа;
+            при удалении программы правило убирается (пакет из Microsoft Store объявляет это правило в своём манифесте).
+            Программа ведёт только локальные счётчики соединений (это не телеметрия, и они никогда не покидают ваш ПК).</li>
+
+            <li><strong>Трансляции для StreamsPlayer.</strong> В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.</li>
+
+            <li><strong>Живая трансляция и камера - только после того, как вы их запустите.</strong> Живая трансляция
+            Share Manager захватывает один выбранный вами источник: экран, одно окно, камеру, микрофон или системный
+            звук. До нажатия «Начать трансляцию» ничего не захватывается; «Остановить трансляцию» завершает её, а
+            закрытие захватываемого окна завершает и его трансляцию. Всё, что видно или слышно в этом источнике, доходит
+            до слушателей, включая личное, поэтому, когда открыто что-то ещё, выбирайте одно окно, а не весь экран.
+            Слушатели - это зрители в вашей собственной сети, когда отмечено «Разрешить зрителям в моей сети», и, если
+            этот ПК присоединён к учётной записи обмена, слушатели через сервер обмена этой учётной записи (см. пункт об
+            учётной записи обмена ниже); разработчику не уходит ничего. Ссылка трансляции, её код или файл .fmsbcast
+            вместе с заданным вами паролем слушателя - это ключ; «Новый пароль ссылки» даёт ссылке новый пароль прямо в
+            эфире. «Сканировать камерой..» в окне кода телефона и в окне учётной записи обмена считывает QR-код телефона
+            первой камерой этого ПК: кадры остаются только в памяти, а это окно ничего не сохраняет и не отправляет.
+            Разрешать ли программам камеру и микрофон, решает сама Windows (Параметры &rarr; Конфиденциальность и
+            защита &rarr; Камера, Микрофон); пакет из Microsoft Store объявляет для этих функций возможности камеры и
+            микрофона.</li>
+
+            <li><strong>Диски FileDO - по желанию, только по вашему согласию.</strong> Если вы подключаете контейнер .fdd для общего доступа,
+            сервер монтирует его на этом ПК и публикует его содержимое для авторизованных SFTP-клиентов.
+            Выбранная буква диска Windows - это локальный псевдоним для текущего сеанса вашего входа; SMB-ресурс
+            при этом не создаётся. Зашифрованный диск разблокируется на ПК. Его пароль передаётся только
+            проверенному локальному обработчику и FileDO, но не в аргументах команд и не в логах. Автозапуск диска
+            - отдельный выбор: только после явного согласия его учётные данные сохраняются в защищённом хранилище
+            Windows на этом ПК. Отключение автозапуска или удаление диска из общего доступа удаляет
+            этот сохранённый ключ. Для монтирования нужны права администратора; включение обычного общего доступа к папкам
+            не повышает права сервера втихую и не меняет учётную запись службы. См.
+            <a href="how-to-filedo-disks.html">руководство по общему доступу к дискам FileDO</a>.</li>
+
+            <li><strong>Всегда включённый общий доступ - служба Windows, только если вы сами об этом попросите.</strong> Она появляется
+            либо из отдельной загрузки Серверной редакции, либо из пункта Менеджера общего доступа «Перевести раздачу в режим службы Windows..»
+            (Настройки менеджера &rarr; Хостинг); по умолчанию она не устанавливается никогда, и
+            в любом случае Windows сначала запрашивает подтверждение администратора. Тот же общий доступ к папкам тогда обслуживается
+            службой Windows, а не вашим сеансом входа, поэтому выбранные вами папки остаются доступны
+            с момента загрузки, даже когда в системе никто не вошёл. То, что собирается, не меняется - по-прежнему
+            никакой телеметрии, и файлы по-прежнему идут напрямую между вашими устройствами - но меняется окно уязвимости:
+            общий доступ работает всё то время, пока включён компьютер, а не только пока вы им пользуетесь. Служба работает от имени
+            <code>LOCAL SERVICE</code>, которой выдаётся доступ на чтение к каждой папке, которой вы делитесь (и доступ на запись
+            только там, где вы разрешили запись), и больше ничего. Её ключ хоста, пароль и настройки хранятся в
+            системной папке <code>%ProgramData%\FastMediaSorterCompanion</code>, которую могут открыть только администраторы,
+            служба и ваша учётная запись. Пункт «Удалить роль сервера» в Менеджере общего доступа или удаление
+            Серверной редакции останавливает и удаляет службу, возвращает эти разрешения на папки и удаляет
+            правило брандмауэра; удаление обычной редакции предлагает сделать то же самое для службы, которую настроил её Менеджер общего доступа
+            (тихое удаление, например <code>winget uninstall</code>, не может спросить и оставляет службу
+            на месте). Ключ хоста сохраняется, если вы не удалите эту папку, так что ваши сопряжённые телефоны продолжат работать, если
+            вы переустановите программу.</li>
+
+            <li><strong>Учётная запись обмена - сервер, который кто-то запускает; обычно это вы.</strong> 64-разрядный просмотрщик
+            и Менеджер общего доступа могут подключиться к учётной записи на сервере обмена, чтобы все устройства одной
+            учётной записи видели папки, которые публикуют остальные. Сервер - не наш: это небольшая программа, которую
+            запускает кто-то свой - обычно вы, на своём ПК или на машине под вашим контролем. Пока вы не войдёте с логином и паролем
+            учётной записи этого сервера (или с кодом сопряжения, который создало для вас одно из его устройств), ничего не происходит:
+            ни соединения с сервером обмена, ни слушающего порта, ни записей. Пароль вводится один раз и не сохраняется - если вы сами
+            не включите его хранение; тогда он шифруется средствами Windows (DPAPI) для вашей учётной записи Windows в одном локальном
+            файле, а сам сервер хранит только его хеш, никогда не пароль. Зарегистрированное устройство вместо пароля хранит токен
+            устройства, на вашем ПК он зашифрован так же; сервер хранит только хеш токена. Программа помнит адрес сервера и отпечаток
+            его сертификата и отказывается подключаться к серверу, чей сертификат изменился. Строка подключения, которую может показать
+            другое устройство учётной записи, - это тот же адрес с отпечатком: в ней нет ни пароля, ни токена, и в логи и в архив
+            поддержки она не попадает никогда. <strong>Что видит сервер обмена и чего не видит.</strong>
+            Сервер обмена соединяет ваши устройства, поэтому знает имена вашего аккаунта, устройств, папок и трансляций, видит, какие устройства в сети, и сколько и когда передаётся. Открыть то, что идёт через него, он не может: папки и их файлы, трансляции и буфер шифруются на вашем устройстве и открываются только на других ваших устройствах или у тех, кому вы дали доступ. Чтобы заглянуть внутрь, тому, кто управляет сервером, пришлось бы добавить в ваш аккаунт своё устройство, и оно появилось бы в списке ваших устройств.
+            Через Google Drive файлы и буфер хранятся в вашем собственном аккаунте Google, как и другие ваши файлы на Google Drive; сервер обмена в этом не участвует.
+            На диске сервер хранит хеши паролей
+            и токенов, открытые ключи устройств и записи опубликованных папок. Зашифрованные данные
+            доступа, «конверты» ключей трансляций и выдач доступа и значения буфера остаются в памяти;
+            зашифрованное содержимое и ключи не записываются в журналы.
+            <strong>Передача буфера.</strong> Команда «Отправить буфер на сервер» в Share Manager,
+            его меню в области уведомлений или ярлыком отправляет текущий текст, изображение или один
+            файл в каждую подключённую обычную запись. «Получить буфер с сервера» получает последнее
+            значение. Это явная передача, без постоянного наблюдения за буфером. Сервер хранит лишь
+            последнее завершённое значение в памяти, никогда на диске. Новая завершённая загрузка
+            заменяет его; прерванная оставляет прежнее. Перезапуск сервера или удаление записи очищает
+            значение. Журналы содержат лишь вид и класс размера, без содержимого буфера и имени файла.
+            <strong>Проверка снаружи.</strong> Кнопка «Виден ли мой сервер снаружи» явно обращается к
+            <a href="https://check-host.net">check-host.net</a> для проверки публичного адреса и порта;
+            сторонний сервис получает адрес, который вы поручили проверить.</li>
+
+            <li id="exchange-account-deletion-ru"><strong>Выход и удаление учётной записи обмена.</strong>
+            «Выйти на этом устройстве» в настройках записи обмена Share Manager удаляет вход на этом ПК,
+            но не запись и не вход на других устройствах. Для удаления выберите удаление записи в меню
+            карточки сервера в разделе «Мои устройства» приложения Android и подтвердите паролем записи
+            либо попросите оператора сервера удалить её. На своём сервере удалите запись со страницы
+            администрирования сервера в Share Manager.
+            Удаляются хеш пароля, зарегистрированные устройства и хеши токенов, включая отозванные,
+            записи опубликованных папок и трансляций, неиспользованные коды сопряжения, доступ,
+            выданный записью и ей самой, и буфер в памяти сервера. Активные сеансы завершаются.
+            Исходные файлы и полученные копии не удаляются; файлы Google Drive и служебные журналы
+            за установленный оператором срок хранения остаются. Удаление программы не удаляет запись.</li>
+
+            <li><strong>Сеть - только когда вы используете функцию, которой она нужна.</strong> Функция перевода текста на картинке
+            выключена, пока вы её не включите и не настроите. Когда вы ею пользуетесь, программа отправляет распознанный текст
+            на конечную точку перевода, которую выбираете <em>вы</em> - локальная модель <a href="https://ollama.com">Ollama</a>
+            на вашем собственном компьютере или указанный вами сервер <a href="https://libretranslate.com">LibreTranslate</a> - и получает
+            переведённый текст. <strong>OCR (распознавание текста) работает полностью офлайн.</strong>
+            Кроме этого, программа не выполняет сетевых запросов, кроме загрузки необязательного компонента, который вы запросили:
+            дополнительные языковые пакеты OCR из публичного репозитория данных Tesseract; среды выполнения OCR и воспроизведения
+            видео с <a href="https://www.nuget.org">nuget.org</a>, если сборка не принесла
+            их с собой; <a href="https://ffmpeg.org">FFmpeg</a> - видеокодировщик, на котором работает «Заменить видео» -
+            из его опубликованных сборок для Windows; установщик Ollama с ollama.com и модели перевода
+            через ваш собственный Ollama, когда вы нажимаете соответствующую кнопку; и doc-html-translate через
+            <code>winget</code>, когда вы нажимаете кнопку его установки. Каждая такая загрузка происходит только после того, как вы нажмёте эту
+            кнопку или ответите «да» на запрос, в котором названо, что именно загружается; вместе с любой из них ничего о ваших файлах, ваших
+            путях или о том, как вы пользуетесь программой, не отправляется. Если для среды выполнения нужен Microsoft Visual C++
+            Redistributable, а его нет, программа сообщит об этом и может открыть загрузку Microsoft в вашем
+            браузере - сам этот установщик она никогда не скачивает и не запускает.</li>
+
+            <li><strong>Ключ API (если вы его задаёте).</strong> Если настроенному вами провайдеру перевода нужен
+            ключ API, он хранится на вашем устройстве в зашифрованном виде с помощью Windows DPAPI и отправляется только на
+            конечную точку этого провайдера при переводе.</li>
+        </ul>
+
+        <h2>Локальные файлы, которые записывает программа</h2>
+        <ul>
+            <li><strong>Настройки.</strong> Предпочтения и горячие клавиши хранятся в реестре Windows (в сборке
+            из Microsoft Store они находятся внутри контейнера пакета приложения).</li>
+            <li><strong>Резервные копии при импорте настроек (64-разрядная программа).</strong> Перед импортом профиля
+            программа сохраняет ваши текущие предпочтения, включая историю папок и позиции воспроизведения,
+            в защищённую папку в <code>%LOCALAPPDATA%\SZA\FastMediaSorter\settings-backups</code>
+            (в сборке из Microsoft Store - внутри корня локальных данных приложения). Эти локальные копии для отката
+            не содержат паролей и ключей API. Импорт прекращается, если не удаётся создать закрытую резервную копию;
+            ничего не сохраняется рядом с импортируемым файлом или в общей временной папке. Резервные копии не
+            удаляются автоматически. Вы можете восстановить одну из них через Настройки &rarr; Импорт настроек или удалить
+            старые копии сами, когда они перестанут быть нужны.</li>
+            <li><strong>Данные и кэши OCR.</strong> Загруженные языковые пакеты Tesseract, загруженная копия
+            FFmpeg, кэш переводов и кэш декодирования (декодированные копии открывавшихся вами файлов WEBP, AVIF и HEIC,
+            которые хранятся, чтобы второй просмотр был мгновенным) находятся в
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. Они никогда не покидают ваше устройство, а оба кэша
+            можно очистить или отключить в Настройках.</li>
+            <li><strong>История просмотра (64-разрядная программа).</strong> В том же месте реестра, что и настройки,
+            просмотрщик хранит списки недавних файлов и папок (в пределах заданных вами лимитов), масштаб папки, если вы
+            выбрали запоминать масштаб для каждой папки, а для видео - позицию воспроизведения каждого файла: его путь,
+            размер, время изменения и позицию, чтобы видео продолжалось с того места, где вы остановились. Пункт
+            «Запоминать позицию просмотра» отключает последнее. Файл, открытый из архива или с сервера, по его временной
+            копии никогда не запоминается.</li>
+            <li><strong>Архивы (64-разрядная программа).</strong> ZIP, CBZ, 7z или RAR, который вы открываете, показывается
+            как папка: его картинки и видео по одному распаковываются в закрытую папку в
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter\archive-cache</code>, пока вы его просматриваете. Папка удаляется,
+            когда вы выходите из архива или закрываете программу, а то, что осталось после сбоя, убирается при следующем
+            открытии архива.</li>
+            <li><strong>Правка картинки (64-разрядная программа).</strong> Когда редактор сохраняет результат поверх оригинала,
+            он сначала записывает его рядом под временным именем с <code>.fms-tmp</code>
+            (например <code>photo.fms-tmp.jpg</code>) и подставляет, только когда файл готов целиком, поэтому сбой не может
+            оставить половину фотографии. Остальные данные EXIF оригинала переносятся, кроме встроенной миниатюры,
+            которая показывала бы картинку до правки.</li>
+            <li><strong>Выгрузки, несущие ключ.</strong> «Экспорт..» в Менеджере ресурсов (64-разрядная программа) записывает
+            файл <code>.fmscfg</code> в выбранное вами место, доступный для чтения только вашей учётной записи; в нём адрес
+            и имя пользователя сервера, а пароль - только если вы выбрали этот вариант. «Отправить по почте..» в Менеджере общего
+            доступа передаёт вашей почтовой программе свой <code>.fmscfg</code> (ключ доступа к общей папке) через временную копию
+            в закрытой папке, которая существует только на время этого вызова и сразу удаляется. Относитесь к такому файлу
+            как к паролю.</li>
+        </ul>
+
+        <h2>Передача данных</h2>
+        <p>Разработчику - ничего, причём такое «ничего», которое действительно ничего, и никакой телеметрии или аналитики
+        никогда. Единственное, что покидает ваше устройство, делает это по вашему явному выбору и идёт туда, куда вы укажете,
+        а не к нам: переводимый вами текст уходит на настроенную вами конечную точку перевода; общие файлы идут
+        напрямую на ваш собственный телефон по SFTP; папки учётной записи обмена и значение буфера обмена, когда вы нажимаете кнопку его отправки, проходят через выбранный вами сервер обмена -
+        ровно как описано выше; при запуске общего доступа ваш публичный IP-адрес видят api.ipify.org
+        и icanhazip.com (они возвращают его программе), а если не включён режим «Только локальная сеть», ваш публичный адрес и порт
+        показываются check-host.net исключительно для проверки доступности; а архив логов попадает к разработчику, только
+        если вы сами отправите его из своей почтовой программы.</p>
+
+        <h2 id="website-ru">Этот сайт</h2>
+        <p>Сама программа не обращается ни к одному из адресов ниже. Они относятся к сайту продукта - главной странице,
+        руководствам и странице доверия к установке - и ваш браузер обращается к ним, когда открывает эти страницы.
+        Эта страница политики ничего из них не загружает. Ни одна страница сайта не обращается к адресам аналитики,
+        менеджера тегов или рекламы.</p>
+        <ul>
+            <li><strong>fonts.googleapis.com</strong> и <strong>fonts.gstatic.com</strong> (Google Fonts) - таблица
+            стилей и два файла шрифтов для начертания сайта; загружаются на страницах, которые его используют. Они получают ваш IP-адрес и user agent вашего браузера, как любой веб-сервер; больше ничего не
+            передаётся.</li>
+        </ul>
+
+        <h2 id="logs-ru">Диагностические логи</h2>
+        <p>Программа ведёт текстовый журнал своей работы рядом с программой (или, если эта папка недоступна для
+        записи, в локальных данных вашего приложения). Сам по себе он никогда не покидает ваше устройство. В Настройки &rarr;
+        О программе есть кнопка «Отправить логи автору»: она упаковывает эти логи и отчёт о вашей версии,
+        сведениях о Windows и настройках в архив, показывает вам, что туда попало, и открывает новое письмо в
+        вашей собственной почтовой программе с приложенным архивом. Ничего не передаётся, пока вы не отправите это письмо
+        сами, а архив можно открыть и проверить заранее. В логах есть пути и имена
+        открывавшихся вами файлов; ключ API вашего перевода в них никогда не включается.</p>
+
+        <h2>Конфиденциальность детей</h2>
+        <p>Программа не собирает данные ни о ком, включая детей.</p>
+
+        <h2>Открытый исходный код</h2>
+        <p>Fast Media Sorter &amp; Sharing for Windows - программа с открытым исходным кодом: вы можете проверить, что именно она делает, никаких скрытых сюрпризов, на
+        <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">github.com/SerZhyAle/FastMediaSorter_Lite</a>.</p>
+
+        <h2>Изменения в этой политике</h2>
+        <p>Если эта политика изменится, обновлённая версия будет опубликована на этой странице с новой датой
+        «Последнее обновление».</p>
+
+        <h2>Контакты</h2>
+        <p>Вопросы по этой политике: <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</p>
+        </div>
+        <div data-l="ua">
+        <p class="note">Останнє оновлення: 8 листопада 2026 р.</p>
+
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows не збирає персональних даних.</strong> У ній немає реклами,
+        телеметрії та аналітики. Програма працює цілком на вашому пристрої, і розробник
+        не отримує жодних даних ні про вас, ні про те, як ви користуєтеся програмою - хіба що ви самі вирішите надіслати свої журнали (див.
+        <a href="#logs-ua">Діагностичні журнали</a>) - чесно кажучи, ми б усе одно не знали, що з ними робити. Там, де програма
+        кудись входить - пароль сервера спільних тек, обліковий запис обміну, ключ перекладача, - вона входить на сервер або службу,
+        <em>які обрали ви</em>; обліковий запис створюється там, де він живе, і розробникові про нього не повідомляється ніколи.</p>
+
+        <h2>До чого звертається програма і навіщо</h2>
+        <ul>
+            <li><strong>Ваші медіафайли.</strong> Програма читає, показує, копіює, переміщує, перейменовує та
+            видаляє файли зображень і відео у відкритих вами теках - у цьому її головне призначення. Вона
+            торкається лише тих файлів і тек, на які ви їй вказали (зокрема мережевих тек, які ви відкриваєте). Вона
+            бачила вашу теку з мемами і нікого не засудила.</li>
+
+            <li><strong>Сервери та мережеві теки, які ви додаєте самі.</strong> Тека на SFTP-сервері або
+            мережева тека, що потребує входу, відкривається лише після того, як ви її додасте (вручну або імпортом
+            файлу, який створює Менеджер спільного доступу). Після цього програма відкриває пряме вихідне з'єднання з адресою, яку
+            ви вказали, і більше ні з чим - вона ніколи не приймає для цього вхідних з'єднань і ніколи не зв'язується
+            з розробником. На вашому ПК, у вашому обліковому записі Windows, зберігаються три невеликі речі: адреса сервера та
+            ім'я користувача, відбиток SSH-ключа сервера (щоб сервер, який видає себе за ваш, було відхилено) і
+            пароль, зашифрований засобами Windows (DPAPI), тож прочитати його можете лише ви на цьому ПК. Якщо зняти прапорець
+            &quot;Запам'ятати пароль (захищено засобами Windows)&quot;, пароль зберігається в пам'яті до закриття програми і ніде
+            не записується. Файли, які ви відкриваєте із сервера, копіюються до закритої теки кешу, яку видаляють, коли
+            ви виходите з ресурсу або закриваєте програму. Паролі ніколи не потрапляють до пакета журналів, який ви можете
+            вирішити надіслати.</li>
+
+            <li><strong>Спільний доступ до тек - за бажанням, лише за вашою згодою.</strong> Якщо ви його ввімкнете, вбудований
+            Менеджер спільного доступу запускає локальний SFTP-сервер, щоб ваш власний телефон міг переглядати обрані вами теки.
+            Пароль доступу та ключ хоста сервера створюються і зберігаються лише на вашому ПК, а файли
+            передаються напряму між вашими пристроями - ніколи не через нас і не через третіх осіб. Поки
+            спільний доступ увімкнено, будь-який пристрій у вашій поточній мережі (домашній, офісній чи громадському Wi-Fi) може звернутися до
+            ПК на порт спільного доступу; для доступу потрібен пароль, вбудований у QR-код або конфігурацію, якими ви ділитеся, тож ставтеся до
+            цього коду як до ключа і не публікуйте його. Перемикач <em>Лише локальна мережа</em> не випускає спільний доступ
+            в інтернет; неактивні з'єднання закриваються за кілька годин, а кількість одночасно підключених
+            пристроїв можна обмежити. Запуск спільного доступу також звертається назовні без окремого перемикача: робоча програма
+            питає у двох публічних сервісів, <a href="https://api.ipify.org">api.ipify.org</a> та
+            <a href="https://icanhazip.com">icanhazip.com</a>, яку адресу бачить інтернет у вашого ПК
+            (вони бачать вашу публічну IP-адресу і більше нічого), і це відбувається навіть за ввімкненого режиму <em>Лише локальна мережа</em>.
+            Якщо цей режим не ввімкнено (за замовчуванням він вимкнений), робоча програма також просить ваш власний роутер
+            прокинути порт спільного доступу (UPnP або NAT-PMP) і, коли прокинутий порт є, просить
+            <a href="https://check-host.net">check-host.net</a> перевірити, що він відповідає ззовні;
+            на час перевірки цей сервіс дізнається вашу публічну адресу та порт. Поки
+            спільний доступ працює, ПК оголошує про себе в локальній мережі (mDNS), щоб сполучений телефон міг знайти його
+            знову, коли адреса зміниться; це не виходить за межі вашої мережі. Для ввімкнення спільного доступу до тек
+            потрібне одне підтвердження адміністратора - в інсталяторі або під час першого ввімкнення в програмі (запитає Windows):
+            воно додає правило брандмауера, яке дозволяє приймати підключення лише програмі спільного доступу;
+            під час видалення програми правило прибирається (пакет зі Microsoft Store оголошує це правило у своєму маніфесті).
+            Програма веде лише локальні лічильники з'єднань (це не телеметрія, і вони ніколи не залишають ваш ПК).</li>
+
+            <li><strong>Трансляції для StreamsPlayer.</strong> У 64-бітному переглядачі натисніть правою кнопкою на відео, аудіофайл або його теку й виберіть трансляцію. Менеджер спільного доступу видає файл .spres, QR-код або швидке посилання для імпорту в StreamsPlayer. Тека стає одним каналом із зафіксованим списком: оновлення замінює список, відкликання вимикає посилання. HTTP-шлюз має окремий перемикач і типово вимкнений. Токен надає доступ лише для читання однієї трансляції, зазвичай на 24 години. HTTP не шифрується: передавайте документ особисто й вмикайте інтернет-доступ лише за потреби.</li>
+
+            <li><strong>Жива трансляція і камера - лише після того, як ви їх запустите.</strong> Жива трансляція
+            Share Manager захоплює одне вибране вами джерело: екран, одне вікно, камеру, мікрофон або системний звук.
+            До натискання «Почати трансляцію» нічого не захоплюється; «Зупинити трансляцію» завершує її, а закриття
+            вікна, що захоплюється, завершує і його трансляцію. Усе, що видно або чутно в цьому джерелі, доходить до
+            слухачів, зокрема особисте, тож коли відкрито щось іще, вибирайте одне вікно, а не весь екран. Слухачі - це
+            глядачі у вашій власній мережі, коли позначено «Дозволити глядачам у моїй мережі», і, якщо цей ПК приєднано
+            до облікового запису обміну, слухачі через сервер обміну цього облікового запису (див. пункт про обліковий
+            запис обміну нижче); розробникові не надходить нічого. Посилання трансляції, її код або файл .fmsbcast разом
+            із заданим вами паролем слухача - це ключ; «Новий пароль посилання» дає посиланню новий пароль просто в
+            ефірі. «Сканувати камерою..» у вікні коду телефону та у вікні облікового запису обміну зчитує QR-код телефону
+            першою камерою цього ПК: кадри залишаються лише в пам'яті, а це вікно нічого не зберігає і не надсилає.
+            Чи дозволяти програмам камеру й мікрофон, вирішує сама Windows (Параметри &rarr; Конфіденційність і захист
+            &rarr; Камера, Мікрофон); пакет із Microsoft Store оголошує для цих функцій можливості камери й
+            мікрофона.</li>
+
+            <li><strong>Диски FileDO - за бажанням, лише за вашою згодою.</strong> Якщо ви підключаєте контейнер .fdd для спільного доступу,
+            сервер монтує його на цьому ПК і публікує його вміст для авторизованих SFTP-клієнтів.
+            Вибрана літера диска Windows - це локальний псевдонім для поточного сеансу вашого входу; SMB-ресурс
+            при цьому не створюється. Зашифрований диск розблоковується на ПК. Його пароль передається лише
+            перевіреному локальному обробнику та FileDO, а не в аргументах команд і не в журналах. Автозапуск диска
+            - окремий вибір: лише після явної згоди його облікові дані зберігаються в захищеному сховищі
+            Windows на цьому ПК. Вимкнення автозапуску або вилучення диска зі спільного доступу видаляє
+            цей збережений ключ. Для монтування потрібні права адміністратора; увімкнення звичайного спільного доступу до тек
+            не підвищує права сервера нишком і не змінює обліковий запис служби. Див.
+            <a href="how-to-filedo-disks.html">посібник зі спільного доступу до дисків FileDO</a>.</li>
+
+            <li><strong>Завжди ввімкнений спільний доступ - служба Windows, лише якщо ви самі про це попросите.</strong> Вона з'являється
+            або з окремого завантаження Серверної редакції, або з пункту Менеджера спільного доступу «Перевести роздачу в режим служби Windows..»
+            (Налаштування менеджера &rarr; Хостинг); за замовчуванням вона не встановлюється ніколи, і
+            в будь-якому разі Windows спершу запитує підтвердження адміністратора. Той самий спільний доступ до тек тоді обслуговується
+            службою Windows, а не вашим сеансом входу, тож обрані вами теки залишаються доступними
+            від моменту завантаження, навіть коли в системі ніхто не ввійшов. Те, що збирається, не змінюється - як і раніше
+            жодної телеметрії, і файли, як і раніше, ідуть напряму між вашими пристроями - але змінюється вікно вразливості:
+            спільний доступ працює весь час, поки ввімкнено комп'ютер, а не лише поки ви ним користуєтеся. Служба працює від імені
+            <code>LOCAL SERVICE</code>, якій надається доступ на читання до кожної теки, якою ви ділитеся (і доступ на запис
+            лише там, де ви дозволили запис), і більше нічого. Її ключ хоста, пароль і налаштування зберігаються в
+            системній теці <code>%ProgramData%\FastMediaSorterCompanion</code>, яку можуть відкрити лише адміністратори,
+            служба та ваш обліковий запис. Пункт «Видалити роль сервера» в Менеджері спільного доступу або видалення
+            Серверної редакції зупиняє і видаляє службу, повертає ці дозволи на теки та видаляє
+            правило брандмауера; видалення звичайної редакції пропонує зробити те саме для служби, яку налаштував її Менеджер спільного доступу
+            (тихе видалення, наприклад <code>winget uninstall</code>, не може запитати і залишає службу
+            на місці). Ключ хоста зберігається, якщо ви не видалите цю теку, тож ваші сполучені телефони й надалі працюватимуть, якщо
+            ви перевстановите програму.</li>
+
+            <li><strong>Обліковий запис обміну - сервер, який хтось запускає; зазвичай це ви.</strong> 64-розрядний переглядач
+            і Менеджер спільного доступу можуть підключитися до облікового запису на сервері обміну, щоб усі пристрої одного
+            облікового запису бачили теки, які публікують інші. Сервер - не наш: це невелика програма, яку запускає
+            хтось свій - зазвичай ви, на своєму ПК або на машині під вашим контролем. Поки ви не увійдете з логіном і паролем
+            облікового запису цього сервера (або з кодом сполучення, який створив для вас один із його пристроїв), нічого не відбувається:
+            ні з'єднання з сервером обміну, ні порта, що слухає, ні записів. Пароль вводиться один раз і не зберігається - якщо ви самі
+            не ввімкнете його зберігання; тоді він шифрується засобами Windows (DPAPI) для вашого облікового запису Windows в одній
+            локальній теці, а сам сервер зберігає лише його хеш, ніколи не пароль. Зареєстрований пристрій замість пароля зберігає
+            токен пристрою, на вашому ПК він зашифрований так само; сервер зберігає лише хеш токена. Програма пам'ятає адресу сервера
+            і відбиток його сертифіката та відмовляється підключатися до сервера, чий сертифікат змінився. Рядок підключення, який
+            може показати інший пристрій облікового запису, - це та сама адреса з відбитком: у ній немає ні пароля, ні токена, і до
+            журналів та архіву підтримки вона не потрапляє ніколи. <strong>Що бачить сервер обміну й чого не бачить.</strong>
+            Сервер обміну з'єднує ваші пристрої, тому знає імена вашого акаунта, пристроїв, папок і трансляцій, бачить, які пристрої в мережі, і скільки й коли передається. Відкрити те, що йде через нього, він не може: папки та їхні файли, трансляції й буфер шифруються на вашому пристрої та відкриваються лише на інших ваших пристроях або в тих, кому ви дали доступ. Щоб зазирнути всередину, тому, хто керує сервером, довелося б додати до вашого акаунта свій пристрій, і він з'явився б у списку ваших пристроїв.
+            Через Google Drive файли й буфер зберігаються у вашому власному акаунті Google, як і інші ваші файли на Google Drive; сервер обміну в цьому не бере участі.
+            На диску сервер зберігає хеші паролів
+            і токенів, відкриті ключі пристроїв та записи опублікованих тек. Зашифровані дані доступу,
+            «конверти» ключів трансляцій і наданого доступу та значення буфера залишаються в пам'яті;
+            зашифрований вміст і ключі не записуються до журналів.
+            <strong>Передавання буфера.</strong> Команда «Надіслати буфер на сервер» у Share Manager,
+            його меню в області сповіщень або ярликом надсилає поточний текст, зображення чи один
+            файл до кожного підключеного звичайного запису. «Отримати буфер із сервера» отримує останнє
+            значення. Це явне передавання, без постійного спостереження за буфером. Сервер зберігає лише
+            останнє завершене значення в пам'яті, ніколи на диску. Нове завершене завантаження замінює
+            його; перерване залишає попереднє. Перезапуск сервера чи видалення запису очищує значення.
+            Журнали містять лише вид і клас розміру, без вмісту буфера та імені файлу.
+            <strong>Перевірка ззовні.</strong> Кнопка «Чи видно мій сервер ззовні» явно звертається до
+            <a href="https://check-host.net">check-host.net</a> для перевірки публічної адреси та порту;
+            сторонній сервіс отримує адресу, яку ви доручили перевірити.</li>
+
+            <li id="exchange-account-deletion-uk"><strong>Вихід і видалення облікового запису обміну.</strong>
+            «Вийти на цьому пристрої» в налаштуваннях запису обміну Share Manager видаляє вхід на цьому ПК,
+            але не запис і не вхід на інших пристроях. Для видалення оберіть видалення запису в меню
+            картки сервера в розділі «Мої пристрої» застосунку Android і підтвердьте паролем запису
+            або попросіть оператора сервера видалити його. На своєму сервері видаліть запис зі сторінки
+            адміністрування сервера в Share Manager.
+            Видаляються хеш пароля, зареєстровані пристрої та хеші токенів, включно з відкликаними,
+            записи опублікованих тек і трансляцій, невикористані коди сполучення, доступ, наданий
+            записом і йому самому, та буфер у пам'яті сервера. Активні сеанси завершуються.
+            Вихідні файли й отримані копії не видаляються; файли Google Drive та службові журнали
+            за встановлений оператором строк зберігання залишаються. Видалення програми не видаляє запис.</li>
+
+            <li><strong>Мережа - лише коли ви користуєтеся функцією, якій вона потрібна.</strong> Функція перекладу тексту на зображенні
+            вимкнена, поки ви її не ввімкнете й не налаштуєте. Коли ви нею користуєтеся, програма надсилає розпізнаний текст
+            на кінцеву точку перекладу, яку обираєте <em>ви</em> - локальну модель <a href="https://ollama.com">Ollama</a>
+            на вашому власному комп'ютері або вказаний вами сервер <a href="https://libretranslate.com">LibreTranslate</a> - і отримує
+            перекладений текст. <strong>OCR (розпізнавання тексту) працює повністю офлайн.</strong>
+            Окрім цього, програма не виконує мережевих запитів, окрім завантаження необов'язкового компонента, який ви запросили:
+            додаткові мовні пакети OCR із публічного репозиторію даних Tesseract; середовища виконання OCR і відтворення
+            відео з <a href="https://www.nuget.org">nuget.org</a>, якщо збірка не принесла
+            їх із собою; <a href="https://ffmpeg.org">FFmpeg</a> - відеокодувальник, на якому працює «Замінити відео» -
+            з його опублікованих збірок для Windows; інсталятор Ollama з ollama.com і моделі перекладу
+            через ваш власний Ollama, коли ви натискаєте відповідну кнопку; та doc-html-translate через
+            <code>winget</code>, коли ви натискаєте кнопку його встановлення. Кожне таке завантаження відбувається лише після того, як ви натиснете цю
+            кнопку або відповісте «так» на запит, у якому названо, що саме завантажується; разом із будь-яким із них нічого про ваші файли, ваші
+            шляхи чи те, як ви користуєтеся програмою, не надсилається. Якщо для середовища виконання потрібен Microsoft Visual C++
+            Redistributable, а його немає, програма повідомить про це і може відкрити завантаження Microsoft у вашому
+            браузері - сам цей інсталятор вона ніколи не завантажує і не запускає.</li>
+
+            <li><strong>Ключ API (якщо ви його задаєте).</strong> Якщо налаштованому вами провайдеру перекладу потрібен
+            ключ API, він зберігається на вашому пристрої в зашифрованому вигляді за допомогою Windows DPAPI і надсилається лише на
+            кінцеву точку цього провайдера під час перекладу.</li>
+        </ul>
+
+        <h2>Локальні файли, які записує програма</h2>
+        <ul>
+            <li><strong>Налаштування.</strong> Уподобання та гарячі клавіші зберігаються в реєстрі Windows (у збірці
+            з Microsoft Store вони містяться всередині контейнера пакета застосунку).</li>
+            <li><strong>Резервні копії під час імпорту налаштувань (64-розрядна програма).</strong> Перед імпортом профілю
+            програма зберігає ваші поточні уподобання, зокрема історію тек і позиції відтворення,
+            у захищену теку в <code>%LOCALAPPDATA%\SZA\FastMediaSorter\settings-backups</code>
+            (у збірці з Microsoft Store - всередині кореня локальних даних застосунку). Ці локальні копії для відкоту
+            не містять паролів і ключів API. Імпорт зупиняється, якщо не вдається створити закриту резервну копію;
+            нічого не зберігається поруч з імпортованим файлом чи в спільній тимчасовій теці. Резервні копії не
+            видаляються автоматично. Ви можете відновити одну з них через Налаштування &rarr; Імпорт налаштувань або видалити
+            старі копії самі, коли вони перестануть бути потрібні.</li>
+            <li><strong>Дані та кеші OCR.</strong> Завантажені мовні пакети Tesseract, завантажена копія
+            FFmpeg, кеш перекладів і кеш декодування (декодовані копії відкритих вами файлів WEBP, AVIF і HEIC,
+            які зберігаються, щоб другий перегляд був миттєвим) містяться в
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. Вони ніколи не залишають ваш пристрій, а обидва кеші
+            можна очистити або вимкнути в Налаштуваннях.</li>
+            <li><strong>Історія перегляду (64-розрядна програма).</strong> У тому самому місці реєстру, що й налаштування,
+            переглядач зберігає списки нещодавніх файлів і тек (в межах заданих вами лімітів), масштаб теки, якщо ви
+            обрали запам'ятовувати масштаб для кожної теки, а для відео - позицію відтворення кожного файлу: його шлях,
+            розмір, час зміни та позицію, щоб відео продовжувалося з того місця, де ви зупинилися. Пункт
+            «Запам'ятовувати позицію перегляду» вимикає останнє. Файл, відкритий з архіву чи із сервера, за його тимчасовою
+            копією ніколи не запам'ятовується.</li>
+            <li><strong>Архіви (64-розрядна програма).</strong> ZIP, CBZ, 7z або RAR, який ви відкриваєте, показується
+            як тека: його картинки й відео по одному розпаковуються в закриту теку в
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter\archive-cache</code>, поки ви його переглядаєте. Теку видаляють,
+            коли ви виходите з архіву або закриваєте програму, а те, що залишилося після збою, прибирається під час наступного
+            відкриття архіву.</li>
+            <li><strong>Редагування картинки (64-розрядна програма).</strong> Коли редактор зберігає результат поверх оригіналу,
+            він спершу записує його поруч під тимчасовою назвою з <code>.fms-tmp</code>
+            (наприклад <code>photo.fms-tmp.jpg</code>) і підставляє, лише коли файл готовий повністю, тож збій не може
+            залишити половину фотографії. Решта даних EXIF оригіналу переноситься, окрім вбудованої мініатюри,
+            яка показувала б картинку до правки.</li>
+            <li><strong>Вивантаження, що несуть ключ.</strong> «Експорт..» у Менеджері ресурсів (64-розрядна програма) записує
+            файл <code>.fmscfg</code> у вибране вами місце, доступний для читання лише вашому обліковому запису; у ньому адреса
+            й ім'я користувача сервера, а пароль - лише якщо ви обрали цей варіант. «Надіслати поштою..» у Менеджері спільного
+            доступу передає вашій поштовій програмі свій <code>.fmscfg</code> (ключ доступу до спільної теки) через тимчасову копію
+            в закритій теці, яка існує лише на час цього виклику і відразу видаляється. Ставтеся до такого файлу
+            як до пароля.</li>
+        </ul>
+
+        <h2>Передавання даних</h2>
+        <p>Розробнику - нічого, причому таке «нічого», яке справді нічого, і жодної телеметрії чи аналітики
+        ніколи. Єдине, що залишає ваш пристрій, робить це за вашим явним вибором і йде туди, куди ви вкажете,
+        а не до нас: текст, який ви перекладаєте, іде на налаштовану вами кінцеву точку перекладу; спільні файли йдуть
+        напряму на ваш власний телефон через SFTP; теки облікового запису обміну та значення буфера обміну, коли ви натискаєте кнопку його надсилання, проходять через обраний вами сервер обміну -
+        рівно як описано вище; під час запуску спільного доступу вашу публічну IP-адресу бачать api.ipify.org
+        та icanhazip.com (вони повертають її програмі), а якщо не ввімкнено режим «Лише локальна мережа», вашу публічну адресу та порт
+        показують check-host.net виключно для перевірки доступності; а архів журналів потрапляє до розробника, лише
+        якщо ви самі надішлете його зі своєї поштової програми.</p>
+
+        <h2 id="website-ua">Цей сайт</h2>
+        <p>Сама програма не звертається до жодної з наведених нижче адрес. Вони належать сайту продукту - головній
+        сторінці, посібникам і сторінці довіри до встановлення - і ваш браузер звертається до них, коли відкриває ці
+        сторінки. Ця сторінка політики нічого з них не завантажує. Жодна сторінка сайту не звертається до адрес
+        аналітики, менеджера тегів чи реклами.</p>
+        <ul>
+            <li><strong>fonts.googleapis.com</strong> і <strong>fonts.gstatic.com</strong> (Google Fonts) - таблиця
+            стилів і два файли шрифтів для накреслення сайту; завантажуються на сторінках, які його використовують. Вони отримують вашу IP-адресу та user agent вашого браузера, як будь-який вебсервер; більше
+            нічого не передається.</li>
+        </ul>
+
+        <h2 id="logs-ua">Діагностичні журнали</h2>
+        <p>Програма веде текстовий журнал своєї роботи поруч із програмою (або, якщо цю теку не можна
+        записувати, у локальних даних вашого застосунку). Сам по собі він ніколи не залишає ваш пристрій. У Налаштування &rarr;
+        Про програму є кнопка «Надіслати журнали автору»: вона пакує ці журнали та звіт про вашу версію,
+        відомості про Windows і налаштування в архів, показує вам, що туди потрапило, і відкриває нове повідомлення у
+        вашій власній поштовій програмі із доданим архівом. Нічого не передається, поки ви не надішлете це повідомлення
+        самі, а архів можна відкрити й перевірити заздалегідь. У журналах є шляхи та імена
+        відкритих вами файлів; ключ API вашого перекладу в них ніколи не включається.</p>
+
+        <h2>Конфіденційність дітей</h2>
+        <p>Програма не збирає дані ні про кого, зокрема про дітей.</p>
+
+        <h2>Відкритий вихідний код</h2>
+        <p>Fast Media Sorter &amp; Sharing for Windows - програма з відкритим вихідним кодом: ви можете перевірити, що саме вона робить, жодних прихованих сюрпризів, на
+        <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">github.com/SerZhyAle/FastMediaSorter_Lite</a>.</p>
+
+        <h2>Зміни в цій політиці</h2>
+        <p>Якщо ця політика зміниться, оновлену версію буде опубліковано на цій сторінці з новою датою
+        «Останнє оновлення».</p>
+
+        <h2>Контакти</h2>
+        <p>Питання щодо цієї політики: <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</p>
+        </div>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom">
+<span data-l="en">MIT licensed &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Source on GitHub</a></span>
+<span data-l="ru">Лицензия MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Исходный код на GitHub</a></span>
+<span data-l="ua">Ліцензія MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Вихідний код на GitHub</a></span>
+<span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a></span>
+</div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues"><span data-l="en">Issue tracker</span><span data-l="ru">Трекер задач</span><span data-l="ua">Трекер задач</span></a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;function lang(v){d.setAttribute('data-lang',v);d.setAttribute('lang',v==='ua'?'uk':v);document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-setlang')===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.getAttribute('data-setlang'))}});var q=(location.search.match(/[?&]lang=(ru|uk|ua|en)(?:&|$)/)||[])[1];if(q==='uk')q='ua';lang(q||(d.getAttribute('data-lang')==='ru'?'ru':d.getAttribute('data-lang')==='ua'?'ua':'en'));var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body>
+</html>

@@ -11,7 +11,10 @@
 
 - **Reconnect transparently (rule 6, O1).** On a transport failure, before the person sees anything: race the stored
   access paths, re-verify the host key against the stored pin, re-authenticate, reopen the subsystem and retry the
-  pending operation. Only a failure of the whole sequence is shown.
+  pending operation. Only a failure of the whole sequence is shown. **Design variant (owner, 2026-10-30, ticket
+  252):** the open races every stored path; a mid-session loss redials the endpoint that won that race, not the
+  whole race again. It is a dated registry exception with a proposal to the contract's owner
+  (`remote-folder-access/PROPOSAL-2026-10-30-single-endpoint-redial-after-mid-session-loss.md`).
 - **Four classes, four reactions (rule 7, O2).** Transport reconnects; an auth rejection stops and asks to re-pair; a
   host-key mismatch refuses and warns, never auto-accepts the new key; an SFTP status is an ordinary result and
   never a reconnect. `ResourceFailureKind` and `ResourceMessages` keep them apart.

@@ -216,6 +216,13 @@ Friend Module ExchangeDeviceText
         Return If(online, Localization.T("в сети"), Localization.T("не в сети"))
     End Function
 
+    ''' <summary>The state of a device of the account. Item DD: a device paused by a platform limit says the row of the message table in
+    ''' place of plain offline.</summary>
+    Friend Function PresenceText(device As ExchangeDeviceRecord) As String
+        If device.IsSharePaused Then Return TableText(ConnectionDiagnosisMessages.SharePaused)
+        Return PresenceText(device.IsOnline)
+    End Function
+
     ''' <summary>The pairing code line and the minutes:seconds still left, as short culture-neutral text.</summary>
     Friend Function CodeLine(code As String) As String
         Return Localization.TF("Код для другого устройства: {0}", code)

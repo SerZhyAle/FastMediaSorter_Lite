@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Постоянная раздача папок | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Раздайте папки этого ПК на Android по SFTP: при входе в систему с полным пакетом или постоянно с серверной редакцией - службой Windows, работающей с загрузки.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/server.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/server.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/server.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Постоянная раздача папок | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Раздайте папки этого ПК на Android по SFTP: при входе в систему с полным пакетом или постоянно с серверной редакцией - службой Windows, работающей с загрузки.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/server.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Постоянная раздача папок | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Раздайте папки этого ПК на Android по SFTP: при входе в систему с полным пакетом или постоянно с серверной редакцией - службой Windows, работающей с загрузки.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Постоянная раздача папок | Fast Media Sorter & Sharing","description":"Раздайте папки этого ПК на Android по SFTP: при входе в систему с полным пакетом или постоянно с серверной редакцией - службой Windows, работающей с загрузки.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/server.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../../assets/sza-kit.css"><link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.warn{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}table.cmp{width:100%;border-collapse:collapse;font-size:.95rem}table.cmp th,table.cmp td{border:1px solid var(--border);padding:.55rem .7rem;text-align:left;vertical-align:top;color:var(--text-2)}table.cmp th{color:var(--text);font-family:var(--font-heading)}.tbl-wrap{overflow-x:auto}table.mx .lbl{display:none}table.mx td[data-state=absent],table.mx td[data-state=in-development]{font-style:italic}@media(max-width:700px){table.mx thead{display:none}table.mx tr{display:block;margin:0 0 .8rem;border:1px solid var(--border);border-radius:var(--radius-sm)}table.mx th,table.mx td{display:block;border:0;border-bottom:1px solid var(--border)}table.mx td .lbl{display:block;font-family:var(--font-heading);font-size:.78rem;color:var(--text)}}pre.cmd{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;overflow-x:auto;margin:.6rem 0}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="server.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../server.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/server.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Скачать</a></nav></header>
+
+<main class="container" id="main" tabindex="-1">
+
+<section class="hero"><span class="kicker">ALWAYS-ON · FOLDER SHARE SERVER</span>
+<h1>Папки доступны с телефона, даже когда в систему никто не вошёл</h1>
+<p class="lead">Серверная редакция ставит службу Windows, которая раздаёт выбранные вами папки по SFTP. Она стартует вместе с Windows, переживает выход из системы и перезапускается сама при сбое. Тот же SFTP, та же привязка по QR, то же приложение Android - отличается только хост.</p></section>
+
+<section class="section" id="which">
+<p>Четыре необязательные части: медиа- и файловый менеджер, который показывает и сортирует фото и видео одной клавишей и управляет файлами в локальных папках, на серверах и подключённых устройствах; локальная служба раздачи, которая раздаёт папки по SFTP и подключает этот ПК к учётной записи обмена; файловые операции по расписанию - копирование, перемещение, удаление и архивация в заданное время, - которые устанавливаются вместе с Менеджером общего доступа; и Media Exchange Server, который вы запускаете сами и через который ваши устройства связываются друг с другом, - начните с менеджера или с сервера раздачи папок, а остальное добавляйте, только если нужно. Эта страница - вход «сначала сервер»: служба раздачи папок для машины, которая должна быть всегда доступна, а менеджер - необязательное дополнение. Файловые операции по расписанию приходят с Менеджером общего доступа этой редакции и выполняются в сеансе вошедшего пользователя, а не в службе Windows. Если вы пришли сортировать фото и видео, <a href="./">начните с менеджера</a>.</p>
+<h2>Какую загрузку выбрать?</h2>
+<div class="two">
+<div class="warn"><b>Раздача, пока вы в системе - полный пакет</b><p><span>Обычный установщик содержит Менеджер общего доступа и SFTP-воркер как необязательный компонент (отмечен в типе «Полная», не ставится в «Компактной»). Установите, откройте Менеджер из просмотрщика или меню «Пуск», выберите папки и отсканируйте QR-код на телефоне. Права администратора не нужны; раздача идёт, пока вы в системе. Менеджер - это просто остальная часть того же пакета.</span> <a href="./#get">Скачать полный пакет</a> · <a href="publish-folders-android.html">Сеть и роутер по шагам</a></p></div>
+<div class="warn"><b>Всегда включено - серверная редакция (остальная часть страницы)</b><p>Отдельный пакет для машины, чья задача - быть доступной всегда: тот же сервер в виде службы Windows, которая стартует вместе с Windows и раздаёт, когда никто не вошёл в систему. Медиа- и файловый менеджер тоже внутри - как необязательный компонент, который не ставится, пока вы не отметите его на странице компонентов. Хостинг дисков FileDO - возможность раздачи - второе необязательное дополнение, оно отмечено по умолчанию.</p></div>
+</div>
+</section>
+
+<!-- gen:matrix -->
+<section class="section" id="matrix">
+<h2>Что ставит каждый пакет</h2>
+<p>Четыре необязательные части, четыре пакета. «Отмечено» значит, что установщик отмечает часть сам; «выключено, пока не включите» значит, что файлы лежат рядом, но ничего не слушает сеть, пока вы не включите раздачу. В строке Media Exchange Server в каждом столбце написано «В этом пакете нет»: этот сервер вы запускаете сами.</p>
+<div class="tbl-wrap"><table class="cmp mx">
+<thead><tr><th scope="col">Часть</th><th scope="col">Установщик или winget (полный пакет)</th><th scope="col">Портативный ZIP</th><th scope="col">Microsoft Store</th><th scope="col">Серверная редакция (установщик или winget)</th></tr></thead>
+<tbody>
+<tr><th scope="row">Медиа- и файловый менеджер</th><td data-state="core"><span class="lbl">Установщик или winget (полный пакет)</span><span>Ставится всегда</span></td><td data-state="core"><span class="lbl">Портативный ZIP</span><span>Ставится всегда</span></td><td data-state="core"><span class="lbl">Microsoft Store</span><span>Ставится всегда</span></td><td data-state="optional-off"><span class="lbl">Серверная редакция (установщик или winget)</span><span>Предлагается при установке, не отмечено</span></td></tr>
+<tr><th scope="row">Локальная раздача</th><td data-state="optional-on"><span class="lbl">Установщик или winget (полный пакет)</span><span>Предлагается при установке, отмечено</span></td><td data-state="bundled"><span class="lbl">Портативный ZIP</span><span>В пакете, выключено, пока вы не включите</span></td><td data-state="bundled"><span class="lbl">Microsoft Store</span><span>В пакете, выключено, пока вы не включите</span></td><td data-state="required"><span class="lbl">Серверная редакция (установщик или winget)</span><span>Это и есть пакет</span></td></tr>
+<tr><th scope="row">Файловые операции по расписанию (устанавливаются вместе с Менеджером общего доступа)</th><td data-state="optional-on"><span class="lbl">Установщик или winget (полный пакет)</span><span>Предлагается при установке, отмечено</span></td><td data-state="bundled"><span class="lbl">Портативный ZIP</span><span>В пакете, выключено, пока вы не включите</span></td><td data-state="bundled"><span class="lbl">Microsoft Store</span><span>В пакете, выключено, пока вы не включите</span></td><td data-state="required"><span class="lbl">Серверная редакция (установщик или winget)</span><span>Это и есть пакет</span></td></tr>
+<tr><th scope="row">Хостинг дисков FileDO (возможность раздачи)</th><td data-state="optional-off"><span class="lbl">Установщик или winget (полный пакет)</span><span>Предлагается при установке, не отмечено</span></td><td data-state="bundled"><span class="lbl">Портативный ZIP</span><span>В пакете, выключено, пока вы не включите</span></td><td data-state="absent"><span class="lbl">Microsoft Store</span><span>В этом пакете нет</span></td><td data-state="optional-on"><span class="lbl">Серверная редакция (установщик или winget)</span><span>Предлагается при установке, отмечено</span></td></tr>
+<tr><th scope="row">Media Exchange Server</th><td data-state="absent"><span class="lbl">Установщик или winget (полный пакет)</span><span>В этом пакете нет</span></td><td data-state="absent"><span class="lbl">Портативный ZIP</span><span>В этом пакете нет</span></td><td data-state="absent"><span class="lbl">Microsoft Store</span><span>В этом пакете нет</span></td><td data-state="absent"><span class="lbl">Серверная редакция (установщик или winget)</span><span>В этом пакете нет</span></td></tr>
+</tbody>
+</table></div>
+<h3>Права, где работает раздача и ограничения</h3>
+<div class="tbl-wrap"><table class="cmp mx">
+<thead><tr><th scope="col">Часть</th><th scope="col">Установщик, ZIP, winget (полный пакет)</th><th scope="col">Microsoft Store</th><th scope="col">Серверная редакция</th></tr></thead>
+<tbody>
+<tr><th scope="row">Где работает раздача</th><td><span class="lbl">Установщик, ZIP, winget (полный пакет)</span><span>Менеджер общего доступа, в вашем сеансе (позже может передать раздачу службе Windows)</span></td><td><span class="lbl">Microsoft Store</span><span>Менеджер общего доступа, в вашем сеансе; службы Windows нет, потому что пакет Store не может её зарегистрировать</span></td><td><span class="lbl">Серверная редакция</span><span>Служба Windows, которая стартует вместе с Windows, когда никто не вошёл</span></td></tr>
+<tr><th scope="row">Где работают файловые операции по расписанию</th><td><span class="lbl">Установщик, ZIP, winget (полный пакет)</span><span>Менеджер общего доступа, в вашем сеансе входа</span></td><td><span class="lbl">Microsoft Store</span><span>Менеджер общего доступа, в вашем сеансе входа</span></td><td><span class="lbl">Серверная редакция</span><span>Менеджер общего доступа, в сеансе входа, но не в службе Windows</span></td></tr>
+<tr><th scope="row">Установка</th><td><span class="lbl">Установщик, ZIP, winget (полный пакет)</span><span>Права администратора не нужны (на пользователя)</span></td><td><span class="lbl">Microsoft Store</span><span>Из Store</span></td><td><span class="lbl">Серверная редакция</span><span>Нужны права администратора</span></td></tr>
+<tr><th scope="row">Включение раздачи</th><td><span class="lbl">Установщик, ZIP, winget (полный пакет)</span><span>Выберите папки; одно подтверждение администратора для правила брандмауэра</span></td><td><span class="lbl">Microsoft Store</span><span>Выберите папки; пакет сам объявляет правило брандмауэра для своего воркера</span></td><td><span class="lbl">Серверная редакция</span><span>Выберите папки; службу и правило брандмауэра установщик уже создал</span></td></tr>
+<tr><th scope="row">Минимальная Windows</th><td><span class="lbl">Установщик, ZIP, winget (полный пакет)</span><span>Windows 10 1607 для раздачи; Windows 7/8.1 и 32-разрядная Windows получают только просмотрщик</span></td><td><span class="lbl">Microsoft Store</span><span>Windows 10 1809</span></td><td><span class="lbl">Серверная редакция</span><span>Windows 10 1607, 64-разрядная</span></td></tr>
+</tbody>
+</table></div>
+<p class="note">По умолчанию любая необязательная часть выключена во время работы: ничего не слушает, правила брандмауэра нет и служба не зарегистрирована, пока вы не попросите. Выбрав менеджер, сервер не нужен; выбрав сервер, не нужен менеджер. Таблица описывает пакеты, как они собираются из текущих исходников; на странице релизов лежит последний опубликованный релиз, а в «Что нового» указано, в какой версии появилась каждая часть.</p>
+</section>
+<!-- /gen:matrix -->
+
+<section class="section"><div class="warn"><b>Нужна ли она вам?</b>
+<p>Ставьте серверную редакцию только если задача машины - быть доступной постоянно: выделенный сервер, VPS, «NAS-подобная» Windows-коробка, домашний сервер. На обычном ПК обычный установщик уже раздаёт папки, пока вы в системе, не требует прав администратора и подходит лучше.</p></div></section>
+
+<section class="section">
+<h2>Две редакции</h2>
+<div class="tbl-wrap"><table class="cmp">
+<tr><th></th><th>Пользовательская (по умолчанию)</th><th>Серверная (эта страница)</th></tr>
+<tr><td>Кто запускает воркер</td><td>Менеджер общего доступа, в вашем сеансе</td><td>Диспетчер служб Windows</td></tr>
+<tr><td>Доступность</td><td>Пока вы в системе и приложение в трее запущено</td><td>С загрузки, до входа, и после выхода из системы</td></tr>
+<tr><td>Учётная запись</td><td>Вы</td><td><code>NT AUTHORITY\LocalService</code></td></tr>
+<tr><td>Права администратора</td><td>Один раз, для правила брандмауэра</td><td>Обязательны, для службы и её прав доступа</td></tr>
+<tr><td>Microsoft Store</td><td>Да</td><td>Нет - только GitHub, эта страница или winget</td></tr>
+<tr><td>SFTP, QR, .fmscfg, приложение Android</td><td colspan="2">Идентичны. Смена редакции сохраняет ключ узла, привязанные телефоны продолжают работать.</td></tr>
+</table></div>
+<p>Обе редакции никогда не работают одновременно. Какой бы хост ни был активен, оба работают с <b>одним</b> списком папок, одними настройками и одним ключом - при переключении ничего не теряется.</p>
+</section>
+
+<section class="section">
+<h2>Установка</h2>
+<!-- gen:server-download -->
+<p>Скачайте <code>FastMediaSorter-26.10.25.1830-windows-x64-server-setup.exe</code> из последнего релиза и запустите от имени администратора. К каждому релизу прилагается файл <code>.sha256</code> - проверьте его перед запуском:</p>
+<div class="dl-row">
+<a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-server-setup.exe"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Серверный установщик (.exe)</span></a>
+<a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Все релизы</a>
+<span class="dl-meta"><span class="dl-facts" lang="en" dir="ltr"><a class="meta-strong" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830">v26.10.25.1830</a> &middot; <time datetime="2026-10-25">2026-10-25</time> &middot; SHA-256: <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-server-setup.exe.sha256">server-setup.exe</a> 102.2 MB <code class="sha">c71ca84771c8f5db36532186184a92530fad9be7691d44c72f8445d0504091a6</code></span></span>
+</div>
+<pre class="cmd">Get-FileHash .\FastMediaSorter-26.10.25.1830-windows-x64-server-setup.exe -Algorithm SHA256</pre>
+<!-- /gen:server-download -->
+<p>Windows предупредит об этой загрузке - она не подписана сертификатом, - а установщик один раз запросит права администратора. <a href="trust.html">Что это за предупреждение, на что именно нажать, для чего нужны права администратора и как забрать каждое из них обратно</a>.</p>
+<p>Либо установите через winget:</p>
+<pre class="cmd">winget install --id SerZhyAle.FastMediaSorter.Server
+winget upgrade --id SerZhyAle.FastMediaSorter.Server
+winget uninstall --id SerZhyAle.FastMediaSorter.Server</pre>
+<p><b>Требования:</b> Windows 10 версии 1607 или новее, Windows 11 либо Windows Server 2016 или новее, 64-разрядная, и права администратора. Серверный пакет по умолчанию содержит только Менеджер общего доступа и SFTP-воркер - без кодеков и моделей OCR. Медиа- и файловый менеджер - необязательный компонент: не ставится, пока вы не отметите его на странице компонентов (тихая установка: <code>/COMPONENTS="server,filedo,viewer"</code>); при установленной пользовательской редакции он не предлагается - у неё уже есть свой просмотрщик.</p>
+<div class="warn"><b>Возможно, этот пакет вам не нужен</b><p>Если обычная версия уже установлена, откройте Менеджер общего доступа → <b>Настройки менеджера</b> → <b>Общий доступ SFTP</b> → <b>Хостинг</b> → <b>Перевести раздачу в режим службы Windows..</b>. Одно подтверждение администратора выполняет весь переход: настройки и ключ узла переезжают в машинное хранилище, воркер размещается в <code>%ProgramData%\FastMediaSorterCompanion\bin</code> (служебная учётная запись не может запускать файл из профиля пользователя), служба регистрируется и стартует, а уже выбранным папкам выдаётся доступ. Серверный пакет - это та же служба, устанавливаемая сразу, для машины, которую настраивают, ни разу не открывая программу. Версия из Microsoft Store регистрировать службы не может - там используйте установщик с этого сайта.</p></div>
+<div class="warn">Тихая установка серверной редакции остановится, если найдена пользовательская: она бы перенесла состояние без подтверждения. Передайте <code>/MIGRATEFROMUSER=yes</code>, чтобы разрешить это явно - пакет winget так и делает.</div>
+</section>
+
+<section class="section">
+<h2>Первая настройка</h2>
+<p>Служба никогда не угадывает, какие папки публиковать. После установки она запущена, но не раздаёт ничего, пока вы не выберете папки.</p>
+<div class="steps">
+<article class="step"><h2>Подтвердите установку</h2><p>Установщик один раз запросит права администратора. Он регистрирует службу <code>FastMediaSorterCompanionSFTP</code> (отложенный автозапуск, от имени LOCAL SERVICE), создаёт машинное хранилище состояния с ограниченными правами и добавляет одно входящее правило брандмауэра для файла воркера.</p></article>
+<article class="step"><h2>Выберите папки</h2><p>Менеджер общего доступа откроется в конце установки. Добавьте публикуемые папки и отметьте галочкой те, что должны быть видны на телефоне. Через <b>Редактировать</b> задайте доступ только для чтения, PIN, разрешённые типы медиа и папку для копий.</p></article>
+<article class="step"><h2>Выдайте службе доступ к этим папкам</h2><p>Служба работает от имени LOCAL SERVICE - это не вы, и папка внутри вашего профиля ей не видна, пока не выдано право на чтение. В Менеджере общего доступа откройте <b>Настройки менеджера</b> → <b>Общий доступ SFTP</b> → <b>Хостинг</b> и нажмите <b>Выдать службе доступ к общим папкам</b>. Добавляется одна запись «чтение и выполнение» на папку, и записывается ровно то, что было добавлено - поэтому удаление роли сервера снимет только это.</p></article>
+<article class="step"><h2>Привяжите телефон</h2><p>Запустите раздачу и нажмите <b>Поделиться</b>, чтобы получить QR-код или файл <code>.fmscfg</code>. На телефоне: FastMediaSorter → <b>Добавить ресурс</b> → <b>SFTP/FTP</b> → <b>Импорт из компаньона</b>.</p></article>
+<article class="step"><h2>Проверьте, что всё переживает перезагрузку</h2><p>Это главная проверка, и её чаще всего пропускают. Перезагрузите машину и <b>не входите в систему</b>. С телефона откройте привязанный ресурс. Если файлы видны - вся цепочка работает. С другого ПК состояние службы можно проверить так:</p>
+<pre class="cmd">sc query FastMediaSorterCompanionSFTP</pre></article>
+</div>
+</section>
+
+<section class="section">
+<h2>Что означают четыре состояния</h2>
+<p>Консоль хостинга намеренно разделяет их: они ломаются по-разному, а телефон, который не подключается, во всех четырёх случаях выглядит одинаково:</p>
+<ul>
+<li><b>Служба установлена</b> - <span>регистрация существует. Служба при этом может быть остановлена.</span></li>
+<li><b>Служба работает</b> - <span>процесс жив и отвечает на канал управления.</span></li>
+<li><b>Раздача SFTP работает</b> - <span>SFTP-слушатель поднят. Работающая служба сама по себе не раздаёт.</span></li>
+<li><b>Папки не выбраны</b> - <span>всё исправно, просто раздавать нечего.</span></li>
+</ul>
+<p>Консоль также показывает, кто отвечает прямо сейчас - служба Windows или фоновый процесс самой программы - и общее хранилище состояния, которым пользуются оба.</p>
+</section>
+
+<section class="section">
+<h2>Переключение между редакциями</h2>
+<p>В обе стороны ключ узла сохраняется, поэтому <b>успешный перенос сохраняет тот же отпечаток ключа, и привязанные телефоны не нужно привязывать заново</b>. Если ключ не удаётся проверить, перенос останавливается до регистрации службы, а не создаёт новый ключ.</p>
+<div class="two">
+<div class="warn"><b>Пользовательская → серверная</b><p>Запустите серверный установщик. Он остановит воркер пользовательского сеанса, скопирует и проверит состояние в машинное хранилище, настроит права и правило брандмауэра, затем зарегистрирует и запустит службу. Просмотрщик остаётся установленным и продолжает работать.</p></div>
+<div class="warn"><b>Серверная → пользовательская</b><p>Менеджер общего доступа → <b>Настройки менеджера</b> → <b>Общий доступ SFTP</b> → <b>Хостинг</b> → <b>Вернуться к пользовательской редакции..</b>, либо удалите серверный пакет. Служба останавливается и удаляется, выданные этим продуктом права на папки снимаются, а состояние остаётся там, где его подхватит воркер пользовательского сеанса.</p></div>
+</div>
+</section>
+
+<section class="section">
+<h2>Права, сеть и ограничения</h2>
+<ul>
+<li><b>Сетевые пути не работают.</b> <span>LOCAL SERVICE выходит в сеть с анонимными учётными данными, поэтому корень вида <code>\\сервер\папка</code> под ней раздать нельзя - никакая настройка прав с вашей стороны это не изменит. Используйте локальный путь.</span></li>
+<li><b>Правило брандмауэра привязано к программе,</b> <span>а не к порту - оно продолжает работать при смене порта прослушивания - и охватывает профили «домен», «частная» и «общедоступная», поскольку сеть сервера обычно считается общедоступной.</span></li>
+<li><b>Ограничение корнями остаётся в силе.</b> <span>Учётная запись службы определяет, что воркер может открыть; она никогда не позволяет телефону выйти за пределы выбранных вами папок.</span></li>
+<li><b>Доступ из интернета</b> <span>по-прежнему требует проброса порта или работающего UPnP, ровно как в пользовательской редакции. Менеджер может проверить доступ снаружи; если он сообщает о CGNAT, проброс порта не поможет.</span></li>
+</ul>
+</section>
+
+<section class="section">
+<h2>Резервная копия и восстановление</h2>
+<p>Всё, что стоит сохранить, лежит в одной папке:</p>
+<pre class="cmd">%ProgramData%\FastMediaSorterCompanion\</pre>
+<p>В ней ключ узла, учётные данные SFTP, список папок, порт и счётчики использования. Скопируйте её от имени администратора, чтобы восстановить ту же личность на пересобранной машине - телефоны подключатся без повторной привязки. Два правила: держите копию защищённой не хуже оригинала (в ней приватный ключ узла и пароль SFTP - именно поэтому у папки ограничены права) и никогда не публикуйте её и не вставляйте содержимое в отчёт об ошибке.</p>
+</section>
+
+<section class="section">
+<h2>Удаление</h2>
+<p>Удаление останавливает и удаляет службу до того, как будет удалён хоть один файл, снимает записанные права на папки и убирает правило брандмауэра - не оставляя ни открытого порта, ни «осиротевшей» регистрации службы. Папка состояния намеренно сохраняется: в ней личность, которой доверяют ваши телефоны. Удаляйте её вручную только если хотите, чтобы все телефоны привязались заново.</p>
+</section>
+
+<section class="section">
+<h2>Если что-то пошло не так</h2>
+<ul>
+<li>В Менеджере общего доступа → <b>Настройки менеджера</b> → <b>Общий доступ SFTP</b> → <b>Хостинг</b> есть <b>Запустить</b>, <b>Остановить</b>, <b>Перезапустить</b> и <b>Восстановить регистрацию службы</b>. Восстановление заново регистрирует службу с правильной командной строкой, учётной записью, типом запуска и действиями при сбое - что бы ни оставила прежняя версия или ручная правка.</li>
+<li>Каждое действие с правами администратора дописывается в <code>%ProgramData%\FastMediaSorterCompanion\install-share-service.log</code>; хост службы пишет сбои в <code>service.log</code> в той же папке.</li>
+<li>После перезагрузки служба может подняться раньше, чем будет готова сеть. Она сама повторяет обнаружение и проверку доступности с нарастающей задержкой - перезапуск не нужен - поэтому подождите минуту, прежде чем считать её сломанной.</li>
+</ul>
+</section>
+
+<section class="section"><div class="warn"><b>Microsoft Store</b><p>Установка из Store даёт только пользовательский режим. Серверная редакция берётся с GitHub, с этой страницы или через winget: ей нужны машинная служба, машинные права на данные, выдача прав на папки и установка администратором - всё это за рамками продукта в Store.</p></div></section>
+
+<section class="section" id="architecture">
+<h2>См. также</h2>
+<p>Серверная редакция - половина Windows одного из способов соединить ваши устройства: ваш собственный ПК, доступный напрямую, дома или через роутер. Портал <i>Обмен медиа между вашими устройствами</i> объясняет этот способ рядом с остальными.</p>
+<ul>
+<li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener noreferrer">Серверы на Windows<span class="sr-only"> (откроется в новой вкладке)</span></a> - какая программа Windows раздаёт ваши папки и когда нужна редакция, работающая круглосуточно.</li>
+<li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-ru.html" target="_blank" rel="noopener noreferrer">Домашняя сеть<span class="sr-only"> (откроется в новой вкладке)</span></a> - способ без сервера посередине, шаг за шагом.</li>
+</ul>
+</section>
+
+<section class="section"><a class="btn btn-ghost" href="publish-folders-android.html">Инструкция по сети и роутеру</a> <a class="btn btn-ghost" href="publish-folders-android.html">Обычная (пользовательская) раздача</a></section>
+
+<section class="section"><div class="tools-grid">
+<a href="publish-folders-android.html"><b>HOW TO · SFTP</b><span>Публикация выбранных папок ПК по SFTP</span></a>
+<a href="how-to-filedo-disks.html"><b>HOW TO · FileDO</b><span>Общий доступ к дискам FileDO .fdd</span></a>
+<a href="publish-folders-android.html"><b>HOW TO · Android</b><span>Сеть и роутер, шаг за шагом</span></a>
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавиши, масштаб и полный экран</span></a>
+<a href="how-to-setup.html"><b>HOW TO · Setup</b><span>Просмотрщик по умолчанию, язык, правила для файлов</span></a>
+<a href="how-to-archives.html"><b>HOW TO · Archives</b><span>Читать ZIP или CBZ как папку</span></a>
+</div></section>
+<section id="sharing-settings-windows">
+<h2>Где находятся настройки общего доступа</h2>
+<p>Настройки находятся в двух окнах. В настройках менеджера есть группа «Общий доступ SFTP» - порт SFTP, локальная сеть и страница хостинга; она видна, пока установлен этот компонент, - рядом с общими параметрами, удалённой учётной записью, публикацией и расписаниями. Установленный локальный сервер обмена настраивается в отдельном окне. Ссылка слева внизу открывает второе окно, сохраняя текущее. Открытие настроек не запускает сервер. В прежних сборках общий доступ SFTP был в отдельном окне.</p>
+<p><a href="../../docs/help/ru/sftp-settings.html">SFTP</a> · <a href="../../docs/help/ru/share-settings.html">Справка настроек менеджера</a></p>
+</section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="publish-folders-android.html">Подробная инструкция для Android</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

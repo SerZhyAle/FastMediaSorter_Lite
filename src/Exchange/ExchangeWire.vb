@@ -71,10 +71,14 @@ Friend NotInheritable Class ExchangeWire
     Public Const FeaturePairing As String = "pairing"
     ''' <summary>Item BV: the server holds one clipboard value per `member` account (section 22).</summary>
     Public Const FeatureClipboard As String = "clipboard"
+    ''' <summary>Ticket L0296, DEVICE-EXCHANGE 1.12 item EO: the server keeps application settings standards.</summary>
+    Public Const FeatureSettings As String = "settings"
 
     ' --- presence (6.1) ---
     Public Const PresenceOnline As String = "online"
     Public Const PresenceOffline As String = "offline"
+    ''' <summary>Item DC: the one value of `offlineReason` in v1, a platform limit paused the device's sharing.</summary>
+    Public Const OfflineReasonTimeLimit As String = "time-limit"
 
     ' --- the schemes of a broadcast tunnel (7.5) ---
     Public Const SchemeHttp As String = "http"
@@ -85,7 +89,7 @@ Friend NotInheritable Class ExchangeWire
 
 End Class
 
-''' <summary>The sixteen reasons of 7.10 (the complete list of `refused.reason`, item BR). An unknown value is <see cref="Unknown"/>,
+''' <summary>The twenty-one reasons of 7.10 (the complete list of `refused.reason`, item BR, plus the four of 1.12 item EP). An unknown value is <see cref="Unknown"/>,
 ''' shown as a generic refusal. The numbers are not a wire value: the wire spelling is <see cref="ExchangeRefusals.WireName"/>.</summary>
 Friend Enum ExchangeRefusal
     Unknown = 0
@@ -111,6 +115,17 @@ Friend Enum ExchangeRefusal
     PasswordPolicy = 15
     ''' <summary>Item AT: a `hello` whose token died with a password change or a reset.</summary>
     SignedOut = 16
+    ''' <summary>Remote administration (L0278 / DEVICE-EXCHANGE admin channel): the answer to an `admin-auth` when administration is
+    ''' switched off on the server. Appended as 17; the names array below is index-addressed, so it is append-only.</summary>
+    AdminDisabled = 17
+    ''' <summary>Ticket L0296, item EP: a `settings_get_standard` for a pair with no standard.</summary>
+    NotFound = 18
+    ''' <summary>Item EP: a `settingsPayload` that is not one object of the shape of item EO, or above 65536 bytes.</summary>
+    InvalidPayload = 19
+    ''' <summary>Item EP: an `appId` that is not the one the device's `product` maps to (item EN).</summary>
+    AppIdMismatch = 20
+    ''' <summary>Item EP: a `formatVersion` the server does not implement.</summary>
+    VersionIncompatible = 21
 End Enum
 
 Friend NotInheritable Class ExchangeRefusals
@@ -121,7 +136,8 @@ Friend NotInheritable Class ExchangeRefusals
     Private Shared ReadOnly Names As String() = {
         "", "bad-credentials", "device-revoked", "version-unsupported", "tls-required",
         "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
-        "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out"}
+        "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out",
+        "admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible"}
 
     ''' <summary>The enum of a wire reason; <see cref="ExchangeRefusal.Unknown"/> for anything else.</summary>
     Public Shared Function Parse(reason As String) As ExchangeRefusal
@@ -145,7 +161,9 @@ Friend NotInheritable Class ExchangeRefusals
                 ExchangeRefusal.TlsRequired, ExchangeRefusal.IdCollision, ExchangeRefusal.Capacity,
                 ExchangeRefusal.PortUnavailable, ExchangeRefusal.Unavailable, ExchangeRefusal.RateLimited, ExchangeRefusal.ProtectionUnsupported,
                 ExchangeRefusal.NotPermitted, ExchangeRefusal.LimitReached, ExchangeRefusal.InvitationInvalid,
-                ExchangeRefusal.LoginTaken, ExchangeRefusal.PasswordPolicy, ExchangeRefusal.SignedOut}
+                ExchangeRefusal.LoginTaken, ExchangeRefusal.PasswordPolicy, ExchangeRefusal.SignedOut,
+                ExchangeRefusal.AdminDisabled, ExchangeRefusal.NotFound, ExchangeRefusal.InvalidPayload,
+                ExchangeRefusal.AppIdMismatch, ExchangeRefusal.VersionIncompatible}
     End Function
 
 End Class

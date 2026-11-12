@@ -71,10 +71,15 @@ Friend NotInheritable Class ExchangeCertificateInfo
     Public ReadOnly Fingerprint As String
     ''' <summary>The platform trust store accepted the chain for the host name (nothing to pin).</summary>
     Public ReadOnly PlatformValid As Boolean
+    ''' <summary>The key pin of the presented leaf: "SHA256:" plus base64 without padding, over its SubjectPublicKeyInfo - filled by
+    ''' <c>ExchangeTlsTransport.ProbeAsync</c> the way <c>ExchangeTlsConnection.KeyPin</c> is, so a caller can judge a
+    ''' renewal that kept the key (L0278 5.4). "" when the caller that built this did not have it.</summary>
+    Public ReadOnly KeyPin As String
 
-    Public Sub New(fingerprint As String, platformValid As Boolean)
+    Public Sub New(fingerprint As String, platformValid As Boolean, Optional keyPin As String = "")
         Me.Fingerprint = fingerprint
         Me.PlatformValid = platformValid
+        Me.KeyPin = If(keyPin, "")
     End Sub
 End Class
 
@@ -212,7 +217,7 @@ Friend NotInheritable Class ExchangeTlsTransport
     ''' this; trust is decided on the connection that carries the secret.</summary>
     Public Shared Async Function ProbeAsync(host As String, port As Integer, ct As CancellationToken) As Task(Of ExchangeCertificateInfo)
         Using conn As ExchangeTlsConnection = Await OpenAsync(host, port, "", True, ct).ConfigureAwait(False)
-            Return New ExchangeCertificateInfo(conn.Fingerprint, conn.Verdict = ExchangeTrustVerdict.PlatformValid)
+            Return New ExchangeCertificateInfo(conn.Fingerprint, conn.Verdict = ExchangeTrustVerdict.PlatformValid, conn.KeyPin)
         End Using
     End Function
 

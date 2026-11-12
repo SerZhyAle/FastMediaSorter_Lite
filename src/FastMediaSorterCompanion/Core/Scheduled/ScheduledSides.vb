@@ -40,6 +40,10 @@ Friend Enum SideProblemKind
     PinLocked = 9
     ''' <summary>The remote device, tunnel, or network is offline; the run is skipped (ticket 231, 3.5).</summary>
     Offline = 10
+    ''' <summary>The person's Google Drive has no room for what the run sends (item CS).</summary>
+    DriveFull = 11
+    ''' <summary>Google Drive does not answer or limits requests just now; the run is skipped like an offline one (ticket 231, 3.5).</summary>
+    DriveUnavailable = 12
 End Enum
 
 Friend NotInheritable Class SideProblem

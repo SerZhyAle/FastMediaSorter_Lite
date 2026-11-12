@@ -121,11 +121,16 @@ Public Class ConnectionDiagnosisTests
         New String() {"server-no-e2e", "state", "operator", "This server cannot carry protected content, so folders, broadcasts and the clipboard do not go through it.", "Этот сервер не умеет передавать защищённое содержимое, поэтому папки, трансляции и буфер через него не идут.", "Цей сервер не вміє передавати захищений вміст, тому папки, трансляції й буфер через нього не йдуть."},
         New String() {"sealed-failed", "local", "-", "This could not be opened on this device. Try again from the other device.", "Это не удалось открыть на этом устройстве. Повторите с другого устройства.", "Це не вдалося відкрити на цьому пристрої. Повторіть з іншого пристрою."},
         New String() {"format-unsupported", "local", "-", "This format is newer than this program supports. Nothing was imported. Use a compatible program.", "Этот формат новее, чем поддерживает программа. Ничего не импортировано. Используйте совместимую программу.", "Цей формат новіший, ніж підтримує програма. Нічого не імпортовано. Скористайтеся сумісною програмою."},
+        New String() {"admin-disabled", "wire", "-", "Remote administration is turned off on this server. Turn it on in the server's settings, on the server machine.", "Удалённое администрирование на этом сервере выключено. Включите его в настройках сервера на самом компьютере сервера.", "Віддалене адміністрування на цьому сервері вимкнено. Увімкніть його в налаштуваннях сервера на самому комп'ютері сервера."},
+        New String() {"not-found", "wire", "-", "No standard settings are saved on the server for this program yet. Save them first.", "На сервере пока не сохранены стандартные настройки для этой программы. Сначала сохраните их.", "На сервері ще не збережено стандартних налаштувань для цієї програми. Спочатку збережіть їх."},
+        New String() {"invalid-payload", "wire", "-", "The server did not accept these settings: they are damaged or too large.", "Сервер не принял эти настройки: они повреждены или слишком велики.", "Сервер не прийняв ці налаштування: вони пошкоджені або завеликі."},
+        New String() {"app-id-mismatch", "wire", "operator", "This server does not keep settings of this program for this account.", "Этот сервер не хранит настройки этой программы для этого аккаунта.", "Цей сервер не зберігає налаштування цієї програми для цього акаунта."},
+        New String() {"version-incompatible", "wire", "operator", "The server does not support this version of the settings format.", "Сервер не поддерживает эту версию формата настроек.", "Сервер не підтримує цю версію формату налаштувань."},
         New String() {"refused", "wire", "operator", "The server refused this.", "Сервер отказал в этом.", "Сервер відмовив у цьому."}}
 
     <Fact>
     Public Sub EveryRowOfTheMessageTablesIsPinnedVerbatimWithItsKindAndStep()
-        Assert.Equal(37, MessageRows.Length)
+        Assert.Equal(42, MessageRows.Length)
         Dim seen As New HashSet(Of String)()
         For Each row As String() In MessageRows
             Dim code As String = row(0)
@@ -183,7 +188,7 @@ Public Class ConnectionDiagnosisTests
             "limit-reached-clipboard", "not-permitted", "declined", "timeout", "unsupported",
             "unreachable-server", "unreachable-device", "unanswered", "tls-failed", "certificate-changed",
             "empty-credential", "server-offline", "resource-locked", "clipboard-empty",
-            "share-paused", "e2e-missing", "key-changed", "server-no-e2e", "sealed-failed", "format-unsupported", "refused"
+            "share-paused", "e2e-missing", "key-changed", "server-no-e2e", "sealed-failed", "format-unsupported", "admin-disabled", "refused"
         }
 
         For Each code In codes
@@ -195,6 +200,16 @@ Public Class ConnectionDiagnosisTests
                 Dim text As String = ConnectionDiagnosisLocalization.GetMessageText(code, localeCode)
                 Assert.False(String.IsNullOrWhiteSpace(text), $"Message {code} missing text for locale {localeCode}")
             Next
+        Next
+    End Sub
+
+    ''' <summary>DEVICE-EXCHANGE item DD: the row has no step, "the text says what will" help, so no language loses its second sentence.</summary>
+    <Fact>
+    Public Sub SharePausedKeepsBothSentencesInEveryLanguage()
+        For Each code As String In Localization.Codes.Concat(Locales13).Distinct()
+            Dim text As String = ConnectionDiagnosisLocalization.GetMessageText("share-paused", code)
+            Dim ends As Integer = text.Count(Function(c) c = "."c OrElse c = ChrW(&H3002) OrElse c = ChrW(&H964) OrElse c = ChrW(&H6D4))
+            Assert.True(ends = 2, "share-paused in " & code & " has " & ends & " sentence ends")
         Next
     End Sub
 
@@ -238,6 +253,29 @@ Public Class ConnectionDiagnosisTests
         Assert.NotEqual(ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "en"), ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "hi"))
         ' a code the program does not ship still reads English
         Assert.Equal(ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "en"), ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "xx"))
+    End Sub
+
+    ''' <summary>L0278 T-1 (G-3, dated exception E-278-2): the wire reason <c>admin-disabled</c> has its own row (kind wire, step none) in
+    ''' every column of the table - the thirteen CZ languages and ar, hi, bn, ur - none a copy of the English sentence, no placeholder,
+    ''' no ellipsis and no smart double quote (house text style).</summary>
+    <Fact>
+    Public Sub AdminDisabledIsItsOwnWireRowAndReadsInEveryColumn()
+        Dim english As String = ConnectionDiagnosisLocalization.GetMessageText("admin-disabled", "en")
+        Assert.Equal("Remote administration is turned off on this server. Turn it on in the server's settings, on the server machine.", english)
+        Assert.Same(ConnectionDiagnosisMessages.AdminDisabled, ConnectionDiagnosisMessages.OfCode("admin-disabled"))
+        Assert.Same(ConnectionDiagnosisMessages.AdminDisabled, ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(ExchangeRefusal.AdminDisabled)))
+        Assert.Equal(ConnectionDiagnosisKind.Wire, ConnectionDiagnosisMessages.AdminDisabled.Kind)
+        Assert.False(ConnectionDiagnosisMessages.AdminDisabled.StepValue.HasValue)
+        Dim columns As String() = {"en", "ru", "uk", "de", "es", "fr", "it", "ja", "ko", "pl", "pt", "tr", "zh", "ar", "hi", "bn", "ur"}
+        For Each code As String In columns
+            Dim text As String = ConnectionDiagnosisLocalization.GetMessageText("admin-disabled", code)
+            Assert.False(String.IsNullOrWhiteSpace(text), "admin-disabled missing for " & code)
+            If code <> "en" Then Assert.NotEqual(english, text)
+            Assert.DoesNotContain("{0}", text)
+            Assert.DoesNotContain(ChrW(&H201C).ToString(), text)
+            Assert.DoesNotContain(ChrW(&H201D).ToString(), text)
+            Assert.DoesNotContain("...", text)
+        Next
     End Sub
 
     <Fact>

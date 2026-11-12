@@ -207,10 +207,12 @@ Public Class ExchangeAttachTests
 
     ' --- states: absence is not authority ---
 
-    Private Shared Function Snapshot(online As Boolean, Optional withResource As Boolean = True, Optional withDevice As Boolean = True) As ExchangeDirectorySnapshot
+    Private Shared Function Snapshot(online As Boolean, Optional withResource As Boolean = True, Optional withDevice As Boolean = True,
+                                     Optional offlineReason As String = "") As ExchangeDirectorySnapshot
         Dim devices As New List(Of ExchangeDeviceRecord)
         If withDevice Then
-            devices.Add(New ExchangeDeviceRecord("{}", Did, "Home PC", "fms-windows", "1", "windows", New List(Of String), If(online, "online", "offline"), ""))
+            devices.Add(New ExchangeDeviceRecord("{}", Did, "Home PC", "fms-windows", "1", "windows", New List(Of String), If(online, "online", "offline"), "",
+                                                 offlineReason:=offlineReason))
         End If
         Dim resources As New List(Of ExchangeResourceRecord)
         If withResource Then resources.Add(New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Camera", If(online, "online", "offline"), ""))
@@ -232,6 +234,35 @@ Public Class ExchangeAttachTests
         Dim devices As New List(Of ExchangeDeviceRecord) From {New ExchangeDeviceRecord("{}", Did, "d", "p", "", "", New List(Of String), "weird", "")}
         Dim resources As New List(Of ExchangeResourceRecord) From {New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "n", "weird", "")}
         Assert.Equal(ExchangeResourceState.DeviceOffline, ExchangeAttach.StateOf(Rid, New ExchangeDirectorySnapshot(1, devices, resources, New List(Of ExchangeBroadcastRecord)), True))
+    End Sub
+
+    <Fact>
+    Public Sub A_device_paused_by_a_platform_limit_has_its_own_state_and_an_unknown_reason_is_plain_offline()
+        Assert.Equal(ExchangeResourceState.SharePaused, ExchangeAttach.StateOf(Rid, Snapshot(online:=False, offlineReason:="time-limit"), True))
+        Assert.Equal(ExchangeResourceState.DeviceOffline, ExchangeAttach.StateOf(Rid, Snapshot(online:=False, offlineReason:="a-later-value"), True))
+        Assert.Equal(ExchangeResourceState.Available, ExchangeAttach.StateOf(Rid, Snapshot(online:=True, offlineReason:="time-limit"), True))
+    End Sub
+
+    <Fact>
+    Public Sub The_row_of_the_message_table_stands_in_place_of_plain_offline_on_the_device_and_on_each_resource()
+        Dim text As String = ConnectionDiagnosisLocalization.GetMessageText("share-paused", Localization.CurrentCode)
+        Assert.Equal(text, ExchangeResourceText.SharePaused())
+        Dim group As ExchangeDeviceGroup = ExchangeDevicesModel.Build(Snapshot(online:=False, offlineReason:="time-limit"), Nothing, "").Single()
+        Assert.True(group.SharePaused)
+        Assert.False(group.Online)
+        Assert.Equal("Home PC - " & text, ExchangeResourceText.DeviceHeader(group.Name, group.Online, group.SharePaused))
+        Dim row As ExchangeDeviceRow = group.Rows.Single()
+        Assert.Equal(ExchangeResourceState.SharePaused, row.State)
+        Assert.Equal(text, ExchangeResourceText.RowState(row))
+        Assert.Equal(text, ExchangeResourceText.RowState(New ExchangeDeviceRow(Rid, "n", "sftp-share", True, False, True, ExchangeResourceState.SharePaused)))
+        Assert.Equal(text, ExchangeResourceText.RowState(New ExchangeDeviceRow(Rid, "n", "sftp-share", True, False, False, ExchangeResourceState.SharePaused, pinProtected:=True)))
+        Assert.Equal(text, ExchangeResourceText.ListState(ExchangeResourceState.SharePaused))
+
+        Dim plain As ExchangeDeviceGroup = ExchangeDevicesModel.Build(Snapshot(online:=False), Nothing, "").Single()
+        Assert.False(plain.SharePaused)
+        Assert.DoesNotContain(text, ExchangeResourceText.DeviceHeader(plain.Name, plain.Online, plain.SharePaused))
+        Assert.NotEqual(text, ExchangeResourceText.RowState(plain.Rows.Single()))
+        Assert.NotEqual(text, ExchangeResourceText.ListState(ExchangeResourceState.DeviceOffline))
     End Sub
 
     ' --- the view as data ---

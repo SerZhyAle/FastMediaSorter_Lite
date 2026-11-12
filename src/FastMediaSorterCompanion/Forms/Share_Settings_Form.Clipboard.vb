@@ -19,6 +19,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Every row of the clipboard block, so one call shows or hides the whole block.</summary>
     Private ReadOnly _clipRows As New List(Of Control)()
     Private _clipTitle As Label
+    Private _clipDriveNote As Label
     Private _clipFolder As TextBox
     Private _clipResult As Label
     Private _clipSize As Label
@@ -36,6 +37,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddClipboardRow(sec, _clipTitle)
         ' CLIPBOARD-GUARD item N: the person is told, where the buttons are, that nothing stands between the clipboard and the server.
         AddClipboardRow(sec, AccNote(Localization.T("Отправляется ровно то, что лежит в буфере обмена в этот момент, в том числе скопированный пароль: программа ничего не проверяет, не фильтрует и не скрывает.")))
+        ' Item DE: said wherever the Drive channel is described, and only while it is on.
+        _clipDriveNote = AccNote(DriveChannelText.PrivacyNote())
+        AddClipboardRow(sec, _clipDriveNote)
 
         Dim actions As FlowLayoutPanel = AccFlow()
         _clipSend = AccButton(Localization.T("Отправить буфер на сервер"), Sub() RunSettingsClipboard(True), "action.upload")
@@ -107,10 +111,17 @@ Partial Public NotInheritable Class Share_Settings_Form
             ' The result line keeps its own visibility (it shows only after a press).
             If row Is _clipResult Then
                 If Not offered Then row.Visible = False
+            ElseIf row Is _clipDriveNote Then
+                row.Visible = offered AndAlso ClipboardCoordinator.DriveIsOn()
             Else
                 row.Visible = offered
             End If
         Next
+        If offered Then
+            _clipTitle.Text = ClipboardCoordinator.BlockTitle()
+            _clipSend.Text = ClipboardCoordinator.ActionText(isSend:=True)
+            _clipGet.Text = ClipboardCoordinator.ActionText(isSend:=False)
+        End If
     End Sub
 
     Private Sub RunSettingsClipboard(isSend As Boolean)
@@ -167,7 +178,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Sub OnClipboardShortcuts()
         Dim result As ClipboardShortcutsResult = ClipboardShortcuts.CreateOnDesktop(
-            Localization.T("Отправить буфер на сервер"), Localization.T("Получить буфер с сервера"), ProductNames.ShareManager)
+            ClipboardCoordinator.ActionText(isSend:=True), ClipboardCoordinator.ActionText(isSend:=False), ProductNames.ShareManager)
         AppFileLogger.WriteLine("Clipboard shortcuts: created=" & result.Created.ToString() & " existing=" & result.Existing.ToString() &
                                 " failed=" & result.Failed.ToString())
         If result.Failed > 0 Then

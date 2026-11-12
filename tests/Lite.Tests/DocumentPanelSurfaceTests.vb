@@ -241,6 +241,71 @@ Public Class DocumentPanelSurfaceTests
         Assert.Contains("TearDownDocumentPanel()", chrome)
     End Sub
 
+    ''' <summary>The readers whose top toolbar is the document panel (280): PDF, EPUB, the HTML viewer and the text reader.</summary>
+    Private Shared ReadOnly ReadersOnThePanel As String() = {"Main_Form.PdfReader.vb", "Main_Form.EpubReader.vb", "Main_Form.HtmlView.vb", "Main_Form.TextEditor.vb"}
+
+    <Fact>
+    Public Sub A_reader_on_the_panel_has_no_toolbar_of_its_own_and_hands_its_commands_to_the_panel()
+        For Each name As String In ReadersOnThePanel
+            Dim reader As String = Source(name)
+            For Each forbidden As String In New String() {"ToolStrip", "NumericUpDown", "_LastActivity", "_Toolbar"}
+                Assert.False(reader.Contains(forbidden), name & " still carries '" & forbidden & "'")
+            Next
+            Assert.Contains("ShowDocumentCommands(", reader)
+            Assert.Contains("HideDocumentPanel()", reader)
+        Next
+    End Sub
+
+    ''' <summary>The glue skips an id its reader hands no command for, so a missing one would leave a hole in the panel
+    ''' that nothing reports (the text reader's context line was one).</summary>
+    <Theory>
+    <InlineData("Main_Form.PdfReader.vb", "Pdf", "PdfReaderCommands")>
+    <InlineData("Main_Form.EpubReader.vb", "Epub", "EpubReaderCommands")>
+    <InlineData("Main_Form.HtmlView.vb", "Html", "HtmlViewCommands")>
+    <InlineData("Main_Form.TextEditor.vb", "Text", "TextReaderCommands")>
+    Public Sub Every_item_of_a_reader_has_a_command_in_its_glue(name As String, kindName As String, builder As String)
+        Dim reader As String = Source(name)
+        Dim start As Integer = reader.IndexOf("Function " & builder & "() As Dictionary(Of String, DocumentCommand)", StringComparison.Ordinal)
+        Assert.True(start >= 0, name & " has no " & builder)
+        Dim finish As Integer = reader.IndexOf(vbCrLf & "    End Function", start, StringComparison.Ordinal)
+        Dim body As String = reader.Substring(start, finish - start)
+        Dim constantOf As New Dictionary(Of String, String)()
+        For Each field As Reflection.FieldInfo In GetType(DocumentPanelRules).GetFields(Reflection.BindingFlags.Static Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.NonPublic)
+            If field.IsLiteral AndAlso field.Name.StartsWith("Id", StringComparison.Ordinal) Then constantOf(CStr(field.GetRawConstantValue())) = field.Name
+        Next
+        For Each id As String In DocumentPanelRules.ItemIds(DirectCast([Enum].Parse(GetType(DocumentReaderKind), kindName), DocumentReaderKind))
+            Dim constant As String = constantOf(id)
+            Dim supplied As Boolean = body.Contains("commands(DocumentPanelRules." & constant & ")") OrElse
+                body.Contains("KeyValuePair(Of String, Integer)(DocumentPanelRules." & constant & ",")
+            Assert.True(supplied, builder & " hands no command for " & constant)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub No_reader_reads_the_old_fullscreen_strip_setting_the_pin_model_replaced()
+        For Each name As String In ReadersOnThePanel
+            Assert.False(Source(name).Contains("DocumentFullscreenChrome"), name & " still reads DocumentFullscreenChrome")
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub The_html_viewer_types_its_find_on_the_panel_and_opens_the_blocked_list_as_a_panel_menu()
+        Dim html As String = Source("Main_Form.HtmlView.vb")
+        Assert.Contains("ShowDocumentCommands(DocumentReaderKind.Html, HtmlViewCommands())", html)
+        Assert.Contains("BeginDocumentEdit(item, html_View_QueryText, ChromeEditMode.Text", html)
+        Assert.Contains("DocumentPanelRevealThen(DocumentPanelRules.IdFind", html)
+        Assert.Contains("Function HtmlViewBlockedMenu() As IEnumerable(Of ChromeMenuItem)", html)
+        ' The page keeps the whole area: no strip height is taken off it.
+        Assert.DoesNotContain("panel_Media.ClientSize.Height - ", html)
+    End Sub
+
+    <Fact>
+    Public Sub The_wheel_over_the_epub_page_and_the_panel_is_the_readers_and_never_flips_the_file()
+        Assert.Contains("EpubReaderOwnsWheel(e)", Source("Main_Form.MouseInput.vb"))
+        Assert.Contains("Function EpubReaderOwnsWheel(", Source("Main_Form.EpubReader.vb"))
+        Assert.Contains("Function ScrollByAsync(", Source(Path.Combine("Documents", "HtmlRestrictedHost.vb")))
+    End Sub
+
     <Fact>
     Public Sub Both_new_source_files_are_in_the_net48_project_list()
         Dim root As New DirectoryInfo(AppContext.BaseDirectory)

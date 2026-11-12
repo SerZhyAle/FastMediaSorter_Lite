@@ -33,6 +33,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Header
         Resource
         Placeholder
+        DriveHeader
     End Enum
 
     Private NotInheritable Class ItemData
@@ -41,6 +42,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Friend Group As ExchangeDeviceGroup
         Friend Row As ExchangeDeviceRow
         Friend Record As ExchangeResourceRecord
+        ''' <summary>A row of the "via Google Drive" group: it belongs to no server (no Source), and the agent's pipe feeds it.</summary>
+        Friend ViaDrive As Boolean
     End Class
 
     ''' <summary>One entry's live pieces: its session, the feed over it, the sync that attaches through it, and the loop that runs while the
@@ -67,6 +70,13 @@ Friend NotInheritable Class Exchange_Devices_Panel
     Private ReadOnly _removeResource As Action(Of ResourceDescriptor)
     Private ReadOnly _syncFactory As Func(Of ExchangeEntry, ExchangeEntrySession, ExchangeSync)
     Private ReadOnly _sources As New List(Of ServerSource)
+    ''' <summary>The agent's pipe, one more source beside the entries (ticket 269 P3.3): it is what lists folders of other devices on Google Drive,
+    ''' one Drive poller per PC (item CQ). Nothing in a test world, which gets no pipe.</summary>
+    Private ReadOnly _driveFeed As ExchangeDevicesFeed
+    Private _driveCts As CancellationTokenSource
+    ''' <summary>The Share Manager's absence is not a condition this group reports, so the pipe is asked at a leisurely pace.</summary>
+    Private Const DriveFeedRetryMs As Integer = 15000
+    Private _driveShown As Boolean
     Private ReadOnly _titleLabel As Label
     Private ReadOnly _note As Label
     Private ReadOnly _addButton As Button
@@ -77,6 +87,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
     Private ReadOnly _diagnoseButton As Button
     Private ReadOnly _updateAddressButton As Button
     Private ReadOnly _handOnButton As Button
+    Private ReadOnly _saveStandardButton As Button
+    Private ReadOnly _readStandardButton As Button
     Private ReadOnly _autoBox As CheckBox
     Private ReadOnly _autoNote As Label
     Private ReadOnly _autoRow As OptionRowHost
@@ -106,6 +118,11 @@ Friend NotInheritable Class Exchange_Devices_Panel
     ''' nothing - absence is not authority). An attached resource whose entry is gone says it needs signing in again.</summary>
     Friend Function StateOf(resource As ResourceDescriptor) As ExchangeResourceState
         If Not ResourceOrigin.IsExchange(resource) Then Return ExchangeResourceState.Unknown
+        If resource.Kind = ResourceKind.Drive Then
+            Dim listed As ExchangeDevicesState = DriveFeedState()
+            If listed.Availability <> ExchangeDevicesAvailability.Ready Then Return ExchangeResourceState.Unknown
+            Return ExchangeAttach.StateOf(resource.ExchangeResourceId, listed.Snapshot, fullList:=True)
+        End If
         If String.IsNullOrEmpty(resource.ExchangeEntryId) Then Return ExchangeResourceState.Unknown
         Dim src As ServerSource = _sources.FirstOrDefault(Function(s) String.Equals(s.Entry.Id, resource.ExchangeEntryId, StringComparison.Ordinal))
         If src Is Nothing Then Return ExchangeResourceState.Unknown
@@ -122,6 +139,11 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _confirmRemove = confirmRemove
         _removeResource = removeResource
         _syncFactory = If(syncFactory, New Func(Of ExchangeEntry, ExchangeEntrySession, ExchangeSync)(AddressOf DefaultSync))
+        If syncFactory Is Nothing Then
+            _driveFeed = ExchangeDevicesFeed.CreateDefault()
+            _driveFeed.RetryMs = DriveFeedRetryMs
+            AddHandler _driveFeed.Changed, AddressOf OnFeedChanged
+        End If
         Name = "res_Devices"
         Visible = False
 
@@ -136,6 +158,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _diagnoseButton = MakeButton("res_DevicesDiagnose", ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), AddressOf OnDiagnoseClicked)
         _updateAddressButton = MakeButton("res_DevicesUpdateAddress", ExchangeEntryText.UpdateAddressButton(), AddressOf OnUpdateAddressClicked)
         _handOnButton = MakeButton("res_DevicesHandOn", ExchangeEntryText.HandOnButton(), AddressOf OnHandOnClicked)
+        _saveStandardButton = MakeButton("res_DevicesSaveStandard", ExchangeEntryText.SaveStandardButton(), AddressOf OnSaveStandardClicked)
+        _readStandardButton = MakeButton("res_DevicesReadStandard", ExchangeEntryText.ReadStandardButton(), AddressOf OnReadStandardClicked)
         ' WINDOWS-UI section 11: every command carries the glyph of its verb, mono (panel commands are never answers).
         ExchangeMark.Apply(_titleLabel, 24, AddressOf RuntimeBootstrap.OpenBundledAsset)
         ButtonGlyphs.Apply(_addButton, IconMap.GetMeaning("res_DevicesAdd").RenderGlyphId)
@@ -146,6 +170,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         ButtonGlyphs.Apply(_diagnoseButton, "action.test-connection")
         ButtonGlyphs.Apply(_updateAddressButton, "action.refresh")
         ButtonGlyphs.Apply(_handOnButton, "action.copy")
+        ButtonGlyphs.Apply(_saveStandardButton, "action.upload")
+        ButtonGlyphs.Apply(_readStandardButton, "action.download")
         _autoBox = New CheckBox With {.Name = "res_DevicesAuto", .Text = ExchangeEntryText.AutoAttachCheckbox(), .Visible = False}
         AddHandler _autoBox.CheckedChanged, AddressOf OnAutoChanged
         _autoNote = New Label With {.Name = "res_DevicesAutoNote", .AutoSize = False, .ForeColor = SystemColors.GrayText, .Text = ExchangeEntryText.AutoAttachNote(), .Visible = False}
@@ -173,6 +199,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Controls.Add(_signOutButton)
         Controls.Add(_updateAddressButton)
         Controls.Add(_handOnButton)
+        Controls.Add(_saveStandardButton)
+        Controls.Add(_readStandardButton)
         Controls.Add(_attachAllButton)
         Controls.Add(_addButton)
         Controls.Add(_note)
@@ -214,7 +242,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _list.BackColor = theme.EditorBack
         _list.ForeColor = theme.EditorText
         _list.BorderStyle = If(theme.Dark, BorderStyle.None, BorderStyle.Fixed3D)
-        For Each b As Button In New Button() {_addButton, _attachAllButton, _signOutButton, _changePasswordButton, _signInButton, _diagnoseButton, _updateAddressButton, _handOnButton}
+        For Each b As Button In New Button() {_addButton, _attachAllButton, _signOutButton, _changePasswordButton, _signInButton, _diagnoseButton, _updateAddressButton, _handOnButton, _saveStandardButton, _readStandardButton}
             b.FlatStyle = FlatStyle.Flat
             b.BackColor = theme.Surface
             b.ForeColor = theme.Text
@@ -235,6 +263,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _diagnoseButton.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
         _updateAddressButton.Text = ExchangeEntryText.UpdateAddressButton()
         _handOnButton.Text = ExchangeEntryText.HandOnButton()
+        _saveStandardButton.Text = ExchangeEntryText.SaveStandardButton()
+        _readStandardButton.Text = ExchangeEntryText.ReadStandardButton()
         _autoRow.SetCaption(ExchangeEntryText.AutoAttachCheckbox())
         _autoRow.SetExplanation(ExchangeEntryText.AutoAttachNote())
         _list.AccessibleName = ExchangeResourceText.SectionTitle()
@@ -302,6 +332,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         For Each src As ServerSource In _sources.ToList()
             StartSource(src)
         Next
+        StartDriveFeed()
         Render()
     End Sub
 
@@ -310,7 +341,27 @@ Friend NotInheritable Class Exchange_Devices_Panel
         For Each src As ServerSource In _sources.ToList()
             StopSource(src)
         Next
+        Dim c As CancellationTokenSource = _driveCts
+        _driveCts = Nothing
+        If c IsNot Nothing Then
+            Try : c.Cancel() : Catch : End Try
+            Try : c.Dispose() : Catch : End Try
+        End If
     End Sub
+
+    ''' <summary>The pipe is read only while the section is on screen, and never without the Share Manager installed (dormant, not an error).</summary>
+    Private Sub StartDriveFeed()
+        If _driveFeed Is Nothing OrElse _driveCts IsNot Nothing OrElse Not _driveFeed.IsOffered() Then Return
+        _driveCts = New CancellationTokenSource()
+        Dim token As CancellationToken = _driveCts.Token
+        Dim feed As ExchangeDevicesFeed = _driveFeed
+        ' runs until the section is hidden or disposed; the loop owns its failures (it never throws)
+        Dim unused As Task = Task.Run(Function() feed.RunAsync(token))
+    End Sub
+
+    Private Function DriveFeedState() As ExchangeDevicesState
+        Return If(_driveFeed Is Nothing, ExchangeDevicesState.Hidden, _driveFeed.Current)
+    End Function
 
     Private Sub StartSource(src As ServerSource)
         If src.Cts IsNot Nothing Then Return
@@ -350,6 +401,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
                 RemoveHandler src.Feed.Changed, src.Handler
             Next
             _sources.Clear()
+            If _driveFeed IsNot Nothing Then RemoveHandler _driveFeed.Changed, AddressOf OnFeedChanged
             Try : _titleLabel.Font?.Dispose() : Catch : End Try
         End If
         MyBase.Dispose(disposing)
@@ -399,7 +451,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Dim x As Integer = 0
         Dim rowTop As Integer = y + Dv(2)
         Dim gap As Integer = Dv(6)
-        For Each b As Button In New Button() {_addButton, _attachAllButton, _signInButton, _diagnoseButton, _changePasswordButton, _signOutButton, _updateAddressButton, _handOnButton}
+        For Each b As Button In New Button() {_addButton, _attachAllButton, _signInButton, _diagnoseButton, _changePasswordButton, _signOutButton, _updateAddressButton, _handOnButton, _saveStandardButton, _readStandardButton}
             If Not b.Visible Then Continue For
             ' The caption, its padding and the verb's glyph with its gap (WINDOWS-UI section 11 item 3).
             Dim glyphWidth As Integer = Math.Max(Dv(ButtonGlyphs.GlyphLogicalSize + ButtonGlyphs.GapLogicalSize), ButtonGlyphs.ExtraWidth(b))
@@ -478,6 +530,10 @@ Friend NotInheritable Class Exchange_Devices_Panel
                 Using bold As New Font(_list.Font, FontStyle.Bold)
                     TextRenderer.DrawText(e.Graphics, e.Item.Text, bold, textBounds, fore, flags)
                 End Using
+            Case ItemKind.DriveHeader
+                Using bold As New Font(_list.Font, FontStyle.Bold)
+                    TextRenderer.DrawText(e.Graphics, e.Item.Text, bold, textBounds, fore, flags)
+                End Using
             Case ItemKind.Header
                 textBounds.X += If(rtl, 0, Dv(10))
                 textBounds.Width -= Dv(10)
@@ -488,7 +544,9 @@ Friend NotInheritable Class Exchange_Devices_Panel
                 TextRenderer.DrawText(e.Graphics, e.Item.Text, _list.Font, textBounds, muted, flags)
             Case Else
                 Dim box As Rectangle = CheckBoxRect(e.Bounds)
-                Using pen As New Pen(If(data.Row.Supported AndAlso (data.Row.Attached OrElse data.Row.DeviceOnline), fore, muted))
+                ' through Drive a tick needs no answer from the device, so only what can never be ticked reads muted
+                Dim tickable As Boolean = If(data.ViaDrive, data.Row.Supported AndAlso Not data.Row.PinProtected, data.Row.Supported AndAlso (data.Row.Attached OrElse data.Row.DeviceOnline))
+                Using pen As New Pen(If(tickable, fore, muted))
                     e.Graphics.DrawRectangle(pen, box.X, box.Y, box.Width - 1, box.Height - 1)
                 End Using
                 If data.Row.Attached Then
@@ -498,7 +556,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
                                                                New Point(box.Right - Dv(3), box.Top + Dv(3))})
                     End Using
                 End If
-                Dim state As String = ExchangeResourceText.RowState(data.Row)
+                Dim state As String = If(data.ViaDrive, ExchangeResourceText.RowStateViaDrive(data.Row), ExchangeResourceText.RowState(data.Row))
                 Dim stateWidth As Integer = If(state.Length = 0, 0, Math.Min(textBounds.Width \ 2, TextRenderer.MeasureText(state, _list.Font).Width + Dv(8)))
                 Dim nameBounds As Rectangle = textBounds
                 nameBounds.X += If(rtl, 0, Dv(44))
@@ -550,8 +608,10 @@ Friend NotInheritable Class Exchange_Devices_Panel
                             .Tag = New ItemData With {.Kind = ItemKind.Placeholder, .Source = src}})
                     End If
                     For Each g As ExchangeDeviceGroup In groups
-                        _list.Items.Add(New ListViewItem(ExchangeResourceText.DeviceHeader(g.Name, g.Online)) With {
-                            .Tag = New ItemData With {.Kind = ItemKind.Header, .Source = src, .Group = g}})
+                        Dim header As String = ExchangeResourceText.DeviceHeader(g.Name, g.Online, g.SharePaused)
+                        _list.Items.Add(New ListViewItem(header) With {
+                            .Tag = New ItemData With {.Kind = ItemKind.Header, .Source = src, .Group = g},
+                            .ToolTipText = If(g.SharePaused, header, "")})
                         If g.Rows.Count = 0 Then
                             _list.Items.Add(New ListViewItem(ExchangeResourceText.NoFolders()) With {
                                 .Tag = New ItemData With {.Kind = ItemKind.Placeholder, .Source = src, .Group = g}})
@@ -576,13 +636,14 @@ Friend NotInheritable Class Exchange_Devices_Panel
                     End If
                 End If
             Next
+            _driveShown = AddDriveRows(all)
             RestoreSelection(keptKey)
         Finally
             _list.EndUpdate()
         End Try
-        _note.Text = If(_sources.Count = 0, ExchangeEntryText.NoServerYet(), "")
+        _note.Text = If(_sources.Count = 0 AndAlso Not _driveShown, ExchangeEntryText.NoServerYet(), "")
         _note.Visible = _note.Text.Length > 0
-        _list.Visible = _sources.Count > 0
+        _list.Visible = _sources.Count > 0 OrElse _driveShown
         UpdateButtons()
         Relayout()
         For Each src As ServerSource In _sources.ToList()
@@ -598,7 +659,44 @@ Friend NotInheritable Class Exchange_Devices_Panel
             _statesSignature = signature
             RaiseEvent StatesChanged(Me, EventArgs.Empty)
         End If
+        ' item BB, one record per identity: a live record of the same folder has taken over, nothing the person chose is lost
+        Dim twins As List(Of ResourceDescriptor) = ExchangeDevicesModel.DriveTwins(all)
+        If twins.Count > 0 Then
+            For Each twin As ResourceDescriptor In twins
+                _removeResource.Invoke(twin)
+            Next
+            RaiseEvent ResourcesChanged(Me, EventArgs.Empty)
+        End If
     End Sub
+
+    ''' <summary>The group headed "via Google Drive", drawn only when the agent reads a Drive listing and that listing has a folder no other road
+    ''' reaches; otherwise the section looks as it always did (the channel is dormant, item CT). True when it drew anything.</summary>
+    Private Function AddDriveRows(all As List(Of ResourceDescriptor)) As Boolean
+        Dim state As ExchangeDevicesState = DriveFeedState()
+        If state.Availability <> ExchangeDevicesAvailability.Ready OrElse state.Snapshot Is Nothing OrElse state.Agent Is Nothing OrElse Not state.Agent.Drive Then Return False
+        Dim listedElsewhere As New HashSet(Of String)(StringComparer.Ordinal)
+        For Each src As ServerSource In _sources
+            Dim listed As ExchangeDirectorySnapshot = src.Feed.Current.Snapshot
+            If listed Is Nothing Then Continue For
+            For Each record As ExchangeResourceRecord In listed.Resources
+                listedElsewhere.Add(record.ResourceId)
+            Next
+        Next
+        Dim groups As List(Of ExchangeDeviceGroup) = ExchangeDevicesModel.BuildDriveGroups(state.Snapshot, listedElsewhere, all, state.OwnDeviceId)
+        If groups.Count = 0 Then Return False
+        _list.Items.Add(New ListViewItem(Localization.T("через Google Drive")) With {.Tag = New ItemData With {.Kind = ItemKind.DriveHeader, .ViaDrive = True}})
+        For Each g As ExchangeDeviceGroup In groups
+            _list.Items.Add(New ListViewItem(ExchangeResourceText.DeviceHeader(g.Name, g.Online, g.SharePaused)) With {
+                .Tag = New ItemData With {.Kind = ItemKind.Header, .Group = g, .ViaDrive = True}})
+            For Each r As ExchangeDeviceRow In g.Rows
+                Dim rowState As String = ExchangeResourceText.RowStateViaDrive(r)
+                _list.Items.Add(New ListViewItem(r.Name) With {
+                    .Tag = New ItemData With {.Kind = ItemKind.Resource, .Group = g, .Row = r, .ViaDrive = True},
+                    .ToolTipText = r.Name & If(rowState.Length > 0, " - " & rowState, "")})
+            Next
+        Next
+        Return True
+    End Function
 
     Private Function SafeResources() As List(Of ResourceDescriptor)
         Try
@@ -612,16 +710,20 @@ Friend NotInheritable Class Exchange_Devices_Panel
         If _list.SelectedItems.Count = 0 Then Return ""
         Dim data As ItemData = TryCast(_list.SelectedItems(0).Tag, ItemData)
         If data Is Nothing Then Return ""
-        Return If(data.Source Is Nothing, "", data.Source.Entry.Id) & "|" & If(data.Row Is Nothing, "", data.Row.ResourceId)
+        Return KeyOf(data)
+    End Function
+
+    ''' <summary>A row's identity across a redraw; "gd" stands where a row of the Google Drive group has no entry.</summary>
+    Private Shared Function KeyOf(data As ItemData) As String
+        Return If(data.ViaDrive, "gd", If(data.Source Is Nothing, "", data.Source.Entry.Id)) & "|" & If(data.Row Is Nothing, "", data.Row.ResourceId)
     End Function
 
     Private Sub RestoreSelection(key As String)
         If key.Length = 0 Then Return
         For Each item As ListViewItem In _list.Items
             Dim data As ItemData = TryCast(item.Tag, ItemData)
-            If data Is Nothing OrElse data.Source Is Nothing Then Continue For
-            Dim k As String = data.Source.Entry.Id & "|" & If(data.Row Is Nothing, "", data.Row.ResourceId)
-            If String.Equals(k, key, StringComparison.Ordinal) Then
+            If data Is Nothing OrElse (data.Source Is Nothing AndAlso Not data.ViaDrive) Then Continue For
+            If String.Equals(KeyOf(data), key, StringComparison.Ordinal) Then
                 item.Selected = True
                 Return
             End If
@@ -646,11 +748,16 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _signOutButton.Visible = src IsNot Nothing
         _changePasswordButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         Dim needsPinEnrollment As Boolean = src IsNot Nothing AndAlso src.Feed.Current.Snapshot IsNot Nothing AndAlso
-            src.Feed.Current.Snapshot.Resources.Any(Function(r) ExchangeAttach.NeedsPinEnrollment(r))
+            src.Feed.Current.Snapshot.Resources.Any(Function(r) ExchangeAttach.NeedsPinEnrollment(r)) AndAlso src.Session.SignInCuresMissingAccess
         _signInButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse needsPinEnrollment)
         _diagnoseButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse state = ExchangeAgentState.Reconnecting OrElse state = ExchangeAgentState.Connecting)
         _updateAddressButton.Visible = src IsNot Nothing AndAlso src.Moved.Length > 0
         _handOnButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
+        ' Ticket L0296: only while the entry's control stream is authenticated and its server lists `settings` (item EO).
+        Dim offersSettings As Boolean = src IsNot Nothing AndAlso state = ExchangeAgentState.Online AndAlso
+            ExchangeSettingsPort.IsConnected AndAlso src.Session.OffersSettings()
+        _saveStandardButton.Visible = offersSettings
+        _readStandardButton.Visible = offersSettings
         _autoBox.Visible = src IsNot Nothing
         _autoRow.Visible = src IsNot Nothing
         If src IsNot Nothing Then
@@ -667,6 +774,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _diagnoseButton.Enabled = Not _busy
         _updateAddressButton.Enabled = Not _busy
         _handOnButton.Enabled = Not _busy
+        _saveStandardButton.Enabled = Not _busy
+        _readStandardButton.Enabled = Not _busy
         Relayout()
     End Sub
 
@@ -724,8 +833,43 @@ Friend NotInheritable Class Exchange_Devices_Panel
         End If
     End Sub
 
+    ''' <summary>A tick in the "via Google Drive" group. It writes a record and nothing more: the device is not asked until the folder is opened,
+    ''' so a device that is off can be ticked too. An untick removes that record alone. A PIN cannot travel this way (item CO), so the row stays locked.</summary>
+    Private Sub ToggleViaDrive(data As ItemData)
+        If data.Row.Attached Then
+            Dim resource As ResourceDescriptor = SafeResources().FirstOrDefault(Function(r) r.Kind = ResourceKind.Drive AndAlso String.Equals(r.ExchangeResourceId, data.Row.ResourceId, StringComparison.Ordinal))
+            If resource Is Nothing OrElse Not _confirmRemove.Invoke(resource) Then Return
+            _removeResource.Invoke(resource)
+            RaiseEvent ResourcesChanged(Me, EventArgs.Empty)
+            Render()
+            Return
+        End If
+        If data.Row.PinProtected Then
+            RaiseEvent StatusSaid(ExchangeResourceText.DriveFailure(ExchangeDriveRequests.ReasonPinRequired), False)
+            Return
+        End If
+        If Not data.Row.Supported Then
+            RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.Unusable), False)
+            Return
+        End If
+        Dim descriptor As ResourceDescriptor = ExchangeAttach.DriveDescriptor(data.Row.ResourceId, data.Row.Name, data.Group.DeviceId, data.Group.Name, AddressOf ResourceImport.NewResourceId)
+        Dim committed As ResourceCommitResult = ResourceCommit.Commit(descriptor, Nothing, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite, Nothing)
+        If committed.Succeeded Then
+            RaiseEvent StatusSaid(ExchangeResourceText.Attached(data.Row.Name), True)
+            RaiseEvent ResourcesChanged(Me, EventArgs.Empty)
+        Else
+            RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.NotStored), False)
+        End If
+        Render()
+    End Sub
+
     Private Async Sub Toggle(data As ItemData)
-        If _busy OrElse data.Row Is Nothing OrElse data.Source Is Nothing Then Return
+        If _busy OrElse data.Row Is Nothing Then Return
+        If data.ViaDrive Then
+            ToggleViaDrive(data)
+            Return
+        End If
+        If data.Source Is Nothing Then Return
         Dim src As ServerSource = data.Source
         If data.Row.Attached Then
             ' an untick is the user's act: the panel's own removal, with its own confirmation
@@ -741,10 +885,11 @@ Friend NotInheritable Class Exchange_Devices_Panel
             Return
         End If
         If Not data.Row.DeviceOnline Then
-            RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.NoAccess), False)
+            RaiseEvent StatusSaid(If(data.Row.State = ExchangeResourceState.SharePaused, ExchangeResourceText.SharePaused(),
+                                     ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.NoAccess)), False)
             Return
         End If
-        If ExchangeAttach.NeedsPinEnrollment(data.Record) Then
+        If ExchangeAttach.NeedsPinEnrollment(data.Record) AndAlso src.Session.SignInCuresMissingAccess Then
             RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.SignInAgain), False)
             UpdateButtons()
             Return
@@ -931,6 +1076,105 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Catch ex As Exception When TypeOf ex Is System.Runtime.InteropServices.ExternalException OrElse TypeOf ex Is InvalidOperationException
             RaiseEvent StatusSaid(ExchangeEntryText.HandOnCopyFailed(), False)
         End Try
+    End Sub
+
+    ''' <summary>Ticket L0296, item EO: "Save as STANDARD" - the chosen groups of this program's exchangeable settings replace the
+    ''' account's standard on this entry's server. One request, one answer; nothing is sent on a later local change (item ER).</summary>
+    Private Async Sub OnSaveStandardClicked(sender As Object, e As EventArgs)
+        Dim src As ServerSource = CurrentSource()
+        If src Is Nothing OrElse _busy OrElse Not ExchangeSettingsPort.IsConnected Then Return
+        Dim chosen As IReadOnlyList(Of String)
+        Using dlg As New Exchange_Settings_Standard_Form(True, src.Entry.DisplayName)
+            DialogLayer.ShowViewerDialog(dlg, FindForm())
+            If dlg.DialogResult <> DialogResult.OK Then Return
+            chosen = dlg.ChosenGroups
+        End Using
+        Dim payload As String = ExchangeSettingsStandard.Serialize(ExchangeSettingsPort.Current.Invoke(), chosen)
+        If System.Text.Encoding.UTF8.GetByteCount(payload) > ExchangeSettingsStandard.MaxPayloadBytes Then
+            RaiseEvent StatusSaid(ConnectionDiagnosisLocalization.GetMessageText(ConnectionDiagnosisMessages.InvalidPayload.Code, Localization.CurrentCode), False)
+            Return
+        End If
+        _busy = True
+        UpdateButtons()
+        Try
+            Dim token As CancellationToken = If(src.Cts IsNot Nothing, src.Cts.Token, CancellationToken.None)
+            Dim result As ExchangeSettingsRequestResult = Await src.Session.SaveSettingsStandardAsync(
+                ExchangeSettingsStandard.AppId, ExchangeSettingsStandard.FormatVersion, payload,
+                ExchangeSettingsStandard.TimestampOf(DateTime.UtcNow), token).ConfigureAwait(True)
+            Select Case result.Outcome
+                Case ExchangeSettingsRequestOutcome.Answered
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardSaved(result.Version, result.UpdatedAt), True)
+                Case ExchangeSettingsRequestOutcome.Refused
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardRefusal(result.Refusal), False)
+                Case ExchangeSettingsRequestOutcome.NotOffered
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardNotOffered(), False)
+                Case ExchangeSettingsRequestOutcome.Protocol
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardProtocol(), False)
+                Case Else
+                    RaiseEvent StatusSaid(ExchangeEntryText.SaveStandardNoAnswer(), False)
+            End Select
+        Catch ex As OperationCanceledException
+        Finally
+            _busy = False
+            If Not IsDisposed Then Render()
+        End Try
+    End Sub
+
+    ''' <summary>Ticket L0296, item ER: "Read STANDARD" - the whole answer is understood before anything is applied; then only the
+    ''' chosen groups and only declared exchangeable keys replace local values, local-only values stay, and nothing links this PC
+    ''' to the server afterwards. No answer, a refusal or a payload this program cannot read changes nothing.</summary>
+    Private Async Sub OnReadStandardClicked(sender As Object, e As EventArgs)
+        Dim src As ServerSource = CurrentSource()
+        If src Is Nothing OrElse _busy OrElse Not ExchangeSettingsPort.IsConnected Then Return
+        Dim chosen As IReadOnlyList(Of String)
+        Using dlg As New Exchange_Settings_Standard_Form(False, src.Entry.DisplayName)
+            DialogLayer.ShowViewerDialog(dlg, FindForm())
+            If dlg.DialogResult <> DialogResult.OK Then Return
+            chosen = dlg.ChosenGroups
+        End Using
+        _busy = True
+        UpdateButtons()
+        Dim applied As Boolean = False
+        Dim appliedText As String = ""
+        Dim appliedStored As Boolean = False
+        Try
+            Dim token As CancellationToken = If(src.Cts IsNot Nothing, src.Cts.Token, CancellationToken.None)
+            Dim result As ExchangeSettingsRequestResult = Await src.Session.GetSettingsStandardAsync(ExchangeSettingsStandard.AppId, token).ConfigureAwait(True)
+            Select Case result.Outcome
+                Case ExchangeSettingsRequestOutcome.Answered
+                    Dim read As ExchangeSettingsReadResult = ExchangeSettingsStandard.Read(ExchangeSettingsPort.Current.Invoke(), result.FormatVersion,
+                                                                                         result.SettingsPayload, chosen)
+                    Select Case read.Outcome
+                        Case ExchangeSettingsReadOutcome.Applied
+                            applied = True
+                            appliedStored = ExchangeSettingsPort.Apply.Invoke(read.Preferences)
+                            appliedText = If(appliedStored, ExchangeEntryText.StandardRead(result.UpdatedAt, read.AppliedCount), ExchangeEntryText.StandardReadNotStored())
+                        Case ExchangeSettingsReadOutcome.FormatUnsupported
+                            RaiseEvent StatusSaid(ConnectionDiagnosisLocalization.FormatUnsupportedText(), False)
+                        Case Else
+                            RaiseEvent StatusSaid(ExchangeEntryText.StandardDamaged(), False)
+                    End Select
+                Case ExchangeSettingsRequestOutcome.Refused
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardRefusal(result.Refusal), False)
+                Case ExchangeSettingsRequestOutcome.NotOffered
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardNotOffered(), False)
+                Case ExchangeSettingsRequestOutcome.Protocol
+                    RaiseEvent StatusSaid(ExchangeEntryText.StandardProtocol(), False)
+                Case Else
+                    RaiseEvent StatusSaid(ExchangeEntryText.ReadStandardNoAnswer(), False)
+            End Select
+        Catch ex As OperationCanceledException
+        Finally
+            _busy = False
+            If Not IsDisposed Then Render()
+        End Try
+        If Not applied OrElse IsDisposed Then Return
+        ' The window that hosts this page still shows the values it was built with, and its owner rebuilds it (as an import does) -
+        ' so the outcome is said in a box the person closes, not in a status line that closes with the window.
+        Dim host As Form = FindForm()
+        ViewerBox.Show(If(host, DirectCast(Me, IWin32Window)), appliedText, ExchangeResourceText.SectionTitle(), MessageBoxButtons.OK,
+                       If(appliedStored, MessageBoxIcon.Information, MessageBoxIcon.Warning))
+        If host IsNot Nothing AndAlso ExchangeSettingsPort.Refresh IsNot Nothing Then ExchangeSettingsPort.Refresh.Invoke(host)
     End Sub
 
     ''' <summary>Q187-4: per entry, off by default. Turning it on records what is listed NOW, so nothing that already exists is attached by

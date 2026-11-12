@@ -106,7 +106,7 @@ Partial Public Class Share_Root_Params_Form
         AddFullRow(tlp, Note(Localization.T("Как ресурс называется в приложении. Пусто = имя папки.")), r) : r += 1
 
         ' 2. Type / profile.
-        cmbProfile = New ComboBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0), .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbProfile = New RowFittingComboBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0), .DropDownStyle = ComboBoxStyle.DropDownList}
         cmbProfile.Items.AddRange(New Object() {
             Localization.T("Обычная папка (по умолчанию)"), Localization.T("Аудиотека"), Localization.T("Видеотека"),
             Localization.T("Фотохранилище"), Localization.T("Документы"), Localization.T("Все файлы")})
@@ -143,7 +143,12 @@ Partial Public Class Share_Root_Params_Form
         scanFlow.Controls.AddRange(New Control() {OptionRows.InFlow(chkScanSub, Nothing, OptionRowFit.Content),
             OptionRows.InFlow(chkSubItems, Nothing, OptionRowFit.Content), OptionRows.InFlow(chkHidden, Nothing, OptionRowFit.Content),
             OptionRows.InFlow(chkAllFiles, Nothing, OptionRowFit.Content)})
-        tlp.Controls.Add(Cap(Localization.T("Условия сканирования:")), 0, r)
+        ' The options are a tall column, so the caption stands at the first of them, level with the exact media set's caption
+        ' above, not in the middle of the column.
+        Dim scanCap As Label = Cap(Localization.T("Условия сканирования:"))
+        scanCap.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+        scanCap.Margin = New Padding(0, 9, 12, 0)
+        tlp.Controls.Add(scanCap, 0, r)
         tlp.Controls.Add(scanFlow, 1, r) : r += 1
 
         ' 5. Access section (all full-width, AutoSize -> never clipped).
@@ -177,7 +182,7 @@ Partial Public Class Share_Root_Params_Form
         tlp.Controls.Add(txtComment, 1, r) : r += 1
 
         Dim pinFlow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0), .WrapContents = False}
-        txtPin = New TextBox With {.Width = 150, .Margin = New Padding(0, 0, 10, 0)}
+        txtPin = New TextBox With {.Width = 150, .Margin = New Padding(0, 0, 10, 0), .UseSystemPasswordChar = True}
         pinFlow.Controls.Add(txtPin)
         pinFlow.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 0), .ForeColor = Color.DimGray,
             .Text = Localization.T("если задан - приложение попросит его при открытии")})
@@ -226,6 +231,9 @@ Partial Public Class Share_Root_Params_Form
             Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
             Dim chromeW As Integer = Me.Width - Me.ClientSize.Width
             Dim chromeH As Integer = Me.Height - Me.ClientSize.Height
+            ' The theme makes the drop-down list taller. Left to the first paint, that comes after the measure below, and the
+            ' content then outgrows the window by the difference and gets a scrollbar.
+            ThemeService.Attach(Me)
             ' The boolean rows are laid out now that the window has its scale (they are as tall as caption and
             ' explanation need), so the measure below already holds their real heights. The destination explanation
             ' stands under its caption for good, so nothing toggling at run time can grow the content later.

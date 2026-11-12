@@ -69,9 +69,56 @@ Friend NotInheritable Class ClipboardMessages
             Case ClipboardLineCode.JoinedLater
                 ' Not an error: a device that joined after the value was sent is not in its box and reads the next one (item DN).
                 Return OnServer(line.Label, Localization.T("Это значение отправлено до того, как это устройство присоединилось к аккаунту, и здесь его не открыть. Следующее значение откроется."))
+            Case ClipboardLineCode.SentViaDrive
+                Return Localization.T("Отправлено через Google Drive.")
+            Case ClipboardLineCode.EmptyViaDrive
+                Return Localization.T("Буфер через Google Drive пуст.")
+            Case ClipboardLineCode.ReceivedValueViaDrive
+                If line.Device.Length = 0 Then Return Localization.T("Буфер, полученный через Google Drive.")
+                Return Localization.TF("Буфер, полученный через Google Drive, устройство «{0}».", line.Device)
+            Case ClipboardLineCode.ReceivedFileViaDrive
+                Return Localization.TF("Файл получен через Google Drive, устройство «{0}»: сохранён в папку «{1}» и лежит в буфере обмена.",
+                                       NameOrDash(line.Device), line.Detail)
+            Case ClipboardLineCode.DriveFull
+                ' Item CS: says how much room there is when that is known.
+                If line.Detail.Length = 0 Then Return Localization.T("На вашем Google Drive нет свободного места.")
+                Return Localization.TF("На вашем Google Drive не хватает места: свободно {0} МБ.", line.Detail)
+            Case ClipboardLineCode.DriveSignedOut
+                Return Localization.T("Вход в Google Drive больше не действует: войдите снова в настройках.")
+            Case ClipboardLineCode.DriveOffline
+                Return Localization.T("Нет связи с Google Drive. Попробуйте ещё раз.")
+            Case ClipboardLineCode.DriveDailyLimit
+                Return Localization.T("Достигнут суточный лимит Google Drive на загрузку. Повторите завтра.")
+            Case ClipboardLineCode.DriveValueReplaced
+                Return Localization.T("Значение на Google Drive только что заменено новым. Получите буфер ещё раз.")
+            Case ClipboardLineCode.DriveUnavailable
+                Return Localization.T("Google Drive отвечает ошибкой или ограничивает запросы. Попробуйте позже.")
+            Case ClipboardLineCode.OverDriveLimit
+                Return Localization.TF("Значение в буфере обмена больше {0} ГБ - столько не отправить через Google Drive. Отправьте что-нибудь поменьше.", line.Detail)
+            Case ClipboardLineCode.DriveBadName
+                Return Localization.T("Файл с таким именем нельзя отправить через Google Drive: переименуйте его.")
             Case Else
                 Return ""
         End Select
+    End Function
+
+    ''' <summary>The words of one of the two actions for the places the person keeps the value in (item CP): the exchange server's own
+    ''' words stay as they are, and Google Drive's appear only where the Drive channel is on.</summary>
+    Public Shared Function ActionText(isSend As Boolean, hasServer As Boolean, hasDrive As Boolean) As String
+        If hasDrive AndAlso hasServer Then
+            Return If(isSend, Localization.T("Отправить буфер на сервер и через Google Drive"), Localization.T("Получить буфер с сервера или через Google Drive"))
+        End If
+        If hasDrive Then
+            Return If(isSend, Localization.T("Отправить буфер через Google Drive"), Localization.T("Получить буфер через Google Drive"))
+        End If
+        Return If(isSend, Localization.T("Отправить буфер на сервер"), Localization.T("Получить буфер с сервера"))
+    End Function
+
+    ''' <summary>The heading of the settings block, by the same rule as <see cref="ActionText"/>.</summary>
+    Public Shared Function BlockTitle(hasServer As Boolean, hasDrive As Boolean) As String
+        If hasDrive AndAlso hasServer Then Return Localization.T("Буфер на сервере и через Google Drive")
+        If hasDrive Then Return Localization.T("Буфер через Google Drive")
+        Return Localization.T("Буфер на сервере")
     End Function
 
     ''' <summary>One paragraph, a line per server and per outcome, in the order they were produced.</summary>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt" data-page-lang="pt">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Porque é que o Windows avisa sobre esta transferência</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: organize fotos e vídeos com uma tecla por arquivo">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="pt">
+<meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Porque é que o Windows avisa sobre esta transferência">
 <meta name="twitter:description" content="O que significa o aviso do SmartScreen no Fast Media Sorter &amp; Sharing, porque aparece, onde clicar exatamente e o que o programa nunca faz.">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">Pode ser contactado um único serviço de terceiros, e só se ligar o acesso pela internet para a partilha: pede-se a check-host.net que confirme que a porta reencaminhada responde do exterior, o que mostra a esse serviço o seu endereço público e a porta. Nada mais lhe é enviado. Outras duas coisas ficam dentro da sua própria rede: com o acesso pela internet ligado, o programa pede ao seu router que reencaminhe a porta de partilha (UPnP ou NAT-PMP), e enquanto a partilha funciona, o PC anuncia-se na rede local (mDNS) para que um telemóvel emparelhado o volte a encontrar.</p>
-  <p class="note" id="site-origins">Abrir uma página deste site (em vez de usar o programa) contacta no máximo três endereços externos: fonts.googleapis.com e fonts.gstatic.com (Google Fonts, para o tipo de letra das páginas) e, na página inicial e nas suas versões noutros idiomas, api.github.com (GitHub, para consultar a versão mais recente da ligação de transferência). Cada um recebe o seu endereço IP e o user agent do seu navegador, e mais nada. Nenhum endereço de análise, gestor de etiquetas ou publicidade é contactado. A página de privacidade diz o mesmo.</p>
+  <p class="note" id="site-origins">Abrir uma página deste site (em vez de usar o programa) contacta dois endereços externos: fonts.googleapis.com e fonts.gstatic.com (Google Fonts, para o tipo de letra das páginas). Cada um recebe o seu endereço IP e o user agent do seu navegador, e mais nada. Nenhum endereço de análise, gestor de etiquetas ou publicidade é contactado. A página de privacidade diz o mesmo.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Transferências</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

@@ -269,6 +269,49 @@ func TestPresenceKeepaliveWindowByeAndAReplacedControlStream(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("bye closes the stream")
 	}
+
+	// a bye that says why (item DC) is relayed into the pushed device record, and the next online drops it
+	paused, err := prod.Online()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := oc.Await(3*time.Second, wire.TypeChanged); err != nil {
+		t.Fatal(err)
+	}
+	oc.Drain()
+	if err := paused.Send(&wire.Bye{OfflineReason: wire.OfflineReasonTimeLimit}); err != nil {
+		t.Fatal(err)
+	}
+	ch, err = oc.Await(3*time.Second, wire.TypeChanged)
+	if err != nil {
+		t.Fatal("bye must take the device offline:", err)
+	}
+	d := findRec(recs(ch.(*wire.Changed).Upserts.Devices), "deviceId", prod.ID)
+	if d == nil {
+		t.Fatal("no device record in the changed")
+	}
+	if p, _ := d.Str("presence"); p != "offline" {
+		t.Fatalf("presence %s", p)
+	}
+	if why, _ := d.Str("offlineReason"); why != wire.OfflineReasonTimeLimit {
+		t.Fatalf("the reason was not relayed: %s", d.Marshal())
+	}
+	select {
+	case <-paused.Closed():
+	case <-time.After(3 * time.Second):
+		t.Fatal("bye closes the stream")
+	}
+	if _, err := prod.Online(); err != nil {
+		t.Fatal(err)
+	}
+	ch, err = oc.Await(3*time.Second, wire.TypeChanged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d = findRec(recs(ch.(*wire.Changed).Upserts.Devices), "deviceId", prod.ID)
+	if d == nil || d.Has("offlineReason") {
+		t.Fatal("online again: the record carries no reason")
+	}
 }
 
 func TestAHelloThatNeverSendsAControlEnvelopeIsNotOnline(t *testing.T) {

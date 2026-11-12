@@ -1,0 +1,63 @@
+name: Pages
+
+# Deploys the product site to GitHub Pages from an ARTIFACT that holds only the site files (ticket L0207,
+# findings F4, F6, F81). It replaces the branch deploy, which served the whole repository root and so
+# published product executables, internal notes and vendored trees.
+#
+# REQUIRES the repository's Pages source to be "GitHub Actions" (Settings > Pages > Build and deployment >
+# Source). While the source is still "Deploy from a branch" the branch deploy keeps serving the root and
+# the deploy job below fails at its last step; switch the source first, then push. The owner does that
+# switch himself at the publish (docs/guides/BUILD_AND_RELEASE.md, the site step of the checklist).
+#
+# The served set is declared in tools/site-served.json. tools/Build-SiteArtifact.ps1 copies exactly that set
+# into _site and fails the run when a copied page refers to a file outside it, so a missing asset stops the
+# deploy instead of becoming a 404 on the site.
+#
+# Triggers: every push to main (the job takes about a minute and the repository is public, so it costs no
+# paid minutes; a path filter would have to track the declaration and could drift from it) and a manual run.
+# release.yml is a separate workflow, started only by a v* tag; the two do not touch each other.
+#
+# Actions are pinned like release.yml: actions/checkout by major tag, the Pages actions (which carry the
+# deploy permission) by commit SHA with the version in a comment.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a running deployment is never cancelled halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Assemble the site artifact and check its references
+        run: pwsh -NoProfile -File ./tools/Build-SiteArtifact.ps1 -OutDir _site
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

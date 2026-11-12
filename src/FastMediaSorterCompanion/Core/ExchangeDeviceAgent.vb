@@ -12,8 +12,10 @@ Imports System.Threading.Tasks
 ' id, the token (DPAPI), the certificate pin, the control stream and the directory model; it enrolls this PC into an
 ' account, issues pairing codes, lists and revokes the account's devices, and serves the viewer through the local channel.
 '
-' Dormant (rule 1): with no account configured nothing here runs - ExchangeDeviceHost.StartIfConfigured constructs no agent,
-' so there is no connection, no pipe, no registry value and no file. Gated (rule 2): every entry reads ExchangeFeatures.
+' Dormant (rule 1): with no account configured and no Google Drive sign-in nothing here runs - ExchangeDeviceHost.StartIfConfigured
+' constructs no agent, so there is no connection, no pipe, no registry value and no file. With a Drive sign-in and no account the agent
+' runs in its Drive-only shape (ticket 269 P2, Q269-6): the local channel serves the Drive listing, there is still no connection.
+' Gated (rule 2): every entry reads ExchangeFeatures.
 ' One control stream per device (rule 3): the viewer uses data streams and the local channel only.
 '
 ' Secrets: the password exists in the enrollment request and in the `enroll` frame, and both are overwritten once sent;
@@ -45,6 +47,33 @@ Friend NotInheritable Class ExchangeAgentPorts
     ''' <summary>What the account's other devices list on Google Drive (203 section 5.11): merged into the directory the viewer reads, and into
     ''' nothing else. The default asks the process's Drive host without creating it; a test hands in its own.</summary>
     Public Property DriveDirectory As Func(Of ExchangeDirectorySnapshot) = Function() DriveChannelHosts.ListedDirectory()
+    ''' <summary>Whether this user has a Google Drive sign-in (ticket 269, Q269-6): with one and no exchange account the agent still runs and
+    ''' serves the Drive listing alone. A plain existence check of the token file - nothing is read, created or asked of Google. The default
+    ''' is <see cref="DriveChannelHosts.TokenPresent"/>; a test hands in its own so the real profile never decides a dormancy fact.</summary>
+    Public Property DriveSignedIn As Func(Of Boolean) = Function() DriveChannelHosts.TokenPresent.Invoke()
+    ''' <summary>Tells the agent that the Drive listing moved, so a viewer waiting on the long poll is answered at once; the result ends the
+    ''' subscription. The default listens to the process's relay, which exists whether or not the Drive host does - subscribing never
+    ''' creates the host. A test hands in its own.</summary>
+    Public Property SubscribeDriveChanged As Func(Of EventHandler, IDisposable) = Function(handler) DriveChannelHosts.SubscribeChanged(handler)
+    ''' <summary>Ticket 269 P3.2: the packet queue through which the agent asks another PC for a folder it lists on Drive, or Nothing while
+    ''' the Drive channel has no service (not signed in). Asking creates nothing. A test hands in a fake.</summary>
+    Public Property DriveRequests As Func(Of IDriveRequestPort) = Function() DriveChannelHosts.RequestPort()
+    ''' <summary>The viewer's remote cache root (RemoteCachePaths.CacheRoot in the viewer, the same folder): the only place a Drive fetch
+    ''' saves to. A test hands in its own.</summary>
+    Public Property RemoteCacheRoot As Func(Of String) = Function() IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                                                                                   "SZA", "FastMediaSorter", "remote-cache")
+
+    ''' <summary>The Drive sign-in question with every failure of the check read as "not signed in": the start of the Share Manager must
+    ''' not fail because a profile folder cannot be read.</summary>
+    Friend Function HasDriveSignIn() As Boolean
+        Dim probe As Func(Of Boolean) = DriveSignedIn
+        If probe Is Nothing Then Return False
+        Try
+            Return probe.Invoke()
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
+            Return False
+        End Try
+    End Function
 
 End Class
 
@@ -281,6 +310,11 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
     Private _changeWaiters As New List(Of TaskCompletionSource(Of Boolean))
     Private _disposed As Boolean
     Private _sealedTrust As IExchangeSealedTrustStore
+    Private ReadOnly _keyUpgradeGate As New ExchangeKeyUpgradeGate()
+    ' Ticket 269 P2: the subscription to the Drive listing's changes (Nothing until the agent serves a listing). Guarded by _gate.
+    Private _driveChanged As IDisposable
+    ' Ticket 269 P3.2: the viewer's Drive requests in flight (created on the first one). Guarded by _gate.
+    Private _driveJobs As DriveRequestJobs
 
     ' Live broadcast state (spec 199 section 3.3)
     Private _liveBroadcastRecordJson As String
@@ -331,13 +365,15 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
 
     ' --- start and stop ---
 
-    ''' <summary>Starts what the stored account says: no account - nothing; an account without a token - "sign in again"; both - the
-    ''' control stream and the local channel. Called once from the Share Manager's start.</summary>
+    ''' <summary>Starts what the stored account says: no account - nothing, or, with a Google Drive sign-in, the local channel alone
+    ''' (<see cref="StartDriveOnly"/>); an account without a token - "sign in again"; both - the control stream and the local channel.
+    ''' Called once from the Share Manager's start.</summary>
     Public Sub Start()
         If _disposed Then Return
         Dim account As ExchangeAccount = _ports.Accounts.Load()
         If account Is Nothing Then
             SetIdle(ExchangeAgentState.NotConfigured, "")
+            StartDriveOnly()
             Return
         End If
         Dim token As String = ""
@@ -353,6 +389,81 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
             Return
         End If
         StartSession(account, address, New ExchangeDeviceCredentials(account.DeviceId, token), Nothing)
+    End Sub
+
+    ' --- Google Drive alone (ticket 269 P2, Q269-6) ---
+
+    ''' <summary>True when this agent serves the Drive listing alone: no exchange account is stored and this user has a Drive sign-in. There is
+    ''' then no control session, so the server's half of the directory is empty and the listing is the whole answer.</summary>
+    Friend Function IsDriveOnly() As Boolean
+        If _disposed Then Return False
+        Return _ports.Accounts.Load() Is Nothing AndAlso _ports.HasDriveSignIn()
+    End Function
+
+    ''' <summary>No account but a Drive sign-in: the local channel opens and nothing else does - no control session, no connection, no
+    ''' registry value, no file - and the state stays NotConfigured. Without a Drive sign-in nothing is started (the dormant rule).</summary>
+    Private Sub StartDriveOnly()
+        If Not IsDriveOnly() Then Return
+        OpenLocalChannel()
+        HookDriveChanges()
+    End Sub
+
+    ''' <summary>The Drive sign-in changed while the Share Manager runs (P2.5): a sign-in opens the Drive-only channel, a sign-out with no
+    ''' account closes it. An account owns the channel through its session, so nothing changes for it. Idempotent.</summary>
+    Friend Sub RefreshDriveOnly()
+        If _disposed OrElse _ports.Accounts.Load() IsNot Nothing Then Return
+        If _ports.HasDriveSignIn() Then
+            OpenLocalChannel()
+            HookDriveChanges()
+            WakeWaiters()
+            Return
+        End If
+        DisposeChannel()
+        UnhookDriveChanges()
+        WakeWaiters()
+    End Sub
+
+    Private Sub OpenLocalChannel()
+        If _channel IsNot Nothing Then Return
+        Try
+            _channel = _ports.StartLocalChannel.Invoke(Me)
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
+            _ports.Log.Invoke("Exchange agent: the local channel could not be created - " & ex.GetType().Name)
+        End Try
+    End Sub
+
+    ''' <summary>Listens to the Drive listing so a long-poll waiter is woken when it moves. Subscribes through the ports' relay, so the Drive
+    ''' host is not created for it. Once per agent.</summary>
+    Private Sub HookDriveChanges()
+        Dim subscribe As Func(Of EventHandler, IDisposable) = _ports.SubscribeDriveChanged
+        SyncLock _gate
+            If subscribe Is Nothing OrElse _driveChanged IsNot Nothing OrElse _disposed Then Return
+        End SyncLock
+        Dim made As IDisposable = subscribe.Invoke(AddressOf OnDriveChanged)
+        SyncLock _gate
+            If _driveChanged Is Nothing AndAlso Not _disposed Then
+                _driveChanged = made
+                made = Nothing
+            End If
+        End SyncLock
+        If made IsNot Nothing Then
+            Try : made.Dispose() : Catch : End Try
+        End If
+    End Sub
+
+    Private Sub UnhookDriveChanges()
+        Dim made As IDisposable
+        SyncLock _gate
+            made = _driveChanged
+            _driveChanged = Nothing
+        End SyncLock
+        If made IsNot Nothing Then
+            Try : made.Dispose() : Catch : End Try
+        End If
+    End Sub
+
+    Private Sub OnDriveChanged(sender As Object, e As EventArgs)
+        WakeWaiters()
     End Sub
 
     ' --- the device key and the kept keys of the sealed scheme (spec 234, items DF and DG) ---
@@ -422,13 +533,8 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
             _session = session
             _cts = cts
         End SyncLock
-        If _channel Is Nothing Then
-            Try
-                _channel = _ports.StartLocalChannel.Invoke(Me)
-            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
-                _ports.Log.Invoke("Exchange agent: the local channel could not be created - " & ex.GetType().Name)
-            End Try
-        End If
+        OpenLocalChannel()
+        HookDriveChanges()
         Dim certificateNote As String = If(account.Certificate = ExchangeCertificateKind.Pinned, "pinned", "validated by the system")
         _ports.Log.Invoke("Exchange agent: starting, device " & ExchangeIds.ForLog(creds.DeviceId) & ", server certificate " & certificateNote)
         _runTask = Task.Run(Function() session.RunAsync(cts.Token, adopted))
@@ -485,7 +591,18 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         End If
         Await Task.Run(Sub() StopSessionOnly()).ConfigureAwait(False)
         DisposeChannel()
+        DisposeDriveJobs()
     End Function
+
+    ''' <summary>Cancels the viewer's Drive requests in flight (each withdraws its REQUEST).</summary>
+    Private Sub DisposeDriveJobs()
+        Dim jobs As DriveRequestJobs
+        SyncLock _gate
+            jobs = _driveJobs
+            _driveJobs = Nothing
+        End SyncLock
+        If jobs IsNot Nothing Then jobs.Dispose()
+    End Sub
 
     Private Sub DisposeChannel()
         Dim c As IDisposable = _channel
@@ -500,6 +617,8 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         _disposed = True
         StopSessionOnly()
         DisposeChannel()
+        UnhookDriveChanges()
+        DisposeDriveJobs()
         Dim liveId As String
         SyncLock _gate
             liveId = _liveBroadcastId
@@ -522,12 +641,98 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         Dim s As ExchangeControlSession = TryCast(sender, ExchangeControlSession)
         If s IsNot Nothing Then _ports.Log.Invoke("Exchange agent: " & s.State.ToString() & If(s.LastReason.Length > 0, " (" & s.LastReason & ")", ""))
         RaiseEvent StatusChanged(Me, EventArgs.Empty)
+        ConsiderKeyUpgrade(s)
     End Sub
 
     Private Sub OnSessionDirectoryChanged(sender As Object, e As EventArgs)
         WakeWaiters()
         RaiseEvent DirectoryChanged(Me, EventArgs.Empty)
         Dim refresh As Task = RefreshGuestGrantsAsync()
+        ConsiderKeyUpgrade(TryCast(sender, ExchangeControlSession))
+    End Sub
+
+    ' --- presenting the first key (ExchangeKeyUpgrade) ---
+
+    ''' <summary>A device enrolled before it had a key presents its first one by itself. Not while a live broadcast or a cast runs on this
+    ''' stream: the swap would cut it. The next change of the directory or of the state asks again.</summary>
+    Private Sub ConsiderKeyUpgrade(session As ExchangeControlSession)
+        If Not ExchangeKeyUpgrade.IsDue(session) Then Return
+        SyncLock _gate
+            If _disposed OrElse Not ReferenceEquals(session, _session) OrElse StreamCarriesSomethingLocked() Then Return
+            If Not _keyUpgradeGate.TryBegin(Environment.TickCount64) Then Return
+        End SyncLock
+        Dim t As Task = Task.Run(Function() UpgradeDeviceKeyAsync(session))
+    End Sub
+
+    Private Function StreamCarriesSomethingLocked() As Boolean
+        Return Not String.IsNullOrEmpty(_liveBroadcastId) OrElse _castPlayingId IsNot Nothing OrElse _castId IsNot Nothing
+    End Function
+
+    Private Async Function UpgradeDeviceKeyAsync(session As ExchangeControlSession) As Task
+        Try
+            Await PresentDeviceKeyAsync(session).ConfigureAwait(False)
+        Catch ex As Exception When TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is IO.IOException OrElse TypeOf ex Is ExchangeWireException OrElse TypeOf ex Is ObjectDisposedException
+            _ports.Log.Invoke("Exchange agent: presenting the device key did not finish: " & ex.GetType().Name)
+        Finally
+            _keyUpgradeGate.Finish(Environment.TickCount64)
+        End Try
+    End Function
+
+    Private Async Function PresentDeviceKeyAsync(session As ExchangeControlSession) As Task
+        Dim account As ExchangeAccount = _ports.Accounts.Load()
+        Dim options As ExchangeControlOptions = session.ConnectionOptions
+        Dim deviceId As String = options.Credentials.DeviceId
+        If account Is Nothing OrElse Not String.Equals(account.DeviceId, deviceId, StringComparison.Ordinal) Then Return
+        Dim address As ExchangeServerAddress = Nothing
+        If Not account.TryGetAddress(address) Then Return
+        ' the key is the device's from here on, whatever the server answers: it is never taken back on this road
+        Dim created As Boolean
+        Dim kem As String = PrepareDeviceKey(deviceId, created)
+        If kem.Length = 0 Then Return
+        Dim pairing As ExchangePairingResult = Await session.RequestPairingCodeAsync(CancellationToken.None).ConfigureAwait(False)
+        If Not pairing.Succeeded Then
+            _ports.Log.Invoke("Exchange agent: no code to present the device key with: " & If(pairing.Answered, ExchangeRefusals.WireName(pairing.Refusal), "no answer"))
+            Return
+        End If
+        Dim description As New ExchangeDeviceDescription(deviceId, ExchangeKeyUpgrade.NameFor(session, account.DeviceName), ExchangeWire.ProductWindows,
+            ExchangeDeviceDescription.Clip(_ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
+            ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""), kem)
+        ' a broadcast or a cast may have begun while the code was on its way; the code then simply runs out
+        SyncLock _gate
+            If _disposed OrElse Not ReferenceEquals(session, _session) OrElse StreamCarriesSomethingLocked() Then Return
+        End SyncLock
+
+        ' the old stream goes first and without `bye`: to the server this device stays what it was until `enrolled`
+        SetIdle(ExchangeAgentState.Connecting, "")
+        Await Task.Run(Sub() StopSessionOnly()).ConfigureAwait(False)
+        Dim opened As ExchangeOpenResult = Nothing
+        Try
+            opened = Await ExchangeKeyUpgrade.PresentFirstKeyAsync(options, account.Login, pairing.Code, description, CancellationToken.None).ConfigureAwait(False)
+        Finally
+            ResumeAfterKeyPresented(deviceId, address, opened)
+        End Try
+    End Function
+
+    ''' <summary>The session starts again: on the stream `enroll` opened when the new token could be kept, else on what is stored.</summary>
+    Private Sub ResumeAfterKeyPresented(deviceId As String, address As ExchangeServerAddress, opened As ExchangeOpenResult)
+        Dim current As ExchangeAccount = _ports.Accounts.Load()
+        Dim sameDevice As Boolean = current IsNot Nothing AndAlso String.Equals(current.DeviceId, deviceId, StringComparison.Ordinal)
+        Dim token As String = If(opened IsNot Nothing AndAlso opened.IsConnected, opened.Welcome.Text("deviceToken"), "")
+        If Not _disposed AndAlso sameDevice AndAlso ExchangeIds.IsValidToken(token) AndAlso _ports.Credentials.Save(deviceId, token) Then
+            _ports.Log.Invoke("Exchange agent: device " & ExchangeIds.ForLog(deviceId) & " presented its key")
+            StartSession(current, address, New ExchangeDeviceCredentials(deviceId, token), opened)
+            Return
+        End If
+        If opened IsNot Nothing Then
+            Dim refusal As String = If(opened.Outcome = ExchangeOpenOutcome.Refused, ExchangeRefusals.WireName(opened.Refusal), "")
+            _ports.Log.Invoke("Exchange agent: the device key was not accepted: " & opened.Outcome.ToString() & " " & refusal)
+            opened.Dispose()
+        End If
+        Dim running As Boolean
+        SyncLock _gate
+            running = _session IsNot Nothing
+        End SyncLock
+        If Not _disposed AndAlso current IsNot Nothing AndAlso Not running Then Start()
     End Sub
 
     Private Sub OnSessionDeviceRevoked(sender As Object, e As EventArgs)
@@ -605,6 +810,26 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
     ''' chosen login and password, then `enrolled`. The completion is a sign-in's own: the token is stored under DPAPI, the account entry is
     ''' written, the control stream stays open and the local channel starts. The request's secrets are wiped whatever happens.</summary>
     Public Async Function RegisterAsync(request As ExchangeRegisterRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
+        Try
+            Return Await WithOneFreshIdRetryAsync(Function() RegisterOnceAsync(request, ct)).ConfigureAwait(False)
+        Finally
+            request.Wipe()
+        End Try
+    End Function
+
+    ''' <summary>Item AD step 3: an `id-collision` answer to a fresh id regenerates it once, and a second collision is shown as a refusal.
+    ''' An id this device already holds is its own and is not replaced here (item DF). The key made for the colliding id went with its attempt.</summary>
+    Private Async Function WithOneFreshIdRetryAsync(attempt As Func(Of Task(Of ExchangeEnrollResult))) As Task(Of ExchangeEnrollResult)
+        Dim fresh As Boolean = Not _ports.Accounts.HasDeviceId()
+        Dim result As ExchangeEnrollResult = Await attempt().ConfigureAwait(False)
+        If fresh AndAlso result.Outcome = ExchangeEnrollOutcome.Refused AndAlso result.Refusal = ExchangeRefusal.IdCollision Then
+            _ports.Log.Invoke("Exchange agent: a fresh device id collided, trying once more with a new one")
+            result = Await attempt().ConfigureAwait(False)
+        End If
+        Return result
+    End Function
+
+    Private Async Function RegisterOnceAsync(request As ExchangeRegisterRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
         Dim keyDeviceId As String = ""
         Dim keyCreated As Boolean = False
         Dim keyKept As Boolean = False
@@ -634,7 +859,6 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
             Dim code As String = request.InvitationCode.Trim()
             Dim sharedPw As String = request.SharedPassword
             Dim password As String = request.Password
-            request.Wipe()
             Dim register As ExchangeEnvelope = ExchangeMessages.Register(code, sharedPw, login, password, description, ExchangeWire.ProposedKeepaliveSeconds)
             Dim opened As ExchangeOpenResult
             Try
@@ -668,7 +892,6 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
                     Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Protocol, ExchangeRefusal.Unknown, opened.Fingerprint)
             End Select
         Finally
-            request.Wipe()
             ' a failed enrollment leaves nothing behind (a key that was there before is the device's own and stays)
             If keyCreated AndAlso Not keyKept Then KeyStore().Delete(keyDeviceId)
         End Try
@@ -677,6 +900,14 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
     ''' account entry is written, the control stream stays open (the very stream that enrolled becomes the control stream) and the local
     ''' channel starts. The request's secrets are wiped whatever happens.</summary>
     Public Async Function EnrollAsync(request As ExchangeEnrollRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
+        Try
+            Return Await WithOneFreshIdRetryAsync(Function() EnrollOnceAsync(request, ct)).ConfigureAwait(False)
+        Finally
+            request.Wipe()
+        End Try
+    End Function
+
+    Private Async Function EnrollOnceAsync(request As ExchangeEnrollRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
         Dim keyDeviceId As String = ""
         Dim keyCreated As Boolean = False
         Dim keyKept As Boolean = False
@@ -711,7 +942,6 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
             Finally
                 ' the frame's buffer was overwritten in the writer; the envelope's copy of the secrets goes too
                 enroll.SetText("password", "").SetText("pairingCode", "")
-                request.Wipe()
             End Try
 
             Select Case opened.Outcome
@@ -737,7 +967,6 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
                     Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Protocol, ExchangeRefusal.Unknown, opened.Fingerprint)
             End Select
         Finally
-            request.Wipe()
             ' a failed enrollment leaves nothing behind (a key that was there before is the device's own and stays)
             If keyCreated AndAlso Not keyKept Then KeyStore().Delete(keyDeviceId)
         End Try
@@ -821,17 +1050,25 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         Dim account As ExchangeAccount = _ports.Accounts.Load()
         Dim told As Boolean = False
         Dim session As ExchangeControlSession
+        Dim broadcastId As String
         SyncLock _gate
             session = _session
+            broadcastId = _liveBroadcastId
         End SyncLock
         If account IsNot Nothing AndAlso session IsNot Nothing Then
-            ' ticket 187 rule 9, in this order and each step best effort: every resource is unpublished, then the device revokes ITSELF on the
-            ' live stream (that removes its records and closes its streams, so a `bye` after it has no stream to ride), then it forgets
-            ' locally. Nothing here waits for the server beyond a short, bounded step: a server that is down costs a second or two, not a hang.
+            ' ticket 187 rule 9 and DEVICE-EXCHANGE items AB and BL, in this order and each step best effort: the running broadcast ends, every
+            ' resource is unpublished, then the device revokes ITSELF on the live stream (that removes its records and closes its streams, so a
+            ' `bye` after it has no stream to ride), then it forgets locally. Nothing here waits for the server beyond a short, bounded step: a
+            ' server that is down costs a second or two, not a hang.
             Dim leave As IExchangeProducerLeave = TryCast(_ports.Producer, IExchangeProducerLeave)
+            ' the agent lets go first: an update or a reconnect during the steps below must not bring back what `broadcast-end` ends
+            If Not String.IsNullOrEmpty(broadcastId) Then ReleaseLiveBroadcast(broadcastId)
             Try
                 Using bounded As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct)
                     bounded.CancelAfter(3000)
+                    If Not String.IsNullOrEmpty(broadcastId) Then
+                        Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastEnd).SetText("broadcastId", broadcastId), bounded.Token).ConfigureAwait(False)
+                    End If
                     If leave IsNot Nothing Then Await leave.UnpublishAllAsync(session, bounded.Token).ConfigureAwait(False)
                     told = Await session.RevokeAsync(account.DeviceId, bounded.Token).ConfigureAwait(False)
                 End Using
@@ -849,6 +1086,12 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
     ''' server (offline) until another device of the account revokes it.</summary>
     Public Async Function DisconnectAsync() As Task
         Await StopAsync().ConfigureAwait(False)
+        ' a broadcast still held would be started again by the next sign-in's welcome; a later enrollment publishes nothing until asked (170 rule 1)
+        Dim heldBroadcastId As String
+        SyncLock _gate
+            heldBroadcastId = _liveBroadcastId
+        End SyncLock
+        If Not String.IsNullOrEmpty(heldBroadcastId) Then ReleaseLiveBroadcast(heldBroadcastId)
         ' the kept keys of the account's devices go with the account (item DG); this device's own key lives as long as its id, which
         ' stays, so a later sign-in under the same id carries the same key (item DF)
         Dim leaving As ExchangeAccount = _ports.Accounts.Load()
@@ -1105,8 +1348,9 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         Return Await SendBroadcastUpdateAsync(state, record).ConfigureAwait(False)
     End Function
 
-    Friend Sub OnBroadcastStopped(broadcastId As String)
-        Dim session As ExchangeControlSession
+    ''' <summary>This side lets go of a broadcast: no record for the next welcome to send again, no upload, no keys. Telling the server is the
+    ''' caller's.</summary>
+    Private Sub ReleaseLiveBroadcast(broadcastId As String)
         Dim uploadCts As CancellationTokenSource
         SyncLock _gate
             If _liveBroadcastId = broadcastId Then
@@ -1117,7 +1361,6 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
                 uploadCts = _liveUploadCts
                 _liveUploadCts = Nothing
             End If
-            session = _session
         End SyncLock
         Try
             uploadCts?.Cancel()
@@ -1125,6 +1368,14 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         End Try
         ' the keys of the ended broadcast (and any made for one that never started) are wiped
         DisposeSealedBroadcast(broadcastId)
+    End Sub
+
+    Friend Sub OnBroadcastStopped(broadcastId As String)
+        Dim session As ExchangeControlSession
+        ReleaseLiveBroadcast(broadcastId)
+        SyncLock _gate
+            session = _session
+        End SyncLock
         If session IsNot Nothing AndAlso Not String.IsNullOrEmpty(broadcastId) Then
             Dim unused As Task = Task.Run(
                 Async Function()
@@ -1657,13 +1908,20 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
     End Function
 
     ''' <summary>The revision of the mirrored directory, or -1 when there is no snapshot (no stream, or not listed yet). It includes the
-    ''' Drive listing's revision (<see cref="DriveDirectoryMerge"/>), so a change listed on Drive answers a viewer that holds the old number.</summary>
+    ''' Drive listing's revision (<see cref="DriveDirectoryMerge"/>), so a change listed on Drive answers a viewer that holds the old number.
+    ''' Drive alone (<see cref="IsDriveOnly"/>, no session by design): the listing's own revision once a round has listed (a listing that
+    ''' no round has answered yet is revision 0), else -1 like a server that is not listed yet.</summary>
     Private Function CurrentRevision() As Long
         Dim session As ExchangeControlSession
         SyncLock _gate
             session = _session
         End SyncLock
-        If session Is Nothing OrElse Not session.Model.HasSnapshot Then Return -1
+        If session Is Nothing Then
+            If Not IsDriveOnly() Then Return -1
+            Dim listed As Long = DriveListing().Revision
+            Return If(listed > 0, listed, -1)
+        End If
+        If Not session.Model.HasSnapshot Then Return -1
         Return session.Model.Revision + DriveListing().Revision
     End Function
 
@@ -1700,11 +1958,14 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
         Select Case requestType
             Case ExchangeAgentPipe.RequestGetState
                 Dim st As ExchangeDeviceStatus = GetStatus()
-                Return ExchangeLocalResult.Success(New ExchangeAgentStateInfo(st.Configured, st.State, st.Features, st.DeviceId, st.DeviceName, st.LastReason).ToJson())
+                ' `drive` (additive; absent reads False): the directory carries a Google Drive listing, so a viewer may read it with no account
+                Return ExchangeLocalResult.Success(New ExchangeAgentStateInfo(st.Configured, st.State, st.Features, st.DeviceId, st.DeviceName, st.LastReason,
+                                                                              _ports.HasDriveSignIn()).ToJson())
 
             Case ExchangeAgentPipe.RequestGetDirectory, ExchangeAgentPipe.RequestGetLiveDirectory
                 Dim status As ExchangeDeviceStatus = GetStatus()
-                If Not status.Configured Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConfigured)
+                ' no account is still a directory when the Drive listing is served alone (Q269-6)
+                If Not status.Configured AndAlso Not IsDriveOnly() Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConfigured)
                 Dim since As Long = ReadLong(request, "sinceRevision", 0)
                 Dim waitMs As Integer = CInt(Math.Min(Math.Max(ReadLong(request, "waitMs", 0), 0), 30000))
                 ' Register the waiter BEFORE looking at the revision: a change that lands between the look and the wait would
@@ -1729,6 +1990,8 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
                     If String.Equals(r.ResourceId, id, StringComparison.Ordinal) Then found = r
                 Next
                 If found Is Nothing Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnknownResource)
+                ' Drive alone has no server session and no box to open: the listed folder is a Drive record, which never carries `access`
+                If IsDriveOnly() Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNoAccess)
                 ' spec 234 items DI, DJ, DP: the access comes out of the record's box, opened here with this device's key; a clear
                 ' `access` from the server is never handed on, and the viewer is told the typed state instead
                 Dim sealedView As ExchangeSealedRecipients = GetSealedRecipients()
@@ -1804,6 +2067,15 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
                 ' The persisted preference belongs to the viewer, not to the agent's local protocol.
                 Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnsupported)
 
+            Case ExchangeAgentPipe.RequestDriveStart
+                Return StartDriveJob(request)
+
+            Case ExchangeAgentPipe.RequestDriveJob
+                Return Await ReadDriveJobAsync(request, ct).ConfigureAwait(False)
+
+            Case ExchangeAgentPipe.RequestDriveCancel
+                Return CancelDriveJob(request)
+
             Case Else
                 Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorBadRequest)
         End Select
@@ -1847,11 +2119,13 @@ Friend NotInheritable Class ExchangeDeviceHost
         End Get
     End Property
 
-    ''' <summary>The Share Manager's start. With the gate shut, or no account configured, NO agent is constructed: no connection, no pipe,
-    ''' no registry value, no file. The decision and the construction are injectable so the dormant test passes counting fakes.</summary>
+    ''' <summary>The Share Manager's start. With the gate shut, or with neither an account configured nor a Google Drive sign-in (ticket 269,
+    ''' Q269-6), NO agent is constructed: no connection, no pipe, no registry value, no file. A Drive sign-in alone starts the agent in its
+    ''' Drive-only shape (the local channel, no session). The decision and the construction are injectable so the dormant test passes counting fakes.</summary>
     Public Shared Function StartIfConfigured(enabled As Boolean, ports As ExchangeAgentPorts, create As Func(Of ExchangeAgentPorts, ExchangeDeviceAgent)) As ExchangeDeviceAgent
         If Not enabled Then Return Nothing
-        If ports Is Nothing OrElse Not ports.Accounts.IsConfigured() Then Return Nothing
+        If ports Is Nothing Then Return Nothing
+        If Not ports.Accounts.IsConfigured() AndAlso Not ports.HasDriveSignIn() Then Return Nothing
         Dim agent As ExchangeDeviceAgent = create(ports)
         SyncLock Gate
             _agent = agent
@@ -1868,6 +2142,32 @@ Friend NotInheritable Class ExchangeDeviceHost
             StartIfConfigured(True, ProductionPorts(), Function(p) New ExchangeDeviceAgent(p))
         Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
             AppFileLogger.WriteLine("Exchange agent: could not start - " & ex.GetType().Name)
+        End Try
+    End Sub
+
+    ''' <summary>The Google Drive sign-in changed while the Share Manager runs (ticket 269 P2.5): with no agent yet, a sign-in starts the
+    ''' Drive-only agent exactly as the start would; with one, it opens the Drive-only channel on a sign-in and closes it on a sign-out when no
+    ''' account is configured. Nothing is constructed with the gate shut or without a sign-in. Injectable like the start.</summary>
+    Public Shared Function DriveSignInChanged(enabled As Boolean, ports As ExchangeAgentPorts, create As Func(Of ExchangeAgentPorts, ExchangeDeviceAgent)) As ExchangeDeviceAgent
+        If Not enabled Then Return Nothing
+        Dim agent As ExchangeDeviceAgent = Current
+        If agent Is Nothing Then Return StartIfConfigured(enabled, ports, create)
+        agent.RefreshDriveOnly()
+        Return agent
+    End Function
+
+    ''' <summary>The production call, made by the Drive page after a sign-in or a sign-out completed.</summary>
+    Public Shared Sub DriveSignInChanged()
+        Try
+            If Not ExchangeFeatures.IsEnabled() Then Return
+            Dim agent As ExchangeDeviceAgent = Current
+            If agent IsNot Nothing Then
+                agent.RefreshDriveOnly()
+            Else
+                StartIfConfigured(True, ProductionPorts(), Function(p) New ExchangeDeviceAgent(p))
+            End If
+        Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
+            AppFileLogger.WriteLine("Exchange agent: could not follow the Drive sign-in - " & ex.GetType().Name)
         End Try
     End Sub
 

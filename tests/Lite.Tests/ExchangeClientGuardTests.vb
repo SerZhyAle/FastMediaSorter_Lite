@@ -59,7 +59,8 @@ Public Class ExchangeClientGuardTests
         ' ports ask the host (GetOrCreate reads the gate, and the wizard asks ExchangeFeatures.IsEnabled itself before it probes or enrols anything)
         Dim allowed As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
             "ExchangeDeviceAgent.vb", "TrayContext.vb", "Share_Settings_Form.ExchangeAccount.vb", "Share_Settings_Form.ExchangeAdmin.vb", "Exchange_Account_Form.vb", "ExchangeServerWizard.vb",
-            "ExchangeLocalJoin.vb"}   ' 2026-10-12: the local join enrols THIS PC's agent in the server that runs on it; every entry asks ExchangeFeatures first, and GetOrCreate reads the gate
+            "ExchangeLocalJoin.vb",   ' 2026-10-12: the local join enrols THIS PC's agent in the server that runs on it; every entry asks ExchangeFeatures first, and GetOrCreate reads the gate
+            "Share_Settings_Form.Drive.vb"}   ' 2026-10-30 (ticket 269 P2.5): the Drive page tells the host that the Drive sign-in changed; the production DriveSignInChanged() reads ExchangeFeatures first
         ' ticket 170: reading ExchangeDeviceHost.Current (the export and the producer rows) never constructs an agent, so it is not a use of the host
         Dim src As String = Path.Combine(Root(), "src")
         Dim users As New List(Of String)
@@ -168,6 +169,26 @@ Public Class ExchangeClientGuardTests
         Dim text As String = File.ReadAllText(Path.Combine(Root(), "src", "FastMediaSorter.vbproj"))
         Assert.DoesNotContain("Exchange\", text, StringComparison.OrdinalIgnoreCase)
         Assert.DoesNotContain("\Exchange", text, StringComparison.OrdinalIgnoreCase)
+    End Sub
+
+    ''' <summary>L0278 7.6, library placement: the viewer compiles src\Exchange because the folder is shared, but administering a server is
+    ''' the Share Manager's; no viewer source outside the library names the session, its wire or its trust decision.</summary>
+    <Fact>
+    Public Sub No_viewer_source_reaches_the_remote_administration_session()
+        Dim src As String = Path.Combine(Root(), "src")
+        Dim scanned As Integer = 0
+        For Each f As String In Directory.GetFiles(src, "*.vb", SearchOption.AllDirectories)
+            Dim relative As String = f.Substring(src.Length + 1)
+            If relative.StartsWith("FastMediaSorterCompanion" & Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) Then Continue For
+            If relative.StartsWith("Exchange" & Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) Then Continue For
+            If f.Contains(Path.DirectorySeparatorChar & "obj" & Path.DirectorySeparatorChar) OrElse f.Contains(Path.DirectorySeparatorChar & "bin" & Path.DirectorySeparatorChar) Then Continue For
+            scanned += 1
+            Dim text As String = File.ReadAllText(f)
+            For Each name As String In {"ExchangeRemoteAdmin", "ExchangeAdminWire", "ExchangeAdminTrust", "ExchangeAdminHandshake"}
+                Assert.True(text.IndexOf(name, StringComparison.Ordinal) < 0, relative & " names " & name)
+            Next
+        Next
+        Assert.True(scanned > 100, "the scan saw " & scanned & " viewer sources; the guard would be vacuous")
     End Sub
 
     <Fact>

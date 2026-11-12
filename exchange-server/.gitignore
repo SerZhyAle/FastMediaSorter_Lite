@@ -2,3 +2,8 @@
 bin/
 # the PE version resource build.ps1 generates for one build and removes again
 *.syso
+# local go build output: the server and the probe are built (Stage-ExchangePayload.ps1, the
+# test fixtures build their own scratch probe), never vendored; a build run
+# from the wrong folder leaves the nested exchange-server/ copy
+/*.exe
+/exchange-server/

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ur" dir="rtl" class="script-ur">
+<html lang="ur" data-page-lang="ur" dir="rtl" class="script-ur">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>ونڈوز اس ڈاؤن لوڈ پر خبردار کیوں کرتا ہے</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیو ترتیب دیں">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="ur">
+<meta property="og:locale" content="ur_PK">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ونڈوز اس ڈاؤن لوڈ پر خبردار کیوں کرتا ہے">
 <meta name="twitter:description" content="‏Fast Media Sorter &amp; Sharing پر آنے والی SmartScreen وارننگ کا کیا مطلب ہے، یہ کیوں آتی ہے، بالکل کس پر کلک کرنا ہے، اور پروگرام کبھی کیا نہیں کرتا۔">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">صرف ایک بیرونی سروس سے رابطہ ہو سکتا ہے، اور وہ بھی تبھی جب آپ شیئرنگ کے لیے انٹرنیٹ رسائی آن کریں: ‏check-host.net سے پوچھا جاتا ہے کہ آپ کا فارورڈ کردہ پورٹ باہر سے جواب دیتا ہے یا نہیں، جس سے اس سروس کو آپ کا عوامی پتہ اور پورٹ نظر آتا ہے۔ اس کے علاوہ اسے کچھ نہیں بھیجا جاتا۔ مزید دو چیزیں آپ کے اپنے نیٹ ورک کے اندر ہی رہتی ہیں: انٹرنیٹ رسائی آن ہونے پر پروگرام آپ کے راؤٹر سے شیئرنگ پورٹ فارورڈ کرنے کو کہتا ہے (UPnP یا NAT-PMP)، اور شیئرنگ چلتے وقت PC مقامی نیٹ ورک میں اپنا اعلان کرتا ہے (mDNS)، تاکہ جوڑا گیا فون اسے دوبارہ ڈھونڈ سکے۔</p>
-  <p class="note" id="site-origins">اس ویب سائٹ کا کوئی صفحہ کھولنے پر (پروگرام استعمال کرنے پر نہیں) زیادہ سے زیادہ تین بیرونی پتوں سے رابطہ ہوتا ہے: fonts.googleapis.com اور fonts.gstatic.com (Google Fonts، صفحات کے حروف کے لیے) اور مرکزی صفحے اور اس کے زبانی نسخوں پر api.github.com (GitHub، ڈاؤن لوڈ لنک کے لیے تازہ ترین ریلیز دیکھنے کو)۔ ہر ایک کو آپ کا IP ایڈریس اور آپ کے براؤزر کا user agent ملتا ہے، اس کے سوا کچھ نہیں۔ تجزیات، ٹیگ مینیجر یا اشتہار کے کسی پتے سے رابطہ نہیں کیا جاتا۔ رازداری کا صفحہ بھی یہی کہتا ہے۔</p>
+  <p class="note" id="site-origins">اس ویب سائٹ کا کوئی صفحہ کھولنے پر (پروگرام استعمال کرنے پر نہیں) دو بیرونی پتوں سے رابطہ ہوتا ہے: fonts.googleapis.com اور fonts.gstatic.com (Google Fonts، صفحات کے حروف کے لیے)۔ ہر ایک کو آپ کا IP ایڈریس اور آپ کے براؤزر کا user agent ملتا ہے، اس کے سوا کچھ نہیں۔ تجزیات، ٹیگ مینیجر یا اشتہار کے کسی پتے سے رابطہ نہیں کیا جاتا۔ رازداری کا صفحہ بھی یہی کہتا ہے۔</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">ڈاؤن لوڈ</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

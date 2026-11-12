@@ -7,7 +7,7 @@
       "purpose": "the Google Fonts stylesheet of the site's lettering",
       "receives": "the visitor's IP address and the browser's user agent",
       "pages": ["*"],
-      "except": ["docs/privacy.html", "docs/publish-folders-android.html", "assets/help/port-forward.html"]
+      "except": ["docs/privacy.html", "lang/ru/privacy.html", "lang/uk/privacy.html", "docs/publish-folders-android.html"]
     },
     {
       "host": "fonts.gstatic.com",
@@ -15,15 +15,7 @@
       "purpose": "the two font files (woff2) of the same lettering",
       "receives": "the visitor's IP address and the browser's user agent",
       "pages": ["*"],
-      "except": ["docs/privacy.html", "docs/publish-folders-android.html", "assets/help/port-forward.html"]
-    },
-    {
-      "host": "api.github.com",
-      "via": "one fetch of releases/latest",
-      "purpose": "the latest release, so the download link points at it",
-      "receives": "the visitor's IP address and the browser's user agent",
-      "pages": ["index.html", "lang/*/index.html"],
-      "except": []
+      "except": ["docs/privacy.html", "lang/ru/privacy.html", "lang/uk/privacy.html", "docs/publish-folders-android.html"]
     }
   ],
   "forbidden": ["googlesyndication.com", "doubleclick.net", "google-analytics.com", "googletagmanager.com", "gtag", "plausible.io", "matomo", "hotjar.com", "clarity.ms", "facebook.net", "yandex.ru/metrika", "mc.yandex.ru"]

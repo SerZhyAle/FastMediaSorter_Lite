@@ -184,6 +184,8 @@ Partial Public Class Main_Form
             Return
         End If
         If e.Delta <> 0 AndAlso HtmlViewOwnsWheel(e) Then Return
+        If e.Delta <> 0 AndAlso EpubReaderOwnsWheel(e) Then Return
+        If e.Delta <> 0 AndAlso TextEditorOwnsWheel(e) Then Return
 #End If
 
 #If Not NETFRAMEWORK Then

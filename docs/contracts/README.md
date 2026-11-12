@@ -22,6 +22,7 @@ not a local edit and not a local copy kept "in sync".
 | [`WORKER-IPC.md`](WORKER-IPC.md) | `WORKER-IPC` | consumer - the Share Manager drives the worker (0.14: host half of the exchange vectors, the `[excluded-range]` token, the status sub-fields and the unknown-is-never-authority rule for the disk requests) |
 | [`WORKER-LAUNCH.md`](WORKER-LAUNCH.md) | `WORKER-LAUNCH` | launcher - the Share Manager starts the worker and the installer scripts register it; the viewer only reads the worker's state directory (1.0, since 2026-10-17, split out of `WORKER-IPC`) |
 | [`DISK-SHARE.md`](DISK-SHARE.md) | `DISK-SHARE` | consumer - file-backed Share Manager disk control (1.4, partial); an unknown state, holder or record never enables a mount; native/service release proof remains open |
+| [`CLI-EVENT-STREAM.md`](CLI-EVENT-STREAM.md) | `CLI-EVENT-STREAM` | consumer - the Share Manager's scheduled "fill free space" runs FileDO's `fill .. del` with `--events` / `--stop-file` and reads the verdict from the event file (0.13, since 2026-11-10, specification L0299) |
 | [`SHARE-SESSION.md`](SHARE-SESSION.md) | `SHARE-SESSION` | client of the session for the viewer's SFTP resources (O1-O4); custodian of guarantee 3's state across installs, uninstalls and host-mode changes; no server half (1.1, re-read 2026-10-07) |
 | [`DEVICE-EXCHANGE.md`](DEVICE-EXCHANGE.md) | `DEVICE-EXCHANGE` | **exchange-server implementer** and device client, resource producer and consumer, broadcaster and receiver (local specifications 160-234) - 1.1 read 2026-10-16, registry `partial 1.1`: the Go server and the clients are built and the client gate has been open since 2026-10-14 (specification 223); rung 1 is this product's own generator against its own replay, no joint rung has run (205), the Drive channel (203) and the outward access (239 CR-13) are not built, the version table of what was written against which version is in specification 235 |
 | [`ANYWHERE-ACCESS.md`](ANYWHERE-ACCESS.md) | `ANYWHERE-ACCESS` | producer and consumer of the share descriptor and the third-party port (local specifications 170, 171 and 227) - 1.0 read 2026-10-16, registry `partial 1.0`; its exchange-server sections 5-7 moved to `DEVICE-EXCHANGE` in 0.11, sections 4, 5.5 and 8 bind; the `FMSSFTP1`/`FMSSFTP2` codec is built (`src/Exchange/FmsSftpCode.vb`) and its descriptor vector is replayed; the outward link (K, L) and the Drive opt-in (H) are open |
@@ -65,7 +66,7 @@ previous one was 2026-10-02, specification 098, the final sync before the freeze
 2026-10-02 state; the per-contract verdicts and the freeze snapshot live in
 `docs/specifications/done/098_freeze_inventory_2026-10-02.md`. Not listed here: `OCR-ACCURACY` - the Android
 sibling's record; since ticket 033 Ф-3 removed the mis-citations nothing in this repository cites it, so
-no pointer is owed (a decision, 2026-09-25) - and `CLI-EVENT-STREAM`, `LAYOUT-SIGNAL`, `LAYOUT-PALETTE`,
+no pointer is owed (a decision, 2026-09-25) - and `LAYOUT-SIGNAL`, `LAYOUT-PALETTE`,
 `SCENARIO-FILE`, `FDD-FORMAT` and `FDD-BEHAVIOUR`, which belong to other
 products' functions and bind nothing here (the
 `WORKER-IPC` pointer covers the schema-2 disk extension of `DISK-SHARE` this host does not use).

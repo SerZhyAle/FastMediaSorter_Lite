@@ -98,7 +98,8 @@ Public Class ExchangeDeviceAgentTests
                 .MachineName = Function() "TESTPC",
                 .Log = Sub(line) Log.Enqueue(line),
                 .StartLocalChannel = Function(h) CountChannel(),
-                .ConfigureSession = AddressOf Configure}
+                .ConfigureSession = AddressOf Configure,
+                .DriveSignedIn = Function() False}      ' the real profile's Drive sign-in never decides a fact (ticket 269 P2); a test sets it
         End Sub
 
         Private Function CountChannel() As IDisposable
@@ -579,6 +580,108 @@ Public Class ExchangeDeviceAgentTests
             Assert.Equal(0, rig.Port.Writes)
             Assert.Equal(0, rig.Channels)
             Assert.False(Directory.Exists(rig.Folder))
+        End Using
+    End Sub
+
+    ''' <summary>A local channel that counts how often it was opened and closed (the rig's own one returns nothing to close).</summary>
+    Friend NotInheritable Class ChannelProbe
+        Implements IDisposable
+
+        Public Opened As Integer
+        Public Closed As Integer
+
+        Public Function Open() As IDisposable
+            Interlocked.Increment(Opened)
+            Return Me
+        End Function
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Interlocked.Increment(Closed)
+        End Sub
+    End Class
+
+    ''' <summary>Ticket 269 P2.1 and P2.2 (Q269-6): a Google Drive sign-in with no exchange account starts the agent in its Drive-only shape - the
+    ''' local channel and nothing else: no connection, no registry value, no file, the state still NotConfigured.</summary>
+    <Fact>
+    Public Sub A_Drive_sign_in_alone_starts_an_agent_that_opens_the_local_channel_and_nothing_else()
+        Using rig As New Rig()
+            rig.Ports.DriveSignedIn = Function() True
+            Dim built As Integer = 0
+            Dim create As Func(Of ExchangeAgentPorts, ExchangeDeviceAgent) = Function(p)
+                                                                                 built += 1
+                                                                                 Return New ExchangeDeviceAgent(p)
+                                                                             End Function
+            ' the gate shut: a Drive sign-in changes nothing
+            Assert.Null(ExchangeDeviceHost.StartIfConfigured(False, rig.Ports, create))
+            Assert.Equal(0, built)
+            Assert.Equal(0, rig.Channels)
+            Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.StartIfConfigured(True, rig.Ports, create)
+            Try
+                Assert.NotNull(agent)
+                Assert.Equal(1, built)
+                Assert.Equal(1, rig.Channels)                   ' the local channel is open ..
+                Assert.Equal(0, rig.Transport.Attempts)         ' .. and no connection was tried
+                Assert.Equal(0, rig.Port.Writes)                ' no registry value
+                Assert.False(Directory.Exists(rig.Folder))      ' no file
+                Assert.Empty(rig.Log)
+                Assert.True(agent.IsDriveOnly())
+                Dim status As ExchangeDeviceStatus = agent.GetStatus()
+                Assert.False(status.Configured)
+                Assert.Equal(ExchangeAgentState.NotConfigured, status.State)
+                Assert.Null(agent.GetSealedRecipients())        ' no control session to open a box with
+            Finally
+                ExchangeDeviceHost.StopAtExit()
+            End Try
+        End Using
+    End Sub
+
+    ''' <summary>Ticket 269 P2.5: a Drive sign-in during the session starts the Drive-only agent, a sign-out with no account closes its channel.</summary>
+    <Fact>
+    Public Sub The_host_follows_a_Drive_sign_in_and_a_sign_out_while_no_account_is_configured()
+        ExchangeDeviceHost.StopAtExit()
+        Using rig As New Rig()
+            Dim signedIn As Boolean = False
+            Dim probe As New ChannelProbe()
+            rig.Ports.DriveSignedIn = Function() signedIn
+            rig.Ports.StartLocalChannel = Function(h) probe.Open()
+            Dim built As Integer = 0
+            Dim create As Func(Of ExchangeAgentPorts, ExchangeDeviceAgent) = Function(p)
+                                                                                 built += 1
+                                                                                 Return New ExchangeDeviceAgent(p)
+                                                                             End Function
+            Try
+                ' no sign-in: nothing is constructed
+                Assert.Null(ExchangeDeviceHost.DriveSignInChanged(True, rig.Ports, create))
+                Assert.Equal(0, built)
+                ' a sign-in with the gate shut: nothing either
+                signedIn = True
+                Assert.Null(ExchangeDeviceHost.DriveSignInChanged(False, rig.Ports, create))
+                Assert.Equal(0, built)
+                ' the sign-in: the Drive-only agent starts with its one channel
+                Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.DriveSignInChanged(True, rig.Ports, create)
+                Assert.NotNull(agent)
+                Assert.Same(agent, ExchangeDeviceHost.Current)
+                Assert.Equal(1, built)
+                Assert.Equal(1, probe.Opened)
+                ' told again: the same agent and the same channel
+                Assert.Same(agent, ExchangeDeviceHost.DriveSignInChanged(True, rig.Ports, create))
+                Assert.Equal(1, built)
+                Assert.Equal(1, probe.Opened)
+                Assert.Equal(0, probe.Closed)
+                ' the sign-out: the channel closes and the agent is dormant again
+                signedIn = False
+                Assert.Same(agent, ExchangeDeviceHost.DriveSignInChanged(True, rig.Ports, create))
+                Assert.Equal(1, probe.Closed)
+                Assert.False(agent.IsDriveOnly())
+                ' signed in once more: the channel opens anew
+                signedIn = True
+                ExchangeDeviceHost.DriveSignInChanged(True, rig.Ports, create)
+                Assert.Equal(2, probe.Opened)
+                Assert.Equal(0, rig.Transport.Attempts)
+                Assert.Equal(0, rig.Port.Writes)
+            Finally
+                ExchangeDeviceHost.StopAtExit()
+            End Try
         End Using
     End Sub
 

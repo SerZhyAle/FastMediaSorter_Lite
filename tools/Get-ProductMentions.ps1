@@ -444,7 +444,7 @@ function Add-TextHit([int]$Line, [string]$ln, $span, [bool]$isJson) {
     }
     $problems = Get-ClaimProblems $sentence
     if ($form -eq 'old-companion') {
-        $problems.Add('names the Windows program only as a folder-share companion (it is the media and file manager with local sharing and scheduling)')
+        $problems.Add('names the Windows program only as a folder-share companion (it is the media and file manager; local sharing and scheduled file operations are two further parts)')
     }
     if ($heading -or $words -lt 5) {
         $note = if ($legacy) { $legacy } else { 'name with no description around it' }
@@ -633,7 +633,7 @@ function Get-Proposal($h) {
         'link-label' { return "label: ``$($h.expected)``" }
         'link-description' { return "description: ``$($h.expected)``" }
         'feature-claim' {
-            if ($h.form -eq 'old-companion') { return "name the program ``$($h.expected)``; the sharing part is the local sharing and scheduling service (positioning.components)" }
+            if ($h.form -eq 'old-companion') { return "name the program ``$($h.expected)``; the sharing part is the local sharing service, and scheduled file operations are a separate part installed together with the Share Manager (positioning.components)" }
             return "rewrite from positioning.lead / the register; $($h.reason)"
         }
         default { return $h.expected }

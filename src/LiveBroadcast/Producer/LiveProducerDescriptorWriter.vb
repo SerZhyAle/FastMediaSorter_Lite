@@ -11,8 +11,8 @@ Imports System.Text.Json
 ' HTTP endpoint of this ticket (broadcasts and folder connections are 173's). Three channels carry the SAME
 ' description (producer rule 3): FMSBCAST1: barcode text (Base64 of the GZIP of the JSON), the
 ' broadcast_<n>.fmsbcast file, and the QR image - which renders the same barcode text, so the payload
-' is built once here. The window's link is `fmsbcast://import?payload=` + the URL-encoded barcode text
-' (<see cref="LinkText"/>, the contract's target host, 4.3); the earlier `live` host stays readable.
+' is built once here. The window's link is the Android `intent://` form around the `fmsbcast://import?payload=`
+' target and the URL-encoded barcode text (<see cref="LinkText"/>, 4.3); the bare `import` and the earlier `live` forms stay readable.
 '
 ' A descriptor handed outside the account that carries a RELAY or TUNNEL endpoint is always protected
 ' (LIVE-BROADCAST item M, ticket 239 CR-15): <see cref="BuildHandOutJson"/> is the ONE function the three
@@ -290,12 +290,16 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
         End Using
     End Function
 
-    ''' <summary>The text the window's copy-link puts on the clipboard (LIVE-BROADCAST 4.3): the importer's
-    ''' `fmsbcast://import?payload=` target followed by the URL-encoded barcode text, so it carries exactly the description of the
-    ''' other channels and, like them, never the password. "" for an empty barcode text (nothing to link).</summary>
+    ''' <summary>The text the window's copy-link puts on the clipboard (LIVE-BROADCAST 4.3): the Android `intent://` link whose target is
+    ''' the importer's `fmsbcast://import?payload=` with the URL-encoded barcode text, and whose browser fallback is the import page with
+    ''' the same text in its fragment - the shape of the phone's own link factory, byte for byte for the same payload. It carries exactly
+    ''' the description of the other channels and, like them, never the password. "" for an empty barcode text (nothing to link).</summary>
     Public Shared Function LinkText(barcodeText As String) As String
         If String.IsNullOrEmpty(barcodeText) Then Return ""
-        Return LiveProducerContract.LinkPrefix & Uri.EscapeDataString(barcodeText)
+        Dim payload As String = Uri.EscapeDataString(barcodeText)
+        Dim fallback As String = LiveProducerContract.LinkFallbackPage & "#payload=" & payload
+        Return "intent://import?payload=" & payload & "#Intent;scheme=fmsbcast;package=" & LiveProducerContract.LinkIntentPackage &
+               ";S.browser_fallback_url=" & Uri.EscapeDataString(fallback) & ";end"
     End Function
 
     ''' <summary>The import file's content of channel 4.2: the JSON, uncompressed.</summary>

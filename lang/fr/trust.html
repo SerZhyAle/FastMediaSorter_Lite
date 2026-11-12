@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-page-lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Pourquoi Windows met en garde à propos de ce téléchargement</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows : triez photos et vidéos avec une touche par fichier">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="fr">
+<meta property="og:locale" content="fr_FR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Pourquoi Windows met en garde à propos de ce téléchargement">
 <meta name="twitter:description" content="Ce que signifie l'avertissement SmartScreen pour Fast Media Sorter &amp; Sharing, pourquoi il apparaît, sur quoi cliquer et ce que le programme ne fait jamais.">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">Un seul service tiers peut être contacté, et seulement si vous activez l'accès depuis internet pour le partage : check-host.net est interrogé pour confirmer que votre port redirigé répond depuis l'extérieur, ce qui montre à ce service votre adresse publique et le port. Rien d'autre ne lui est envoyé. Deux autres choses restent dans votre propre réseau : avec l'accès depuis internet activé, le programme demande à votre routeur de rediriger le port de partage (UPnP ou NAT-PMP), et tant que le partage fonctionne, le PC s'annonce sur le réseau local (mDNS) pour qu'un téléphone associé puisse le retrouver.</p>
-  <p class="note" id="site-origins">Ouvrir une page de ce site web (et non utiliser le programme) contacte au plus trois adresses extérieures : fonts.googleapis.com et fonts.gstatic.com (Google Fonts, pour la typographie des pages) et, sur la page d'accueil et ses versions linguistiques, api.github.com (GitHub, pour chercher la dernière version du lien de téléchargement). Chacune reçoit votre adresse IP et le user agent de votre navigateur, rien d'autre. Aucune adresse d'analyse, de gestionnaire de balises ou de publicité n'est contactée. La page de confidentialité dit la même chose.</p>
+  <p class="note" id="site-origins">Ouvrir une page de ce site web (et non utiliser le programme) contacte deux adresses extérieures : fonts.googleapis.com et fonts.gstatic.com (Google Fonts, pour la typographie des pages). Chacune reçoit votre adresse IP et le user agent de votre navigateur, rien d'autre. Aucune adresse d'analyse, de gestionnaire de balises ou de publicité n'est contactée. La page de confidentialité dit la même chose.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Téléchargements</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

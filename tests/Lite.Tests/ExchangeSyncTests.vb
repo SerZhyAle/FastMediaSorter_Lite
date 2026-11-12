@@ -330,6 +330,41 @@ Public Class ExchangeSyncTests
         Assert.Equal(1, reg.Commits)
     End Function
 
+    Private Const OtherFp As String = "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+    ''' <summary>Ticket 239 CR-22, `DEVICE-EXCHANGE` item DI: a record that names a `hostKeyFingerprint` other than the `fp` of the access the
+    ''' agent opened is not that resource - nothing is attached; the same fingerprint, or a record without the member, attaches as before.</summary>
+    <Theory>
+    <InlineData(OtherFp, "SealedFailed", 0)>
+    <InlineData(Fp, "Attached", 1)>
+    <InlineData("", "Attached", 1)>
+    Public Async Function A_record_naming_another_host_key_than_the_opened_access_is_not_attached(recordFp As String, expected As String, commits As Integer) As Task
+        Dim api As New FakeApi()
+        api.Access(Rid) = AccessResult()
+        Dim reg As New Registry()
+        Dim record As New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Camera", "online", "", hostKeyFingerprint:=recordFp)
+        Assert.Equal(expected, (Await reg.Sync(api).AttachAsync(record, "Home PC", CancellationToken.None)).ToString())
+        Assert.Equal(commits, reg.Commits)
+    End Function
+
+    ''' <summary>Item DI on the follow path: a changed access whose `fp` is not the one the listed record names is not merged into the kept
+    ''' resource; with the record's own fingerprint the same change is followed.</summary>
+    <Theory>
+    <InlineData(OtherFp, False)>
+    <InlineData(Fp, True)>
+    Public Async Function A_changed_access_of_another_host_key_than_the_listed_one_is_not_merged(listedFp As String, merged As Boolean) As Task
+        Dim api As New FakeApi()
+        Dim reg As New Registry()
+        Dim attached As ResourceDescriptor = Await AttachedAsync(reg, api)
+        Dim resources As New List(Of ExchangeResourceRecord) From {New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Camera", "online", "", hostKeyFingerprint:=listedFp)}
+        api.Snapshot = New ExchangeDirectorySnapshot(5, Dir().Devices, resources, New List(Of ExchangeBroadcastRecord))
+        api.Access(Rid) = AccessResult(host:="192.168.1.77")
+        Dim outcome As ExchangeFollowOutcome = Await reg.Sync(api).FollowOneAsync(attached, "Home PC", CancellationToken.None)
+        Assert.Equal(merged, outcome.Changed)
+        Assert.Equal(If(merged, "192.168.1.77", "192.168.1.23"), reg.Items.Single().Host)
+        Assert.Equal(If(merged, 2, 1), reg.Commits)
+    End Function
+
     <Fact>
     Public Async Function Without_the_agent_or_without_access_the_kept_access_stays_and_nothing_is_committed() As Task
         Dim api As New FakeApi()
@@ -412,6 +447,58 @@ Public Class ExchangeSyncTests
         Assert.True(ready.FullList)
         Assert.Equal(Own, ready.OwnDeviceId)
     End Function
+
+    ''' <summary>Ticket 269 P2.4 (Q269-6): an agent with no account that serves a Google Drive listing (`drive`) is read like an online one, and its
+    ''' answer is Ready; without `drive` the same state still says "not signed in", and a directory that fails is Offline with no snapshot.</summary>
+    <Fact>
+    Public Async Function A_Drive_only_agent_with_no_account_is_read_and_its_directory_is_Ready() As Task
+        Dim api As New FakeApi()
+        api.Info = New ExchangeAgentStateInfo(False, ExchangeAgentState.NotConfigured, Array.Empty(Of String)(), "", "", "", drive:=True)
+        api.Snapshot = Dir(revision:=3)
+        Dim ready As ExchangeDevicesState = Await Feed(api).RefreshAsync(CancellationToken.None)
+        Assert.Equal(ExchangeDevicesAvailability.Ready, ready.Availability)
+        Assert.True(ready.FullList)
+        Assert.Equal(1, api.DirectoryCalls)
+        Assert.Equal(3L, ready.Snapshot.Revision)
+
+        ' the Drive listing is not there yet (the agent answers not-connected): offline, and no state is drawn from it
+        api.DirectoryReply = New ExchangeAgentReply(ExchangeAgentReplyKind.Refused, ExchangeAgentPipe.ErrorNotConnected, "")
+        Dim waiting As ExchangeDevicesState = Await Feed(api).RefreshAsync(CancellationToken.None)
+        Assert.Equal(ExchangeDevicesAvailability.Offline, waiting.Availability)
+        Assert.Null(waiting.Snapshot)
+
+        ' no account and no Drive listing: the directory is never asked for
+        Dim bare As New FakeApi()
+        bare.Info = New ExchangeAgentStateInfo(False, ExchangeAgentState.NotConfigured, Array.Empty(Of String)(), "", "", "")
+        Assert.Equal(ExchangeDevicesAvailability.NotSignedIn, (Await Feed(bare).RefreshAsync(CancellationToken.None)).Availability)
+        Assert.Equal(0, bare.DirectoryCalls)
+    End Function
+
+    ''' <summary>The `drive` member of the agent's state is additive: written only when True, an absent member reads False (an older agent), and a
+    ''' member this viewer does not know changes nothing for it (a newer agent).</summary>
+    <Fact>
+    Public Sub The_drive_flag_of_the_agent_state_is_additive_on_the_wire()
+        Dim plain As New ExchangeAgentStateInfo(True, ExchangeAgentState.Online, {"directory"}, Own, "This PC", "")
+        Assert.DoesNotContain("drive", plain.ToJson())
+
+        Dim parsed As ExchangeAgentStateInfo = Nothing
+        Assert.True(ExchangeAgentStateInfo.TryParse(plain.ToJson(), parsed))
+        Assert.False(parsed.Drive)
+        Assert.True(parsed.Configured)
+
+        Dim withDrive As New ExchangeAgentStateInfo(False, ExchangeAgentState.NotConfigured, Array.Empty(Of String)(), "", "", "", drive:=True)
+        Assert.Contains("""drive"":true", withDrive.ToJson())
+        Assert.True(ExchangeAgentStateInfo.TryParse(withDrive.ToJson(), parsed))
+        Assert.True(parsed.Drive)
+        Assert.False(parsed.Configured)
+
+        ' a state written before the flag existed
+        Assert.True(ExchangeAgentStateInfo.TryParse("{""configured"":false,""state"":""NotConfigured""}", parsed))
+        Assert.False(parsed.Drive)
+        ' a non-boolean `drive` is not trusted
+        Assert.True(ExchangeAgentStateInfo.TryParse("{""configured"":false,""state"":""NotConfigured"",""drive"":""yes""}", parsed))
+        Assert.False(parsed.Drive)
+    End Sub
 
     <Fact>
     Public Async Function A_directory_that_could_not_be_fetched_is_no_snapshot_so_no_state_is_drawn_from_it() As Task

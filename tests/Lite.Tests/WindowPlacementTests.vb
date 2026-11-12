@@ -164,6 +164,71 @@ Public Class WindowPlacementTests
         Assert.Equal(expected, WindowPlacement.ParseDpi(text))
     End Sub
 
+    ' --- a minimum that grows with the scale never passes the screen (279, T-2) -------------------------
+
+    ''' <summary>The Settings window asks for 780 x 400 logical px times its composed scale (display x interface
+    ''' scale x Windows Text size). On a 1920 px wide screen at 150 percent with Text size 200 percent that is
+    ''' 2340 px: the bound brings it back to the work area, and a minimum that fits is left as it is.</summary>
+    <Theory>
+    <InlineData(780, 400, 1920, 1040, 780, 400)>
+    <InlineData(1170, 600, 1920, 1040, 1170, 600)>
+    <InlineData(2340, 1200, 1920, 1040, 1920, 1040)>
+    <InlineData(1755, 900, 1366, 728, 1366, 728)>
+    <InlineData(2632, 700, 1920, 1040, 1920, 700)>
+    <InlineData(700, 1300, 1920, 1040, 700, 1040)>
+    <InlineData(1920, 1040, 1920, 1040, 1920, 1040)>
+    Public Sub A_minimum_size_never_exceeds_the_work_area_it_opens_on(wantedW As Integer, wantedH As Integer,
+                                                                      areaW As Integer, areaH As Integer,
+                                                                      expectedW As Integer, expectedH As Integer)
+        Dim bounded As Size = WindowPlacement.BoundMinimum(New Size(wantedW, wantedH), New Rectangle(0, 0, areaW, areaH))
+        Assert.Equal(New Size(expectedW, expectedH), bounded)
+        ' The area may sit anywhere (a second monitor left of the primary): only its size counts.
+        Assert.Equal(bounded, WindowPlacement.BoundMinimum(New Size(wantedW, wantedH), New Rectangle(-areaW, 0, areaW, areaH)))
+    End Sub
+
+    <Fact>
+    Public Sub An_unknown_work_area_sets_no_bound_and_a_negative_minimum_is_none()
+        Assert.Equal(New Size(2340, 1200), WindowPlacement.BoundMinimum(New Size(2340, 1200), Rectangle.Empty))
+        Assert.Equal(New Size(2340, 1040), WindowPlacement.BoundMinimum(New Size(2340, 1200), New Rectangle(0, 0, 0, 1040)))
+        Assert.Equal(New Size(0, 0), WindowPlacement.BoundMinimum(New Size(-5, -9), New Rectangle(0, 0, 1920, 1040)))
+    End Sub
+
+    ''' <summary>Every composed scale the Windows Text size can reach (1.0 to 2.25) on the common displays: the
+    ''' bounded minimum is inside the work area, which is the whole point of the rule.</summary>
+    <Fact>
+    Public Sub At_every_display_and_text_size_the_settings_minimum_fits_the_work_area()
+        Dim areas As Rectangle() = {New Rectangle(0, 0, 1366, 728), New Rectangle(0, 0, 1920, 1040), New Rectangle(0, 0, 2560, 1400), New Rectangle(0, 0, 3840, 2120)}
+        For Each area As Rectangle In areas
+            For Each display As Single In New Single() {1.0F, 1.25F, 1.5F, 2.0F}
+                For Each interfaceScale As Single In New Single() {1.0F, 1.5F}
+                    For Each textSize As Single In New Single() {1.0F, 1.5F, 2.0F, UiSizing.MaxTextFactor}
+                        Dim composed As Single = display * interfaceScale * textSize
+                        Dim wanted As New Size(CInt(Math.Round(780 * composed)), CInt(Math.Round(400 * composed)))
+                        Dim bounded As Size = WindowPlacement.BoundMinimum(wanted, area)
+                        Assert.True(bounded.Width <= area.Width AndAlso bounded.Height <= area.Height,
+                                    String.Format("{0}x{1}: display {2} x interface {3} x text {4} still asks {5}x{6}", area.Width, area.Height, display, interfaceScale, textSize, bounded.Width, bounded.Height))
+                        Assert.True(bounded.Width <= wanted.Width AndAlso bounded.Height <= wanted.Height, "the bound only ever lowers a minimum")
+                    Next
+                Next
+            Next
+        Next
+    End Sub
+
+    ''' <summary>The Settings window keeps what it asks for in one field and bounds the live minimum by the work area
+    ''' BEFORE it reads that minimum to clamp the client size (a clamp of the size alone cannot make a form smaller
+    ''' than its MinimumSize).</summary>
+    <Fact>
+    Public Sub The_settings_window_bounds_its_minimum_by_the_work_area_before_it_clamps_its_size()
+        Dim layout As String = Source("Table_Form.ModernLayout.vb")
+        Assert.Contains("settingsDesiredMinimum = New Size(Sp(780), Sp(400))", layout)
+        Assert.DoesNotContain("MinimumSize = New Size(Sp(780), Sp(400))", layout)
+        Dim fit As String = BodyOf(layout, "Private Sub FitModernSettingsClientSize(")
+        Dim bound As Integer = fit.IndexOf("MinimumSize = WindowPlacement.BoundMinimum(settingsDesiredMinimum, workArea)", StringComparison.Ordinal)
+        Dim reads As Integer = fit.IndexOf("Dim minClientWidth As Integer = Math.Max(1, MinimumSize.Width - chromeWidth)", StringComparison.Ordinal)
+        Assert.True(bound >= 0, "FitModernSettingsClientSize no longer bounds the minimum by the work area")
+        Assert.True(reads > bound, "the minimum is read for the clamp before it is bounded")
+    End Sub
+
     ' --- the order the two windows apply it in -------------------------------------------------------
 
     Private Shared Function Source(fileName As String) As String
@@ -219,6 +284,23 @@ Public Class WindowPlacementTests
         Assert.True(panel.IndexOf("DialogLayout.ApplyAutoScale(Me)", StringComparison.Ordinal) >
                     panel.IndexOf("Controls.Add(toolbar)", StringComparison.Ordinal),
                     "the panel scales before its last band exists")
+    End Sub
+
+    ''' <summary>Ticket 279, T-2: two Settings-window pieces that kept a fixed text size at a larger Windows Text size.
+    ''' The consent window of "send the logs" scales after its own fonts exist (the grown ones are exactly the controls'
+    ''' own), and the recipient grid's header font takes the window's font scale like every other font of the window.</summary>
+    <Fact>
+    Public Sub The_send_logs_consent_window_scales_after_its_fonts_and_the_grid_header_takes_the_font_scale()
+        Dim logs As String = Source("Table_Form.SendLogs.vb")
+        Dim fonts As Integer = logs.IndexOf("ApplySendLogsScriptFont(dialog, header, ownedFonts)", StringComparison.Ordinal)
+        Dim scaled As Integer = logs.IndexOf("DialogLayout.ApplyAutoScale(dialog)", StringComparison.Ordinal)
+        Dim shown As Integer = logs.IndexOf("DialogLayer.ShowViewerDialog(dialog, Me)", StringComparison.Ordinal)
+        Assert.True(fonts >= 0, "the consent window no longer sets its script font where this test looks")
+        Assert.True(scaled > fonts, "the consent window scales before its own fonts exist, so the Text size would not reach them")
+        Assert.True(shown > scaled, "the consent window is shown before it is scaled")
+
+        Dim layout As String = Source("Table_Form.ModernLayout.vb")
+        Assert.Contains("ColumnHeadersDefaultCellStyle.Font = SettingsFont(""Segoe UI Semibold"", Sf(9.0F)", layout)
     End Sub
 
 End Class

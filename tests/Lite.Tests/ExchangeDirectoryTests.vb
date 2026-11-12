@@ -161,6 +161,26 @@ Public Class ExchangeDirectoryTests
         Assert.False(ExchangeRecordReader.TryReadDevice("{""deviceName"":""no id""}", rec))
     End Sub
 
+    <Fact>
+    Public Sub An_offline_reason_counts_only_with_presence_offline_and_the_one_value_of_v1()
+        Dim rec As ExchangeDeviceRecord = Nothing
+        Assert.True(ExchangeRecordReader.TryReadDevice("{""deviceId"":""d1"",""presence"":""offline"",""offlineReason"":""time-limit""}", rec))
+        Assert.True(rec.IsSharePaused)
+        Assert.False(rec.IsOnline)
+        ' item DC: online with the member reads as online, the member ignored
+        Assert.True(ExchangeRecordReader.TryReadDevice("{""deviceId"":""d1"",""presence"":""online"",""offlineReason"":""time-limit""}", rec))
+        Assert.False(rec.IsSharePaused)
+        Assert.True(rec.IsOnline)
+        For Each plain As String In {"{""deviceId"":""d1"",""presence"":""offline""}",
+                                     "{""deviceId"":""d1"",""presence"":""offline"",""offlineReason"":""a-later-value""}",
+                                     "{""deviceId"":""d1"",""presence"":""offline"",""offlineReason"":5}",
+                                     "{""deviceId"":""d1"",""presence"":""weird"",""offlineReason"":""time-limit""}"}
+            Assert.True(ExchangeRecordReader.TryReadDevice(plain, rec))
+            Assert.False(rec.IsSharePaused, plain)
+            Assert.False(rec.IsOnline, plain)
+        Next
+    End Sub
+
     <Theory>
     <InlineData("{""scheme"":""future""}")>
     <InlineData("null")>

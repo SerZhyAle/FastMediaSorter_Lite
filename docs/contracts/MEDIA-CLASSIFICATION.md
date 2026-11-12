@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `MEDIA-CLASSIFICATION` |
-| **Version** | 0.12, draft (read 2026-10-20, specification 244; read at 0.10 on 2026-10-02 and 2026-10-07). Owner: FastMediaSorter Android. 0.11 (additive) says classification does not require browsing, that a MIME label in a popup alone is not adoption, and that sorting, random order, zoom, move and slideshow follow `MEDIA-VIEWER`, not this enum; 0.12 (additive) adds `.jxl` to `IMAGE`. Implemented: rules 1, 2, 3, 5, 6 (extension fallback) and section 4 (ticket 043); **not** rule 4 |
+| **Version** | 0.12, draft (read 2026-10-20, specification 244; read at 0.10 on 2026-10-02 and 2026-10-07). Owner: FastMediaSorter Android. 0.11 (additive) says classification does not require browsing, that a MIME label in a popup alone is not adoption, and that sorting, random order, zoom, move and slideshow follow `MEDIA-VIEWER`, not this enum; 0.12 (additive) adds `.jxl` to `IMAGE`. Implemented: rules 1, 2, 3, 5, 6 (extension fallback) and section 4 (ticket 043); rule 4 on the mainline since 2026-10-22 (registry row closed 2026-10-30, ticket 252). 0.13 (2026-10-29, six extensions) not read yet |
 | **Home** | `media-classification/README.md` in the shared contracts catalog |
 | **Role here** | consumer - `MediaKindClassifier.KindOf` in `src/MediaKind.vb` (.NET 10 mainline only); the net48 fallback keeps plain extension lists |
 
@@ -24,9 +24,11 @@
   providers and storage operations keep their full file sets.
 - Section 4 conformance vectors are in `tests/Lite.Tests/MediaKindClassifierTests.vb`. Classification
   does not expand the supported navigation sets or bypass video/audio preferences (ticket 009).
-- **Rule 4 (sidecar association) is not implemented**: no general sidecar resolver exists, and none is
-  claimed. It is a dated registry exception; the day a feature needs one (a subtitle or cover that
-  travels with its file) it is written against the contract's patterns, not invented.
+- **Rule 4 (sidecar association)** is `src/SidecarAssociations.vb` (.NET 10 mainline only, whole-file
+  `#If Not NETFRAMEWORK`): subtitles, lyrics, a cover or poster and metadata in the primary's own directory, by
+  the contract's patterns, without changing the primary's category; the file details, audio view and video
+  player call it on their background work. Tests: `tests/Lite.Tests/SidecarAssociationsTests.vb`. The net48
+  fallback associates none (maintenance policy).
 - Plain NTFS supplies no MIME, so rule 6 uses extension fallback here.
 - Classifying an extension is not a promise to render it: the x86 fallback keeps listing formats it cannot
   decode as unsupported.

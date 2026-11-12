@@ -206,6 +206,9 @@ Friend NotInheritable Class ClipboardWin32
     Friend Const OpenAttempts As Integer = 12
     Friend Const OpenPauseMs As Integer = 15
 
+    ''' <summary>How long a read waits before it is abandoned: the 5 seconds of CLIPBOARD-GUARD item N.</summary>
+    Friend Const ReadBoundSeconds As Integer = 5
+
     ''' <summary>The most a text or an image is kept in memory (a file is streamed from the disk and has no such bound).</summary>
     Friend Const MaxInMemoryBytes As Long = 256L * 1024L * 1024L
 
@@ -213,7 +216,7 @@ Friend NotInheritable Class ClipboardWin32
     Private ReadOnly _placeBound As TimeSpan
 
     Public Sub New(Optional readBound As TimeSpan = Nothing, Optional placeBound As TimeSpan = Nothing)
-        _readBound = If(readBound > TimeSpan.Zero, readBound, TimeSpan.FromSeconds(8))
+        _readBound = If(readBound > TimeSpan.Zero, readBound, TimeSpan.FromSeconds(ReadBoundSeconds))
         _placeBound = If(placeBound > TimeSpan.Zero, placeBound, TimeSpan.FromSeconds(8))
     End Sub
 

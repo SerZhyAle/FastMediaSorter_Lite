@@ -109,7 +109,7 @@ Public Class ExchangeWireTests
 
     <Fact>
     Public Sub Every_type_of_the_table_survives_encode_then_decode_and_then_encodes_to_the_same_bytes()
-        Assert.Equal(52, ExchangeEnvelopeTable.Types().Count)   ' 37 + the eight clipboard types of spec 230 + the three grant types of spec 234 + the four admin types of spec 245
+        Assert.Equal(56, ExchangeEnvelopeTable.Types().Count)   ' 37 + the eight clipboard types of spec 230 + the three grant types of spec 234 + the four admin types of spec 245 + the four settings types of L0296
         For Each typeName As String In ExchangeEnvelopeTable.Types()
             Dim first As Byte() = ExchangeEnvelopeCodec.Encode(Sample(typeName))
             Dim back As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(first)
@@ -412,12 +412,18 @@ Public Class ExchangeWireTests
     ' ---------------------------------------------------------------- reasons, ids
 
     <Fact>
-    Public Sub The_sixteen_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
+    Public Sub The_seventeen_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
         ' DEVICE-EXCHANGE 7.10 / item BR, in the order of ExchangeRefusals.All(): the nine of 7.10, protection-unsupported, the two of
-        ' the clipboard (item BW) and the four of the account lifecycle (items AQ and AT, ticket 239 CR-1)
+        ' the clipboard (item BW), the four of the account lifecycle (items AQ and AT, ticket 239 CR-1) and, appended last (the names
+        ' array is index-addressed), `admin-disabled` of the administration channel (L0278 T-1, value 17)
         Dim names As String() = {"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited",
-                                 "protection-unsupported", "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out"}
-        Assert.Equal(16, ExchangeRefusals.All().Length)
+                                 "protection-unsupported", "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out", "admin-disabled",
+                                 "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible"}
+        Assert.Equal(21, ExchangeRefusals.All().Length)
+        Assert.Equal(21, CInt(ExchangeRefusal.VersionIncompatible))
+        Assert.Equal(17, CInt(ExchangeRefusal.AdminDisabled))
+        Assert.Equal(ExchangeRefusal.AdminDisabled, ExchangeRefusals.Parse("admin-disabled"))
+        Assert.Equal("admin-disabled", ExchangeRefusals.WireName(ExchangeRefusal.AdminDisabled))
         Assert.Equal(names.Length, ExchangeRefusals.All().Length)
         Assert.Equal(ExchangeRefusal.NotPermitted, ExchangeRefusals.Parse("not-permitted"))
         Assert.Equal(ExchangeRefusal.LimitReached, ExchangeRefusals.Parse("limit-reached"))

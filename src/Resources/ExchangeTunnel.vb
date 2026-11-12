@@ -428,6 +428,10 @@ Friend NotInheritable Class ExchangeTunnelDialer
                (openRefusal = ExchangeRefusal.DeviceRevoked OrElse openRefusal = ExchangeRefusal.BadCredentials) Then
                 Return DialResult.Failed(New ResourceFailure(ResourceFailureKind.Auth, Nothing, "device-revoked"))
             End If
+            If openOutcome = ExchangeOpenOutcome.Refused AndAlso openRefusal = ExchangeRefusal.SignedOut Then
+                ' item AT/BR: the token died with a password change on another device - a refusal to sign in again, not a dead link
+                Return DialResult.Failed(New ResourceFailure(ResourceFailureKind.Auth, Nothing, "signed-out"))
+            End If
             Return If(result, DialResult.Failed(New ResourceFailure(ResourceFailureKind.Transport)))
         End If
         Dim provider As SftpProvider = TryCast(result.Session, SftpProvider)

@@ -228,6 +228,18 @@ Friend NotInheritable Class TextViewRules
         Return column
     End Function
 
+    ''' <summary>The row that shows a place of the text. A column past the end of its line lands on the line's last row, and
+    ''' a line past the end of the text on the last row: a remembered place outlives the file getting shorter.</summary>
+    Public Shared Function RowOfPlace(rows As IList(Of TextRow), place As TextPosition) As Integer
+        If rows Is Nothing OrElse rows.Count = 0 Then Return 0
+        For index As Integer = 0 To rows.Count - 1
+            Dim row As TextRow = rows(index)
+            If row.Line > place.Line OrElse (row.Line = place.Line AndAlso place.Column < row.End) Then Return index
+            If row.Line = place.Line AndAlso (index + 1 = rows.Count OrElse rows(index + 1).Line <> row.Line) Then Return index
+        Next
+        Return rows.Count - 1
+    End Function
+
     ''' <summary>The row under a vertical position, pulled to the rows there are. Above the first visible row is the
     ''' first visible row's predecessor (so a drag upward reaches the line scrolled out of sight); the caller scrolls.</summary>
     Public Shared Function RowAt(y As Integer, top As Integer, rowHeight As Integer, firstVisibleRow As Integer, rowCount As Integer) As Integer

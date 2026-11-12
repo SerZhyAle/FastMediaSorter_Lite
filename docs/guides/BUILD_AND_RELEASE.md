@@ -211,7 +211,7 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 .\tools\Release.ps1 -Push
 ```
 
-The preflight has nine local steps in the order implemented by `tools/Release.ps1`. Each child reports through
+The preflight has ten local steps in the order implemented by `tools/Release.ps1`. Each child reports through
 `CHECK-VERDICT` (0 - прошло, 1 - дефект, 2 - не удалось проверить), а кто какую проверку запускает,
 записано в [tools/check-placement.jsonl](../../tools/check-placement.jsonl):
 
@@ -245,13 +245,16 @@ The preflight has nine local steps in the order implemented by `tools/Release.ps
    `*.previous-*.exe` copy in a stage, `Magick.Native` beside the mainline and inside the Share Manager,
    `x86\libwebpdecoder.dll` beside the x86 exe, and notices that name what ships. Read from the
    built bytes, for the User stage, the Server stage and the Server setup's optional viewer.
+10. **WebView2 host in the artifacts** (`tools/Test-HtmlHostArtifacts.ps1`, specification 275): one x64
+   WebView2 loader from the pinned SDK in `webview2\win-x64` beside each staged viewer, none in the
+   Manager-only Server root. Read from the same three stages as step 9.
 
-Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 9 of 9 steps passed)`. Тег создаётся
+Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 10 of 10 steps passed)`. Тег создаётся
 **только при чистом PASS**. Шаг, пропущенный через `-SkipTests` или `-SkipLocalCheck`, делает вердикт
 `COULD NOT VERIFY` (пропущенный шаг никто не проверил), поэтому эти ключи годятся для быстрого сухого
 прогона, но с `-Push` тег не создадут.
 
-The nine-step PASS proves the automated preflight for the named version. Candidate scope, security
+The ten-step PASS proves the automated preflight for the named version. Candidate scope, security
 disposition and real prior-install upgrade acceptance remain required under specifications 264-268.
 A full test PASS alone accepts neither an installer nor a device row. During readiness work without a
 GitHub operation, run the child checks directly: `Release.ps1` itself inspects Git state. Preserve the
@@ -261,13 +264,34 @@ mechanically derived version. After that release exists, inspect its ZIP, two se
 sidecars, reconcile the availability matrix, and run `Store-Prepublish-Checks.ps1 -Expect <version>`
 against the published hashes before either winget PR. Store remains a separate optional User-only channel.
 
+**Google Drive sign-in client (specification 269, Q269-7).** The Share Manager signs in to Google Drive with
+the desktop OAuth client of the owner's Google Cloud project. A build receives it only as two MSBuild
+properties, `FmsDriveClientId` and `FmsDriveClientSecret`, which MSBuild takes from same-named environment
+variables and turns into assembly metadata read by `ExchangeDriveClientConfig.Resolve`. `release.yml` sets them
+on the Share Manager publish step from the repository secrets `FMS_DRIVE_CLIENT_ID` and `FMS_DRIVE_CLIENT_SECRET`;
+a local packager (the MSIX build included) gets them only when the owner sets both variables in that shell. With
+either value missing the exe carries no metadata and the Drive page says the sign-in is not configured in this
+build. No file of the repository holds a value (`DriveClientDeliveryTests`); access and refresh tokens never
+leave the user's DPAPI file.
+
 ### Чек-лист релиза (что нельзя забыть)
 
 **A. Документация и сайт (до тега):**
 - [ ] Обновлены `README.md`, `README_RU.md`, `README_UK.md` если менялись фичи.
 - [ ] Обновлён сайт [index.html](../../index.html) / [docs/privacy.html](../privacy.html) по контенту.
-      Версию править НЕ нужно - кнопки ведут на `/releases/latest` и на winget id, без захардкоженного номера.
+      Версию руками НЕ править: её, ссылки на ассеты, `.sha256` и дату рисует `tools/Set-ReleaseManifest.ps1`
+      после публикации релиза (пункт B); рядом с каждой версионной ссылкой остаётся `/releases/latest`.
 - [ ] `CLAUDE.md` отражает изменения архитектуры (если были).
+- [ ] A page, asset or screenshot that a served page refers to is declared in `tools/site-served.json`: run
+      `pwsh -NoProfile -File tools/Build-SiteArtifact.ps1 -OutDir temp/site-artifact -Clean` (about 4 s; exit 0 means
+      every local reference resolves inside the artifact; `-ReportUnreferenced` lists served files nothing refers to).
+- [ ] **One-time, the owner, at the first publish after ticket L0207:** switch the repository's Pages source to
+      "GitHub Actions" (Settings > Pages > Build and deployment > Source) BEFORE the push of `main` below. The site is
+      no longer the repository root: `.github/workflows/pages.yml` deploys the artifact that
+      `tools/Build-SiteArtifact.ps1` assembles from `tools/site-served.json`, so no executable, `payload/`,
+      `exchange-server/`, `.scratchpad/`, `.claude/` or vendored `lua/` page is published. Until the switch the branch
+      deploy keeps serving the root and the deploy job of that workflow fails after its build job. After the push,
+      check that the "Pages" run is green and that `/exchange-server/fms-exchange-server.exe` answers 404 on the site.
 - [ ] Всё закоммичено и запушено в `main` (бесплатно).
 
 **B. Сборка и публикация на GitHub (тег):**
@@ -280,6 +304,10 @@ against the published hashes before either winget PR. Store remains a separate o
 - [ ] GitHub Actions собрал Release и приложил **6 ассетов**: `setup.exe`, `.zip`,
       `server-setup.exe` и три `.sha256`.
       Следить: https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
+- [ ] Сайт: `pwsh -NoProfile -File tools/Set-ReleaseManifest.ps1 -Version <версия>` - пишет
+      `tools/release-manifest.json` из опубликованного релиза (черновик и релиз без любого из шести ассетов
+      отклоняются) и перерисовывает страницы; затем коммит и пуш сайта в `main`. Пропущенный шаг ловит
+      `tools/Build-SitePages.ps1 -Check`, проверка 6, когда манифест отстаёт от CHANGELOG на два раздела.
 
 **C. winget (после того как GitHub release готов) - два независимых пакета:**
 - [ ] Манифест указывает на Inno **`setup.exe`** напрямую (`InstallerType: inno`), без зависимостей,

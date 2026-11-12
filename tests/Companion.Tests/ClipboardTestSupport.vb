@@ -99,6 +99,9 @@ Friend NotInheritable Class ClipboardTestRig
         Directory.CreateDirectory(Source)
     End Sub
 
+    ''' <summary>The Google Drive path of the run; Nothing is "the channel is off", and the real profile is never looked at.</summary>
+    Public Property Drive As ClipboardDrivePath
+
     Public Function Logged() As String()
         SyncLock _log
             Return _log.ToArray()
@@ -118,7 +121,8 @@ Friend NotInheritable Class ClipboardTestRig
                    End Sub,
             .Idle = TimeSpan.FromSeconds(10),
             .StateIdle = TimeSpan.FromSeconds(10),
-            .Sealing = Function(target As ClipboardTarget, ct As CancellationToken) Task.FromResult(ClipboardTestKit.SealingFor(target, _unreachable))}
+            .Sealing = Function(target As ClipboardTarget, ct As CancellationToken) Task.FromResult(ClipboardTestKit.SealingFor(target, _unreachable)),
+            .Drive = Function() Drive}
         Return New ClipboardExchange(ports)
     End Function
 

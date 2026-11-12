@@ -106,6 +106,7 @@ Partial Public Class Main_Form
         If PdfReaderOwnsInput(e) Then Return
         If EpubReaderOwnsInput(e) Then Return
         If HtmlViewOwnsInput(e) Then Return
+        If TextEditorOwnsInput(e) Then Return
         ' KeybUse is also called directly by forwarding windows, without ProcessCmdKey.
         If Not ChromeMenu.PopupVisible AndAlso help_Card IsNot Nothing AndAlso help_Card.Visible AndAlso
            e.KeyData = e.KeyCode AndAlso help_Card.TryScrollKey(e.KeyCode) Then

@@ -164,6 +164,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "This server cannot carry protected content, so folders, broadcasts and the clipboard do not go through it."},
             {"sealed-failed", "This could not be opened on this device. Try again from the other device."},
             {"format-unsupported", "This format is newer than this program supports. Nothing was imported. Use a compatible program."},
+            {"admin-disabled", "Remote administration is turned off on this server. Turn it on in the server's settings, on the server machine."},  ' contract-exception E-278-2 (L0278): native wording, held until the proposal is decided (ask 2); the 16 other columns translate this sentence
+            {"not-found", "No standard settings are saved on the server for this program yet. Save them first."},
+            {"invalid-payload", "The server did not accept these settings: they are damaged or too large."},
+            {"app-id-mismatch", "This server does not keep settings of this program for this account."},
+            {"version-incompatible", "The server does not support this version of the settings format."},
             {"refused", "The server refused this."}
         }
         MessageTexts("en") = msgs
@@ -247,6 +252,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "Этот сервер не умеет передавать защищённое содержимое, поэтому папки, трансляции и буфер через него не идут."},
             {"sealed-failed", "Это не удалось открыть на этом устройстве. Повторите с другого устройства."},
             {"format-unsupported", "Этот формат новее, чем поддерживает программа. Ничего не импортировано. Используйте совместимую программу."},
+            {"admin-disabled", "Удалённое администрирование на этом сервере выключено. Включите его в настройках сервера на самом компьютере сервера."},
+            {"not-found", "На сервере пока не сохранены стандартные настройки для этой программы. Сначала сохраните их."},
+            {"invalid-payload", "Сервер не принял эти настройки: они повреждены или слишком велики."},
+            {"app-id-mismatch", "Этот сервер не хранит настройки этой программы для этого аккаунта."},
+            {"version-incompatible", "Сервер не поддерживает эту версию формата настроек."},
             {"refused", "Сервер отказал в этом."}
         }
         MessageTexts("ru") = msgs
@@ -330,6 +340,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "Цей сервер не вміє передавати захищений вміст, тому папки, трансляції й буфер через нього не йдуть."},
             {"sealed-failed", "Це не вдалося відкрити на цьому пристрої. Повторіть з іншого пристрою."},
             {"format-unsupported", "Цей формат новіший, ніж підтримує програма. Нічого не імпортовано. Скористайтеся сумісною програмою."},
+            {"admin-disabled", "Віддалене адміністрування на цьому сервері вимкнено. Увімкніть його в налаштуваннях сервера на самому комп'ютері сервера."},
+            {"not-found", "На сервері ще не збережено стандартних налаштувань для цієї програми. Спочатку збережіть їх."},
+            {"invalid-payload", "Сервер не прийняв ці налаштування: вони пошкоджені або завеликі."},
+            {"app-id-mismatch", "Цей сервер не зберігає налаштування цієї програми для цього акаунта."},
+            {"version-incompatible", "Сервер не підтримує цю версію формату налаштувань."},
             {"refused", "Сервер відмовив у цьому."}
         }
         MessageTexts("uk") = msgs
@@ -412,12 +427,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "Der Server ist offline."},
             {"resource-locked", "Dieser Ordner ist mit einer PIN gesperrt."},
             {"clipboard-empty", "Die Zwischenablage auf dem Server ist leer."},
-            {"share-paused", "Android hat die Freigabe auf diesem Telefon pausiert."},
+            {"share-paused", "Android hat die Freigabe auf diesem Telefon pausiert. Sie wird fortgesetzt, wenn die App auf dem Telefon geöffnet wird."},
             {"e2e-missing", "Dieses Gerät kann noch keine geschützten Inhalte empfangen."},
             {"key-changed", "Der Sicherheitsschlüssel dieses Geräts hat sich geändert."},
             {"server-no-e2e", "Dieser Server unterstützt keine geschützten Inhalte."},
             {"sealed-failed", "Konnte auf diesem Gerät nicht geöffnet werden."},
             {"format-unsupported", "Dieses Format ist neuer, als dieses Programm unterstützt. Es wurde nichts importiert. Verwenden Sie ein kompatibles Programm."},
+            {"admin-disabled", "Die Fernverwaltung ist auf diesem Server ausgeschaltet. Schalten Sie sie in den Einstellungen des Servers ein, direkt am Server-Rechner."},
+            {"not-found", "Auf dem Server sind noch keine Standardeinstellungen für dieses Programm gespeichert. Speichern Sie sie zuerst."},
+            {"invalid-payload", "Der Server hat diese Einstellungen nicht angenommen: Sie sind beschädigt oder zu groß."},
+            {"app-id-mismatch", "Dieser Server speichert keine Einstellungen dieses Programms für dieses Konto."},
+            {"version-incompatible", "Der Server unterstützt diese Version des Einstellungsformats nicht."},
             {"refused", "Der Server hat dies abgelehnt."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -491,12 +511,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "El servidor está desconectado."},
             {"resource-locked", "Esta carpeta está bloqueada con PIN."},
             {"clipboard-empty", "El portapapeles en el servidor está vacío."},
-            {"share-paused", "Android pausó el uso compartido en este teléfono."},
+            {"share-paused", "Android pausó el uso compartido en este teléfono. Continuará cuando se abra la aplicación en el teléfono."},
             {"e2e-missing", "Este dispositivo aún no puede recibir contenido protegido."},
             {"key-changed", "La clave de protección de este dispositivo ha cambiado."},
             {"server-no-e2e", "Este servidor no puede transmitir contenido protegido."},
             {"sealed-failed", "No se pudo abrir en este dispositivo."},
             {"format-unsupported", "Este formato es más reciente de lo que admite este programa. No se importó nada. Usa un programa compatible."},
+            {"admin-disabled", "La administración remota está desactivada en este servidor. Actívala en los ajustes del servidor, en el propio equipo del servidor."},
+            {"not-found", "Todavía no hay ajustes estándar guardados en el servidor para este programa. Guárdalos primero."},
+            {"invalid-payload", "El servidor no aceptó estos ajustes: están dañados o son demasiado grandes."},
+            {"app-id-mismatch", "Este servidor no guarda ajustes de este programa para esta cuenta."},
+            {"version-incompatible", "El servidor no admite esta versión del formato de ajustes."},
             {"refused", "El servidor rechazó esta solicitud."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -570,12 +595,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "Le serveur est hors ligne."},
             {"resource-locked", "Ce dossier est verrouillé par un code PIN."},
             {"clipboard-empty", "Le presse-papiers sur le serveur est vide."},
-            {"share-paused", "Android a mis en pause le partage sur ce téléphone."},
+            {"share-paused", "Android a mis en pause le partage sur ce téléphone. Il reprendra à l'ouverture de l'application sur le téléphone."},
             {"e2e-missing", "Cet appareil ne peut pas encore recevoir de contenu protégé."},
             {"key-changed", "La clé de protection de cet appareil a changé."},
             {"server-no-e2e", "Ce serveur ne prend pas en charge le contenu protégé."},
             {"sealed-failed", "Impossible d'ouvrir sur cet appareil."},
             {"format-unsupported", "Ce format est plus récent que ce que ce programme prend en charge. Rien n'a été importé. Utilisez un programme compatible."},
+            {"admin-disabled", "L'administration à distance est désactivée sur ce serveur. Activez-la dans les paramètres du serveur, sur l'ordinateur du serveur lui-même."},
+            {"not-found", "Aucun paramètre standard n'est encore enregistré sur le serveur pour ce programme. Enregistrez-les d'abord."},
+            {"invalid-payload", "Le serveur n'a pas accepté ces paramètres : ils sont endommagés ou trop volumineux."},
+            {"app-id-mismatch", "Ce serveur ne conserve pas les paramètres de ce programme pour ce compte."},
+            {"version-incompatible", "Le serveur ne prend pas en charge cette version du format des paramètres."},
             {"refused", "Le serveur a refusé cette requête."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -649,12 +679,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "Il server è offline."},
             {"resource-locked", "Questa cartella è bloccata con PIN."},
             {"clipboard-empty", "Gli appunti sul server sono vuoti."},
-            {"share-paused", "Android ha sospeso la condivisione su questo telefono."},
+            {"share-paused", "Android ha sospeso la condivisione su questo telefono. Riprenderà quando l'app verrà aperta sul telefono."},
             {"e2e-missing", "Questo dispositivo non può ancora ricevere contenuti protetti."},
             {"key-changed", "La chiave di protezione di questo dispositivo è cambiata."},
             {"server-no-e2e", "Questo server non supporta contenuti protetti."},
             {"sealed-failed", "Impossibile aprire su questo dispositivo."},
             {"format-unsupported", "Questo formato è più recente di quello supportato da questo programma. Non è stato importato nulla. Usa un programma compatibile."},
+            {"admin-disabled", "L'amministrazione remota è disattivata su questo server. Attivala nelle impostazioni del server, sul computer del server stesso."},
+            {"not-found", "Sul server non sono ancora salvate impostazioni standard per questo programma. Salvale prima."},
+            {"invalid-payload", "Il server non ha accettato queste impostazioni: sono danneggiate o troppo grandi."},
+            {"app-id-mismatch", "Questo server non conserva le impostazioni di questo programma per questo account."},
+            {"version-incompatible", "Il server non supporta questa versione del formato delle impostazioni."},
             {"refused", "Il server ha rifiutato la richiesta."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -728,12 +763,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "サーバーはオフラインです。"},
             {"resource-locked", "フォルダーはPINでロックされています。"},
             {"clipboard-empty", "サーバー上のクリップボードは空です。"},
-            {"share-paused", "Androidが共有を一時停止しました。"},
+            {"share-paused", "Androidがこのスマートフォンでの共有を一時停止しました。スマートフォンでアプリを開くと再開します。"},
             {"e2e-missing", "この機器は保護されたコンテンツを受信できません。"},
             {"key-changed", "この機器の保護キーが変更されました。"},
             {"server-no-e2e", "このサーバーは保護されたコンテンツを送信できません。"},
             {"sealed-failed", "この機器では開けませんでした。"},
             {"format-unsupported", "この形式は、このプログラムが対応しているものより新しい形式です。何もインポートされませんでした。互換性のあるプログラムを使用してください。"},
+            {"admin-disabled", "このサーバーではリモート管理がオフになっています。サーバーのコンピューター上で、サーバーの設定からオンにしてください。"},
+            {"not-found", "このプログラムの標準設定はまだサーバーに保存されていません。先に保存してください。"},
+            {"invalid-payload", "サーバーはこの設定を受け付けませんでした。設定が壊れているか、大きすぎます。"},
+            {"app-id-mismatch", "このサーバーは、このアカウントのこのプログラムの設定を保存しません。"},
+            {"version-incompatible", "サーバーはこのバージョンの設定形式に対応していません。"},
             {"refused", "サーバーが接続を拒否しました。"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -807,12 +847,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "서버가 오프라인 상태입니다."},
             {"resource-locked", "폴더가 PIN으로 잠겨 있습니다."},
             {"clipboard-empty", "서버 클립보드가 비어 있습니다."},
-            {"share-paused", "Android에서 이 휴대폰의 공유를 일시 중지했습니다."},
+            {"share-paused", "Android에서 이 휴대폰의 공유를 일시 중지했습니다. 휴대폰에서 앱을 열면 계속됩니다."},
             {"e2e-missing", "이 기기는 아직 보호된 콘텐츠를 수신할 수 없습니다."},
             {"key-changed", "이 기기의 보안 키가 변경되었습니다."},
             {"server-no-e2e", "이 서버는 보호된 콘텐츠를 전달할 수 없습니다."},
             {"sealed-failed", "이 기기에서 열 수 없습니다."},
             {"format-unsupported", "이 형식은 이 프로그램이 지원하는 것보다 새로운 형식입니다. 아무것도 가져오지 않았습니다. 호환되는 프로그램을 사용하세요."},
+            {"admin-disabled", "이 서버에서는 원격 관리가 꺼져 있습니다. 서버 컴퓨터에서 서버 설정을 열어 켜세요."},
+            {"not-found", "이 프로그램의 표준 설정이 아직 서버에 저장되지 않았습니다. 먼저 저장하세요."},
+            {"invalid-payload", "서버가 이 설정을 받지 않았습니다. 설정이 손상되었거나 너무 큽니다."},
+            {"app-id-mismatch", "이 서버는 이 계정의 이 프로그램 설정을 보관하지 않습니다."},
+            {"version-incompatible", "서버가 이 버전의 설정 형식을 지원하지 않습니다."},
             {"refused", "서버가 요청을 거부했습니다."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -886,12 +931,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "Serwer jest offline."},
             {"resource-locked", "Folder jest zablokowany kodem PIN."},
             {"clipboard-empty", "Schowek na serwerze jest pusty."},
-            {"share-paused", "System Android wstrzymał udostępnianie na tym telefonie."},
+            {"share-paused", "System Android wstrzymał udostępnianie na tym telefonie. Zostanie wznowione po otwarciu aplikacji na telefonie."},
             {"e2e-missing", "To urządzenie nie obsługuje jeszcze chronionej zawartości."},
             {"key-changed", "Klucz zabezpieczeń tego urządzenia uległ zmianie."},
             {"server-no-e2e", "Ten serwer nie obsługuje chronionej zawartości."},
             {"sealed-failed", "Nie udało się otworzyć na tym urządzeniu."},
             {"format-unsupported", "Ten format jest nowszy, niż obsługuje ten program. Nic nie zaimportowano. Użyj zgodnego programu."},
+            {"admin-disabled", "Zdalne administrowanie jest na tym serwerze wyłączone. Włącz je w ustawieniach serwera, na samym komputerze serwera."},
+            {"not-found", "Na serwerze nie zapisano jeszcze ustawień standardowych tego programu. Najpierw je zapisz."},
+            {"invalid-payload", "Serwer nie przyjął tych ustawień: są uszkodzone lub zbyt duże."},
+            {"app-id-mismatch", "Ten serwer nie przechowuje ustawień tego programu dla tego konta."},
+            {"version-incompatible", "Serwer nie obsługuje tej wersji formatu ustawień."},
             {"refused", "Serwer odrzucił żądanie."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -965,12 +1015,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "O servidor está offline."},
             {"resource-locked", "A pasta está bloqueada por PIN."},
             {"clipboard-empty", "A área de transferência no servidor está vazia."},
-            {"share-paused", "O Android pausou o compartilhamento neste telefone."},
+            {"share-paused", "O Android pausou o compartilhamento neste telefone. Ele continuará quando o aplicativo for aberto no telefone."},
             {"e2e-missing", "Este dispositivo ainda não pode receber conteúdo protegido."},
             {"key-changed", "A chave de segurança deste dispositivo mudou."},
             {"server-no-e2e", "Este servidor não suporta conteúdo protegido."},
             {"sealed-failed", "Não foi possível abrir neste dispositivo."},
             {"format-unsupported", "Este formato é mais recente do que este programa suporta. Nada foi importado. Use um programa compatível."},
+            {"admin-disabled", "A administração remota está desativada neste servidor. Ative-a nas configurações do servidor, no próprio computador do servidor."},
+            {"not-found", "Ainda não há configurações padrão salvas no servidor para este programa. Salve-as primeiro."},
+            {"invalid-payload", "O servidor não aceitou estas configurações: elas estão danificadas ou são grandes demais."},
+            {"app-id-mismatch", "Este servidor não guarda configurações deste programa para esta conta."},
+            {"version-incompatible", "O servidor não oferece suporte a esta versão do formato de configurações."},
             {"refused", "O servidor recusou a solicitação."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1044,12 +1099,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "Sunucu çevrimdışı."},
             {"resource-locked", "Klasör PIN ile kilitlenmiştir."},
             {"clipboard-empty", "Sunucudaki pano boş."},
-            {"share-paused", "Android bu telefonda paylaşımı duraklattı."},
+            {"share-paused", "Android bu telefonda paylaşımı duraklattı. Uygulama telefonda açıldığında devam edecek."},
             {"e2e-missing", "Bu cihaz henüz korumalı içerik alamıyor."},
             {"key-changed", "Bu cihazın koruma anahtarı değişti."},
             {"server-no-e2e", "Bu sunucu korumalı içerik aktaramıyor."},
             {"sealed-failed", "Bu cihazda açılamadı."},
             {"format-unsupported", "Bu biçim, bu programın desteklediğinden daha yeni. Hiçbir şey içe aktarılmadı. Uyumlu bir program kullanın."},
+            {"admin-disabled", "Bu sunucuda uzaktan yönetim kapalı. Sunucunun ayarlarından, sunucu bilgisayarın başında açın."},
+            {"not-found", "Sunucuda bu program için henüz standart ayar kaydedilmedi. Önce kaydedin."},
+            {"invalid-payload", "Sunucu bu ayarları kabul etmedi: ayarlar bozuk ya da çok büyük."},
+            {"app-id-mismatch", "Bu sunucu, bu hesap için bu programın ayarlarını tutmuyor."},
+            {"version-incompatible", "Sunucu, ayar biçiminin bu sürümünü desteklemiyor."},
             {"refused", "Sunucu isteği reddetti."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1123,12 +1183,17 @@ Public Module ConnectionDiagnosisLocalization
             {"server-offline", "服务器处于离线状态。"},
             {"resource-locked", "此文件夹已锁定。"},
             {"clipboard-empty", "服务器上的剪贴板为空。"},
-            {"share-paused", "Android 已在此手机上暂停共享。"},
+            {"share-paused", "Android 已在此手机上暂停共享。在手机上打开应用后将继续。"},
             {"e2e-missing", "此设备尚无法接收受保护内容。"},
             {"key-changed", "此设备的保护密钥已更改。"},
             {"server-no-e2e", "此服务器无法传输受保护内容。"},
             {"sealed-failed", "无法在此设备上打开。"},
             {"format-unsupported", "此格式比本程序支持的格式更新。未导入任何内容。请使用兼容的程序。"},
+            {"admin-disabled", "此服务器已关闭远程管理。请在服务器本机上，通过服务器的设置将其开启。"},
+            {"not-found", "服务器上还没有保存此程序的标准设置。请先保存。"},
+            {"invalid-payload", "服务器未接受这些设置：设置已损坏或过大。"},
+            {"app-id-mismatch", "此服务器不为此账户保存此程序的设置。"},
+            {"version-incompatible", "服务器不支持此版本的设置格式。"},
             {"refused", "服务器拒绝了此请求。"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1211,6 +1276,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "لا يستطيع هذا الخادم نقل المحتوى المحمي، لذلك لا تمر المجلدات والبثوث والحافظة عبره."},
             {"sealed-failed", "تعذر فتح هذا على هذا الجهاز. حاول مرة أخرى من الجهاز الآخر."},
             {"format-unsupported", "هذا التنسيق أحدث مما يدعمه هذا البرنامج. لم يتم استيراد أي شيء. استخدم برنامجًا متوافقًا."},
+            {"admin-disabled", "الإدارة عن بُعد متوقفة على هذا الخادم. شغّلها من إعدادات الخادم، على جهاز الخادم نفسه."},
+            {"not-found", "لم تُحفظ بعد إعدادات قياسية لهذا البرنامج على الخادم. احفظها أولًا."},
+            {"invalid-payload", "لم يقبل الخادم هذه الإعدادات: إنها تالفة أو كبيرة جدًا."},
+            {"app-id-mismatch", "لا يحتفظ هذا الخادم بإعدادات هذا البرنامج لهذا الحساب."},
+            {"version-incompatible", "لا يدعم الخادم هذا الإصدار من تنسيق الإعدادات."},
             {"refused", "رفض الخادم هذا."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1290,6 +1360,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "यह सर्वर सुरक्षित सामग्री नहीं ले जा सकता, इसलिए फ़ोल्डर, प्रसारण और क्लिपबोर्ड उसके ज़रिए नहीं जाते।"},
             {"sealed-failed", "यह इस डिवाइस पर नहीं खुल सका। दूसरे डिवाइस से फिर कोशिश करें।"},
             {"format-unsupported", "यह फ़ॉर्मैट इस प्रोग्राम के समर्थन से नया है। कुछ भी आयात नहीं किया गया। संगत प्रोग्राम का उपयोग करें।"},
+            {"admin-disabled", "इस सर्वर पर रिमोट एडमिनिस्ट्रेशन बंद है। इसे सर्वर की सेटिंग्स में, सर्वर वाले कंप्यूटर पर ही चालू करें।"},
+            {"not-found", "इस प्रोग्राम की मानक सेटिंग्स अभी सर्वर पर सहेजी नहीं गई हैं। पहले उन्हें सहेजें।"},
+            {"invalid-payload", "सर्वर ने ये सेटिंग्स स्वीकार नहीं कीं: वे खराब हैं या बहुत बड़ी हैं।"},
+            {"app-id-mismatch", "यह सर्वर इस खाते के लिए इस प्रोग्राम की सेटिंग्स नहीं रखता।"},
+            {"version-incompatible", "सर्वर सेटिंग्स फ़ॉर्मैट के इस संस्करण का समर्थन नहीं करता।"},
             {"refused", "सर्वर ने इसे अस्वीकार किया।"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1369,6 +1444,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "এই সার্ভার সুরক্ষিত বিষয়বস্তু বহন করতে পারে না, তাই ফোল্ডার, সম্প্রচার ও ক্লিপবোর্ড এর মধ্য দিয়ে যায় না।"},
             {"sealed-failed", "এই ডিভাইসে এটি খোলা যায়নি। অন্য ডিভাইস থেকে আবার চেষ্টা করুন।"},
             {"format-unsupported", "এই ফরম্যাটটি এই প্রোগ্রামের সমর্থনের চেয়ে নতুন। কিছুই ইমপোর্ট করা হয়নি। একটি সামঞ্জস্যপূর্ণ প্রোগ্রাম ব্যবহার করুন।"},
+            {"admin-disabled", "এই সার্ভারে রিমোট অ্যাডমিনিস্ট্রেশন বন্ধ আছে। সার্ভারের সেটিংসে, সার্ভার কম্পিউটারেই এটি চালু করুন।"},
+            {"not-found", "এই প্রোগ্রামের স্ট্যান্ডার্ড সেটিংস এখনও সার্ভারে সংরক্ষণ করা হয়নি। আগে সেগুলি সংরক্ষণ করুন।"},
+            {"invalid-payload", "সার্ভার এই সেটিংস গ্রহণ করেনি: সেগুলি ক্ষতিগ্রস্ত বা খুব বড়।"},
+            {"app-id-mismatch", "এই সার্ভার এই অ্যাকাউন্টের জন্য এই প্রোগ্রামের সেটিংস রাখে না।"},
+            {"version-incompatible", "সার্ভার সেটিংস ফরম্যাটের এই সংস্করণ সমর্থন করে না।"},
             {"refused", "সার্ভার এটি প্রত্যাখ্যান করেছে।"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1448,6 +1528,11 @@ Public Module ConnectionDiagnosisLocalization
             {"server-no-e2e", "یہ سرور محفوظ مواد نہیں لے جا سکتا، اس لیے فولڈرز، نشریات اور کلپ بورڈ اس کے ذریعے نہیں جاتے۔"},
             {"sealed-failed", "یہ اس ڈیوائس پر نہیں کھل سکا۔ دوسری ڈیوائس سے دوبارہ کوشش کریں۔"},
             {"format-unsupported", "یہ فارمیٹ اس پروگرام کی معاونت سے نیا ہے۔ کچھ بھی درآمد نہیں کیا گیا۔ ہم آہنگ پروگرام استعمال کریں۔"},
+            {"admin-disabled", "اس سرور پر ریموٹ ایڈمنسٹریشن بند ہے۔ اسے سرور کی سیٹنگز میں، خود سرور والے کمپیوٹر پر آن کریں۔"},
+            {"not-found", "اس پروگرام کی معیاری سیٹنگز ابھی سرور پر محفوظ نہیں کی گئیں۔ پہلے انہیں محفوظ کریں۔"},
+            {"invalid-payload", "سرور نے یہ سیٹنگز قبول نہیں کیں: یہ خراب ہیں یا بہت بڑی ہیں۔"},
+            {"app-id-mismatch", "یہ سرور اس اکاؤنٹ کے لیے اس پروگرام کی سیٹنگز نہیں رکھتا۔"},
+            {"version-incompatible", "سرور سیٹنگز فارمیٹ کے اس ورژن کو سپورٹ نہیں کرتا۔"},
             {"refused", "سرور نے اسے مسترد کر دیا۔"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {

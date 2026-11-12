@@ -28,12 +28,18 @@ Friend NotInheritable Class DrivePlannedResource
     Public ReadOnly Json As String
     ''' <summary>What a rewrite would change: the id, the name, the fingerprint, the lock. Equal signatures need no new write.</summary>
     Public ReadOnly Signature As String
+    ''' <summary>The folder on this PC, for the answers to REQUEST packets (ticket 269 P3.1); never written into the record.</summary>
+    Public ReadOnly HostPath As String
+    ''' <summary>The root carries a PIN lock: a request is answered `pin-required` (item CO).</summary>
+    Public ReadOnly Locked As Boolean
 
-    Public Sub New(name As String, resourceId As String, json As String, signature As String)
+    Public Sub New(name As String, resourceId As String, json As String, signature As String, Optional hostPath As String = "", Optional locked As Boolean = False)
         Me.Name = name
         Me.ResourceId = resourceId
         Me.Json = json
         Me.Signature = signature
+        Me.HostPath = If(hostPath, "")
+        Me.Locked = locked
     End Sub
 
     Public Overrides Function ToString() As String
@@ -133,7 +139,8 @@ Friend NotInheritable Class DriveShareRecords
             ' no `access`, no shareId, no port request: the record is a listing (item X)
             If Not ExchangeResourceRecordBuilder.TryBuild(entry.ResourceId, deviceId, root.name, "", "", Nothing, nowUtc, json, root.pinProtected,
                                                           "", fingerprint, ExchangeResourceAccess.FallbackRoot(root.name)) Then Continue For
-            planned.Add(New DrivePlannedResource(root.name, entry.ResourceId, json, SignatureOf(entry.ResourceId, root.name, fingerprint, root.pinProtected)))
+            planned.Add(New DrivePlannedResource(root.name, entry.ResourceId, json, SignatureOf(entry.ResourceId, root.name, fingerprint, root.pinProtected),
+                                                 If(root.hostPath, ""), locked))
         Next
         Return New DriveSharePlan(planned, current, changed, waiting)
     End Function

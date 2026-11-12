@@ -94,6 +94,13 @@ Partial Public Class Main_Form
         Dim onThisComputer As Boolean = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending() AndAlso Not IsResourceMode() AndAlso Not IsStreamOnScreen()
         AddMenuItem(target, Localization.T("Показать в проводнике"), Sub() ShowCurrentFileInExplorer(),
                     enabled:=onThisComputer, disabledReason:=Localization.T("Файл недоступен"))
+#If Not NETFRAMEWORK Then
+        ' Specification 277 section 4.1. Only with the full reader on: with it off the preview stays what it was.
+        If FullTextReaderOn() AndAlso Not IsTextDocumentShown() Then
+            AddMenuItem(target, Localization.T("Открыть как текст"), Sub() OpenCurrentFileAsText(),
+                        enabled:=CurrentFileOpensAsText(), disabledReason:=Localization.T("Файл недоступен"))
+        End If
+#End If
 
         target.Add(New ToolStripSeparator())
         AddFileOperationItems(target)

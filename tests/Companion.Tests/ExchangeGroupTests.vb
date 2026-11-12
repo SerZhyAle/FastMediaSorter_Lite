@@ -368,6 +368,8 @@ Public Class ExchangeGroupTests
         allowed = allowed.Concat({"ExchangeLocalJoin.vb"}).ToArray()
         ' spec 245: remote administration forms and settings card
         allowed = allowed.Concat({"Share_Settings_Form.ExchangeRemoteAdmin.vb", "Exchange_Admin_Browser_Form.vb"}).ToArray()
+        ' ticket L0278: the remote dialogs reuse the group's password-floor sentences (ExchangeText); RemoteAdminSeparationTests denies the rest
+        allowed = allowed.Concat({"Share_Settings_Form.RemoteExchangeActions.vb"}).ToArray()
         For Each p As String In ExchangeTestSupport.CompanionSources()
             Dim name As String = Path.GetFileName(p)
             If name.StartsWith("Localization.", StringComparison.Ordinal) OrElse allowed.Contains(name) Then Continue For

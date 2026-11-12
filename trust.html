@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page-lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Why Windows warns about this download</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="en">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Why Windows warns about this download">
 <meta name="twitter:description" content="What the SmartScreen warning on Fast Media Sorter &amp; Sharing means, why it appears, exactly what to click, and what the program never does.">
@@ -90,7 +90,7 @@
     <p class="lead">Nothing is broken and the warning is not a mistake. SmartScreen asks two things about a file: is it signed with a certificate Windows recognizes, and have enough people already run it.</p>
     <ul>
       <li>Not signed. A code-signing certificate costs several hundred dollars a year. The program is free and earns nothing, so paying for one is a choice that has not been made - it is not an oversight.</li>
-      <li>Not yet known. Reputation is counted per file, so every new version starts from zero. It builds up on its own as people download that release, which is why the warning fades between versions and comes back for a while after each new one.</li>
+      <li>Unknown to SmartScreen. Reputation is counted per file, so every new version starts from zero. It builds up on its own as people download that release, which is why the warning fades between versions and comes back for a while after each new one.</li>
       <li>The Microsoft Store build is the exception: Microsoft signs it during certification, so it shows none of this. It is the same program.</li>
     </ul>
   </section>
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">One third-party service can be contacted, and only if you turn on internet access for sharing: check-host.net is asked to confirm that your forwarded port answers from outside, which shows that service your public address and port. Nothing else is sent to it. Two more things stay inside your own network: with internet access on, the program asks your router to forward the sharing port (UPnP or NAT-PMP), and while sharing runs, the PC announces itself on the local network (mDNS) so a paired phone can find it again.</p>
-  <p class="note" id="site-origins">Opening a page of this website, as opposed to using the program, contacts up to three outside addresses: fonts.googleapis.com and fonts.gstatic.com (Google Fonts, for the lettering of the pages) and, on the home page and its language versions, api.github.com (GitHub, to look up the latest release for the download link). Each receives your IP address and your browser's user agent and nothing else. No analytics, tag-manager or advertising address is contacted. The privacy page says the same.</p>
+  <p class="note" id="site-origins">Opening a page of this website, as opposed to using the program, contacts two outside addresses: fonts.googleapis.com and fonts.gstatic.com (Google Fonts, for the lettering of the pages). Each receives your IP address and your browser's user agent and nothing else. No analytics, tag-manager or advertising address is contacted. The privacy page says the same.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Downloads</a>
@@ -170,7 +170,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

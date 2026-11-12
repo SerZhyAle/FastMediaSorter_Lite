@@ -4,7 +4,8 @@
     the sitemap announces.
 
 .DESCRIPTION
-    The published corpus is the repository root as GitHub Pages serves it: the root
+    The published corpus is the site's pages in the repository root (GitHub Pages deploys
+    the subset tools/site-served.json declares, assembled by tools/Build-SiteArtifact.ps1): the root
     *.html pages (the hand-authored portal and reference pages), the task guides under
     docs/how-to-*.html, the privacy policy and the
     generated lang/<code>/index.html and lang/<code>/trust.html renders - the exact
@@ -28,7 +29,9 @@
               whose url is the canonical, the hreflang set where translations exist
               and x-default everywhere, the og:image asset present on disk with its
               declared size (og:image:width/height) and a text alternative
-              (og:image:alt, twitter:image:alt) on every page (ticket 207);
+              (og:image:alt, twitter:image:alt) on every page (ticket 207), og:locale the ll_CC
+              `ogLocale` of the page's language in tools/site-copy.json and every og:locale:alternate
+              another language's (ticket 207 F49);
       rule 6  a guide that declares data-ui-steps carries >= 1 screenshot from
               assets/guides/ with alt text whose PNG's true size matches its width and
               height attributes; every <img> on any page resolves, is tracked and has
@@ -117,6 +120,8 @@ Write-Subject 'Test-SiteQuality' ("the published site: sitemap page set, SEO blo
 
 # --- -Record: re-stamp the freshness record and stop ---------------------------
 function Get-CopyFingerprint($obj) {
+    # `ogLocale` is page metadata, not translated copy: a change to it leaves every translation fresh (ticket 207 F49)
+    if ($obj.PSObject.Properties['ogLocale']) { $obj = $obj | Select-Object -Property * -ExcludeProperty ogLocale }
     $json = $obj | ConvertTo-Json -Depth 20
     $sha = [System.Security.Cryptography.SHA256]::Create()
     try {
@@ -179,6 +184,42 @@ Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter 'how-to-*.html' -Fil
 }
 # The privacy policy is a required page type that lives under docs/ and is listed in the sitemap (specification 151, T-3).
 if (Test-Path (Join-Path $Root 'docs/privacy.html')) { $pages += @{ File = 'docs/privacy.html'; Lang = 'en'; Kind = 'privacy' } }
+# The privacy, topics and glossary pages have a page per core language (ticket 207 F1, F10, F16): the English page above plus
+# a lang/ru/ and a lang/uk/ sibling each, rendered by Build-SitePages.ps1 from tools/site-pages/ (keep in step with its
+# $SitePageDefs). The three pages of a set declare each other and x-default the English one (rule 5 below).
+$SiblingSets = [ordered]@{ privacy = 'docs/privacy.html'; topics = 'topics.html'; glossary = 'glossary.html' }
+# The task guides too (ticket L0301 P6): their ru and uk siblings are guides, so the termbase's `guides` scope reads them.
+foreach ($g in 'archives', 'keys', 'editor', 'ocr', 'resources', 'viewer', 'setup', 'filedo-disks') { $SiblingSets["how-to-$g"] = "docs/how-to-$g.html" }
+$SiblingSets['server'] = 'server.html'
+$SiblingSets['publish-folders-android'] = 'publish-folders-android.html'
+$SiblingSets['support'] = 'support.html'
+$SiblingSets['whats-new'] = 'whats-new.html'
+foreach ($name in $SiblingSets.Keys) {
+    foreach ($c in 'ru', 'uk') {
+        $rel = "$LangDir/$c/$name.html"
+        if (-not (Test-Path (Join-Path $Root $rel))) {
+            Write-Host "  - missing generated page: $rel (run tools\Build-SitePages.ps1)"
+            Exit-Verdict 'Test-SiteQuality' 1 "missing generated page: $rel"
+        }
+        $pages += @{ File = $rel; Lang = $c; Kind = $(if ($name -like 'how-to-*') { 'guide' } else { 'sibling' }) }
+    }
+}
+# The one-source page an English page is rendered from (tools/site-pages/<name>.src.html), or nothing.
+function SiblingSourceOf([string]$file) {
+    foreach ($name in $SiblingSets.Keys) {
+        if ($file -eq $SiblingSets[$name]) {
+            $src = "tools/site-pages/$name.src.html"
+            if (Test-Path -LiteralPath (Join-Path $Root $src)) { return $src }
+        }
+    }
+    return $null
+}
+function SiblingSetOf([string]$file) {
+    foreach ($name in $SiblingSets.Keys) {
+        if ($file -eq $SiblingSets[$name] -or $file -match "^$LangDir/(ru|uk)/$name\.html$") { return $name }
+    }
+    return $null
+}
 foreach ($c in ($codes | Where-Object { $_ -ne 'en' })) {
     foreach ($kind in 'index', 'trust') {
         $rel = "$LangDir/$c/$kind.html"
@@ -268,6 +309,14 @@ function Resolve-SiteLink([string]$page, [string]$url, [string]$what) {
 }
 
 # --- per-page gates: rules 5, 6, 7 ---------------------------------------------
+# rule 5 - the Open Graph locale of each language: one ll_CC value per column of tools/site-copy.json, none shared
+$ogLocales = @{}
+foreach ($c in $codes) {
+    $v = [string]$copy.$c.ogLocale
+    if ($v -cnotmatch '^[a-z]{2}_[A-Z]{2}$') { Problem "tools/site-copy.json: '$c' has no ogLocale of the form ll_CC ('$v') (rule 5)"; continue }
+    if ($ogLocales.Values -ccontains $v) { Problem "tools/site-copy.json: '$c' repeats the ogLocale '$v' of another language (rule 5)" }
+    $ogLocales[$c] = $v
+}
 $linkCount = 0
 $imgCount = 0
 foreach ($p in $pages) {
@@ -294,6 +343,13 @@ foreach ($p in $pages) {
     }
     foreach ($name in 'twitter:card', 'twitter:title', 'twitter:description', 'twitter:image') {
         if ($h -notmatch [regex]::Escape("name=`"$name`"")) { Problem "${rel}: missing twitter meta: $name" }
+    }
+    $ogLocWant = $ogLocales[$p.Lang]
+    $ogLoc = Attr $h '(?i)<meta\s+property="og:locale"\s+content="([^"]*)"'
+    if ($ogLoc -and $ogLocWant -and $ogLoc -cne $ogLocWant) { Problem "${rel}: og:locale is '$ogLoc', not '$ogLocWant' (ogLocale of '$($p.Lang)' in tools/site-copy.json)" }
+    foreach ($m in [regex]::Matches($h, '(?i)<meta\s+property="og:locale:alternate"\s+content="([^"]*)"')) {
+        $alt = $m.Groups[1].Value
+        if ($ogLocales.Values -cnotcontains $alt -or $alt -ceq $ogLocWant) { Problem "${rel}: og:locale:alternate '$alt' is not the ogLocale of another language in tools/site-copy.json" }
     }
     $ogTitle = Attr $h '(?i)<meta\s+property="og:title"\s+content="([^"]*)"'
     if ($ogTitle -and $title -and $ogTitle -ne $title) { Problem "${rel}: og:title disagrees with the title tag" }
@@ -335,7 +391,21 @@ foreach ($p in $pages) {
     $alts = @([regex]::Matches($h, '(?i)<link\s+rel="alternate"\s+hreflang="([^"]*)"\s+href="([^"]*)"') |
         ForEach-Object { [pscustomobject]@{ Lang = $_.Groups[1].Value; Href = $_.Groups[2].Value } })
     $hasTranslations = $p.Kind -in 'landing', 'index', 'trust'
-    if ($hasTranslations) {
+    $sibSet = SiblingSetOf $rel
+    if ($sibSet) {
+        # a page of a per-language set: en, ru and uk name the three pages of the set, x-default the English one
+        $wantSib = @{ en = "$BaseUrl/$($SiblingSets[$sibSet])"; ru = "$BaseUrl/$LangDir/ru/$sibSet.html"; uk = "$BaseUrl/$LangDir/uk/$sibSet.html" }
+        foreach ($c in 'en', 'ru', 'uk') {
+            $a = $alts | Where-Object { $_.Lang -eq $c }
+            if (-not $a) { Problem "${rel}: hreflang set is missing '$c'" }
+            elseif ($a.Href -ne $wantSib[$c]) { Problem "${rel}: hreflang '$c' points at $($a.Href), not $($wantSib[$c])" }
+        }
+        $xd = $alts | Where-Object { $_.Lang -eq 'x-default' }
+        if (-not $xd) { Problem "${rel}: hreflang set is missing x-default" }
+        elseif ($xd.Href -ne $wantSib['en']) { Problem "${rel}: x-default points at $($xd.Href), not $($wantSib['en'])" }
+        $extra = @($alts | Where-Object { $_.Lang -notin 'en', 'ru', 'uk', 'x-default' })
+        if ($extra.Count -gt 0) { Problem "${rel}: declares hreflang alternates ($(@($extra | ForEach-Object Lang) -join ', ')) outside its set of en, ru and uk" }
+    } elseif ($hasTranslations) {
         $wantHref = @{}
         foreach ($c in $codes) {
             $wantHref[$c] = if ($p.Kind -eq 'trust') {
@@ -457,7 +527,7 @@ else {
 if (-not (Test-Path (Join-Path $Root 'topics.html'))) { Problem 'topics.html (the subject index) does not exist' }
 else {
     $tp = Page-Html 'topics.html'
-    foreach ($p in ($pages | Where-Object { $_.File -ne 'topics.html' -and $_.Kind -in 'landing', 'root', 'guide' })) {
+    foreach ($p in ($pages | Where-Object { $_.File -ne 'topics.html' -and $_.Lang -eq 'en' -and $_.Kind -in 'landing', 'root', 'guide' })) {
         $want = if ($p.File -eq 'index.html') { './' } else { $p.File }
         $linked = [regex]::Matches($tp, [regex]::Escape("href=`"$want`""))
         if ($linked.Count -eq 0) { Problem "topics.html does not link $($p.File)" }
@@ -560,7 +630,9 @@ if ($tb -and $tb.uiNames) {
     . (Join-Path $PSScriptRoot 'lib\UiStrings.ps1')
     $uiSets = Get-UiStrings $Root
     $exempt = @{ any = @($tb.uiNames.any); en = @($tb.uiNames.en); ru = @($tb.uiNames.ru); uk = @($tb.uiNames.uk) }
-    $guidePages = @($pages | Where-Object { $_.Kind -eq 'guide' -or ($_.Kind -eq 'root' -and $_.File -eq 'publish-folders-android.html') } | ForEach-Object { $_.File })
+    # A guide rendered from a one-source page is read in its source, where the three languages are still marked.
+    $guidePages = @($pages | Where-Object { $_.Lang -eq 'en' -and ($_.Kind -eq 'guide' -or ($_.Kind -eq 'root' -and $_.File -eq 'publish-folders-android.html')) } |
+        ForEach-Object { $src = SiblingSourceOf $_.File; if ($src) { $src } else { $_.File } })
     foreach ($miss in (Get-GuideUiMisses $Root $guidePages $uiSets $exempt)) {
         $f = $miss -split '\|', 3
         Problem "$($f[0]) ($($f[1])): bold name '$($f[2])' is not a string of the program in that language and is not listed as an exemption in site-termbase.json uiNames (rule 11)"
@@ -729,7 +801,7 @@ foreach ($src in $ctlCss.Keys) {
         if ($sel -match ':hover') {
             foreach ($d in [regex]::Matches($body, '(?i)(?<![\w-])transform\s*:\s*([^;]+)')) {
                 $v = ($d.Groups[1].Value -replace '!important', '').Trim()
-                if ($v -notmatch '^(none|translateY\(-50%\))$') { Problem "${src}: '$sel' moves on hover ('$v') - no hover lift (rule 13)" }
+                if ($v -ne 'none') { Problem "${src}: '$sel' moves on hover ('$v') - no hover lift (rule 13)" }
             }
             if ($body -match '(?i)(?<![\w-])translate\s*:') { Problem "${src}: '$sel' translates on hover (rule 13)" }
             foreach ($d in [regex]::Matches($body, '(?i)(?<![\w-])box-shadow\s*:\s*([^;]+)')) {
@@ -810,13 +882,14 @@ foreach ($rel in $ctlHtml.Keys) {
         }
         if ($h -notmatch "(?s)getElementById\('themeBtn'\).{0,700}?setAttribute\('aria-pressed'") { Problem "${rel}: the page's script does not keep the theme control's aria-pressed in step (rule 15)" }
     }
-    if ($pageCode -ne 'en') {
+    # Every landing is one language on its own address (the English root since ticket 207 F9), so its locale links are plain
+    # links and the current one carries aria-current. The other English root pages still switch in-page with buttons.
+    if ($pageCode -ne 'en' -or $rel -eq 'index.html') {
         foreach ($anchor in [regex]::Matches($h, '<a\b[^>]*\bclass="on"[^>]*>')) {
             if ($anchor.Value -notmatch '\baria-current=') { Problem "${rel}: the current-locale link $($anchor.Value) has no aria-current (rule 15)" }
         }
         if ($h -notmatch ('<a\b(?=[^>]*\bhreflang="' + [regex]::Escape($pageCode) + '")(?=[^>]*\baria-current=)[^>]*>')) { Problem "${rel}: no locale link for '$pageCode' carries aria-current (rule 15)" }
     }
-    if ($rel -eq 'index.html' -and $h -notmatch '<button\b[^>]*\bdata-setlang="[a-z]+"[^>]*\baria-pressed="true"') { Problem 'index.html: the language switch marks no current language in its markup (aria-pressed="true") (rule 15)' }
 }
 
 # --- rule 16: the collapsible group (COLLAPSIBLE-GROUP 1.1 sections 3 and 4) ----------------------------------------

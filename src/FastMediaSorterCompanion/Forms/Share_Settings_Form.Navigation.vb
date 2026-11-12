@@ -149,7 +149,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim title As New Label With {.Text = SettingsPageTitle(sec), .AutoSize = True, .Dock = DockStyle.Fill,
                 .Font = New Font(Font.FontFamily, Font.Size * 1.5F, FontStyle.Bold), .Margin = New Padding(0, 0, 0, 8)}
             _pageTitles(id) = title
-            If id = "exchange" OrElse id = "exchange-account" Then ExchangeMark.Apply(title, 24, AddressOf CompanionAssets.OpenBundledAsset)
+            If id = "exchange" OrElse id = "exchange-account" OrElse id = "remote-exchange" Then ExchangeMark.Apply(title, 24, AddressOf CompanionAssets.OpenBundledAsset)
             AddHandler title.Disposed, Sub() title.Font.Dispose()
             Dim description As New Label With {.AutoSize = True, .Dock = DockStyle.Fill,
                 .Text = SettingsPageDescription(id), .ForeColor = ThemeService.Palette.TextMuted,
@@ -197,6 +197,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : Return Localization.T("Режим работы и служба общего доступа.")
             Case "exchange" : Return Localization.T("Сервер обмена, порты и учётные записи.")
             Case "exchange-account" : Return Localization.T("Подключение этого ПК к серверу обмена.")
+            Case "remote-exchange" : Return Localization.T("Сервер обмена на другом компьютере: вход, учётные записи, устройства и приглашения.")
             Case "drive" : Return DriveChannelText.PageDescription()
             Case "scheduled" : Return Localization.T("Копирование, перенос, удаление и архивация файлов по расписанию или вручную.")
             Case Else : Return Localization.T("Версия, лицензия, документация и помощь.")
@@ -561,6 +562,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Sub LoadSelectedSettingsPage()
+        ApplyDriveQueueActivity()
         Select Case _selectedPage
             Case "hosting" : EnsureHostingLoaded()
             Case "exchange" : EnsureExchangeLoaded()
@@ -578,6 +580,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub ApplySettingsTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
         ApplySettingsNavigationTheme(palette)
         RenderSettingsHeader(palette)
+        ApplyRemoteTheme(palette)
         ApplySettingsContrast(palette)
     End Sub
 
@@ -679,7 +682,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Shared Function SettingsPageGlyph(id As String) As String
-        Return IconMap.GetMeaning("managerSettingsNav_" & id).RenderGlyphId
+        ' The remote administration window has one page whose row is never shown (flat rail); it wears the exchange identity.
+        Dim meaning = If(IconMap.GetMeaning("managerSettingsNav_" & id), IconMap.GetMeaning("managerSettingsNav_exchange"))
+        Return meaning.RenderGlyphId
     End Function
 
     ''' <summary>The vocabulary glyph of one item row (SETTINGS-NAVIGATION 2.0 section 2 rules 2 and 4): the glyph of its

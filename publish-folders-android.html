@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-lang="en" data-theme="dark" data-ui-steps>
+<html lang="en" data-page-lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,36 +9,39 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
-<title>Publish folders for Android - Fast Media Sorter &amp; Sharing</title>
+<title>Publish folders for Android | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/publish-folders-android.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/publish-folders-android.html">
 <link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:title" content="Publish folders for Android - Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Publish folders for Android | Fast Media Sorter &amp; Sharing">
 <meta property="og:description" content="Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app.">
 <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
 <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
-<meta property="og:locale" content="en">
-<meta property="og:locale:alternate" content="ru">
-<meta property="og:locale:alternate" content="uk">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta property="og:locale:alternate" content="uk_UA">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Publish folders for Android - Fast Media Sorter &amp; Sharing">
+<meta name="twitter:title" content="Publish folders for Android | Fast Media Sorter &amp; Sharing">
 <meta name="twitter:description" content="Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app.">
 <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
 <meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Publish folders for Android - Fast Media Sorter & Sharing","description":"Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","inLanguage":["en","ru","uk"],"image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Publish folders for Android | Fast Media Sorter & Sharing","description":"Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","inLanguage":"en","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 <link rel="icon" href="assets/icons/Fast_Media_Sorter.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,9 +50,6 @@
 <link rel="stylesheet" href="assets/fms-site.css">
 <link rel="stylesheet" href="assets/fms-buttons.css">
 <style>
-  html[data-lang="ru"] [data-l]:not([data-l="ru"]){display:none}
-  html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
-  html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
   .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr;gap:0 44px}
   @media(min-width:760px){.steps{grid-template-columns:1fr 1fr}}
   @media(min-width:1200px){.steps{grid-template-columns:repeat(3,1fr)}}
@@ -65,78 +65,58 @@
 </style>
 </head>
 <body>
-<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a>
+<a class="skip-link" href="#main">Skip to main content</a>
 <div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
-<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
+<header class="site-header"><span id="site-nav-label" class="sr-only">Main navigation</span><nav class="site-nav" aria-labelledby="site-nav-label">
   <a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
-  <div class="seg" role="group" aria-label="Language">
-    <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
-  </div>
-  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span><span data-l="en">Dark theme</span><span data-l="ru">Тёмная тема</span><span data-l="ua">Темна тема</span></span></button>
-  <a class="btn btn-primary" href="./#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+  <div class="seg" role="group" aria-label="Language"><a hreflang="ru" href="lang/ru/publish-folders-android.html" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="publish-folders-android.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="lang/uk/publish-folders-android.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Dark theme</span></button>
+  <a class="btn btn-primary" href="./#get">Download</a>
 </nav></header>
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <span class="eyebrow"><span data-l="en">HOW TO · Android</span><span data-l="ru">HOW TO · Android</span><span data-l="ua">HOW TO · Android</span></span>
+    <span class="eyebrow">HOW TO · Android</span>
     <h1>
-      <span data-l="en">How to publish your folders for Android</span>
-      <span data-l="ru">Как публиковать свои папки для Android</span>
-      <span data-l="ua">Як публікувати свої папки для Android</span>
+      How to publish your folders for Android
     </h1>
     <p class="lead">
-      <span data-l="en">Share folders from this PC with the FastMediaSorter app on your Android phone - over your home network, or over the internet. No cloud, no accounts: the phone connects straight to your PC over an encrypted SFTP connection. Sharing is handled by the companion <b>Share Manager</b> app that ships alongside the viewer. It is installed with the <b>Full</b> install type (the <b>Compact</b> type does not carry it) and works with the 64-bit viewer (<code>FastMediaSorter_LITE.exe</code>) on Windows 10 version 1607 or newer; the 32-bit viewer for Windows 7/8.1 does not offer it.</span>
-      <span data-l="ru">Делитесь папками этого ПК с приложением FastMediaSorter на телефоне Android - по домашней сети или через интернет. Без облака и аккаунтов: телефон подключается прямо к вашему ПК по зашифрованному соединению SFTP. Раздачей занимается отдельная программа <b>Share Manager</b>, которая идёт вместе с просмотрщиком. Она ставится с типом установки <b>Полная</b> (в типе <b>Компактная</b> её нет) и работает с 64-битным просмотрщиком (<code>FastMediaSorter_LITE.exe</code>) на Windows 10 версии 1607 и новее; в 32-битном просмотрщике для Windows 7/8.1 её нет.</span>
-      <span data-l="ua">Діліться папками цього ПК з застосунком FastMediaSorter на телефоні Android - домашньою мережею або через інтернет. Без хмари й акаунтів: телефон підключається прямо до вашого ПК зашифрованим з'єднанням SFTP. Роздачею опікується окрема програма <b>Share Manager</b>, що йде разом із переглядачем. Вона встановлюється з типом встановлення <b>Повна</b> (у типі <b>Компактна</b> її немає) і працює з 64-бітним переглядачем (<code>FastMediaSorter_LITE.exe</code>) на Windows 10 версії 1607 і новіше; у 32-бітному переглядачі для Windows 7/8.1 її немає.</span>
+      Share folders from this PC with the FastMediaSorter app on your Android phone - over your home network, or over the internet. No cloud, no accounts: the phone connects straight to your PC over an encrypted SFTP connection. Sharing is handled by the companion <b>Share Manager</b> app that ships alongside the viewer. It is installed with the <b>Full</b> install type (the <b>Compact</b> type does not carry it) and works with the 64-bit viewer (<code>FastMediaSorter_LITE.exe</code>) on Windows 10 version 1607 or newer; the 32-bit viewer for Windows 7/8.1 does not offer it.
     </p>
   </section>
 
   <div class="pill-row">
-    <span class="pill" data-l="en">Windows PC + Android phone</span><span class="pill" data-l="ru">ПК Windows + телефон Android</span><span class="pill" data-l="ua">ПК Windows + телефон Android</span>
-    <span class="pill" data-l="en">Same Wi-Fi = instant</span><span class="pill" data-l="ru">Одна Wi-Fi = сразу</span><span class="pill" data-l="ua">Одна Wi-Fi = одразу</span>
-    <span class="pill" data-l="en">Writable by default; Read-only is a choice</span><span class="pill" data-l="ru">По умолчанию с записью; «Только чтение» - по выбору</span><span class="pill" data-l="ua">Типово із записом; «Лише читання» - за вибором</span>
+    <span class="pill">Windows PC + Android phone</span>
+    <span class="pill">Same Wi-Fi = instant</span>
+    <span class="pill">Writable by default; Read-only is a choice</span>
   </div>
 
   <!-- Android app CTA -->
   <div class="card card-bar">
     <div>
-      <b><img class="contract-icon" src="assets/glyphs/device.phone.svg" alt=""> <span data-l="en">Need the phone app?</span><span data-l="ru">Нужно приложение для телефона?</span><span data-l="ua">Потрібен застосунок для телефона?</span></b>
+      <b><img class="contract-icon" src="assets/glyphs/device.phone.svg" alt=""> <span>Need the phone app?</span></b>
       <span class="muted muted-block">
-        <span data-l="en">The Android app is a free viewer/sorter that imports these shares.</span>
-        <span data-l="ru">Приложение для Android - бесплатный просмотрщик/сортировщик, который импортирует эти папки.</span>
-        <span data-l="ua">Застосунок для Android - безкоштовний переглядач/сортувальник, що імпортує ці папки.</span>
+        The Android app is a free viewer/sorter that imports these shares.
       </span>
     </div>
     <div class="button-group">
-      <a class="btn btn-ghost" data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener noreferrer">Get the Android app<span class="sr-only"> (opens in a new tab)</span></a>
-      <a class="btn btn-ghost" data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener noreferrer">Приложение для Android<span class="sr-only"> (откроется в новой вкладке)</span></a>
-      <a class="btn btn-ghost" data-l="ua" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" target="_blank" rel="noopener noreferrer">Застосунок для Android<span class="sr-only"> (відкриється в новій вкладці)</span></a>
-      <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=com.sza.fastmediasorter" target="_blank" rel="noopener noreferrer">Google Play<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a>
+      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener noreferrer">Get the Android app<span class="sr-only"> (opens in a new tab)</span></a>
+      <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=com.sza.fastmediasorter" target="_blank" rel="noopener noreferrer">Google Play<span class="sr-only"> (opens in a new tab)</span></a>
     </div>
   </div>
 
   <!-- BEFORE YOU START: what the steps below do, said before the step that does it -->
   <section class="section">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">Before you start</span><span data-l="ru">Прежде чем начать</span><span data-l="ua">Перш ніж почати</span></h2>
+      <h2 class="section-title"><span class="hash">#</span><span>Before you start</span></h2>
     </div>
     <div class="warn">
       <ul class="flush-list">
-        <li><span data-l="en"><b>One administrator approval, one firewall rule.</b> The first time, <b>Enable server features..</b> asks Windows for administrator rights once (a UAC prompt) and adds a Windows Firewall rule for the sharing program only. You can tick this during installation instead. Until it is done nothing is shared. To take it back: <b>Manager settings..</b> - Network - «Switch off server features..».</span>
-            <span data-l="ru"><b>Одно подтверждение администратора и одно правило брандмауэра.</b> В первый раз кнопка <b>Включить функции сервера..</b> один раз запрашивает у Windows права администратора (окно UAC) и добавляет правило брандмауэра Windows только для программы раздачи. Это же можно включить галочкой при установке. Пока этого не сделано, ничего не раздаётся. Отменить: <b>Настройки менеджера..</b> - Сеть - «Выключить функции сервера..».</span>
-            <span data-l="ua"><b>Одне підтвердження адміністратора і одне правило брандмауера.</b> Уперше кнопка <b>Увімкнути функції сервера..</b> один раз запитує у Windows права адміністратора (вікно UAC) і додає правило брандмауера Windows лише для програми роздачі. Це ж можна ввімкнути галочкою під час встановлення. Поки цього не зроблено, нічого не роздається. Скасувати: <b>Налаштування менеджера..</b> - Мережа - «Вимкнути функції сервера..».</span></li>
-        <li><span data-l="en"><b>The internet path.</b> When sharing starts, unless <b>Local network only (no internet access)</b> is ticked (<b>Manager settings..</b> - Network; it is off by default), Share Manager asks the router to open the port (UPnP/NAT-PMP) and checks, through the external service <b>check-host.net</b>, whether that port is visible from the internet. Tick it to keep everything inside your local network.</span>
-            <span data-l="ru"><b>Путь через интернет.</b> Когда раздача запускается, если не отмечено <b>Только локальная сеть (без доступа из интернета)</b> (<b>Настройки менеджера..</b> - Сеть; по умолчанию галочки нет), Share Manager просит роутер открыть порт (UPnP/NAT-PMP) и проверяет через внешний сервис <b>check-host.net</b>, виден ли этот порт из интернета. Отметьте её, чтобы всё оставалось внутри локальной сети.</span>
-            <span data-l="ua"><b>Шлях через інтернет.</b> Коли роздача запускається, якщо не позначено <b>Тільки локальна мережа (без доступу з інтернету)</b> (<b>Налаштування менеджера..</b> - Мережа; типово галочки немає), Share Manager просить роутер відкрити порт (UPnP/NAT-PMP) і перевіряє через зовнішній сервіс <b>check-host.net</b>, чи видно цей порт з інтернету. Позначте її, щоб усе залишалося всередині локальної мережі.</span></li>
-        <li><span data-l="en"><b>What the phone may do.</b> While sharing is on, the folders you ticked can be read over the network, and by default the phone can also add, rename and delete files in them. To make a folder browse-only, choose the real lock («Not writable at the server level») under <b>Edit</b>.</span>
-            <span data-l="ru"><b>Что может телефон.</b> Пока раздача включена, отмеченные папки можно читать по сети, а по умолчанию телефон может и добавлять, переименовывать и удалять в них файлы. Чтобы папка только просматривалась, выберите в <b>Редактировать</b> настоящий запрет («Недоступно для записи на уровне сервера»).</span>
-            <span data-l="ua"><b>Що може телефон.</b> Поки роздача ввімкнена, позначені папки можна читати мережею, а за замовчуванням телефон може й додавати, перейменовувати та видаляти в них файли. Щоб папку можна було лише переглядати, виберіть у <b>Редагувати</b> справжню заборону («Недоступно для запису на рівні сервера»).</span></li>
-        <li><span data-l="en"><b>The QR code and the <code>.fmscfg</code> file are a key.</b> They contain the auto-generated password (and the PIN, if one is set) - do not post them publicly. In the <b>Share - access code</b> window you can tick <b>Keep the password out of the file/QR</b> and pass it separately; whether the phone accepts a code without a password depends on the Android app version. <b>Send by email..</b> warns the recipient in the message and leaves no copy of the file on the PC; a saved <code>.fmscfg</code> is readable by your Windows account only.</span>
-            <span data-l="ru"><b>QR-код и файл <code>.fmscfg</code> - это ключ.</b> Они содержат автоматически созданный пароль (и PIN, если он задан) - не публикуйте их. В окне <b>Поделиться - код доступа</b> можно поставить галочку <b>Не включать пароль в файл/QR</b> и передать пароль отдельно; примет ли телефон код без пароля, зависит от версии Android-приложения. <b>Отправить по почте..</b> предупреждает получателя в письме и не оставляет копию файла на компьютере; сохранённый <code>.fmscfg</code> доступен только вашей учётной записи Windows.</span>
-            <span data-l="ua"><b>QR-код і файл <code>.fmscfg</code> - це ключ.</b> Вони містять автоматично створений пароль (і PIN, якщо його задано) - не публікуйте їх. У вікні <b>Поділитися - код доступу</b> можна поставити галочку <b>Не включати пароль до файлу/QR</b> і передати пароль окремо; чи прийме телефон код без пароля, залежить від версії Android-застосунку. <b>Надіслати поштою..</b> попереджає одержувача в листі й не залишає копії файлу на комп'ютері; збережений <code>.fmscfg</code> доступний лише вашому обліковому запису Windows.</span></li>
-        <li><span data-l="en"><b>Stop when you are done.</b> Press <b>Stop sharing</b> or quit Share Manager from the tray. The connection is encrypted and the phone pins your PC's key on first use - a later "key changed" warning is meaningful.</span>
-            <span data-l="ru"><b>Остановите, когда закончите.</b> Нажмите <b>Остановить раздачу</b> или выйдите из Share Manager через трей. Соединение шифруется, а телефон запоминает ключ вашего ПК при первом подключении - позднее предупреждение "ключ изменился" важно.</span>
-            <span data-l="ua"><b>Зупиніть, коли закінчите.</b> Натисніть <b>Зупинити роздачу</b> або вийдіть із Share Manager через трей. З'єднання шифрується, а телефон запам'ятовує ключ вашого ПК під час першого підключення - пізніше попередження "ключ змінився" важливе.</span></li>
+        <li><b>One administrator approval, one firewall rule.</b> The first time, <b>Enable server features..</b> asks Windows for administrator rights once (a UAC prompt) and adds a Windows Firewall rule for the sharing program only. You can tick this during installation instead. Until it is done nothing is shared. To take it back: <b>Manager settings..</b> - Network - «Switch off server features..».</li>
+        <li><b>The internet path.</b> When sharing starts, unless <b>Local network only (no internet access)</b> is ticked (<b>Manager settings..</b> - Network; it is off by default), Share Manager asks the router to open the port (UPnP/NAT-PMP) and checks, through the external service <b>check-host.net</b>, whether that port is visible from the internet. Tick it to keep everything inside your local network.</li>
+        <li><b>What the phone may do.</b> While sharing is on, the folders you ticked can be read over the network, and by default the phone can also add, rename and delete files in them. To make a folder browse-only, choose the real lock («Not writable at the server level») under <b>Edit</b>.</li>
+        <li><b>The QR code and the <code>.fmscfg</code> file are a key.</b> They contain the auto-generated password (and the PIN, if one is set) - do not post them publicly. In the <b>Share - access code</b> window you can tick <b>Keep the password out of the file/QR</b> and pass it separately; whether the phone accepts a code without a password depends on the Android app version. <b>Send by email..</b> warns the recipient in the message and leaves no copy of the file on the PC; a saved <code>.fmscfg</code> is readable by your Windows account only.</li>
+        <li><b>Stop when you are done.</b> Press <b>Stop sharing</b> or quit Share Manager from the tray. The connection is encrypted and the phone pins your PC's key on first use - a later "key changed" warning is meaningful.</li>
       </ul>
     </div>
   </section>
@@ -144,40 +124,28 @@
   <!-- STEPS -->
   <section class="section">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">Step by step</span><span data-l="ru">Пошагово</span><span data-l="ua">Покроково</span></h2>
+      <h2 class="section-title"><span class="hash">#</span><span>Step by step</span></h2>
     </div>
     <div class="card">
       <ol class="steps">
         <li>
-          <span data-l="en">In Fast Media Sorter &amp; Sharing for Windows, right-click the folder box and choose <b>Share this folder with Android..</b>, or open <b>Settings</b> (<kbd>F2</kbd>) &rarr; <b>Server and resources</b> &rarr; <b>Android / SFTP</b> and press <b>Manage SFTP</b>. Either one opens the <b>Share Manager</b> companion app.</span>
-          <span data-l="ru">В Fast Media Sorter &amp; Sharing for Windows щёлкните правой кнопкой по строке каталога и выберите <b>Поделиться этой папкой с Android..</b>, либо откройте <b>Настройки</b> (<kbd>F2</kbd>) &rarr; <b>Сервер и ресурсы</b> &rarr; <b>Android / SFTP</b> и нажмите <b>Управление SFTP</b>. Любой из способов открывает отдельную программу <b>Share Manager</b>.</span>
-          <span data-l="ua">У Fast Media Sorter &amp; Sharing for Windows клацніть правою кнопкою по рядку каталогу й виберіть <b>Поділитися цією текою з Android..</b>, або відкрийте <b>Налаштування</b> (<kbd>F2</kbd>) &rarr; <b>Сервер і ресурси</b> &rarr; <b>Android / SFTP</b> і натисніть <b>Керування SFTP</b>. Будь-який зі способів відкриває окрему програму <b>Share Manager</b>.</span>
-          <figure class="shot"><img src="assets/guides/settings-sftp.png" alt="The Android / SFTP settings page with the Manage SFTP button, the connection guide link and the Android application link" width="738" height="459" loading="lazy"><span data-l="en">Settings: the <b>Manage SFTP</b> button opens the Share Manager.</span><span data-l="ru">Настройки: кнопка <b>Управление SFTP</b> открывает Share Manager.</span><span data-l="ua">Налаштування: кнопка <b>Керування SFTP</b> відкриває Share Manager.</span></figure>
+          <span>In Fast Media Sorter &amp; Sharing for Windows, right-click the folder box and choose <b>Share this folder with Android..</b>, or open <b>Settings</b> (<kbd>F2</kbd>) &rarr; <b>Server and resources</b> &rarr; <b>Android / SFTP</b> and press <b>Manage SFTP</b>. Either one opens the <b>Share Manager</b> companion app.</span>
+          <figure class="shot"><img src="assets/guides/settings-sftp.png" alt="The Android / SFTP settings page with the Manage SFTP button, the connection guide link and the Android application link" width="738" height="459" loading="lazy"><span>Settings: the <b>Manage SFTP</b> button opens the Share Manager.</span></figure>
         </li>
         <li>
-          <span data-l="en">The first time, Share Manager says <b>Server features are off</b>: press <b>Enable server features..</b> and approve the administrator prompt (see <i>Before you start</i>). Until then nothing is shared; the viewer itself stays an ordinary local program.</span>
-          <span data-l="ru">В первый раз Share Manager сообщает <b>Функции сервера выключены</b>: нажмите <b>Включить функции сервера..</b> и подтвердите запрос администратора (см. «Прежде чем начать»). До этого ничего не раздаётся; сам просмотрщик остаётся обычной локальной программой.</span>
-          <span data-l="ua">Уперше Share Manager повідомляє <b>Функції сервера вимкнено</b>: натисніть <b>Увімкнути функції сервера..</b> і підтвердьте запит адміністратора (див. «Перш ніж почати»). До того нічого не роздається; сам переглядач лишається звичайною локальною програмою.</span>
+          The first time, Share Manager says <b>Server features are off</b>: press <b>Enable server features..</b> and approve the administrator prompt (see <i>Before you start</i>). Until then nothing is shared; the viewer itself stays an ordinary local program.
         </li>
         <li>
-          <span data-l="en">Share Manager opens with your folder already added and <b>sharing started</b> - the <b>Android access</b> panel shows the PC's address. Add more folders with <b><svg class="glyph" data-glyph="action.add" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>Add folder..</b> and tick only the ones to show on the phone; use <b>Edit</b> to set a real read-only lock, a PIN, allowed media types, a destination for copies, and more.</span>
-          <span data-l="ru">Share Manager откроется с уже добавленной папкой, и <b>раздача запустится</b> - на панели <b>Доступ с Android</b> будет виден адрес ПК. Добавляйте другие папки кнопкой <b><svg class="glyph" data-glyph="action.add" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>Добавить папку..</b> и отмечайте галочками только те, что должны быть видны на телефоне; кнопка <b>Редактировать</b> задаёт настоящий запрет записи, PIN, разрешённые типы медиа, папку-приёмник для копий и другое.</span>
-          <span data-l="ua">Share Manager відкриється з уже доданою текою, і <b>роздача запуститься</b> - на панелі <b>Доступ з Android</b> буде видно адресу ПК. Додавайте інші теки кнопкою <b><svg class="glyph" data-glyph="action.add" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>Додати папку..</b> і позначайте галочками лише ті, що мають бути видимі на телефоні; кнопка <b>Редагувати</b> задає справжню заборону запису, PIN, дозволені типи медіа, теку-приймач для копій тощо.</span>
+          Share Manager opens with your folder already added and <b>sharing started</b> - the <b>Android access</b> panel shows the PC's address. Add more folders with <b><svg class="glyph" data-glyph="action.add" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>Add folder..</b> and tick only the ones to show on the phone; use <b>Edit</b> to set a real read-only lock, a PIN, allowed media types, a destination for copies, and more.
         </li>
         <li>
-          <span data-l="en">Press the big <b><svg class="glyph" data-glyph="action.share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M18,16.08c-0.76,0 -1.44,0.3 -1.96,0.77L8.91,12.7c0.05,-0.23 0.09,-0.46 0.09,-0.7s-0.04,-0.47 -0.09,-0.7l7.05,-4.11c0.54,0.5 1.25,0.81 2.04,0.81 1.66,0 3,-1.34 3,-3s-1.34,-3 -3,-3 -3,1.34 -3,3c0,0.24 0.04,0.47 0.09,0.7L8.04,9.81C7.5,9.31 6.79,9 6,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3c0.79,0 1.5,-0.31 2.04,-0.81l7.12,4.16c-0.05,0.21 -0.08,0.43 -0.08,0.65 0,1.61 1.31,2.92 2.92,2.92 1.61,0 2.92,-1.31 2.92,-2.92s-1.31,-2.92 -2.92,-2.92z" fill="currentColor"/></svg>Share</b> button. The <b>Share - access code</b> window shows a <b>QR code</b> and the buttons <b>Show QR code</b>, <b>Save .fmscfg file..</b>, <b>Send by email..</b> and <b>Copy login/password</b>. (When you started from the folder right-click, this window opens for you automatically.)</span>
-          <span data-l="ru">Нажмите большую кнопку <b><svg class="glyph" data-glyph="action.share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M18,16.08c-0.76,0 -1.44,0.3 -1.96,0.77L8.91,12.7c0.05,-0.23 0.09,-0.46 0.09,-0.7s-0.04,-0.47 -0.09,-0.7l7.05,-4.11c0.54,0.5 1.25,0.81 2.04,0.81 1.66,0 3,-1.34 3,-3s-1.34,-3 -3,-3 -3,1.34 -3,3c0,0.24 0.04,0.47 0.09,0.7L8.04,9.81C7.5,9.31 6.79,9 6,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3c0.79,0 1.5,-0.31 2.04,-0.81l7.12,4.16c-0.05,0.21 -0.08,0.43 -0.08,0.65 0,1.61 1.31,2.92 2.92,2.92 1.61,0 2.92,-1.31 2.92,-2.92s-1.31,-2.92 -2.92,-2.92z" fill="currentColor"/></svg>Поделиться</b>. В окне <b>Поделиться - код доступа</b> появятся <b>QR-код</b> и кнопки <b>Показать QR-код</b>, <b>Сохранить файл .fmscfg..</b>, <b>Отправить по почте..</b> и <b>Скопировать логин/пароль</b>. (Если вы начали с правого клика по папке, это окно откроется само.)</span>
-          <span data-l="ua">Натисніть велику кнопку <b><svg class="glyph" data-glyph="action.share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M18,16.08c-0.76,0 -1.44,0.3 -1.96,0.77L8.91,12.7c0.05,-0.23 0.09,-0.46 0.09,-0.7s-0.04,-0.47 -0.09,-0.7l7.05,-4.11c0.54,0.5 1.25,0.81 2.04,0.81 1.66,0 3,-1.34 3,-3s-1.34,-3 -3,-3 -3,1.34 -3,3c0,0.24 0.04,0.47 0.09,0.7L8.04,9.81C7.5,9.31 6.79,9 6,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3c0.79,0 1.5,-0.31 2.04,-0.81l7.12,4.16c-0.05,0.21 -0.08,0.43 -0.08,0.65 0,1.61 1.31,2.92 2.92,2.92 1.61,0 2.92,-1.31 2.92,-2.92s-1.31,-2.92 -2.92,-2.92z" fill="currentColor"/></svg>Поділитися</b>. У вікні <b>Поділитися - код доступу</b> з'являться <b>QR-код</b> і кнопки <b>Показати QR-код</b>, <b>Зберегти файл .fmscfg..</b>, <b>Надіслати поштою..</b> та <b>Скопіювати логін/пароль</b>. (Якщо ви почали з правого кліку по папці, це вікно відкриється саме.)</span>
+          Press the big <b><svg class="glyph" data-glyph="action.share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M18,16.08c-0.76,0 -1.44,0.3 -1.96,0.77L8.91,12.7c0.05,-0.23 0.09,-0.46 0.09,-0.7s-0.04,-0.47 -0.09,-0.7l7.05,-4.11c0.54,0.5 1.25,0.81 2.04,0.81 1.66,0 3,-1.34 3,-3s-1.34,-3 -3,-3 -3,1.34 -3,3c0,0.24 0.04,0.47 0.09,0.7L8.04,9.81C7.5,9.31 6.79,9 6,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3c0.79,0 1.5,-0.31 2.04,-0.81l7.12,4.16c-0.05,0.21 -0.08,0.43 -0.08,0.65 0,1.61 1.31,2.92 2.92,2.92 1.61,0 2.92,-1.31 2.92,-2.92s-1.31,-2.92 -2.92,-2.92z" fill="currentColor"/></svg>Share</b> button. The <b>Share - access code</b> window shows a <b>QR code</b> and the buttons <b>Show QR code</b>, <b>Save .fmscfg file..</b>, <b>Send by email..</b> and <b>Copy login/password</b>. (When you started from the folder right-click, this window opens for you automatically.)
         </li>
         <li>
-          <span data-l="en">On the phone, open FastMediaSorter &rarr; <b>Add resource</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Import from companion</b>, then scan the QR code (or open the saved <code>.fmscfg</code> file).</span>
-          <span data-l="ru">На телефоне откройте FastMediaSorter &rarr; <b>Добавить ресурс</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Импорт из компаньона</b>, затем отсканируйте QR-код (или откройте сохранённый файл <code>.fmscfg</code>).</span>
-          <span data-l="ua">На телефоні відкрийте FastMediaSorter &rarr; <b>Додати ресурс</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Імпорт із компаньйона</b>, потім відскануйте QR-код (або відкрийте збережений файл <code>.fmscfg</code>).</span>
+          On the phone, open FastMediaSorter &rarr; <b>Add resource</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Import from companion</b>, then scan the QR code (or open the saved <code>.fmscfg</code> file).
         </li>
         <li>
-          <span data-l="en">Done - the shared folders open on the phone. Sharing keeps running from the tray even after you close the viewer; closing the Share Manager window just hides it to the tray while a share is active.</span>
-          <span data-l="ru">Готово - общие папки открываются на телефоне. Раздача продолжает работать из трея, даже когда просмотрщик закрыт; закрытие окна Share Manager просто сворачивает его в трей, пока идёт раздача.</span>
-          <span data-l="ua">Готово - спільні папки відкриваються на телефоні. Роздача працює далі з трея, навіть коли переглядач закрито; закриття вікна Share Manager просто згортає його в трей, поки триває роздача.</span>
+          Done - the shared folders open on the phone. Sharing keeps running from the tray even after you close the viewer; closing the Share Manager window just hides it to the tray while a share is active.
         </li>
       </ol>
     </div>
@@ -186,65 +154,51 @@
   <!-- LAN vs INTERNET -->
   <section class="section">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">Local network vs internet</span><span data-l="ru">Локальная сеть или интернет</span><span data-l="ua">Локальна мережа чи інтернет</span></h2>
+      <h2 class="section-title"><span class="hash">#</span><span>Local network vs internet</span></h2>
       <p class="section-desc">
-        <span data-l="en">There is <b>one QR code / one <code>.fmscfg</code></b> that carries every way to reach your PC - local Wi-Fi, IPv6 and the internet address. The phone tries them all and connects over whichever is reachable, preferring the fast local one. <b>One scan works both at home and away</b> - you no longer choose a "network" up front.</span>
-        <span data-l="ru">Один <b>QR-код / один файл <code>.fmscfg</code></b> содержит все способы связаться с ПК: локальную Wi-Fi, IPv6 и адрес из интернета. Телефон пробует их все и подключается по тому, что доступен, предпочитая быстрый локальный. <b>Одно сканирование работает и дома, и вне дома</b> - выбирать "сеть" заранее больше не нужно.</span>
-        <span data-l="ua">Один <b>QR-код / один файл <code>.fmscfg</code></b> містить усі способи зв'язатися з ПК: локальну Wi-Fi, IPv6 та адресу з інтернету. Телефон пробує їх усі й підключається тим, що доступний, віддаючи перевагу швидкому локальному. <b>Одне сканування працює і вдома, і поза домом</b> - обирати "мережу" заздалегідь більше не потрібно.</span>
+        There is <b>one QR code / one <code>.fmscfg</code></b> that carries every way to reach your PC - local Wi-Fi, IPv6 and the internet address. The phone tries them all and connects over whichever is reachable, preferring the fast local one. <b>One scan works both at home and away</b> - you no longer choose a "network" up front.
       </p>
     </div>
     <div class="grid">
       <div class="card">
-        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/system.wifi.svg" alt=""> <span data-l="en">Local network</span><span data-l="ru">Локальная сеть</span><span data-l="ua">Локальна мережа</span></h3>
-        <p><span data-l="en">When the phone is on the same Wi-Fi as the PC, it just works - nothing to configure. This is the default and the most private option.</span>
-           <span data-l="ru">Когда телефон в той же Wi-Fi, что и ПК, всё работает сразу - настраивать нечего. Это вариант по умолчанию и самый приватный.</span>
-           <span data-l="ua">Коли телефон у тій самій Wi-Fi, що й ПК, усе працює одразу - налаштовувати нічого. Це варіант за замовчуванням і найприватніший.</span></p>
+        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/system.wifi.svg" alt=""> <span>Local network</span></h3>
+        <p>When the phone is on the same Wi-Fi as the PC, it just works - nothing to configure. This is the default and the most private option.</p>
       </div>
       <div class="card">
-        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/system.internet.svg" alt=""> <span data-l="en">Internet</span><span data-l="ru">Интернет</span><span data-l="ua">Інтернет</span></h3>
-        <p><span data-l="en">When sharing starts, Share Manager tries to open the port automatically (UPnP/NAT-PMP) and then <b>checks from the outside whether it really answers</b> (through check-host.net). Both are skipped when <b>Local network only (no internet access)</b> is ticked. The <b>Via internet</b> line shows the address honestly - or tells you it's behind CGNAT. If the port isn't open, use <b>How to set up internet access</b> for a per-router port-forward guide and <b>Test internet access</b> to verify. If your PC has <b>IPv6</b>, that address is added too and works even behind CGNAT.</span>
-           <span data-l="ru">Когда раздача запускается, Share Manager пробует открыть порт автоматически (UPnP/NAT-PMP), а затем <b>проверяет снаружи, действительно ли он отвечает</b> (через check-host.net). Если отмечено <b>Только локальная сеть (без доступа из интернета)</b>, ни то ни другое не выполняется. Строка <b>Через интернет</b> честно показывает адрес - или сообщает, что вы за CGNAT. Если порт не открыт, откройте <b>Как настроить доступ через интернет</b> - инструкцию проброса порта под ваш роутер, и <b>Проверить доступ из интернета</b> для проверки. Если у ПК есть <b>IPv6</b>, его адрес добавляется тоже и работает даже за CGNAT.</span>
-           <span data-l="ua">Коли роздача запускається, Share Manager пробує відкрити порт автоматично (UPnP/NAT-PMP), а потім <b>перевіряє ззовні, чи він справді відповідає</b> (через check-host.net). Якщо позначено <b>Тільки локальна мережа (без доступу з інтернету)</b>, ні те, ні інше не виконується. Рядок <b>Через інтернет</b> чесно показує адресу - або повідомляє, що ви за CGNAT. Якщо порт не відкрито, відкрийте <b>Як налаштувати доступ через інтернет</b> - інструкцію проброса порту під ваш роутер, і <b>Перевірити доступ з інтернету</b> для перевірки. Якщо ПК має <b>IPv6</b>, його адресу додано теж, і вона працює навіть за CGNAT.</span></p>
-        <p class="flush-bottom"><span data-l="en">Per-model, step-by-step port-forwarding guides: </span><span data-l="ru">Пошаговые инструкции проброса портов по моделям: </span><span data-l="ua">Покрокові інструкції проброса портів за моделями: </span>
-          <a href="https://portforward.com/router.htm" target="_blank" rel="noopener noreferrer">portforward.com<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a>.</p>
+        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/system.internet.svg" alt=""> <span>Internet</span></h3>
+        <p>When sharing starts, Share Manager tries to open the port automatically (UPnP/NAT-PMP) and then <b>checks from the outside whether it really answers</b> (through check-host.net). Both are skipped when <b>Local network only (no internet access)</b> is ticked. The <b>Via internet</b> line shows the address honestly - or tells you it's behind CGNAT. If the port isn't open, use <b>How to set up internet access</b> for a per-router port-forward guide and <b>Test internet access</b> to verify. If your PC has <b>IPv6</b>, that address is added too and works even behind CGNAT.</p>
+        <p class="flush-bottom"><span>Per-model, step-by-step port-forwarding guides: </span>
+          <a href="https://portforward.com/router.htm" target="_blank" rel="noopener noreferrer">portforward.com<span class="sr-only"> (opens in a new tab)</span></a>.</p>
       </div>
       <div class="card">
-        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/action.search.svg" alt=""> <span data-l="en">Finds your PC automatically</span><span data-l="ru">Находит ваш ПК сам</span><span data-l="ua">Знаходить ваш ПК сам</span></h3>
-        <p class="flush-bottom"><span data-l="en">On the same Wi-Fi the phone also discovers the PC by its host-key fingerprint. So even if the PC's local address changed since you scanned the code (a new lease, a reconnect), the phone reconnects on its own - no need to re-scan.</span>
-           <span data-l="ru">В той же Wi-Fi телефон дополнительно находит ПК по отпечатку его ключа. Поэтому даже если локальный адрес ПК изменился после сканирования кода (новая аренда, переподключение), телефон переподключится сам - пересканировать не нужно.</span>
-           <span data-l="ua">У тій самій Wi-Fi телефон додатково знаходить ПК за відбитком його ключа. Тож навіть якщо локальна адреса ПК змінилася після сканування коду (нова оренда, перепідключення), телефон перепідключиться сам - пересканувати не потрібно.</span></p>
+        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/action.search.svg" alt=""> <span>Finds your PC automatically</span></h3>
+        <p class="flush-bottom">On the same Wi-Fi the phone also discovers the PC by its host-key fingerprint. So even if the PC's local address changed since you scanned the code (a new lease, a reconnect), the phone reconnects on its own - no need to re-scan.</p>
       </div>
     </div>
     <p class="lead-narrow lead-small">
-      <span data-l="en">Manufacturer support:</span><span data-l="ru">Поддержка производителей:</span><span data-l="ua">Підтримка виробників:</span>
-      <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener noreferrer">TP-Link<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://www.asus.com/support/" target="_blank" rel="noopener noreferrer">ASUS<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://help.keenetic.com/" target="_blank" rel="noopener noreferrer">Keenetic<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://support.dlink.com/" target="_blank" rel="noopener noreferrer">D-Link<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://www.netgear.com/support/" target="_blank" rel="noopener noreferrer">NETGEAR<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener noreferrer">Huawei<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://www.mi.com/global/service/" target="_blank" rel="noopener noreferrer">Xiaomi<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
-      <a href="https://help.mikrotik.com/" target="_blank" rel="noopener noreferrer">MikroTik<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a>
+      <span>Manufacturer support:</span>
+      <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener noreferrer">TP-Link<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://www.asus.com/support/" target="_blank" rel="noopener noreferrer">ASUS<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://help.keenetic.com/" target="_blank" rel="noopener noreferrer">Keenetic<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://support.dlink.com/" target="_blank" rel="noopener noreferrer">D-Link<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://www.netgear.com/support/" target="_blank" rel="noopener noreferrer">NETGEAR<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener noreferrer">Huawei<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://www.mi.com/global/service/" target="_blank" rel="noopener noreferrer">Xiaomi<span class="sr-only"> (opens in a new tab)</span></a> ·
+      <a href="https://help.mikrotik.com/" target="_blank" rel="noopener noreferrer">MikroTik<span class="sr-only"> (opens in a new tab)</span></a>
     </p>
   </section>
 
   <!-- OTHER WAYS TO CONNECT: the shared portal explains them; this page keeps only the way it documents -->
   <section class="section" id="schemes">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">Other ways to connect your devices</span><span data-l="ru">Другие способы соединить ваши устройства</span><span data-l="ua">Інші способи з'єднати ваші пристрої</span></h2>
-      <p><span data-l="en">This page is about one way: your PC shares folders and the phone connects to it, at home or through your router. The portal <i>Media exchange between your devices</i> puts all the ways side by side - what each needs, what each does, and which program takes part.</span><span data-l="ru">Эта страница об одном способе: ваш ПК раздаёт папки, а телефон подключается к нему - дома или через ваш роутер. Портал <i>Обмен медиа между вашими устройствами</i> ставит рядом все способы: что нужно каждому, что он делает и какая программа в нём участвует.</span><span data-l="ua">Ця сторінка про один спосіб: ваш ПК роздає теки, а телефон підключається до нього - вдома або через ваш роутер. Портал <i>Обмін медіа між вашими пристроями</i> ставить поруч усі способи: що потрібно кожному, що він робить і яка програма в ньому бере участь.</span></p>
+      <h2 class="section-title"><span class="hash">#</span><span>Other ways to connect your devices</span></h2>
+      <p>This page is about one way: your PC shares folders and the phone connects to it, at home or through your router. The portal <i>Media exchange between your devices</i> puts all the ways side by side - what each needs, what each does, and which program takes part.</p>
     </div>
     <div class="card">
       <ul class="flush-list">
-        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">The portal start page<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - every way, and which program does what.</span>
-            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-ru.html" target="_blank" rel="noopener noreferrer">Стартовая страница портала<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - все способы и что делает каждая программа.</span>
-            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html" target="_blank" rel="noopener noreferrer">Стартова сторінка порталу<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - усі способи і що робить кожна програма.</span></li>
-        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html" target="_blank" rel="noopener noreferrer">Your home network<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - your own router and no server in between, the way this page sets up.</span>
-            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-ru.html" target="_blank" rel="noopener noreferrer">Домашняя сеть<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - ваш роутер и никакого сервера посередине, способ, который настраивает эта страница.</span>
-            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-uk.html" target="_blank" rel="noopener noreferrer">Домашня мережа<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - ваш роутер і жодного сервера посередині, спосіб, який налаштовує ця сторінка.</span></li>
-        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html" target="_blank" rel="noopener noreferrer">Windows servers<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - which Windows program serves your folders, and the always-on Server edition.</span>
-            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener noreferrer">Серверы на Windows<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - какая программа Windows раздаёт ваши папки и чем отличается серверная редакция, которая работает круглосуточно.</span>
-            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-uk.html" target="_blank" rel="noopener noreferrer">Сервери на Windows<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - яка програма Windows роздає ваші теки і чим відрізняється серверна редакція, що працює цілодобово.</span></li>
+        <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">The portal start page<span class="sr-only"> (opens in a new tab)</span></a> - every way, and which program does what.</li>
+        <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html" target="_blank" rel="noopener noreferrer">Your home network<span class="sr-only"> (opens in a new tab)</span></a> - your own router and no server in between, the way this page sets up.</li>
+        <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html" target="_blank" rel="noopener noreferrer">Windows servers<span class="sr-only"> (opens in a new tab)</span></a> - which Windows program serves your folders, and the always-on Server edition.</li>
       </ul>
     </div>
   </section>
@@ -252,25 +206,15 @@
   <!-- TROUBLESHOOT -->
   <section class="section">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">If the phone can't connect</span><span data-l="ru">Если телефон не подключается</span><span data-l="ua">Якщо телефон не підключається</span></h2>
+      <h2 class="section-title"><span class="hash">#</span><span>If the phone can't connect</span></h2>
     </div>
     <div class="card">
       <ul class="flush-list">
-        <li><span data-l="en"><b>Same network?</b> The LAN path only works when the phone is on the same Wi-Fi as the PC.</span>
-            <span data-l="ru"><b>Одна сеть?</b> Локальный путь работает только когда телефон в той же Wi-Fi, что и ПК.</span>
-            <span data-l="ua"><b>Одна мережа?</b> Локальний шлях працює лише коли телефон у тій самій Wi-Fi, що й ПК.</span></li>
-        <li><span data-l="en"><b>Is sharing running?</b> The start/stop button should say <b>Stop sharing</b>. Reopen Share Manager to check the displayed address and status.</span>
-            <span data-l="ru"><b>Раздача запущена?</b> Кнопка запуска и остановки должна показывать <b>Остановить раздачу</b>. Откройте Share Manager снова и проверьте показанный адрес и статус.</span>
-            <span data-l="ua"><b>Роздача запущена?</b> Кнопка запуску й зупинки має показувати <b>Зупинити роздачу</b>. Знову відкрийте Share Manager і перевірте показану адресу та статус.</span></li>
-        <li><span data-l="en"><b>Firewall:</b> the SFTP port must be allowed through Windows Firewall. The rule is added by <b>Enable server features..</b> (or the installer checkbox) - see <i>Before you start</i>.</span>
-            <span data-l="ru"><b>Брандмауэр:</b> порт SFTP должен быть разрешён в брандмауэре Windows. Правило добавляет <b>Включить функции сервера..</b> (или галочка в установщике) - см. «Прежде чем начать».</span>
-            <span data-l="ua"><b>Брандмауер:</b> порт SFTP має бути дозволений у брандмауері Windows. Правило додає <b>Увімкнути функції сервера..</b> (або галочка в інсталяторі) - див. «Перш ніж почати».</span></li>
-        <li><span data-l="en"><b>CGNAT:</b> some providers share one public address between many customers - port forwarding cannot help. Use the local network, the <b>IPv6</b> address (if both sides have IPv6), a VPN, or ask for a public "white" IP.</span>
-            <span data-l="ru"><b>CGNAT:</b> некоторые провайдеры делят один публичный адрес между многими - проброс портов не поможет. Пользуйтесь локальной сетью, адресом <b>IPv6</b> (если он есть с обеих сторон), VPN/ретранслятором или попросите публичный "белый" IP.</span>
-            <span data-l="ua"><b>CGNAT:</b> деякі провайдери ділять одну публічну адресу між багатьма - проброс портів не допоможе. Користуйтеся локальною мережею, адресою <b>IPv6</b> (якщо вона є з обох боків), VPN/ретранслятором або попросіть публічну "білу" IP.</span></li>
-        <li><span data-l="en"><b>IP changed:</b> home IPs rotate. On the same Wi-Fi the phone re-finds the PC by itself; from the internet, reopen Share Manager to see the current address, or set up Dynamic DNS on the router.</span>
-            <span data-l="ru"><b>IP сменился:</b> домашние адреса меняются. В той же Wi-Fi телефон находит ПК сам; из интернета - откройте Share Manager снова, чтобы увидеть текущий адрес, или настройте Dynamic DNS на роутере.</span>
-            <span data-l="ua"><b>IP змінився:</b> домашні адреси змінюються. У тій самій Wi-Fi телефон знаходить ПК сам; з інтернету - відкрийте Share Manager знову, щоб побачити поточну адресу, або налаштуйте Dynamic DNS на роутері.</span></li>
+        <li><b>Same network?</b> The LAN path only works when the phone is on the same Wi-Fi as the PC.</li>
+        <li><b>Is sharing running?</b> The start/stop button should say <b>Stop sharing</b>. Reopen Share Manager to check the displayed address and status.</li>
+        <li><b>Firewall:</b> the SFTP port must be allowed through Windows Firewall. The rule is added by <b>Enable server features..</b> (or the installer checkbox) - see <i>Before you start</i>.</li>
+        <li><b>CGNAT:</b> some providers share one public address between many customers - port forwarding cannot help. Use the local network, the <b>IPv6</b> address (if both sides have IPv6), a VPN, or ask for a public "white" IP.</li>
+        <li><b>IP changed:</b> home IPs rotate. On the same Wi-Fi the phone re-finds the PC by itself; from the internet, reopen Share Manager to see the current address, or set up Dynamic DNS on the router.</li>
       </ul>
     </div>
   </section>
@@ -279,52 +223,46 @@
   <!-- RELATED FUNCTIONS: one owner each, one sentence and a link here -->
   <section class="section">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">Related</span><span data-l="ru">Рядом по теме</span><span data-l="ua">Поруч за темою</span></h2>
+      <h2 class="section-title"><span class="hash">#</span><span>Related</span></h2>
     </div>
     <div class="grid">
       <div class="card">
-        <h3 class="flush-top"><span data-l="en">Available around the clock</span><span data-l="ru">Доступ круглосуточно</span><span data-l="ua">Доступ цілодобово</span></h3>
-        <p class="flush-bottom"><span data-l="en">The sharing above works while you are signed in and Share Manager is running. The Server edition hosts the same sharing as a Windows service that starts at boot, with nobody signed in - same SFTP, same QR pairing, same Android app. <a href="server.html">Always-on Server edition</a>.</span>
-           <span data-l="ru">Раздача выше работает, пока вы вошли в систему и Share Manager запущен. Серверная редакция поднимает ту же раздачу как службу Windows, которая стартует с загрузкой и работает без входа в систему - тот же SFTP, та же привязка по QR, то же приложение Android. <a href="server.html">Серверная редакция (всегда доступна)</a>.</span>
-           <span data-l="ua">Роздача вище працює, поки ви увійшли в систему і Share Manager запущено. Серверна редакція піднімає ту саму роздачу як службу Windows, що стартує із завантаженням і працює без входу в систему - той самий SFTP, та сама прив'язка за QR, той самий застосунок Android. <a href="server.html">Серверна редакція (завжди доступна)</a>.</span></p>
+        <h3 class="flush-top">Available around the clock</h3>
+        <p class="flush-bottom">The sharing above works while you are signed in and Share Manager is running. The Server edition hosts the same sharing as a Windows service that starts at boot, with nobody signed in - same SFTP, same QR pairing, same Android app. <a href="server.html">Always-on Server edition</a>.</p>
       </div>
       <div class="card">
-        <h3 class="flush-top"><span data-l="en">FileDO disks</span><span data-l="ru">Диски FileDO</span><span data-l="ua">Диски FileDO</span></h3>
-        <p class="flush-bottom"><span data-l="en">A FileDO <code>.fdd</code> virtual disk is shared through the same Share Manager and the same QR or <code>.fmscfg</code> pairing. <a href="docs/how-to-filedo-disks.html">Share FileDO .fdd virtual disks</a>.</span>
-           <span data-l="ru">Виртуальный диск FileDO <code>.fdd</code> раздаётся через тот же Share Manager и ту же привязку по QR или <code>.fmscfg</code>. <a href="docs/how-to-filedo-disks.html">Общий доступ к виртуальным дискам FileDO .fdd</a>.</span>
-           <span data-l="ua">Віртуальний диск FileDO <code>.fdd</code> роздається через той самий Share Manager і ту саму прив'язку за QR або <code>.fmscfg</code>. <a href="docs/how-to-filedo-disks.html">Спільний доступ до віртуальних дисків FileDO .fdd</a>.</span></p>
+        <h3 class="flush-top">FileDO disks</h3>
+        <p class="flush-bottom">A FileDO <code>.fdd</code> virtual disk is shared through the same Share Manager and the same QR or <code>.fmscfg</code> pairing. <a href="docs/how-to-filedo-disks.html">Share FileDO .fdd virtual disks</a>.</p>
       </div>
       <div class="card">
-        <h3 class="flush-top"><span data-l="en">The other direction</span><span data-l="ru">В другую сторону</span><span data-l="ua">В інший бік</span></h3>
-        <p class="flush-bottom"><span data-l="en">To open a server, a NAS or another PC's share in the viewer itself, see <a href="docs/how-to-resources.html">Open a server or a network share like a folder</a>.</span>
-           <span data-l="ru">Чтобы открыть сервер, NAS или общую папку другого ПК в самом просмотрщике, см. <a href="docs/how-to-resources.html">Открыть сервер или сетевую папку как обычную папку</a>.</span>
-           <span data-l="ua">Щоб відкрити сервер, NAS або спільну теку іншого ПК у самому переглядачі, див. <a href="docs/how-to-resources.html">Відкрийте сервер або мережеву теку як звичайну теку</a>.</span></p>
+        <h3 class="flush-top">The other direction</h3>
+        <p class="flush-bottom">To open a server, a NAS or another PC's share in the viewer itself, see <a href="docs/how-to-resources.html">Open a server or a network share like a folder</a>.</p>
       </div>
     </div>
   </section>
 
   <section class="section">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span><span data-l="en">More HOW TO guides</span><span data-l="ru">Другие инструкции HOW TO</span><span data-l="ua">Інші інструкції HOW TO</span></h2>
+      <h2 class="section-title"><span class="hash">#</span><span>More HOW TO guides</span></h2>
     </div>
     <div class="tools-grid">
-      <a href="docs/how-to-viewer.html"><b>HOW TO · Viewer</b><span data-l="en">Review and sort a media folder</span><span data-l="ru">Просмотр и сортировка медиафайлов</span><span data-l="ua">Перегляд і сортування медіафайлів</span></a>
-      <a href="docs/how-to-keys.html"><b>HOW TO · Keys</b><span data-l="en">Keys, zoom and full screen</span><span data-l="ru">Клавиши, масштаб и полный экран</span><span data-l="ua">Клавіші, масштаб і повний екран</span></a>
-      <a href="docs/how-to-setup.html"><b>HOW TO · Setup</b><span data-l="en">Default viewer, language, file rules</span><span data-l="ru">Просмотрщик по умолчанию, язык, правила для файлов</span><span data-l="ua">Переглядач за умовчанням, мова, правила для файлів</span></a>
-      <a href="docs/how-to-ocr.html"><b>HOW TO · OCR</b><span data-l="en">Read and translate text on a picture</span><span data-l="ru">Распознать и перевести текст на картинке</span><span data-l="ua">Розпізнати й перекласти текст на картинці</span></a>
-      <a href="docs/how-to-editor.html"><b>HOW TO · Editor</b><span data-l="en">Draw on a photo and crop it</span><span data-l="ru">Порисовать на фото и обрезать его</span><span data-l="ua">Помалювати на фото й обрізати його</span></a>
-      <a href="docs/how-to-archives.html"><b>HOW TO · Archives</b><span data-l="en">Read a ZIP or CBZ like a folder</span><span data-l="ru">Читать ZIP или CBZ как папку</span><span data-l="ua">Читати ZIP або CBZ як папку</span></a>
-      <a href="docs/how-to-resources.html"><b>HOW TO · Resources</b><span data-l="en">Open a server or a network share like a folder</span><span data-l="ru">Открыть сервер или сетевую папку как обычную папку</span><span data-l="ua">Відкрити сервер або мережеву теку як звичайну теку</span></a>
-      <a href="docs/how-to-filedo-disks.html"><b>HOW TO · FileDO</b><span data-l="en">Share FileDO .fdd virtual disks</span><span data-l="ru">Общий доступ к дискам FileDO .fdd</span><span data-l="ua">Спільний доступ до дисків FileDO .fdd</span></a>
-      <a href="server.html"><b>SERVER · Always-on</b><span data-l="en">Share folders from boot, with nobody signed in</span><span data-l="ru">Раздача папок с загрузки, без входа в систему</span><span data-l="ua">Роздача тек із завантаження, без входу в систему</span></a>
-      <a href="topics.html"><b>TOPICS</b><span data-l="en">Every page on this site by subject</span><span data-l="ru">Все страницы сайта по темам</span><span data-l="ua">Усі сторінки сайту за темами</span></a>
-      <a href="glossary.html"><b>GLOSSARY</b><span data-l="en">What the site's terms mean</span><span data-l="ru">Что значат термины сайта</span><span data-l="ua">Що означають терміни сайту</span></a>
+      <a href="docs/how-to-viewer.html"><b>HOW TO · Viewer</b><span>Review and sort a media folder</span></a>
+      <a href="docs/how-to-keys.html"><b>HOW TO · Keys</b><span>Keys, zoom and full screen</span></a>
+      <a href="docs/how-to-setup.html"><b>HOW TO · Setup</b><span>Default viewer, language, file rules</span></a>
+      <a href="docs/how-to-ocr.html"><b>HOW TO · OCR</b><span>Read and translate text on a picture</span></a>
+      <a href="docs/how-to-editor.html"><b>HOW TO · Editor</b><span>Draw on a photo and crop it</span></a>
+      <a href="docs/how-to-archives.html"><b>HOW TO · Archives</b><span>Read a ZIP or CBZ like a folder</span></a>
+      <a href="docs/how-to-resources.html"><b>HOW TO · Resources</b><span>Open a server or a network share like a folder</span></a>
+      <a href="docs/how-to-filedo-disks.html"><b>HOW TO · FileDO</b><span>Share FileDO .fdd virtual disks</span></a>
+      <a href="server.html"><b>SERVER · Always-on</b><span>Share folders from boot, with nobody signed in</span></a>
+      <a href="topics.html"><b>TOPICS</b><span>Every page on this site by subject</span></a>
+      <a href="glossary.html"><b>GLOSSARY</b><span>What the site's terms mean</span></a>
     </div>
   </section>
 <section id="sharing-settings-windows">
-<h2><span data-l="en">Where sharing settings live</span><span data-l="ru">Где находятся настройки общего доступа</span><span data-l="ua">Де знаходяться налаштування спільного доступу</span></h2>
-<p><span data-l="en">Settings are in two windows. Manager settings holds the SFTP sharing group - the SFTP port, LAN-only policy and Hosting page, shown while that component is installed - beside general preferences, remote-account access, publishing and schedules. The installed local exchange server has its own settings window. The link at the lower left opens the other window without closing the current one. Opening settings starts no server. Earlier builds showed SFTP sharing in a window of its own.</span><span data-l="ru">Настройки находятся в двух окнах. В настройках менеджера есть группа «Общий доступ SFTP» - порт SFTP, локальная сеть и страница хостинга; она видна, пока установлен этот компонент, - рядом с общими параметрами, удалённой учётной записью, публикацией и расписаниями. Установленный локальный сервер обмена настраивается в отдельном окне. Ссылка слева внизу открывает второе окно, сохраняя текущее. Открытие настроек не запускает сервер. В прежних сборках общий доступ SFTP был в отдельном окне.</span><span data-l="ua">Налаштування розташовані у двох вікнах. У налаштуваннях менеджера є група «Спільний доступ SFTP» - порт SFTP, локальна мережа й сторінка хостингу; вона видима, поки встановлено цей компонент, - поруч із загальними параметрами, віддаленим обліковим записом, публікацією й розкладами. Установлений локальний сервер обміну налаштовується в окремому вікні. Посилання зліва внизу відкриває друге вікно, зберігаючи поточне. Відкриття налаштувань не запускає сервер. У попередніх збірках спільний доступ SFTP був в окремому вікні.</span></p>
-<p><a href="docs/help/en/sftp-settings.html">SFTP</a> · <a href="docs/help/en/share-settings.html" data-l="en">Manager settings help</a><a href="docs/help/ru/share-settings.html" data-l="ru">Справка настроек менеджера</a><a href="docs/help/uk/share-settings.html" data-l="ua">Довідка налаштувань менеджера</a></p>
+<h2>Where sharing settings live</h2>
+<p>Settings are in two windows. Manager settings holds the SFTP sharing group - the SFTP port, LAN-only policy and Hosting page, shown while that component is installed - beside general preferences, remote-account access, publishing and schedules. The installed local exchange server has its own settings window. The link at the lower left opens the other window without closing the current one. Opening settings starts no server. Earlier builds showed SFTP sharing in a window of its own.</p>
+<p><a href="docs/help/en/sftp-settings.html">SFTP</a> · <a href="docs/help/en/share-settings.html">Manager settings help</a></p>
 </section>
 </main>
 <footer class="site-footer"><div class="container">
@@ -332,41 +270,13 @@
     <span>© 2026 Serhii Zhyhunenko</span>
     <span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="https://sza.od.ua">sza.od.ua</a> · <a href="https://github.com/SerZhyAle">GitHub</a> · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <button class="to-top" id="toTop" aria-label="Scroll to top"><svg class="glyph" data-glyph="nav.scroll-top" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M8,11h3v10h2V11h3l-4,-4 -4,4zM4,3v2h16V3H4z" fill="currentColor"/></svg></button>
 
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 <script>
 (function(){
-  var d=document.documentElement;
-  function setLang(v){
-    if(['ru','en','ua'].indexOf(v)<0) v='en';
-    d.setAttribute('data-lang',v);
-    d.setAttribute('lang', v==='ua'?'uk':v);
-    document.querySelectorAll('[data-setlang]').forEach(function(b){
-      b.setAttribute('aria-pressed',String(b.getAttribute('data-setlang')===v));
-    });
-    try{localStorage.setItem('sza-lang',v);}catch(e){}
-  }
-  document.querySelectorAll('[data-setlang]').forEach(function(b){
-    b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
-  });
-  var q=(location.search.match(/[?&]lang=([a-z]+)/)||[])[1];
-  if(q==='uk')q='ua';
-  setLang((q==='ru'||q==='en'||q==='ua')?q:(d.getAttribute('data-lang')||'en'));
-
-  var themeBtn=document.getElementById('themeBtn');
-  function syncTheme(){ if(themeBtn) themeBtn.setAttribute('aria-pressed', d.getAttribute('data-theme')==='light'?'false':'true'); }
-  syncTheme();
-  if(themeBtn){
-    themeBtn.addEventListener('click',function(){
-      var v=d.getAttribute('data-theme')==='light'?'dark':'light';
-      d.setAttribute('data-theme',v);
-      try{localStorage.setItem('sza-theme',v);}catch(e){}
-      syncTheme();
-    });
-  }
-
   var toTop=document.getElementById('toTop');
   function onScroll(){ if(window.scrollY>600) toTop.classList.add('show'); else toTop.classList.remove('show'); }
   window.addEventListener('scroll',onScroll,{passive:true}); onScroll();

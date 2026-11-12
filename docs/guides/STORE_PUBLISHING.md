@@ -108,19 +108,37 @@ Pitfalls hit in practice:
    (or another available variant). The manifest `DisplayName` must equal the reserved name character
    for character, so it stays `FastMediaSorter LITE`: the Store name does not follow the product's
    renamed inscriptions (owner decision, 2026-10-03).
-3. **Product ▸ Product identity** → copy three values into the build command:
-   - `Package/Identity/Name` → `-IdentityName`
-   - `Package/Identity/Publisher` (e.g. `CN=…`) → `-Publisher`
-   - `Package/Properties/PublisherDisplayName` → `-PublisherDisplayName`
+3. **Product ▸ Product identity** → copy the values into [publishing/msix/identity.json](../../publishing/msix/identity.json),
+   the product's one machine-readable Store identity record:
+   - `Package/Identity/Name` → `IdentityName`
+   - `Package/Identity/Publisher` (e.g. `CN=…`) → `Publisher`
+   - `Package/Properties/PublisherDisplayName` → `PublisherDisplayName`
+
+   The file also holds the product's `StoreId`, `PackageFamilyName` and `IarcRatingId`. The build script reads it and stops
+   before it builds when it is missing or incomplete.
 4. Build the Store package (no `-SelfSign`) and upload the **unsigned** `.msix`:
    ```powershell
    cd publishing\msix
-   .\build-msix.ps1 -ReleaseVersion "<the tag's YY.M.D.HHmm>" `
-                    -IdentityName "<Name>" -Publisher "<CN=…>" -PublisherDisplayName "<…>"
+   .\build-msix.ps1 -ReleaseVersion "<the tag's YY.M.D.HHmm>"
    ```
    Pass `-ReleaseVersion` whenever the package belongs to a release: without it the projects stamp
    the current minute, so a package built an hour after the tag carries a different version than the
    GitHub and winget artifacts of the same release. Omit it only for a throwaway local build.
+
+   The upload is a manual step in Partner Center; this repository's release flow starts no submission. The Store Developer
+   CLI and the Store submission API give a read-only view of the live product: `msstore apps list`,
+   `msstore submission status <StoreId>` and `msstore submission get <StoreId>` (the Store ID is in `identity.json`).
+   With no pending submission `submission get` returns the last published one, so read its `Status`, never the mere
+   existence of JSON. A write through the channel (publish, update, delete, rollout) is made only on the owner's
+   instruction that names the product and the package version; a submission created in Partner Center is changed only in
+   Partner Center. No account identifier or credential is written into this repository.
+
+   Before the tag, `tools\Release.ps1` (step 7) calls the shared read-only Store preflight of the canon (`WINDOWS-STORE` 0.4
+   section D, rules 21 and 23): the release stops with the reason when a Store submission is already pending, when the package
+   version is not strictly above the live one, or when the price is not `Free`. With the channel unconfigured, its credential
+   expired or its token refused, the release prints one line that the Store step is manual and goes on exactly as without the
+   channel. After the tag is pushed, one evidence line per release (the Store ID, the package version and the preflight's
+   answer, no account identifier or credential) is appended to `publishing/store/channel-evidence.jsonl`.
 
 ---
 
@@ -285,8 +303,9 @@ Share folders with your phone: the bundled Share Manager turns this PC
 into a private SFTP server for folders you pick, so the Android app can browse them -
 on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
 stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are
-signed in. The Share Manager can also run file operations on a schedule - copy, move, delete or archive
-the files of a folder at a set time - while it runs in your session. The same program family also has an always-on Server edition, which hosts the same sharing
+signed in. The Share Manager also runs scheduled file operations - copy, move, delete or archive the
+files of a folder at a set time - in their own window, with no folder sharing needed, while it runs in
+your signed-in session; they come with the Share Manager, with nothing else to download. The same program family also has an always-on Server edition, which hosts the same sharing
 as a Windows service, and FileDO virtual-disk hosting, a capability of sharing; these are not part of
 the Store version - they are available from the project website and winget.
 
@@ -354,9 +373,10 @@ SFTP и SMB и очередью файловых операций между н�
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение
 открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
 Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
-ничего не выгружается. Раздача работает, пока вы вошли в систему. Share Manager может также выполнять
-файловые операции по расписанию - копировать, переносить, удалять или архивировать файлы папки в
-заданное время, - пока он работает в вашем сеансе. У того же семейства программ есть
+ничего не выгружается. Раздача работает, пока вы вошли в систему. Share Manager также выполняет
+файловые операции по расписанию - копирует, переносит, удаляет или архивирует файлы папки в заданное
+время - в своём окне и без раздачи папок, пока он работает в вашем сеансе входа; они приходят вместе
+с Share Manager, ничего дополнительно скачивать не нужно. У того же семейства программ есть
 ещё серверная редакция, которая поднимает ту же раздачу как службу Windows, и хостинг виртуальных
 дисков FileDO - возможность раздачи; в версию из Store не входит ни то ни другое - всё это доступно
 на сайте проекта и через winget.

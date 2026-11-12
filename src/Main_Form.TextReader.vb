@@ -24,6 +24,12 @@ Partial Public Class Main_Form
     Private text_Detection As EncodingDetectionResult
     ''' <summary>The file is larger than the editing ceiling: read in windows, never editable.</summary>
     Private text_Virtual As Boolean
+    ''' <summary>A binary file the user asked to see (section 4.1): shown escaped, never editable (VM-08).</summary>
+    Private text_Binary_View As Boolean
+    ''' <summary>The next load may show a binary file: the warning was answered for it.</summary>
+    Private text_Binary_Request As Boolean
+    ''' <summary>The file "Open as Text" asked for; the next read of exactly this file goes to the reader, whatever its kind.</summary>
+    Private text_As_Text_Path As String = ""
     Private text_Display_Lines As String()
     Private text_Line_Ending As LineEndingKind = LineEndingKind.None
     ''' <summary>Line number (0-based) of the first line of each window whose place is known: window 0, and
@@ -48,12 +54,23 @@ Partial Public Class Main_Form
     Private text_Scan_Total As Integer
     ''' <summary>A place to bring into view at the next paint, once the rows of the current width exist.</summary>
     Private text_Pending_Reveal As TextPosition?
+    ''' <summary>A remembered place to put at the top of the view at the next paint, once the rows exist.</summary>
+    Private text_Pending_Top As TextPosition?
+    ''' <summary>The identity the place of this document is remembered under, taken at the open: an archive session may be
+    ''' gone by the time the document leaves.</summary>
+    Private text_Place_Identity As DocumentIdentity
     ''' <summary>The window was entered from below: its end is shown once the rows exist.</summary>
     Private text_Pending_End As Boolean
     ''' <summary>Re-open with Encoding for the next load only: -1 none, 0 detect again, else the code page.</summary>
     Private text_Encoding_Request As Integer = -1
     ''' <summary>An excerpt is being written on the pool: a second Ctrl+Shift+S is ignored until it ends.</summary>
     Private text_Excerpt_Saving As Boolean
+    ''' <summary>The language of the open file by its extension (P3.8); None for a file that is not coloured.</summary>
+    Private text_Syntax_Language As TextSyntaxLanguage
+    ''' <summary>The spans of the window on screen, computed once when the window is read (never in a paint) and
+    ''' indexed by the same line numbers as <c>text_Current_Result.Lines</c>; Nothing when the setting is off, the
+    ''' file is paged, or nothing is coloured.</summary>
+    Private text_Syntax As TextSyntaxResult
 
     Private Function FullTextReaderOn() As Boolean
         Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.FullTextReaderEnabled
@@ -72,6 +89,8 @@ Partial Public Class Main_Form
         Dim result As New TextReadResult()
         Dim request As Integer = text_Encoding_Request
         text_Encoding_Request = -1
+        Dim binaryAllowed As Boolean = text_Binary_Request
+        text_Binary_Request = False
         Try
             Dim info As New FileInfo(filePath)
             Dim size As Long = info.Length
@@ -81,22 +100,22 @@ Partial Public Class Main_Form
             If request < 0 AndAlso modern_Preferences.TextRememberEncoding Then
                 overrideCodePage = TextEncodingMemory.Current.Lookup(TextDocumentIdentity(filePath, info))
             End If
-            Dim probe(CInt(Math.Min(size, TextEncodingDetector.ProbeBytes)) - 1) As Byte
-            Using stream As New FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
-                Dim filled As Integer = 0
-                While filled < probe.Length
-                    Dim count As Integer = stream.Read(probe, filled, probe.Length - filled)
-                    If count <= 0 Then Exit While
-                    filled += count
-                End While
-                If filled < probe.Length Then Array.Resize(probe, filled)
-            End Using
+            Dim probe As Byte() = ReadTextProbe(filePath, size)
             Dim detection As EncodingDetectionResult = TextEncodingDetector.Detect(probe, probe.Length, size > probe.Length,
                 modern_Preferences.TextEncodingFallbackCodePage, overrideCodePage)
-            If detection.IsBinary Then
-                result.IsBinary = True
-                Return result
+            ' An encoding chosen by hand does not make a binary file text: it reads differently, it still is not editable.
+            Dim isBinary As Boolean = detection.IsBinary OrElse
+                (overrideCodePage <> 0 AndAlso TextEncodingDetector.Detect(probe, probe.Length, size > probe.Length).IsBinary)
+            If isBinary Then
+                If Not binaryAllowed Then
+                    result.IsBinary = True
+                    Return result
+                End If
+                If detection.IsBinary Then
+                    detection = TextEncodingDetector.Detect(probe, probe.Length, size > probe.Length, 0, TextReaderLayout.BinaryViewCodePage)
+                End If
             End If
+            text_Binary_View = isBinary
 
             Dim ceiling As Long = CLng(modern_Preferences.TextEditingMaxMb) * 1048576L
             text_Virtual = size > ceiling
@@ -105,6 +124,7 @@ Partial Public Class Main_Form
                 CInt(Math.Min(Integer.MaxValue - 8L, size + 8L)))
             text_Detection = detection
             text_Pager = New TextFilePager(filePath, detection.Encoding, detection.BomLength, windowBytes)
+            text_Syntax_Language = TextSyntaxHighlighter.LanguageOf(Path.GetExtension(filePath))
             text_Window_First_Line.Clear()
             text_Window_Terminators.Clear()
             text_Window_First_Line(0) = 0L
@@ -124,10 +144,81 @@ Partial Public Class Main_Form
         Return result
     End Function
 
+    ''' <summary>The start of the file the encoding is judged on.</summary>
+    Private Shared Function ReadTextProbe(filePath As String, size As Long) As Byte()
+        Dim probe(CInt(Math.Min(size, TextEncodingDetector.ProbeBytes)) - 1) As Byte
+        Using stream As New FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+            Dim filled As Integer = 0
+            While filled < probe.Length
+                Dim count As Integer = stream.Read(probe, filled, probe.Length - filled)
+                If count <= 0 Then Exit While
+                filled += count
+            End While
+            If filled < probe.Length Then Array.Resize(probe, filled)
+        End Using
+        Return probe
+    End Function
+
+    ''' <summary>Section 4.1 "Open as Text": this file, this once, whatever its kind; the next file goes by its kind again. A
+    ''' file that looks binary says so first, and is then only looked at. The ordinary read shows it, so what was on screen
+    ''' is let go the way any move to another file lets it go.</summary>
+    Private Async Sub OpenCurrentFileAsText()
+        Dim filePath As String = Current_File_Name
+        If Not CurrentFileOpensAsText() Then Return
+        Dim generation As Integer = media_Generation
+        If Not Await EnsureEntryLocal(filePath) Then Return
+        If IsDisposed OrElse generation <> media_Generation Then Return
+
+        Dim fallback As Integer = modern_Preferences.TextEncodingFallbackCodePage
+        Dim isBinary As Boolean
+        Try
+            isBinary = Await Task.Run(
+                Function()
+                    Dim size As Long = New FileInfo(filePath).Length
+                    Dim probe As Byte() = ReadTextProbe(filePath, size)
+                    Return TextEncodingDetector.Detect(probe, probe.Length, size > probe.Length, fallback).IsBinary
+                End Function)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            Notify(Localization.TF("Не удалось прочитать файл: {0}", FailureText.Describe(ex)), NotifyLevel.Error)
+            Return
+        End Try
+        If IsDisposed OrElse generation <> media_Generation Then Return
+
+        If isBinary Then
+            Dim answer As Integer
+            Using dialog As New Ask_Dialog(AskSpecs.TextOpenBinary(CurrentFileDisplayName(filePath)))
+                DialogLayer.ShowViewerDialog(dialog, Me)
+                answer = dialog.Answer
+            End Using
+            If answer <> AskSpecs.TextOpenBinaryShow OrElse IsDisposed OrElse generation <> media_Generation Then Return
+        End If
+        SlideShowStop()
+        text_Binary_Request = isBinary
+        text_As_Text_Path = filePath
+        ReadShowMediaFile(Mode_SetFile)
+    End Sub
+
+    ''' <summary>The file on screen can be read as text: the reader is on and there is a file behind what is shown, not a
+    ''' stream and not a secure container, whose bytes are not its content.</summary>
+    Private Function CurrentFileOpensAsText() As Boolean
+        If Not FullTextReaderOn() OrElse String.IsNullOrEmpty(Current_File_Name) OrElse IsTextDocumentShown() Then Return False
+        If IsStreamOnScreen() OrElse IsSecureContentOnScreen() OrElse IsSecurePlaceholderLocked() Then Return False
+        Return Not IsSecureContainerExtension(NavigationRules.ExtensionKey(Current_File_Name))
+    End Function
+
+    ''' <summary>The dispatch asks: was this very file asked for as text? The request is answered once.</summary>
+    Private Function TakeOpenAsTextRequest(filePath As String) As Boolean
+        Dim wanted As Boolean = text_As_Text_Path.Length > 0 AndAlso String.Equals(text_As_Text_Path, filePath, StringComparison.OrdinalIgnoreCase)
+        text_As_Text_Path = ""
+        If Not wanted Then text_Binary_Request = False
+        Return wanted
+    End Function
+
     ''' <summary>Reads one window and remembers what numbering and the status line need about it.</summary>
     Private Function ReadTextWindowLines(index As Integer) As TextReaderLines
         Dim previous As Integer = text_Pager.CurrentWindowIndex
         Dim text As String = text_Pager.ReadWindow(index)
+        If text_Binary_View Then text = TextReaderLayout.EscapeControlCharacters(text)
         index = text_Pager.CurrentWindowIndex
         Dim lines As TextReaderLines = TextReaderLayout.BuildLines(text, modern_Preferences.TextTabWidth,
             modern_Preferences.TextWhitespace, index < text_Pager.TotalWindows - 1)
@@ -145,6 +236,13 @@ Partial Public Class Main_Form
         Dim mixed As Boolean
         text_Line_Ending = TextEncodingDetector.DetectLineEnding(text, mixed)
         text_Display_Lines = lines.DisplayLines
+        ' P3.8: the colours of this window, once, here on the load path and bounded (50 ms, 1 MiB). The copy lines
+        ' carry real spaces and the display lines the same columns, so a span fits either. A paged file is not coloured.
+        text_Syntax = Nothing
+        If modern_Preferences.TextSyntaxHighlighting AndAlso Not text_Virtual AndAlso text_Syntax_Language <> TextSyntaxLanguage.None Then
+            Dim colours As TextSyntaxResult = TextSyntaxHighlighter.Highlight(lines.CopyLines, text_Syntax_Language)
+            If colours.Spans.Length > 0 Then text_Syntax = colours
+        End If
         Return lines
     End Function
 
@@ -201,7 +299,10 @@ Partial Public Class Main_Form
         text_Pager = Nothing
         text_Detection = Nothing
         text_Virtual = False
+        text_Binary_View = False
         text_Display_Lines = Nothing
+        text_Syntax = Nothing
+        text_Syntax_Language = TextSyntaxLanguage.None
         text_Line_Ending = LineEndingKind.None
         text_Window_First_Line.Clear()
         text_Window_Terminators.Clear()
@@ -215,7 +316,44 @@ Partial Public Class Main_Form
         text_File_Hit_Index = -1
         text_File_Hits_Capped = False
         text_Pending_Reveal = Nothing
+        text_Pending_Top = Nothing
+        text_Place_Identity = Nothing
         text_Pending_End = False
+    End Sub
+
+    ''' <summary>
+    ''' Section 12.1, <c>TextRememberPosition</c>: the document comes back where it was left. A paged file returns to its
+    ''' window only under the window size it was left with, since the same index is another stretch of the file under another.
+    ''' </summary>
+    Private Sub RestoreTextPlace(filePath As String)
+        text_Place_Identity = DocumentReaderIdentity(filePath, 0L, 0L)
+        If Not modern_Preferences.TextRememberPosition Then Return
+        Dim memory As TextPositionMemory = TextPositionMemory.Current
+        If memory.Diagnostic.Length > 0 Then AppFileLogger.LogMessage("Text position memory: " & memory.Diagnostic)
+        Dim place As TextPlace = memory.Lookup(text_Place_Identity)
+        If place Is Nothing Then Return
+        If place.Window > 0 Then
+            If Not text_Virtual OrElse place.WindowSize <> text_Pager.WindowSize OrElse place.Window >= text_Pager.TotalWindows Then Return
+            ShowTextWindow(place.Window, False)
+        End If
+        text_Pending_Top = New TextPosition(place.Line, place.Column)
+    End Sub
+
+    ''' <summary>The first row in view goes to the memory when the document leaves. A rendered page has no rows of its own and
+    ''' a document never painted has no place yet: both keep the record they had. The write runs on the pool.</summary>
+    Private Sub RememberTextPlace()
+        If text_Place_Identity Is Nothing OrElse Not FullTextReaderShown() OrElse text_Markdown_Page Then Return
+        If modern_Preferences Is Nothing OrElse Not modern_Preferences.TextRememberPosition OrElse text_Rows.Count = 0 Then Return
+        Dim row As TextRow = text_Rows(Math.Max(0, Math.Min(text_Scroll_Offset, text_Rows.Count - 1)))
+        Dim memory As TextPositionMemory = TextPositionMemory.Current
+        memory.Remember(text_Place_Identity, New TextPlace(text_Pager.CurrentWindowIndex, text_Pager.WindowSize, row.Line, row.Start))
+        Task.Run(AddressOf memory.Save)
+    End Sub
+
+    ''' <summary>The last write at exit, on the closing thread: a pool thread does not outlive the process.</summary>
+    Private Sub FlushTextPlaces()
+        If modern_Preferences Is Nothing OrElse Not modern_Preferences.TextRememberPosition Then Return
+        TextPositionMemory.Current.Save()
     End Sub
 
     ''' <summary>The status line under the file name right after the load; a paged file also says why it cannot
@@ -281,6 +419,10 @@ Partial Public Class Main_Form
                 text_Pending_End = False
                 text_Scroll_Offset = Math.Max(0, text_Rows.Count - visibleRows)
             End If
+            If text_Pending_Top.HasValue Then
+                text_Scroll_Offset = TextViewRules.RowOfPlace(text_Rows, text_Pending_Top.Value)
+                text_Pending_Top = Nothing
+            End If
             RevealPendingTextPosition(visibleRows)
             text_Scroll_Offset = Math.Max(0, Math.Min(text_Scroll_Offset, Math.Max(0, text_Total_Lines_Cached - visibleRows)))
 
@@ -314,6 +456,10 @@ Partial Public Class Main_Form
                 matchIndex = TextReaderLayout.FirstMatchFrom(text_Search_Matches, text_Rows(text_Scroll_Offset).Line)
                 If matchIndex >= 0 AndAlso text_Search_Matches(matchIndex).Line < text_Rows(text_Scroll_Offset).Line Then matchIndex = -1
             End If
+
+            ' P3.8: the colours computed at the load (Nothing when off or nothing is coloured). Not for right-to-left
+            ' text: a span's column is a logical place, and a bidi run does not lay out left to right by column.
+            Dim syntax As TextSyntaxResult = If(prefs.TextSyntaxHighlighting AndAlso Not rightToLeft, text_Syntax, Nothing)
 
             Dim saved As Drawing2D.GraphicsState = g.Save()
             g.SetClip(New Rectangle(textLeft, marginY, Math.Max(1, bounds.Width - textLeft), Math.Max(1, visibleRows * rowHeight)))
@@ -353,8 +499,12 @@ Partial Public Class Main_Form
                     End If
                 End If
 
-                TextRenderer.DrawText(g, rowData.Text, font,
-                    New Rectangle(originX, rowTop, contentWidth + text_Horizontal_Offset + marginX, rowHeight), colors.Ink, flags)
+                Dim rowBounds As New Rectangle(originX, rowTop, contentWidth + text_Horizontal_Offset + marginX, rowHeight)
+                If syntax IsNot Nothing AndAlso rowData.Text.Length > 0 AndAlso syntax.SpanCountOf(rowData.Line) > 0 Then
+                    PaintSyntaxRow(g, font, rowData, syntax, colors, rowBounds, flags)
+                Else
+                    TextRenderer.DrawText(g, rowData.Text, font, rowBounds, colors.Ink, flags)
+                End If
 
                 If prefs.TextWhitespace AndAlso (index + 1 >= text_Rows.Count OrElse text_Rows(index + 1).Line <> rowData.Line) Then
                     Dim width As Integer = If(rowData.Text.Length = 0, 0,
@@ -393,6 +543,41 @@ Partial Public Class Main_Form
             End If
         End Using
     End Sub
+
+    ''' <summary>
+    ''' One row drawn as runs: the plain ink between the spans of its line and each span in its kind's ink from the
+    ''' palette. Each run is placed after the measured width of the runs before it (the measure the bands use, no
+    ''' padding), so the row costs one measure per run and nothing is drawn twice. Spans are in columns of the whole
+    ''' line, the row holds the part of the line from <c>rowData.Start</c>.
+    ''' </summary>
+    Private Shared Sub PaintSyntaxRow(g As Graphics, font As Font, rowData As TextRow, syntax As TextSyntaxResult,
+                                      colors As TextReaderPalette, rowBounds As Rectangle, flags As TextFormatFlags)
+        Dim measureFlags As TextFormatFlags = TextFormatFlags.NoPrefix Or TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine
+        Dim text As String = rowData.Text
+        Dim x As Integer = rowBounds.Left
+        Dim cursor As Integer = 0
+        Dim first As Integer = syntax.FirstSpanOf(rowData.Line)
+        For k As Integer = 0 To syntax.SpanCountOf(rowData.Line) - 1
+            Dim span As TextTokenSpan = syntax.Spans(first + k)
+            Dim fromColumn As Integer = Math.Max(cursor, span.Start - rowData.Start)
+            Dim toColumn As Integer = Math.Min(text.Length, span.Start + span.Length - rowData.Start)
+            If toColumn <= fromColumn Then Continue For
+            x = PaintRun(g, font, text, cursor, fromColumn, colors.Ink, x, rowBounds, flags, measureFlags)
+            x = PaintRun(g, font, text, fromColumn, toColumn, colors.TokenInk(span.Kind), x, rowBounds, flags, measureFlags)
+            cursor = toColumn
+        Next
+        PaintRun(g, font, text, cursor, text.Length, colors.Ink, x, rowBounds, flags, measureFlags)
+    End Sub
+
+    ''' <summary>The columns [fromColumn, toColumn) of a row drawn at <paramref name="x"/>; returns where the next run starts.</summary>
+    Private Shared Function PaintRun(g As Graphics, font As Font, rowText As String, fromColumn As Integer, toColumn As Integer,
+                                     ink As Color, x As Integer, rowBounds As Rectangle, flags As TextFormatFlags,
+                                     measureFlags As TextFormatFlags) As Integer
+        If toColumn <= fromColumn Then Return x
+        Dim run As String = rowText.Substring(fromColumn, toColumn - fromColumn)
+        TextRenderer.DrawText(g, run, font, New Rectangle(x, rowBounds.Top, Math.Max(1, rowBounds.Right - x), rowBounds.Height), ink, flags)
+        Return x + TextRenderer.MeasureText(g, run, font, New Size(Integer.MaxValue, rowBounds.Height), measureFlags).Width
+    End Function
 
     ''' <summary>A tint under the columns [fromColumn, toColumn) of a row, measured with the row's font.</summary>
     Private Shared Sub PaintTextBand(g As Graphics, font As Font, rowText As String, fromColumn As Integer, toColumn As Integer,
@@ -508,6 +693,8 @@ Partial Public Class Main_Form
             parts.Add(Localization.TF("Только чтение, часть {0} из {1}: {2} - {3}",
                 (text_Pager.CurrentWindowIndex + 1).ToString(), text_Pager.TotalWindows.ToString(),
                 FormatFileSize(startOffset), FormatFileSize(endOffset)))
+        ElseIf text_Binary_View Then
+            parts.Add(Localization.T("Бинарный файл"))
         ElseIf text_Virtual Then
             parts.Add(Localization.T("Только чтение"))
         Else
@@ -528,12 +715,17 @@ Partial Public Class Main_Form
     ''' The reader's own keys, asked only while a full-reader document is on screen: Ctrl+F finds, F3 and
     ''' Shift+F3 step through the hits, Ctrl+G goes to a line, Ctrl+PageUp/PageDown move between the windows of a
     ''' paged file and Ctrl+Home/End go to its first and last window, Ctrl+Shift+E re-opens the file in another
-    ''' encoding, Ctrl+Shift+S saves the selection as a new file. Shift+wheel scrolls sideways (wrap off). Nothing else is taken, so sorting and navigation keys keep
+    ''' encoding, Ctrl+Shift+S saves the selection as a new file, Ctrl+E edits (only with its opt-in on), Ctrl+Shift+M
+    ''' switches a Markdown file between source and rendered. Shift+wheel scrolls sideways (wrap off). Nothing else is taken, so sorting and navigation keys keep
     ''' their meaning.
     ''' </summary>
     Private Function TryHandleFullReaderKey(e As KeyEventArgs) As Boolean
         If Not FullTextReaderShown() Then Return False
+        If TryHandleTextMarkdownKey(e) Then Return True
         Select Case e.KeyData
+            Case Keys.Control Or Keys.E
+                If Not TextEditingOn() Then Return False
+                BeginTextEdit()
             Case Keys.Control Or Keys.Shift Or Keys.E
                 ReopenTextWithEncoding()
             Case Keys.Control Or Keys.Shift Or Keys.S
@@ -831,6 +1023,11 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Async Sub SaveTextExcerpt()
         If text_Excerpt_Saving OrElse SecureBlocksWritingAction() Then Return
+        ' The screen holds signs for the control bytes, not the file's characters.
+        If text_Binary_View Then
+            Notify(Localization.T("Бинарный файл открыт только для просмотра - править его и сохранять из него выдержки нельзя."), NotifyLevel.Info)
+            Return
+        End If
         If Not HasTextSelection() Then
             Notify(Localization.T("Нечего сохранять - выделите текст мышью или нажмите Ctrl+A"), NotifyLevel.Info)
             Return
@@ -921,6 +1118,7 @@ Partial Public Class Main_Form
     ''' place stay where they were.
     ''' </summary>
     Private Sub ReopenTextWithEncoding()
+        If text_Editing AndAlso Not TextEditorAllowsLeaving(AddressOf ReopenTextWithEncoding) Then Return
         Dim filePath As String = text_Current_File_Path
         Dim probe(TextEncodingChoice.PreviewProbeBytes - 1) As Byte
         Dim filled As Integer = 0
@@ -961,10 +1159,12 @@ Partial Public Class Main_Form
         Dim windowIndex As Integer = text_Pager.CurrentWindowIndex
         Dim scrollOffset As Integer = text_Scroll_Offset
         text_Encoding_Request = chosen
+        text_Binary_Request = text_Binary_View
         LoadTextDocument(filePath)
         If Not FullTextReaderShown() Then Return
         If windowIndex > 0 AndAlso windowIndex < text_Pager.TotalWindows Then ShowTextWindow(windowIndex, False)
         text_Scroll_Offset = scrollOffset
+        text_Pending_Top = Nothing
         GetActivePictureBox()?.Invalidate()
         If chosen = 0 Then
             Notify(Localization.T("Кодировка снова определяется автоматически"), NotifyLevel.Info)

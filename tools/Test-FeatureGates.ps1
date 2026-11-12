@@ -8,7 +8,12 @@
 
       * INCLUDE_EXCHANGE (the exchange server binary in a package) - .github\workflows\release.yml;
       * ExchangeFeatures.Offered (the exchange client features) - src\Exchange\ExchangeFeatures.vb;
-      * LiveBroadcastFeatures.Offered (the PC as a live-broadcast producer) - src\LiveBroadcast\LiveBroadcastFeatures.vb.
+      * LiveBroadcastFeatures.Offered (the PC as a live-broadcast producer) - src\LiveBroadcast\LiveBroadcastFeatures.vb;
+      * ExchangeRemoteAdminFeatures.Offered (the Share Manager administering a Media Exchange Server on
+        another PC, L0278) - src\FastMediaSorterCompanion\Core\RemoteAdmin\ExchangeRemoteAdminFeatures.vb,
+        read by its own line-anchored rule in BOTH directions (docs\specifications\remote-admin-gate-evidence.md:
+        open needs one PASS line for E1 and one for E2; shut forbids any PASS line; suite half
+        RemoteAdminGateGuardTests).
 
     and every other "Const Offered As Boolean" in src (today the Share Manager's broadcasts page,
     159 section 3.2, held by BroadcastWorkerCapabilityTests) are read here, and the rule is one sentence:
@@ -59,8 +64,56 @@ Write-Subject $check "the exchange and live-broadcast gates against their eviden
 $gates = @(
     @{ Name = 'INCLUDE_EXCHANGE';            Evidence = 'exchange-gate-evidence.md' },
     @{ Name = 'ExchangeFeatures.Offered';    Evidence = 'exchange-gate-evidence.md' },
-    @{ Name = 'LiveBroadcastFeatures.Offered'; Evidence = 'live-broadcast-gate-evidence.md' }
+    @{ Name = 'LiveBroadcastFeatures.Offered'; Evidence = 'live-broadcast-gate-evidence.md' },
+    @{ Name = 'ExchangeRemoteAdminFeatures.Offered'; Evidence = 'remote-admin-gate-evidence.md' }
 )
+
+# The remote administration gate (L0278 section 5.10) is read by its own line-anchored rule, in both
+# directions, with the same pattern as its suite half RemoteAdminGateGuardTests: open needs exactly one
+# PASS line for E1 and one for E2 (a calendar date not in the future, one day of allowance for the time
+# zone, and a repo-relative path that exists); shut forbids any PASS line.
+$remoteAdminGate = 'ExchangeRemoteAdminFeatures.Offered'
+$remoteAdminPassLine = '^EVIDENCE (?<id>E\d+) PASS (?<date>\d{4}-\d{2}-\d{2}) (?<who>\S+) (?<path>\S[^\r\n]*?)[ \t\r]*$'
+function Get-RemoteAdminDefects([bool]$offered, [string]$evidencePath, [string]$treeRoot) {
+    $found = [System.Collections.Generic.List[string]]::new()
+    $text = if (Test-Path -LiteralPath $evidencePath) { Get-Content -LiteralPath $evidencePath -Raw } else { $null }
+    $lines = @()
+    if ($null -ne $text) {
+        $lines = @([regex]::Matches($text, $remoteAdminPassLine, [Text.RegularExpressions.RegexOptions]'Multiline, CultureInvariant'))
+    }
+    if (-not $offered) {
+        if ($lines.Count -gt 0) {
+            $found.Add("$remoteAdminGate is False but its evidence file holds $($lines.Count) PASS line(s): evidence that says passed while the gate is shut is a stale file or a forgotten flip")
+        }
+        return $found
+    }
+    if ($null -eq $text) {
+        $found.Add("$remoteAdminGate is True but docs\specifications\remote-admin-gate-evidence.md does not exist")
+        return $found
+    }
+    foreach ($id in 'E1', 'E2') {
+        $count = @($lines | Where-Object { $_.Groups['id'].Value -ceq $id }).Count
+        if ($count -ne 1) { $found.Add("$remoteAdminGate is True and the evidence file needs exactly one PASS line for $id (found $count)") }
+    }
+    $latest = [DateTime]::UtcNow.Date.AddDays(1)
+    foreach ($m in $lines) {
+        $id = $m.Groups['id'].Value
+        if ($id -cne 'E1' -and $id -cne 'E2') { $found.Add("${id}: only E1 and E2 are evidence ids of this gate") }
+        $stamp = [DateTime]::MinValue
+        if (-not [DateTime]::TryParseExact($m.Groups['date'].Value, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$stamp)) {
+            $found.Add("${id}: $($m.Groups['date'].Value) is not a calendar date")
+        } elseif ($stamp.Date -gt $latest) {
+            $found.Add("${id}: $($m.Groups['date'].Value) is in the future")
+        }
+        $relative = $m.Groups['path'].Value
+        if ([IO.Path]::IsPathRooted($relative) -or $relative -match '(^|[\\/])\.\.([\\/]|$)') {
+            $found.Add("${id}: the evidence path must be repo-relative (not rooted, no ..): $relative")
+        } elseif (-not (Test-Path -LiteralPath (Join-Path $treeRoot $relative))) {
+            $found.Add("${id}: the evidence path does not exist: $relative")
+        }
+    }
+    return $found
+}
 
 # --- the packaging gate: INCLUDE_EXCHANGE in the release workflow -------------------------------
 $workflow = Join-Path $root '.github\workflows\release.yml'
@@ -81,6 +134,7 @@ $open['INCLUDE_EXCHANGE'] = ($includeMatches[0].Groups[1].Value -eq 'true')
 $known = @{}
 $known['src\Exchange\ExchangeFeatures.vb'] = 'ExchangeFeatures.Offered'
 $known['src\LiveBroadcast\LiveBroadcastFeatures.vb'] = 'LiveBroadcastFeatures.Offered'
+$known['src\FastMediaSorterCompanion\Core\RemoteAdmin\ExchangeRemoteAdminFeatures.vb'] = 'ExchangeRemoteAdminFeatures.Offered'
 # Offer switches that are already shipped and are NOT gates of the 206 table. Each row names the test
 # that holds the switch to its other half; this is a registry, not an allowance - a switch in neither
 # table is a defect, and removing the shipped feature's switch means removing its row here.
@@ -112,8 +166,15 @@ $problems = [System.Collections.Generic.List[string]]::new()
 $shut = [System.Collections.Generic.List[string]]::new()
 $opened = [System.Collections.Generic.List[string]]::new()
 foreach ($g in $gates) {
-    if (-not $open[$g.Name]) { $shut.Add($g.Name); continue }
     $evidencePath = Join-Path (Join-Path $root 'docs\specifications') $g.Evidence
+    if ($g.Name -eq $remoteAdminGate) {
+        $before = $problems.Count
+        foreach ($p in (Get-RemoteAdminDefects ([bool]$open[$g.Name]) $evidencePath $root)) { $problems.Add($p) }
+        if ($problems.Count -gt $before) { continue }
+        if ($open[$g.Name]) { $opened.Add($g.Name) } else { $shut.Add($g.Name) }
+        continue
+    }
+    if (-not $open[$g.Name]) { $shut.Add($g.Name); continue }
     if (-not (Test-Path -LiteralPath $evidencePath)) {
         $problems.Add("$($g.Name) is open but docs\specifications\$($g.Evidence) does not exist - opening a gate needs the owner's word and an evidence file naming the rung and the date")
         continue

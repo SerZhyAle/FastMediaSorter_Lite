@@ -1470,6 +1470,48 @@ Partial Public NotInheritable Class Localization
             "کلپ بورڈ کسی دوسرے پروگرام کے استعمال میں ہے",
             "剪贴板正被其他程序占用")
 
+        Add("Текст в буфере обмена слишком велик",
+            "The text on the clipboard is too large",
+            "Текст у буфері обміну завеликий",
+            "Der Text in der Zwischenablage ist zu groß",
+            "Il testo negli appunti è troppo grande",
+            "El texto del portapapeles es demasiado grande",
+            "Le texte du presse-papiers est trop volumineux",
+            "O texto da área de transferência é grande demais",
+            "النص الموجود في الحافظة كبير جدًا",
+            "क्लिपबोर्ड का टेक्स्ट बहुत बड़ा है",
+            "ক্লিপবোর্ডের টেক্সট খুব বড়",
+            "کلپ بورڈ کا متن بہت بڑا ہے",
+            "剪贴板中的文本过大")
+
+        Add("Операция с буфером обмена уже идёт.",
+            "A clipboard operation is already running.",
+            "Операція з буфером обміну вже триває.",
+            "Ein Vorgang mit der Zwischenablage läuft bereits.",
+            "Un'operazione con gli appunti è già in corso.",
+            "Ya hay una operación con el portapapeles en curso.",
+            "Une opération sur le presse-papiers est déjà en cours.",
+            "Já há uma operação com a área de transferência em andamento.",
+            "هناك عملية على الحافظة قيد التنفيذ بالفعل.",
+            "क्लिपबोर्ड का एक ऑपरेशन पहले से चल रहा है।",
+            "ক্লিপবোর্ডের একটি অপারেশন ইতিমধ্যে চলছে।",
+            "کلپ بورڈ کا ایک عمل پہلے سے جاری ہے۔",
+            "已有一项剪贴板操作正在进行。")
+
+        Add("Программа, которой принадлежит буфер обмена, не ответила вовремя. Подождите немного и попробуйте ещё раз.",
+            "The program that owns the clipboard did not answer in time. Wait a moment and try again.",
+            "Програма, якій належить буфер обміну, не відповіла вчасно. Зачекайте трохи й спробуйте ще раз.",
+            "Das Programm, dem die Zwischenablage gehört, hat nicht rechtzeitig geantwortet. Warten Sie einen Moment und versuchen Sie es erneut.",
+            "Il programma che possiede gli appunti non ha risposto in tempo. Attendi un momento e riprova.",
+            "El programa que posee el portapapeles no respondió a tiempo. Espere un momento e inténtelo de nuevo.",
+            "Le programme qui détient le presse-papiers n'a pas répondu à temps. Patientez un instant et réessayez.",
+            "O programa que detém a área de transferência não respondeu a tempo. Aguarde um momento e tente novamente.",
+            "لم يستجب البرنامج الذي يمتلك الحافظة في الوقت المناسب. انتظر قليلًا ثم حاول مرة أخرى.",
+            "क्लिपबोर्ड का स्वामी प्रोग्राम समय पर जवाब नहीं दे सका। थोड़ा रुकें और फिर से प्रयास करें।",
+            "ক্লিপবোর্ডের মালিক প্রোগ্রামটি সময়মতো সাড়া দেয়নি। একটু অপেক্ষা করে আবার চেষ্টা করুন।",
+            "کلپ بورڈ کا مالک پروگرام بروقت جواب نہیں دے سکا۔ ذرا انتظار کریں اور دوبارہ کوشش کریں۔",
+            "占用剪贴板的程序没有及时响应。请稍候再试。")
+
         Add("Подключение телефона",
             "Phone connection",
             "Підключення телефону",

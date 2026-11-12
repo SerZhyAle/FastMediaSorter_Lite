@@ -923,6 +923,8 @@ Partial Public Class Main_Form
     Private Sub ExecuteRecipientAction(ByVal move_Slot_index As Integer, ByVal action As RecipientActionKind)
         If Not IsRecipientSlotConfigured(move_Slot_index) Then Return
 #If Not NETFRAMEWORK Then
+        ' Specification 277: a file with unsaved edits is not moved out from under them.
+        If Not TextEditorAllowsLeaving(Sub() ExecuteRecipientAction(move_Slot_index, action)) Then Return
         ' A slot may name a folder of a saved resource (007 §4.2) - "sftp://user@host:port/folder".
         ' Everything below works on it through SlotPaths and the slot connections: the gate dials and
         ' probes it, the transfer is the staged, content-verified one of the provider layer.

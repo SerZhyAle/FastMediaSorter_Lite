@@ -1,5 +1,5 @@
 {
-  "_exchangeMark": { "asset": "assets/exchange-mark/svg/exchange-mark-small.svg", "door": 3 },
+  "_exchangeMark": { "asset": "assets/exchange-mark/svg/exchange-mark-small.svg", "door": 4 },
   "_comment": [
     "Source of truth for the per-language first pages of the site.",
     "tools/Build-SitePages.ps1 renders lang/<code>/index.html from this - edit THIS",
@@ -9,16 +9,20 @@
     "Keys are the ISO 639-1 codes of the 13 UI languages. 'dir' is rtl for ar/ur.",
     "'machine' marks a locale whose copy is a machine translation and says so on the",
     "page itself - EN/RU/UK are proofread by the author, the other ten are not.",
+    "'ogLocale' is the language's Open Graph locale, ll_CC (ticket L0207 F49, owner map of",
+    "2026-11-10): og:locale and og:locale:alternate of every page in that language.",
     "",
     "'_howto' is deliberately NOT per language: the HOW TO guides themselves exist in",
-    "English and Russian only, so translating the link labels into the other eleven",
-    "would promise a page that does not exist. The block renders in English on every",
-    "language page and says which languages the guides are written in."
+    "English, Russian and Ukrainian only, so translating the link labels into the other",
+    "ten would promise a page that does not exist. The block renders in English (lang=en,",
+    "dir=ltr) on those ten pages and says which languages the guides are written in; on",
+    "lang/ru/ and lang/uk/ it renders from the ru and ua blocks inside _howto, in the",
+    "page's own language."
   ],
 
   "_howto": {
     "title": "HOW TO",
-    "note": "Step-by-step guides. The guide pages themselves are in English and Russian.",
+    "note": "Step-by-step guides. The guide pages themselves are in English, Russian and Ukrainian.",
     "portal": {
       "_comment": "The shared media-exchange portal of the product family (the Android site). An absolute address on another origin, so it is NOT an item of the list below - those are repository pages, checked on disk and offered by the 404 page. Rendered as one extra HOW TO entry and one footer link, opening in a new tab. Link only the start page here; the portal page about the exchange server is never linked from a Windows-site surface (SITE-REPRESENTATION rule 4).",
       "label": "Media exchange between your devices (portal)",
@@ -35,9 +39,150 @@
       ["docs/how-to-resources.html",         "Open a server or a network share like a folder"],
       ["docs/how-to-filedo-disks.html",      "Share FileDO .fdd virtual disks"],
       ["publish-folders-android.html",  "Share folders to Android over SFTP"]
-    ]
+    ],
+    "_localized": "Russian (ru) and Ukrainian (ua; the page directory is lang/uk/) forms of the block, used by lang/ru/ and lang/uk/ only (ticket L0207 F15). The wording is the author's own copy of the trilingual landing index.html. labels is keyed by the item path above, and Render stops when an item has no label; the portal block repeats the label, the footer label and the address of the portal page in that language; footer holds the labels of the Documentation row of the page footer and techLinks the Privacy, licence and GitHub row above it.",
+    "ru": {
+      "title": "HOW TO - как это делается",
+      "note": "Пошаговые инструкции. Сами страницы инструкций - на английском, русском и украинском.",
+      "labels": {
+        "docs/how-to-viewer.html": "Просмотр и сортировка медиафайлов",
+        "docs/how-to-keys.html": "Клавиши, масштаб и полный экран",
+        "docs/how-to-setup.html": "Просмотрщик по умолчанию, язык, правила для файлов",
+        "docs/how-to-ocr.html": "Распознать и перевести текст на картинке",
+        "docs/how-to-editor.html": "Порисовать на фото и обрезать его",
+        "docs/how-to-archives.html": "Читать ZIP или CBZ как папку",
+        "docs/how-to-resources.html": "Открыть сервер или сетевую папку как папку",
+        "docs/how-to-filedo-disks.html": "Общий доступ к дискам FileDO .fdd",
+        "publish-folders-android.html": "Публикация выбранных папок ПК по SFTP"
+      },
+      "portal": {
+        "label": "Обмен медиа между вашими устройствами: домашняя сеть, ПК-сервер, прямые эфиры",
+        "footer": "Портал обмена медиа",
+        "url": "https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-ru.html"
+      },
+      "footer": {
+        "title": "Документация и справка",
+        "guides": "Инструкции",
+        "topics": "Темы",
+        "glossary": "Глоссарий",
+        "windowHelp": "Справка по окнам",
+        "privacy": "Конфиденциальность",
+        "whatsNew": "Что нового",
+        "support": "Поддержка",
+        "issues": "Сообщить о проблеме"
+      },
+      "techLinks": {
+        "privacy": "Политика конфиденциальности",
+        "license": "Лицензия MIT",
+        "github": "Исходный код (GitHub)"
+      }
+    },
+    "ua": {
+      "title": "HOW TO - як це робиться",
+      "note": "Покрокові інструкції. Самі сторінки інструкцій - англійською, російською та українською.",
+      "labels": {
+        "docs/how-to-viewer.html": "Перегляд і сортування медіафайлів",
+        "docs/how-to-keys.html": "Клавіші, масштаб і повний екран",
+        "docs/how-to-setup.html": "Переглядач за умовчанням, мова, правила для файлів",
+        "docs/how-to-ocr.html": "Розпізнати й перекласти текст на картинці",
+        "docs/how-to-editor.html": "Помалювати на фото й обрізати його",
+        "docs/how-to-archives.html": "Читати ZIP або CBZ як папку",
+        "docs/how-to-resources.html": "Відкрити сервер або мережеву теку як теку",
+        "docs/how-to-filedo-disks.html": "Спільний доступ до дисків FileDO .fdd",
+        "publish-folders-android.html": "Публікація вибраних папок ПК через SFTP"
+      },
+      "portal": {
+        "label": "Обмін медіа між вашими пристроями: домашня мережа, ПК-сервер, прямі ефіри",
+        "footer": "Портал обміну медіа",
+        "url": "https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html"
+      },
+      "footer": {
+        "title": "Документація та довідка",
+        "guides": "Інструкції",
+        "topics": "Теми",
+        "glossary": "Глосарій",
+        "windowHelp": "Довідка до вікон",
+        "privacy": "Конфіденційність",
+        "whatsNew": "Що нового",
+        "support": "Підтримка",
+        "issues": "Повідомити про проблему"
+      },
+      "techLinks": {
+        "privacy": "Політика конфіденційності",
+        "license": "Ліцензія MIT",
+        "github": "Вихідний код (GitHub)"
+      }
+    }
   },
 
+  "_pages": {
+    "_comment": "The head copy of the one-source pages that have a page per language (ticket L0207 F1/F10/F16; the eight docs/how-to-*.html guides since ticket L0301):the title job word (the page title is the job, then the title separator and suffix of tools/site-facts.json, like `pageTitle` of a locale) and the description, in en, ru and uk. tools/Build-SitePages.ps1 RenderSitePage writes docs/privacy.html, topics.html and glossary.html (English) and lang/ru/ and lang/uk/ pages of the same names out of tools/site-pages/<name>.src.html; the visible body words stay in the source (data-l blocks), only the head is read from here. The product name is Latin in every language.",
+    "privacy": {
+      "en": { "job": "Privacy Policy", "desc": "Privacy policy of Fast Media Sorter & Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on." },
+      "ru": { "job": "Политика конфиденциальности", "desc": "Политика конфиденциальности Fast Media Sorter & Sharing for Windows: работает на вашем устройстве, без персональных данных и телеметрии; сеть - только для функций, которые вы включаете." },
+      "uk": { "job": "Політика конфіденційності", "desc": "Політика конфіденційності Fast Media Sorter & Sharing for Windows: працює на вашому пристрої, без персональних даних і телеметрії; мережа - лише для функцій, які ви вмикаєте." }
+    },
+    "topics": {
+      "en": { "job": "Topics: every task on one page", "desc": "Every Fast Media Sorter & Sharing for Windows guide and reference page, from a first look at the viewer to SFTP sharing and the always-on server edition." },
+      "ru": { "job": "Темы: любая задача на одной странице", "desc": "Все инструкции и справочные страницы Fast Media Sorter & Sharing for Windows: от первого знакомства с просмотрщиком до раздачи по SFTP и серверной редакции, которая работает постоянно." },
+      "uk": { "job": "Теми: будь-яке завдання на одній сторінці", "desc": "Усі посібники та довідкові сторінки Fast Media Sorter & Sharing for Windows: від першого знайомства з переглядачем до роздачі по SFTP і серверної редакції, що працює постійно." }
+    },
+    "glossary": {
+      "en": { "job": "Glossary: the words we use", "desc": "What Fast Media Sorter & Sharing for Windows means by Share Manager, destination folder, NumPad and its other terms - the same words in every language." },
+      "ru": { "job": "Глоссарий: слова, которыми мы пользуемся", "desc": "Что Fast Media Sorter & Sharing for Windows называет Менеджером общего доступа, папкой-получателем, NumPad и другими терминами - одни и те же слова на всех языках." },
+      "uk": { "job": "Глосарій: слова, якими ми користуємося", "desc": "Що Fast Media Sorter & Sharing for Windows називає Менеджером спільного доступу, текою-отримувачем, NumPad та іншими термінами - одні й ті самі слова всіма мовами." }
+    },
+    "how-to-archives": {
+      "en": { "job": "ZIP, CBZ, 7z, RAR as a folder", "desc": "Open a ZIP, CBZ, 7z, RAR or CBR archive in Fast Media Sorter & Sharing for Windows and page through the pictures inside without unpacking it first." },
+      "ru": { "job": "ZIP, CBZ, 7z, RAR как папка", "desc": "Откройте ZIP, CBZ, 7z, RAR или CBR в Fast Media Sorter & Sharing for Windows и листайте картинки внутри, не распаковывая архив." },
+      "uk": { "job": "ZIP, CBZ, 7z, RAR як тека", "desc": "Відкрийте ZIP, CBZ, 7z, RAR або CBR у Fast Media Sorter & Sharing for Windows і гортайте зображення всередині, не розпаковуючи архів." }
+    },
+    "how-to-keys": {
+      "en": { "job": "Keys, zoom and full screen", "desc": "The full keyboard and mouse map of Fast Media Sorter & Sharing for Windows: navigation, sorting, zoom, full screen, slideshow and video keys." },
+      "ru": { "job": "Клавиши, масштаб, полный экран", "desc": "Все клавиши и действия мыши в Fast Media Sorter & Sharing for Windows: переходы, сортировка, масштаб, полный экран, слайдшоу и видео." },
+      "uk": { "job": "Клавіші, масштаб, повний екран", "desc": "Усі клавіші та дії миші у Fast Media Sorter & Sharing for Windows: переходи, сортування, масштаб, повний екран, слайд-шоу та відео." }
+    },
+    "how-to-editor": {
+      "en": { "job": "Draw on a photo and crop it", "desc": "Mark up a picture, crop it and write the result back to disk with the built-in image editor of Fast Media Sorter & Sharing for Windows." },
+      "ru": { "job": "Пометки и обрезка фото", "desc": "Пометьте картинку, обрежьте её и сохраните результат на диск во встроенном редакторе Fast Media Sorter & Sharing for Windows." },
+      "uk": { "job": "Позначки й обрізання фото", "desc": "Позначте зображення, обріжте його й збережіть результат на диск у вбудованому редакторі Fast Media Sorter & Sharing for Windows." }
+    },
+    "how-to-ocr": {
+      "en": { "job": "Translate text on a picture", "desc": "Recognize the text on a photo or a screenshot and show its translation over the image, with a translator that runs on your own PC." },
+      "ru": { "job": "Перевод текста на картинке", "desc": "Распознайте текст на фото или скриншоте и покажите его перевод поверх изображения - переводчиком, который работает на вашем ПК." },
+      "uk": { "job": "Переклад тексту на зображенні", "desc": "Розпізнайте текст на фото чи знімку екрана й покажіть його переклад поверх зображення - перекладачем, що працює на вашому ПК." }
+    },
+    "how-to-resources": {
+      "en": { "job": "Open a server like a folder", "desc": "Open an SFTP server or a network share with a login as an ordinary folder in Fast Media Sorter & Sharing for Windows; the server key is pinned." },
+      "ru": { "job": "Сервер как обычная папка", "desc": "Откройте SFTP-сервер или сетевую папку с паролем как обычную папку в Fast Media Sorter & Sharing for Windows; ключ сервера закреплён." },
+      "uk": { "job": "Сервер як звичайна тека", "desc": "Відкрийте SFTP-сервер або мережеву теку з паролем як звичайну теку у Fast Media Sorter & Sharing for Windows; ключ сервера закріплено." }
+    },
+    "how-to-viewer": {
+      "en": { "job": "Viewer guide", "desc": "A practical guide to reviewing, sorting and managing photos and video with Fast Media Sorter & Sharing for Windows." },
+      "ru": { "job": "Просмотр и сортировка", "desc": "Практическое руководство: просмотр, сортировка и работа с фото и видео в Fast Media Sorter & Sharing for Windows." },
+      "uk": { "job": "Перегляд і сортування", "desc": "Практичний посібник: перегляд, сортування й робота з фото та відео у Fast Media Sorter & Sharing for Windows." }
+    },
+    "how-to-setup": {
+      "en": { "job": "Setup: viewer, language, rules", "desc": "Make Fast Media Sorter the default viewer for your pictures and video, choose the interface language, and set what happens to files as you sort them." },
+      "ru": { "job": "Настройка: язык и правила", "desc": "Сделайте Fast Media Sorter просмотрщиком картинок и видео по умолчанию, выберите язык интерфейса и решите, что происходит с файлами при разборе." },
+      "uk": { "job": "Налаштування: мова й правила", "desc": "Зробіть Fast Media Sorter типовим переглядачем зображень і відео, виберіть мову інтерфейсу й вирішіть, що відбувається з файлами під час розбору." }
+    },
+    "how-to-filedo-disks": {
+      "en": { "job": "Share FileDO .fdd Disks", "desc": "How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter & Sharing for Windows, setup, autostart and troubleshooting." },
+      "ru": { "job": "Диски FileDO .fdd на телефоне", "desc": "Как открыть виртуальные диски FileDO .fdd сопряжённым телефонам по SFTP в Fast Media Sorter & Sharing for Windows: настройка, автозапуск, неполадки." },
+      "uk": { "job": "Диски FileDO .fdd на телефоні", "desc": "Як відкрити віртуальні диски FileDO .fdd сполученим телефонам через SFTP у Fast Media Sorter & Sharing for Windows: налаштування, автозапуск, негаразди." }
+    },
+    "server": {
+      "en": { "job": "Always-on Folder Share Server", "desc": "Share this PC's folders to Android over SFTP: signed in with the full package, or always on with the Server edition - a Windows service that serves from boot." },
+      "ru": { "job": "Постоянная раздача папок", "desc": "Раздайте папки этого ПК на Android по SFTP: при входе в систему с полным пакетом или постоянно с серверной редакцией - службой Windows, работающей с загрузки." },
+      "uk": { "job": "Постійна роздача тек", "desc": "Роздайте теки цього ПК на Android через SFTP: під час входу з повним пакетом або постійно із серверною редакцією - службою Windows, що працює від завантаження." }
+    },
+    "publish-folders-android": {
+      "en": { "job": "Publish folders for Android", "desc": "Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app." },
+      "ru": { "job": "Публикация папок для Android", "desc": "Откройте папки ПК приложению для Android по локальной сети или через интернет. Пошаговая инструкция по Менеджеру общего доступа." },
+      "uk": { "job": "Публікація тек для Android", "desc": "Відкрийте теки ПК застосунку для Android у локальній мережі або через інтернет. Покрокова інструкція з Менеджером спільного доступу." }
+    }
+  },
   "_notFound": {
     "_comment": "The not-found page (404.html, SITE-STRUCTURE rule 15, ticket 149). Core three only: en, ru, ua. The page is noindex and is not in the sitemap or the search index. Guide titles come from _howto.",
     "metaDesc": "The address you opened is not on this site. Start from the program page, the subject index or the guides.",
@@ -50,7 +195,7 @@
       "topicsTitle": "Every task, from one page",
       "topicsText": "The subject index: every guide and reference page, grouped by what you want to do.",
       "guidesTitle": "Guides",
-      "guidesNote": "Step-by-step guides. The guide pages themselves are in English and Russian.",
+      "guidesNote": "Step-by-step guides. The guide pages themselves are in English, Russian and Ukrainian.",
       "download": "Download",
       "skip": "Skip to main content",
       "nav": "Main navigation"
@@ -64,7 +209,7 @@
       "topicsTitle": "Любая задача - с одной страницы",
       "topicsText": "Предметный указатель: все инструкции и справочные страницы, собранные по тому, что вы хотите сделать.",
       "guidesTitle": "Инструкции",
-      "guidesNote": "Пошаговые инструкции. Сами страницы инструкций - на английском и русском.",
+      "guidesNote": "Пошаговые инструкции. Сами страницы инструкций - на английском, русском и украинском.",
       "download": "Скачать",
       "skip": "Перейти к основному содержимому",
       "nav": "Основная навигация"
@@ -78,7 +223,7 @@
       "topicsTitle": "Будь-яке завдання - з однієї сторінки",
       "topicsText": "Предметний покажчик: усі інструкції та довідкові сторінки, зібрані за тим, що ви хочете зробити.",
       "guidesTitle": "Інструкції",
-      "guidesNote": "Покрокові інструкції. Самі сторінки інструкцій - англійською та російською.",
+      "guidesNote": "Покрокові інструкції. Самі сторінки інструкцій - англійською, російською та українською.",
       "download": "Завантажити",
       "skip": "Перейти до основного вмісту",
       "nav": "Основна навігація"
@@ -88,6 +233,7 @@
   "_support": {
     "_comment": "Copy of the generated Support page, support.html (ticket 207 T-5, Q207-3; DOCUMENTATION_CONCEPT section 4). In-page trilingual (en, ru, ua) like the not-found page. {email} becomes the contact link (_contact.email, SITE-FAMILY-MAP rule 3). The wording of 'What to expect' is the author's to confirm: it promises nothing but an honest absence of promise.",
     "short": { "en": "Support", "ru": "Поддержка", "ua": "Підтримка" },
+    "tracker": { "en": "Issue tracker", "ru": "Трекер задач", "ua": "Трекер задач" },
     "desc": {
       "en": "How to get help with Fast Media Sorter & Sharing for Windows: the issue tracker, e-mail, what to include and what to expect.",
       "ru": "Как получить помощь по Fast Media Sorter & Sharing for Windows: трекер задач, почта, что приложить и чего ждать.",
@@ -191,11 +337,12 @@
     "_comment": "Labels for the component x package matrix rendered into server.html (region gen:matrix) by tools/Build-SitePages.ps1. The cells themselves are not here: they are the 'availability' block of tools/site-facts.json, each with the packaging files that prove it, and tools/Test-SitePositioning.ps1 holds both. The three languages are the ones the hand-authored pages carry; the keys must be the same in all three.",
     "en": {
       "title": "What each package installs",
-      "lead": "Three optional parts, four packages. Ticked means the wizard ticks it for you; off until you switch it on means the files are there but nothing listens until you turn sharing on. The Media Exchange Server row says Not in this package in every column: it is a server you run yourself.",
+      "lead": "Four optional parts, four packages. Ticked means the wizard ticks it for you; off until you switch it on means the files are there but nothing listens until you turn sharing on. The Media Exchange Server row says Not in this package in every column: it is a server you run yourself.",
       "corner": "Part",
       "components": {
         "viewer": "Media and file manager",
-        "share": "Local sharing and scheduling",
+        "share": "Local sharing",
+        "scheduled": "Scheduled file operations (installed with the Share Manager)",
         "filedo": "FileDO disk hosting (a capability of sharing)",
         "exchange": "Media Exchange Server"
       },
@@ -217,6 +364,7 @@
       "factsHead": ["", "Installer, ZIP, winget (full package)", "Microsoft Store", "Server edition"],
       "facts": [
         ["Where sharing runs", "The Share Manager, in your session (it can hand sharing to a Windows service later)", "The Share Manager, in your session; no Windows service, because a Store package cannot register one", "A Windows service that starts with Windows, with nobody signed in"],
+        ["Where scheduled operations run", "The Share Manager, in your signed-in session", "The Share Manager, in your signed-in session", "The Share Manager, in the signed-in session - never in the Windows service"],
         ["To install", "No administrator rights (per user)", "From the Store", "Administrator rights"],
         ["To switch sharing on", "Choose folders; one administrator approval for the firewall rule", "Choose folders; the package declares the firewall rule of its worker", "Choose folders; the installer already set up the service and the firewall rule"],
         ["Windows floor", "Windows 10 1607 for sharing; Windows 7/8.1 and 32-bit Windows get the viewer only", "Windows 10 1809", "Windows 10 1607, 64-bit"]
@@ -225,11 +373,12 @@
     },
     "ru": {
       "title": "Что ставит каждый пакет",
-      "lead": "Три необязательные части, четыре пакета. «Отмечено» значит, что установщик отмечает часть сам; «выключено, пока не включите» значит, что файлы лежат рядом, но ничего не слушает сеть, пока вы не включите раздачу. В строке Media Exchange Server в каждом столбце написано «В этом пакете нет»: этот сервер вы запускаете сами.",
+      "lead": "Четыре необязательные части, четыре пакета. «Отмечено» значит, что установщик отмечает часть сам; «выключено, пока не включите» значит, что файлы лежат рядом, но ничего не слушает сеть, пока вы не включите раздачу. В строке Media Exchange Server в каждом столбце написано «В этом пакете нет»: этот сервер вы запускаете сами.",
       "corner": "Часть",
       "components": {
         "viewer": "Медиа- и файловый менеджер",
-        "share": "Локальная раздача и расписания",
+        "share": "Локальная раздача",
+        "scheduled": "Файловые операции по расписанию (устанавливаются вместе с Менеджером общего доступа)",
         "filedo": "Хостинг дисков FileDO (возможность раздачи)",
         "exchange": "Media Exchange Server"
       },
@@ -251,6 +400,7 @@
       "factsHead": ["", "Установщик, ZIP, winget (полный пакет)", "Microsoft Store", "Серверная редакция"],
       "facts": [
         ["Где работает раздача", "Менеджер общего доступа, в вашем сеансе (позже может передать раздачу службе Windows)", "Менеджер общего доступа, в вашем сеансе; службы Windows нет, потому что пакет Store не может её зарегистрировать", "Служба Windows, которая стартует вместе с Windows, когда никто не вошёл"],
+        ["Где работают файловые операции по расписанию", "Менеджер общего доступа, в вашем сеансе входа", "Менеджер общего доступа, в вашем сеансе входа", "Менеджер общего доступа, в сеансе входа, но не в службе Windows"],
         ["Установка", "Права администратора не нужны (на пользователя)", "Из Store", "Нужны права администратора"],
         ["Включение раздачи", "Выберите папки; одно подтверждение администратора для правила брандмауэра", "Выберите папки; пакет сам объявляет правило брандмауэра для своего воркера", "Выберите папки; службу и правило брандмауэра установщик уже создал"],
         ["Минимальная Windows", "Windows 10 1607 для раздачи; Windows 7/8.1 и 32-разрядная Windows получают только просмотрщик", "Windows 10 1809", "Windows 10 1607, 64-разрядная"]
@@ -259,11 +409,12 @@
     },
     "uk": {
       "title": "Що встановлює кожен пакет",
-      "lead": "Три необов'язкові частини, чотири пакети. «Позначено» означає, що інсталятор позначає частину сам; «вимкнено, доки не ввімкнете» означає, що файли лежать поруч, але нічого не слухає мережу, доки ви не ввімкнете роздачу. У рядку Media Exchange Server в кожному стовпці написано «У цьому пакеті немає»: цей сервер ви запускаєте самі.",
+      "lead": "Чотири необов'язкові частини, чотири пакети. «Позначено» означає, що інсталятор позначає частину сам; «вимкнено, доки не ввімкнете» означає, що файли лежать поруч, але нічого не слухає мережу, доки ви не ввімкнете роздачу. У рядку Media Exchange Server в кожному стовпці написано «У цьому пакеті немає»: цей сервер ви запускаєте самі.",
       "corner": "Частина",
       "components": {
         "viewer": "Медіа- та файловий менеджер",
-        "share": "Локальна роздача та розклади",
+        "share": "Локальна роздача",
+        "scheduled": "Файлові операції за розкладом (встановлюються разом із Менеджером спільного доступу)",
         "filedo": "Хостинг дисків FileDO (можливість роздачі)",
         "exchange": "Media Exchange Server"
       },
@@ -285,12 +436,23 @@
       "factsHead": ["", "Інсталятор, ZIP, winget (повний пакет)", "Microsoft Store", "Серверна редакція"],
       "facts": [
         ["Де працює роздача", "Менеджер спільного доступу, у вашому сеансі (пізніше може передати роздачу службі Windows)", "Менеджер спільного доступу, у вашому сеансі; служби Windows немає, бо пакет Store не може її зареєструвати", "Служба Windows, яка стартує разом із Windows, коли ніхто не ввійшов"],
+        ["Де працюють файлові операції за розкладом", "Менеджер спільного доступу, у вашому сеансі входу", "Менеджер спільного доступу, у вашому сеансі входу", "Менеджер спільного доступу, у сеансі входу, але не в службі Windows"],
         ["Встановлення", "Права адміністратора не потрібні (на користувача)", "Зі Store", "Потрібні права адміністратора"],
         ["Увімкнення роздачі", "Виберіть теки; одне підтвердження адміністратора для правила брандмауера", "Виберіть теки; пакет сам оголошує правило брандмауера для свого воркера", "Виберіть теки; службу й правило брандмауера інсталятор уже створив"],
         ["Мінімальна Windows", "Windows 10 1607 для роздачі; Windows 7/8.1 та 32-розрядна Windows отримують лише переглядач", "Windows 10 1809", "Windows 10 1607, 64-розрядна"]
       ],
       "notes": "За замовчуванням кожна необов'язкова частина вимкнена під час роботи: нічого не слухає, правила брандмауера немає, а службу не зареєстровано, доки ви не попросите. Обравши менеджер, сервер не потрібен; обравши сервер, не потрібен менеджер. Таблиця описує пакети, як вони збираються з поточних вихідних кодів; на сторінці релізів лежить останній опублікований реліз, а в «Що нового» вказано, у якій версії з'явилася кожна частина."
     }
+  },
+  "_serverDownload": {
+    "_about": "The gen:server-download region of server.html (ticket 207 F31): `{0}` is the Server setup's asset name of tools/release-manifest.json, a backtick pair is code.",
+    "lead": {
+      "en": "Download `{0}` from the latest release and run it as administrator. Each release ships a `.sha256` sidecar next to the installer - verify it before running:",
+      "ru": "Скачайте `{0}` из последнего релиза и запустите от имени администратора. К каждому релизу прилагается файл `.sha256` - проверьте его перед запуском:",
+      "ua": "Завантажте `{0}` з останнього релізу й запустіть від імені адміністратора. До кожного релізу додається файл `.sha256` поруч з інсталятором - перевірте його перед запуском:"
+    },
+    "button": { "en": "Server setup (.exe)", "ru": "Серверный установщик (.exe)", "ua": "Серверний інсталятор (.exe)" },
+    "all": { "en": "All releases", "ru": "Все релизы", "ua": "Усі релізи" }
   },
   "_channels": {
     "store": {
@@ -403,10 +565,11 @@
   },
 
   "en": {
-    "dir": "ltr", "machine": false, "name": "English",
+    "dir": "ltr", "ogLocale": "en_US", "machine": false, "name": "English",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Photo & video sorting",
+    "pageTitle": "File manager for Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: sort photos and videos with one key per file",
+    "heroShotAlt": "The viewer window: a photo, the toolbar above it and the file name, date and size below it",
     "outcome": "Sort photos and videos with one key per file",
     "tagline": "Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key.",
     "sharing": "«Sharing» in the name means giving your media to someone else: your Android phone, another copy of the program or any SFTP client. It stays off until you switch it on.",
@@ -440,15 +603,16 @@
     "guide": "Full guide (English)",
     "serverLink": "Always-on Folder Share Server",
     "docsLink": "Documentation",
-    "family": "Three optional parts: a media and file manager that views and sorts photos and videos with one key and manages files in local folders, on servers and on connected devices; a local sharing and scheduling service that shares folders over SFTP, runs file operations on a schedule and connects this PC to an exchange account; and a Media Exchange Server that you run yourself, through which your devices reach each other - start with the manager or with the folder-sharing server, and add the rest only if you want it.",
-    "doorsTitle": "Two ways in, three optional parts",
-    "doorsLead": "Start where you are: with the media and file manager, or with the folder-sharing server. Each part is optional, and the Media Exchange Server is the one you run yourself.",
+    "family": "Four optional parts: a media and file manager that views and sorts photos and videos with one key and manages files in local folders, on servers and on connected devices; a local sharing service that shares folders over SFTP and connects this PC to an exchange account; scheduled file operations that run copy, move, delete and archive on a timetable, installed together with the Share Manager; and a Media Exchange Server that you run yourself, through which your devices reach each other - start with the manager or with the folder-sharing server, and add the rest only if you want it.",
+    "doorsTitle": "Three ways in, four optional parts",
+    "doorsLead": "Start where you are: with the media and file manager, with the folder-sharing server or with scheduled file operations. Each part is optional, and the Media Exchange Server is the one you run yourself.",
     "doors": [
-      ["Manager first", "I need a media and file manager", "Sort and look at photos and videos with one key per file, and manage files in local folders, on SFTP and SMB servers and on the devices of an exchange account. The full package installs the manager, with local sharing and scheduling as an optional part that stays off until you switch it on; choose the Compact type in Setup to leave it out. Sorting needs no server.", "Download the full package"],
-      ["Server first", "I want a server for my folders", "Open this PC's folders on an Android phone, another copy of the program or any SFTP client, and run file operations on a schedule. The Server edition (setup.exe or winget, administrator rights) installs the Folder Share Server - the sharing and scheduling service - as a Windows service that runs with nobody signed in; the manager is an optional, unticked extra.", "Server edition: the folder-sharing service"],
+      ["Manager first", "I need a media and file manager", "Sort and look at photos and videos with one key per file, and manage files in local folders, on SFTP and SMB servers and on the devices of an exchange account. The full package installs the manager, with local sharing and scheduled file operations as optional parts that stay off until you switch them on; choose the Compact type in Setup to leave both out. Sorting needs no server.", "Download the full package"],
+      ["Server first", "I want a server for my folders", "Open this PC's folders on an Android phone, another copy of the program or any SFTP client. The Server edition (setup.exe or winget, administrator rights) installs the Folder Share Server - the local sharing service - as a Windows service that runs with nobody signed in; the manager is an optional, unticked extra. Scheduled file operations do not run in that service: they run in the Share Manager in a signed-in session, and the Server edition brings them with its Share Manager.", "Server edition: the folder-sharing service"],
+      ["Scheduled first", "I want file operations on a schedule", "Copy, move, delete and archive files on a timetable, with a preview before a task runs and a journal of every run. Scheduled operations need no folder sharing, no server, no open port and no administrator rights: they are installed together with the Share Manager (the Scheduled operations item of Setup, ticked in the full package) and run while it runs in your signed-in session. Open them from the tray, from the viewer's folder menu or with a key you assign.", "Download the full package"],
       ["Your own server", "Media Exchange Server", "A server you run yourself: your devices enroll into an account you create on it and reach each other through it when they cannot reach each other directly. It is not folder sharing, and neither the manager nor local sharing needs it.", ""]
     ],
-    "insideNote": "Inside the full package: the media and file manager and, as optional parts that stay off until you switch them on, local sharing and scheduling (the Share Manager and its SFTP worker, with scheduled operations, the connection to an exchange account and FileDO .fdd disk hosting as a capability of sharing), offline video codecs and OCR models. Choose the Compact type to leave sharing out. The Media Exchange Server is not in this package.",
+    "insideNote": "Inside the full package: the media and file manager and, as optional parts that stay off until you switch them on, local sharing (the Share Manager and its SFTP worker, the connection to an exchange account and FileDO .fdd disk hosting as a capability of sharing) and scheduled file operations (installed together with the Share Manager), offline video codecs and OCR models. Choose the Compact type to leave both out. The Media Exchange Server is not in this package.",
     "langLabel": "Language",
     "skipLabel": "Skip to main content",
     "navLabel": "Main navigation",
@@ -459,10 +623,11 @@
   },
 
   "ru": {
-    "dir": "ltr", "machine": false, "name": "Русский",
+    "dir": "ltr", "ogLocale": "ru_RU", "machine": false, "name": "Русский",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Сортировка фото и видео",
+    "pageTitle": "Файловый менеджер для Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: сортируйте фото и видео одной клавишей на файл",
+    "heroShotAlt": "Окно просмотра: фото, над ним панель инструментов, под ним имя файла, дата и размер",
     "outcome": "Сортируйте фото и видео одной клавишей на файл",
     "tagline": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.",
     "sharing": "«Sharing» в названии - это передача ваших медиафайлов другому: телефону с Android, другой копии программы или любому SFTP-клиенту. Пока вы не включите, она выключена.",
@@ -496,15 +661,16 @@
     "guide": "Полное руководство (на английском)",
     "serverLink": "Серверная редакция: раздача без входа в систему",
     "docsLink": "Документация",
-    "family": "Три необязательные части: медиа- и файловый менеджер, который показывает и сортирует фото и видео одной клавишей и управляет файлами в локальных папках, на серверах и подключённых устройствах; локальная служба раздачи и расписаний, которая раздаёт папки по SFTP, выполняет файловые операции по расписанию и подключает этот ПК к учётной записи обмена; и Media Exchange Server, который вы запускаете сами и через который ваши устройства связываются друг с другом, - начните с менеджера или с сервера раздачи папок, а остальное добавляйте, только если нужно.",
-    "doorsTitle": "Два входа, три необязательные части",
-    "doorsLead": "Начните оттуда, где вы стоите: с медиа- и файлового менеджера или с сервера раздачи папок. Каждая часть необязательна, а Media Exchange Server вы запускаете сами.",
+    "family": "Четыре необязательные части: медиа- и файловый менеджер, который показывает и сортирует фото и видео одной клавишей и управляет файлами в локальных папках, на серверах и подключённых устройствах; локальная служба раздачи, которая раздаёт папки по SFTP и подключает этот ПК к учётной записи обмена; файловые операции по расписанию - копирование, перемещение, удаление и архивация в заданное время, - которые устанавливаются вместе с Менеджером общего доступа; и Media Exchange Server, который вы запускаете сами и через который ваши устройства связываются друг с другом, - начните с менеджера или с сервера раздачи папок, а остальное добавляйте, только если нужно.",
+    "doorsTitle": "Три входа, четыре необязательные части",
+    "doorsLead": "Начните оттуда, где вы стоите: с медиа- и файлового менеджера, с сервера раздачи папок или с файловых операций по расписанию. Каждая часть необязательна, а Media Exchange Server вы запускаете сами.",
     "doors": [
-      ["Сначала менеджер", "Мне нужен медиа- и файловый менеджер", "Просматривайте и сортируйте фото и видео одной клавишей на файл и управляйте файлами в локальных папках, на серверах SFTP и SMB и на устройствах учётной записи обмена. Полный пакет ставит менеджер, а локальную раздачу и расписания - как необязательную часть, которая выключена, пока вы её не включите; выберите в установщике тип «Компактная», чтобы её не было вовсе. Для сортировки сервер не нужен.", "Скачать полный пакет"],
-      ["Сначала сервер", "Мне нужен сервер для моих папок", "Откройте папки этого ПК на телефоне с Android, в другой копии программы или в любом SFTP-клиенте и запускайте файловые операции по расписанию. Серверная редакция (setup.exe или winget, нужны права администратора) ставит Folder Share Server - службу раздачи и расписаний - как службу Windows, которая работает, когда никто не вошёл в систему; менеджер - необязательное дополнение без галочки.", "Серверная редакция: служба раздачи папок"],
+      ["Сначала менеджер", "Мне нужен медиа- и файловый менеджер", "Просматривайте и сортируйте фото и видео одной клавишей на файл и управляйте файлами в локальных папках, на серверах SFTP и SMB и на устройствах учётной записи обмена. Полный пакет ставит менеджер, а локальную раздачу и файловые операции по расписанию - как необязательные части, которые выключены, пока вы их не включите; выберите в установщике тип «Компактная», чтобы их не было вовсе. Для сортировки сервер не нужен.", "Скачать полный пакет"],
+      ["Сначала сервер", "Мне нужен сервер для моих папок", "Откройте папки этого ПК на телефоне с Android, в другой копии программы или в любом SFTP-клиенте. Серверная редакция (setup.exe или winget, нужны права администратора) ставит Folder Share Server - локальную службу раздачи - как службу Windows, которая работает, когда никто не вошёл в систему; менеджер - необязательное дополнение без галочки. Файловые операции по расписанию в этой службе не работают: они выполняются в Менеджере общего доступа в сеансе входа, а серверная редакция ставит их вместе со своим Менеджером общего доступа.", "Серверная редакция: служба раздачи папок"],
+      ["Сначала расписание", "Мне нужны файловые операции по расписанию", "Копируйте, перемещайте, удаляйте и архивируйте файлы по расписанию - с предварительным просмотром перед запуском задачи и журналом каждого запуска. Файловым операциям по расписанию не нужны раздача папок, сервер, открытый порт и права администратора: они устанавливаются вместе с Менеджером общего доступа (пункт «Операции по расписанию» установщика, отмеченный в полном пакете) и работают, пока он работает в вашем сеансе входа. Открывайте их из трея, из меню папки в просмотрщике или клавишей, которую вы назначите.", "Скачать полный пакет"],
       ["Свой сервер", "Media Exchange Server", "Сервер, который вы запускаете сами: ваши устройства подключаются к созданной на нём учётной записи обмена и связываются друг с другом через него, когда напрямую не могут. Это не раздача папок, и ни менеджеру, ни локальной раздаче он не нужен.", ""]
     ],
-    "insideNote": "Внутри полного пакета: медиа- и файловый менеджер и - как необязательные части, выключенные, пока вы их не включите, - локальная раздача и расписания (Менеджер общего доступа и SFTP-воркер, операции по расписанию и подключение к учётной записи обмена; размещение дисков FileDO .fdd - возможность раздачи), видео-кодеки и модели OCR для работы без интернета. Выберите тип «Компактная», чтобы раздача не ставилась. Media Exchange Server в этом пакете нет.",
+    "insideNote": "Внутри полного пакета: медиа- и файловый менеджер и - как необязательные части, выключенные, пока вы их не включите, - локальная раздача (Менеджер общего доступа и SFTP-воркер, подключение к учётной записи обмена; размещение дисков FileDO .fdd - возможность раздачи) и файловые операции по расписанию (устанавливаются вместе с Менеджером общего доступа), видео-кодеки и модели OCR для работы без интернета. Выберите тип «Компактная», чтобы не ставились ни раздача, ни файловые операции по расписанию. Media Exchange Server в этом пакете нет.",
     "langLabel": "Язык",
     "skipLabel": "Перейти к основному содержимому",
     "navLabel": "Основная навигация",
@@ -515,10 +681,11 @@
   },
 
   "uk": {
-    "dir": "ltr", "machine": false, "name": "Українська",
+    "dir": "ltr", "ogLocale": "uk_UA", "machine": false, "name": "Українська",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Сортування фото та відео",
+    "pageTitle": "Файловий менеджер для Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл",
+    "heroShotAlt": "Вікно перегляду: фото, над ним панель інструментів, під ним назва файлу, дата й розмір",
     "outcome": "Сортуйте фото та відео одним натисканням клавіші на файл",
     "tagline": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.",
     "sharing": "«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена.",
@@ -552,15 +719,16 @@
     "guide": "Повний посібник (англійською)",
     "serverLink": "Серверна редакція: роздача без входу в систему",
     "docsLink": "Документація",
-    "family": "Три необов'язкові частини: медіа- та файловий менеджер, який показує й сортує фото та відео однією клавішею і керує файлами в локальних теках, на серверах і підключених пристроях; локальна служба роздачі та розкладів, яка роздає теки по SFTP, виконує файлові операції за розкладом і підключає цей ПК до облікового запису обміну; і Media Exchange Server, який ви запускаєте самі і через який ваші пристрої зв'язуються між собою, - почніть із менеджера або з сервера роздачі тек, а решту додавайте, лише якщо потрібно.",
-    "doorsTitle": "Два входи, три необов'язкові частини",
-    "doorsLead": "Почніть звідти, де ви стоїте: з медіа- та файлового менеджера або із сервера роздачі тек. Кожна частина необов'язкова, а Media Exchange Server ви запускаєте самі.",
+    "family": "Чотири необов'язкові частини: медіа- та файловий менеджер, який показує й сортує фото та відео однією клавішею і керує файлами в локальних теках, на серверах і підключених пристроях; локальна служба роздачі, яка роздає теки по SFTP і підключає цей ПК до облікового запису обміну; файлові операції за розкладом - копіювання, переміщення, видалення й архівація в заданий час, - які встановлюються разом із Менеджером спільного доступу; і Media Exchange Server, який ви запускаєте самі і через який ваші пристрої зв'язуються між собою, - почніть із менеджера або з сервера роздачі тек, а решту додавайте, лише якщо потрібно.",
+    "doorsTitle": "Три входи, чотири необов'язкові частини",
+    "doorsLead": "Почніть звідти, де ви стоїте: з медіа- та файлового менеджера, із сервера роздачі тек або з файлових операцій за розкладом. Кожна частина необов'язкова, а Media Exchange Server ви запускаєте самі.",
     "doors": [
-      ["Спершу менеджер", "Мені потрібен медіа- та файловий менеджер", "Переглядайте й сортуйте фото та відео однією клавішею на файл і керуйте файлами в локальних теках, на серверах SFTP та SMB і на пристроях облікового запису обміну. Повний пакет ставить менеджер, а локальну роздачу та розклади - як необов'язкову частину, що вимкнена, доки ви її не ввімкнете; виберіть в інсталяторі тип «Компактна», щоб її не було зовсім. Для сортування сервер не потрібен.", "Завантажити повний пакет"],
-      ["Спершу сервер", "Мені потрібен сервер для моїх тек", "Відкрийте теки цього ПК на телефоні з Android, в іншій копії програми або в будь-якому SFTP-клієнті й запускайте файлові операції за розкладом. Серверна редакція (setup.exe або winget, потрібні права адміністратора) ставить Folder Share Server - службу роздачі та розкладів - як службу Windows, що працює, коли ніхто не ввійшов у систему; менеджер - необов'язкове доповнення без позначки.", "Серверна редакція: служба роздачі тек"],
+      ["Спершу менеджер", "Мені потрібен медіа- та файловий менеджер", "Переглядайте й сортуйте фото та відео однією клавішею на файл і керуйте файлами в локальних теках, на серверах SFTP та SMB і на пристроях облікового запису обміну. Повний пакет ставить менеджер, а локальну роздачу та файлові операції за розкладом - як необов'язкові частини, що вимкнені, доки ви їх не ввімкнете; виберіть в інсталяторі тип «Компактна», щоб їх не було зовсім. Для сортування сервер не потрібен.", "Завантажити повний пакет"],
+      ["Спершу сервер", "Мені потрібен сервер для моїх тек", "Відкрийте теки цього ПК на телефоні з Android, в іншій копії програми або в будь-якому SFTP-клієнті. Серверна редакція (setup.exe або winget, потрібні права адміністратора) ставить Folder Share Server - локальну службу роздачі - як службу Windows, що працює, коли ніхто не ввійшов у систему; менеджер - необов'язкове доповнення без позначки. Файлові операції за розкладом у цій службі не працюють: вони виконуються в Менеджері спільного доступу в сеансі входу, а серверна редакція ставить їх разом зі своїм Менеджером спільного доступу.", "Серверна редакція: служба роздачі тек"],
+      ["Спершу розклад", "Мені потрібні файлові операції за розкладом", "Копіюйте, переміщуйте, видаляйте й архівуйте файли за розкладом - із попереднім переглядом перед запуском завдання та журналом кожного запуску. Файловим операціям за розкладом не потрібні роздача тек, сервер, відкритий порт і права адміністратора: вони встановлюються разом із Менеджером спільного доступу (пункт «Операції за розкладом» інсталятора, позначений у повному пакеті) і працюють, поки він працює у вашому сеансі входу. Відкривайте їх із трея, з меню теки в переглядачі або клавішею, яку ви призначите.", "Завантажити повний пакет"],
       ["Власний сервер", "Media Exchange Server", "Сервер, який ви запускаєте самі: ваші пристрої підключаються до створеного на ньому облікового запису обміну й зв'язуються між собою через нього, коли напряму не можуть. Це не роздача тек, і ні менеджеру, ні локальній роздачі він не потрібен.", ""]
     ],
-    "insideNote": "Усередині повного пакета: медіа- та файловий менеджер і - як необов'язкові частини, вимкнені, доки ви їх не ввімкнете, - локальна роздача та розклади (Менеджер спільного доступу та SFTP-воркер, операції за розкладом і підключення до облікового запису обміну; розміщення дисків FileDO .fdd - можливість роздачі), відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб роздача не ставилася. Media Exchange Server у цьому пакеті немає.",
+    "insideNote": "Усередині повного пакета: медіа- та файловий менеджер і - як необов'язкові частини, вимкнені, доки ви їх не ввімкнете, - локальна роздача (Менеджер спільного доступу та SFTP-воркер, підключення до облікового запису обміну; розміщення дисків FileDO .fdd - можливість роздачі) і файлові операції за розкладом (встановлюються разом із Менеджером спільного доступу), відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб не ставилися ні роздача, ні файлові операції за розкладом. Media Exchange Server у цьому пакеті немає.",
     "langLabel": "Мова",
     "skipLabel": "Перейти до основного вмісту",
     "navLabel": "Основна навігація",
@@ -571,10 +739,11 @@
   },
 
   "de": {
-    "dir": "ltr", "machine": true, "name": "Deutsch",
+    "dir": "ltr", "ogLocale": "de_DE", "machine": true, "name": "Deutsch",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Fotos & Videos sortieren",
+    "pageTitle": "Dateimanager für Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: Fotos und Videos mit einer Taste pro Datei sortieren",
+    "heroShotAlt": "Das Betrachterfenster: ein Foto, darüber die Symbolleiste, darunter Dateiname, Datum und Größe",
     "outcome": "Fotos und Videos mit einer Taste pro Datei sortieren",
     "tagline": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste.",
     "sharing": "«Sharing» im Namen heißt: Ihre Medien an jemand anderen weitergeben - an Ihr Android-Telefon, eine weitere Kopie des Programms oder einen beliebigen SFTP-Client. Es bleibt aus, bis Sie es einschalten.",
@@ -608,15 +777,16 @@
     "guide": "Vollständige Anleitung (auf Englisch)",
     "serverLink": "Server-Edition: Freigabe ohne Anmeldung (auf Englisch)",
     "docsLink": "Dokumentation (auf Englisch)",
-    "family": "Drei optionale Teile: ein Medien- und Dateimanager, der Fotos und Videos mit einer Taste ansieht und sortiert und Dateien in lokalen Ordnern, auf Servern und auf verbundenen Geräten verwaltet; ein lokaler Freigabe- und Zeitplandienst, der Ordner per SFTP freigibt, Dateioperationen nach Zeitplan ausführt und diesen PC mit einem Austauschkonto verbindet; und ein Media Exchange Server, den Sie selbst betreiben und über den Ihre Geräte einander erreichen - beginnen Sie mit dem Manager oder mit dem Ordner-Freigabeserver und ergänzen Sie den Rest nur, wenn Sie ihn möchten.",
-    "doorsTitle": "Zwei Zugänge, drei optionale Teile",
-    "doorsLead": "Beginnen Sie dort, wo Sie stehen: mit dem Medien- und Dateimanager oder mit dem Ordner-Freigabeserver. Jeder Teil ist optional, und den Media Exchange Server betreiben Sie selbst.",
+    "family": "Vier optionale Teile: ein Medien- und Dateimanager, der Fotos und Videos mit einer Taste ansieht und sortiert und Dateien in lokalen Ordnern, auf Servern und auf verbundenen Geräten verwaltet; ein lokaler Freigabedienst, der Ordner per SFTP freigibt und diesen PC mit einem Austauschkonto verbindet; geplante Dateivorgänge, die Kopieren, Verschieben, Löschen und Archivieren nach Zeitplan ausführen und zusammen mit dem Share Manager installiert werden; und ein Media Exchange Server, den Sie selbst betreiben und über den Ihre Geräte einander erreichen - beginnen Sie mit dem Manager oder mit dem Ordner-Freigabeserver und ergänzen Sie den Rest nur, wenn Sie ihn möchten.",
+    "doorsTitle": "Drei Zugänge, vier optionale Teile",
+    "doorsLead": "Beginnen Sie dort, wo Sie stehen: mit dem Medien- und Dateimanager, mit dem Ordner-Freigabeserver oder mit geplanten Dateivorgängen. Jeder Teil ist optional, und den Media Exchange Server betreiben Sie selbst.",
     "doors": [
-      ["Zuerst der Manager", "Ich brauche einen Medien- und Dateimanager", "Fotos und Videos mit einer Taste pro Datei ansehen und sortieren sowie Dateien in lokalen Ordnern, auf SFTP- und SMB-Servern und auf den Geräten eines Austauschkontos verwalten. Das vollständige Paket installiert den Manager, die lokale Freigabe und Zeitplanung als optionalen Teil, der aus bleibt, bis Sie ihn einschalten; wählen Sie im Setup den Typ «Kompakt», um sie wegzulassen. Zum Sortieren ist kein Server nötig.", "Vollständiges Paket herunterladen"],
-      ["Zuerst der Server", "Ich möchte einen Server für meine Ordner", "Öffnen Sie die Ordner dieses PCs auf einem Android-Telefon, in einer anderen Kopie des Programms oder in jedem SFTP-Client und führen Sie Dateioperationen nach Zeitplan aus. Die Server-Edition (setup.exe oder winget, Administratorrechte nötig) installiert den Folder Share Server - den Freigabe- und Zeitplandienst - als Windows-Dienst, der läuft, ohne dass jemand angemeldet ist; der Manager ist ein optionales Extra ohne Häkchen.", "Server-Edition: Freigabe ohne Anmeldung (auf Englisch)"],
+      ["Zuerst der Manager", "Ich brauche einen Medien- und Dateimanager", "Fotos und Videos mit einer Taste pro Datei ansehen und sortieren sowie Dateien in lokalen Ordnern, auf SFTP- und SMB-Servern und auf den Geräten eines Austauschkontos verwalten. Das vollständige Paket installiert den Manager, dazu die lokale Freigabe und geplante Dateivorgänge als optionale Teile, die aus bleiben, bis Sie sie einschalten; wählen Sie im Setup den Typ «Kompakt», um beide wegzulassen. Zum Sortieren ist kein Server nötig.", "Vollständiges Paket herunterladen"],
+      ["Zuerst der Server", "Ich möchte einen Server für meine Ordner", "Öffnen Sie die Ordner dieses PCs auf einem Android-Telefon, in einer anderen Kopie des Programms oder in jedem SFTP-Client. Die Server-Edition (setup.exe oder winget, Administratorrechte nötig) installiert den Folder Share Server - den lokalen Freigabedienst - als Windows-Dienst, der läuft, ohne dass jemand angemeldet ist; der Manager ist ein optionales Extra ohne Häkchen. Geplante Dateivorgänge laufen nicht in diesem Dienst: Sie laufen im Share Manager in einer angemeldeten Sitzung, und die Server-Edition bringt sie mit ihrem Share Manager mit.", "Server-Edition: Freigabe ohne Anmeldung (auf Englisch)"],
+      ["Zuerst der Zeitplan", "Ich möchte Dateivorgänge nach Zeitplan", "Dateien nach Zeitplan kopieren, verschieben, löschen und archivieren - mit einer Vorschau, bevor eine Aufgabe läuft, und einem Protokoll jedes Laufs. Geplante Dateivorgänge brauchen keine Ordnerfreigabe, keinen Server, keinen offenen Port und keine Administratorrechte: Sie werden zusammen mit dem Share Manager installiert (der Eintrag «Geplante Vorgänge» im Setup, im vollständigen Paket angehakt) und laufen, solange er in Ihrer angemeldeten Sitzung läuft. Öffnen Sie sie über den Infobereich der Taskleiste, über das Ordnermenü des Betrachters oder mit einer Taste, die Sie zuweisen.", "Vollständiges Paket herunterladen"],
       ["Ihr eigener Server", "Media Exchange Server", "Ein Server, den Sie selbst betreiben: Ihre Geräte melden sich an einem Konto darauf an und erreichen einander darüber, wenn sie sich nicht direkt erreichen können. Er ist keine Ordnerfreigabe, und weder der Manager noch die lokale Freigabe brauchen ihn.", ""]
     ],
-    "insideNote": "Im vollständigen Paket: der Medien- und Dateimanager und - als optionale Teile, die aus bleiben, bis Sie sie einschalten - die lokale Freigabe und Zeitplanung (Share Manager und SFTP-Worker mit Dateioperationen nach Zeitplan und der Verbindung zu einem Austauschkonto; das Hosten von FileDO-.fdd-Laufwerken ist eine Fähigkeit der Freigabe), Offline-Videocodecs und OCR-Modelle. Wählen Sie den Typ «Kompakt», um die Freigabe wegzulassen. Der Media Exchange Server ist in diesem Paket nicht enthalten.",
+    "insideNote": "Im vollständigen Paket: der Medien- und Dateimanager und - als optionale Teile, die aus bleiben, bis Sie sie einschalten - die lokale Freigabe (Share Manager und SFTP-Worker mit der Verbindung zu einem Austauschkonto; das Hosten von FileDO-.fdd-Laufwerken ist eine Fähigkeit der Freigabe) und geplante Dateivorgänge (zusammen mit dem Share Manager installiert), Offline-Videocodecs und OCR-Modelle. Wählen Sie den Typ «Kompakt», um beides wegzulassen. Der Media Exchange Server ist in diesem Paket nicht enthalten.",
     "langLabel": "Sprache",
     "skipLabel": "Zum Hauptinhalt springen",
     "navLabel": "Hauptnavigation",
@@ -627,10 +797,11 @@
   },
 
   "it": {
-    "dir": "ltr", "machine": true, "name": "Italiano",
+    "dir": "ltr", "ogLocale": "it_IT", "machine": true, "name": "Italiano",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Ordina foto e video",
+    "pageTitle": "File manager per Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: ordina foto e video con un tasto per file",
+    "heroShotAlt": "La finestra del visualizzatore: una foto, sopra la barra degli strumenti, sotto nome, data e dimensione del file",
     "outcome": "Ordina foto e video con un tasto per file",
     "tagline": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto.",
     "sharing": "«Sharing» nel nome significa dare i tuoi file multimediali a qualcun altro: il tuo telefono Android, un'altra copia del programma o un qualsiasi client SFTP. Resta disattivato finché non lo attivi.",
@@ -664,15 +835,16 @@
     "guide": "Guida completa (in inglese)",
     "serverLink": "Edizione Server: condivisione senza accesso (in inglese)",
     "docsLink": "Documentazione (in inglese)",
-    "family": "Tre parti facoltative: un gestore di media e file che mostra e ordina foto e video con un tasto e gestisce i file nelle cartelle locali, sui server e sui dispositivi collegati; un servizio locale di condivisione e pianificazione che condivide cartelle via SFTP, esegue operazioni sui file secondo una pianificazione e collega questo PC a un account di scambio; e un Media Exchange Server che gestisci tu, tramite il quale i tuoi dispositivi si raggiungono - inizia dal gestore o dal server di condivisione cartelle e aggiungi il resto solo se lo vuoi.",
-    "doorsTitle": "Due ingressi, tre parti facoltative",
-    "doorsLead": "Parti da dove sei: dal gestore di media e file o dal server di condivisione cartelle. Ogni parte è facoltativa, e il Media Exchange Server lo gestisci tu.",
+    "family": "Quattro parti facoltative: un gestore di media e file che mostra e ordina foto e video con un tasto e gestisce i file nelle cartelle locali, sui server e sui dispositivi collegati; un servizio locale di condivisione che condivide cartelle via SFTP e collega questo PC a un account di scambio; operazioni pianificate sui file che eseguono copia, spostamento, eliminazione e archiviazione secondo una pianificazione e si installano insieme a Share Manager; e un Media Exchange Server che gestisci tu, tramite il quale i tuoi dispositivi si raggiungono - inizia dal gestore o dal server di condivisione cartelle e aggiungi il resto solo se lo vuoi.",
+    "doorsTitle": "Tre ingressi, quattro parti facoltative",
+    "doorsLead": "Parti da dove sei: dal gestore di media e file, dal server di condivisione cartelle o dalle operazioni pianificate sui file. Ogni parte è facoltativa, e il Media Exchange Server lo gestisci tu.",
     "doors": [
-      ["Prima il gestore", "Mi serve un gestore di media e file", "Guarda e ordina foto e video con un tasto per file e gestisci i file nelle cartelle locali, sui server SFTP e SMB e sui dispositivi di un account di scambio. Il pacchetto completo installa il gestore e, come parte facoltativa che resta spenta finché non la attivi, la condivisione locale e la pianificazione; scegli il tipo «Compatto» nell'installazione per lasciarla fuori. Per ordinare non serve alcun server.", "Scarica il pacchetto completo"],
-      ["Prima il server", "Voglio un server per le mie cartelle", "Apri le cartelle di questo PC su un telefono Android, in un'altra copia del programma o in qualsiasi client SFTP, ed esegui operazioni sui file secondo una pianificazione. L'edizione Server (setup.exe o winget, servono i diritti di amministratore) installa il Folder Share Server - il servizio di condivisione e pianificazione - come servizio di Windows che funziona senza che nessuno abbia effettuato l'accesso; il gestore è un extra facoltativo, non selezionato.", "Edizione Server: condivisione senza accesso (in inglese)"],
+      ["Prima il gestore", "Mi serve un gestore di media e file", "Guarda e ordina foto e video con un tasto per file e gestisci i file nelle cartelle locali, sui server SFTP e SMB e sui dispositivi di un account di scambio. Il pacchetto completo installa il gestore e, come parti facoltative che restano spente finché non le attivi, la condivisione locale e le operazioni pianificate sui file; scegli il tipo «Compatto» nell'installazione per lasciare fuori entrambe. Per ordinare non serve alcun server.", "Scarica il pacchetto completo"],
+      ["Prima il server", "Voglio un server per le mie cartelle", "Apri le cartelle di questo PC su un telefono Android, in un'altra copia del programma o in qualsiasi client SFTP. L'edizione Server (setup.exe o winget, servono i diritti di amministratore) installa il Folder Share Server - il servizio locale di condivisione - come servizio di Windows che funziona senza che nessuno abbia effettuato l'accesso; il gestore è un extra facoltativo, non selezionato. Le operazioni pianificate sui file non girano in quel servizio: girano in Share Manager, in una sessione con accesso effettuato, e l'edizione Server le porta con il suo Share Manager.", "Edizione Server: condivisione senza accesso (in inglese)"],
+      ["Prima la pianificazione", "Voglio operazioni sui file pianificate", "Copia, sposta, elimina e archivia i file secondo una pianificazione, con un'anteprima prima che un'attività venga eseguita e un registro di ogni esecuzione. Le operazioni pianificate sui file non richiedono condivisione di cartelle, server, porte aperte né diritti di amministratore: si installano insieme a Share Manager (la voce «Operazioni pianificate» dell'installazione, selezionata nel pacchetto completo) e vengono eseguite finché Share Manager è in esecuzione nella tua sessione con accesso effettuato. Aprile dall'area di notifica, dal menu cartella del visualizzatore o con un tasto che assegni tu.", "Scarica il pacchetto completo"],
       ["Il tuo server", "Media Exchange Server", "Un server che gestisci tu: i tuoi dispositivi si registrano in un account creato su di esso e si raggiungono tramite il server quando non possono raggiungersi direttamente. Non è la condivisione di cartelle, e né il gestore né la condivisione locale ne hanno bisogno.", ""]
     ],
-    "insideNote": "Nel pacchetto completo: il gestore di media e file e - come parti facoltative che restano spente finché non le attivi - la condivisione locale e la pianificazione (Share Manager e worker SFTP, con le operazioni pianificate e il collegamento a un account di scambio; l'hosting dei dischi FileDO .fdd è una capacità della condivisione), codec video offline e modelli OCR. Scegli il tipo «Compatto» per lasciare fuori la condivisione. Il Media Exchange Server non è in questo pacchetto.",
+    "insideNote": "Nel pacchetto completo: il gestore di media e file e - come parti facoltative che restano spente finché non le attivi - la condivisione locale (Share Manager e worker SFTP, con il collegamento a un account di scambio; l'hosting dei dischi FileDO .fdd è una capacità della condivisione) e le operazioni pianificate sui file (installate insieme a Share Manager), codec video offline e modelli OCR. Scegli il tipo «Compatto» per lasciare fuori entrambe. Il Media Exchange Server non è in questo pacchetto.",
     "langLabel": "Lingua",
     "skipLabel": "Vai al contenuto principale",
     "navLabel": "Navigazione principale",
@@ -683,10 +855,11 @@
   },
 
   "es": {
-    "dir": "ltr", "machine": true, "name": "Español",
+    "dir": "ltr", "ogLocale": "es_MX", "machine": true, "name": "Español",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Ordena fotos y vídeos",
+    "pageTitle": "Gestor de archivos en Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: ordena fotos y vídeos con una tecla por archivo",
+    "heroShotAlt": "La ventana del visor: una foto, encima la barra de herramientas y debajo el nombre, la fecha y el tamaño del archivo",
     "outcome": "Ordena fotos y vídeos con una tecla por archivo",
     "tagline": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.",
     "sharing": "«Sharing» en el nombre significa entregar sus archivos multimedia a otra persona: su teléfono Android, otra copia del programa o cualquier cliente SFTP. Permanece desactivado hasta que lo active.",
@@ -720,15 +893,16 @@
     "guide": "Guía completa (en inglés)",
     "serverLink": "Edición Servidor: uso compartido sin iniciar sesión (en inglés)",
     "docsLink": "Documentación (en inglés)",
-    "family": "Tres partes opcionales: un gestor de medios y archivos que muestra y ordena fotos y vídeos con una tecla y gestiona archivos en carpetas locales, en servidores y en dispositivos conectados; un servicio local de uso compartido y tareas programadas que comparte carpetas por SFTP, ejecuta operaciones con archivos según un horario y conecta este PC a una cuenta de intercambio; y un Media Exchange Server que montas tú mismo y a través del cual tus dispositivos se alcanzan entre sí - empieza por el gestor o por el servidor para compartir carpetas y añade el resto solo si lo quieres.",
-    "doorsTitle": "Dos entradas, tres partes opcionales",
-    "doorsLead": "Empieza por donde estás: por el gestor de medios y archivos o por el servidor para compartir carpetas. Cada parte es opcional, y el Media Exchange Server lo montas tú mismo.",
+    "family": "Cuatro partes opcionales: un gestor de medios y archivos que muestra y ordena fotos y vídeos con una tecla y gestiona archivos en carpetas locales, en servidores y en dispositivos conectados; un servicio local de uso compartido que comparte carpetas por SFTP y conecta este PC a una cuenta de intercambio; operaciones de archivos programadas que ejecutan copiar, mover, eliminar y archivar según un horario y se instalan junto con el Share Manager; y un Media Exchange Server que montas tú mismo y a través del cual tus dispositivos se alcanzan entre sí - empieza por el gestor o por el servidor para compartir carpetas y añade el resto solo si lo quieres.",
+    "doorsTitle": "Tres entradas, cuatro partes opcionales",
+    "doorsLead": "Empieza por donde estás: por el gestor de medios y archivos, por el servidor para compartir carpetas o por las operaciones de archivos programadas. Cada parte es opcional, y el Media Exchange Server lo montas tú mismo.",
     "doors": [
-      ["Primero el gestor", "Necesito un gestor de medios y archivos", "Mira y ordena fotos y vídeos con una tecla por archivo y gestiona archivos en carpetas locales, en servidores SFTP y SMB y en los dispositivos de una cuenta de intercambio. El paquete completo instala el gestor y, como parte opcional que sigue apagada hasta que la actives, el uso compartido local y las tareas programadas; elige el tipo «Compacto» en la instalación para dejarla fuera. Para ordenar no hace falta ningún servidor.", "Descargar el paquete completo"],
-      ["Primero el servidor", "Quiero un servidor para mis carpetas", "Abre las carpetas de este PC en un teléfono Android, en otra copia del programa o en cualquier cliente SFTP, y ejecuta operaciones con archivos según un horario. La edición Servidor (setup.exe o winget, requiere derechos de administrador) instala el Folder Share Server - el servicio de uso compartido y tareas programadas - como servicio de Windows que funciona sin que nadie haya iniciado sesión; el gestor es un extra opcional, sin marcar.", "Edición Servidor: uso compartido sin iniciar sesión (en inglés)"],
+      ["Primero el gestor", "Necesito un gestor de medios y archivos", "Mira y ordena fotos y vídeos con una tecla por archivo y gestiona archivos en carpetas locales, en servidores SFTP y SMB y en los dispositivos de una cuenta de intercambio. El paquete completo instala el gestor y, como partes opcionales que siguen apagadas hasta que las actives, el uso compartido local y las operaciones de archivos programadas; elige el tipo «Compacto» en la instalación para dejar fuera ambas. Para ordenar no hace falta ningún servidor.", "Descargar el paquete completo"],
+      ["Primero el servidor", "Quiero un servidor para mis carpetas", "Abre las carpetas de este PC en un teléfono Android, en otra copia del programa o en cualquier cliente SFTP. La edición Servidor (setup.exe o winget, requiere derechos de administrador) instala el Folder Share Server - el servicio local de uso compartido - como servicio de Windows que funciona sin que nadie haya iniciado sesión; el gestor es un extra opcional, sin marcar. Las operaciones de archivos programadas no se ejecutan en ese servicio: se ejecutan en el Share Manager en una sesión iniciada, y la edición Servidor las incluye con su Share Manager.", "Edición Servidor: uso compartido sin iniciar sesión (en inglés)"],
+      ["Primero la programación", "Quiero operaciones de archivos programadas", "Copia, mueve, elimina y archiva archivos según un horario, con una vista previa antes de que se ejecute una tarea y un registro de cada ejecución. Las operaciones de archivos programadas no necesitan compartir carpetas, ni servidor, ni puerto abierto, ni derechos de administrador: se instalan junto con el Share Manager (el elemento «Operaciones programadas» de la instalación, marcado en el paquete completo) y se ejecutan mientras este funciona en tu sesión iniciada. Ábrelas desde la bandeja del sistema, desde el menú de carpeta del visor o con una tecla que asignes.", "Descargar el paquete completo"],
       ["Tu propio servidor", "Media Exchange Server", "Un servidor que montas tú mismo: tus dispositivos se inscriben en una cuenta creada en él y se alcanzan a través del servidor cuando no pueden alcanzarse directamente. No es compartir carpetas, y ni el gestor ni el uso compartido local lo necesitan.", ""]
     ],
-    "insideNote": "Dentro del paquete completo: el gestor de medios y archivos y, como partes opcionales que siguen apagadas hasta que las actives, el uso compartido local y las tareas programadas (Share Manager y el worker SFTP, con operaciones programadas y la conexión a una cuenta de intercambio; alojar discos FileDO .fdd es una capacidad del uso compartido), códecs de vídeo sin conexión y modelos OCR. Elige el tipo «Compacto» para dejar fuera el uso compartido. El Media Exchange Server no está en este paquete.",
+    "insideNote": "Dentro del paquete completo: el gestor de medios y archivos y, como partes opcionales que siguen apagadas hasta que las actives, el uso compartido local (Share Manager y el worker SFTP, con la conexión a una cuenta de intercambio; alojar discos FileDO .fdd es una capacidad del uso compartido) y las operaciones de archivos programadas (se instalan junto con el Share Manager), códecs de vídeo sin conexión y modelos OCR. Elige el tipo «Compacto» para dejar fuera ambos. El Media Exchange Server no está en este paquete.",
     "langLabel": "Idioma",
     "skipLabel": "Saltar al contenido principal",
     "navLabel": "Navegación principal",
@@ -739,10 +913,11 @@
   },
 
   "fr": {
-    "dir": "ltr", "machine": true, "name": "Français",
+    "dir": "ltr", "ogLocale": "fr_FR", "machine": true, "name": "Français",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Triez photos et vidéos",
+    "pageTitle": "Gestion de fichiers Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows : triez photos et vidéos avec une touche par fichier",
+    "heroShotAlt": "La fenêtre de visualisation : une photo, la barre d'outils au-dessus, le nom, la date et la taille du fichier en dessous",
     "outcome": "Triez photos et vidéos avec une touche par fichier",
     "tagline": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.",
     "sharing": "«Sharing» dans le nom signifie donner vos médias à quelqu'un d'autre : votre téléphone Android, une autre copie du programme ou n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas.",
@@ -776,15 +951,16 @@
     "guide": "Guide complet (en anglais)",
     "serverLink": "Édition Serveur : partage sans session ouverte (en anglais)",
     "docsLink": "Documentation (en anglais)",
-    "family": "Trois parties facultatives : un gestionnaire de médias et de fichiers qui affiche et trie photos et vidéos avec une touche et gère les fichiers dans les dossiers locaux, sur des serveurs et sur les appareils connectés ; un service local de partage et de planification qui partage des dossiers par SFTP, exécute des opérations sur fichiers selon un calendrier et relie ce PC à un compte d'échange ; et un Media Exchange Server que vous exploitez vous-même et par lequel vos appareils se joignent - commencez par le gestionnaire ou par le serveur de partage de dossiers, et n'ajoutez le reste que si vous le voulez.",
-    "doorsTitle": "Deux entrées, trois parties facultatives",
-    "doorsLead": "Commencez là où vous en êtes : par le gestionnaire de médias et de fichiers ou par le serveur de partage de dossiers. Chaque partie est facultative, et le Media Exchange Server, vous l'exploitez vous-même.",
+    "family": "Quatre parties facultatives : un gestionnaire de médias et de fichiers qui affiche et trie photos et vidéos avec une touche et gère les fichiers dans les dossiers locaux, sur des serveurs et sur les appareils connectés ; un service local de partage qui partage des dossiers par SFTP et relie ce PC à un compte d'échange ; des opérations planifiées sur les fichiers qui exécutent copie, déplacement, suppression et archivage selon un calendrier et s'installent avec le Share Manager ; et un Media Exchange Server que vous exploitez vous-même et par lequel vos appareils se joignent - commencez par le gestionnaire ou par le serveur de partage de dossiers, et n'ajoutez le reste que si vous le voulez.",
+    "doorsTitle": "Trois entrées, quatre parties facultatives",
+    "doorsLead": "Commencez là où vous en êtes : par le gestionnaire de médias et de fichiers, par le serveur de partage de dossiers ou par les opérations planifiées sur les fichiers. Chaque partie est facultative, et le Media Exchange Server, vous l'exploitez vous-même.",
     "doors": [
-      ["D'abord le gestionnaire", "J'ai besoin d'un gestionnaire de médias et de fichiers", "Affichez et triez photos et vidéos avec une touche par fichier, et gérez les fichiers dans des dossiers locaux, sur des serveurs SFTP et SMB et sur les appareils d'un compte d'échange. Le paquet complet installe le gestionnaire et, en partie facultative qui reste désactivée tant que vous ne l'activez pas, le partage local et la planification ; choisissez le type « Compact » dans l'installation pour l'exclure. Pas besoin de serveur pour trier.", "Télécharger le paquet complet"],
-      ["D'abord le serveur", "Je veux un serveur pour mes dossiers", "Ouvrez les dossiers de ce PC sur un téléphone Android, dans une autre copie du programme ou dans n'importe quel client SFTP, et exécutez des opérations sur fichiers selon un calendrier. L'édition Serveur (setup.exe ou winget, droits d'administrateur requis) installe le Folder Share Server - le service de partage et de planification - comme service Windows qui tourne sans qu'aucune session soit ouverte ; le gestionnaire est un extra facultatif, non coché.", "Édition Serveur : partage sans session ouverte (en anglais)"],
+      ["D'abord le gestionnaire", "J'ai besoin d'un gestionnaire de médias et de fichiers", "Affichez et triez photos et vidéos avec une touche par fichier, et gérez les fichiers dans des dossiers locaux, sur des serveurs SFTP et SMB et sur les appareils d'un compte d'échange. Le paquet complet installe le gestionnaire et, en parties facultatives qui restent désactivées tant que vous ne les activez pas, le partage local et les opérations planifiées sur les fichiers ; choisissez le type « Compact » dans l'installation pour exclure les deux. Pas besoin de serveur pour trier.", "Télécharger le paquet complet"],
+      ["D'abord le serveur", "Je veux un serveur pour mes dossiers", "Ouvrez les dossiers de ce PC sur un téléphone Android, dans une autre copie du programme ou dans n'importe quel client SFTP. L'édition Serveur (setup.exe ou winget, droits d'administrateur requis) installe le Folder Share Server - le service local de partage - comme service Windows qui tourne sans qu'aucune session soit ouverte ; le gestionnaire est un extra facultatif, non coché. Les opérations planifiées sur les fichiers ne tournent pas dans ce service : elles tournent dans le Share Manager, dans une session ouverte, et l'édition Serveur les apporte avec son Share Manager.", "Édition Serveur : partage sans session ouverte (en anglais)"],
+      ["D'abord la planification", "Je veux des opérations sur fichiers planifiées", "Copiez, déplacez, supprimez et archivez des fichiers selon un calendrier, avec un aperçu avant l'exécution d'une tâche et un journal de chaque exécution. Les opérations planifiées sur les fichiers ne demandent ni partage de dossiers, ni serveur, ni port ouvert, ni droits d'administrateur : elles s'installent avec le Share Manager (l'élément « Opérations planifiées » de l'installation, coché dans le paquet complet) et s'exécutent tant qu'il tourne dans votre session ouverte. Ouvrez-les depuis la zone de notification, depuis le menu du dossier de la visionneuse ou avec une touche que vous attribuez.", "Télécharger le paquet complet"],
       ["Votre propre serveur", "Media Exchange Server", "Un serveur que vous exploitez vous-même : vos appareils s'inscrivent dans un compte créé sur lui et se joignent par son intermédiaire quand ils ne peuvent pas se joindre directement. Ce n'est pas du partage de dossiers, et ni le gestionnaire ni le partage local n'en ont besoin.", ""]
     ],
-    "insideNote": "Dans le paquet complet : le gestionnaire de médias et de fichiers et, en parties facultatives qui restent désactivées tant que vous ne les activez pas, le partage local et la planification (Share Manager et worker SFTP, avec les opérations planifiées et la connexion à un compte d'échange ; l'hébergement de disques FileDO .fdd est une capacité du partage), les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour exclure le partage. Le Media Exchange Server ne figure pas dans ce paquet.",
+    "insideNote": "Dans le paquet complet : le gestionnaire de médias et de fichiers et, en parties facultatives qui restent désactivées tant que vous ne les activez pas, le partage local (Share Manager et worker SFTP, avec la connexion à un compte d'échange ; l'hébergement de disques FileDO .fdd est une capacité du partage) et les opérations planifiées sur les fichiers (installées avec le Share Manager), les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour exclure les deux. Le Media Exchange Server ne figure pas dans ce paquet.",
     "langLabel": "Langue",
     "skipLabel": "Aller au contenu principal",
     "navLabel": "Navigation principale",
@@ -795,10 +971,11 @@
   },
 
   "pt": {
-    "dir": "ltr", "machine": true, "name": "Português",
+    "dir": "ltr", "ogLocale": "pt_BR", "machine": true, "name": "Português",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "Organize fotos e vídeos",
+    "pageTitle": "Gerenciar arquivos no Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: organize fotos e vídeos com uma tecla por arquivo",
+    "heroShotAlt": "A janela do visualizador: uma foto, a barra de ferramentas acima e o nome, a data e o tamanho do arquivo abaixo",
     "outcome": "Organize fotos e vídeos com uma tecla por arquivo",
     "tagline": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla.",
     "sharing": "«Sharing» no nome significa entregar suas mídias a outra pessoa: seu telefone Android, outra cópia do programa ou qualquer cliente SFTP. Fica desligado até você ligar.",
@@ -832,29 +1009,31 @@
     "guide": "Guia completo (em inglês)",
     "serverLink": "Edição Servidor: partilha sem sessão iniciada (em inglês)",
     "docsLink": "Documentação (em inglês)",
-    "family": "Três partes opcionais: um gestor de média e ficheiros que mostra e organiza fotografias e vídeos com uma tecla e gere ficheiros em pastas locais, em servidores e em dispositivos ligados; um serviço local de partilha e agendamento que partilha pastas por SFTP, executa operações de ficheiros segundo um agendamento e liga este PC a uma conta de intercâmbio; e um Media Exchange Server que você mesmo gere e através do qual os seus dispositivos se alcançam - comece pelo gestor ou pelo servidor de partilha de pastas e acrescente o resto só se quiser.",
-    "doorsTitle": "Duas entradas, três partes opcionais",
-    "doorsLead": "Comece por onde está: pelo gestor de média e ficheiros ou pelo servidor de partilha de pastas. Cada parte é opcional, e o Media Exchange Server é aquele que você mesmo gere.",
+    "family": "Quatro partes opcionais: um gestor de média e ficheiros que mostra e organiza fotografias e vídeos com uma tecla e gere ficheiros em pastas locais, em servidores e em dispositivos ligados; um serviço local de partilha que partilha pastas por SFTP e liga este PC a uma conta de intercâmbio; operações agendadas de ficheiros que executam copiar, mover, eliminar e arquivar segundo um agendamento e são instaladas juntamente com o Share Manager; e um Media Exchange Server que você mesmo gere e através do qual os seus dispositivos se alcançam - comece pelo gestor ou pelo servidor de partilha de pastas e acrescente o resto só se quiser.",
+    "doorsTitle": "Três entradas, quatro partes opcionais",
+    "doorsLead": "Comece por onde está: pelo gestor de média e ficheiros, pelo servidor de partilha de pastas ou pelas operações agendadas de ficheiros. Cada parte é opcional, e o Media Exchange Server é aquele que você mesmo gere.",
     "doors": [
-      ["Primeiro o gestor", "Preciso de um gestor de média e ficheiros", "Veja e organize fotografias e vídeos com uma tecla por ficheiro e gira ficheiros em pastas locais, em servidores SFTP e SMB e nos dispositivos de uma conta de intercâmbio. O pacote completo instala o gestor e, como parte opcional que fica desligada até que a ative, a partilha local e o agendamento; escolha o tipo «Compacto» na instalação para a deixar de fora. Para organizar não é preciso nenhum servidor.", "Transferir o pacote completo"],
-      ["Primeiro o servidor", "Quero um servidor para as minhas pastas", "Abra as pastas deste PC num telemóvel Android, noutra cópia do programa ou em qualquer cliente SFTP, e execute operações de ficheiros segundo um agendamento. A edição Servidor (setup.exe ou winget, requer direitos de administrador) instala o Folder Share Server - o serviço de partilha e agendamento - como serviço do Windows que funciona sem ninguém ter iniciado sessão; o gestor é um extra opcional, desmarcado.", "Edição Servidor: partilha sem sessão iniciada (em inglês)"],
+      ["Primeiro o gestor", "Preciso de um gestor de média e ficheiros", "Veja e organize fotografias e vídeos com uma tecla por ficheiro e gira ficheiros em pastas locais, em servidores SFTP e SMB e nos dispositivos de uma conta de intercâmbio. O pacote completo instala o gestor e, como partes opcionais que ficam desligadas até que as ative, a partilha local e as operações agendadas de ficheiros; escolha o tipo «Compacto» na instalação para deixar ambas de fora. Para organizar não é preciso nenhum servidor.", "Transferir o pacote completo"],
+      ["Primeiro o servidor", "Quero um servidor para as minhas pastas", "Abra as pastas deste PC num telemóvel Android, noutra cópia do programa ou em qualquer cliente SFTP. A edição Servidor (setup.exe ou winget, requer direitos de administrador) instala o Folder Share Server - o serviço local de partilha - como serviço do Windows que funciona sem ninguém ter iniciado sessão; o gestor é um extra opcional, desmarcado. As operações agendadas de ficheiros não correm nesse serviço: correm no Share Manager, numa sessão iniciada, e a edição Servidor traz-as com o seu Share Manager.", "Edição Servidor: partilha sem sessão iniciada (em inglês)"],
+      ["Primeiro o agendamento", "Quero operações de ficheiros agendadas", "Copie, mova, elimine e arquive ficheiros segundo um agendamento, com uma pré-visualização antes de uma tarefa correr e um registo de cada execução. As operações agendadas de ficheiros não precisam de partilha de pastas, de servidor, de porta aberta nem de direitos de administrador: são instaladas juntamente com o Share Manager (o item «Operações agendadas» da instalação, marcado no pacote completo) e correm enquanto ele corre na sua sessão iniciada. Abra-as a partir da área de notificação, do menu de pastas do visualizador ou com uma tecla que atribuir.", "Transferir o pacote completo"],
       ["O seu próprio servidor", "Media Exchange Server", "Um servidor que você mesmo gere: os seus dispositivos inscrevem-se numa conta criada nele e alcançam-se através dele quando não se conseguem alcançar diretamente. Não é partilha de pastas, e nem o gestor nem a partilha local precisam dele.", ""]
     ],
-    "insideNote": "Dentro do pacote completo: o gestor de média e ficheiros e, como partes opcionais que ficam desligadas até que as ative, a partilha local e o agendamento (Share Manager e worker SFTP, com operações agendadas e a ligação a uma conta de intercâmbio; alojar discos FileDO .fdd é uma capacidade da partilha), codecs de vídeo offline e modelos OCR. Escolha o tipo «Compacto» para deixar a partilha de fora. O Media Exchange Server não está neste pacote.",
+    "insideNote": "Dentro do pacote completo: o gestor de média e ficheiros e, como partes opcionais que ficam desligadas até que as ative, a partilha local (Share Manager e worker SFTP, com a ligação a uma conta de intercâmbio; alojar discos FileDO .fdd é uma capacidade da partilha) e as operações agendadas de ficheiros (instaladas juntamente com o Share Manager), codecs de vídeo offline e modelos OCR. Escolha o tipo «Compacto» para deixar ambas de fora. O Media Exchange Server não está neste pacote.",
     "langLabel": "Idioma",
     "skipLabel": "Saltar para o conteúdo principal",
     "navLabel": "Navegação principal",
     "themeLabel": "Tema escuro",
-    "externalLabel": "abre num novo separador",
+    "externalLabel": "abre em uma nova aba",
     "featuresLabel": "Funcionalidades",
     "machineNote": "Esta página e a interface em português são traduções automáticas não revisadas. Correções são bem-vindas."
   },
 
   "ar": {
-    "dir": "rtl", "machine": true, "name": "العربية",
+    "dir": "rtl", "ogLocale": "ar_AR", "machine": true, "name": "العربية",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "فرز الصور والفيديو",
+    "pageTitle": "مدير ملفات لنظام Windows",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: فرز الصور والفيديو بمفتاح واحد لكل ملف",
+    "heroShotAlt": "نافذة العارض: صورة، وفوقها شريط الأدوات، وتحتها اسم الملف وتاريخه وحجمه",
     "outcome": "فرز الصور والفيديو بمفتاح واحد لكل ملف",
     "tagline": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.",
     "sharing": "«Sharing» في الاسم تعني تسليم وسائطك إلى طرف آخر: هاتف Android الخاص بك أو نسخة أخرى من البرنامج أو أي عميل SFTP. يبقى معطّلًا حتى تفعّله بنفسك.",
@@ -888,15 +1067,16 @@
     "guide": "الدليل الكامل (بالإنجليزية)",
     "serverLink": "إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)",
     "docsLink": "الوثائق (بالإنجليزية)",
-    "family": "ثلاثة أجزاء اختيارية: مدير وسائط وملفات يعرض الصور ومقاطع الفيديو ويرتّبها بمفتاح واحد ويدير الملفات في المجلدات المحلية وعلى الخوادم وعلى الأجهزة المتصلة؛ وخدمة محلية للمشاركة والجدولة تشارك المجلدات عبر SFTP وتنفّذ عمليات الملفات حسب جدول زمني وتربط هذا الحاسوب بحساب تبادل؛ وخادم Media Exchange Server الذي تشغّله بنفسك وتصل أجهزتك عبره بعضها إلى بعض - ابدأ بالمدير أو بخادم مشاركة المجلدات، ولا تضف الباقي إلا إن أردته.",
-    "doorsTitle": "مدخلان وثلاثة أجزاء اختيارية",
-    "doorsLead": "ابدأ من حيث أنت: بمدير الوسائط والملفات أو بخادم مشاركة المجلدات. كل جزء اختياري، أما Media Exchange Server فتشغّله بنفسك.",
+    "family": "أربعة أجزاء اختيارية: مدير وسائط وملفات يعرض الصور ومقاطع الفيديو ويرتّبها بمفتاح واحد ويدير الملفات في المجلدات المحلية وعلى الخوادم وعلى الأجهزة المتصلة؛ وخدمة محلية للمشاركة تشارك المجلدات عبر SFTP وتربط هذا الحاسوب بحساب تبادل؛ وعمليات الملفات المجدولة التي تشغّل النسخ والنقل والحذف والأرشفة حسب جدول زمني وتُثبَّت مع Share Manager؛ وخادم Media Exchange Server الذي تشغّله بنفسك وتصل أجهزتك عبره بعضها إلى بعض - ابدأ بالمدير أو بخادم مشاركة المجلدات، ولا تضف الباقي إلا إن أردته.",
+    "doorsTitle": "ثلاثة مداخل وأربعة أجزاء اختيارية",
+    "doorsLead": "ابدأ من حيث أنت: بمدير الوسائط والملفات أو بخادم مشاركة المجلدات أو بعمليات الملفات المجدولة. كل جزء اختياري، أما Media Exchange Server فتشغّله بنفسك.",
     "doors": [
-      ["المدير أولًا", "أحتاج إلى مدير وسائط وملفات", "اعرض الصور ومقاطع الفيديو ورتّبها بمفتاح واحد لكل ملف، وأدر الملفات في المجلدات المحلية وعلى خوادم SFTP وSMB وعلى أجهزة حساب تبادل. تثبّت الحزمة الكاملة المدير، ومعه المشاركة المحلية والجدولة كجزء اختياري يبقى متوقفًا حتى تُشغّله؛ اختر النوع «مضغوط» في الإعداد لتركه خارجًا. لا حاجة إلى خادم للترتيب.", "نزّل الحزمة الكاملة"],
-      ["الخادم أولًا", "أريد خادمًا لمجلداتي", "افتح مجلدات هذا الحاسوب على هاتف Android أو في نسخة أخرى من البرنامج أو في أي عميل SFTP، ونفّذ عمليات الملفات حسب جدول زمني. تثبّت إصدارة الخادم (setup.exe أو winget، وتتطلب صلاحيات المسؤول) Folder Share Server - خدمة المشاركة والجدولة - كخدمة Windows تعمل دون أن يكون أحد مسجّلًا الدخول؛ والمدير إضافة اختيارية غير محدّدة.", "إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)"],
+      ["المدير أولًا", "أحتاج إلى مدير وسائط وملفات", "اعرض الصور ومقاطع الفيديو ورتّبها بمفتاح واحد لكل ملف، وأدر الملفات في المجلدات المحلية وعلى خوادم SFTP وSMB وعلى أجهزة حساب تبادل. تثبّت الحزمة الكاملة المدير، ومعه المشاركة المحلية وعمليات الملفات المجدولة كجزأين اختياريين يبقيان متوقفين حتى تُشغّلهما؛ اختر النوع «مضغوط» في الإعداد لترك كليهما خارجًا. لا حاجة إلى خادم للترتيب.", "نزّل الحزمة الكاملة"],
+      ["الخادم أولًا", "أريد خادمًا لمجلداتي", "افتح مجلدات هذا الحاسوب على هاتف Android أو في نسخة أخرى من البرنامج أو في أي عميل SFTP. تثبّت إصدارة الخادم (setup.exe أو winget، وتتطلب صلاحيات المسؤول) Folder Share Server - خدمة المشاركة المحلية - كخدمة Windows تعمل دون أن يكون أحد مسجّلًا الدخول؛ والمدير إضافة اختيارية غير محدّدة. لا تعمل عمليات الملفات المجدولة في هذه الخدمة: فهي تعمل في Share Manager ضمن جلسة مسجّل فيها الدخول، وتأتي إصدارة الخادم بها مع Share Manager الخاص بها.", "إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)"],
+      ["الجدولة أولًا", "أريد عمليات ملفات حسب جدول زمني", "انسخ الملفات وانقلها واحذفها وأرشِفها حسب جدول زمني، مع معاينة قبل تشغيل أي مهمة وسجل لكل تشغيل. لا تحتاج عمليات الملفات المجدولة إلى مشاركة المجلدات ولا إلى خادم ولا إلى منفذ مفتوح ولا إلى صلاحيات المسؤول: فهي تُثبَّت مع Share Manager (عنصر «العمليات المجدولة» في الإعداد، وهو محدّد في الحزمة الكاملة) وتعمل ما دام يعمل في جلسة دخولك. افتحها من علبة النظام أو من قائمة المجلد في العارض أو بمفتاح تعيّنه.", "نزّل الحزمة الكاملة"],
       ["خادمك الخاص", "Media Exchange Server", "خادم تشغّله بنفسك: تنضم أجهزتك إلى حساب تنشئه عليه وتصل إلى بعضها عبره حين لا تستطيع الوصول إلى بعضها مباشرة. وهو ليس مشاركة مجلدات، ولا يحتاج إليه المدير ولا المشاركة المحلية.", ""]
     ],
-    "insideNote": "داخل الحزمة الكاملة: مدير الوسائط والملفات، وكأجزاء اختيارية تبقى متوقفة حتى تُشغّلها: المشاركة المحلية والجدولة (Share Manager وعامل SFTP مع عمليات مجدولة والاتصال بحساب تبادل؛ واستضافة أقراص FileDO الافتراضية قدرة من قدرات المشاركة)، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لترك المشاركة خارجًا. وMedia Exchange Server ليس في هذه الحزمة.",
+    "insideNote": "داخل الحزمة الكاملة: مدير الوسائط والملفات، وكأجزاء اختيارية تبقى متوقفة حتى تُشغّلها: المشاركة المحلية (Share Manager وعامل SFTP مع الاتصال بحساب تبادل؛ واستضافة أقراص FileDO الافتراضية قدرة من قدرات المشاركة) وعمليات الملفات المجدولة (تُثبَّت مع Share Manager)، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لترك الاثنتين خارجًا. وMedia Exchange Server ليس في هذه الحزمة.",
     "langLabel": "اللغة",
     "skipLabel": "انتقل إلى المحتوى الرئيسي",
     "navLabel": "التنقل الرئيسي",
@@ -907,10 +1087,11 @@
   },
 
   "hi": {
-    "dir": "ltr", "machine": true, "name": "हिन्दी",
+    "dir": "ltr", "ogLocale": "hi_IN", "machine": true, "name": "हिन्दी",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "फ़ोटो और वीडियो छाँटें",
+    "pageTitle": "Windows के लिए फ़ाइल मैनेजर",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो छाँटें",
+    "heroShotAlt": "व्यूअर विंडो: एक फ़ोटो, ऊपर टूलबार और नीचे फ़ाइल का नाम, तारीख़ और आकार",
     "outcome": "हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो छाँटें",
     "tagline": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।",
     "sharing": "नाम में «Sharing» का मतलब है अपनी मीडिया किसी और को देना: आपका Android फ़ोन, प्रोग्राम की कोई दूसरी प्रति, या कोई भी SFTP क्लाइंट। जब तक आप चालू न करें, यह बंद रहता है।",
@@ -944,15 +1125,16 @@
     "guide": "पूरी गाइड (अंग्रेज़ी में)",
     "serverLink": "सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)",
     "docsLink": "दस्तावेज़ (अंग्रेज़ी में)",
-    "family": "तीन वैकल्पिक हिस्से: मीडिया और फ़ाइल मैनेजर, जो एक कुंजी से फ़ोटो और वीडियो देखता और छाँटता है और स्थानीय फ़ोल्डरों, सर्वरों और जुड़े उपकरणों पर फ़ाइलें सँभालता है; स्थानीय साझाकरण और शेड्यूलिंग सेवा, जो SFTP पर फ़ोल्डर साझा करती है, फ़ाइल कार्रवाइयाँ शेड्यूल पर चलाती है और इस पीसी को एक्सचेंज खाते से जोड़ती है; और Media Exchange Server, जिसे आप ख़ुद चलाते हैं और जिसके ज़रिए आपके उपकरण एक-दूसरे तक पहुँचते हैं - मैनेजर से या फ़ोल्डर-साझाकरण सर्वर से शुरू करें, और बाक़ी सिर्फ़ तब जोड़ें जब आप चाहें।",
-    "doorsTitle": "दो रास्ते, तीन वैकल्पिक हिस्से",
-    "doorsLead": "जहाँ हैं वहीं से शुरू करें: मीडिया और फ़ाइल मैनेजर से या फ़ोल्डर-साझाकरण सर्वर से। हर हिस्सा वैकल्पिक है, और Media Exchange Server को आप ख़ुद चलाते हैं।",
+    "family": "चार वैकल्पिक हिस्से: मीडिया और फ़ाइल मैनेजर, जो एक कुंजी से फ़ोटो और वीडियो देखता और छाँटता है और स्थानीय फ़ोल्डरों, सर्वरों और जुड़े उपकरणों पर फ़ाइलें सँभालता है; स्थानीय साझाकरण सेवा, जो SFTP पर फ़ोल्डर साझा करती है और इस पीसी को एक्सचेंज खाते से जोड़ती है; शेड्यूल किए गए फ़ाइल ऑपरेशन, जो कॉपी, मूव, डिलीट और आर्काइव को शेड्यूल पर चलाते हैं और Share Manager के साथ इंस्टॉल होते हैं; और Media Exchange Server, जिसे आप ख़ुद चलाते हैं और जिसके ज़रिए आपके उपकरण एक-दूसरे तक पहुँचते हैं - मैनेजर से या फ़ोल्डर-साझाकरण सर्वर से शुरू करें, और बाक़ी सिर्फ़ तब जोड़ें जब आप चाहें।",
+    "doorsTitle": "तीन रास्ते, चार वैकल्पिक हिस्से",
+    "doorsLead": "जहाँ हैं वहीं से शुरू करें: मीडिया और फ़ाइल मैनेजर से, फ़ोल्डर-साझाकरण सर्वर से या शेड्यूल किए गए फ़ाइल ऑपरेशन से। हर हिस्सा वैकल्पिक है, और Media Exchange Server को आप ख़ुद चलाते हैं।",
     "doors": [
-      ["पहले मैनेजर", "मुझे मीडिया और फ़ाइल मैनेजर चाहिए", "हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें, और स्थानीय फ़ोल्डरों, SFTP और SMB सर्वरों तथा एक्सचेंज खाते के उपकरणों पर फ़ाइलें सँभालें। पूरा पैकेज मैनेजर इंस्टॉल करता है, और स्थानीय साझाकरण व शेड्यूलिंग एक वैकल्पिक हिस्से के रूप में, जो आपके चालू करने तक बंद रहता है; इसे छोड़ने के लिए सेटअप में «कॉम्पैक्ट» प्रकार चुनें। छाँटने के लिए किसी सर्वर की ज़रूरत नहीं।", "पूरा पैकेज डाउनलोड करें"],
-      ["पहले सर्वर", "मुझे अपने फ़ोल्डरों के लिए सर्वर चाहिए", "इस पीसी के फ़ोल्डर Android फ़ोन पर, प्रोग्राम की दूसरी प्रति में या किसी भी SFTP क्लाइंट में खोलें, और फ़ाइल कार्रवाइयाँ शेड्यूल पर चलाएँ। सर्वर संस्करण (setup.exe या winget, प्रशासक अधिकार चाहिए) साझाकरण और शेड्यूलिंग सेवा Folder Share Server को Windows सेवा के रूप में इंस्टॉल करता है, जो किसी के साइन इन किए बिना चलती है; मैनेजर एक वैकल्पिक, बिना टिक वाला अतिरिक्त हिस्सा है।", "सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)"],
+      ["पहले मैनेजर", "मुझे मीडिया और फ़ाइल मैनेजर चाहिए", "हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें, और स्थानीय फ़ोल्डरों, SFTP और SMB सर्वरों तथा एक्सचेंज खाते के उपकरणों पर फ़ाइलें सँभालें। पूरा पैकेज मैनेजर इंस्टॉल करता है, और स्थानीय साझाकरण व शेड्यूल किए गए फ़ाइल ऑपरेशन वैकल्पिक हिस्सों के रूप में, जो आपके चालू करने तक बंद रहते हैं; इन्हें छोड़ने के लिए सेटअप में «कॉम्पैक्ट» प्रकार चुनें। छाँटने के लिए किसी सर्वर की ज़रूरत नहीं।", "पूरा पैकेज डाउनलोड करें"],
+      ["पहले सर्वर", "मुझे अपने फ़ोल्डरों के लिए सर्वर चाहिए", "इस पीसी के फ़ोल्डर Android फ़ोन पर, प्रोग्राम की दूसरी प्रति में या किसी भी SFTP क्लाइंट में खोलें। सर्वर संस्करण (setup.exe या winget, प्रशासक अधिकार चाहिए) स्थानीय साझाकरण सेवा Folder Share Server को Windows सेवा के रूप में इंस्टॉल करता है, जो किसी के साइन इन किए बिना चलती है; मैनेजर एक वैकल्पिक, बिना टिक वाला अतिरिक्त हिस्सा है। शेड्यूल किए गए फ़ाइल ऑपरेशन इस सेवा में नहीं चलते: वे साइन इन किए गए सत्र में Share Manager में चलते हैं, और सर्वर संस्करण उन्हें अपने Share Manager के साथ लाता है।", "सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)"],
+      ["पहले शेड्यूल", "मुझे शेड्यूल पर फ़ाइल ऑपरेशन चाहिए", "फ़ाइलों को शेड्यूल पर कॉपी, मूव, डिलीट और आर्काइव करें - कोई कार्य चलने से पहले पूर्वावलोकन और हर रन का जर्नल मिलता है। शेड्यूल किए गए फ़ाइल ऑपरेशन को फ़ोल्डर साझाकरण, सर्वर, खुला पोर्ट या प्रशासक अधिकार नहीं चाहिए: वे Share Manager के साथ इंस्टॉल होते हैं (सेटअप का «शेड्यूल किए गए ऑपरेशन» आइटम, पूरे पैकेज में टिक किया हुआ) और तब तक चलते हैं जब तक वह आपके साइन इन किए गए सत्र में चलता है। उन्हें ट्रे से, व्यूअर के फ़ोल्डर मेनू से या आपकी तय की गई कुंजी से खोलें।", "पूरा पैकेज डाउनलोड करें"],
       ["आपका अपना सर्वर", "Media Exchange Server", "एक सर्वर जिसे आप ख़ुद चलाते हैं: आपके उपकरण उस पर बनाए गए खाते में जुड़ते हैं और जब सीधे एक-दूसरे तक नहीं पहुँच सकते, तब उसी के ज़रिए पहुँचते हैं। यह फ़ोल्डर-साझाकरण नहीं है, और न मैनेजर को, न स्थानीय साझाकरण को इसकी ज़रूरत है।", ""]
     ],
-    "insideNote": "पूरे पैकेज के भीतर: मीडिया और फ़ाइल मैनेजर, और वैकल्पिक हिस्से जो आपके चालू करने तक बंद रहते हैं - स्थानीय साझाकरण और शेड्यूलिंग (Share Manager और SFTP वर्कर, शेड्यूल पर चलने वाली फ़ाइल कार्रवाइयों और एक्सचेंज खाते से जुड़ाव के साथ; FileDO .fdd डिस्क की होस्टिंग साझाकरण की एक क्षमता है), ऑफ़लाइन वीडियो कोडेक और OCR मॉडल। साझाकरण को छोड़ने के लिए «कॉम्पैक्ट» प्रकार चुनें। Media Exchange Server इस पैकेज में नहीं है।",
+    "insideNote": "पूरे पैकेज के भीतर: मीडिया और फ़ाइल मैनेजर, और वैकल्पिक हिस्से जो आपके चालू करने तक बंद रहते हैं - स्थानीय साझाकरण (Share Manager और SFTP वर्कर, एक्सचेंज खाते से जुड़ाव के साथ; FileDO .fdd डिस्क की होस्टिंग साझाकरण की एक क्षमता है) और शेड्यूल किए गए फ़ाइल ऑपरेशन (Share Manager के साथ इंस्टॉल होते हैं), ऑफ़लाइन वीडियो कोडेक और OCR मॉडल। दोनों को छोड़ने के लिए «कॉम्पैक्ट» प्रकार चुनें। Media Exchange Server इस पैकेज में नहीं है।",
     "langLabel": "भाषा",
     "skipLabel": "मुख्य सामग्री पर जाएँ",
     "navLabel": "मुख्य नेविगेशन",
@@ -963,10 +1145,11 @@
   },
 
   "bn": {
-    "dir": "ltr", "machine": true, "name": "বাংলা",
+    "dir": "ltr", "ogLocale": "bn_BD", "machine": true, "name": "বাংলা",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "ছবি ও ভিডিও সাজান",
+    "pageTitle": "Windows-এর জন্য ফাইল ম্যানেজার",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: প্রতিটি ফাইলের জন্য এক কী দিয়ে ছবি ও ভিডিও সাজান",
+    "heroShotAlt": "ভিউয়ার উইন্ডো: একটি ছবি, উপরে টুলবার এবং নিচে ফাইলের নাম, তারিখ ও আকার",
     "outcome": "প্রতিটি ফাইলের জন্য এক কী দিয়ে ছবি ও ভিডিও সাজান",
     "tagline": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।",
     "sharing": "নামের «Sharing»-এর অর্থ আপনার মিডিয়া অন্য কাউকে দেওয়া: আপনার Android ফোন, প্রোগ্রামের অন্য কোনো কপি, বা যেকোনো SFTP ক্লায়েন্ট। না চালানো পর্যন্ত এটি বন্ধ থাকে।",
@@ -1000,15 +1183,16 @@
     "guide": "পূর্ণ নির্দেশিকা (ইংরেজিতে)",
     "serverLink": "সার্ভার সংস্করণ: সাইন ইন ছাড়াই শেয়ারিং (ইংরেজিতে)",
     "docsLink": "নথি (ইংরেজিতে)",
-    "family": "তিনটি ঐচ্ছিক অংশ: মিডিয়া ও ফাইল ম্যানেজার, যা এক কী-তে ছবি ও ভিডিও দেখে ও সাজায় এবং স্থানীয় ফোল্ডারে, সার্ভারে ও সংযুক্ত ডিভাইসে ফাইল পরিচালনা করে; স্থানীয় শেয়ারিং ও সময়সূচি সেবা, যা SFTP-তে ফোল্ডার শেয়ার করে, সময়সূচি অনুযায়ী ফাইল অপারেশন চালায় এবং এই পিসিকে একটি এক্সচেঞ্জ অ্যাকাউন্টের সঙ্গে যুক্ত করে; এবং Media Exchange Server, যা আপনি নিজে চালান এবং যার মাধ্যমে আপনার ডিভাইসগুলো একে অপরের কাছে পৌঁছায় - ম্যানেজার দিয়ে বা ফোল্ডার-শেয়ারিং সার্ভার দিয়ে শুরু করুন, আর বাকিটা চাইলে তবেই যোগ করুন।",
-    "doorsTitle": "দুটি প্রবেশপথ, তিনটি ঐচ্ছিক অংশ",
-    "doorsLead": "যেখানে আছেন সেখান থেকেই শুরু করুন: মিডিয়া ও ফাইল ম্যানেজার দিয়ে বা ফোল্ডার-শেয়ারিং সার্ভার দিয়ে। প্রতিটি অংশ ঐচ্ছিক, আর Media Exchange Server আপনি নিজে চালান।",
+    "family": "চারটি ঐচ্ছিক অংশ: মিডিয়া ও ফাইল ম্যানেজার, যা এক কী-তে ছবি ও ভিডিও দেখে ও সাজায় এবং স্থানীয় ফোল্ডারে, সার্ভারে ও সংযুক্ত ডিভাইসে ফাইল পরিচালনা করে; স্থানীয় শেয়ারিং সেবা, যা SFTP-তে ফোল্ডার শেয়ার করে এবং এই পিসিকে একটি এক্সচেঞ্জ অ্যাকাউন্টের সঙ্গে যুক্ত করে; নির্ধারিত ফাইল অপারেশন, যা সময়সূচি অনুযায়ী কপি, মুভ, ডিলিট ও আর্কাইভ চালায় এবং Share Manager-এর সঙ্গে ইনস্টল হয়; এবং Media Exchange Server, যা আপনি নিজে চালান এবং যার মাধ্যমে আপনার ডিভাইসগুলো একে অপরের কাছে পৌঁছায় - ম্যানেজার দিয়ে বা ফোল্ডার-শেয়ারিং সার্ভার দিয়ে শুরু করুন, আর বাকিটা চাইলে তবেই যোগ করুন।",
+    "doorsTitle": "তিনটি প্রবেশপথ, চারটি ঐচ্ছিক অংশ",
+    "doorsLead": "যেখানে আছেন সেখান থেকেই শুরু করুন: মিডিয়া ও ফাইল ম্যানেজার দিয়ে, ফোল্ডার-শেয়ারিং সার্ভার দিয়ে বা নির্ধারিত ফাইল অপারেশন দিয়ে। প্রতিটি অংশ ঐচ্ছিক, আর Media Exchange Server আপনি নিজে চালান।",
     "doors": [
-      ["আগে ম্যানেজার", "আমার একটি মিডিয়া ও ফাইল ম্যানেজার দরকার", "প্রতিটি ফাইলের জন্য একটি কী দিয়ে ছবি ও ভিডিও দেখুন ও সাজান, আর স্থানীয় ফোল্ডারে, SFTP ও SMB সার্ভারে এবং এক্সচেঞ্জ অ্যাকাউন্টের ডিভাইসে ফাইল পরিচালনা করুন। পূর্ণ প্যাকেজ ম্যানেজার ইনস্টল করে, সঙ্গে স্থানীয় শেয়ারিং ও সময়সূচি একটি ঐচ্ছিক অংশ হিসেবে, যা আপনি চালু না করা পর্যন্ত বন্ধ থাকে; এটি বাদ দিতে সেটআপে «কমপ্যাক্ট» ধরন বেছে নিন। সাজাতে কোনো সার্ভার লাগে না।", "পূর্ণ প্যাকেজ ডাউনলোড করুন"],
-      ["আগে সার্ভার", "আমার ফোল্ডারগুলোর জন্য একটি সার্ভার চাই", "এই পিসির ফোল্ডার Android ফোনে, প্রোগ্রামের অন্য কপিতে বা যেকোনো SFTP ক্লায়েন্টে খুলুন, এবং সময়সূচি অনুযায়ী ফাইল অপারেশন চালান। সার্ভার সংস্করণ (setup.exe বা winget, প্রশাসকের অধিকার লাগে) শেয়ারিং ও সময়সূচি সেবা Folder Share Server-কে Windows সার্ভিস হিসেবে ইনস্টল করে, যা কেউ সাইন ইন না করলেও চলে; ম্যানেজার একটি ঐচ্ছিক, টিক-না-দেওয়া অতিরিক্ত অংশ।", "সার্ভার সংস্করণ: সাইন ইন ছাড়াই শেয়ারিং (ইংরেজিতে)"],
+      ["আগে ম্যানেজার", "আমার একটি মিডিয়া ও ফাইল ম্যানেজার দরকার", "প্রতিটি ফাইলের জন্য একটি কী দিয়ে ছবি ও ভিডিও দেখুন ও সাজান, আর স্থানীয় ফোল্ডারে, SFTP ও SMB সার্ভারে এবং এক্সচেঞ্জ অ্যাকাউন্টের ডিভাইসে ফাইল পরিচালনা করুন। পূর্ণ প্যাকেজ ম্যানেজার ইনস্টল করে, সঙ্গে স্থানীয় শেয়ারিং ও নির্ধারিত ফাইল অপারেশন ঐচ্ছিক অংশ হিসেবে, যা আপনি চালু না করা পর্যন্ত বন্ধ থাকে; দুটিই বাদ দিতে সেটআপে «কমপ্যাক্ট» ধরন বেছে নিন। সাজাতে কোনো সার্ভার লাগে না।", "পূর্ণ প্যাকেজ ডাউনলোড করুন"],
+      ["আগে সার্ভার", "আমার ফোল্ডারগুলোর জন্য একটি সার্ভার চাই", "এই পিসির ফোল্ডার Android ফোনে, প্রোগ্রামের অন্য কপিতে বা যেকোনো SFTP ক্লায়েন্টে খুলুন। সার্ভার সংস্করণ (setup.exe বা winget, প্রশাসকের অধিকার লাগে) স্থানীয় শেয়ারিং সেবা Folder Share Server-কে Windows সার্ভিস হিসেবে ইনস্টল করে, যা কেউ সাইন ইন না করলেও চলে; ম্যানেজার একটি ঐচ্ছিক, টিক-না-দেওয়া অতিরিক্ত অংশ। নির্ধারিত ফাইল অপারেশন এই সার্ভিসে চলে না: সেগুলো সাইন ইন করা সেশনে Share Manager-এ চলে, আর সার্ভার সংস্করণ সেগুলো তার Share Manager-এর সঙ্গে নিয়ে আসে।", "সার্ভার সংস্করণ: সাইন ইন ছাড়াই শেয়ারিং (ইংরেজিতে)"],
+      ["আগে সময়সূচি", "আমি সময়সূচি অনুযায়ী ফাইল অপারেশন চাই", "সময়সূচি অনুযায়ী ফাইল কপি, মুভ, ডিলিট ও আর্কাইভ করুন - কোনো কাজ চলার আগে প্রিভিউ এবং প্রতিটি রানের জার্নাল সহ। নির্ধারিত ফাইল অপারেশনের জন্য ফোল্ডার শেয়ারিং, সার্ভার, খোলা পোর্ট বা প্রশাসকের অধিকার লাগে না: এগুলো Share Manager-এর সঙ্গে ইনস্টল হয় (সেটআপের «নির্ধারিত অপারেশন» আইটেম, পূর্ণ প্যাকেজে টিক দেওয়া) এবং Share Manager আপনার সাইন ইন করা সেশনে চলা পর্যন্ত চলে। এগুলো ট্রে থেকে, ভিউয়ারের ফোল্ডার মেনু থেকে বা আপনার ঠিক করা কী দিয়ে খুলুন।", "পূর্ণ প্যাকেজ ডাউনলোড করুন"],
       ["আপনার নিজের সার্ভার", "Media Exchange Server", "একটি সার্ভার যা আপনি নিজে চালান: আপনার ডিভাইসগুলো তাতে তৈরি করা একটি অ্যাকাউন্টে যুক্ত হয় এবং সরাসরি একে অপরের কাছে পৌঁছাতে না পারলে তার মাধ্যমে পৌঁছায়। এটি ফোল্ডার শেয়ারিং নয়, আর ম্যানেজার বা স্থানীয় শেয়ারিং কারোরই এটি লাগে না।", ""]
     ],
-    "insideNote": "পূর্ণ প্যাকেজের ভেতরে: মিডিয়া ও ফাইল ম্যানেজার, এবং ঐচ্ছিক অংশ যা আপনি চালু না করা পর্যন্ত বন্ধ থাকে - স্থানীয় শেয়ারিং ও সময়সূচি (Share Manager ও SFTP ওয়ার্কার, সময়সূচি অনুযায়ী ফাইল অপারেশন ও এক্সচেঞ্জ অ্যাকাউন্টে সংযোগসহ; FileDO .fdd ডিস্ক হোস্ট করা শেয়ারিংয়ের একটি সামর্থ্য), অফলাইন ভিডিও কোডেক ও OCR মডেল। শেয়ারিং বাদ দিতে «কমপ্যাক্ট» ধরন বেছে নিন। Media Exchange Server এই প্যাকেজে নেই।",
+    "insideNote": "পূর্ণ প্যাকেজের ভেতরে: মিডিয়া ও ফাইল ম্যানেজার, এবং ঐচ্ছিক অংশ যা আপনি চালু না করা পর্যন্ত বন্ধ থাকে - স্থানীয় শেয়ারিং (Share Manager ও SFTP ওয়ার্কার এবং এক্সচেঞ্জ অ্যাকাউন্টে সংযোগসহ; FileDO .fdd ডিস্ক হোস্ট করা শেয়ারিংয়ের একটি সামর্থ্য) ও নির্ধারিত ফাইল অপারেশন (Share Manager-এর সঙ্গে ইনস্টল হয়), অফলাইন ভিডিও কোডেক ও OCR মডেল। দুটিই বাদ দিতে «কমপ্যাক্ট» ধরন বেছে নিন। Media Exchange Server এই প্যাকেজে নেই।",
     "langLabel": "ভাষা",
     "skipLabel": "মূল বিষয়বস্তুতে যান",
     "navLabel": "প্রধান নেভিগেশন",
@@ -1019,10 +1203,11 @@
   },
 
   "ur": {
-    "dir": "rtl", "machine": true, "name": "اردو",
+    "dir": "rtl", "ogLocale": "ur_PK", "machine": true, "name": "اردو",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "تصاویر اور ویڈیو ترتیب دیں",
+    "pageTitle": "Windows کے لیے فائل مینیجر",
     "ogAlt": "Fast Media Sorter & Sharing for Windows: ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیو ترتیب دیں",
+    "heroShotAlt": "ویور ونڈو: ایک تصویر، اوپر ٹول بار اور نیچے فائل کا نام، تاریخ اور سائز",
     "outcome": "ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیو ترتیب دیں",
     "tagline": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔",
     "sharing": "نام میں «Sharing» کا مطلب ہے اپنا میڈیا کسی اور کو دینا: آپ کا Android فون، پروگرام کی کوئی دوسری کاپی، یا کوئی بھی SFTP کلائنٹ۔ جب تک آپ آن نہ کریں، یہ بند رہتا ہے۔",
@@ -1056,15 +1241,16 @@
     "guide": "مکمل رہنما (انگریزی میں)",
     "serverLink": "سرور ایڈیشن: سائن اِن کے بغیر شیئرنگ (انگریزی میں)",
     "docsLink": "دستاویزات (انگریزی میں)",
-    "family": "تین اختیاری حصے: میڈیا اور فائل مینیجر، جو ایک کلید سے تصاویر اور ویڈیو دیکھتا اور ترتیب دیتا ہے اور مقامی فولڈرز، سرورز اور جڑے ہوئے آلات پر فائلیں سنبھالتا ہے؛ مقامی شیئرنگ اور شیڈولنگ سروس، جو SFTP پر فولڈر شیئر کرتی ہے، فائل آپریشنز شیڈول کے مطابق چلاتی ہے اور اس پی سی کو ایک ایکسچینج اکاؤنٹ سے جوڑتی ہے؛ اور Media Exchange Server، جسے آپ خود چلاتے ہیں اور جس کے ذریعے آپ کے آلات ایک دوسرے تک پہنچتے ہیں - مینیجر سے یا فولڈر شیئرنگ سرور سے شروع کریں، اور باقی صرف تب شامل کریں جب آپ چاہیں۔",
-    "doorsTitle": "دو راستے، تین اختیاری حصے",
-    "doorsLead": "جہاں ہیں وہیں سے شروع کریں: میڈیا اور فائل مینیجر سے یا فولڈر شیئرنگ سرور سے۔ ہر حصہ اختیاری ہے، اور Media Exchange Server کو آپ خود چلاتے ہیں۔",
+    "family": "چار اختیاری حصے: میڈیا اور فائل مینیجر، جو ایک کلید سے تصاویر اور ویڈیو دیکھتا اور ترتیب دیتا ہے اور مقامی فولڈرز، سرورز اور جڑے ہوئے آلات پر فائلیں سنبھالتا ہے؛ مقامی شیئرنگ سروس، جو SFTP پر فولڈر شیئر کرتی ہے اور اس پی سی کو ایک ایکسچینج اکاؤنٹ سے جوڑتی ہے؛ شیڈولڈ فائل آپریشنز، جو کاپی، منتقلی، حذف اور آرکائیو کو شیڈول کے مطابق چلاتے ہیں اور Share Manager کے ساتھ انسٹال ہوتے ہیں؛ اور Media Exchange Server، جسے آپ خود چلاتے ہیں اور جس کے ذریعے آپ کے آلات ایک دوسرے تک پہنچتے ہیں - مینیجر سے یا فولڈر شیئرنگ سرور سے شروع کریں، اور باقی صرف تب شامل کریں جب آپ چاہیں۔",
+    "doorsTitle": "تین راستے، چار اختیاری حصے",
+    "doorsLead": "جہاں ہیں وہیں سے شروع کریں: میڈیا اور فائل مینیجر سے، فولڈر شیئرنگ سرور سے یا شیڈولڈ فائل آپریشنز سے۔ ہر حصہ اختیاری ہے، اور Media Exchange Server کو آپ خود چلاتے ہیں۔",
     "doors": [
-      ["پہلے مینیجر", "مجھے میڈیا اور فائل مینیجر چاہیے", "ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیوز دیکھیں اور ترتیب دیں، اور مقامی فولڈرز، SFTP اور SMB سرورز اور ایکسچینج اکاؤنٹ کے آلات پر فائلیں سنبھالیں۔ مکمل پیکیج مینیجر انسٹال کرتا ہے، اور مقامی شیئرنگ اور شیڈولنگ ایک اختیاری حصے کے طور پر، جو آپ کے چالو کرنے تک بند رہتی ہے؛ اسے چھوڑنے کے لیے سیٹ اپ میں «کمپیکٹ» قسم چنیں۔ ترتیب دینے کے لیے کسی سرور کی ضرورت نہیں۔", "مکمل پیکیج ڈاؤن لوڈ کریں"],
-      ["پہلے سرور", "مجھے اپنے فولڈرز کے لیے سرور چاہیے", "اس پی سی کے فولڈرز Android فون پر، پروگرام کی دوسری کاپی میں یا کسی بھی SFTP کلائنٹ میں کھولیں، اور فائل آپریشنز شیڈول کے مطابق چلائیں۔ سرور ایڈیشن (setup.exe یا winget، ایڈمنسٹریٹر کے حقوق درکار) شیئرنگ اور شیڈولنگ سروس Folder Share Server کو Windows سروس کے طور پر انسٹال کرتا ہے جو کسی کے سائن اِن کیے بغیر چلتی ہے؛ مینیجر ایک اختیاری، بغیر نشان والا اضافہ ہے۔", "سرور ایڈیشن: سائن اِن کے بغیر شیئرنگ (انگریزی میں)"],
+      ["پہلے مینیجر", "مجھے میڈیا اور فائل مینیجر چاہیے", "ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیوز دیکھیں اور ترتیب دیں، اور مقامی فولڈرز، SFTP اور SMB سرورز اور ایکسچینج اکاؤنٹ کے آلات پر فائلیں سنبھالیں۔ مکمل پیکیج مینیجر انسٹال کرتا ہے، اور مقامی شیئرنگ اور شیڈولڈ فائل آپریشنز اختیاری حصوں کے طور پر، جو آپ کے چالو کرنے تک بند رہتے ہیں؛ دونوں کو چھوڑنے کے لیے سیٹ اپ میں «کمپیکٹ» قسم چنیں۔ ترتیب دینے کے لیے کسی سرور کی ضرورت نہیں۔", "مکمل پیکیج ڈاؤن لوڈ کریں"],
+      ["پہلے سرور", "مجھے اپنے فولڈرز کے لیے سرور چاہیے", "اس پی سی کے فولڈرز Android فون پر، پروگرام کی دوسری کاپی میں یا کسی بھی SFTP کلائنٹ میں کھولیں۔ سرور ایڈیشن (setup.exe یا winget، ایڈمنسٹریٹر کے حقوق درکار) مقامی شیئرنگ سروس Folder Share Server کو Windows سروس کے طور پر انسٹال کرتا ہے جو کسی کے سائن اِن کیے بغیر چلتی ہے؛ مینیجر ایک اختیاری، بغیر نشان والا اضافہ ہے۔ شیڈولڈ فائل آپریشنز اس سروس میں نہیں چلتے: وہ سائن اِن شدہ سیشن میں Share Manager کے اندر چلتے ہیں، اور سرور ایڈیشن انہیں اپنے Share Manager کے ساتھ لاتا ہے۔", "سرور ایڈیشن: سائن اِن کے بغیر شیئرنگ (انگریزی میں)"],
+      ["پہلے شیڈول", "مجھے شیڈول پر فائل آپریشنز چاہییں", "فائلوں کو شیڈول کے مطابق کاپی، منتقل، حذف اور آرکائیو کریں - کوئی ٹاسک چلنے سے پہلے پیش منظر اور ہر رن کا جرنل ملتا ہے۔ شیڈولڈ فائل آپریشنز کو فولڈر شیئرنگ، سرور، کھلا پورٹ یا ایڈمنسٹریٹر کے حقوق درکار نہیں: وہ Share Manager کے ساتھ انسٹال ہوتے ہیں (سیٹ اپ کا «شیڈولڈ آپریشنز» آئٹم، مکمل پیکیج میں نشان زد) اور اس وقت تک چلتے ہیں جب تک وہ آپ کے سائن اِن شدہ سیشن میں چلتا ہے۔ انہیں ٹرے سے، ویوئر کے فولڈر مینو سے یا آپ کی مقرر کردہ کلید سے کھولیں۔", "مکمل پیکیج ڈاؤن لوڈ کریں"],
       ["آپ کا اپنا سرور", "Media Exchange Server", "ایک سرور جسے آپ خود چلاتے ہیں: آپ کے آلات اس پر بنائے گئے اکاؤنٹ میں شامل ہوتے ہیں اور جب براہِ راست ایک دوسرے تک نہ پہنچ سکیں تو اسی کے ذریعے پہنچتے ہیں۔ یہ فولڈر شیئرنگ نہیں ہے، اور نہ مینیجر کو، نہ مقامی شیئرنگ کو اس کی ضرورت ہے۔", ""]
     ],
-    "insideNote": "مکمل پیکیج کے اندر: میڈیا اور فائل مینیجر، اور اختیاری حصے جو آپ کے چالو کرنے تک بند رہتے ہیں - مقامی شیئرنگ اور شیڈولنگ (Share Manager اور SFTP ورکر، شیڈول کے مطابق فائل آپریشنز اور ایکسچینج اکاؤنٹ سے جڑنے کے ساتھ؛ FileDO .fdd ڈسکس کی میزبانی شیئرنگ کی ایک صلاحیت ہے)، آف لائن ویڈیو کوڈیکس اور OCR ماڈلز۔ شیئرنگ کو چھوڑنے کے لیے «کمپیکٹ» قسم چنیں۔ Media Exchange Server اس پیکیج میں نہیں ہے۔",
+    "insideNote": "مکمل پیکیج کے اندر: میڈیا اور فائل مینیجر، اور اختیاری حصے جو آپ کے چالو کرنے تک بند رہتے ہیں - مقامی شیئرنگ (Share Manager اور SFTP ورکر، ایکسچینج اکاؤنٹ سے جڑنے کے ساتھ؛ FileDO .fdd ڈسکس کی میزبانی شیئرنگ کی ایک صلاحیت ہے) اور شیڈولڈ فائل آپریشنز (Share Manager کے ساتھ انسٹال ہوتے ہیں)، آف لائن ویڈیو کوڈیکس اور OCR ماڈلز۔ دونوں کو چھوڑنے کے لیے «کمپیکٹ» قسم چنیں۔ Media Exchange Server اس پیکیج میں نہیں ہے۔",
     "langLabel": "زبان",
     "skipLabel": "مرکزی مواد پر جائیں",
     "navLabel": "بنیادی نیویگیشن",
@@ -1075,10 +1261,11 @@
   },
 
   "zh": {
-    "dir": "ltr", "machine": true, "name": "中文",
+    "dir": "ltr", "ogLocale": "zh_CN", "machine": true, "name": "中文",
     "title": "Fast Media Sorter & Sharing for Windows",
-    "pageTitle": "整理照片和视频",
+    "pageTitle": "Windows 文件管理器",
     "ogAlt": "Fast Media Sorter & Sharing for Windows：用一个按键整理每个照片和视频文件",
+    "heroShotAlt": "查看器窗口：一张照片，上方是工具栏，下方是文件名、日期和大小",
     "outcome": "用一个按键整理每个照片和视频文件",
     "tagline": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。",
     "sharing": "名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。",
@@ -1112,15 +1299,16 @@
     "guide": "完整指南（英文）",
     "serverLink": "服务器版：无需登录的共享（英文）",
     "docsLink": "文档（英文）",
-    "family": "三个可选部分：媒体与文件管理器，用一个按键查看并整理照片和视频，并管理本地文件夹、服务器和已连接设备上的文件；本地共享与计划服务，通过 SFTP 共享文件夹、按计划运行文件操作，并把这台电脑连接到交换账户；以及由您自己运行的 Media Exchange Server，您的设备通过它彼此互通 - 可以从管理器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。",
-    "doorsTitle": "两种入口，三个可选部分",
-    "doorsLead": "从您所在之处开始：用媒体与文件管理器，或用文件夹共享服务器。每个部分都是可选的，Media Exchange Server 由您自己运行。",
+    "family": "四个可选部分：媒体与文件管理器，用一个按键查看并整理照片和视频，并管理本地文件夹、服务器和已连接设备上的文件；本地共享服务，通过 SFTP 共享文件夹，并把这台电脑连接到交换账户；计划文件操作，按计划运行复制、移动、删除和归档，与 Share Manager 一起安装；以及由您自己运行的 Media Exchange Server，您的设备通过它彼此互通 - 可以从管理器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。",
+    "doorsTitle": "三种入口，四个可选部分",
+    "doorsLead": "从您所在之处开始：用媒体与文件管理器、文件夹共享服务器，或计划文件操作。每个部分都是可选的，Media Exchange Server 由您自己运行。",
     "doors": [
-      ["先用管理器", "我需要媒体与文件管理器", "每个文件一个按键，查看并整理照片和视频，并管理本地文件夹、SFTP 与 SMB 服务器以及交换账户设备上的文件。完整安装包会安装管理器，并把本地共享与计划作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可不装它。整理媒体不需要任何服务器。", "下载完整安装包"],
-      ["先用服务器", "我想为我的文件夹配一台服务器", "在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹，并按计划运行文件操作。服务器版（setup.exe 或 winget，需要管理员权限）把共享与计划服务 Folder Share Server 安装为 Windows 服务，无人登录时也能运行；管理器是可选的附加项，默认不勾选。", "服务器版：无需登录的共享（英文）"],
+      ["先用管理器", "我需要媒体与文件管理器", "每个文件一个按键，查看并整理照片和视频，并管理本地文件夹、SFTP 与 SMB 服务器以及交换账户设备上的文件。完整安装包会安装管理器，并把本地共享和计划文件操作作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可两者都不装。整理媒体不需要任何服务器。", "下载完整安装包"],
+      ["先用服务器", "我想为我的文件夹配一台服务器", "在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹。服务器版（setup.exe 或 winget，需要管理员权限）把本地共享服务 Folder Share Server 安装为 Windows 服务，无人登录时也能运行；管理器是可选的附加项，默认不勾选。计划文件操作不在该服务中运行：它们在已登录的会话里由 Share Manager 运行，服务器版随其 Share Manager 一并提供。", "服务器版：无需登录的共享（英文）"],
+      ["先用计划", "我想按计划运行文件操作", "按计划复制、移动、删除和归档文件，任务运行前可预览，每次运行都有日志。计划文件操作不需要文件夹共享、服务器、开放端口或管理员权限：它们与 Share Manager 一起安装（安装程序中的「计划操作」项，完整安装包中默认勾选），并在 Share Manager 于您已登录的会话中运行期间运行。可从托盘、查看器的文件夹菜单打开，或用您指定的按键打开。", "下载完整安装包"],
       ["您自己的服务器", "Media Exchange Server", "一台由您自己运行的服务器：您的设备加入在它上面创建的账户，在无法直接互相访问时通过它互通。它不是文件夹共享，管理器和本地共享都不需要它。", ""]
     ],
-    "insideNote": "完整安装包内含：媒体与文件管理器，以及启用前保持关闭的可选部分 - 本地共享与计划（Share Manager 与 SFTP 工作进程，含按计划运行的文件操作和到交换账户的连接；托管 FileDO .fdd 磁盘是共享的一项能力）、离线视频编解码器和 OCR 模型。选择「精简」类型即可不装共享。Media Exchange Server 不在此安装包中。",
+    "insideNote": "完整安装包内含：媒体与文件管理器，以及启用前保持关闭的可选部分 - 本地共享（Share Manager 与 SFTP 工作进程，含到交换账户的连接；托管 FileDO .fdd 磁盘是共享的一项能力）和计划文件操作（与 Share Manager 一起安装）、离线视频编解码器和 OCR 模型。选择「精简」类型即可两者都不装。Media Exchange Server 不在此安装包中。",
     "langLabel": "语言",
     "skipLabel": "跳到主要内容",
     "navLabel": "主导航",

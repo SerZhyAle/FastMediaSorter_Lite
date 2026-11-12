@@ -315,6 +315,12 @@ Partial Public NotInheritable Class Localization
             "Panel de imágenes", "Panneau d'images", "Painel de imagens",
             "لوحة الصور", "छवि पैनल", "ছবি প্যানেল", "تصویری پینل", "图片面板")
 
+        ' L0297: the assignable command into scheduled file operations (no factory key).
+        Add("Операции по расписанию",
+            "Scheduled operations", "Операції за розкладом", "Geplante Vorgänge", "Operazioni pianificate",
+            "Operaciones programadas", "Opérations planifiées", "Operações agendadas", "العمليات المجدولة",
+            "शेड्यूल किए गए ऑपरेशन", "নির্ধারিত অপারেশন", "شیڈولڈ آپریشنز", "计划操作")
+
         Add("Увеличить масштаб",
             "Zoom in", "Збільшити масштаб", "Vergrößern", "Ingrandisci", "Acercar", "Zoom avant",
             "Ampliar", "تكبير", "ज़ूम इन", "জুম ইন", "زوم اِن", "放大")

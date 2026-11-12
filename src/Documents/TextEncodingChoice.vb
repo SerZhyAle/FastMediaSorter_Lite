@@ -208,8 +208,9 @@ Public NotInheritable Class TextEncodingMemory
                 If parsed Is Nothing Then Continue For
                 entries.RemoveAll(Function(item) SameDocument(item.Identity, parsed.Identity))
                 entries.Add(parsed)
+                ' Trimmed line by line: a damaged file of many short lines would otherwise make the scan above quadratic.
+                If entries.Count > EntryLimit Then entries.RemoveAt(0)
             Next
-            If entries.Count > EntryLimit Then entries.RemoveRange(0, entries.Count - EntryLimit)
         End SyncLock
     End Sub
 

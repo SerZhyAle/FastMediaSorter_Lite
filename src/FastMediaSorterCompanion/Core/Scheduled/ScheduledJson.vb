@@ -28,6 +28,14 @@ Friend NotInheritable Class ScheduledOperationDto
     Public Property IntervalMinutes As Integer = ScheduleMath.DefaultIntervalMinutes
     Public Property Conflict As String = "skip"
     Public Property DeleteOriginalsAfterVerify As Boolean
+    ''' <summary>Fill free space only (L0299); absent on every other action, and ignored by a build that predates it.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ChunkSizeMb As Integer?
+    ''' <summary>Backup only (L0298); absent on every other action. The password of a sealed backup is never here.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property BackupKeepCount As Integer?
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property BackupSealed As Boolean?
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
     Public Property RetryMissedRunsAtStart As Boolean?
     Public Property ShowBalloonOnError As Boolean
@@ -43,6 +51,8 @@ Friend NotInheritable Class ScheduledLocationDto
     Public Property ResourceId As String = ""
     Public Property ResourceName As String = ""
     Public Property Recursive As Boolean = True
+    Public Property DriveResourceId As String = ""
+    Public Property DriveDeviceName As String = ""
 End Class
 
 Friend NotInheritable Class ScheduledConditionsDto
@@ -71,6 +81,7 @@ Friend NotInheritable Class ScheduledRecordDto
     Public Property LastError As String = ""
     Public Property NextRunAt As String = ""
     Public Property SkippedSinceSuccess As Boolean
+    Public Property DriveMark As String = ""
 End Class
 
 Friend Module ScheduledJson
@@ -91,6 +102,8 @@ Friend Module ScheduledJson
             Case ScheduledAction.Move : Return "move"
             Case ScheduledAction.Delete : Return "delete"
             Case ScheduledAction.Archive : Return "archive"
+            Case ScheduledAction.FillFreeSpace : Return "fill_free_space"
+            Case ScheduledAction.Backup : Return "backup"
             Case Else : Return "copy"
         End Select
     End Function
@@ -102,6 +115,8 @@ Friend Module ScheduledJson
             Case "move" : action = ScheduledAction.Move : Return True
             Case "delete" : action = ScheduledAction.Delete : Return True
             Case "archive" : action = ScheduledAction.Archive : Return True
+            Case "fill_free_space", "fill" : action = ScheduledAction.FillFreeSpace : Return True
+            Case "backup" : action = ScheduledAction.Backup : Return True
         End Select
         action = ScheduledAction.Copy
         Return False
@@ -271,6 +286,9 @@ Friend Module ScheduledJson
             .StartDate = op.StartDate.ToString(DateFormat, CultureInfo.InvariantCulture),
             .AnchorMinutes = op.AnchorMinutes, .IntervalMinutes = op.IntervalMinutes,
             .Conflict = ConflictName(op.Conflict), .DeleteOriginalsAfterVerify = op.DeleteOriginalsAfterVerify,
+            .ChunkSizeMb = If(op.Action = ScheduledAction.FillFreeSpace, CType(op.ChunkSizeMb, Integer?), Nothing),
+            .BackupKeepCount = If(op.Action = ScheduledAction.Backup, CType(op.BackupKeepCount, Integer?), Nothing),
+            .BackupSealed = If(op.Action = ScheduledAction.Backup, CType(op.BackupSealed, Boolean?), Nothing),
             .RetryMissedRunsAtStart = If(op.HasExplicitRetryMissedRuns, CType(op.RetryMissedRunsAtStart, Boolean?), Nothing),
             .ShowBalloonOnError = op.ShowBalloonOnError,
             .Halt = HaltText(op.Halt), .HaltDetail = op.HaltDetail,
@@ -287,7 +305,7 @@ Friend Module ScheduledJson
         Return New ScheduledLocationDto With {
             .Kind = kindName,
             .Path = location.Path, .ResourceId = location.ResourceId, .ResourceName = location.ResourceName,
-            .Recursive = location.Recursive}
+            .Recursive = location.Recursive, .DriveResourceId = location.DriveResourceId, .DriveDeviceName = location.DriveDeviceName}
     End Function
 
     Friend Function RecordToDto(record As ScheduledRunRecord) As ScheduledRecordDto
@@ -296,7 +314,7 @@ Friend Module ScheduledJson
             .LastOutcome = OutcomeName(record.LastOutcome), .LastTrigger = TriggerName(record.LastTrigger),
             .LastFileCount = record.LastFileCount, .LastFailedCount = record.LastFailedCount,
             .LastError = record.LastError, .NextRunAt = FormatTime(record.NextRunAt),
-            .SkippedSinceSuccess = record.SkippedSinceSuccess}
+            .SkippedSinceSuccess = record.SkippedSinceSuccess, .DriveMark = record.DriveMark}
     End Function
 
     Friend Function FromDto(dto As ScheduledOperationDto) As ScheduledOperation
@@ -324,6 +342,11 @@ Friend Module ScheduledJson
         op.IntervalMinutes = ScheduleMath.NormalizeInterval(dto.IntervalMinutes)
         op.Conflict = ParseConflict(dto.Conflict)
         op.DeleteOriginalsAfterVerify = dto.DeleteOriginalsAfterVerify AndAlso action = ScheduledAction.Archive
+        op.ChunkSizeMb = ScheduledValidation.NormalizeChunkSize(dto.ChunkSizeMb.GetValueOrDefault(ScheduledOperation.DefaultChunkSizeMb))
+        If action = ScheduledAction.Backup Then
+            op.BackupKeepCount = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepCount.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepCount))
+            op.BackupSealed = dto.BackupSealed.GetValueOrDefault(False)
+        End If
         If dto.RetryMissedRunsAtStart.HasValue Then
             op.RetryMissedRunsAtStart = dto.RetryMissedRunsAtStart.Value
         End If
@@ -347,7 +370,7 @@ Friend Module ScheduledJson
         Return New ScheduledLocation With {
             .Kind = kind,
             .Path = If(dto.Path, ""), .ResourceId = If(dto.ResourceId, ""), .ResourceName = If(dto.ResourceName, ""),
-            .Recursive = dto.Recursive}
+            .Recursive = dto.Recursive, .DriveResourceId = If(dto.DriveResourceId, ""), .DriveDeviceName = If(dto.DriveDeviceName, "")}
     End Function
 
     Friend Function RecordFromDto(dto As ScheduledRecordDto) As ScheduledRunRecord
@@ -357,7 +380,7 @@ Friend Module ScheduledJson
             .LastOutcome = ParseOutcome(dto.LastOutcome), .LastTrigger = ParseTrigger(dto.LastTrigger),
             .LastFileCount = Math.Max(0, dto.LastFileCount), .LastFailedCount = Math.Max(0, dto.LastFailedCount),
             .LastError = If(dto.LastError, ""), .NextRunAt = ParseTime(dto.NextRunAt),
-            .SkippedSinceSuccess = dto.SkippedSinceSuccess}
+            .SkippedSinceSuccess = dto.SkippedSinceSuccess, .DriveMark = If(dto.DriveMark, "")}
     End Function
 
     ' --- text ------------------------------------------------------------------------------------

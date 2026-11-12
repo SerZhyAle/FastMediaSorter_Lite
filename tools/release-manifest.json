@@ -1,0 +1,24 @@
+{
+  "_about": "The release facts the site shows (ticket 207 F3, ticket L0301). Written by tools/Set-ReleaseManifest.ps1 from the published GitHub release, read by tools/Build-SitePages.ps1; never edited by hand.",
+  "version": "26.10.25.1830",
+  "date": "2026-10-25",
+  "assets": {
+    "setup": "FastMediaSorter-26.10.25.1830-windows-x64-setup.exe",
+    "zip": "FastMediaSorter-26.10.25.1830-windows-x64.zip",
+    "serverSetup": "FastMediaSorter-26.10.25.1830-windows-x64-server-setup.exe"
+  },
+  "files": {
+    "setup": {
+      "size": 458787194,
+      "sha256": "653c070f87683cf2354b97a77ae0507721af869ab8bd14d9c5e0dadf538df050"
+    },
+    "zip": {
+      "size": 544636781,
+      "sha256": "64e1d6e63b8b1d8ff0e9d573c064d28f1579b961ece1f7c5c99b508d46d0ea91"
+    },
+    "serverSetup": {
+      "size": 107214057,
+      "sha256": "c71ca84771c8f5db36532186184a92530fad9be7691d44c72f8445d0504091a6"
+    }
+  }
+}

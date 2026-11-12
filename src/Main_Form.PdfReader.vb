@@ -867,7 +867,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub ClosePdfReaderUi()
-        HideDocumentPanel()
+        If document_Panel_Kind = DocumentReaderKind.Pdf OrElse document_Wanted_Kind = DocumentReaderKind.Pdf Then HideDocumentPanel()
         If panel_Media IsNot Nothing Then RemoveHandler panel_Media.SizeChanged, AddressOf LayoutPdfReader
         pdf_Reading_Canvas?.Dispose()
         pdf_Reading_Canvas = Nothing

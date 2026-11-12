@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -43,12 +44,13 @@ var KnownRoles = []string{"resource-producer", "resource-consumer", "broadcaster
 // validate on Head is the default: an envelope with no required member.
 func (h *Head) validate() error { return nil }
 
+// textOK is item AM: a text member holds valid UTF-8 and no control character, the C1 range included.
 func textOK(s string, max int) bool {
 	if len(s) > max || !utf8.ValidString(s) {
 		return false
 	}
 	for _, r := range s {
-		if r < 0x20 || r == 0x7f {
+		if unicode.IsControl(r) {
 			return false
 		}
 	}
@@ -335,10 +337,10 @@ func (e *Register) validate() error {
 	if t := bytes.TrimSpace(e.Receiver); string(t) == "null" {
 		e.Receiver = nil
 	}
+	// the same bounds as on enroll: the block becomes the device record's `receiver`
 	if len(e.Receiver) > 0 {
-		var m map[string]json.RawMessage
-		if err := json.Unmarshal(e.Receiver, &m); err != nil {
-			return errors.New("receiver is not a JSON object")
+		if err := CheckReceiver(e.Receiver); err != nil {
+			return err
 		}
 	}
 	return nil

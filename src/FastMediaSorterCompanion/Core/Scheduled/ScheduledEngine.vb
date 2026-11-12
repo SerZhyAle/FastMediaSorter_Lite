@@ -657,6 +657,7 @@ Friend NotInheritable Class ScheduledEngine
                     If result.Outcome = ScheduledRunOutcome.Ok Then
                         record.LastSuccessAt = result.StartedAt
                         record.SkippedSinceSuccess = False
+                        If result.DriveMark.Length > 0 Then record.DriveMark = result.DriveMark
                         If current.Halt = ScheduledHalt.Wall Then
                             current.Halt = ScheduledHalt.None
                             current.HaltDetail = ""

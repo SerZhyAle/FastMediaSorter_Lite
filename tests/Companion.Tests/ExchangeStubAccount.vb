@@ -100,6 +100,9 @@ Friend NotInheritable Class ExchangeStubAccount
         _enrollRefusals.Enqueue(reason)
     End Sub
 
+    ''' <summary>While set, an `enroll` is noted and its answer waits for this task: a test can act in the moment a device is between its two streams.</summary>
+    Public Property EnrollHold As Task
+
     ''' <summary>The roles every `enroll` declared, as "role,role" per enroll, in arrival order.</summary>
     Public Function EnrollRolesSeen() As List(Of String)
         SyncLock _gate
@@ -198,6 +201,21 @@ Friend NotInheritable Class ExchangeStubAccount
         SyncLock _gate
             _tokens(deviceId) = token
             _revoked.Remove(deviceId)
+        End SyncLock
+        Return token
+    End Function
+
+    ''' <summary>A device that enrolled before it had a key (spec 234 item DF): the server holds it and, with <see cref="ListEnrolledDevices"/>,
+    ''' lists it with neither a key nor the capabilities that came with one. Its token is returned.</summary>
+    Public Function PreEnrollKeyless(deviceId As String, deviceName As String) As String
+        Dim token As String = PreEnroll(deviceId)
+        Dim o As New System.Text.Json.Nodes.JsonObject()
+        o("deviceId") = deviceId
+        o("deviceName") = deviceName
+        o("product") = "fms-windows"
+        o("presence") = "online"
+        SyncLock _gate
+            _enrolledRecords(deviceId) = o.ToJsonString()
         End SyncLock
         Return token
     End Function
@@ -312,6 +330,13 @@ Friend NotInheritable Class ExchangeStubAccount
     ''' Off by default so the older tests keep the directory they built by hand; a sealed-folder test turns it on.</summary>
     Public Property ListEnrolledDevices As Boolean
 
+    ''' <summary>Ticket L0296: the one standard this stub keeps (its account and appId are not told apart), and the switch that ends
+    ''' the stream on a `settings_get_standard` instead of answering it.</summary>
+    Public Const SettingsUpdatedAt As String = "2026-11-10T02:00:00Z"
+    Public Property DropOnSettingsGet As Boolean
+    Private _settingsPayload As String = ""
+    Private _settingsVersion As Long
+
     Private ReadOnly _enrolledRecords As New Dictionary(Of String, String)(StringComparer.Ordinal)   ' deviceId -> record as the directory lists it
 
     ''' <summary>The invitation code of a `register` frame: the member of DEVICE-EXCHANGE item AQ, else the first spelling.</summary>
@@ -364,6 +389,8 @@ Friend NotInheritable Class ExchangeStubAccount
                     _enrollE2eKeys.Add(first.Record("e2eKey"))
                     _enrolledRecords(first.Text("deviceId")) = EnrolledRecordOf(first)
                 End SyncLock
+                Dim hold As Task = EnrollHold
+                If hold IsNot Nothing Then Await hold
                 Dim enrollRefusal As String = Nothing
                 If _enrollRefusals.TryDequeue(enrollRefusal) Then
                     Await c.Refuse(enrollRefusal)
@@ -726,6 +753,32 @@ Friend NotInheritable Class ExchangeStubAccount
                             If thisDevice.Length > 0 Then _tokens(thisDevice) = fresh
                         End SyncLock
                         Await c.WriteAsync(New ExchangeEnvelope("password-changed").SetText("deviceToken", fresh))
+                    Case "settings_save_standard"
+                        ' ticket L0296, item EO: a save replaces the standard as a whole and moves the version by one
+                        Dim saved As Long
+                        SyncLock _gate
+                            _settingsVersion += 1
+                            saved = _settingsVersion
+                            _settingsPayload = env.Text("settingsPayload")
+                        End SyncLock
+                        Await c.WriteAsync(New ExchangeEnvelope("settings_saved").SetText("appId", env.Text("appId")).
+                                           SetNumber("version", saved).SetText("updatedAt", SettingsUpdatedAt))
+                    Case "settings_get_standard"
+                        If DropOnSettingsGet Then
+                            ' case 13: the stream ends before the answer
+                            Try : c.Stream.Dispose() : Catch : End Try
+                            Return
+                        End If
+                        Dim stored As String
+                        SyncLock _gate
+                            stored = _settingsPayload
+                        End SyncLock
+                        If stored.Length = 0 Then
+                            Await c.Refuse("not-found")
+                        Else
+                            Await c.WriteAsync(New ExchangeEnvelope("settings_standard_payload").SetText("appId", env.Text("appId")).
+                                               SetNumber("formatVersion", 1).SetText("settingsPayload", stored).SetText("updatedAt", SettingsUpdatedAt))
+                        End If
                     Case "bye"
                         Return
                 End Select

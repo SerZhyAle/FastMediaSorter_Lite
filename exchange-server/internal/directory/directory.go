@@ -166,11 +166,14 @@ type DeviceInfo struct {
 }
 
 type devState struct {
-	info    DeviceInfo
-	sink    Sink // the control stream, nil while offline
-	online  bool
-	updated time.Time
-	raw     json.RawMessage
+	info   DeviceInfo
+	sink   Sink // the control stream, nil while offline
+	online bool
+	// offlineReason is what the device's bye said (item DC), "" otherwise. In memory only: after a restart the
+	// record says plain offline, which item DC allows. A rotated token makes a new devState, so it drops this too.
+	offlineReason string
+	updated       time.Time
+	raw           json.RawMessage
 }
 
 type resState struct {
@@ -276,6 +279,9 @@ func (d *Dir) renderDevice(h *hub, s *devState) {
 		r.SetRaw("e2eKey", b)
 	}
 	r.SetStr("presence", presence(s.online))
+	if !s.online && s.offlineReason != "" {
+		r.SetStr("offlineReason", s.offlineReason)
+	}
 	if !s.info.LastSeen.IsZero() {
 		r.SetTime("lastSeen", s.info.LastSeen)
 	}

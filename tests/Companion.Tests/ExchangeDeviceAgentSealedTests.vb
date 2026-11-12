@@ -421,6 +421,7 @@ Public Class ExchangeDeviceAgentSealedTests
 
                     ' a refusal, an id collision, a token that cannot be stored
                     acc.RefuseNextEnroll("id-collision")
+                    acc.RefuseNextEnroll("id-collision")
                     Dim collided As ExchangeEnrollResult = Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)
                     Assert.Equal(ExchangeRefusal.IdCollision, collided.Refusal)
                     texts.Add(ExchangeDeviceText.EnrollFailure(collided))

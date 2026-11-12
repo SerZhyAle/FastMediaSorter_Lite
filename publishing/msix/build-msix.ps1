@@ -10,16 +10,18 @@
       5. Packs it into msix\dist\FastMediaSorter_LITE-<version>-x64.msix with makeappx.
 
     For the STORE you submit the UNSIGNED .msix - Microsoft re-signs it during certification, so you
-    don't need a paid code-signing certificate. Set -IdentityName / -Publisher / -PublisherDisplayName
-    to the exact values reserved for you in Partner Center (Product > Product identity).
+    don't need a paid code-signing certificate. The identity (Name / Publisher / PublisherDisplayName,
+    the exact values reserved in Partner Center under Product > Product identity) is read from
+    identity.json beside this script; the run stops before it builds when that file is missing or
+    incomplete. -IdentityName / -Publisher / -PublisherDisplayName override a single value of it.
 
     For LOCAL testing add -SelfSign: it creates a self-signed cert whose subject equals -Publisher,
     signs the package, and prints how to trust + install it. (Self-signing requires the manifest
     Publisher to match the cert subject - keep them equal.)
 
     Examples:
-      # Store-ready package (fill these from Partner Center):
-      .\build-msix.ps1 -IdentityName "SZA.FastMediaSorterLITE" -Publisher "CN=F98ACEDB-1E22-4C39-AF63-F9FCFE807DCD" -PublisherDisplayName "SZA"
+      # Store-ready package (the identity comes from identity.json):
+      .\build-msix.ps1 -ReleaseVersion "<the release tag without the v>"
 
       # Local sideload test (self-signed), reusing an existing Release build:
       .\build-msix.ps1 -SelfSign -NoBuild
@@ -37,9 +39,10 @@ param(
     # tag produced a different stamp than the GitHub/winget artifacts of the same
     # release, and the Store listing no longer lined up with the changelog entry.
     [string] $ReleaseVersion       = '',
-    [string] $IdentityName         = 'SZA.FastMediaSorterLITE',
-    [string] $Publisher            = 'CN=F98ACEDB-1E22-4C39-AF63-F9FCFE807DCD',
-    [string] $PublisherDisplayName = 'SZA',
+    # No defaults: the three identity values come from identity.json (Read-StoreIdentity) unless given.
+    [string] $IdentityName         = '',
+    [string] $Publisher            = '',
+    [string] $PublisherDisplayName = '',
     [string] $Configuration        = 'Release',
     [switch] $NoBuild,
     [switch] $SelfSign,
@@ -82,6 +85,27 @@ function Get-RelativePath([string] $BasePath, [string] $TargetPath) {
     $baseUri   = New-Object System.Uri($baseResolved)
     $targetUri = New-Object System.Uri($targetResolved)
     return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString().Replace('/', '\'))
+}
+
+# The product's Store identity is one machine-readable record beside this script. A missing or incomplete
+# file stops the run here, before any build step - a package must never be built under a guessed identity.
+function Read-StoreIdentity([string] $Path) {
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Store identity file not found: $Path" }
+    try { $identity = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json }
+    catch { throw "Store identity file $Path is not valid JSON: $($_.Exception.Message)" }
+    foreach ($field in 'IdentityName', 'Publisher', 'PublisherDisplayName') {
+        if ([string]::IsNullOrWhiteSpace([string]$identity.$field)) { throw "Store identity file $Path has no $field." }
+    }
+    return $identity
+}
+
+# --- 0a. Identity ----------------------------------------------------------
+$StoreIdentity = Read-StoreIdentity (Join-Path $MsixDir 'identity.json')
+if (-not $PSBoundParameters.ContainsKey('IdentityName'))         { $IdentityName         = [string]$StoreIdentity.IdentityName }
+if (-not $PSBoundParameters.ContainsKey('Publisher'))            { $Publisher            = [string]$StoreIdentity.Publisher }
+if (-not $PSBoundParameters.ContainsKey('PublisherDisplayName')) { $PublisherDisplayName = [string]$StoreIdentity.PublisherDisplayName }
+if (-not $IdentityName -or -not $Publisher -or -not $PublisherDisplayName) {
+    throw 'The Store identity is incomplete: -IdentityName, -Publisher and -PublisherDisplayName must not be empty.'
 }
 
 # --- 0. Version ------------------------------------------------------------

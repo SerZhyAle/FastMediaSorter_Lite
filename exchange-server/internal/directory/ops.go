@@ -62,6 +62,8 @@ func (d *Dir) Online(account, deviceID string, sink Sink) bool {
 	t := d.begin(h)
 	old := s.sink
 	s.sink = sink
+	// also when a new stream replaces one whose bye has not ended it yet
+	s.offlineReason = ""
 	delete(h.subs, deviceID) // the old stream's subscription is not the new stream's
 	if old != nil && old != sink {
 		t.afterUnlock(old.Close)
@@ -79,6 +81,24 @@ func (d *Dir) Online(account, deviceID string, sink Sink) bool {
 	}
 	t.finish()
 	return true
+}
+
+// NoteOfflineReason keeps why a device says it is going offline, from its bye (item DC), for the Offline that
+// ends the stream to put on the record; the record of an online device does not change. Only a value this
+// version knows and only from the device's current stream: anything else leaves a plain offline.
+func (d *Dir) NoteOfflineReason(account, deviceID string, sink Sink, reason string) {
+	if reason != wire.OfflineReasonTimeLimit {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return
+	}
+	if s := h.devices[deviceID]; s != nil && s.sink == sink {
+		s.offlineReason = reason
+	}
 }
 
 // Offline takes a device offline when its control stream ended, a missed keepalive window or a bye.

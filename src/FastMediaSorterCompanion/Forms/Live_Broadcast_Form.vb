@@ -61,6 +61,7 @@ Public Class Live_Broadcast_Form
     Private _txtPassword As TextBox
     Private _lblPasswordHint As Label
     Private _btnGenPassword As Button
+    Private _btnNewLinkPassword As Button
     Private _numPort As NumericUpDown
     Private _numBitrate As NumericUpDown
     Private _numMaxListeners As NumericUpDown
@@ -111,6 +112,8 @@ Public Class Live_Broadcast_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' The theme makes the drop-down lists taller. Left to the first paint, that comes after the fit below.
+        ThemeService.Attach(Me)
         ' The three boolean rows are laid out once the window has its scale (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a).
         OptionRows.ArrangeAll(Me)
         ' The scaled first size can be taller than a small monitor: cap it first, so the fit below scrolls what does not fit.
@@ -255,8 +258,12 @@ Public Class Live_Broadcast_Form
         AddHandler _btnGenPassword.Click, Sub()
             _txtPassword.Text = LiveProducerTokens.NewId().Substring(0, 8)
         End Sub
+        ' Ticket 263 Q263-5: on air "Random" gives way to this one change the locked password allows - a new link password.
+        _btnNewLinkPassword = New Button With {.AutoSize = True, .Text = Localization.T("Новый пароль ссылки"), .Visible = False}
+        AddHandler _btnNewLinkPassword.Click, AddressOf OnNewLinkPassword
         pwdFlow.Controls.Add(_txtPassword)
         pwdFlow.Controls.Add(_btnGenPassword)
+        pwdFlow.Controls.Add(_btnNewLinkPassword)
         rows.Controls.Add(pwdFlow, 1, 4)
         ' Ticket 239 CR-15 (LIVE-BROADCAST item M): what the password does for the hand-off, said where it is typed.
         _lblPasswordHint = New Label With {
@@ -293,7 +300,7 @@ Public Class Live_Broadcast_Form
         screenRows.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
         _lblScreen = New Label With {.AutoSize = True, .Text = Localization.T("Экран:")}
-        _cboMonitor = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        _cboMonitor = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
         FillMonitorPicker()
         screenRows.Controls.Add(_lblScreen, 0, 0)
         screenRows.Controls.Add(_cboMonitor, 1, 0)
@@ -301,7 +308,7 @@ Public Class Live_Broadcast_Form
         ' The window picker (ticket 263 T-2): one row under the monitor. A window picked here is captured
         ' INSTEAD of the monitor; "none" keeps the whole monitor. Filled when the list drops down.
         _lblWindow = New Label With {.AutoSize = True, .Text = Localization.T("Окно:")}
-        _cboWindow = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .DropDownWidth = 520}
+        _cboWindow = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .DropDownWidth = 520}
         _cboWindow.Items.Add(Localization.T("Нет, весь экран"))
         _cboWindow.SelectedIndex = 0
         AddHandler _cboWindow.DropDown, Sub() RefreshWindowPicker()
@@ -331,12 +338,12 @@ Public Class Live_Broadcast_Form
         cameraRows.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
         _lblCamera = New Label With {.AutoSize = True, .Text = Localization.T("Камера:")}
-        _cboCamera = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        _cboCamera = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
         cameraRows.Controls.Add(_lblCamera, 0, 0)
         cameraRows.Controls.Add(_cboCamera, 1, 0)
 
         _lblCameraMode = New Label With {.AutoSize = True, .Text = Localization.T("Режим:")}
-        _cboCameraMode = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        _cboCameraMode = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
         cameraRows.Controls.Add(_lblCameraMode, 0, 1)
         cameraRows.Controls.Add(_cboCameraMode, 1, 1)
         videoRows.Controls.Add(cameraRows, 0, 1)
@@ -708,7 +715,12 @@ Public Class Live_Broadcast_Form
         _numBitrate.Enabled = False
         _chkAllowLanViewers.Enabled = True
         If _txtPassword IsNot Nothing Then _txtPassword.Enabled = False
-        If _btnGenPassword IsNot Nothing Then _btnGenPassword.Enabled = False
+        Dim canRotate As Boolean = _controller.CanRotateLinkPassword
+        If _btnGenPassword IsNot Nothing Then
+            _btnGenPassword.Enabled = False
+            _btnGenPassword.Visible = Not canRotate
+        End If
+        If _btnNewLinkPassword IsNot Nothing Then _btnNewLinkPassword.Visible = canRotate
         If _btnCopyLink IsNot Nothing Then _btnCopyLink.Enabled = True
         _btnCopyCode.Enabled = True
         _btnSaveFile.Enabled = True
@@ -832,7 +844,11 @@ Public Class Live_Broadcast_Form
         _numBitrate.Enabled = True
         _chkAllowLanViewers.Enabled = True
         If _txtPassword IsNot Nothing Then _txtPassword.Enabled = True
-        If _btnGenPassword IsNot Nothing Then _btnGenPassword.Enabled = True
+        If _btnGenPassword IsNot Nothing Then
+            _btnGenPassword.Enabled = True
+            _btnGenPassword.Visible = True
+        End If
+        If _btnNewLinkPassword IsNot Nothing Then _btnNewLinkPassword.Visible = False
         If _btnCopyLink IsNot Nothing Then _btnCopyLink.Enabled = False
         _btnCopyCode.Enabled = False
         _btnSaveFile.Enabled = False
@@ -918,6 +934,19 @@ Public Class Live_Broadcast_Form
         Else
             _lblState.Text = Localization.T("Не удалось скопировать.")
         End If
+    End Sub
+
+    ''' <summary>Ticket 263 Q263-5: withdraws the link on air. The link pair gets a new password, shown where the password is; whoever
+    ''' holds only the old one can no longer open the broadcast, streams already playing go on, the account's own devices keep watching.
+    ''' The link text itself carries no password, so the same link works again together with the new password.</summary>
+    Private Sub OnNewLinkPassword(sender As Object, e As EventArgs)
+        Dim fresh As String = LiveProducerTokens.NewId().Substring(0, 8)
+        If Not _controller.RotateLinkPassword(fresh) Then
+            _lblState.Text = Localization.T("Не удалось сменить пароль ссылки.")
+            Return
+        End If
+        _txtPassword.Text = fresh
+        _lblState.Text = Localization.T("Пароль ссылки сменён: со старым паролем трансляцию больше не открыть, уже идущие просмотры продолжаются. Передайте новый пароль вместе со ссылкой.")
     End Sub
 
     Private Async Sub OnCastClick(sender As Object, e As EventArgs)

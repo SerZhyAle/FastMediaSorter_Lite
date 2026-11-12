@@ -160,6 +160,17 @@ Public Class ExchangeConnectInputTests
             Dim version As String = "This program and the server speak different versions of the exchange."
             Assert.Equal(version, ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.VersionUnsupported))
             Assert.Equal(version, ExchangeEntryText.StateText(ExchangeAgentState.UpdateNeeded))
+            ' the sign-in refusals too (CR-1 residue): the row of each reason as the Share Manager shows it, the generic row otherwise
+            Assert.Equal("The login or the password is wrong.", ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.BadCredentials))
+            Assert.Equal("Too many attempts in a row.", ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.RateLimited))
+            Assert.Equal("The password of this account was changed, so this device was signed out.", ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.SignedOut))
+            Assert.Equal("The server refused this.", ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.Unknown))
+            ' L0278 T-1: the 17th reason has its own row, not the generic one (the loop below would pass on two generic rows)
+            Assert.Equal("Remote administration is turned off on this server. Turn it on in the server's settings, on the server machine.",
+                         ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.AdminDisabled))
+            For Each r As ExchangeRefusal In ExchangeRefusals.All()
+                Assert.Equal(ExchangeResourceText.SealedText(ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(r))), ExchangeEntryText.EnrollFailure(refused, r))
+            Next
         Finally
             Localization.CurrentCode = saved
         End Try

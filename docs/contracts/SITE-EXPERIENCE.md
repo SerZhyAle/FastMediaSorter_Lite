@@ -20,11 +20,15 @@
    (rule 10); the landing and the guides already do, and the locale lists of the generated language and trust
    pages write `sza-lang` for RU, EN or UA and never for a further locale. Their picker is not yet the form rule 10
    names (it shows an endonym, not the current code, and lists endonyms without codes): a dated exception.
-4. **Take a version or a channel from the landing's run-time source** (rule 13): no page types a version.
-5. **Declare and disclose every third-party origin** (rule 14): `fonts.googleapis.com`, `fonts.gstatic.com`
-   and `api.github.com`, declared in `tools/site-origins.json` and named with purpose and data on the privacy page
-   (en, ru, ua) and in every trust locale; `tools/Test-SiteOrigins.ps1` compares the pages with the declaration in
-   both directions. Held since 2026-10-06 (specification 153).
+4. **Take a version or a channel from one source** (rule 13): no page types a version. The release facts (version,
+   versioned links, `.sha256` links, date) are rendered at build time from `tools/release-manifest.json`, which
+   `tools/Set-ReleaseManifest.ps1` writes from the published release; no page calls `api.github.com`. The rule's
+   "resolved at run time" (after `PAGE-STYLE` 4.10) is a dated exception since 2026-11-08 (ticket L0207, F3), with a
+   proposal to both owners to take the canon's build-time wording.
+5. **Declare and disclose every third-party origin** (rule 14): `fonts.googleapis.com` and `fonts.gstatic.com`,
+   declared in `tools/site-origins.json` and named with purpose and data on the privacy page (en, ru, ua) and in every
+   trust locale; `tools/Test-SiteOrigins.ps1` compares the pages with the declaration in both directions. Held since
+   2026-10-06 (specification 153); `api.github.com` left the set on 2026-11-08 with the landing's fetch.
 6. **Keep the pages usable by keyboard, by landmark, in both themes, with a text equivalent for every image
    and under reduced motion** (rules 15-19): the skip link, the `nav` landmark, the light-theme contrast and
    the 44 px targets for every pointer are built (the kit's own for `.btn`, `.seg button` and `.theme-btn` since the

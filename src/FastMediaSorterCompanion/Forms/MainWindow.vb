@@ -509,14 +509,11 @@ Partial Public NotInheritable Class MainWindow
 
     Private Sub OnSettingsClicked(sender As Object, e As EventArgs)
         Dim page = If(_focusExchangeSettings, "exchange", If(_focusHostingSettings, "hosting",
-            If(_focusPublishSettings, "exchange-account", If(_focusScheduledSettings, "scheduled", ""))))
-        Dim folder = _scheduledPrefill
+            If(_focusPublishSettings, "exchange-account", "")))
         _focusExchangeSettings = False
         _focusHostingSettings = False
         _focusPublishSettings = False
-        _focusScheduledSettings = False
-        _scheduledPrefill = ""
-        OpenSettings(SettingsRoutes.Destination(page), page, folder)
+        OpenSettings(SettingsRoutes.Destination(page), page)
     End Sub
 
     ' --- hint / busy ------------------------------------------------------------

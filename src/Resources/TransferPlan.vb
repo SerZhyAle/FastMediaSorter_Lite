@@ -102,6 +102,8 @@ Friend NotInheritable Class TransferEndpoint
 
     Friend Function IsSameResourceAs(other As TransferEndpoint) As Boolean
         If other Is Nothing Then Return False
+        ' A folder reached through Google Drive shares no namespace with anything (269).
+        If Provider.Kind = ResourceKind.Drive OrElse other.Provider.Kind = ResourceKind.Drive Then Return False
         ' Local and SMB paths share the Windows namespace, including different views of one UNC path.
         If Provider.Kind <> ResourceKind.Sftp AndAlso other.Provider.Kind <> ResourceKind.Sftp Then Return True
         Dim left As ResourceDescriptor = TryCast(Provider, SftpProvider)?.Descriptor

@@ -29,21 +29,66 @@ Public NotInheritable Class DocHtmlJobArguments
     End Function
 
     ''' <summary>The arguments for one job, or Nothing when the request cannot be expressed safely: an unknown
-    ''' mode, or an input or output root that is not an absolute local or UNC path. <c>-noopen</c> is never sent
-    ''' here - until the producer profile is accepted the converter opens its own output (section 1.1, Q276-3).
+    ''' mode, or an input or output root that is not an absolute local or UNC path. <paramref name="noOpen"/> sends
+    ''' <c>-noopen</c> for a caller that opens the verified result itself (OCR-INVOCATION 1.2 item B rule 1, the
+    ''' owned jobs of T-3); without it the converter opens its own output, the T-2 handoff.
     ''' The input goes last, so it can never be read as a flag.</summary>
-    Public Shared Function Build(inputPath As String, outputRoot As String, mode As String, force As Boolean) As IReadOnlyList(Of String)
+    Public Shared Function Build(inputPath As String, outputRoot As String, mode As String, force As Boolean,
+                                 Optional noOpen As Boolean = False, Optional options As DocHtmlJobOptions = Nothing) As IReadOnlyList(Of String)
         If Not IsKnownMode(mode) Then Return Nothing
         If Not IsAbsolutePath(inputPath) OrElse Not IsAbsolutePath(outputRoot) Then Return Nothing
+        Dim o = If(options, New DocHtmlJobOptions())
+        Dim local = String.Equals(mode, ModeLocal, StringComparison.Ordinal)
         Dim args As New List(Of String) From {"-folder", outputRoot}
         If String.Equals(mode, ModeConvert, StringComparison.Ordinal) Then
             args.Add("-notranslate")
-        ElseIf String.Equals(mode, ModeLocal, StringComparison.Ordinal) Then
+        ElseIf local Then
             args.Add("-ollama")
+            If Not AddValue(args, "-ollama-model", o.LocalModel, AddressOf IsModelName) Then Return Nothing
+            ' The languages shape the page only when the converter translates; it drops them otherwise (2.3).
+            If Not AddValue(args, "-src", o.SourceLanguage, AddressOf IsLanguageList) Then Return Nothing
+            If Not AddValue(args, "-dst", o.TargetLanguage, AddressOf IsLanguageList) Then Return Nothing
         End If
+        ' 7.2: -ocr only when recognition is forced; -ocr-lang only for an explicit choice, never an assumed ladder.
+        If o.OcrForce Then args.Add("-ocr")
+        If Not AddValue(args, "-ocr-lang", o.OcrLanguages, AddressOf IsLanguageList) Then Return Nothing
         If force Then args.Add("-force")
+        If noOpen Then args.Add("-noopen")
         args.Add(inputPath)
         Return args
+    End Function
+
+    ''' <summary>Adds <c>flag value</c> for a chosen value; False when the value is chosen but not acceptable.</summary>
+    Private Shared Function AddValue(args As List(Of String), flag As String, value As String, accept As Func(Of String, Boolean)) As Boolean
+        If String.IsNullOrEmpty(value) Then Return True
+        If Not accept(value) Then Return False
+        args.Add(flag)
+        args.Add(value)
+        Return True
+    End Function
+
+    ''' <summary>A language code or a <c>+</c>/<c>,</c> list of them (<c>eng</c>, <c>rus+eng</c>, <c>pt-BR</c>): letters,
+    ''' digits, <c>-</c>, <c>_</c>, <c>+</c>, <c>,</c>; never starting with <c>-</c>, at most 64 characters.</summary>
+    Public Shared Function IsLanguageList(value As String) As Boolean
+        If String.IsNullOrEmpty(value) OrElse value.Length > 64 OrElse value(0) = "-"c Then Return False
+        For Each ch As Char In value
+            If Not (IsAsciiLetterOrDigit(ch) OrElse ch = "-"c OrElse ch = "_"c OrElse ch = "+"c OrElse ch = ","c) Then Return False
+        Next
+        Return True
+    End Function
+
+    ''' <summary>An Ollama model name (<c>llama3.1:8b</c>, <c>library/qwen2.5</c>): letters, digits, <c>. _ - : /</c>;
+    ''' never starting with <c>-</c>, at most 128 characters.</summary>
+    Public Shared Function IsModelName(value As String) As Boolean
+        If String.IsNullOrEmpty(value) OrElse value.Length > 128 OrElse value(0) = "-"c Then Return False
+        For Each ch As Char In value
+            If Not (IsAsciiLetterOrDigit(ch) OrElse ch = "."c OrElse ch = "_"c OrElse ch = "-"c OrElse ch = ":"c OrElse ch = "/"c) Then Return False
+        Next
+        Return True
+    End Function
+
+    Private Shared Function IsAsciiLetterOrDigit(ch As Char) As Boolean
+        Return (ch >= "a"c AndAlso ch <= "z"c) OrElse (ch >= "A"c AndAlso ch <= "Z"c) OrElse (ch >= "0"c AndAlso ch <= "9"c)
     End Function
 
     ''' <summary>A drive-rooted (<c>C:\..</c>) or UNC (<c>\\server\share\..</c>) path with no control character.

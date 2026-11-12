@@ -8,7 +8,8 @@
     contact it). Judged over the current files on disk, no network:
 
       1  the declaration parses and every record has its fields;
-      2  every published page (the root *.html, lang/*/*.html, docs/*.html, assets/help/*.html) is
+      2  every published page (the root *.html, lang/*/*.html, docs/*.html - the pages of tools/site-served.json;
+         assets/help/ is the programs' embedded offline help, not served) is
          scanned for what it CONTACTS: a stylesheet / preconnect / preload / icon link, a script,
          image, frame, source, video, audio, embed or object address, a fetch or XHR address, an
          @import or url() - in the page itself and in the local stylesheets and scripts it loads.
@@ -19,7 +20,8 @@
          (an analytics, tag-manager or advertising origin);
       4  every declared host is contacted by at least one page, and the set of pages that contact it
          is exactly the set the declaration names (a stale or too-wide declaration fails);
-      5  docs/privacy.html names every declared host in each of its language blocks (en, ru, ua);
+      5  each language page of the privacy policy (docs/privacy.html, lang/ru/privacy.html, lang/uk/privacy.html)
+         names every declared host and loads no outside address itself;
       6  every locale of tools/trust-copy.json carries an "origins" paragraph that names every host.
 
     Ends in the shared one-line verdict (CHECK-VERDICT): exit 0 PASS / 1 FAIL / 2 COULD NOT VERIFY.
@@ -44,10 +46,11 @@ if (-not $Declaration) { $Declaration = Join-Path $Root 'tools/site-origins.json
 Write-Subject 'Test-SiteOrigins' "the third-party origins of the published pages against their declaration and disclosure; $(Get-TreeLabel $Root)"
 
 $OwnHosts = @('serzhyale.github.io')   # the site itself; keep in step with SitePages.SiteRoot
-$PrivacyPage = 'docs/privacy.html'
+# one page per core language (ticket L0207 F1/F10/F16), rendered by tools/Build-SitePages.ps1 from tools/site-pages/
+$PrivacyPages = 'docs/privacy.html', 'lang/ru/privacy.html', 'lang/uk/privacy.html'
 $TrustCopy = Join-Path $Root 'tools/trust-copy.json'
 
-foreach ($f in $Declaration, $TrustCopy, (Join-Path $Root $PrivacyPage)) {
+foreach ($f in @($Declaration, $TrustCopy) + @($PrivacyPages | ForEach-Object { Join-Path $Root $_ })) {
     if (-not (Test-Path -LiteralPath $f)) { Exit-Verdict 'Test-SiteOrigins' 2 "missing input: $f" }
 }
 
@@ -84,7 +87,6 @@ function Add-Pages([string]$dir, [string]$prefix, [switch]$Recurse) {
 Add-Pages '' ''
 Add-Pages 'lang' 'lang' -Recurse
 Add-Pages 'docs' 'docs'
-Add-Pages 'assets/help' 'assets/help'
 $pages = [Collections.Generic.List[string]]@($pages | Sort-Object -Unique)
 if ($pages.Count -eq 0) { Exit-Verdict 'Test-SiteOrigins' 2 'no published page found under the root' }
 
@@ -179,21 +181,17 @@ foreach ($h in $declared.Keys) {
     if ($extra.Count) { Problem "$h is contacted by $($extra.Count) page(s) the declaration does not cover: $((($extra | Select-Object -First 3) -join ', '))$(if ($extra.Count -gt 3) { ', ..' })" }
 }
 
-# --- 5: the privacy page names each host in each language block -----------------------------------
-$privacy = Read-Utf8 (Join-Path $Root $PrivacyPage)
-$blocks = [ordered]@{}
-foreach ($lang in 'en', 'ru', 'ua') {
-    $m = [regex]::Match($privacy, '(?s)<div data-l="' + $lang + '">(.*?)(?=<div data-l="(?:en|ru|ua)">|<footer\b)')
-    if (-not $m.Success) { Problem "$PrivacyPage has no '$lang' block"; continue }
-    $blocks[$lang] = $m.Groups[1].Value
-}
-foreach ($lang in $blocks.Keys) {
+# --- 5: each language page of the privacy policy names each host ---------------------------------
+foreach ($page in $PrivacyPages) {
+    $privacy = Read-Utf8 (Join-Path $Root $page)
+    $m = [regex]::Match($privacy, '(?s)<main\b.*?</main>')
+    if (-not $m.Success) { Problem "$page has no <main>"; continue }
     foreach ($h in $declared.Keys) {
-        if (-not $blocks[$lang].ToLowerInvariant().Contains($h)) { Problem "$PrivacyPage ($lang) does not name $h" }
+        if (-not $m.Value.ToLowerInvariant().Contains($h)) { Problem "$page does not name $h" }
     }
-}
-foreach ($m in [regex]::Matches($privacy, '(?i)<(?:link|script|img|iframe)\b[^>]*(?:href|src)\s*=\s*["'']https?://(?!serzhyale\.github\.io)[^"'']+')) {
-    Problem "$PrivacyPage itself loads an outside address: $($m.Value)"
+    foreach ($load in [regex]::Matches($privacy, '(?i)<(?:link|script|img|iframe)\b[^>]*(?:href|src)\s*=\s*["'']https?://(?!serzhyale\.github\.io)[^"'']+')) {
+        Problem "$page itself loads an outside address: $($load.Value)"
+    }
 }
 
 # --- 6: every locale of the trust copy names each host --------------------------------------------

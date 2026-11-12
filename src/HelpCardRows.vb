@@ -129,7 +129,7 @@ Friend NotInheritable Class HelpCardRows
         groups.Add(mouse)
 
         Dim panels As New HelpCardGroup("Панели и окна")
-        For Each id As String In {"settings", "imagePanel", "help"}
+        For Each id As String In {"settings", "imagePanel", "scheduledOperations", "help"}
             AddAction(panels, map, id)
         Next
         panels.Rows.Add(New HelpCardRow("F10", "Клавиатурный режим панелей (Tab и стрелки - выбор, Enter - нажать)"))
@@ -200,7 +200,7 @@ Friend NotInheritable Class HelpCardRows
     Public Shared Function KeysOf(map As Dictionary(Of String, String), action As HotkeyAction) As String
         Dim combo As String = Nothing
         If map IsNot Nothing AndAlso map.TryGetValue(action.Id, combo) AndAlso Not String.IsNullOrEmpty(combo) Then
-            Return If(combo = CustomHotkeys.NoShortcut, String.Empty, DisplayKey(combo))
+            Return If(CustomHotkeys.IsInert(combo), String.Empty, DisplayKey(combo))
         End If
 
         Dim shown As New List(Of String)()

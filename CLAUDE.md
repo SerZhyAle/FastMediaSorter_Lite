@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**Fast Media Sorter & Sharing for Windows** is a Windows Forms media and file manager with a local sharing and scheduling service and a Media Exchange Server as its two further optional parts (what the product is, in what order and in which words: [docs/guides/POSITIONING.md](docs/guides/POSITIONING.md) - cite it, never restate it). The viewer program is shipped as **two exes side by side in one folder** built from **one source tree**: the **.NET 10 x64 mainline** (`FastMediaSorter_LITE.exe`) and a **net48 x86 fallback** (`FastMediaSorter_x86.exe`) for Windows 7/8.1 and 32-bit Windows. Read "Two builds, one source tree" below before touching anything build- or media-related.
+**Fast Media Sorter & Sharing for Windows** is a Windows Forms media and file manager with local sharing, scheduled file operations and a Media Exchange Server as its three further optional parts (what the product is, in what order and in which words: [docs/guides/POSITIONING.md](docs/guides/POSITIONING.md) - cite it, never restate it). The viewer program is shipped as **two exes side by side in one folder** built from **one source tree**: the **.NET 10 x64 mainline** (`FastMediaSorter_LITE.exe`) and a **net48 x86 fallback** (`FastMediaSorter_x86.exe`) for Windows 7/8.1 and 32-bit Windows. Read "Two builds, one source tree" below before touching anything build- or media-related.
 
 
 ## Layout of the agent instructions (2026-10-15)

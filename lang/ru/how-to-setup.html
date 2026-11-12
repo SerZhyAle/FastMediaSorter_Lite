@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Настройка: язык и правила | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Сделайте Fast Media Sorter просмотрщиком картинок и видео по умолчанию, выберите язык интерфейса и решите, что происходит с файлами при разборе.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-setup.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-setup.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-setup.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Настройка: язык и правила | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Сделайте Fast Media Sorter просмотрщиком картинок и видео по умолчанию, выберите язык интерфейса и решите, что происходит с файлами при разборе.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-setup.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Настройка: язык и правила | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Сделайте Fast Media Sorter просмотрщиком картинок и видео по умолчанию, выберите язык интерфейса и решите, что происходит с файлами при разборе.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Настройка: язык и правила | Fast Media Sorter & Sharing","description":"Сделайте Fast Media Sorter просмотрщиком картинок и видео по умолчанию, выберите язык интерфейса и решите, что происходит с файлами при разборе.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-setup.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}.shot{margin:.9rem 0 0}.shot img{max-width:100%;height:auto;border:1px solid var(--border);border-radius:var(--radius-sm);display:block}.shot [data-l]{font-size:.9rem;color:var(--text-2);margin-top:.45rem}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="how-to-setup.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-setup.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/how-to-setup.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="./#get">Скачать</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · SETUP</span><h1>Настройте один раз: просмотрщик по умолчанию, язык и что происходит с файлами</h1><p class="lead">Всё, что ниже, находится за клавишей <kbd>F2</kbd>. По умолчанию всё настроено безопасно, поэтому считайте это списком того, что стоит решить для себя, а не обязательной настройкой. Страница описывает окно настроек 64-битного просмотрщика (Windows 10 1607+); в 32-битной резервной сборке окно проще, из пяти вкладок, и большинства названных здесь страниц и групп в нём нет.</p></section>
+<section class="section"><div class="steps">
+<article class="step"><h2>Найдите настройку и возвращайтесь к ней</h2><p>Группы раскрываются независимо. Настройки помнят последнюю страницу, состояния групп и примерную позицию прокрутки. <b><svg class="glyph" data-glyph="action.search" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/></svg>Поиск настроек</b> или <kbd>Ctrl+F</kbd> ищет названия, пояснения и варианты значений; результат открывает исходное поле. <b>Развернуть все</b> и <b>Свернуть все</b> действуют на эту страницу. Закрытие сохраняет применённые изменения. Поиск временный, ключи API и личная история в него не попадают. Импорт и экспорт профиля находятся в <b>Общие / Дополнительные настройки</b>; контекст окна остаётся на этом компьютере.</p><p><b><svg class="glyph" data-glyph="content.disk-container" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13zM7.5 13h9v6h-9zM13.5 16a1 1 0 1 0 2 0a1 1 0 1 0-2 0z" fill="currentColor" fill-rule="evenodd"/></svg>Хранилище</b> содержит лимиты кэшей и их очистку. Размер миниатюр: 96, 128, 192 или 256 px. Масштаб интерфейса умножает масштаб Windows для настроек, плавающих панелей и текстового просмотра. В <b>Общих</b> есть сброс дополнительных настроек с подтверждением и резервной копией; получатели, язык, тема, звук, OCR и личная история сохраняются.</p></article>
+<article class="step"><h2>Сделайте программой по умолчанию</h2><p>На странице <b><svg class="glyph" data-glyph="content.folder" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10,4H4c-1.1,0 -1.99,0.9 -1.99,2L2,18c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V8c0,-1.1 -0.9,-2 -2,-2h-8l-2,-2z" fill="currentColor"/></svg>Файлы</b>, в группе <b>Клавиши и ассоциации</b>, кнопка <b>Форматы изображений</b> закрепляет за программой те типы картинок, которые она умеет показывать, а <b>Форматы видео</b> - видео и звук, которые она умеет проигрывать. Обе пишут в ваш собственный профиль пользователя, права администратора не нужны, - а Windows может дополнительно попросить подтвердить выбор в своих параметрах приложений при первом двойном щелчке по файлу.</p><figure class="shot"><img src="../../assets/guides/settings-files.png" alt="Files settings with independent groups, search and page commands" width="1470" height="974" loading="lazy"><span>Страница <b>«Файлы»</b>: операции с файлами и тематические группы. Язык и тема находятся в «Общих».</span></figure></article>
+<article class="step"><h2>Выберите язык интерфейса</h2><p>В 64-битном просмотрщике тринадцать языков (в 32-битной резервной сборке - только русский и английский). При самом первом запуске она следует языку интерфейса Windows, а дальше решает ваш выбор: двухбуквенная кнопка на панели переключает язык мгновенно, та же настройка есть в <b>Общие / Основные настройки</b>. Арабский и урду разворачивают окно справа налево; хинди, бенгальский и китайский переключаются на шрифт, умеющий рисовать их письмо.</p></article>
+<article class="step"><h2>Решите, что происходит с файлом</h2><p>Группа <b>Файлы / Основные настройки</b> - то, что стоит прочитать перед большим разбором:</p><ul>
+<li><b>Совпадение имён</b> - спрашивать, пропустить, сохранить оба или заменить, когда в папке-получателе уже есть файл с таким именем.</li>
+<li><b>После копирования или перемещения</b> - следующий файл, остаться на текущем или закрыть, когда файлов не осталось.</li>
+<li><b>Удалять в Корзину</b> и <b>Спрашивать перед удалением</b> - всегда, никогда или только если файл не попадёт в Корзину. У сетевой папки и флешки Корзины нет вовсе, и именно тогда вопрос и нужен.</li></ul></article>
+<article class="step"><h2>Сузьте то, что показывается</h2><p>Пункт <b>Типы файлов</b> ограничивает список теми форматами, которые вам действительно нужны, а <b>Просматривать вложенные папки</b> решает, означает ли папка только свои файлы или всё, что лежит внутри неё. <b>При запуске открывать</b> (<b>Общие / Запуск</b>) выбирает, что показывает обычный запуск: стартовую страницу, последнюю папку или последний файл. Прямо под ним пункт <b>Продолжать с последнего файла</b> делает больше, чем строка выше: он открывает именно тот файл, который был на экране, - а не его номер в папке, - и даёт видео продолжиться с той позиции, где его оставили. По умолчанию выключен, а если файл удалён, переименован или лежит на отключённом диске, окно просто остаётся пустым. Размеры истории недавних файлов и папок - там же, вместе с кнопкой их очистки.</p></article>
+<article class="step"><h2>Перенесите настройки на другой компьютер</h2><p><b>Экспорт дополнительных настроек</b> сохраняет дополнительные параметры в файл, <b>Импорт дополнительных настроек</b> читает их обратно. Получатели, язык, тема, звук и OCR не включаются. Флажок <b>Включить личные данные</b> решает, поедут ли с ним история папок и позиции просмотра; ключи API и пароли не попадают туда никогда, с флажком или без.</p></article>
+</div></section>
+<section class="section two"><div class="callout"><b>Комфорт просмотра</b><p>В группе <b>Общие / Оформление</b> находятся масштаб интерфейса и <b>Уменьшать анимацию</b>; <b>Изображения / Основные настройки</b> задаёт масштаб нового изображения. Если окно кажется мелким, а эффекты - слишком бойкими для вашего монитора, начинать надо оттуда.</p></div><div class="callout" id="send-logs"><b>Если что-то пошло не так</b><p><kbd>F2</kbd> → <b><svg class="glyph" data-glyph="app.info" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/></svg>О программе</b> → <b>Отправить логи автору</b> соберёт журналы и отчёт о версии, Windows и настройках в архив, покажет, что туда попало, и откроет письмо с вложением. Ничего не уходит, пока вы сами не нажмёте «Отправить». Отправка логов есть только в 64-битном просмотрщике (Windows 10 1607+); в 32-битной резервной сборке её нет.</p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавиши, масштаб и полный экран</span></a>
+<a href="publish-folders-android.html"><b>HOW TO · SFTP</b><span>Публикация выбранных папок ПК по SFTP</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Все страницы сайта по темам</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Что значат термины сайта</span></a>
+</div></section>
+<section id="sharing-settings-windows">
+<h2>Где находятся настройки общего доступа</h2>
+<p>Настройки находятся в двух окнах. В настройках менеджера есть группа «Общий доступ SFTP» - порт SFTP, локальная сеть и страница хостинга; она видна, пока установлен этот компонент, - рядом с общими параметрами, удалённой учётной записью, публикацией и расписаниями. Установленный локальный сервер обмена настраивается в отдельном окне. Ссылка слева внизу открывает второе окно, сохраняя текущее. Открытие настроек не запускает сервер. В прежних сборках общий доступ SFTP был в отдельном окне.</p>
+<p><a href="../../docs/help/ru/sftp-settings.html">SFTP</a> · <a href="../../docs/help/ru/share-settings.html">Справка настроек менеджера</a></p>
+</section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

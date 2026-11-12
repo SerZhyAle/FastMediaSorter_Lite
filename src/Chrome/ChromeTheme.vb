@@ -52,6 +52,9 @@ Friend NotInheritable Class ChromeTheme
 
         Dim fill As Color = Opaque(back)
         Dim ink As Color = Opaque(fore)
+        If IsDark(fill) = IsDark(ink) Then
+            ink = ContrastingText(fill)
+        End If
         ' The user's own accent from Windows (the same source the dark palette uses), the system highlight when
         ' Windows gives none (124 UX-215): one blue for the chrome and the windows beside it.
         Dim accent As Color = Opaque(AccentColors.ForChrome(SystemColors.Highlight))
@@ -105,6 +108,39 @@ Friend NotInheritable Class ChromeTheme
     ''' decision IsDark the outline already makes, so pure black and pure white trade places and no
     ''' mid-grey survives un-flipped. Hue is never rotated: a coloured ink is neither black nor
     ''' white and keeps its colour.</summary>
+    ''' <summary>Builds an opaque, high-contrast theme for menus (spec 060, APP-STYLE rule 5 amendment:
+    ''' menus follow the application theme, not content-sampled photo colors).</summary>
+    Public Shared Function ForMenu(palette As ThemePalette) As ChromeTheme
+        If SystemInformation.HighContrast Then Return ForHighContrast()
+        If palette Is Nothing Then palette = ThemePalette.Dark
+
+        Dim fill As Color = palette.SurfaceRaised
+        Dim ink As Color = palette.TextPrimary
+        Dim border As Color = palette.Border
+        Dim hover As Color = palette.ControlHover
+        Dim pressed As Color = palette.ControlPressed
+        Dim accent As Color = Opaque(AccentColors.ForChrome(palette.Accent))
+
+        Return New ChromeTheme() With {
+            .PanelFill = fill,
+            .Foreground = ink,
+            .Hairline = border,
+            .ItemHover = hover,
+            .ItemPressed = pressed,
+            .Accent = accent,
+            .AccentForeground = palette.AccentInk,
+            .DisabledForeground = palette.TextDisabled,
+            .FocusRing = accent,
+            .DestructiveRest = ChromeMetrics.DestructiveRest,
+            .DestructiveHover = ChromeMetrics.DestructiveHover,
+            .DestructivePressed = ChromeMetrics.DestructivePressed,
+            .DestructiveForeground = Color.White,
+            .PanelOpacity = 1.0R,
+            .AllowsAnimation = False,
+            .IsHighContrast = False
+        }
+    End Function
+
     Public Shared Function InvertedTone(ink As Color) As Color
         Return If(IsDark(ink), Color.White, Color.Black)
     End Function
@@ -200,7 +236,7 @@ Friend NotInheritable Class ChromeTheme
 
     ''' <summary>Rec. 601 luma below 128 is a dark colour (the rule the window already uses).</summary>
     Public Shared Function IsDark(c As Color) As Boolean
-        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 128.0
+        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 140.0
     End Function
 
     ''' <summary>Black or white, whichever reads on <paramref name="background"/>.</summary>

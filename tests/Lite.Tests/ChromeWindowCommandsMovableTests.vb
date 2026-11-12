@@ -179,7 +179,7 @@ Public Class ChromeWindowCommandsMovableTests
         Dim corner As Integer = anchored.IndexOf("If p.Name = Window_Controls_Panel_Name Then", StringComparison.Ordinal)
         Dim physical As Integer = anchored.IndexOf("left = media.Right - inset - size.Width", corner, StringComparison.Ordinal)
         Dim leaves As Integer = anchored.IndexOf("Return New Rectangle(left, top, size.Width, size.Height)", physical, StringComparison.Ordinal)
-        Dim rows As Integer = anchored.IndexOf("If p.Name = ""chrome_Row1"" OrElse p.Name = ""chrome_Row2"" Then", StringComparison.Ordinal)
+        Dim rows As Integer = anchored.IndexOf("If p.Name = ""chrome_Row1"" OrElse p.Name = ""chrome_Row2""", StringComparison.Ordinal)
         Assert.True(corner >= 0 AndAlso physical > corner AndAlso leaves > physical AndAlso rows > leaves,
                     "the corner branch returns before the rows' band is asked")
         ' The free branch goes through the fit, like the rows and the strip; the reading direction does not move this panel.
@@ -225,7 +225,7 @@ Public Class ChromeWindowCommandsMovableTests
     <Fact>
     Public Sub The_window_commands_stay_protected_and_are_not_judged_against_themselves()
         Dim chrome As String = Source("Main_Form.Chrome.vb")
-        Dim guarded As String = MemberBody(chrome, "Private Function ChromeProtectedRects(Optional moved As ChromePanel = Nothing) As List(Of Rectangle)")
+        Dim guarded As String = MemberBody(chrome, "Private Function ChromeProtectedRects(Optional moved As ChromePanel = Nothing")
         Assert.Contains("controls IsNot Nothing AndAlso controls IsNot moved", guarded)
         Assert.Contains("guarded.Add(ChromePanelRect(controls))", guarded)
         ' The transport bar is still protected while it is shown - it is what a dropped window-commands panel is judged against.

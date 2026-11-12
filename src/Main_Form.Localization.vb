@@ -96,6 +96,7 @@ Partial Public Class Main_Form
         LocalizePdfReader()
         ApplyCatalogToolbarGlyphs()
         ChromeRefreshText()
+        LocalizeDocumentPanel()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()

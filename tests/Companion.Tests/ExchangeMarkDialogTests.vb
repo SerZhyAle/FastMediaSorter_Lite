@@ -54,7 +54,13 @@ Public Class ExchangeMarkDialogTests
             New Surface("Exchange_Admin_Browser_Form", Function(agent) New Exchange_Admin_Browser_Form("https://exch.example.com:22022/#admin", fp)),
             New Surface("Exchange_Admin_Audit_Form", Function(agent) New Exchange_Admin_Audit_Form(New ExchangeAdminAuditView())),
             New Surface("Connection_Diagnosis_Dialog", Function(agent) New Connection_Diagnosis_Dialog(Nothing)),
-            New Surface("Server_Welcome_Form (exchange)", Function(agent) New Server_Welcome_Form(WelcomeHalf.Exchange, ports, ports.Snapshot))}
+            New Surface("Server_Welcome_Form (exchange)", Function(agent) New Server_Welcome_Form(WelcomeHalf.Exchange, ports, ports.Snapshot)),
+            New Surface("Remote_Admin_Target_Form", Function(agent) New Remote_Admin_Target_Form(New ExchangeAdminTargets(New ExchangeDeviceAgentTests.MemoryPort()))),
+            New Surface("Remote_Admin_Account_Form", Function(agent) New Remote_Admin_Account_Form(Remote_Admin_Account_Form.DialogMode.Add, "", "member")),
+            New Surface("Remote_Admin_Limits_Form", Function(agent) New Remote_Admin_Limits_Form(Remote_Admin_Limits_Form.DialogMode.Policy, "", RemoteAdminLimits.Empty, Nothing)),
+            New Surface("Remote_Admin_Invitation_Form", Function(agent) Remote_Admin_Invitation_Form.ForCreate()),
+            New Surface("Remote_Admin_Shared_Form", Function(agent) New Remote_Admin_Shared_Form("member")),
+            New Surface("Remote_Admin_Confirm_Form", Function(agent) New Remote_Admin_Confirm_Form(New RemoteAdminConfirmQuestion(RemoteAdminConfirmKind.AccountRemove, "c", "t", "x")))}
     End Function
 
     Private Shared Function Descendants(parent As Control) As List(Of Control)

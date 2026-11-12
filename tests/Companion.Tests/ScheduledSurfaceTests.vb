@@ -85,6 +85,11 @@ Public Class ScheduledSurfaceTests
         Dim menu As String = File.ReadAllText(Path.Combine(root, "src", "Main_Form.FolderMenu.vb"))
         Dim launcher As String = File.ReadAllText(Path.Combine(root, "src", "Main_Form.ShareLauncher.vb"))
         Assert.Contains("ActivateScheduleEntryPoint()", menu)
+        ' L0297: the folderless entries - the menu's window item and the assignable command - open the
+        ' window itself; only the folder item pre-fills an editor.
+        Dim hotkeys As String = File.ReadAllText(Path.Combine(root, "src", "Main_Form.CustomHotkeys.vb"))
+        Assert.Contains("ActivateScheduleWindowEntryPoint()", menu)
+        Assert.Contains("Case ""scheduledOperations"" : ActivateScheduleWindowEntryPoint()", hotkeys)
         Assert.Contains("CompanionScheduleCommandPrefix", launcher)
         ' The same constant the receiver parses (frozen once it ships).
         Dim sent As Match = Regex.Match(launcher, "CompanionScheduleCommandPrefix As String = ""([^""]+)""")

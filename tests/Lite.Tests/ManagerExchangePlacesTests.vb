@@ -161,6 +161,25 @@ Public Class ManagerExchangePlacesTests
     End Sub
 
     <Fact>
+    Public Sub APausedDeviceAndItsRootsSayTheRowOfTheMessageTableInPlaceOfOffline()
+        Dim paused As New ExchangeDeviceRecord("{}", "device", "Same label", "producer", "1", "android", Array.Empty(Of String)(), "offline", "",
+                                               offlineReason:=ExchangeWire.OfflineReasonTimeLimit)
+        Dim root As New ExchangeResourceRecord("{}", "resource", "device", ExchangeWire.KindSftpShare, "Same label", "offline", "")
+        Dim snapshot As New ExchangeDirectorySnapshot(1, {paused}, {root}, Array.Empty(Of ExchangeBroadcastRecord)())
+        Dim descriptor As ResourceDescriptor = ExchangeTestDescriptor()
+        Dim nodes = ManagerExchangePlaces.Project(ExchangeTestAccount(), ExchangeTestReady(snapshot), {descriptor}, Array.Empty(Of ManagerExchangeNode)()).
+            Where(Function(n) n.Kind <> ManagerExchangeNodeKind.Account).ToList()
+        Dim text As String = ConnectionDiagnosisLocalization.GetMessageText("share-paused", Localization.CurrentCode)
+        Assert.Equal(2, nodes.Count)
+        For Each node As ManagerExchangeNode In nodes
+            Assert.Equal(ManagerExchangeAvailability.SharePaused, node.State)
+            Assert.Equal(text, node.StateText)
+        Next
+        Dim refused = Assert.Throws(Of ManagerExchangeException)(Sub() ManagerExchangeAccess.ValidateRecord(ManagerPlace.ForResource(descriptor), descriptor, snapshot))
+        Assert.Equal(ManagerExchangeAvailability.SharePaused, refused.State)
+    End Sub
+
+    <Fact>
     Public Sub MissingEntryNeverConnectsToAnotherAccount()
         Dim descriptor As ResourceDescriptor = ManagerExchangeFixture.ExchangeTestDescriptor()
         Dim connections As Integer

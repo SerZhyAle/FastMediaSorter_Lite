@@ -386,4 +386,113 @@ Public Class ExchangeLocalChannelTests
         End Using
     End Function
 
+    ''' <summary>What a test hands the agent as "tell me when the Drive listing moves": it keeps the handler, so the test can raise the change.</summary>
+    Private NotInheritable Class DriveHook
+        Implements IDisposable
+
+        Public Handler As EventHandler
+        Public Subscriptions As Integer
+        Public Released As Integer
+
+        Public Function Subscribe(handler As EventHandler) As IDisposable
+            Me.Handler = handler
+            Subscriptions += 1
+            Return Me
+        End Function
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Released += 1
+            Handler = Nothing
+        End Sub
+    End Class
+
+    ''' <summary>Ticket 269 P2.2 and P2.3 (Q269-6): with a Drive sign-in and no exchange account the local channel answers the Drive listing
+    ''' alone (revision, rows, no `access`), refuses a folder's access with `no-access`, says `drive` in its state, and a long poll is woken by
+    ''' a change of the listing.</summary>
+    <Fact>
+    Public Async Function A_Drive_only_agent_serves_the_Drive_listing_with_no_account_and_wakes_a_long_poll() As Task
+        Using rig As New ExchangeDeviceAgentTests.Rig()
+            Dim otherId As String = ExchangeWireTestKit.IdOf("D"c)
+            Dim resId As String = ExchangeWireTestKit.IdOf("R"c)
+            Dim device As ExchangeDeviceRecord = Nothing
+            Dim folder As ExchangeResourceRecord = Nothing
+            Assert.True(ExchangeRecordReader.TryReadDevice("{""deviceId"":""" & otherId & """,""deviceName"":""Laptop"",""product"":""FastMediaSorter"",""presence"":""online"",""roles"":[""resourceProducer""]}", device))
+            Assert.True(ExchangeRecordReader.TryReadResource("{""resourceId"":""" & resId & """,""deviceId"":""" & otherId & """,""kind"":""sftp-share"",""name"":""Photos"",""presence"":""online"",""hostKeyFingerprint"":""SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"",""root"":""/Photos""}", folder))
+            ' no round has listed yet: revision 0, the way the Drive host answers before its first poll
+            Dim listed As ExchangeDirectorySnapshot = ExchangeDirectorySnapshot.Empty
+            Dim hook As New DriveHook()
+            rig.Ports.DriveSignedIn = Function() True
+            rig.Ports.DriveDirectory = Function() listed
+            rig.Ports.SubscribeDriveChanged = AddressOf hook.Subscribe
+
+            Dim agent As ExchangeDeviceAgent = rig.NewAgent()
+            Try
+                Dim name As String = PipeName()
+                Using channel As New ExchangeDeviceLocalChannel(agent, name)
+                    channel.Start()
+                    agent.Start()
+                    Assert.Equal(1, rig.Channels)                      ' the agent opened its own channel, with no session behind it
+                    Assert.Equal(1, hook.Subscriptions)
+                    Assert.Equal(0, rig.Transport.Attempts)
+                    Dim client As New ExchangeAgentClient(name)
+
+                    ' the state: no account, and `drive` says the directory can be read anyway
+                    Dim state As ExchangeAgentStateResult = Await client.GetStateAsync(CancellationToken.None)
+                    Assert.True(state.Reply.IsOk)
+                    Assert.False(state.Info.Configured)
+                    Assert.True(state.Info.Drive)
+                    Assert.Equal(ExchangeAgentState.NotConfigured, state.Info.State)
+
+                    ' not listed yet: the same answer as a server that is not listed, never an empty list that reads as "no devices"
+                    Assert.Equal(ExchangeAgentPipe.ErrorNotConnected, (Await client.GetDirectoryAsync(0, 0, CancellationToken.None)).Reply.Error)
+
+                    ' a viewer waits on the long poll; the first round lists, the host says so, and the viewer is answered
+                    Dim waiting As Task(Of ExchangeAgentDirectoryResult) = client.GetDirectoryAsync(0, 10000, CancellationToken.None)
+                    Await Task.Delay(300)
+                    Assert.False(waiting.IsCompleted)
+                    listed = New ExchangeDirectorySnapshot(2, New List(Of ExchangeDeviceRecord) From {device}, New List(Of ExchangeResourceRecord) From {folder}, New List(Of ExchangeBroadcastRecord))
+                    hook.Handler.Invoke(Nothing, EventArgs.Empty)
+                    Assert.Same(waiting, Await Task.WhenAny(waiting, Task.Delay(5000)))
+                    Dim dir As ExchangeAgentDirectoryResult = Await waiting
+                    Assert.True(dir.Reply.IsOk)
+                    Assert.Equal(2L, dir.Snapshot.Revision)            ' the listing's own revision: the server half is empty
+                    Assert.Contains(dir.Snapshot.Devices, Function(d) d.DeviceId = otherId)
+                    Assert.Equal("Photos", dir.Snapshot.Resources.Single(Function(r) r.ResourceId = resId).Name)
+                    Assert.DoesNotContain("""access""", dir.Reply.DataJson)
+
+                    ' the live directory is the same listing
+                    Dim live As ExchangeAgentReply = Await client.SendAsync(ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestGetLiveDirectory), 3000, CancellationToken.None)
+                    Assert.True(live.IsOk)
+
+                    ' listed, not attachable: a typed answer, never an address; an id nobody lists stays unknown
+                    Assert.Equal(ExchangeAgentPipe.ErrorNoAccess, (Await client.GetAccessAsync(resId, CancellationToken.None)).Reply.Error)
+                    Assert.Equal(ExchangeAgentPipe.ErrorUnknownResource, (Await client.GetAccessAsync("nope", CancellationToken.None)).Reply.Error)
+                End Using
+            Finally
+                agent.Dispose()
+            End Try
+            Assert.Equal(1, hook.Released)                             ' the subscription ends with the agent
+        End Using
+    End Function
+
+    ''' <summary>The dormant rule on the pipe: with no account and no Drive sign-in the directory is still refused as not configured.</summary>
+    <Fact>
+    Public Async Function Without_an_account_and_without_a_Drive_sign_in_the_directory_is_refused_as_not_configured() As Task
+        Using rig As New ExchangeDeviceAgentTests.Rig()
+            Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                Dim name As String = PipeName()
+                Using channel As New ExchangeDeviceLocalChannel(agent, name)
+                    channel.Start()
+                    agent.Start()
+                    Assert.Equal(0, rig.Channels)                      ' nothing was opened by the agent itself
+                    Dim client As New ExchangeAgentClient(name)
+                    Dim state As ExchangeAgentStateResult = Await client.GetStateAsync(CancellationToken.None)
+                    Assert.False(state.Info.Configured)
+                    Assert.False(state.Info.Drive)
+                    Assert.Equal(ExchangeAgentPipe.ErrorNotConfigured, (Await client.GetDirectoryAsync(0, 0, CancellationToken.None)).Reply.Error)
+                End Using
+            End Using
+        End Using
+    End Function
+
 End Class

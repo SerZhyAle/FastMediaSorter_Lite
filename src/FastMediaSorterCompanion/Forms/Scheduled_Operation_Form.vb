@@ -21,6 +21,9 @@ Imports System.Windows.Forms
 '''     with the sentences of <see cref="ScheduledText.IssueText"/> and keeps this dialog open;
 '''   * for a delete, and for an archive that removes its originals, the verdict - the Recycle Bin or
 '''     permanently, and why - is a read-only line (D3): the run asks nothing, so the editor says it;
+'''   * a fill of free space with deletion (L0299) selects no files: the destination, conflict, originals and every
+'''     file-selection row hide, the source is a local folder or drive root, and a chunk size plus a read-only note
+'''     (volume, free space, SSD caveat, a missing FileDO) take their place;
 '''   * nothing is written until Save.
 ''' </summary>
 Friend NotInheritable Class Scheduled_Operation_Form
@@ -56,6 +59,32 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private spacerOriginals As Label
     Private spacerVerdict As Label
     Private spacerConditions As Label
+    Private spacerConditionsButton As Label
+    Private spacerRecursive As Label
+
+    ' L0299, fill free space with deletion (FileDO): the chunk size and the read-only note stand in the page only for that
+    ' action, and the rows that do not apply to it (destination, conflict, originals, every file-selection control) hide.
+    Private spacerFill As Label
+    Private lblChunk As Label
+    Private cmbChunk As ComboBox
+    Private lblFillNote As Label
+    ' L0298, backup of the folder (FileDO): how many numbered copies are kept, the seal switch and its masked password, and a
+    ' read-only note on the generation set. The password is never shown in clear and never read back into the box.
+    Private spacerBackupKeep As Label
+    Private lblBackupKeep As Label
+    Private numBackupKeep As NumericUpDown
+    Private spacerBackupSeal As Label
+    Private chkBackupSeal As CheckBox
+    Private lblBackupPassword As Label
+    Private txtBackupPassword As TextBox
+    Private spacerBackupNote As Label
+    Private lblBackupNote As Label
+    ''' <summary>Whether this operation already has a stored password - an empty box then keeps it.</summary>
+    Private backupPasswordStored As Boolean
+    ''' <summary>Whether the conditions group is open as the user left it; it stays hidden while the action selects no files.</summary>
+    Private conditionsOpen As Boolean
+    ''' <summary>Whether filedo.exe was found - looked up once per window, not on every key typed into the source box.</summary>
+    Private fileDoPresent As Boolean?
 
     Private btnConditions As Button
     Private pnlConditions As TableLayoutPanel
@@ -182,9 +211,10 @@ Friend NotInheritable Class Scheduled_Operation_Form
         txtName = New TextBox With {.Dock = DockStyle.Top, .Margin = New Padding(0, 4, 0, 0), .MaxLength = 120, .Name = "txtSchedName"}
         AddRow(page, Caption(Localization.T("Название")), txtName)
 
-        cmbAction = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedAction"}
-        For Each action As ScheduledAction In {ScheduledAction.Copy, ScheduledAction.Move, ScheduledAction.Delete, ScheduledAction.Archive}
-            cmbAction.Items.Add(ScheduledText.ActionName(action))
+        cmbAction = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedAction"}
+        For Each action As ScheduledAction In {ScheduledAction.Copy, ScheduledAction.Move, ScheduledAction.Delete, ScheduledAction.Archive,
+                                               ScheduledAction.FillFreeSpace, ScheduledAction.Backup}
+            cmbAction.Items.Add(ActionLabel(action))
         Next
         AddHandler cmbAction.SelectedIndexChanged, AddressOf OnShapeChanged
         AddRow(page, Caption(Localization.T("Действие")), cmbAction)
@@ -197,14 +227,15 @@ Friend NotInheritable Class Scheduled_Operation_Form
         btnSourceResource = New Button With {.Text = Localization.T("Ресурс.."), .AutoSize = True, .Name = "btnSchedSourceResource", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnSourceResource, "source.resource")
         AddHandler btnSourceResource.Click, Sub() PickResource(txtSource, sourceLocation)
-        btnSourceDrive = New Button With {.Text = Localization.T("Через Google Диск"), .AutoSize = True, .Name = "btnSchedSourceDrive", .Margin = New Padding(6, 2, 0, 0)}
+        btnSourceDrive = New Button With {.Text = Localization.T("Через Google Drive"), .AutoSize = True, .Name = "btnSchedSourceDrive", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnSourceDrive, "system.internet")
-        AddHandler btnSourceDrive.Click, Sub() PickDrive(txtSource, sourceLocation)
+        AddHandler btnSourceDrive.Click, Sub() PickDrive(txtSource, sourceLocation, True)
         AddRow(page, Caption(Localization.T("Источник")), PairRow(txtSource, btnSourcePick, btnSourceResource, btnSourceDrive))
 
         chkRecursive = New CheckBox With {.Text = Localization.T("Включая вложенные папки"), .AutoSize = True, .Checked = True,
             .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedRecursive"}
-        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, OptionRows.InFlow(chkRecursive))
+        spacerRecursive = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerRecursive, OptionRows.InFlow(chkRecursive))
 
         lblDestination = Caption(Localization.T("Назначение"))
         txtDestination = New TextBox With {.Dock = DockStyle.Fill, .Margin = New Padding(0, 4, 6, 0), .Name = "txtSchedDestination"}
@@ -215,13 +246,13 @@ Friend NotInheritable Class Scheduled_Operation_Form
         btnDestinationResource = New Button With {.Text = Localization.T("Ресурс.."), .AutoSize = True, .Name = "btnSchedDestinationResource", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnDestinationResource, "source.resource")
         AddHandler btnDestinationResource.Click, Sub() PickResource(txtDestination, destinationLocation)
-        btnDestinationDrive = New Button With {.Text = Localization.T("Через Google Диск"), .AutoSize = True, .Name = "btnSchedDestinationDrive", .Margin = New Padding(6, 2, 0, 0)}
+        btnDestinationDrive = New Button With {.Text = Localization.T("Через Google Drive"), .AutoSize = True, .Name = "btnSchedDestinationDrive", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnDestinationDrive, "system.internet")
-        AddHandler btnDestinationDrive.Click, Sub() PickDrive(txtDestination, destinationLocation)
+        AddHandler btnDestinationDrive.Click, Sub() PickDrive(txtDestination, destinationLocation, False)
         AddRow(page, lblDestination, PairRow(txtDestination, btnDestinationPick, btnDestinationResource, btnDestinationDrive))
 
         lblConflict = Caption(Localization.T("Если имя занято"))
-        cmbConflict = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedConflict"}
+        cmbConflict = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedConflict"}
         For Each mode As ScheduledConflict In {ScheduledConflict.Skip, ScheduledConflict.Overwrite, ScheduledConflict.KeepBoth}
             cmbConflict.Items.Add(ScheduledText.ConflictName(mode))
         Next
@@ -239,12 +270,50 @@ Friend NotInheritable Class Scheduled_Operation_Form
         spacerVerdict = New Label With {.AutoSize = True, .Margin = New Padding(0)}
         AddRow(page, spacerVerdict, lblVerdict)
 
+        ' --- fill free space with deletion (FileDO), L0299: the chunk size and the read-only note about the volume ---
+        lblChunk = Caption(Localization.T("Размер временных файлов (МБ)"))
+        lblChunk.Visible = False
+        cmbChunk = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 140, .Margin = New Padding(0, 4, 0, 0),
+            .Name = "cmbSchedChunk", .Visible = False}
+        ' Bare numbers: the caption already names the unit.
+        For Each megabytes As Integer In ScheduledOperation.ChunkSizesMb
+            cmbChunk.Items.Add(megabytes.ToString(Globalization.CultureInfo.CurrentCulture))
+        Next
+        AddRow(page, lblChunk, cmbChunk)
+        spacerFill = New Label With {.AutoSize = True, .Margin = New Padding(0), .Visible = False}
+        lblFillNote = Note("")
+        lblFillNote.Name = "lblSchedFillNote"
+        lblFillNote.Visible = False
+        AddRow(page, spacerFill, lblFillNote)
+
+        ' --- backup of the folder (FileDO), L0298: the size of the numbered set, the seal and its password ---
+        lblBackupKeep = Caption(Localization.T("Хранить копий"))
+        numBackupKeep = New NumericUpDown With {.Minimum = ScheduledOperation.MinBackupKeepCount, .Maximum = ScheduledOperation.MaxBackupKeepCount,
+            .Value = ScheduledOperation.DefaultBackupKeepCount, .Width = 72, .Margin = New Padding(0, 4, 6, 0), .Name = "numSchedBackupKeep"}
+        AddHandler numBackupKeep.ValueChanged, AddressOf OnShapeChanged
+        AddRow(page, lblBackupKeep, numBackupKeep)
+        chkBackupSeal = New CheckBox With {.Text = Localization.T("Защитить копии паролем (контейнер FileDO)"), .AutoSize = True,
+            .Margin = New Padding(0, 4, 0, 2), .Name = "chkSchedBackupSeal"}
+        AddHandler chkBackupSeal.CheckedChanged, AddressOf OnShapeChanged
+        spacerBackupSeal = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerBackupSeal, OptionRows.InFlow(chkBackupSeal))
+        lblBackupPassword = Caption(Localization.T("Пароль"))
+        txtBackupPassword = New TextBox With {.UseSystemPasswordChar = True, .Width = 260, .Margin = New Padding(0, 4, 0, 0),
+            .MaxLength = 256, .Name = "txtSchedBackupPassword"}
+        AddRow(page, lblBackupPassword, txtBackupPassword)
+        spacerBackupNote = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        lblBackupNote = Note("")
+        lblBackupNote.Name = "lblSchedBackupNote"
+        AddRow(page, spacerBackupNote, lblBackupNote)
+        SetBackupRowsVisible(False, False)
+
         ' --- conditions (collapsed by default, as in FMS_A) ---
         btnConditions = New Button With {.Text = Localization.T("Условия отбора файлов"), .AutoSize = True, .Name = "btnSchedConditions",
             .Margin = New Padding(0, 10, 0, 2), .Padding = New Padding(10, 4, 10, 4)}
         ButtonGlyphs.Apply(btnConditions, "action.filter")
-        AddHandler btnConditions.Click, Sub() SetConditionsOpen(Not pnlConditions.Visible)
-        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, btnConditions)
+        AddHandler btnConditions.Click, Sub() SetConditionsOpen(Not conditionsOpen)
+        spacerConditionsButton = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerConditionsButton, btnConditions)
 
         BuildConditions()
         spacerConditions = New Label With {.AutoSize = True, .Margin = New Padding(0), .Visible = False}
@@ -305,6 +374,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' The theme makes the drop-down lists taller. Left to the first paint, that comes after the measure below.
+        ThemeService.Attach(Me)
         ' The boolean rows (ticket 243 T-11c-b) are laid out now that the window has its scale; the page makes room for the
         ' taller rows and the body scrolls.
         OptionRows.ArrangeAll(Me)
@@ -317,7 +388,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
     ''' <summary>A drop-down is as wide as its longest entry in the language shown (the fixed authored width cut "Новые с прошлого
     ''' запуска" and its translations), and its list is never narrower than the face.</summary>
     Private Sub FitCombos()
-        For Each box As ComboBox In New ComboBox() {cmbAction, cmbConflict, cmbTime}
+        For Each box As ComboBox In New ComboBox() {cmbAction, cmbConflict, cmbTime, cmbChunk}
             Dim widest As Integer = 0
             For Each item As Object In box.Items
                 widest = Math.Max(widest, TextRenderer.MeasureText(Convert.ToString(item), box.Font).Width)
@@ -348,10 +419,66 @@ Friend NotInheritable Class Scheduled_Operation_Form
 
     ''' <summary>Opens or folds the conditions group together with the empty cell in front of it (see <see cref="spacerConditions"/>).</summary>
     Private Sub SetConditionsOpen(open As Boolean)
-        pnlConditions.Visible = open
-        spacerConditions.Visible = open
-        If open Then GrowToContent()
+        conditionsOpen = open
+        ApplyConditionsVisibility()
+        If open AndAlso Not IsFillAction() Then GrowToContent()
     End Sub
+
+    ''' <summary>The conditions group and its switch exist only for an action that selects files; a fill selects none (L0299).
+    ''' The open state the user chose is kept in <see cref="conditionsOpen"/>, so it comes back with the next file action.</summary>
+    Private Sub ApplyConditionsVisibility()
+        Dim selectsFiles As Boolean = Not IsFillAction() AndAlso Not IsBackupAction()
+        btnConditions.Visible = selectsFiles
+        spacerConditionsButton.Visible = selectsFiles
+        Dim showGroup As Boolean = selectsFiles AndAlso conditionsOpen
+        pnlConditions.Visible = showGroup
+        spacerConditions.Visible = showGroup
+    End Sub
+
+    Private Function IsFillAction() As Boolean
+        Return cmbAction.SelectedIndex = CInt(ScheduledAction.FillFreeSpace)
+    End Function
+
+    Private Function IsBackupAction() As Boolean
+        Return cmbAction.SelectedIndex = CInt(ScheduledAction.Backup)
+    End Function
+
+    ''' <summary>The backup rows (L0298); the password row only while the seal is on.</summary>
+    Private Sub SetBackupRowsVisible(isBackup As Boolean, sealed As Boolean)
+        lblBackupKeep.Visible = isBackup
+        numBackupKeep.Visible = isBackup
+        OptionRows.RowOf(chkBackupSeal).Visible = isBackup
+        spacerBackupSeal.Visible = isBackup
+        lblBackupPassword.Visible = isBackup AndAlso sealed
+        txtBackupPassword.Visible = isBackup AndAlso sealed
+        spacerBackupNote.Visible = isBackup
+        lblBackupNote.Visible = isBackup
+    End Sub
+
+    ''' <summary>The read-only note of a backup (L0298): what the set holds and names, what is retired, the seal, and what to
+    ''' install when filedo.exe is not found. Text in the page, never a message box.</summary>
+    Private Sub UpdateBackupNote()
+        Dim keep As Integer = CInt(numBackupKeep.Value)
+        Dim extension As String = If(chkBackupSeal.Checked, ".fd-sec", ".zip")
+        Dim lines As New List(Of String) From {
+            Localization.TF("Каждый запуск сохраняет папку целиком как следующую копию с номером от 001 до {0}.", keep),
+            Localization.TF("Когда набор заполнен, новая копия после проверки заменяет самую старую. Исходная папка не изменяется. Имена копий: {0}.",
+                            Localization.LtrValue(ReadOperation().BackupStem & "_001" & extension))}
+        If chkBackupSeal.Checked Then
+            lines.Add(If(backupPasswordStored,
+                Localization.T("Пароль сохранён на этом компьютере. Оставьте поле пустым, чтобы не менять его. Без пароля копию открыть нельзя."),
+                Localization.T("Пароль хранится только на этом компьютере и не попадает в экспорт настроек. Без пароля копию открыть нельзя.")))
+        End If
+        If Not fileDoPresent.HasValue Then fileDoPresent = FileDoLocator.Find().Length > 0
+        If Not fileDoPresent.Value Then lines.Add(Localization.T("Для этой операции требуется FileDO. Установите компонент FileDO."))
+        lblBackupNote.Text = String.Join(vbCrLf, lines)
+    End Sub
+
+    ''' <summary>The action's name in the drop-down. The fill's name is spelled here too, so the list never shows a copy's name for it.</summary>
+    Private Shared Function ActionLabel(action As ScheduledAction) As String
+        If action = ScheduledAction.FillFreeSpace Then Return Localization.T("Заполнение свободного места с удалением (FileDO)")
+        Return ScheduledText.ActionName(action)
+    End Function
 
     Private Sub BuildConditions()
         pnlConditions = New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2,
@@ -371,7 +498,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
                               OptionRows.InFlow(chkDocuments, Nothing, OptionRowFit.Content)})
         AddRow(pnlConditions, Caption(Localization.T("Типы файлов")), types)
 
-        cmbTime = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedTime"}
+        cmbTime = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedTime"}
         For Each filter As ScheduledTimeFilter In {ScheduledTimeFilter.All, ScheduledTimeFilter.SinceLastRun, ScheduledTimeFilter.LastHour, ScheduledTimeFilter.LastDay}
             cmbTime.Items.Add(ScheduledText.TimeFilterName(filter))
         Next
@@ -454,6 +581,14 @@ Friend NotInheritable Class Scheduled_Operation_Form
             ShowLocation(txtDestination, destinationLocation)
             cmbConflict.SelectedIndex = CInt(op.Conflict)
             chkDeleteOriginals.Checked = op.DeleteOriginalsAfterVerify
+            Dim chunkIndex As Integer = Array.IndexOf(ScheduledOperation.ChunkSizesMb, op.ChunkSizeMb)
+            If chunkIndex < 0 Then chunkIndex = Array.IndexOf(ScheduledOperation.ChunkSizesMb, ScheduledOperation.DefaultChunkSizeMb)
+            cmbChunk.SelectedIndex = Math.Max(0, chunkIndex)
+            numBackupKeep.Value = ScheduledValidation.NormalizeKeepCount(op.BackupKeepCount)
+            chkBackupSeal.Checked = op.BackupSealed
+            txtBackupPassword.Text = ""
+            backupPasswordStored = op.Action = ScheduledAction.Backup AndAlso op.Id.Length > 0 AndAlso
+                                   engine.StoreInstance.BackupCredentials.Has(op.Id)
 
             Dim c As ScheduledConditions = op.Conditions
             chkAllFiles.Checked = (c.TypeMask And ScheduledTypeMask.AllFiles) <> 0
@@ -517,6 +652,13 @@ Friend NotInheritable Class Scheduled_Operation_Form
         op.Destination = If(op.NeedsDestination, ReadLocation(txtDestination, destinationLocation), New ScheduledLocation())
         op.Conflict = CType(Math.Max(0, cmbConflict.SelectedIndex), ScheduledConflict)
         op.DeleteOriginalsAfterVerify = op.Action = ScheduledAction.Archive AndAlso chkDeleteOriginals.Checked
+        If op.Action = ScheduledAction.FillFreeSpace Then
+            op.ChunkSizeMb = ScheduledOperation.ChunkSizesMb(Math.Max(0, Math.Min(cmbChunk.SelectedIndex, ScheduledOperation.ChunkSizesMb.Length - 1)))
+        End If
+        If op.Action = ScheduledAction.Backup Then
+            op.BackupKeepCount = CInt(numBackupKeep.Value)
+            op.BackupSealed = chkBackupSeal.Checked
+        End If
 
         Dim mask As ScheduledTypeMask = ScheduledTypeMask.None
         If chkAllFiles.Checked Then
@@ -555,11 +697,14 @@ Friend NotInheritable Class Scheduled_Operation_Form
     End Sub
 
     ''' <summary>Which rows exist depends on the action: a delete has no destination, only a copy or a move
-    ''' has a conflict mode, only an archive offers to remove its originals.</summary>
+    ''' has a conflict mode, only an archive offers to remove its originals. A fill of free space (L0299) has none of those and
+    ''' selects no files: it takes a local folder or drive root, a chunk size and shows what the volume looks like.</summary>
     Private Sub OnShapeChanged(sender As Object, e As EventArgs)
         If cmbAction.SelectedIndex < 0 Then Return
         Dim action As ScheduledAction = CType(cmbAction.SelectedIndex, ScheduledAction)
-        Dim hasDestination As Boolean = action <> ScheduledAction.Delete
+        Dim isFill As Boolean = action = ScheduledAction.FillFreeSpace
+        Dim isBackup As Boolean = action = ScheduledAction.Backup
+        Dim hasDestination As Boolean = action <> ScheduledAction.Delete AndAlso Not isFill
         lblDestination.Visible = hasDestination
         txtDestination.Parent.Visible = hasDestination
         ' A control's own Visible getter answers for its parents too (False while the window is not shown), so the
@@ -573,13 +718,71 @@ Friend NotInheritable Class Scheduled_Operation_Form
         OptionRows.RowOf(chkDeleteOriginals).Visible = showOriginals
         spacerOriginals.Visible = showOriginals
         ' An archive takes folders of this PC (or Google Drive) only for now (12.2 default 7).
-        btnSourceResource.Visible = action <> ScheduledAction.Archive
-        btnDestinationResource.Visible = action <> ScheduledAction.Archive
+        ' A fill takes a local folder or a drive root only (the folder-browse button stays): no resource, no Google Drive.
+        ' A backup takes two plain folders (L0298): no resource, no Google Drive on either side.
+        btnSourceResource.Visible = action <> ScheduledAction.Archive AndAlso Not isFill AndAlso Not isBackup
+        btnDestinationResource.Visible = action <> ScheduledAction.Archive AndAlso Not isBackup
         Dim driveOffered As Boolean = ScheduledDriveRegistry.IsSignedIn()
-        btnSourceDrive.Visible = (driveOffered OrElse sourceLocation.Kind = ScheduledLocationKind.Drive) AndAlso action <> ScheduledAction.Delete
-        btnDestinationDrive.Visible = (driveOffered OrElse destinationLocation.Kind = ScheduledLocationKind.Drive) AndAlso hasDestination
+        btnSourceDrive.Visible = (driveOffered OrElse sourceLocation.Kind = ScheduledLocationKind.Drive) AndAlso action <> ScheduledAction.Delete AndAlso
+                                 Not isFill AndAlso Not isBackup
+        btnDestinationDrive.Visible = (driveOffered OrElse destinationLocation.Kind = ScheduledLocationKind.Drive) AndAlso hasDestination AndAlso Not isBackup
+        ' No file is selected, so no subfolder option, no conditions and nothing to list ahead of a run; a backup always
+        ' takes the whole folder, subfolders included.
+        OptionRows.RowOf(chkRecursive).Visible = Not isFill AndAlso Not isBackup
+        spacerRecursive.Visible = Not isFill AndAlso Not isBackup
+        ApplyConditionsVisibility()
+        btnPreview.Visible = Not isFill AndAlso Not isBackup
+        SetBackupRowsVisible(isBackup, chkBackupSeal.Checked)
+        If isBackup Then UpdateBackupNote()
+        lblChunk.Visible = isFill
+        cmbChunk.Visible = isFill
+        spacerFill.Visible = isFill
+        lblFillNote.Visible = isFill
+        If isFill Then UpdateFillNote()
         UpdateVerdict(action)
     End Sub
+
+    ''' <summary>The read-only note of a fill (L0299): the volume the source stands on, what the run does to its free space, the
+    ''' system-volume reserve, the SSD wear caveat (always shown - owner decision Q299-3, no drive-type detection) and, when
+    ''' filedo.exe is not found, what to install. It is text in the page, never a message box.</summary>
+    Private Sub UpdateFillNote()
+        Dim lines As New List(Of String)()
+        Dim location As ScheduledLocation = ReadLocation(txtSource, sourceLocation)
+        If location.Kind <> ScheduledLocationKind.Path OrElse LooksLikeNetworkPath(location.Path) Then
+            lines.Add(Localization.T("Заполнение свободного места работает только с локальным диском или папкой на нём."))
+        ElseIf location.Path.Length > 0 Then
+            Dim info As FillVolumeInfo = FillVolumeInfo.Read(location.Path)
+            If info.IsNetwork Then
+                lines.Add(Localization.T("Заполнение свободного места работает только с локальным диском или папкой на нём."))
+            ElseIf info.Known Then
+                lines.Add(Localization.TF("Диск {0}: объём {1}, свободно {2}.", Localization.LtrValue(VolumeName(info.Root)),
+                                          ScheduledText.SizeText(info.TotalBytes), ScheduledText.SizeText(info.FreeBytes)))
+                lines.Add(Localization.TF("Свободное место ({0}) будет заполнено временными файлами и затем очищено.",
+                                          ScheduledText.SizeText(info.FreeBytes)))
+                If info.IsSystemVolume Then
+                    lines.Add(Localization.T("Это системный диск: FileDO оставит свободными не меньше 10 ГБ и не меньше 10 % его объёма."))
+                End If
+            End If
+        End If
+        lines.Add(Localization.T("Перезапись свободного места на SSD увеличивает износ диска и не гарантирует полное удаление данных."))
+        If Not fileDoPresent.HasValue Then fileDoPresent = FileDoLocator.Find().Length > 0
+        If Not fileDoPresent.Value Then lines.Add(Localization.T("Для этой операции требуется FileDO. Установите компонент FileDO."))
+        lblFillNote.Text = String.Join(vbCrLf, lines)
+    End Sub
+
+    ''' <summary>"C" for "C:\" - the label has its own colon ("Диск C: .."); a mount-point folder keeps its path without the trailing separator.</summary>
+    Private Shared Function VolumeName(root As String) As String
+        If String.IsNullOrEmpty(root) Then Return ""
+        If root.Length >= 2 AndAlso root(1) = ":"c Then Return root.Substring(0, 1).ToUpperInvariant()
+        Return root.TrimEnd("\"c)
+    End Function
+
+    ''' <summary>A UNC path (not the extended-length local form) is a network share: it is refused without touching the share, so a
+    ''' path typed one letter at a time never waits on an unreachable server.</summary>
+    Private Shared Function LooksLikeNetworkPath(path As String) As Boolean
+        Return path.StartsWith("\\", StringComparison.Ordinal) AndAlso
+               Not path.StartsWith("\\?\", StringComparison.Ordinal) AndAlso Not path.StartsWith("\\.\", StringComparison.Ordinal)
+    End Function
 
     ''' <summary>The read-only verdict line (D3): shown only when something is going to be deleted.</summary>
     Private Sub UpdateVerdict(action As ScheduledAction)
@@ -634,7 +837,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
             box.Text = location.Describe()
             box.ReadOnly = True
         ElseIf location.Kind = ScheduledLocationKind.Drive Then
-            box.Text = If(location.ResourceName.Length > 0, location.ResourceName, Localization.T("Через Google Диск"))
+            box.Text = ScheduledText.ShortLocation(location)
             box.ReadOnly = True
         Else
             box.Text = location.Path
@@ -658,6 +861,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
             location.Kind = ScheduledLocationKind.Path
             location.ResourceId = ""
             location.ResourceName = ""
+            location.DriveResourceId = ""
+            location.DriveDeviceName = ""
             location.Path = dialog.SelectedPath
             ShowLocation(target, location)
         End Using
@@ -669,24 +874,47 @@ Friend NotInheritable Class Scheduled_Operation_Form
             location.Kind = ScheduledLocationKind.Resource
             location.ResourceId = dialog.ChosenId
             location.ResourceName = dialog.ChosenName
+            location.DriveResourceId = ""
+            location.DriveDeviceName = ""
             location.Path = dialog.ChosenFolder
             ShowLocation(target, location)
         End Using
     End Sub
 
-    Private Sub PickDrive(target As TextBox, location As ScheduledLocation)
-        location.Kind = ScheduledLocationKind.Drive
-        location.ResourceId = ""
-        location.ResourceName = Localization.T("Через Google Диск")
-        location.Path = ""
-        ShowLocation(target, location)
-        OnShapeChanged(Nothing, EventArgs.Empty)
+    Private Sub PickDrive(target As TextBox, location As ScheduledLocation, isSource As Boolean)
+        Using dialog As New Scheduled_Drive_Picker_Form(location, isSource)
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            location.Kind = ScheduledLocationKind.Drive
+            location.ResourceId = dialog.Chosen.DeviceId
+            location.ResourceName = dialog.Chosen.Label
+            location.DriveResourceId = dialog.Chosen.ResourceId
+            location.DriveDeviceName = dialog.Chosen.DeviceName
+            location.Path = ""
+            ShowLocation(target, location)
+            OnShapeChanged(Nothing, EventArgs.Empty)
+        End Using
     End Sub
 
     ' --- save and preview ------------------------------------------------------------------------------
 
     Private Sub OnSaveClicked(sender As Object, e As EventArgs)
         Dim op As ScheduledOperation = ReadOperation()
+        ' A sealed backup (L0298): a new password replaces the stored one, an empty box keeps it; none at all is refused here,
+        ' before anything is stored, and so is a trivial one.
+        Dim newPassword As String = If(op.Action = ScheduledAction.Backup AndAlso op.BackupSealed, txtBackupPassword.Text, "")
+        If op.Action = ScheduledAction.Backup AndAlso op.BackupSealed Then
+            Dim refusal As String = ""
+            If newPassword.Length = 0 AndAlso Not backupPasswordStored Then
+                refusal = ScheduledText.IssueText(New ScheduledIssue(ScheduledIssueCode.BackupPasswordMissing))
+            ElseIf newPassword.Length > 0 AndAlso ScheduledBackupCredentialStore.IsTrivial(newPassword) Then
+                refusal = Localization.T("Пароль слишком простой: нужно не меньше 8 символов, и не один и тот же символ.")
+            End If
+            If refusal.Length > 0 Then
+                MessageBox.Show(Me, refusal, Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtBackupPassword.Focus()
+                Return
+            End If
+        End If
         Dim storedId As String = ""
         Dim issues As List(Of ScheduledIssue) = engine.Upsert(op, storedId)
         If issues.Count > 0 Then
@@ -694,6 +922,16 @@ Friend NotInheritable Class Scheduled_Operation_Form
                             Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
+        Dim credentials As ScheduledBackupCredentialStore = engine.StoreInstance.BackupCredentials
+        If op.Action <> ScheduledAction.Backup OrElse Not op.BackupSealed Then
+            ' Nothing sealed any more: the password has no use and is not kept.
+            credentials.Delete(storedId)
+        ElseIf newPassword.Length > 0 AndAlso Not credentials.Write(storedId, newPassword) Then
+            ' The definition is saved; its runs wait at the "no password" wall until a password can be stored.
+            MessageBox.Show(Me, Localization.T("Не удалось сохранить пароль на этом компьютере. Операция сохранена, но запустится только после того, как пароль будет сохранён."),
+                            Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End If
+        txtBackupPassword.Text = ""
         SavedId = storedId
         DialogResult = DialogResult.OK
         Close()
@@ -724,6 +962,11 @@ Friend NotInheritable Class Scheduled_Operation_Form
         End If
         If result.Problem.IsProblem Then
             MessageBox.Show(Me, Localization.TF("Папка недоступна: {0}", result.Problem.Detail),
+                            Localization.T("Что будет выполнено сейчас"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+        If result.DriveSource Then
+            MessageBox.Show(Me, Localization.T("Что придёт через Google Drive, станет известно при запуске."),
                             Localization.T("Что будет выполнено сейчас"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If

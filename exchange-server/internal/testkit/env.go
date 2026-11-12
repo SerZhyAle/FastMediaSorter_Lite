@@ -20,6 +20,7 @@ import (
 	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/rendezvous"
+	"fms/exchange-server/internal/settings"
 	"fms/exchange-server/internal/tlsid"
 )
 
@@ -58,6 +59,9 @@ type Options struct {
 	Cast        bool
 	// Sealed turns on the `sealed` feature (27 item DP): the keys, the boxes and the sealed clipboard kind.
 	Sealed bool
+	// Settings keeps the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296) in the data
+	// directory, and the server lists `settings` in features. Off by default: the transcripts of ticket 205 stand.
+	Settings bool
 	// LogFile also writes every log line to <DataDir>/logs/exchange.log (the real layout of ticket 182
 	// L-1), so a test can scan the directory the way the manifest test of ticket 167 does.
 	LogFile bool
@@ -97,6 +101,8 @@ type Env struct {
 	Verifier     *limits.Verifier
 	Pool         *ports.Pool
 	Params       rendezvous.Params
+	// Settings is the standards store when Options.Settings was set.
+	Settings *settings.Store
 	// Relay is the real relay when Options.WithRelay was set.
 	Relay *rendezvous.Relay
 
@@ -247,11 +253,17 @@ func StartServer(t TB, opt Options) *Env {
 		env.Relay = rendezvous.NewRelay(rc)
 		relayHandler = env.Relay
 	}
+	if opt.Settings {
+		env.Settings, err = settings.Open(dir, now)
+		if err != nil {
+			t.Fatalf("settings: %v", err)
+		}
+	}
 	env.Engine = rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: env.Params, Accounts: env.Accounts, Dir: env.Dir, Pool: env.Pool, Verifier: env.Verifier,
 		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now, Audit: opt.Audit,
 		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast, Sealed: opt.Sealed}, Relay: relayHandler,
-		Rand: opt.EngineRand,
+		Rand: opt.EngineRand, Settings: env.Settings,
 	})
 	env.Ops = env.Engine.Ops()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")

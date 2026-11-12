@@ -27,6 +27,10 @@ Friend Interface IDriveChannelPublisher
     ''' <summary>Look at the folders now instead of at the next interval.</summary>
     Sub Nudge()
 
+    ''' <summary>The folder listed on Drive under <paramref name="resourceId"/> as of the last pass, or Nothing: a folder is served
+    ''' through packets only while its record stands (item CO).</summary>
+    Function ServedRoot(resourceId As String) As DriveServedRoot
+
 End Interface
 
 ''' <summary>Everything the publisher needs from outside, so a test hands in fakes and counts the calls.</summary>
@@ -62,6 +66,8 @@ Friend NotInheritable Class DriveChannelPublisher
     Private ReadOnly _gate As New Object()
     ' resource id -> signature of the record standing on Drive; touched by the loop only
     Private ReadOnly _standing As New Dictionary(Of String, String)(StringComparer.Ordinal)
+    ' resource id -> the folder behind a standing record, for the answers to REQUEST packets; written by the loop, read under _gate
+    Private ReadOnly _served As New Dictionary(Of String, DriveServedRoot)(StringComparer.Ordinal)
     Private _deviceJson As String = ""
     Private _cts As CancellationTokenSource
     Private _loop As Task
@@ -92,6 +98,14 @@ Friend NotInheritable Class DriveChannelPublisher
             End SyncLock
         End Get
     End Property
+
+    Public Function ServedRoot(resourceId As String) As DriveServedRoot Implements IDriveChannelPublisher.ServedRoot
+        If String.IsNullOrEmpty(resourceId) Then Return Nothing
+        SyncLock _gate
+            Dim root As DriveServedRoot = Nothing
+            Return If(_served.TryGetValue(resourceId, root), root, Nothing)
+        End SyncLock
+    End Function
 
     Public Sub Start() Implements IDriveChannelPublisher.Start
         SyncLock _gate
@@ -133,6 +147,7 @@ Friend NotInheritable Class DriveChannelPublisher
         End If
         SyncLock _gate
             _standing.Clear()
+            _served.Clear()
         End SyncLock
     End Function
 
@@ -232,6 +247,10 @@ Friend NotInheritable Class DriveChannelPublisher
         Dim gone As List(Of String)
         SyncLock _gate
             gone = _standing.Keys.Where(Function(id) Not wanted.Contains(id)).ToList()
+            ' a folder that is going away is no longer served, even before its record is withdrawn
+            For Each id As String In gone
+                _served.Remove(id)
+            Next
         End SyncLock
         For Each id As String In gone
             ct.ThrowIfCancellationRequested()
@@ -246,12 +265,15 @@ Friend NotInheritable Class DriveChannelPublisher
             SyncLock _gate
                 Dim signature As String = Nothing
                 same = _standing.TryGetValue(item.ResourceId, signature) AndAlso String.Equals(signature, item.Signature, StringComparison.Ordinal)
+                ' the folder behind a standing record may move without its record changing
+                If same Then _served(item.ResourceId) = New DriveServedRoot(item.ResourceId, item.HostPath, item.Locked)
             End SyncLock
             If same Then Continue For
             ct.ThrowIfCancellationRequested()
             Await records.PublishAsync(ExchangeDriveRecordKind.Resource, item.ResourceId, item.Json, 0, ct).ConfigureAwait(False)
             SyncLock _gate
                 _standing(item.ResourceId) = item.Signature
+                _served(item.ResourceId) = New DriveServedRoot(item.ResourceId, item.HostPath, item.Locked)
             End SyncLock
         Next
     End Function

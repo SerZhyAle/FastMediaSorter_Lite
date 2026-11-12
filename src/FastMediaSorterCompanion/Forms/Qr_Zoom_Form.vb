@@ -99,7 +99,7 @@ Public Class Qr_Zoom_Form
         End Sub
     End Class
 
-    Private Sub New(img As Image, clientSide As Integer, baseName As String, carriesAccess As Boolean)
+    Friend Sub New(img As Image, clientSide As Integer, baseName As String, carriesAccess As Boolean)
         _baseSide = clientSide
         _carriesAccess = carriesAccess
         _baseName = If(baseName, "")

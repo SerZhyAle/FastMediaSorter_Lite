@@ -125,11 +125,14 @@ Friend NotInheritable Class ExchangeEntryStore
     Private ReadOnly _port As IExchangeSettingsPort
     Private ReadOnly _tokenRoot As String
     Private ReadOnly _cipher As IExchangeSecretCipher
+    ' The cipher as it was given: Nothing lets the key store use its own entropy, because a token blob is no key blob.
+    Private ReadOnly _keyCipher As IExchangeSecretCipher
 
     Public Sub New(port As IExchangeSettingsPort, Optional tokenRoot As String = Nothing, Optional cipher As IExchangeSecretCipher = Nothing)
         _port = If(port, New ExchangeRegistrySettings())
         _tokenRoot = If(String.IsNullOrWhiteSpace(tokenRoot), Path.Combine(ExchangeCredentialStore.DefaultDirectory(), "entries"), tokenRoot)
         _cipher = If(cipher, ExchangeDpapiCipher.Instance)
+        _keyCipher = cipher
     End Sub
 
     Public Shared Function CreateDefault() As ExchangeEntryStore
@@ -149,6 +152,33 @@ Friend NotInheritable Class ExchangeEntryStore
         If Not IsValidEntryId(entryId) Then Throw New ArgumentException("entry id", NameOf(entryId))
         Return New ExchangeCredentialStore(Path.Combine(_tokenRoot, entryId), _cipher)
     End Function
+
+    ''' <summary>The device key of one entry (DEVICE-EXCHANGE 27 item DF: one pair per deviceId), in the entry's folder beside its token.</summary>
+    Public Function DeviceKeysFor(entryId As String) As IExchangeDeviceKeyStore
+        If Not IsValidEntryId(entryId) Then Throw New ArgumentException("entry id", NameOf(entryId))
+        Return New ExchangeDeviceKeyStore(Path.Combine(_tokenRoot, entryId), _keyCipher)
+    End Function
+
+    ''' <summary>The kept first-seen keys of one entry's devices (item DG), in the entry's folder. The caller keeps ONE object for a session's
+    ''' life: the file store caches what it read, and two of them over one file would disagree.</summary>
+    Public Function TrustStoreFor(entryId As String) As IExchangeSealedTrustStore
+        If Not IsValidEntryId(entryId) Then Throw New ArgumentException("entry id", NameOf(entryId))
+        Return New ExchangeSealedTrustStore(Path.Combine(_tokenRoot, entryId))
+    End Function
+
+    ''' <summary>A failed enrollment leaves nothing behind: the key made for it goes, and so does a folder that held nothing else.</summary>
+    Public Sub DropFreshKey(entryId As String, deviceId As String)
+        DeviceKeysFor(entryId).Delete(deviceId)
+        RemoveWhenEmpty(Path.Combine(_tokenRoot, entryId))
+        RemoveWhenEmpty(_tokenRoot)
+    End Sub
+
+    Private Shared Sub RemoveWhenEmpty(folder As String)
+        Try
+            If Directory.Exists(folder) AndAlso Directory.GetFileSystemEntries(folder).Length = 0 Then Directory.Delete(folder)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+        End Try
+    End Sub
 
     Public Shared Function NewEntryId() As String
         Return Guid.NewGuid().ToString("N")
@@ -299,7 +329,8 @@ Friend NotInheritable Class ExchangeEntryStore
         Return Upsert(e.WithPin(pin, kind))
     End Function
 
-    ''' <summary>Forgets the entry and its token. An attached resource is NOT touched here (9.3): the caller leaves them in place.</summary>
+    ''' <summary>Forgets the entry with its token, its device key and the keys it kept for other devices - its whole folder. An attached
+    ''' resource is NOT touched here (9.3): the caller leaves them in place.</summary>
     Public Function Remove(id As String) As Boolean
         Dim list As List(Of ExchangeEntry) = Load()
         Dim removed As Integer = list.RemoveAll(Function(e) String.Equals(e.Id, id, StringComparison.Ordinal))
@@ -311,7 +342,9 @@ Friend NotInheritable Class ExchangeEntryStore
         End If
         Try
             TokenStoreFor(id).Delete()
-        Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is IOException
+            Dim folder As String = Path.Combine(_tokenRoot, id)
+            If Directory.Exists(folder) Then Directory.Delete(folder, True)
+        Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
         End Try
         Return True
     End Function

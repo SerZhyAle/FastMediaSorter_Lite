@@ -20,6 +20,8 @@ Friend Module ScheduledText
             Case ScheduledAction.Move : Return Localization.T("Перенос")
             Case ScheduledAction.Delete : Return Localization.T("Удаление")
             Case ScheduledAction.Archive : Return Localization.T("Архивация")
+            Case ScheduledAction.FillFreeSpace : Return Localization.T("Заполнение свободного места с удалением (FileDO)")
+            Case ScheduledAction.Backup : Return Localization.T("Резервная копия папки (FileDO)")
             Case Else : Return Localization.T("Копирование")
         End Select
     End Function
@@ -127,6 +129,7 @@ Friend Module ScheduledText
             Case "kept-both" : Return Localization.TF("скопирован, но исходный файл остался на месте: {0}", argument)
             Case "transport" : Return Localization.TF("связь с папкой прервалась: {0}", argument)
             Case "disk-full" : Return Localization.TF("на диске не хватило места: {0}", argument)
+            Case "too-large" : Return Localization.TF("файл больше предела пакета Google Drive: {0}", argument)
             Case "archive-unverified" : Return Localization.T("архив не прошёл проверку, исходные файлы оставлены на месте")
             Case "source-unreachable" : Return Localization.TF("исходная папка недоступна: {0}", argument)
             Case "source-denied" : Return Localization.TF("нет доступа к исходной папке: {0}", argument)
@@ -141,13 +144,26 @@ Friend Module ScheduledText
             Case "source-exchange-certificate", "destination-exchange-certificate"
                 Return Localization.TF("сертификат сервера обмена изменился: {0}", argument)
             Case "source-signed-out", "destination-signed-out"
+                If argument.StartsWith(ScheduledLocation.DriveLabel, StringComparison.Ordinal) Then Return Localization.TF("выполнен выход из Google Drive: {0}", argument)
                 Return Localization.TF("выполнен выход из учётной записи обмена: {0}", argument)
+            Case "source-drive-full", "destination-drive-full"
+                Return Localization.TF("на Google Drive не хватило места: {0}", argument)
+            Case "source-drive-unavailable", "destination-drive-unavailable"
+                Return Localization.TF("нет связи с Google Drive: {0}", argument)
             Case "source-pin-locked", "destination-pin-locked"
                 Return Localization.TF("требуется PIN-код или он изменился: {0}", argument)
             Case "source-offline", "destination-offline"
                 Return Localization.TF("устройство сейчас не в сети: {0}", argument)
             Case "resource-removed" : Return Localization.TF("ресурс удалён из списка ресурсов: {0}", argument)
             Case "invalid-definition" : Return Localization.T("определение не читается этой версией менеджера")
+            Case "filedo-missing" : Return Localization.T("FileDO не найден: установите компонент FileDO")
+            Case "filedo-start" : Return Localization.TF("не удалось запустить FileDO: {0}", argument)
+            Case "fill-failed" : Return Localization.TF("FileDO не смог заполнить свободное место: {0}", argument)
+            Case "fill-not-proven" : Return Localization.TF("FileDO не подтвердил результат заполнения: {0}", argument)
+            Case "fill-leftovers" : Return Localization.TF("в рабочей папке остались файлы, удалите её вручную: {0}", argument)
+            Case "fill-network-drive" : Return Localization.TF("сетевой диск нельзя заполнять: {0}", argument)
+            Case "backup-no-password" : Return Localization.T("пароль резервной копии не сохранён на этом компьютере: введите его в операции")
+            Case "backup-filedo-unsupported" : Return Localization.T("установленный FileDO не умеет нумеровать резервные копии: обновите компонент FileDO")
             Case Else
                 If code.StartsWith("issue-", StringComparison.Ordinal) Then Return IssueSentence(code, argument)
                 Return Localization.TF("не удалось обработать: {0}", argument)
@@ -199,9 +215,17 @@ Friend Module ScheduledText
             Case ScheduledIssueCode.ResourceUnsupported
                 Return Localization.T("Этот вид ресурса (ссылка обмена) нельзя использовать в операциях по расписанию.")
             Case ScheduledIssueCode.DriveBothSides
-                Return Localization.T("Google Диск нельзя выбрать одновременно как источник и как назначение.")
+                Return Localization.T("Google Drive нельзя выбрать одновременно как источник и как назначение.")
             Case ScheduledIssueCode.DriveDeleteUnsupported
-                Return Localization.T("Удаление по расписанию через Google Диск не поддерживается.")
+                Return Localization.T("Удаление по расписанию через Google Drive не поддерживается.")
+            Case ScheduledIssueCode.DriveAgeUnsupported
+                Return Localization.T("Возраст файла нельзя задавать для источника через Google Drive: время файла здесь - время его получения.")
+            Case ScheduledIssueCode.LocalStorageRequired
+                Return Localization.T("Заполнение свободного места работает только с локальным диском или папкой на нём.")
+            Case ScheduledIssueCode.BackupNeedsPaths
+                Return Localization.T("Резервная копия принимает только обычные папки, не ресурсы и не Google Drive.")
+            Case ScheduledIssueCode.BackupPasswordMissing
+                Return Localization.T("Введите пароль для защищённой резервной копии.")
             Case Else : Return Localization.T("Определение не прошло проверку.")
         End Select
     End Function
@@ -229,6 +253,10 @@ Friend Module ScheduledText
     ''' <summary>The recorded verdict of a run ("recycle", "permanent:NoBinOnNetwork", "mixed") as words.</summary>
     Friend Function RecordedVerdictText(verdict As String) As String
         If String.IsNullOrEmpty(verdict) Then Return ""
+        Dim freeAtStart, written As Long
+        If FillCommandLine.TryReadVerdict(verdict, freeAtStart, written) Then
+            Return Localization.TF("свободно перед запуском: {0}, перезаписано: {1}", SizeText(freeAtStart), SizeText(written))
+        End If
         If verdict = "recycle" Then Return Localization.T("в Корзину")
         If verdict = "mixed" Then Return Localization.T("частично в Корзину, частично безвозвратно")
         If verdict = "permanent:BinDidNotTakeIt" Then
@@ -243,6 +271,15 @@ Friend Module ScheduledText
         Return ""
     End Function
 
+    ''' <summary>A size as a person reads it: gigabytes with one decimal from 1 GB up, whole megabytes below (binary units).</summary>
+    Friend Function SizeText(bytes As Long) As String
+        Const Megabyte As Double = 1024.0 * 1024.0
+        Const Gigabyte As Double = Megabyte * 1024.0
+        Dim value As Double = Math.Max(0L, bytes)
+        If value >= Gigabyte Then Return Localization.TF("{0} ГБ", (value / Gigabyte).ToString("0.0", CultureInfo.CurrentCulture))
+        Return Localization.TF("{0} МБ", Math.Round(value / Megabyte).ToString("0", CultureInfo.CurrentCulture))
+    End Function
+
     ' --- a row of the page -----------------------------------------------------------------------------
 
     ''' <summary>The operation's name cell on the page: prefixed with "! " while a run was skipped since the last success.</summary>
@@ -251,6 +288,9 @@ Friend Module ScheduledText
     End Function
 
     Friend Function ShortLocation(location As ScheduledLocation) As String
+        If location.Kind = ScheduledLocationKind.Drive Then
+            Return If(location.ResourceName.Length > 0, Localization.TF("Через Google Drive: {0}", location.ResourceName), Localization.T("Через Google Drive"))
+        End If
         Return location.Describe()
     End Function
 

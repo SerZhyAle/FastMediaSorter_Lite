@@ -132,6 +132,14 @@
       "reason": "Subordinate ZIP options dialog; file manager help explains destination, verification and optional original cleanup."
     },
     {
+      "id": "text-encoding",
+      "type": "fmsl.Text_Encoding_Form",
+      "name": "Re-open with Encoding",
+      "form": "inherit",
+      "parent": "main-viewer",
+      "reason": "Subordinate encoding picker of the text reader; its preview shows the file in the chosen encoding, and nothing is written to the file."
+    },
+    {
       "id": "file-details",
       "type": "fmsl.File_Details_Form",
       "name": "File Details",
@@ -209,6 +217,14 @@
       "name": "Change Exchange Password",
       "form": "page",
       "help": "exchange-password-change"
+    },
+    {
+      "id": "exchange-settings-standard",
+      "type": "fmsl.Exchange_Settings_Standard_Form",
+      "name": "Settings STANDARD",
+      "form": "inherit",
+      "parent": "settings",
+      "reason": "Subordinate confirmation of 'Save as STANDARD..' and 'Read STANDARD..' on the Server and resources page; the Settings help of that page explains the groups, what stays on this computer and that the server operator can read a standard."
     },
     {
       "id": "connection-diagnosis",
@@ -426,12 +442,28 @@
       "help": "scheduled-resource-picker"
     },
     {
+      "id": "scheduled-manager",
+      "type": "FastMediaSorterCompanion.Scheduled_Manager_Form",
+      "name": "Scheduled Operations",
+      "form": "inherit",
+      "parent": "scheduled-operation",
+      "reason": "The window of its own that lists the scheduled operations (tray, the viewer's command and folder item, the settings link); the operation's page opens with where this window opens and what it does."
+    },
+    {
       "id": "scheduled-preview",
       "type": "FastMediaSorterCompanion.Scheduled_Preview_Form",
       "name": "Scheduled Preview",
       "form": "inherit",
       "parent": "scheduled-operation",
       "reason": "Preview dialog opened from the scheduled operation editor."
+    },
+    {
+      "id": "scheduled-drive-picker",
+      "type": "FastMediaSorterCompanion.Scheduled_Drive_Picker_Form",
+      "name": "Scheduled Drive Side Picker",
+      "form": "inherit",
+      "parent": "scheduled-operation",
+      "reason": "Short picker opened from 'Via Google Drive' in the scheduled operation editor; its section is on the operation's page."
     },
     {
       "id": "internet-access",
@@ -650,8 +682,9 @@
       "type": "FastMediaSorterCompanion.Qr_Zoom_Form",
       "name": "QR Barcode Viewer",
       "form": "inherit",
-      "parent": "main-viewer",
-      "reason": "Subordinate modal preview for QR barcode bitmaps."
+      "parent": "share-main",
+      "ask": "off",
+      "reason": "The window is one control: the code fills it edge to edge, every click on it is a gesture of the code, and an added button would lie over the code a camera has to read (CONTEXT-HELP 0.2 section 7 item B). Its title line says what the clicks do."
     },
     {
       "id": "companion-connection-diagnosis",
@@ -660,6 +693,61 @@
       "form": "inherit",
       "parent": "connection-diagnosis",
       "reason": "Shared connection diagnosis dialog used across both applications."
+    },
+    {
+      "id": "share-settings.remote-exchange",
+      "name": "Exchange server administration",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
+    },
+    {
+      "id": "remote-admin-target",
+      "type": "FastMediaSorterCompanion.Remote_Admin_Target_Form",
+      "name": "Exchange server administration: server",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
+    },
+    {
+      "id": "remote-admin-account",
+      "type": "FastMediaSorterCompanion.Remote_Admin_Account_Form",
+      "name": "Exchange server administration: account",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
+    },
+    {
+      "id": "remote-admin-limits",
+      "type": "FastMediaSorterCompanion.Remote_Admin_Limits_Form",
+      "name": "Exchange server administration: limits",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
+    },
+    {
+      "id": "remote-admin-invitation",
+      "type": "FastMediaSorterCompanion.Remote_Admin_Invitation_Form",
+      "name": "Exchange server administration: invitation",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
+    },
+    {
+      "id": "remote-admin-shared",
+      "type": "FastMediaSorterCompanion.Remote_Admin_Shared_Form",
+      "name": "Exchange server administration: shared invitation",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
+    },
+    {
+      "id": "remote-admin-confirm",
+      "type": "FastMediaSorterCompanion.Remote_Admin_Confirm_Form",
+      "name": "Exchange server administration: confirmation",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "gate shut; its own entry is written when the gate opens"
     },
     {
       "id": "sftp-settings",

@@ -9,7 +9,7 @@ Friend NotInheritable Class Exchange_Guest_Grant_Form
 
     Private ReadOnly _agent As ExchangeDeviceAgent
     Private _iconHandle As IntPtr
-    Private ReadOnly _target As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 420}
+    Private ReadOnly _target As New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 420}
     Private ReadOnly _guest As New TextBox With {.Width = 420, .MaxLength = 128}
     Private ReadOnly _result As New Label With {.AutoSize = True, .MaximumSize = New Size(420, 0)}
     Private ReadOnly _cancel As New CancellationTokenSource()

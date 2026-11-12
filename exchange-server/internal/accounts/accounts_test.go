@@ -231,6 +231,42 @@ func TestEnrollingAKnownDeviceRotatesItsToken(t *testing.T) {
 	}
 }
 
+// A key lives exactly as long as its deviceId (27 item DF): an enroll that names a known deviceId with
+// another key, or with none, is refused id-collision and the device stays as it was - its key, its token.
+// The same key is a token rotation; a device kept without a key may present its first.
+func TestEnrollingAKnownDeviceWithAnotherKeyIsACollisionAndKeepsTheRecord(t *testing.T) {
+	s, _, _ := withAccounts(t)
+	key1 := &wire.E2EKey{V: wire.E2EKeyVersion, KEM: "BA" + strings.Repeat("A", 85)}
+	key2 := &wire.E2EKey{V: wire.E2EKeyVersion, KEM: "BA" + strings.Repeat("B", 85)}
+	keyed := func(k *wire.E2EKey) EnrollSpec { sp := spec(alice, devA); sp.E2EKey = k; return sp }
+
+	first, err := s.Enroll(keyed(nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := s.Enroll(keyed(key1))
+	if err != nil || !second.Rotated {
+		t.Fatalf("a device kept without a key presents its first: %v %+v", err, second)
+	}
+	if _, st := s.Hello(devA, first.Token); st != HelloBad {
+		t.Fatal("that enroll is a rotation: the old token dies")
+	}
+	for name, k := range map[string]*wire.E2EKey{"another key": key2, "no key": nil} {
+		if _, err := s.Enroll(keyed(k)); !errors.Is(err, ErrIDCollision) {
+			t.Fatalf("%s on a keyed deviceId: %v", name, err)
+		}
+		if _, st := s.Hello(devA, second.Token); st != HelloOK {
+			t.Fatalf("%s: the refused enroll must not rotate the token", name)
+		}
+		if ds := s.Devices(alice); len(ds) != 1 || !ds[0].E2EKey.Equal(key1) {
+			t.Fatalf("%s: the record keeps its key: %+v", name, ds)
+		}
+	}
+	if third, err := s.Enroll(keyed(key1.Clone())); err != nil || !third.Rotated {
+		t.Fatalf("the same key is a rotation: %v %+v", err, third)
+	}
+}
+
 func TestIDCollisionAcrossAccountsAndCapacity(t *testing.T) {
 	s, _, _ := withAccounts(t)
 	if _, err := s.Enroll(spec(alice, devA)); err != nil {

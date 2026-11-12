@@ -356,11 +356,65 @@ Public Class ExchangeDeviceKeyTests
     ' ---------------------------------------------------------------- DF: id-collision
 
     <Fact>
-    Public Async Function An_id_collision_is_a_refusal_like_the_others_and_the_next_try_is_a_new_id_with_a_new_key() As Task
+    Public Async Function One_id_collision_on_a_fresh_id_regenerates_it_with_a_new_key_and_the_key_of_the_colliding_id_goes() As Task
         Using acc As New ExchangeStubAccount()
             Dim keys As New TrackingKeyStore()
             Using rig As ExchangeDeviceAgentTests.Rig = NewRig(keys)
                 Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    acc.RefuseNextEnroll("id-collision")
+                    Dim request As ExchangeEnrollRequest = rig.Request(acc)
+                    Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.EnrollAsync(request, CancellationToken.None)).Outcome)
+                    Assert.Equal("", request.Password)
+                    Dim seen As List(Of String) = acc.EnrollDeviceIdsSeen()
+                    Assert.Equal(2, seen.Count)
+                    Assert.NotEqual(seen(0), seen(1))
+                    Assert.False(keys.Exists(seen(0)))
+                    Dim id As String = agent.GetStatus().DeviceId
+                    Assert.Equal(seen(1), id)
+                    Assert.True(keys.Exists(id))
+                    AssertKeyMember(acc.EnrollE2eKeysSeen()(1), keys.KemOf(id))
+                End Using
+            End Using
+
+            ' the same for a registration: a rig of its own, because the id above is held by now
+            Using rig As ExchangeDeviceAgentTests.Rig = NewRig(New TrackingKeyStore())
+                Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    acc.RefuseNextRegister("id-collision")
+                    Dim register As ExchangeRegisterRequest = RegisterRequest(acc)
+                    Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.RegisterAsync(register, CancellationToken.None)).Outcome)
+                    Assert.Equal("", register.Password)
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function An_id_collision_on_an_id_this_device_already_holds_is_shown_and_the_id_stays() As Task
+        Using acc As New ExchangeStubAccount()
+            Using rig As ExchangeDeviceAgentTests.Rig = NewRig(New TrackingKeyStore())
+                Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)).Outcome)
+                    Dim id As String = agent.GetStatus().DeviceId
+                    Await agent.DisconnectAsync()
+                    Dim before As Integer = acc.EnrollDeviceIdsSeen().Count
+                    acc.RefuseNextEnroll("id-collision")
+                    Dim result As ExchangeEnrollResult = Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)
+                    Assert.Equal(ExchangeEnrollOutcome.Refused, result.Outcome)
+                    Assert.Equal(ExchangeRefusal.IdCollision, result.Refusal)
+                    Assert.Equal(before + 1, acc.EnrollDeviceIdsSeen().Count)                  ' one attempt, not two
+                    Assert.Equal(id, acc.EnrollDeviceIdsSeen().Last())
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function A_second_id_collision_is_a_refusal_like_the_others_and_the_next_try_is_a_new_id_with_a_new_key() As Task
+        Using acc As New ExchangeStubAccount()
+            Dim keys As New TrackingKeyStore()
+            Using rig As ExchangeDeviceAgentTests.Rig = NewRig(keys)
+                Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    acc.RefuseNextEnroll("id-collision")
                     acc.RefuseNextEnroll("id-collision")
                     Dim request As ExchangeEnrollRequest = rig.Request(acc)
                     Dim result As ExchangeEnrollResult = Await agent.EnrollAsync(request, CancellationToken.None)
@@ -371,8 +425,11 @@ Public Class ExchangeDeviceKeyTests
                     Assert.NotEqual("", sentence)
                     Assert.NotEqual(ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.Unknown, "")), sentence)
                     Assert.Equal("", request.Password)
-                    Dim collidingId As String = acc.EnrollDeviceIdsSeen().Single()
-                    Assert.False(keys.Exists(collidingId))                                    ' the key made for the colliding id goes
+                    Dim colliding As List(Of String) = acc.EnrollDeviceIdsSeen()
+                    Assert.Equal(2, colliding.Count)
+                    Assert.NotEqual(colliding(0), colliding(1))
+                    Assert.False(keys.Exists(colliding(0)))                                   ' the keys made for the colliding ids go
+                    Assert.False(keys.Exists(colliding(1)))
                     Assert.False(rig.Ports.Accounts.IsConfigured())
                     Assert.False(rig.Ports.Credentials.Exists())
                     Assert.Equal(0, rig.Port.Writes)                                          ' the colliding id is not remembered
@@ -381,13 +438,17 @@ Public Class ExchangeDeviceKeyTests
                     ' the person tries again: a new id, so a new key; the contract's "enrolls anew with a new deviceId"
                     Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)).Outcome)
                     Dim id As String = agent.GetStatus().DeviceId
-                    Assert.NotEqual(collidingId, id)
+                    Assert.DoesNotContain(id, colliding)
                     Assert.True(keys.Exists(id))
                     Assert.NotEqual("", keys.KemOf(id))
-                    AssertKeyMember(acc.EnrollE2eKeysSeen()(1), keys.KemOf(id))
+                    AssertKeyMember(acc.EnrollE2eKeysSeen()(2), keys.KemOf(id))
+                End Using
+            End Using
 
-                    ' the same for a registration
-                    Await agent.DisconnectAsync()
+            ' the same for a registration: a rig of its own, because the id above is held by now
+            Using rig As ExchangeDeviceAgentTests.Rig = NewRig(New TrackingKeyStore())
+                Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    acc.RefuseNextRegister("id-collision")
                     acc.RefuseNextRegister("id-collision")
                     Dim register As ExchangeRegisterRequest = RegisterRequest(acc)
                     Dim registered As ExchangeEnrollResult = Await agent.RegisterAsync(register, CancellationToken.None)

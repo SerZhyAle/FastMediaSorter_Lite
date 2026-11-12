@@ -160,6 +160,47 @@ func TestCLIAccountLimitsAndWarning(t *testing.T) {
 	}
 }
 
+// Item BZ: the program states the memory a full clipboard can take, for each account with a limit.
+func TestCLIStatesTheMemoryOfAFullClipboard(t *testing.T) {
+	p := cfgPath(t)
+	execute(t, []string{"account", "add", "alice", "--generate", "--config", p}, "")
+	execute(t, []string{"account", "add", "guest1", "--generate", "--kind", "guest", "--config", p}, "")
+	execute(t, []string{"account", "add", "offaccount", "--generate", "--config", p}, "")
+	for _, c := range [][]string{
+		{"account", "limits", "alice", "--clipboard-bytes", "1000", "--config", p},
+		{"account", "limits", "offaccount", "--clipboard-bytes", "0", "--config", p},
+	} {
+		if code, out, errText := execute(t, c, ""); code != 0 {
+			t.Fatalf("%v: %d %q %q", c, code, out, errText)
+		}
+	}
+	code, out, _ := execute(t, []string{"account", "limits", "alice", "--config", p}, "")
+	if code != 0 || !strings.Contains(out, "clipboard memory\t2000 bytes") {
+		t.Fatalf("limits of alice: %d %q", code, out)
+	}
+	code, out, _ = execute(t, []string{"account", "limits", "offaccount", "--config", p}, "")
+	if code != 0 || strings.Contains(out, "clipboard memory") {
+		t.Fatalf("an account with the clipboard off takes no memory: %d %q", code, out)
+	}
+	code, out, _ = execute(t, []string{"account", "list", "--config", p}, "")
+	if code != 0 {
+		t.Fatalf("account list: %d %q", code, out)
+	}
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		named := strings.Contains(line, "clipboard memory")
+		switch strings.SplitN(line, "\t", 2)[0] {
+		case "alice":
+			if !strings.Contains(line, "clipboard memory 2000 bytes") {
+				t.Fatalf("list line of alice: %q", line)
+			}
+		case "guest1", "offaccount":
+			if named {
+				t.Fatalf("no clipboard, no memory: %q", line)
+			}
+		}
+	}
+}
+
 // Rule 3: a grant names something the member holds RIGHT NOW; with the server stopped nothing is held,
 // so the command refuses by name and a listing is empty.
 func TestCLIGrants(t *testing.T) {

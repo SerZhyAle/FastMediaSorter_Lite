@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi" class="script-hi">
+<html lang="hi" data-page-lang="hi" class="script-hi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Windows इस डाउनलोड पर चेतावनी क्यों देता है</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो छाँटें">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="hi">
+<meta property="og:locale" content="hi_IN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Windows इस डाउनलोड पर चेतावनी क्यों देता है">
 <meta name="twitter:description" content="Fast Media Sorter &amp; Sharing पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">एक ही बाहरी सेवा से संपर्क हो सकता है, और वह भी केवल तब जब आप साझाकरण के लिए इंटरनेट पहुँच चालू करें: check-host.net से पूछा जाता है कि आपका फ़ॉरवर्ड किया पोर्ट बाहर से जवाब देता है या नहीं, जिससे उस सेवा को आपका सार्वजनिक पता और पोर्ट दिखता है। इसके अलावा उसे कुछ नहीं भेजा जाता। दो और चीज़ें आपके अपने नेटवर्क के भीतर ही रहती हैं: इंटरनेट पहुँच चालू होने पर प्रोग्राम आपके राउटर से साझाकरण पोर्ट फ़ॉरवर्ड करने को कहता है (UPnP या NAT-PMP), और साझाकरण चलते समय PC स्थानीय नेटवर्क में अपनी घोषणा करता है (mDNS), ताकि जोड़ा गया फ़ोन उसे फिर ढूँढ सके।</p>
-  <p class="note" id="site-origins">इस वेबसाइट का कोई पृष्ठ खोलने पर (प्रोग्राम चलाने पर नहीं) अधिकतम तीन बाहरी पतों से संपर्क होता है: fonts.googleapis.com और fonts.gstatic.com (Google Fonts, पृष्ठों के अक्षरों के लिए) और मुख्य पृष्ठ व उसके भाषा-संस्करणों पर api.github.com (GitHub, डाउनलोड लिंक के लिए नवीनतम रिलीज़ देखने हेतु)। हर एक को आपका IP पता और आपके ब्राउज़र का user agent मिलता है, और कुछ नहीं। विश्लेषण, टैग-मैनेजर या विज्ञापन के किसी पते से संपर्क नहीं किया जाता। गोपनीयता पृष्ठ भी यही कहता है।</p>
+  <p class="note" id="site-origins">इस वेबसाइट का कोई पृष्ठ खोलने पर (प्रोग्राम चलाने पर नहीं) दो बाहरी पतों से संपर्क होता है: fonts.googleapis.com और fonts.gstatic.com (Google Fonts, पृष्ठों के अक्षरों के लिए)। हर एक को आपका IP पता और आपके ब्राउज़र का user agent मिलता है, और कुछ नहीं। विश्लेषण, टैग-मैनेजर या विज्ञापन के किसी पते से संपर्क नहीं किया जाता। गोपनीयता पृष्ठ भी यही कहता है।</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">डाउनलोड</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

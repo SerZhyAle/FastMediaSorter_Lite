@@ -242,6 +242,10 @@ Partial Public Class Main_Form
         ' worker both decode there) and cannot reach the form, so the budget is mirrored
         ' into it - here at startup, and again whenever the settings window changes it.
         DecodeCacheStore.BudgetMb = modern_Preferences.DecodeCacheMaxMb
+        ' Ticket L0296: the exchange page reads and replaces the live preferences through this port, the same path as an import.
+        ExchangeSettingsPort.Current = AddressOf GetModernPreferences
+        ExchangeSettingsPort.Apply = AddressOf ApplyExchangeSettingsStandard
+        ExchangeSettingsPort.Refresh = AddressOf RefreshAfterExchangeSettingsRead
 #End If
 #If NETFRAMEWORK Then
         ' A three-method bridge, never the form: script in the video page can reach
@@ -429,6 +433,8 @@ Partial Public Class Main_Form
         End If
 
 #If Not NETFRAMEWORK Then
+        ' Specification 277: a file arriving from outside does not take an edited text away unasked.
+        If Not TextEditorAllowsLeaving(Sub() ProcessArgument(argument_Raw_Text)) Then Return
         ' A file forwarded by another process can arrive before the deferred first-launch wizard.
         ' Keep that open request ahead of setup just like an argument on this process's command line.
         welcome_File_Argument = True
@@ -1213,10 +1219,19 @@ Partial Public Class Main_Form
             ' cleared, a flush a minute later that wiped all ten destination folders (053 F-01).
             If e.CloseReason = CloseReason.WindowsShutDown Then
                 SettingsFlush.SaveNow()
+#If Not NETFRAMEWORK Then
+                e.Cancel = TextEditStopsShutdown()
+#End If
                 Return
             End If
 
 #If Not NETFRAMEWORK Then
+            ' Specification 277: closing asks about an edited text before anything is torn down; this is before the first
+            ' Await, so the answer still reaches WinForms. After Save the close runs again.
+            If Not TextEditorAllowsLeaving(Sub() BeginInvoke(New Action(AddressOf Close))) Then
+                e.Cancel = True
+                Return
+            End If
             ' If a drain is already waiting on the queue, this close attempt is re-entrant
             ' (e.g. repeated Alt+F4 or close button clicks while SMB copy finishes).
             ' Cancel it immediately so we do not bypass the drain or start parallel drains (ticket 107).
@@ -1409,7 +1424,9 @@ Partial Public Class Main_Form
         ReleasePdfDocument()
         ReleaseEpubReader()
         ReleaseHtmlView()
+        TearDownTextEditor()
         ReleaseTextDocument()
+        FlushTextPlaces()
         ClearEpubPlaceholderData()
 #End If
         ShutdownOcrTranslate()

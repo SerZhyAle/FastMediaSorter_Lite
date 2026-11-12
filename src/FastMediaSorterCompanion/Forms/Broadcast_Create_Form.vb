@@ -140,7 +140,7 @@ Public NotInheritable Class Broadcast_Create_Form
             .Text = Localization.T("Срок действия:")
         }, 0, r)
 
-        cboLifetime = New ComboBox With {
+        cboLifetime = New RowFittingComboBox With {
             .DropDownStyle = ComboBoxStyle.DropDownList,
             .Dock = DockStyle.Fill,
             .Margin = New Padding(0, 4, 0, 6)

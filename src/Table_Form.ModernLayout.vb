@@ -106,6 +106,37 @@ Partial Public Class Table_Form
     ''' </summary>
     Private settingsScale As Single = 1.0F
     Private fontScale As Single = 1.0F
+    ''' <summary>The Windows Text size this window was built with (1.0 .. 2.25), already inside
+    ''' <see cref="settingsScale"/> and <see cref="fontScale"/>.</summary>
+    Private settingsTextFactor As Single = 1.0F
+    Private settingsTextRestartQueued As Boolean
+    ''' <summary>The minimum size the window asks for at its composed scale, before the work area it opens on
+    ''' bounds it (<see cref="WindowPlacement.BoundMinimum"/>, applied by <c>FitModernSettingsClientSize</c>).</summary>
+    Private settingsDesiredMinimum As Size
+
+    ''' <summary>Rebuilds the window when the Windows Text size is no longer the one it was built with. Asked on
+    ''' activation (the person comes back from the Windows settings) and on a settings broadcast. The rebuild is the
+    ''' one the interface-scale row uses (<c>RequestSettingsWindowRestart</c> + close; the viewer reopens the window off
+    ''' the closing stack): every metric and font of this window is baked at build time, so rebuilding is the honest
+    ''' way to apply a new scale. Nothing is lost - the options write straight through as they change.</summary>
+    Private Sub SettingsTextSizeMayHaveChanged()
+        If settingsTextRestartQueued OrElse IsDisposed OrElse Not IsHandleCreated Then Return
+        If Math.Abs(UiSizing.CurrentTextFactor() - settingsTextFactor) < 0.001F Then Return
+        settingsTextRestartQueued = True
+        BeginInvoke(New MethodInvoker(
+            Sub()
+                If IsDisposed Then Return
+                Main_Form.RequestSettingsWindowRestart()
+                Close()
+            End Sub))
+    End Sub
+
+    Private Const WM_SETTINGCHANGE As Integer = &H1A
+
+    Protected Overrides Sub WndProc(ByRef m As Message)
+        MyBase.WndProc(m)
+        If m.Msg = WM_SETTINGCHANGE AndAlso modernSettingsBuilt Then SettingsTextSizeMayHaveChanged()
+    End Sub
 
     Private Function Sp(value As Integer) As Integer
         If settingsScale = 1.0F Then Return value
@@ -331,8 +362,13 @@ Partial Public Class Table_Form
         Dim dpiFactor As Single = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F)
         Dim relative As Integer = Main_Form.GetModernPreferences().InterfaceScaleRelativePercent
         Dim userFactor As Single = If(relative > 0, relative / 100.0F, If(percent <= 0, 1.0F, percent / 100.0F))
-        settingsScale = dpiFactor * userFactor
-        fontScale = userFactor
+        ' The Windows "Text size" is composed into this one scale, once, here (ticket 279, T-2; UI-SIZING section 2
+        ' rule 3): the text and the layout grow together, independent of the interface scale the user chose. At the
+        ' ordinary Text size the factor is 1.0 and nothing below changes. A change of the Text size while the window
+        ' is open rebuilds it (SettingsTextSizeMayHaveChanged), the way a change of the interface scale does.
+        settingsTextFactor = UiSizing.CurrentTextFactor()
+        settingsScale = dpiFactor * userFactor * settingsTextFactor
+        fontScale = userFactor * settingsTextFactor
 
         LoadSystemSettingsPalette()
 
@@ -342,7 +378,8 @@ Partial Public Class Table_Form
         FormBorderStyle = FormBorderStyle.Sizable
         MaximizeBox = True
         MinimizeBox = False
-        MinimumSize = New Size(Sp(780), Sp(400))
+        settingsDesiredMinimum = New Size(Sp(780), Sp(400))
+        MinimumSize = settingsDesiredMinimum
         ' Start at the content-fit floor so the first page is not built and measured
         ' at a larger size only to be shrunk again before its first frame.
         ClientSize = New Size(Sp(ProvisionalRailLogical + 560 + 48), Sp(520))
@@ -472,6 +509,7 @@ Partial Public Class Table_Form
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
+        AddHandler Activated, Sub() SettingsTextSizeMayHaveChanged()
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
         ' The rail follows the reading direction live (rule 1) and keeps its share of the client width (rule 5).
         AddHandler RightToLeftChanged, Sub() ArrangeModernRail()
@@ -856,6 +894,10 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub FitModernSettingsClientSize(workArea As Rectangle, desiredWidth As Integer, desiredHeight As Integer)
+        ' The minimum grows with the interface scale and the Windows Text size (ticket 279, T-2); a form is never
+        ' smaller than its MinimumSize, so on a screen the composed minimum does not fit the window would stand
+        ' wider than the screen however its client size is clamped below. Bound it first, then clamp.
+        MinimumSize = WindowPlacement.BoundMinimum(settingsDesiredMinimum, workArea)
         Dim chromeWidth As Integer = Width - ClientSize.Width
         Dim chromeHeight As Integer = Height - ClientSize.Height
         Dim maxClientWidth As Integer = Math.Max(1, workArea.Width - chromeWidth)
@@ -1141,6 +1183,7 @@ Partial Public Class Table_Form
     Private Function ModernSettingTitle(key As String) As String
         If key.StartsWith("doc_", StringComparison.Ordinal) Then Return DocumentSettingTitle(key)
         If key.StartsWith("html_", StringComparison.Ordinal) Then Return HtmlSettingTitle(key)
+        If key.StartsWith("textdoc_", StringComparison.Ordinal) Then Return TextDocumentSettingTitle(key)
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Таблица получателей поверх изображения")
             Case "section_overlay_layout" : Return Localization.T("Вид таблицы получателей")
@@ -1317,6 +1360,7 @@ Partial Public Class Table_Form
         If key.StartsWith("doc_converter_", StringComparison.Ordinal) Then Return DocumentConverterSettingDescription(key)
         If key.StartsWith("doc_", StringComparison.Ordinal) Then Return Localization.T("Настройки чтения не изменяют исходный файл. Сброс оформления сохраняет закладки.")
         If key.StartsWith("html_", StringComparison.Ordinal) Then Return HtmlSettingDescription(key)
+        If key.StartsWith("textdoc_", StringComparison.Ordinal) Then Return TextDocumentSettingDescription(key)
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок поверх изображения; закрепляется и открепляется своей булавкой, как панели.")
             Case "recipients_position" : Return Localization.T("Угол области просмотра; панель можно перетащить за заголовок.")
@@ -2792,7 +2836,7 @@ Partial Public Class Table_Form
         Data_Grid_View.EnableHeadersVisualStyles = False
         Data_Grid_View.ColumnHeadersDefaultCellStyle.BackColor = BlendSettingsColor(SettingsSurface, SettingsCanvas, 0.7F)
         Data_Grid_View.ColumnHeadersDefaultCellStyle.ForeColor = SettingsText
-        Data_Grid_View.ColumnHeadersDefaultCellStyle.Font = SettingsFont("Segoe UI Semibold", 9.0F, FontStyle.Regular)
+        Data_Grid_View.ColumnHeadersDefaultCellStyle.Font = SettingsFont("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular)
         Data_Grid_View.DefaultCellStyle.BackColor = SettingsSurface
         Data_Grid_View.DefaultCellStyle.ForeColor = SettingsText
         Data_Grid_View.DefaultCellStyle.SelectionBackColor = BlendSettingsColor(SettingsAccent, SettingsSurface, 0.72F)

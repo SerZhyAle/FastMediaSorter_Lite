@@ -55,6 +55,16 @@ Public Class ExchangeDiagnosisTextTests
     End Sub
 
     <Fact>
+    Public Sub A_paused_device_says_the_row_of_the_table_and_any_other_device_its_plain_presence()
+        Dim record As Func(Of String, String, ExchangeDeviceRecord) =
+            Function(presence, reason) New ExchangeDeviceRecord("{}", "d", "Phone", "fms-android", "", "android", New String() {}, presence, "", offlineReason:=reason)
+        Assert.Equal(ExchangeDeviceText.TableText(ConnectionDiagnosisMessages.SharePaused), ExchangeDeviceText.PresenceText(record("offline", "time-limit")))
+        Assert.Equal(ExchangeDeviceText.PresenceText(False), ExchangeDeviceText.PresenceText(record("offline", "")))
+        Assert.Equal(ExchangeDeviceText.PresenceText(False), ExchangeDeviceText.PresenceText(record("offline", "a-later-value")))
+        Assert.Equal(ExchangeDeviceText.PresenceText(True), ExchangeDeviceText.PresenceText(record("online", "time-limit")))
+    End Sub
+
+    <Fact>
     Public Sub The_three_registration_refusals_are_three_different_sentences_in_every_language()
         For Each code As String In {"en", "ru", "uk", "de", "es", "fr", "it", "ja", "ko", "pl", "pt", "tr", "zh"}
             Dim saved As String = Localization.CurrentCode

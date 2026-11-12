@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="uk" data-page-lang="uk" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Позначки й обрізання фото | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Позначте зображення, обріжте його й збережіть результат на диск у вбудованому редакторі Fast Media Sorter &amp; Sharing for Windows.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-editor.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-editor.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-editor.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Позначки й обрізання фото | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Позначте зображення, обріжте його й збережіть результат на диск у вбудованому редакторі Fast Media Sorter &amp; Sharing for Windows.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-editor.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Позначки й обрізання фото | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Позначте зображення, обріжте його й збережіть результат на диск у вбудованому редакторі Fast Media Sorter &amp; Sharing for Windows.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Позначки й обрізання фото | Fast Media Sorter & Sharing","description":"Позначте зображення, обріжте його й збережіть результат на диск у вбудованому редакторі Fast Media Sorter & Sharing for Windows.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-editor.html","inLanguage":"uk","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти до основного вмісту</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основна навігація</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Мова"><a hreflang="ru" href="../ru/how-to-editor.html" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-editor.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="how-to-editor.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Темна тема</span></button><a class="btn btn-primary" href="./#get">Завантажити</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · IMAGE EDITOR</span><h1>Позначте зображення й обріжте його, не виходячи з переглядача</h1><p class="lead">Обведіть важливе, закрийте ім'я чи номер, відріжте порожні краї - і збережіть поверх оригіналу або поруч із ним. Редактор відкривається окремим вікном, тож випадкове натискання клавіші не перемістить і не видалить файл за його спиною. Він є лише в 64-бітному переглядачі (Windows 10 версії 1607 або новішої).</p></section>
+<section class="section"><div class="steps">
+<article class="step"><h2>Відкрийте редактор на нерухомому зображенні</h2><p>Коли на екрані фотографія, натисніть кнопку <b>Редагувати</b> <svg class="glyph" data-glyph="action.edit" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z" fill="currentColor"/></svg> на панелі (значок без підпису; у підказці: <i>Відкрити зображення в редакторі</i>) або клацніть по зображенню <b>середньою кнопкою миші</b> і виберіть перший пункт меню - <b>Редагувати..</b>. Кнопка з'являється лише для нерухомих зображень - у відео чи анімації, що відтворюється, редагувати нічого.</p></article>
+<article class="step"><h2>Виберіть інструмент, колір і товщину</h2><p>Кнопки на панелі - лише значки; назву й клавішу показує підказка. Інструменти: <svg class="glyph" data-glyph="tool.brush" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M7,14c-1.66,0 -3,1.34 -3,3 0,1.31 -1.16,2 -2,2 0.92,1.22 2.49,2 4,2 2.21,0 4,-1.79 4,-4 0,-1.66 -1.34,-3 -3,-3zM20.71,4.63l-1.34,-1.34c-0.39,-0.39 -1.02,-0.39 -1.41,0L9,12.25 11.75,15l8.96,-8.96c0.39,-0.39 0.39,-1.02 0,-1.41z" fill="currentColor"/></svg><b>Пензель</b>, <svg class="glyph" data-glyph="tool.rectangle" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3,3 L21,3 L21,21 L3,21 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg><b>Прямокутник</b> і <b>Залитий прямокутник</b>, <svg class="glyph" data-glyph="tool.oval" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12,4 C7,4 3,8 3,12 C3,16 7,20 12,20 C17,20 21,16 21,12 C21,8 17,4 12,4 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg><b>Овал</b> і <b>Залитий овал</b>, а також <svg class="glyph" data-glyph="action.crop" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M17,15h2V7c0,-1.1 -0.9,-2 -2,-2H9v2h8v8zM7,17V1H5v4H1v2h4v10c0,1.1 0.9,2 2,2h10v4h2v-4h4v-2H7z" fill="currentColor"/></svg><b>Обрізання</b>. Зразки кольорів поруч слугують для швидкого вибору, а повна палітра - за одним натисканням кнопки (<b>Вибрати колір</b>). <b>Товщина</b> вимірюється в пікселях самого зображення, тому лінія виглядає однаково після зменшення масштабу.</p><ul><li>Утримуйте <kbd>Shift</kbd>, коли тягнете фігуру, щоб вона лишалася ідеальним квадратом або колом.</li><li><kbd>Ctrl</kbd>+<kbd>Z</kbd> або кнопка <b>Скасувати</b> скасовує останній штрих.</li></ul></article>
+<article class="step"><h2>Обріжте за рамкою й підтвердіть</h2><p>Виберіть <b>Обрізання</b> і протягніть рамку; її кути та сторони можна тягнути, а саму рамку - переміщувати. Натисніть <kbd>Enter</kbd> або <b>Застосувати обрізання</b>, щоб обрізати, або <kbd>Esc</kbd>, щоб прибрати рамку й залишити зображення цілим. Обрізання - звичайний крок в історії: скасування повертає його так само, як і будь-який штрих.</p></article>
+<div class="callout"><b>Збереження поверх оригіналу не скасувати</b><p>Кнопка <b>Зберегти</b> замінює відкритий файл, а попередня версія ніде не лишається - навіть у Кошику. JPEG під час запису ще й стискається повторно, а це незворотно, тож редактор один раз за сеанс запитує підтвердження (це запитання вимикає налаштування <b>Не запитувати підтвердження</b> на сторінці <b>Файли</b>). Щоб зберегти оригінал, скористайтеся <b>Зберегти як..</b>.</p></div><article class="step"><h2>Збережіть поверх оригіналу або як новий файл</h2><p><b>Зберегти</b> замінює відкритий файл; запис спершу йде в тимчасовий файл і лише потім підміняє вихідний, тож збій ніколи не залишить половину фотографії. <b>Зберегти як..</b> записує новий файл і пропонується щоразу, коли заміна неможлива - файл лише для читання, формат, який не можна записати, або файл, який утримує інша програма. Рядок стану вказує, що саме з цього, а не просто відмовляє.</p></article>
+<article class="step"><h2>Знайте, що відбувається з файлом</h2><p>Можна записувати PNG, JPEG, BMP, TIFF і WEBP. Дата зйомки та решта даних EXIF переносяться там, де формат це дозволяє, разом із кольоровим профілем, XMP та IPTC, з трьома поправками: невелика вбудована в EXIF мініатюра попереднього перегляду не зберігається (вона й далі показувала б зображення до редагування), записаний розмір у пікселях перераховується під новий, а тег орієнтації узгоджується з пікселями, які справді записано. Якщо метадані оригіналу не вдається прочитати, зображення все одно зберігається, але без них. GIF, ICO і ще кілька форматів тут навмисно лише для читання, а вихід - <b>Зберегти як..</b> в іншому форматі.</p></article>
+</div></section>
+<section class="section two"><div class="callout"><b>Редактор працює з оригіналом</b><p>Він читає власні байти файлу, а не те, що показано на екрані, тому поворот, зроблений клавішею <kbd>R</kbd> у переглядачі, не вшивається у файл, а WEBP непомітно не перетворюється на щось інше. Зберігається те зображення, яке ви відкрили, плюс ваші правки.</p></div><div class="callout"><b>Лише 64-бітна програма</b><p>Редактор входить до сучасної 64-бітної збірки для Windows 10 і 11. 32-бітна резервна збірка для Windows 7 і 8.1 залишається переглядачем і сортувальником; вона не записує пікселі назад на диск.</p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Перегляд і сортування теки з медіафайлами</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавіші, масштаб і повноекранний режим</span></a>
+<a href="how-to-ocr.html"><b>HOW TO · OCR</b><span>Розпізнати й перекласти текст на зображенні</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Усі сторінки сайту за темами</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Що означають терміни сайту</span></a>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Підтримка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

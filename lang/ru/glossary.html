@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Глоссарий: слова, которыми мы пользуемся | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Что Fast Media Sorter &amp; Sharing for Windows называет Менеджером общего доступа, папкой-получателем, NumPad и другими терминами - одни и те же слова на всех языках.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/glossary.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/glossary.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/glossary.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Глоссарий: слова, которыми мы пользуемся | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Что Fast Media Sorter &amp; Sharing for Windows называет Менеджером общего доступа, папкой-получателем, NumPad и другими терминами - одни и те же слова на всех языках.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/glossary.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Глоссарий: слова, которыми мы пользуемся | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Что Fast Media Sorter &amp; Sharing for Windows называет Менеджером общего доступа, папкой-получателем, NumPad и другими терминами - одни и те же слова на всех языках.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Глоссарий: слова, которыми мы пользуемся | Fast Media Sorter & Sharing","description":"Что Fast Media Sorter & Sharing for Windows называет Менеджером общего доступа, папкой-получателем, NumPad и другими терминами - одни и те же слова на всех языках.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/glossary.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.gloss dt{font-family:var(--font-heading);font-weight:700;font-size:1.08rem;margin-top:1.4rem;color:var(--text)}.gloss dt:first-of-type{margin-top:0}.gloss dd{margin:.25rem 0 0;color:var(--text-2)}.gloss .alt{color:var(--muted);font-size:.92rem}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="glossary.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../glossary.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/glossary.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="./#get">Скачать</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">ГЛОССАРИЙ</span><h1>Слова, которыми говорит сайт</h1><p class="lead">Немного терминов, на которых держатся Fast Media Sorter &amp; Sharing for Windows и эти инструкции. Каждый из них переведён одинаково во всех языках интерфейса: слово здесь - то же слово, что и в программе.</p></section>
+
+<section class="section"><dl class="gloss">
+<dt data-term="product-name">Fast Media Sorter &amp; Sharing for Windows</dt>
+<dd>Название программы. Оно не переводится, а в тексте может сокращаться до Fast Media Sorter. «Sharing» - это передача медиафайлов другому: телефону, другой копии программы или SFTP-клиенту. В Microsoft Store, в списке установленных программ и в winget программа по-прежнему значится как FastMediaSorter LITE - закреплённое техническое имя, по которому системы обновлений находят программу. Это одна и та же программа.</dd>
+
+<dt data-term="share-manager">Менеджер общего доступа</dt>
+<dd>Сопутствующее настольное приложение, поднимающее SFTP-сервис: привязывает телефон по QR-коду, хранит список опубликованных папок и живёт в трее, пока идёт раздача. Ставится рядом с просмотрщиком и запускается из меню «Поделиться».</dd>
+
+<dt data-term="media-file-manager">Медиа- и файловый менеджер</dt>
+<dd>Первая необязательная часть и та программа, которую вы открываете: показывает и сортирует фото и видео одной клавишей на файл, а в 64-битной программе ещё и управляет файлами в локальных папках, на серверах SFTP и SMB и на устройствах учётной записи обмена (режим файлового менеджера, F3). Когда речь о самом окне программы, оно по-прежнему называется просмотрщиком.</dd>
+
+<dt data-term="local-sharing">Локальная раздача</dt>
+<dd>Вторая необязательная часть: Менеджер общего доступа и его SFTP-воркер. Раздаёт папки по SFTP (привязка Android по QR-коду) и подключает этот ПК к учётной записи обмена. Размещение дисков FileDO .fdd - возможность раздачи, а не отдельная часть. Выключена, пока вы её не включите.</dd>
+
+<dt data-term="scheduled-file-operations">Файловые операции по расписанию</dt>
+<dd>Третья необязательная часть: копирование, перемещение, удаление и архивация по расписанию, которое вы задаёте, с предварительным просмотром перед запуском задачи и журналом каждого запуска. Файловые операции по расписанию устанавливаются вместе с Менеджером общего доступа - это одна поставка, без отдельной загрузки и без службы Windows - и выполняются, пока Менеджер общего доступа работает в вашем сеансе входа. Им не нужны раздача папок, сервер, открытый порт и права администратора. Открываются из меню Менеджера в трее, из меню папки в просмотрщике или клавишей, которую вы назначите.</dd>
+
+<dt data-term="scheduled-operation">Операция по расписанию</dt>
+<dd>Файловая операция - копирование, перемещение, удаление или архивирование, - которую Менеджер общего доступа выполняет по расписанию, заданному вами. Она идёт, пока Менеджер работает в вашем сеансе, и только в 64-битной программе; один пункт меню папки в просмотрщике открывает её страницу.</dd>
+
+<dt data-term="exchange-account">Учётная запись обмена</dt>
+<dd>Учётная запись на Media Exchange Server, к которой подключается этот ПК. Устройства учётной записи тогда появляются как места, работает буфер обмена сервера, а файлы можно шифровать сквозным шифрованием. Сам сервер вы запускаете сами.</dd>
+
+<dt data-term="destination-folder">Папка-получатель</dt>
+<dd>Одна из пронумерованных папок, которые вы назначаете для разбора. Цифровая клавиша переносит файл с экрана туда, Shift плюс цифра - копирует. Список задаётся на страницах настроек и сохраняется между сеансами.</dd>
+
+<dt data-term="hotkeys">Названия клавиш</dt>
+<dd>Инструкции называют клавиши так, как их называет Windows, - <kbd>NumPad</kbd> для цифровой клавиатуры, <kbd>Del</kbd>, <kbd>PgDn</kbd>, <kbd>Shift</kbd> - и эти названия не переводятся: одна и та же клавиша зовётся одинаково во всех тринадцати языках интерфейса.</dd>
+</dl></section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Инструкция по просмотрщику</a> · <a href="topics.html">Темы</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

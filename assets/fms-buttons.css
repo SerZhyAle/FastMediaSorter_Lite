@@ -118,13 +118,11 @@ a[target="_blank"]::after{
 @media (forced-colors:active){a[target="_blank"]::after{forced-color-adjust:none;background-color:currentColor}}
 
 /* ---------- copy button inside the code surface (dark in both themes) ---------- */
-.copybox{padding-right:8.5rem}   /* room for the longest localized "Copied" at the 32/48 target without covering the command */
 .copybox .copy{
+  margin-inline-start:auto;   /* the kit's box is a flex row that centres it: the button closes the row, in flow (ticket 207 F82) */
   border-color:color-mix(in srgb,var(--code-ink) 32%,transparent);
   background:color-mix(in srgb,var(--code-ink) 8%,transparent);
-  top:50%;transform:translateY(-50%);   /* centred in the box for both profiles; a fixed position, not a hover movement */
 }
-.copybox .copy:hover{transform:translateY(-50%)}
 .copybox .copy.done{border-color:var(--code-accent)}
 
 /* ---------- back to top: a square control of the profile's target size, no shadow ---------- */
@@ -138,6 +136,7 @@ a[target="_blank"]::after{
 .button-group{justify-content:flex-start;margin-top:.2rem}
 .scenario-foot{margin-top:auto}
 .dl-meta{color:var(--muted);font-size:.78rem;width:100%}
+.dl-facts{display:block;margin-bottom:.2rem}   /* the release facts line (version, date, SHA-256 links) above the bundle note */
 .site-nav{flex-wrap:wrap;gap:var(--btn-gap)}   /* the header's controls wrap as whole buttons at every width, not only under 480 px */
 
 /* ---------- collapsible group (COLLAPSIBLE-GROUP 1.1 sections 3 and 4; the kit's `details.sec`) ----------

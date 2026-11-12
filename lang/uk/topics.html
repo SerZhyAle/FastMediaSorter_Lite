@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="uk" data-page-lang="uk" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Теми: будь-яке завдання на одній сторінці | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Усі посібники та довідкові сторінки Fast Media Sorter &amp; Sharing for Windows: від першого знайомства з переглядачем до роздачі по SFTP і серверної редакції, що працює постійно.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/topics.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Теми: будь-яке завдання на одній сторінці | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Усі посібники та довідкові сторінки Fast Media Sorter &amp; Sharing for Windows: від першого знайомства з переглядачем до роздачі по SFTP і серверної редакції, що працює постійно.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Теми: будь-яке завдання на одній сторінці | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Усі посібники та довідкові сторінки Fast Media Sorter &amp; Sharing for Windows: від першого знайомства з переглядачем до роздачі по SFTP і серверної редакції, що працює постійно.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Теми: будь-яке завдання на одній сторінці | Fast Media Sorter & Sharing","description":"Усі посібники та довідкові сторінки Fast Media Sorter & Sharing for Windows: від першого знайомства з переглядачем до роздачі по SFTP і серверної редакції, що працює постійно.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html","inLanguage":"uk","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.topics{display:grid;gap:1.2rem}.topics-search{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;margin:0 0 1rem}.topics-search[hidden]{display:none}.topics-search label{font-weight:600}.topics-search input{flex:0 1 28rem;min-width:min(100%,14rem);min-height:44px;padding:.4rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--text);font:inherit}.topics-count{margin:0;color:var(--text-2)}.topics-none{margin:0 0 1rem}.topic-group h2{font-size:1.15rem;margin:0 0 .7rem}.cards{display:grid;gap:.8rem}@media(min-width:860px){.cards{grid-template-columns:1fr 1fr}}.cards a{display:block;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1.1rem;text-decoration:none}.cards a b{display:block;color:var(--text);font-family:var(--font-heading);margin-bottom:.2rem}.cards a span{color:var(--text-2);font-size:.95rem}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти до основного вмісту</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основна навігація</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Мова"><a hreflang="ru" href="../ru/topics.html" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../topics.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="topics.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Темна тема</span></button><a class="btn btn-primary" href="./#get">Завантажити</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">ПРЕДМЕТНИЙ ПОКАЖЧИК</span><h1>Будь-яке завдання - з однієї сторінки</h1><p class="lead">Предметний покажчик Fast Media Sorter &amp; Sharing for Windows: усі посібники та довідкові сторінки сайту, згруповані за тим, що ви хочете зробити.</p></section>
+
+<section class="topics-search" data-topics-search hidden data-found="Знайдено тем: {0}"><label for="topics-q">Знайти тему</label><input id="topics-q" type="search" autocomplete="off" spellcheck="false" placeholder="SFTP, клавіші, OCR, ZIP.."><p id="topics-count" class="topics-count" role="status" aria-live="polite"></p></section>
+<p id="topics-none" class="topics-none" hidden>Жодна тема не містить усіх введених слів. Спробуйте коротше слово або очистьте поле, щоб побачити весь покажчик.</p>
+
+<section class="section topics">
+<div class="topic-group"><h2>Почніть звідси</h2><div class="cards">
+<a href="./"><b>Про програму</b><span>Що таке Fast Media Sorter і де його взяти.</span></a>
+<a href="how-to-viewer.html"><b>Перегляд і розбір теки</b><span>Перші десять хвилин: відкрити теку й почати розбір.</span></a>
+<a href="how-to-keys.html" data-keywords="hotkeys shortcuts keyboard NumPad F11 zoom mouse"><b>Клавіші, масштаб, повний екран</b><span>Повна карта клавіатури та миші.</span></a>
+<a href="../../docs/help/uk/index.html"><b>Довідка до вікон</b><span>Кожне вікно програми - та сама сторінка, що відкриває F1.</span></a>
+</div></div>
+
+<div class="topic-group"><h2>Налаштування й можливості</h2><div class="cards">
+<a href="how-to-setup.html" data-keywords="default viewer file association language settings winget"><b>Переглядач за замовчуванням, мова, налаштування</b><span>Налаштуйте один раз і вирішіть, що відбувається з файлами.</span></a>
+<a href="how-to-ocr.html" data-keywords="OCR Tesseract translate translation"><b>Текст на зображенні</b><span>Розпізнати й побачити переклад одразу на місці.</span></a>
+<a href="how-to-editor.html"><b>Малювання на фото та обрізання</b><span>Вбудований редактор: позначити, обрізати, зберегти назад.</span></a>
+<a href="how-to-archives.html" data-keywords="ZIP CBZ 7z RAR CBR archive comics"><b>ZIP як тека</b><span>ZIP, CBZ, 7z, RAR і CBR відкриваються на місці.</span></a>
+<a href="how-to-resources.html" data-keywords="SFTP SMB NAS network share server"><b>Сервер як тека</b><span>SFTP-сервери та мережеві теки відкриваються на місці, ключ сервера запам'ятовується.</span></a>
+<a href="../../docs/help/uk/thumbnail-panel.html"><b>Файловий менеджер (F3)</b><span>Локальні диски, сервери та пристрої облікового запису обміну як місця в одній панелі, копіювання й переміщення в черзі.</span></a>
+<a href="../../docs/help/uk/scheduled-operation.html"><b>Заплановані операції</b><span>Копіювання, переміщення, видалення або архівування за розкладом, налаштовується в Менеджері спільного доступу.</span></a>
+</div></div>
+
+<div class="topic-group"><h2>Роздача на телефон</h2><div class="cards">
+<a href="how-to-filedo-disks.html"><b>Диски FileDO</b><span>Спільний доступ до віртуальних дисків .fdd для сполучених телефонів через SFTP.</span></a>
+<a href="publish-folders-android.html"><b>Роздача тек на Android (SFTP)</b><span>Публікація вибраних тек ПК у FastMediaSorter на Android: перший запуск, роутер та інтернет, крок за кроком.</span></a>
+<a href="server.html"><b>Серверна редакція</b><span>Служба Windows, що роздає теки від самого завантаження.</span></a>
+<a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html" target="_blank" rel="noopener noreferrer"><b>Способи з'єднати пристрої</b><span>Портал: домашня мережа, ПК-сервер і прямі ефіри поруч, та яка програма бере участь у кожному.</span><span class="sr-only"> (відкриється в новій вкладці)</span></a>
+</div></div>
+
+<div class="topic-group"><h2>За назвою функції</h2><div class="cards">
+<a href="how-to-viewer.html#move-or-copy"><b>Перемістити або скопіювати файл</b><span>Надіслати поточний файл у теку-отримувач однією клавішею.</span></a>
+<a href="how-to-viewer.html#animation-to-video"><b>Перетворити на відео..</b><span>Перетворити анімований WEBP, APNG або GIF на справжній MP4.</span></a>
+<a href="how-to-viewer.html#decode-cache"><b>Кеш декодування</b><span>Чому повторний перегляд WEBP, AVIF і HEIC миттєвий і де його обмежити.</span></a>
+<a href="how-to-setup.html#send-logs"><b>Надіслати журнали автору</b><span>Що потрапляє в пакет і що ви бачите до надсилання.</span></a>
+<a href="publish-folders-android.html"><b>Поділитися цією текою з Android..</b><span>Команда, з якої починається роздача теки; інструкція веде від першого запуску.</span></a>
+</div></div>
+
+<div class="topic-group"><h2>Довідка</h2><div class="cards">
+<a href="../../docs/help/uk/index.html"><b>Довідка до кожного вікна</b><span>Що робить кожне вікно й налаштування: обліковий запис обміну, жива трансляція, захищені контейнери, розклади та інше.</span></a>
+<a href="glossary.html"><b>Глосарій</b><span>Слова, якими говорять сайт і програма, з визначеннями.</span></a>
+<a href="trust.html" data-keywords="SmartScreen SHA-256 Get-FileHash checksum install warning"><b>Чому Windows попереджає</b><span>Попередження SmartScreen: що воно означає і на що натиснути.</span></a>
+<a href="whats-new.html"><b>Що нового</b><span>Що додали, змінили й виправили останні версії.</span></a>
+<a href="support.html"><b>Підтримка</b><span>Куди повідомити про проблему чи поставити запитання і що додати.</span></a>
+</div></div>
+</section>
+<section id="sharing-settings-windows">
+<h2>Де знаходяться налаштування спільного доступу</h2>
+<p>Налаштування розташовані у двох вікнах. У налаштуваннях менеджера є група «Спільний доступ SFTP» - порт SFTP, локальна мережа й сторінка хостингу; вона видима, поки встановлено цей компонент, - поруч із загальними параметрами, віддаленим обліковим записом, публікацією й розкладами. Установлений локальний сервер обміну налаштовується в окремому вікні. Посилання зліва внизу відкриває друге вікно, зберігаючи поточне. Відкриття налаштувань не запускає сервер. У попередніх збірках спільний доступ SFTP був в окремому вікні.</p>
+<p><a href="../../docs/help/uk/sftp-settings.html">SFTP</a> · <a href="../../docs/help/uk/share-settings.html">Довідка налаштувань менеджера</a></p>
+</section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Інструкція з переглядача</a> · <a href="glossary.html">Глосарій</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Підтримка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+<script src="../../assets/js/topics-search.js" defer></script>
+</body></html>

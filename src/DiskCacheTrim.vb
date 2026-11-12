@@ -36,10 +36,13 @@ Friend Module DiskCacheTrim
     ''' its whole tree counts towards the total.</param>
     ''' <param name="max_Mb">Budget in megabytes. Zero or less means "no limit" and the call
     ''' does nothing - that is the reading the settings UI documents.</param>
+    ''' <param name="keep">Entries that are leased and never deleted (full paths, case-insensitive) - a result a
+    ''' browser tab may still show (specification 276 section 6). They still count towards the total.</param>
     Friend Function TrimToBudget(cache_Dir As String,
                                  max_Mb As Integer,
                                  Optional file_Pattern As String = "*.json",
-                                 Optional entries_Are_Folders As Boolean = False) As Integer
+                                 Optional entries_Are_Folders As Boolean = False,
+                                 Optional keep As ICollection(Of String) = Nothing) As Integer
         Try
             If max_Mb <= 0 Then Return 0
             If String.IsNullOrEmpty(cache_Dir) OrElse Not Directory.Exists(cache_Dir) Then Return 0
@@ -60,6 +63,7 @@ Friend Module DiskCacheTrim
             Dim removed As Integer = 0
             For Each e As CacheEntry In entries
                 If total <= budget Then Exit For
+                If IsKept(e.Path, keep) Then Continue For
                 If Delete(e, entries_Are_Folders) Then
                     total -= e.Bytes
                     removed += 1
@@ -69,6 +73,14 @@ Friend Module DiskCacheTrim
         Catch
             Return 0
         End Try
+    End Function
+
+    Private Function IsKept(entry_Path As String, keep As ICollection(Of String)) As Boolean
+        If keep Is Nothing Then Return False
+        For Each kept As String In keep
+            If String.Equals(kept, entry_Path, StringComparison.OrdinalIgnoreCase) Then Return True
+        Next
+        Return False
     End Function
 
     Private Class CacheEntry

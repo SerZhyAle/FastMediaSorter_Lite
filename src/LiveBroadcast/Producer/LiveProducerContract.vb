@@ -79,6 +79,14 @@ Friend NotInheritable Class LiveProducerContract
     ''' URL-encoded barcode text following it. The consumer's reader keeps reading the earlier `fmsbcast://live?payload=` form too.</summary>
     Public Const LinkPrefix As String = "fmsbcast://import?payload="
 
+    ''' <summary>The Android package the shared `intent://` link names (LIVE-BROADCAST 4.3; ticket 263 section 10): the store id, which a
+    ''' producer that is not the phone writes.</summary>
+    Public Const LinkIntentPackage As String = "com.sza.fastmediasorter"
+
+    ''' <summary>The browser fallback page of the shared link (4.3): it offers installing the app and an explicit open tap and never
+    ''' navigates to `fmsbcast://` by itself. The payload rides in its fragment, so it never reaches the page's host.</summary>
+    Public Const LinkFallbackPage As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/broadcast-import.html"
+
     ''' <summary>Where the random id of an unenrolled device is kept: the app's registry store
     ''' HKCU\Software\SZA\FastMediaSorter (199 section 5).</summary>
     Public Const SourceIdRegistryValue As String = "LiveBroadcast_SourceId"

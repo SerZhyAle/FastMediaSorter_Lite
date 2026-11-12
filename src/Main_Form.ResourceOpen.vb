@@ -212,6 +212,10 @@ Partial Public Class Main_Form
     ' --------------------------------------------------------------------- an address ----
 
     Private Sub OpenResourceFromLocator(locator As String)
+        If ResourceLocator.IsDriveLocator(locator) Then
+            OpenDriveLocator(locator)
+            Return
+        End If
         Dim user As String = "", host As String = "", port As Integer = 0, remotePath As String = "/"
         If Not ResourceLocator.TryParse(locator, user, host, port, remotePath) Then
             lbl_Status.Text = Localization.T("Адрес ресурса не распознан")
@@ -227,6 +231,29 @@ Partial Public Class Main_Form
         ShowResourceManager(New ResourceDescriptor With {
             .Kind = ResourceKind.Sftp, .Host = host, .Port = If(port > 0, port, 22), .UserName = user,
             .RootPath = remotePath, .DisplayName = host})
+    End Sub
+
+    ''' <summary>An address of a folder through Google Drive (the last folder of a previous run, a recent entry). It names a resource by its
+    ''' id and opens the record bound to that id: the live record when there is one, whose own connection comes first (item BB), and its paths
+    ''' are not the address's, so it opens at its root.</summary>
+    Private Sub OpenDriveLocator(locator As String)
+        Dim resourceId As String = "", remotePath As String = "/"
+        If Not ExchangeFeatures.IsEnabled() OrElse Not ResourceLocator.TryParseDrive(locator, resourceId, remotePath) Then
+            lbl_Status.Text = Localization.T("Адрес ресурса не распознан")
+            Return
+        End If
+        Dim bound As List(Of ResourceDescriptor) = ResourceRegistry.Load().Where(Function(r) ResourceOrigin.IsExchange(r) AndAlso String.Equals(r.ExchangeResourceId, resourceId, StringComparison.Ordinal)).ToList()
+        Dim live As ResourceDescriptor = bound.FirstOrDefault(Function(r) r.Kind <> ResourceKind.Drive)
+        If live IsNot Nothing Then
+            ConnectAndEnterResource(live, "")
+            Return
+        End If
+        Dim viaDrive As ResourceDescriptor = bound.FirstOrDefault()
+        If viaDrive Is Nothing Then
+            lbl_Status.Text = Localization.T("Адрес ресурса не распознан")
+            Return
+        End If
+        ConnectAndEnterResource(viaDrive, remotePath)
     End Sub
 
     ' --------------------------------------------------------------------- connecting ----
@@ -248,6 +275,14 @@ Partial Public Class Main_Form
         ' living on its phone side, in the Share Manager.
         If WorkerShares.IsManaged(descriptor) AndAlso Not descriptor.PinRequired Then
             OpenManagedShareFolder(descriptor)
+            Return
+        End If
+
+        ' A folder attached through Google Drive has no connection to make: it has no address and no credential, and the first listing is
+        ' what asks the other device (ticket 269 P3.3).
+        If descriptor.Kind = ResourceKind.Drive Then
+            RememberAfterSuccess(descriptor, Nothing, False, False)
+            EnterResource(CloneForOpen(descriptor, startPath), New DriveProvider(New ExchangeAgentDriveChannel(), descriptor.ExchangeResourceId, descriptor.ExchangeDeviceName))
             Return
         End If
 
@@ -343,6 +378,7 @@ Partial Public Class Main_Form
                     resource_Session_Passwords.Remove(descriptor.Id)
                     Continue Do
                 End If
+                If Await TryOpenThroughDrive(descriptor, outcome.Failure, cancel) Then Return
                 ReportConnectFailure(descriptor, outcome)
                 Return
             Loop
@@ -437,8 +473,27 @@ Partial Public Class Main_Form
     ''' The registry entry is untouched - a path typed once is not a new root.</summary>
     Private Shared Function CloneForOpen(descriptor As ResourceDescriptor, startPath As String) As ResourceDescriptor
         Dim opened As ResourceDescriptor = System.Text.Json.JsonSerializer.Deserialize(Of ResourceDescriptor)(System.Text.Json.JsonSerializer.Serialize(descriptor))
-        If Not String.IsNullOrEmpty(startPath) AndAlso descriptor.Kind = ResourceKind.Sftp Then opened.RootPath = startPath
+        If Not String.IsNullOrEmpty(startPath) AndAlso (descriptor.Kind = ResourceKind.Sftp OrElse descriptor.Kind = ResourceKind.Drive) Then opened.RootPath = startPath
         Return opened
+    End Function
+
+    ''' <summary>Item BB: Drive is the last road. When every live channel of a folder of the account failed - and only then, a refusal being an
+    ''' answer and not a dead road - the same folder is asked for through Drive and opens read-only for this visit. The stored record stays as
+    ''' it is, so the next open tries the live roads again; a typed password was not proved and is not remembered. False leaves the failure of
+    ''' the live roads as the one to report: the folder is not listed on Drive, or nobody is signed in there.</summary>
+    Private Async Function TryOpenThroughDrive(descriptor As ResourceDescriptor, failure As ResourceFailure, cancel As CancellationTokenSource) As Task(Of Boolean)
+        If Not ResourceOrigin.IsExchange(descriptor) OrElse descriptor.PinRequired OrElse Not ExchangeFeatures.IsEnabled() Then Return False
+        If failure Is Nothing OrElse Not failure.IsRetryable OrElse String.IsNullOrEmpty(descriptor.ExchangeResourceId) Then Return False
+        Dim provider As New DriveProvider(New ExchangeAgentDriveChannel(), descriptor.ExchangeResourceId, descriptor.ExchangeDeviceName)
+        Dim token As CancellationToken = cancel.Token
+        If Not Await Task.Run(Function() provider.TryStartListing("/", token)) Then Return False
+        If resource_Connect_Cancel Is cancel Then resource_Connect_Cancel = Nothing
+        Dim opened As ResourceDescriptor = CloneForOpen(descriptor, "")
+        opened.Kind = ResourceKind.Drive
+        opened.RootPath = "/"
+        opened.ReadOnlyHint = True
+        EnterResource(opened, provider)
+        Return True
     End Function
 
     ' ------------------------------------------------------------------------ prompts ----

@@ -424,6 +424,102 @@ func TestOfflineDropsAccessEndsBroadcastsAndIsOneTransaction(t *testing.T) {
 	}
 }
 
+func deviceRecord(t *testing.T, e *env, account, id string) *wire.Record {
+	t.Helper()
+	_, ds, _, _ := e.d.Snapshot(account)
+	for _, r := range recordsOf(ds) {
+		if got, _ := r.Str("deviceId"); got == id {
+			return r
+		}
+	}
+	t.Fatalf("no record of device %s", id)
+	return nil
+}
+
+func TestAByeWithAReasonPutsItOnTheOfflineRecordAndOnlineDropsIt(t *testing.T) {
+	e := newEnv(t, nil)
+	prod := e.online(alice, devA1)
+	watch := e.online(alice, devA2)
+	e.d.Subscribe(alice, devA2, watch)
+	watch.reset()
+	rev := e.d.Revision(alice)
+
+	e.d.NoteOfflineReason(alice, devA1, prod, wire.OfflineReasonTimeLimit)
+	if e.d.Revision(alice) != rev || len(watch.changes(t)) != 0 || deviceRecord(t, e, alice, devA1).Has("offlineReason") {
+		t.Fatal("the reason reaches no record while the device is online")
+	}
+
+	e.d.Offline(alice, devA1, prod)
+	chs := watch.changes(t)
+	if len(chs) != 1 || len(chs[0].Upserts.Devices) != 1 {
+		t.Fatalf("one offline is one changed: %d", len(chs))
+	}
+	pushed := recordsOf(chs[0].Upserts.Devices)[0]
+	if p, _ := pushed.Str("presence"); p != "offline" {
+		t.Fatalf("presence %s", p)
+	}
+	if why, _ := pushed.Str("offlineReason"); why != wire.OfflineReasonTimeLimit {
+		t.Fatalf("the pushed record: %s", pushed.Marshal())
+	}
+	if why, _ := deviceRecord(t, e, alice, devA1).Str("offlineReason"); why != wire.OfflineReasonTimeLimit {
+		t.Fatal("the directory holds the reason for whoever lists it later")
+	}
+
+	watch.reset()
+	e.online(alice, devA1)
+	chs = watch.changes(t)
+	if len(chs) != 1 || len(chs[0].Upserts.Devices) != 1 {
+		t.Fatalf("one online is one changed: %d", len(chs))
+	}
+	if r := recordsOf(chs[0].Upserts.Devices)[0]; r.Has("offlineReason") {
+		t.Fatalf("online again: %s", r.Marshal())
+	}
+	if deviceRecord(t, e, alice, devA1).Has("offlineReason") {
+		t.Fatal("the member is dropped when the device is online again")
+	}
+}
+
+func TestAnOfflineReasonIsKeptOnlyWhenKnownAndFromTheCurrentStream(t *testing.T) {
+	e := newEnv(t, nil)
+	plain := func(step string) {
+		t.Helper()
+		if deviceRecord(t, e, alice, devA1).Has("offlineReason") {
+			t.Fatalf("%s: a plain offline carries no reason", step)
+		}
+	}
+
+	prod := e.online(alice, devA1)
+	e.d.Offline(alice, devA1, prod)
+	plain("no bye")
+
+	prod = e.online(alice, devA1)
+	e.d.NoteOfflineReason(alice, devA1, prod, "a-value-of-a-later-version")
+	e.d.Offline(alice, devA1, prod)
+	plain("unknown value")
+
+	old := e.online(alice, devA1)
+	cur := e.online(alice, devA1)
+	e.d.NoteOfflineReason(alice, devA1, old, wire.OfflineReasonTimeLimit)
+	e.d.Offline(alice, devA1, cur)
+	plain("a stream that was replaced")
+
+	prod = e.online(alice, devA1)
+	e.d.NoteOfflineReason(alice, devA1, prod, wire.OfflineReasonTimeLimit)
+	next := e.online(alice, devA1)
+	e.d.Offline(alice, devA1, next)
+	plain("a new stream after the bye")
+
+	prod = e.online(alice, devA1)
+	e.d.NoteOfflineReason(alice, devA1, prod, wire.OfflineReasonTimeLimit)
+	e.d.Offline(alice, devA1, prod)
+	info := DeviceInfo{ID: devA1, Account: alice, Name: "Phone", Product: "fms-android"}
+	e.d.DeviceEnrolled(info)
+	plain("a rotated token")
+
+	e.d.NoteOfflineReason("nobody", devA1, prod, wire.OfflineReasonTimeLimit)
+	e.d.NoteOfflineReason(alice, "AAAAAAAAAAAAAAAAAAAAAw", prod, wire.OfflineReasonTimeLimit)
+}
+
 func TestARestartServesEveryResourceOfflineWithoutAccessOrShareId(t *testing.T) {
 	e := newEnv(t, nil)
 	prod := e.online(alice, devA1)

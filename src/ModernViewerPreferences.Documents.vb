@@ -67,6 +67,20 @@ Partial Public NotInheritable Class ModernViewerPreferences
     ''' <summary>An explicit doc-html-translate.exe; empty means automatic discovery.</summary>
     Public Property DocumentConverterLocation As String = ""
     Public Property DocumentProcessingMode As String = DocHtmlJobArguments.ModeBrowser
+    ' Step 3.2: the remaining section 5 choices of the owned job. Empty strings mean "the converter's default".
+    Public Property DocumentOpenResultAutomatically As Boolean = True
+    Public Property DocumentOcrMode As String = "auto"
+    Public Property DocumentOcrLanguages As String = ""
+    Public Property DocumentSourceLanguage As String = ""
+    Public Property DocumentTargetLanguage As String = ""
+    Public Property DocumentLocalModel As String = ""
+    Public Property DocumentJobTimeoutMinutes As Integer = 30
+    Public Property DocumentResultCacheMb As Integer = 1024
+    Public Property DocumentResultRetentionDays As Integer = 7
+    Public Property DocumentReuseResults As Boolean = True
+    ' Step 4.1: where a verified page opens (the 275 host or the system browser) and whether every finished page is kept until Clear.
+    Public Property DocumentResultDestination As String = "browser"
+    Public Property DocumentKeepCompletedResults As Boolean
 
     ' An explicit allow-list keeps unrelated preference keys out of this plumbing.
     Private Shared ReadOnly documentPreferenceNames As String() = (
@@ -76,7 +90,8 @@ Partial Public NotInheritable Class ModernViewerPreferences
         "EpubLayout EpubTheme EpubFontFamily EpubFontSize EpubLineHeight EpubParagraphSpacing EpubHorizontalMargin EpubColumnWidth EpubAlignment " &
         "EpubHyphenation EpubUseBookStyles EpubUseEmbeddedFonts EpubTocDepth EpubSearchScope DocumentMemoryCacheMb " &
         "DocumentDiskCacheMb DocumentBookmarks DocumentAppearanceHistory DocumentConverterEnabled DocumentConverterLocation " &
-        "DocumentProcessingMode").Split(" "c)
+        "DocumentProcessingMode DocumentOpenResultAutomatically DocumentOcrMode DocumentOcrLanguages DocumentSourceLanguage " &
+        "DocumentTargetLanguage DocumentLocalModel DocumentJobTimeoutMinutes DocumentResultCacheMb DocumentResultRetentionDays DocumentReuseResults DocumentResultDestination DocumentKeepCompletedResults").Split(" "c)
 
     Private Sub LoadDocumentPreferences()
         For Each name In documentPreferenceNames
@@ -119,6 +134,13 @@ Partial Public NotInheritable Class ModernViewerPreferences
         Return Choice(value, fallback, choices)
     End Function
 
+    ''' <summary>A free-form value that reaches the converter's command line: trimmed, and dropped (the converter's
+    ''' default) when it is not a value the argument builder accepts.</summary>
+    Private Shared Function AcceptedToken(value As String, accept As Func(Of String, Boolean)) As String
+        Dim trimmed = If(value, "").Trim()
+        Return If(trimmed.Length > 0 AndAlso accept(trimmed), trimmed, "")
+    End Function
+
     Private Shared Function Bounded(value As Double, minimum As Double, maximum As Double, fallback As Double) As Double
         Return If(Double.IsNaN(value) OrElse Double.IsInfinity(value), fallback, Math.Max(minimum, Math.Min(maximum, value)))
     End Function
@@ -157,6 +179,15 @@ Partial Public NotInheritable Class ModernViewerPreferences
             DocHtmlJobArguments.ModeBrowser, DocHtmlJobArguments.ModeConvert, DocHtmlJobArguments.ModeLocal)
         DocumentConverterLocation = If(DocumentConverterLocation, "").Trim()
         If DocumentConverterLocation.Length > 1024 Then DocumentConverterLocation = ""
+        DocumentOcrMode = ChoiceValue(DocumentOcrMode, "auto", "auto", "force")
+        DocumentOcrLanguages = AcceptedToken(DocumentOcrLanguages, AddressOf DocHtmlJobArguments.IsLanguageList)
+        DocumentSourceLanguage = AcceptedToken(DocumentSourceLanguage, AddressOf DocHtmlJobArguments.IsLanguageList)
+        DocumentTargetLanguage = AcceptedToken(DocumentTargetLanguage, AddressOf DocHtmlJobArguments.IsLanguageList)
+        DocumentLocalModel = AcceptedToken(DocumentLocalModel, AddressOf DocHtmlJobArguments.IsModelName)
+        DocumentJobTimeoutMinutes = Clamp(DocumentJobTimeoutMinutes, 1, 240)
+        DocumentResultCacheMb = Clamp(DocumentResultCacheMb, 128, 8192)
+        DocumentResultRetentionDays = Clamp(DocumentResultRetentionDays, 1, 90)
+        DocumentResultDestination = ChoiceValue(DocumentResultDestination, "browser", "browser", "viewer")
         DocumentBookmarks = JsonSerializer.Serialize(ReadDocumentBookmarks())
         DocumentAppearanceHistory = JsonSerializer.Serialize(ReadDocumentAppearances())
     End Sub

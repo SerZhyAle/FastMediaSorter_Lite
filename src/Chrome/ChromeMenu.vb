@@ -33,6 +33,14 @@ Friend NotInheritable Class ChromeMenu
     Private Shared Function MapVirtualKey(code As UInteger, mapType As UInteger) As UInteger
     End Function
 
+    <DllImport("user32.dll")>
+    Private Shared Function SetWindowPos(hWnd As IntPtr, hWndInsertAfter As IntPtr, x As Integer, y As Integer,
+                                         cx As Integer, cy As Integer, flags As UInteger) As <MarshalAs(UnmanagedType.Bool)> Boolean
+    End Function
+
+    ''' <summary>SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE: a raise to HWND_TOP that leaves the keyboard where it is.</summary>
+    Private Const Swp_Raise As UInteger = &H13UI
+
     Public Shared Event FocusKeyConsumed As Action
     ''' <summary>A menu of the chain was hidden: whoever opened the chain looks at <see cref="PopupVisible"/> to learn whether it is
     ''' still on screen (a menu button reports "expanded" only while it is; 243 T-9).</summary>
@@ -98,6 +106,22 @@ Friend NotInheritable Class ChromeMenu
         End While
         Return result
     End Function
+
+    ''' <summary>An open chain is the top of the viewer's own band (L0302): every level is raised without activation,
+    ''' root first and leaf last, so a submenu stays above its parent. A window shown without activation is not lifted
+    ''' over its owner's other owned windows, and a panel shown or raised after the chain would cover it, so whoever
+    ''' shows or raises a viewer window while a chain is open calls this. Only the band order moves: the chain never
+    ''' becomes topmost on its own (its TopMost follows the viewer), and each level carries its own ink window with it.</summary>
+    Friend Shared Sub RaiseOpenChain()
+        If Not PopupVisible Then Return
+        Dim current As ChromeMenu = popup.RootMenu()
+        While current IsNot Nothing
+            If Not current.IsDisposed AndAlso current.IsHandleCreated AndAlso current.Visible Then
+                SetWindowPos(current.Handle, IntPtr.Zero, 0, 0, 0, 0, Swp_Raise)
+            End If
+            current = current.childMenu
+        End While
+    End Sub
 
     ''' <summary>The row of the open leaf menu that has the keyboard ring, or Nothing.</summary>
     Friend Shared ReadOnly Property FocusedRowOfLeaf As ChromeItem
@@ -236,6 +260,8 @@ Friend NotInheritable Class ChromeMenu
         openForeground = GetForegroundWindow()
         Application.AddMessageFilter(Me)
         Show()
+        ' The panels already on screen would otherwise stand over the fresh list (L0302).
+        RaiseOpenChain()
         If focusFirstRow Then Surface.EnterKeyboardMode()
     End Sub
 

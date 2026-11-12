@@ -28,12 +28,13 @@
 - Every send is bounded (6 s total, 3 s per attempt) and actually bound - since ticket 040 the wake of the
   Share Manager declares its entry point explicitly, so a delivery is counted only on the receiver's
   answer.
-- **Rule 5's mechanism is the one open deviation (registry exception).** The sender allows the receiver to
+- **Rule 5's mechanism is a design variant (owner, 2026-10-30, ticket 252; registry row and the proposal
+  `app-activation/PROPOSAL-2026-10-30-rule-5-without-attach-thread-input.md` for CyrFlip).** The sender allows the receiver to
   take the foreground (`AllowSetForegroundWindow`, `Application_Events.vb` and `Main_Form.ShareLauncher.vb`);
   the contract's `AttachThreadInput` bracket and the `WM_NULL` responsiveness probe before it are not used
   anywhere in the source - the hang the probe guards against cannot arise without the attach, and every
-  send already carries `SMTO_ABORTIFHUNG`. Whether that is conformant is the owner's reading; it is recorded
-  as a deviation until then.
+  send already carries `SMTO_ABORTIFHUNG`. The owner reads that as this product's rule 5; a rejection of the
+  proposal reopens it as debt.
 
 - **0.13 profile declaration.** Both receivers here are **forwarding profiles**: a second start hands its path
   or sentinel to the running window, so the payload rules above bind them. Neither is a payload-less focus-only

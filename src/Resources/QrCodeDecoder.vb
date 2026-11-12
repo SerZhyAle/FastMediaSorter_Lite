@@ -3,9 +3,7 @@ Option Strict On
 
 Imports System.Drawing
 Imports System.IO
-Imports System.Runtime.InteropServices
-Imports System.Threading
-Imports System.Windows.Forms
+Imports System.Threading.Tasks
 Imports ZXing
 Imports ZXing.Windows.Compatibility
 
@@ -205,52 +203,45 @@ Friend NotInheritable Class QrCodeDecoder
     End Function
 
     ''' <summary>
-    ''' Reads clipboard content according to CLIPBOARD-GUARD (bounded retries, UI thread).
-    ''' If clipboard contains an image (e.g. Win+Shift+S screenshot), decodes QR code from it.
+    ''' Reads clipboard content according to CLIPBOARD-GUARD (<see cref="ClipboardPaste"/>: bounded retries and size caps, on a worker).
+    ''' If clipboard contains an image (e.g. Win+Shift+S screenshot), decodes QR code from it, off the caller's thread as well.
     ''' If clipboard contains plain text, returns text directly as Success.
     ''' </summary>
-    Friend Shared Function DecodeClipboard() As QrDecodeResult
-        Dim containsImage As Boolean = False
-        Dim containsText As Boolean = False
-        Dim imageObj As Image = Nothing
-        Dim textContent As String = Nothing
+    Friend Shared Async Function DecodeClipboardAsync() As Task(Of QrDecodeResult)
+        Dim read As ClipboardPasteResult = Await ClipboardPaste.ReadBoundedAsync().ConfigureAwait(False)
+        Return DecodePaste(read)
+    End Function
 
-        Dim success As Boolean = False
-        For attempt As Integer = 1 To 3
-            Try
-                containsImage = Clipboard.ContainsImage()
-                containsText = Clipboard.ContainsText()
-                If containsImage Then
-                    imageObj = Clipboard.GetImage()
-                ElseIf containsText Then
-                    textContent = Clipboard.GetText()
+    ''' <summary>What the read found, in the decoder's words. The clipboard is closed again by now.</summary>
+    Friend Shared Function DecodePaste(read As ClipboardPasteResult) As QrDecodeResult
+        Select Case read.Outcome
+            Case ClipboardPasteOutcome.Busy
+                Return New QrDecodeResult(QrDecodeOutcome.Failed, "", Localization.T("Буфер обмена занят другой программой"))
+            Case ClipboardPasteOutcome.NoAnswer
+                Return New QrDecodeResult(QrDecodeOutcome.Failed, "", Localization.T("Программа, которой принадлежит буфер обмена, не ответила вовремя. Подождите немного и попробуйте ещё раз."))
+            Case ClipboardPasteOutcome.UnderWay
+                Return New QrDecodeResult(QrDecodeOutcome.Failed, "", Localization.T("Операция с буфером обмена уже идёт."))
+            Case ClipboardPasteOutcome.Unreadable
+                Return New QrDecodeResult(QrDecodeOutcome.Failed, "", Localization.T("Не удалось прочитать буфер обмена."))
+            Case ClipboardPasteOutcome.ImageTooLarge
+                Return New QrDecodeResult(QrDecodeOutcome.TooLarge, "", Localization.T("Изображение слишком велико для поиска QR-кода"))
+            Case ClipboardPasteOutcome.TextTooLarge
+                Return New QrDecodeResult(QrDecodeOutcome.TooLarge, "", Localization.T("Текст в буфере обмена слишком велик"))
+            Case ClipboardPasteOutcome.Image
+                Try
+                    Using ms As New MemoryStream(read.Bmp, writable:=False)
+                        Using bmp As New Bitmap(ms)
+                            Return DecodeBitmap(bmp)
+                        End Using
+                    End Using
+                Catch ex As Exception
+                    Return New QrDecodeResult(QrDecodeOutcome.Failed, "", Localization.T("Не удалось распознать QR-код"))
+                End Try
+            Case ClipboardPasteOutcome.Text
+                If Not String.IsNullOrWhiteSpace(read.Text) Then
+                    Return New QrDecodeResult(QrDecodeOutcome.Success, read.Text.Trim(), "")
                 End If
-                success = True
-                Exit For
-            Catch ex As ExternalException
-                If attempt < 3 Then Thread.Sleep(120)
-            Catch ex As Exception
-                Exit For
-            End Try
-        Next
-
-        If Not success Then
-            Return New QrDecodeResult(QrDecodeOutcome.Failed, "", Localization.T("Буфер обмена занят другой программой"))
-        End If
-
-        If containsImage AndAlso imageObj IsNot Nothing Then
-            Try
-                Using bmp As New Bitmap(imageObj)
-                    Return DecodeBitmap(bmp)
-                End Using
-            Finally
-                imageObj.Dispose()
-            End Try
-        End If
-
-        If containsText AndAlso Not String.IsNullOrWhiteSpace(textContent) Then
-            Return New QrDecodeResult(QrDecodeOutcome.Success, textContent.Trim(), "")
-        End If
+        End Select
 
         Return New QrDecodeResult(QrDecodeOutcome.NoQr, "", Localization.T("В буфере обмена нет текста или изображения"))
     End Function

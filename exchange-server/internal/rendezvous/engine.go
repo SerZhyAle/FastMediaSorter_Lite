@@ -13,6 +13,7 @@ import (
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/ports"
+	"fms/exchange-server/internal/settings"
 	"fms/exchange-server/internal/tunnel"
 	"fms/exchange-server/internal/wire"
 )
@@ -55,6 +56,9 @@ type EngineConfig struct {
 	// Rand is the source of tunnel ids; nil is the system's generator (the vector generator of
 	// ticket 205 injects a seeded one).
 	Rand io.Reader
+	// Settings is the store of the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296).
+	// Nil: the server does not list `settings` and ignores the frames, as 7.1 says of an unknown type.
+	Settings *settings.Store
 }
 
 // Engine is the real Backend: accounts and enrollment (162), the directory and presence (163),
@@ -94,7 +98,7 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
 		clip: clipboard.NewTable(cfg.Now, cfg.Rand),
 		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
-	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Sealed: cfg.Features.Sealed,
+	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Settings: cfg.Settings, Sealed: cfg.Features.Sealed,
 		Audit: admin.NewAuditTracker(), AuditLog: cfg.Audit}
 	if cfg.Rand != nil {
 		e.tunnels.SetRand(cfg.Rand)
@@ -199,6 +203,9 @@ func (e *Engine) features() []string {
 	out = append(out, "pairing", "clipboard")
 	if e.cfg.Features.Sealed {
 		out = append(out, wire.FeatureSealed)
+	}
+	if e.cfg.Settings != nil {
+		out = append(out, wire.FeatureSettings)
 	}
 	return out
 }

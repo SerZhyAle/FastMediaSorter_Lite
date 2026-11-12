@@ -20,6 +20,8 @@ Imports System.Threading.Tasks
 '
 ' The device id is the ENTRY's own, generated before `enroll` (a retry after `id-collision` makes one fresh id, once), so two logins on
 ' one server never meet item G. This device declares `resource-consumer` and nothing else: it is complete without a producer.
+' Its key (DEVICE-EXCHANGE 27 item DF) is made and kept in the entry's folder before anything is sent, and a key made for an enrollment
+' that did not succeed is taken back. An entry that enrolled before it had one gets it from ExchangeEntrySession, with no password.
 
 ''' <summary>What this program needs from its surroundings, injectable so the whole join is tested against a stub server.</summary>
 Friend NotInheritable Class ExchangeConsumerPorts
@@ -164,6 +166,36 @@ Friend NotInheritable Class ExchangeConsumer
         Return ExchangeDeviceDescription.Clip(machine & " " & ports.DeviceNameSuffix, 64)
     End Function
 
+    ''' <summary>What this device says about itself in `enroll` and `register`: one role, and its key when it has one.</summary>
+    Friend Shared Function DescriptionOf(entry As ExchangeEntry, ports As ExchangeConsumerPorts, deviceName As String, kem As String) As ExchangeDeviceDescription
+        Return New ExchangeDeviceDescription(entry.DeviceId, deviceName, ExchangeWire.ProductWindows,
+            ExchangeDeviceDescription.Clip(ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
+            New List(Of String) From {ExchangeWire.RoleResourceConsumer}, "", kem)
+    End Function
+
+    ''' <summary>One attempt under the entry's key: the kept one, or a new one kept first. No key that can be kept, nothing sent. A key made for
+    ''' this attempt goes again unless the attempt enrolled; a key that was there before is the device's and stays.</summary>
+    Private Shared Async Function WithDeviceKeyAsync(ports As ExchangeConsumerPorts, entry As ExchangeEntry,
+                                                     attempt As Func(Of String, Task(Of ExchangeConsumerEnrollResult))) As Task(Of ExchangeConsumerEnrollResult)
+        Dim store As IExchangeDeviceKeyStore = ports.Entries.DeviceKeysFor(entry.Id)
+        Dim created As Boolean = Not store.Exists(entry.DeviceId)
+        Dim kem As String
+        Using key As ExchangeDeviceKey = ExchangeDeviceKeys.LoadOrCreate(store, entry.DeviceId)
+            If key Is Nothing Then
+                ports.Log.Invoke("Exchange: the device key could not be kept on this computer - nothing was sent")
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.StoreFailed, ExchangeRefusal.Unknown, "", Nothing)
+            End If
+            kem = key.Kem
+        End Using
+        Dim result As ExchangeConsumerEnrollResult = Nothing
+        Try
+            result = Await attempt.Invoke(kem).ConfigureAwait(False)
+            Return result
+        Finally
+            If created AndAlso (result Is Nothing OrElse result.Outcome <> ExchangeConsumerEnrollOutcome.Enrolled) Then ports.Entries.DropFreshKey(entry.Id, entry.DeviceId)
+        End Try
+    End Function
+
     ''' <summary>REGISTER by invitation (226 rule 1): TLS under the invitation string's trust, `register` with the code (or
     ''' the shared password), the chosen login and the password, and the answer `enrolled` stores the SAME entry a sign-in
     ''' stores - same shape, same token store, same pin decision. The request's secrets are wiped whatever happens, and
@@ -193,7 +225,8 @@ Friend NotInheritable Class ExchangeConsumer
             request.Wipe()
             Dim outcome As ExchangeConsumerEnrollResult = Nothing
             For attempt As Integer = 0 To 1
-                outcome = Await TryRegisterOnceAsync(password, invitation, sharedPw, ports, address, pin, platformValid, entry, ct).ConfigureAwait(False)
+                Dim current As ExchangeEntry = entry
+                outcome = Await WithDeviceKeyAsync(ports, current, Function(kem) TryRegisterOnceAsync(password, invitation, sharedPw, ports, address, pin, platformValid, current, kem, ct)).ConfigureAwait(False)
                 ' a device id already known in another account of the deployment: one fresh id, once (the same item G as a sign-in's)
                 If outcome.Outcome = ExchangeConsumerEnrollOutcome.Refused AndAlso outcome.Refusal = ExchangeRefusal.IdCollision AndAlso attempt = 0 Then
                     entry = New ExchangeEntry(entry.Id, entry.Server, entry.Login, entry.Pin, entry.Certificate, ExchangeIds.NewId(), entry.DeviceName, entry.Name, entry.AutoAttach, entry.Seen, entry.KeyPin)
@@ -208,10 +241,8 @@ Friend NotInheritable Class ExchangeConsumer
     End Function
 
     Private Shared Async Function TryRegisterOnceAsync(password As String, invitation As String, sharedPw As String, ports As ExchangeConsumerPorts,
-                                                       address As ExchangeServerAddress, pin As String, platformValid As Boolean, entry As ExchangeEntry, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
-        Dim description As New ExchangeDeviceDescription(entry.DeviceId, entry.DeviceName, ExchangeWire.ProductWindows,
-            ExchangeDeviceDescription.Clip(ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
-            New List(Of String) From {ExchangeWire.RoleResourceConsumer}, "")
+                                                       address As ExchangeServerAddress, pin As String, platformValid As Boolean, entry As ExchangeEntry, kem As String, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
+        Dim description As ExchangeDeviceDescription = DescriptionOf(entry, ports, entry.DeviceName, kem)
         Dim register As ExchangeEnvelope = ExchangeMessages.Register(invitation, sharedPw, entry.Login, password, description, ExchangeWire.ProposedKeepaliveSeconds)
         Dim opened As ExchangeOpenResult
         Try
@@ -274,7 +305,8 @@ Friend NotInheritable Class ExchangeConsumer
             request.Wipe()
             Dim outcome As ExchangeConsumerEnrollResult = Nothing
             For attempt As Integer = 0 To 1
-                outcome = Await TryEnrollOnceAsync(password, request, ports, address, pin, entry, ct).ConfigureAwait(False)
+                Dim current As ExchangeEntry = entry
+                outcome = Await WithDeviceKeyAsync(ports, current, Function(kem) TryEnrollOnceAsync(password, request, ports, address, pin, current, kem, ct)).ConfigureAwait(False)
                 ' item G: a device id that is enrolled in another account of the deployment - one fresh id, once (a second is shown)
                 If outcome.Outcome = ExchangeConsumerEnrollOutcome.Refused AndAlso outcome.Refusal = ExchangeRefusal.IdCollision AndAlso attempt = 0 Then
                     entry = New ExchangeEntry(entry.Id, entry.Server, entry.Login, entry.Pin, entry.Certificate, ExchangeIds.NewId(), entry.DeviceName, entry.Name, entry.AutoAttach, entry.Seen, entry.KeyPin)
@@ -289,11 +321,9 @@ Friend NotInheritable Class ExchangeConsumer
     End Function
 
     Private Shared Async Function TryEnrollOnceAsync(password As String, request As ExchangeConsumerEnrollRequest, ports As ExchangeConsumerPorts, address As ExchangeServerAddress,
-                                                     pin As String, entry As ExchangeEntry, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
+                                                     pin As String, entry As ExchangeEntry, kem As String, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
         ' the one role of this device: it enrols, lists, attaches and opens a tunnel with nothing else on the machine
-        Dim description As New ExchangeDeviceDescription(entry.DeviceId, entry.DeviceName, ExchangeWire.ProductWindows,
-            ExchangeDeviceDescription.Clip(ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
-            New List(Of String) From {ExchangeWire.RoleResourceConsumer}, "")
+        Dim description As ExchangeDeviceDescription = DescriptionOf(entry, ports, entry.DeviceName, kem)
         Dim enroll As ExchangeEnvelope = ExchangeMessages.Enroll(entry.Login, password, "", description, ExchangeWire.ProposedKeepaliveSeconds)
         Dim opened As ExchangeOpenResult
         Try

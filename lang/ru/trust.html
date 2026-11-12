@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-page-lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Почему Windows предупреждает об этой загрузке</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="ru">
+<meta property="og:locale" content="ru_RU">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Почему Windows предупреждает об этой загрузке">
 <meta name="twitter:description" content="Что означает предупреждение SmartScreen при установке Fast Media Sorter &amp; Sharing, почему оно появляется, на что нажать и чего программа не делает никогда.">
@@ -129,11 +129,11 @@
   </section>
 
   <p class="note">Один сторонний сервис всё же может быть вызван, и только если вы включите доступ из интернета для общего доступа к папкам: у check-host.net спрашивают, отвечает ли проброшенный порт снаружи, и этот сервис видит ваш публичный адрес и порт. Больше ему ничего не отправляется. Ещё две вещи не выходят за пределы вашей сети: при включённом доступе из интернета программа просит ваш роутер пробросить порт раздачи (UPnP или NAT-PMP), а пока раздача работает, компьютер объявляет о себе в локальной сети (mDNS), чтобы привязанный телефон снова его нашёл.</p>
-  <p class="note" id="site-origins">Открытие страниц этого сайта (а не работа программы) обращается не более чем к трём внешним адресам: fonts.googleapis.com и fonts.gstatic.com (Google Fonts, начертание страниц) и - на главной странице и её языковых версиях - api.github.com (GitHub, чтобы узнать последний выпуск для ссылки на скачивание). Каждый получает ваш IP-адрес и user agent вашего браузера и ничего больше. Адреса аналитики, менеджера тегов или рекламы не используются. То же сказано на странице приватности.</p>
+  <p class="note" id="site-origins">Открытие страниц этого сайта (а не работа программы) обращается к двум внешним адресам: fonts.googleapis.com и fonts.gstatic.com (Google Fonts, начертание страниц). Каждый получает ваш IP-адрес и user agent вашего браузера и ничего больше. Адреса аналитики, менеджера тегов или рекламы не используются. То же сказано на странице приватности.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Загрузки</a>
-    <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Конфиденциальность</a>
+    <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/privacy.html">Конфиденциальность</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/">На главную страницу</a>
   </div>
 </main>
@@ -170,7 +170,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

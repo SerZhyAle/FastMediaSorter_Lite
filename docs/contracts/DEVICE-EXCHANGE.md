@@ -13,6 +13,12 @@
   `version-unsupported`. Every deployment serves TLS and a client never falls back to plain. A client validates the
   leaf as item D says: the platform chain first, otherwise the entry's pin, a new leaf only after the person has
   accepted it.
+- **Settings standard (1.12, section 35, items EN to ER; local specification L0296).** The server lists `settings`
+  only with its store open, keeps one standard per account and `appId` in `settings.json`, refuses with the four
+  reasons of item EP and erases the standards with the account (item AU). The viewer sends `settings_save_standard`
+  and `settings_get_standard` only on the person's act and only while `welcome` lists `settings`, writes no
+  local-only key (item EQ) and applies nothing of a read before the whole payload is understood (item ER). The
+  regenerated server transcript is not yet offered to the catalog (L0296 phase 1 step 7).
 - **No account, no Drive, no change (section 9 rule 7).** With neither configured, nothing in the product changes.
 - **Connection string (5.5, items BO, CK, CZ, DP; the 1.3 amendment).** A higher `FMSEXCH` prefix or descriptor schema is refused cleanly, never
   imported in part, with the catalog's canonical text, code `format-unsupported` (kind local, step `-`), and no

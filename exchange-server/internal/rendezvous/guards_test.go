@@ -3,6 +3,7 @@ package rendezvous_test
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -547,6 +548,57 @@ func TestTheConnectionLimitIsExhaustedAndAnotherAddressIsServed(t *testing.T) {
 		t.Fatalf("another address must be served: %v %+v", err, r)
 	}
 	_ = rendezvous.DefaultParams
+}
+
+// item BQ: a peer that finishes the TLS handshake and closes before any byte is a reachability probe. Three
+// times the connection budget of them leave the budget whole, a real enroll is still served, and a peer
+// that does send a byte stays under the budget.
+func TestAHandshakeThatSendsNoByteCostsNoConnectionBudget(t *testing.T) {
+	const burst = 4
+	lc := loose()
+	lc.Rates[limits.Connection] = limits.Rate{PerMinute: 1, Burst: burst}
+	env := testkit.StartServer(t, testkit.Options{Limits: lc, LoginLimits: loose(), Logins: []string{"alice"}})
+	handshake := func() (*tls.Conn, error) {
+		raw, err := net.DialTimeout("tcp", env.Addr, 5*time.Second)
+		if err != nil {
+			return nil, err
+		}
+		c := tls.Client(raw, &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}) // no name check: the budget is under test
+		_ = c.SetDeadline(time.Now().Add(5 * time.Second))
+		if err := c.Handshake(); err != nil {
+			_ = c.Close()
+			return nil, err
+		}
+		return c, nil
+	}
+	for i := 0; i < 3*burst; i++ {
+		c, err := handshake()
+		if err != nil {
+			t.Fatalf("probe %d was turned away: %v", i, err)
+		}
+		// take the session tickets, so that the close is a close and not a reset of unread bytes
+		_ = c.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+		_, _ = c.Read(make([]byte, 1))
+		_ = c.Close()
+		time.Sleep(30 * time.Millisecond) // the refund runs on the server's goroutine of that connection
+	}
+	if r, err := env.NewDevice("alice").Enroll(); err != nil || r.TypeName() != wire.TypeEnrolled {
+		t.Fatalf("a real enroll after the probes must be served: %v %+v", err, r)
+	}
+	served := 0
+	for i := 0; i < 3*burst; i++ {
+		c, err := handshake()
+		if err != nil {
+			break
+		}
+		served++
+		_, _ = c.Write([]byte{0xff})
+		_ = c.Close()
+		time.Sleep(30 * time.Millisecond)
+	}
+	if served > burst {
+		t.Fatalf("%d peers that sent a byte were served against a budget of %d", served, burst)
+	}
 }
 
 // every class of the rate limits of rule 6 that has an address, a login, an account or a device as its

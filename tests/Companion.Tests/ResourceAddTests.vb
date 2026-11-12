@@ -175,9 +175,28 @@ Public Class ResourceAddTests
                     Assert.True(hosted.ReadDraft().IsWritable())
                     Assert.False(hosted.ReadDraft().AdvertisedReadOnly())
                     Assert.True(Field(Of TextBox)(hosted, "txtPin").UseSystemPasswordChar)
+                    Assert.True(Field(Of TextBox)(standalone, "txtPin").UseSystemPasswordChar)
                 End Using
             End Using
             Assert.Equal("scene-pin", input.AccessPin)
+        End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub The_access_code_grid_ticks_a_set_PIN_and_never_holds_its_value()
+        Isolated(Sub()
+            ShareRootParamsStore.SetFor("C:\Locked", New ShareRootParams With {.AccessPin = "3333"})
+            Using wizard As New PackageWizardForm(New List(Of String)())
+                GetType(PackageWizardForm).GetField("_status", Flags).SetValue(wizard, New WorkerStatus With {.Running = True,
+                    .Roots = New List(Of ShareFolder) From {New ShareFolder With {.hostPath = "C:\Locked", .name = "Locked"},
+                                                            New ShareFolder With {.hostPath = "C:\Open", .name = "Open"}}})
+                Invoke(wizard, "PopulateGrid")
+                Dim grid As DataGridView = Field(Of DataGridView)(wizard, "dgv")
+                Assert.IsType(Of DataGridViewCheckBoxColumn)(grid.Columns("pin"))
+                Assert.True(grid.Columns("pin").ReadOnly)
+                Assert.Equal(CObj(True), grid.Rows(0).Cells("pin").Value)
+                Assert.Equal(CObj(False), grid.Rows(1).Cells("pin").Value)
+            End Using
         End Sub)
     End Sub
 

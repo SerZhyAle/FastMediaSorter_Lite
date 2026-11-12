@@ -84,6 +84,19 @@ Friend NotInheritable Class WindowPlacement
         Return New Rectangle(left, top, width, height)
     End Function
 
+    ''' <summary>The smallest size a window may demand of its user on <paramref name="area"/>: the size it asks for,
+    ''' but never more than the work area it opens on. A minimum that grows with the interface scale and the Windows
+    ''' Text size (150 percent display x 200 percent text = 3.0 x 780 px) can pass the width of the screen, and a
+    ''' form is never smaller than its <c>MinimumSize</c>, so a clamp of the size alone leaves the window wider
+    ''' than the screen. An empty or unknown area sets no bound; a negative side counts as 0 (no minimum).</summary>
+    Friend Shared Function BoundMinimum(desired As Size, area As Rectangle) As Size
+        Dim width As Integer = Math.Max(0, desired.Width)
+        Dim height As Integer = Math.Max(0, desired.Height)
+        If area.Width > 0 Then width = Math.Min(width, area.Width)
+        If area.Height > 0 Then height = Math.Min(height, area.Height)
+        Return New Size(width, height)
+    End Function
+
     ''' <summary>How much of a window has to be on a display for it to count as on it -
     ''' enough of a title bar to grab.</summary>
     Friend Const MinimumVisible As Integer = 40

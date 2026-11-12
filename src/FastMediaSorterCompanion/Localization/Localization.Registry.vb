@@ -49,6 +49,8 @@ Partial Public NotInheritable Class Localization
         AddOutwardAccessStrings()      ' ticket 239 CR-13: the guest invitation and the link with a password shown as not available
         AddAboutPageStrings()          ' ticket 243 T-6: the About group of the Share Manager - description, updates, help, project links, related projects
         AddDriveStrings()              ' spec 203 section 5.10 (T-UI-1): the Google Drive sign-in page of Manager settings
+        AddRemoteAdminStrings()        ' ticket L0278 T-5: the remote administration window - banner words, the words of an outcome, the confirmation opt-out
+        AddRemoteAdminCardStrings()    ' ticket L0278 T-6: the six cards of the remote administration window - captions, rows, columns, buttons
     End Sub
 
     ''' <summary>

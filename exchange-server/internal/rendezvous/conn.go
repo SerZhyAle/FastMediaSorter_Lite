@@ -309,6 +309,12 @@ func (s *Server) handle(raw *trackedConn) {
 		br2 := bufio.NewReaderSize(tc, 512)
 		b2, err := br2.Peek(1)
 		if err != nil {
+			// item BQ: a peer that finished the handshake and closed before any byte is a reachability
+			// probe, which costs no budget; one that merely stayed silent past the window is not
+			var ne net.Error
+			if !(errors.As(err, &ne) && ne.Timeout()) {
+				s.cfg.Limiter.Refund(key, limits.Connection)
+			}
 			_ = raw.Close()
 			return
 		}

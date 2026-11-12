@@ -278,6 +278,20 @@ Partial Public NotInheritable Class Localization
             "درست اقسام کا سیٹ منتخب کرنے کے لیے کلک کریں۔ خالی = قسم فیصلہ کرتی ہے۔",
             "点击以选择确切的类型集合。留空 = 由类型决定。")
 
+        Add("Нажмите, чтобы задать или изменить PIN. Пусто = без PIN.",
+            "Click to set or change the PIN. Empty = no PIN.",
+            "Натисніть, щоб задати або змінити PIN. Порожньо = без PIN.",
+            "Klicken Sie, um die PIN festzulegen oder zu ändern. Leer = keine PIN.",
+            "Fai clic per impostare o modificare il PIN. Vuoto = nessun PIN.",
+            "Haz clic para establecer o cambiar el PIN. Vacío = sin PIN.",
+            "Cliquez pour définir ou modifier le code PIN. Vide = pas de code PIN.",
+            "Clique para definir ou alterar o PIN. Vazio = sem PIN.",
+            "انقر لتعيين رمز PIN أو تغييره. فارغ = بدون رمز PIN.",
+            "PIN सेट करने या बदलने के लिए क्लिक करें। खाली = कोई PIN नहीं।",
+            "PIN সেট করতে বা বদলাতে ক্লিক করুন। ফাঁকা = কোনো PIN নেই।",
+            "کلک کر کے PIN مقرر کریں یا بدلیں۔ خالی = کوئی PIN نہیں۔",
+            "点击以设置或更改 PIN。留空 = 不设 PIN。")
+
         Add("Получение состояния..",
             "Fetching state..", "Отримання стану..", "Status wird abgerufen..",
             "Recupero dello stato..", "Obteniendo el estado..", "Récupération de l'état..",

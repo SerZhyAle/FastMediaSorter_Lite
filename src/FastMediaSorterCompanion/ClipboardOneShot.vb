@@ -33,6 +33,8 @@ Friend NotInheritable Class ClipboardOneShot
     Friend Shared Function Run(isSend As Boolean, alreadyRunning As Boolean) As Integer
         Using context As New ClipboardOneShot(isSend, alreadyRunning)
             Application.Run(context)
+            ' The one action may have made a Drive service (never started): nothing outlives the run.
+            DriveChannelHosts.Release()
             Return context._exitCode
         End Using
     End Function
@@ -65,7 +67,7 @@ Friend NotInheritable Class ClipboardOneShot
     End Sub
 
     Private Function Title() As String
-        Return If(_isSend, Localization.T("Отправить буфер на сервер"), Localization.T("Получить буфер с сервера"))
+        Return ClipboardCoordinator.ActionText(_isSend)
     End Function
 
     ''' <summary>A notification-area tooltip is 63 characters at most; a longer one throws.</summary>

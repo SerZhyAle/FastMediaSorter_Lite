@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>资源 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -32,7 +33,7 @@
 <details id="check"><summary>检查</summary><p>「检查」会在不打开的情况下测试所选行。对于 SFTP 服务器，它会尝试该资源所有已知的地址，并把每个地址以 host:port 的形式连同结论一并报告：只要有一个 SSH 应答，检查即成功；端口开放但不是 SSH 则为警告；没有任何应答则为失败。检查不会发送密码。对于网络文件夹，它使用已保存的密码打开共享并读取其顶层文件夹；如果没有保存密码，会提示你通过「编辑..」输入。对于 Share Manager 行，它只查看该文件夹是否存在于这台电脑上。</p></details>
 <details id="open"><summary>打开</summary><p>「打开」或双击某一行，会把该资源交给查看器，由查看器连接并显示其文件夹。如果没有保存密码，或保存的密码被拒绝，会先弹出一个小窗口询问密码。</p></details>
 <details id="more-menu"><summary>「更多」按钮</summary><p>标有圆点的按钮包含：「导出..」（需要选中一个资源）、「从文件导入..」（.fmscfg、.json 或 .txt 文件，或二维码图片；也可以把文件拖放到列表上）、「从剪贴板导入」、「使用摄像头扫描..」（仅在已安装 Share Manager 且找到摄像头时才会出现）、「显示手机连接码..」，以及在选中某一行时出现的「为什么连不上？..」，它会打开连接诊断。</p></details>
-<details id="share-manager-rows"><summary>Share Manager 行和「我的设备」</summary><p>Share Manager 从这台电脑共享的文件夹在 Share Manager 中管理：它的工具提示是「此共享文件夹由 Share Manager 管理」，其所在行的「编辑..」和「删除」会打开 Share Manager，而不是在这里更改任何内容，「导出..」则不可用。当交换客户端可用时，列表下方的「我的设备」区域会显示你在交换服务器上的其他设备的文件夹。</p></details>
+<details id="share-manager-rows"><summary>Share Manager 行和「我的设备」</summary><p>Share Manager 从这台电脑共享的文件夹在 Share Manager 中管理：它的工具提示是「此共享文件夹由 Share Manager 管理」，其所在行的「编辑..」和「删除」会打开 Share Manager，而不是在这里更改任何内容，「导出..」则不可用。当交换客户端可用时，列表下方的「我的设备」区域会显示你在交换服务器上的其他设备的文件夹。 在 Share Manager 中登录 Google Drive 后，此区域还有「通过 Google Drive」分组，列出你的其他设备在那里发布的文件夹，即使没有交换服务器也是如此。这样的文件夹以只读方式打开，每次一层，回复最多延迟两分钟，不能修改或导出，受 PIN 保护的文件夹也不能这样打开。从服务器连接的文件夹在服务器无法访问时同样可通过 Google Drive 打开。</p></details>
     <p><a href="settings.html">设置</a></p>
   </section>
   <nav id="related">

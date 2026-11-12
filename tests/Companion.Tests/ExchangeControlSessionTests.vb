@@ -444,6 +444,71 @@ Public Class ExchangeControlSessionTests
         End Using
     End Function
 
+    ' ---------------------------------------------------------------- the settings standard (ticket L0296, cases 12 and 13)
+
+    <Fact>
+    Public Async Function Case_12_a_save_and_a_read_are_one_request_each_and_nothing_is_sent_after_the_read() As Task
+        Using acc As New ExchangeStubAccount()
+            acc.Features = {"directory", "tunnel", "pairing", ExchangeWire.FeatureSettings}
+            Dim token As String = acc.PreEnroll(DeviceId)
+            Dim session As New ExchangeControlSession(MakeOptions(acc, token, New Waits()), New Hooks())
+            Using cts As New CancellationTokenSource()
+                Dim task As Task = Run(session, cts)
+                Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() session.Model.HasSnapshot))
+                Assert.True(session.OffersSettings())
+
+                Dim missing As ExchangeSettingsRequestResult = Await session.GetSettingsStandardAsync("fms_win", CancellationToken.None)
+                Assert.Equal(ExchangeSettingsRequestOutcome.Refused, missing.Outcome)
+                Assert.Equal(ExchangeRefusal.NotFound, missing.Refusal)
+
+                Dim payload As String = "{""version"":1,""groups"":{""playback"":{""videoAutoplay"":false}}}"
+                Dim saved As ExchangeSettingsRequestResult = Await session.SaveSettingsStandardAsync("fms_win", 1, payload, "", CancellationToken.None)
+                Assert.Equal(ExchangeSettingsRequestOutcome.Answered, saved.Outcome)
+                Assert.Equal(1L, saved.Version)
+                Assert.Equal(ExchangeStubAccount.SettingsUpdatedAt, saved.UpdatedAt)
+
+                Dim read As ExchangeSettingsRequestResult = Await session.GetSettingsStandardAsync("fms_win", CancellationToken.None)
+                Assert.Equal(ExchangeSettingsRequestOutcome.Answered, read.Outcome)
+                Assert.Equal(payload, read.SettingsPayload)
+                Assert.Equal(1L, read.FormatVersion)
+
+                ' item ER: after the read the session says nothing of its own about settings
+                Await System.Threading.Tasks.Task.Delay(300)
+                Dim sent As List(Of String) = acc.ReceivedOn(1)
+                Dim afterRead As String() = sent.Skip(sent.LastIndexOf("settings_get_standard") + 1).Where(Function(t) t <> "keepalive").ToArray()
+                Assert.Empty(afterRead)
+                Assert.Equal(1, acc.CountOf("settings_save_standard"))
+                Assert.Equal(2, acc.CountOf("settings_get_standard"))
+                cts.Cancel()
+                Await task
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Case_13_a_stream_that_drops_before_the_answer_gives_no_payload_and_the_read_is_not_repeated() As Task
+        Using acc As New ExchangeStubAccount()
+            acc.Features = {"directory", "tunnel", "pairing", ExchangeWire.FeatureSettings}
+            acc.DropOnSettingsGet = True
+            Dim token As String = acc.PreEnroll(DeviceId)
+            Dim session As New ExchangeControlSession(MakeOptions(acc, token, New Waits()), New Hooks())
+            Using cts As New CancellationTokenSource()
+                Dim task As Task = Run(session, cts)
+                Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() session.Model.HasSnapshot))
+                Dim read As ExchangeSettingsRequestResult = Await session.GetSettingsStandardAsync("fms_win", CancellationToken.None)
+                Assert.Equal(ExchangeSettingsRequestOutcome.NoAnswer, read.Outcome)
+                Assert.Equal("", read.SettingsPayload)
+                Assert.Equal(0L, read.FormatVersion)
+                ' the session connects again on its own, and the read is not sent again without the person
+                Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.ReceivedOn(2).Contains("subscribe")))
+                Await System.Threading.Tasks.Task.Delay(200)
+                Assert.Equal(1, acc.CountOf("settings_get_standard"))
+                cts.Cancel()
+                Await task
+            End Using
+        End Using
+    End Function
+
     ' ---------------------------------------------------------------- adopting the enrolling stream
 
     <Fact>

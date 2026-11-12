@@ -66,6 +66,13 @@ Friend NotInheritable Class ChromeEditBox
         End Get
     End Property
 
+    ''' <summary>The edit is a number (a page, a chapter), not a query: it means nothing once the place has moved.</summary>
+    Public ReadOnly Property EditsNumber As Boolean
+        Get
+            Return editing AndAlso mode = ChromeEditMode.Digits
+        End Get
+    End Property
+
     ''' <summary>What the editor holds right now.</summary>
     Public ReadOnly Property Value As String
         Get
@@ -138,7 +145,8 @@ Friend NotInheritable Class ChromeEditBox
     End Sub
 
     Private Sub InputKeyDown(sender As Object, args As KeyEventArgs)
-        If args.KeyCode = Keys.Enter Then
+        ' F3 in the page find steps to the next match like Enter, as it did in the box this editor replaced.
+        If args.KeyCode = Keys.Enter OrElse (args.KeyCode = Keys.F3 AndAlso mode = ChromeEditMode.Text) Then
             args.SuppressKeyPress = True
             AcceptedWithShift = args.Shift
             RaiseEvent Accepted(Me, EventArgs.Empty)

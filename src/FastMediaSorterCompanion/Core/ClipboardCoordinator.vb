@@ -47,15 +47,43 @@ Friend NotInheritable Class ClipboardCoordinator
         _offered = offered
     End Sub
 
-    ''' <summary>True when the exchange client is available here AND the person holds at least one account. A pure read of two
-    ''' registry values; with no account nothing is drawn and nothing is opened (spec 230 rule 9).</summary>
+    ''' <summary>True when the exchange client is available here AND the person holds at least one account or turned the Google Drive
+    ''' channel on. A pure read of two registry values and one file's existence; with neither nothing is drawn and nothing is opened
+    ''' (spec 230 rule 9).</summary>
     Public Shared Function AnyAccount() As Boolean
+        Return HasServerAccount() OrElse HasDrive()
+    End Function
+
+    Private Shared Function HasServerAccount() As Boolean
         Try
             If Not ExchangeFeatures.IsEnabled() Then Return False
             Return ClipboardTargets.AnyConfigured(ExchangeAccountStore.CreateDefault(), ExchangeEntryStore.CreateDefault())
         Catch ex As Exception When TypeOf ex Is System.IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
             Return False
         End Try
+    End Function
+
+    Private Shared Function HasDrive() As Boolean
+        Try
+            Return ClipboardDrivePath.IsOffered()
+        Catch ex As Exception When TypeOf ex Is System.IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>The words of one action for what the person has now (<see cref="ClipboardMessages.ActionText"/>).</summary>
+    Public Shared Function ActionText(isSend As Boolean) As String
+        Return ClipboardMessages.ActionText(isSend, HasServerAccount(), HasDrive())
+    End Function
+
+    ''' <summary>The heading of the settings block for what the person has now.</summary>
+    Public Shared Function BlockTitle() As String
+        Return ClipboardMessages.BlockTitle(HasServerAccount(), HasDrive())
+    End Function
+
+    ''' <summary>Whether the Google Drive path is on, so the settings block can describe it.</summary>
+    Public Shared Function DriveIsOn() As Boolean
+        Return HasDrive()
     End Function
 
     ''' <summary>Whether the buttons, tray items and shortcuts are drawn at all.</summary>

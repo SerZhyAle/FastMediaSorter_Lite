@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
+Imports System.Globalization
 Imports System.Linq
 Imports System.Threading
 Imports System.Windows.Forms
@@ -21,6 +22,17 @@ Imports Xunit
 ''' </summary>
 <Collection("AppFileLogger")>
 Public Class DialogLayoutTests
+    Implements IDisposable
+
+    ' The windows built here call DialogLayout.ApplyAutoScale, which composes the Windows Text size of the machine
+    ' (ticket 279, T-2); the scales below are EMULATED on top of the ordinary one, so the Text size is pinned to 1.0.
+    Public Sub New()
+        UiSizing.TextFactorOverride = 1.0F
+    End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        UiSizing.TextFactorOverride = 0.0F
+    End Sub
 
     Private Shared Sub OnSta(action As Action)
         Dim failure As Exception = Nothing
@@ -178,6 +190,213 @@ Public Class DialogLayoutTests
                       Assert.True(form.Wide.Width > 60, "the long caption widened its button")
                   End Using
               End Sub)
+    End Sub
+
+    ' --- the Windows Text size (ticket 279, T-2) ---------------------------------------------------
+
+    ''' <summary>A window with one fixed label, built at an explicit text factor; the second call must change nothing.</summary>
+    Private Class TextScaledForm
+        Inherits Form
+
+        Friend ReadOnly Message As New Label()
+
+        Friend Sub New(textFactor As Single)
+            FormBorderStyle = FormBorderStyle.FixedDialog
+            ClientSize = New Size(300, 100)
+            Message.AutoSize = False
+            Message.SetBounds(10, 10, 280, 40)
+            Message.Text = "A fixed label."
+            Controls.Add(Message)
+            DialogLayout.ApplyAutoScale(Me, textFactor)
+            DialogLayout.ApplyAutoScale(Me, textFactor)
+        End Sub
+    End Class
+
+    <Fact>
+    Public Sub A_text_enlargement_grows_the_font_and_the_authored_layout_together_and_the_ordinary_size_changes_nothing()
+        OnSta(Sub()
+                  Using plain As New TextScaledForm(1.0F)
+                      Using grown As New TextScaledForm(1.5F)
+                          ' AutoScaleDimensions is not asserted: WinForms normalises it to the current DPI once it has
+                          ' scaled the window, so it cannot be read back. The growth below is what the base 96 / 1.5 does.
+                          Assert.Equal(AutoScaleMode.Dpi, plain.AutoScaleMode)
+                          Assert.Equal(AutoScaleMode.Dpi, grown.AutoScaleMode)
+                          ' 1.5 times once, not 2.25 times: the second ApplyAutoScale call of the builder is ignored.
+                          Assert.Equal(CDbl(plain.Font.SizeInPoints * 1.5F), CDbl(grown.Font.SizeInPoints), 2)
+                          Assert.Equal(CDbl(grown.Font.SizeInPoints), CDbl(grown.Message.Font.SizeInPoints), 2)
+                          plain.StartPosition = FormStartPosition.Manual
+                          grown.StartPosition = FormStartPosition.Manual
+                          plain.Location = New Point(20, 20)
+                          grown.Location = New Point(20, 20)
+                          plain.Show()
+                          grown.Show()
+                          Dim width As Integer = CInt(Math.Round(plain.Message.Width * 1.5R))
+                          Dim height As Integer = CInt(Math.Round(plain.Message.Height * 1.5R))
+                          Assert.InRange(grown.Message.Width, width - 2, width + 2)
+                          Assert.InRange(grown.Message.Height, height - 2, height + 2)
+                      End Using
+                  End Using
+              End Sub)
+    End Sub
+
+    ''' <summary>A window whose children carry fonts of their own - a bold heading derived from the window font, a panel with
+    ''' a monospaced face and a child that inherits it, a pixel-sized label - built at an explicit text factor.</summary>
+    Private Class OwnFontForm
+        Inherits Form
+
+        Friend ReadOnly Heading As New Label()
+        Friend ReadOnly Plain As New Label()
+        Friend ReadOnly Box As New Panel()
+        Friend ReadOnly Inner As New Label()
+        Friend ReadOnly Pixels As New Label()
+        Private ReadOnly headingFont As Font
+        Private ReadOnly boxFont As Font
+        Private ReadOnly pixelFont As Font
+
+        Friend Sub New(textFactor As Single)
+            FormBorderStyle = FormBorderStyle.FixedDialog
+            ClientSize = New Size(400, 200)
+            headingFont = New Font(Me.Font, FontStyle.Bold)
+            boxFont = New Font("Consolas", 10.0F)
+            pixelFont = New Font(Me.Font.FontFamily, 12.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+            Heading.AutoSize = False
+            Heading.SetBounds(10, 10, 280, 30)
+            Heading.Font = headingFont
+            Heading.Text = "A bold heading."
+            Plain.AutoSize = False
+            Plain.SetBounds(10, 50, 280, 30)
+            Plain.Text = "Inherits the window font."
+            Box.SetBounds(10, 90, 280, 40)
+            Box.Font = boxFont
+            Inner.AutoSize = False
+            Inner.SetBounds(0, 0, 200, 30)
+            Inner.Text = "Inherits the panel font."
+            Box.Controls.Add(Inner)
+            Pixels.AutoSize = False
+            Pixels.SetBounds(10, 140, 280, 30)
+            Pixels.Font = pixelFont
+            Pixels.Text = "A pixel font."
+            Controls.AddRange(New Control() {Heading, Plain, Box, Pixels})
+            DialogLayout.ApplyAutoScale(Me, textFactor)
+        End Sub
+
+        Protected Overrides Sub Dispose(disposing As Boolean)
+            MyBase.Dispose(disposing)
+            If disposing Then
+                headingFont.Dispose()
+                boxFont.Dispose()
+                pixelFont.Dispose()
+            End If
+        End Sub
+    End Class
+
+    <Fact>
+    Public Sub A_control_with_its_own_font_grows_with_the_window_text_size_and_the_ordinary_size_keeps_it()
+        OnSta(Sub()
+                  Using plain As New OwnFontForm(1.0F)
+                      Using grown As New OwnFontForm(1.5F)
+                          ' At the ordinary text size nothing is touched: the heading is still the window font, bold.
+                          Assert.Equal(CDbl(plain.Font.SizeInPoints), CDbl(plain.Heading.Font.SizeInPoints), 2)
+                          ' An own font grows by the same factor as the window font, once, with its face and style kept.
+                          Assert.Equal(CDbl(plain.Heading.Font.SizeInPoints * 1.5F), CDbl(grown.Heading.Font.SizeInPoints), 2)
+                          Assert.True(grown.Heading.Font.Bold)
+                          Assert.Equal(plain.Heading.Font.FontFamily.Name, grown.Heading.Font.FontFamily.Name)
+                          Assert.Equal(CDbl(plain.Box.Font.SizeInPoints * 1.5F), CDbl(grown.Box.Font.SizeInPoints), 2)
+                          Assert.Equal(plain.Box.Font.FontFamily.Name, grown.Box.Font.FontFamily.Name)
+                          ' What inherits follows its parent exactly once (never 1.5 x 1.5).
+                          Assert.Equal(CDbl(grown.Font.SizeInPoints), CDbl(grown.Plain.Font.SizeInPoints), 2)
+                          Assert.Equal(CDbl(grown.Box.Font.SizeInPoints), CDbl(grown.Inner.Font.SizeInPoints), 2)
+                          ' A pixel-sized font is sized by its own control from the scale it reads, so it is left alone.
+                          Assert.Equal(GraphicsUnit.Pixel, grown.Pixels.Font.Unit)
+                          Assert.Equal(CDbl(plain.Pixels.Font.Size), CDbl(grown.Pixels.Font.Size), 2)
+                      End Using
+                  End Using
+              End Sub)
+    End Sub
+
+    ''' <summary>Builds a window the way the product does - its builder reads the Windows Text size, pinned here - shows it
+    ''' and audits it. The display scale is left as it is; the text size is the only thing varied.</summary>
+    Private Shared Function AtTextSize(factory As Func(Of Form), text As Single) As List(Of String)
+        UiSizing.TextFactorOverride = text
+        Try
+            Dim form As Form = factory()
+            Try
+                form.StartPosition = FormStartPosition.Manual
+                form.Location = New Point(20, 20)
+                form.Show()
+                Return Problems(form)
+            Finally
+                form.Dispose()
+            End Try
+        Finally
+            UiSizing.TextFactorOverride = 1.0F
+        End Try
+    End Function
+
+    <Fact>
+    Public Sub Two_secondary_windows_stay_clean_at_a_150_percent_Windows_text_size()
+        OnSta(Sub()
+                  Dim all As New List(Of String)()
+                  all.AddRange(AtTextSize(Function() New Secure_Password_Form(LongName, retry:=True), 1.5F))
+                  all.AddRange(AtTextSize(Function() New Resource_Credential_Form("My server with a rather long display name", "somebody-with-a-long-user-name", retry:=True), 1.5F))
+                  Assert.True(all.Count = 0, String.Join(vbLf, all))
+              End Sub)
+    End Sub
+
+    ''' <summary>One row per shipped language, read from the engine so a fourteenth language joins the matrix on its own.</summary>
+    Public Shared ReadOnly Property ShippedLanguages As TheoryData(Of String)
+        Get
+            Dim rows As New TheoryData(Of String)()
+            For Each code As String In Localization.Codes
+                rows.Add(code)
+            Next
+            Return rows
+        End Get
+    End Property
+
+    <Fact>
+    Public Sub The_text_size_matrix_reads_all_thirteen_shipped_languages()
+        ' The data source above is built from Localization.Codes, so the matrix cannot drift from the engine; this
+        ' pins the count the ticket promises (13) and fails the day a language is added without a look at the matrix.
+        Assert.Equal(13, Localization.Codes.Length)
+    End Sub
+
+    ''' <summary>Ticket 279 T-2 "Done when": a Windows Text size of 100, 150 and 200 percent reflows the viewer's code-built
+    ''' dialogs without a clipped label or button, in each of the 13 languages. The password windows and the two resource
+    ''' windows are the long-caption ones; every question of <c>AskSpecs.All()</c> is built too, so a new question joins the
+    ''' matrix on its own. The display scale is the one of the machine; the Text size is pinned per window by
+    ''' <c>AtTextSize</c>. The look on a real screen (real fonts, RTL, the Settings window) stays the hand run of T-5.</summary>
+    <Theory>
+    <MemberData(NameOf(ShippedLanguages))>
+    Public Sub The_secondary_windows_and_the_questions_stay_clean_at_100_150_and_200_percent_Windows_text_size(code As String)
+        Dim saved As String = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = code
+            OnSta(Sub()
+                      Dim all As New List(Of String)()
+                      For Each text As Single In New Single() {1.0F, 1.5F, 2.0F}
+                          Dim prefix As String = code & " @text " & CInt(text * 100).ToString(CultureInfo.InvariantCulture) & "%: "
+                          For Each p As String In AtTextSize(Function() New Secure_Password_Form(LongName, retry:=True), text)
+                              all.Add(prefix & "Secure_Password_Form " & p)
+                          Next
+                          For Each p As String In AtTextSize(Function() New Resource_Credential_Form("My server with a rather long display name", "somebody-with-a-long-user-name", retry:=True), text)
+                              all.Add(prefix & "Resource_Credential_Form " & p)
+                          Next
+                          For Each p As String In AtTextSize(Function() New Resource_Edit_Form(Nothing), text)
+                              all.Add(prefix & "Resource_Edit_Form " & p)
+                          Next
+                          For Each spec As AskSpec In AskSpecs.All()
+                              Dim question As AskSpec = spec
+                              For Each p As String In AtTextSize(Function() New Ask_Dialog(question), text)
+                                  all.Add(prefix & "Ask_Dialog '" & question.Title & "' " & p)
+                              Next
+                          Next
+                      Next
+                      Assert.True(all.Count = 0, String.Join(vbLf, all))
+                  End Sub)
+        Finally
+            Localization.CurrentCode = saved
+        End Try
     End Sub
 
     ' --- the windows ------------------------------------------------------------------------------

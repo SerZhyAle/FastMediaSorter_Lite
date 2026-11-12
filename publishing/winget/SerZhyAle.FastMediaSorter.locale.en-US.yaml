@@ -21,13 +21,14 @@ LicenseUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE
 Copyright: Copyright (c) 2025 SZA
 ShortDescription: Fast Media Sorter & Sharing for Windows - a media and file manager that sorts photos and videos with one key per file, manages files on disks and servers and shares folders to your phone over SFTP (off until you switch it on).
 Description: |-
-  Three optional parts: a media and file manager that views and sorts photos and videos with one
-  key and manages files in local folders, on servers and on connected devices; a local
-  sharing and scheduling service that shares folders over SFTP, runs file operations on a schedule
-  and connects this PC to an exchange account; and a Media Exchange Server that you run yourself,
-  through which your devices reach each other - start with the manager or with the folder-sharing
-  server, and add the rest only if you want it. This package installs the manager, with local
-  sharing and scheduling as an optional component that stays off until you switch it on; the
+  Four optional parts: a media and file manager that views and sorts photos and videos with one
+  key and manages files in local folders, on servers and on connected devices; a
+  local sharing service that shares folders over SFTP and connects this PC to an exchange account;
+  scheduled file operations that run copy, move, delete and archive on a timetable, installed
+  together with the Share Manager; and a Media Exchange Server that you run yourself, through which
+  your devices reach each other - start with the manager or with the folder-sharing server, and add
+  the rest only if you want it. This package installs the manager, with local sharing and the
+  scheduled operations as optional components that stay off until you switch them on; the
   Media Exchange Server is not in this package.
 
   Fast Media Sorter & Sharing for Windows is a fast, keyboard-driven way to view and sort photos and
@@ -39,9 +40,15 @@ Description: |-
 
   Sharing here means giving your own media to your own devices: the bundled Share Manager turns the PC
   into a private SFTP server for the folders you pick, and the Android app pairs with it by QR code. It
-  also runs file operations on a schedule and joins this PC to an exchange account. It is opt-in and
-  stays off until you switch it on. The setup wizard lets you leave it out: the Compact type installs
-  the manager without folder sharing.
+  also joins this PC to an exchange account. It is opt-in and stays off until you switch it on.
+
+  Scheduled file operations copy, move, delete and archive files on a timetable, with a preview and a
+  journal of every run, in their own window opened from the tray, the viewer's folder menu or a key
+  you assign. They need no folder sharing, no server, no open port and no administrator rights, and
+  run while the Share Manager runs in your signed-in session: they are installed together with the
+  Share Manager - one payload, no separate download and no Windows service. The setup wizard lets you
+  leave both out: the Compact type installs the manager without folder sharing and scheduled
+  operations.
 
   The main program is now a 64-bit .NET 10 build that carries its own runtime - there is nothing extra
   to install and no .NET Framework requirement. It replaces the previous version in place and keeps

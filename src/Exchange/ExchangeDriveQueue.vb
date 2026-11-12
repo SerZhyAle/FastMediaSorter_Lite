@@ -294,8 +294,6 @@ Friend Enum ExchangeDriveReceiveOutcome
     MissingFile
     ''' <summary>A downloaded file is not the size or the SHA-256 the manifest said: dropped, nothing placed.</summary>
     Corrupt
-    ''' <summary>The packet is not a clipboard value this call can read (more than a text bound, or no payload).</summary>
-    TooLarge
 End Enum
 
 Friend NotInheritable Class ExchangeDriveReceiveResult
@@ -309,13 +307,17 @@ Friend NotInheritable Class ExchangeDriveReceiveResult
     Public ReadOnly PacketDeleted As Boolean
     ''' <summary>A text clipboard value (<see cref="ExchangeDriveQueue.ReceiveClipboardAsync"/>); "" otherwise.</summary>
     Public ReadOnly Text As String
+    ''' <summary>A clipboard value read into memory (<see cref="ExchangeDriveQueue.ReadClipboardAsync"/>); Nothing otherwise.</summary>
+    Public ReadOnly Bytes As Byte()
 
-    Public Sub New(outcome As ExchangeDriveReceiveOutcome, savedPaths As IReadOnlyList(Of String), failedName As String, packetDeleted As Boolean, text As String)
+    Public Sub New(outcome As ExchangeDriveReceiveOutcome, savedPaths As IReadOnlyList(Of String), failedName As String, packetDeleted As Boolean, text As String,
+                   Optional bytes As Byte() = Nothing)
         Me.Outcome = outcome
         Me.SavedPaths = savedPaths
         Me.FailedName = If(failedName, "")
         Me.PacketDeleted = packetDeleted
         Me.Text = If(text, "")
+        Me.Bytes = bytes
     End Sub
 
     Public ReadOnly Property Succeeded As Boolean
@@ -328,7 +330,7 @@ End Class
 ''' <summary>Sending, polling, receiving and deleting packets.</summary>
 Friend NotInheritable Class ExchangeDriveQueue
 
-    ''' <summary>The largest clipboard text read into memory (item BZ's bound is for files; a text is never that big in practice).</summary>
+    ''' <summary>The largest clipboard text read into a string (item BZ's bound is for files); a longer one is saved as a file.</summary>
     Public Const MaxClipboardTextBytes As Integer = 64 * 1024 * 1024
 
     Private Const ManifestMimeType As String = "application/json"
@@ -365,6 +367,13 @@ Friend NotInheritable Class ExchangeDriveQueue
 
     ' ------------------------------------------------------------------------------------------ sending
 
+    ''' <summary>The largest packet this device writes (item CS); above it a send answers <see cref="ExchangeDriveSendOutcome.TooLarge"/>.</summary>
+    Public ReadOnly Property PacketBytes As Long
+        Get
+            Return _packetBytes
+        End Get
+    End Property
+
     ''' <summary>Sends files to one device (<paramref name="targetDeviceId"/>) or, with no target, offers them to every own device.</summary>
     Public Function SendFilesAsync(sources As IReadOnlyList(Of ExchangeDriveSendSource), targetDeviceId As String, targetDeviceName As String,
                                    cancellation As CancellationToken, Optional progress As Action(Of Long, Long) = Nothing, Optional ttlDays As Integer = 0) As Task(Of ExchangeDriveSendResult)
@@ -378,9 +387,10 @@ Friend NotInheritable Class ExchangeDriveQueue
 
     ''' <summary>Writes this device's clipboard value (item CP): untargeted, no expiry, one payload file; a text is
     ''' `clipboard.txt`. After the manifest landed the older clipboard packets this device can see are deleted.</summary>
-    Public Async Function SendClipboardAsync(source As ExchangeDriveSendSource, clipKind As String, cancellation As CancellationToken) As Task(Of ExchangeDriveSendResult)
+    Public Async Function SendClipboardAsync(source As ExchangeDriveSendSource, clipKind As String, cancellation As CancellationToken,
+                                             Optional progress As Action(Of Long, Long) = Nothing) As Task(Of ExchangeDriveSendResult)
         Dim template As New ExchangeDrivePacketManifest() With {.PayloadKind = ExchangeDrivePayloadKind.Clipboard, .ClipKind = If(clipKind, "")}
-        Dim result As ExchangeDriveSendResult = Await SendCoreAsync(template, New ExchangeDriveSendSource() {source}, cancellation, Nothing).ConfigureAwait(False)
+        Dim result As ExchangeDriveSendResult = Await SendCoreAsync(template, New ExchangeDriveSendSource() {source}, cancellation, progress).ConfigureAwait(False)
         If result.Succeeded Then
             Try
                 Await SupersedeClipboardAsync(result.PacketId, cancellation).ConfigureAwait(False)
@@ -719,6 +729,12 @@ Friend NotInheritable Class ExchangeDriveQueue
         Return result
     End Function
 
+    ''' <summary>True when this device already took the packet: the queue screen's "received" (item CS). May read the handled file
+    ''' on its first call, so the poller's thread asks, not a window's.</summary>
+    Public Function WasTaken(packet As ExchangeDrivePacket) As Boolean
+        Return packet IsNot Nothing AndAlso _handled.Contains(packet.PacketId)
+    End Function
+
     ''' <summary>The REQUESTs addressed to this device (item CO), oldest first. A request is always targeted by id.</summary>
     Public Function RequestsForThisDevice(poll As ExchangeDriveQueuePoll) As IReadOnlyList(Of ExchangeDrivePacket)
         Dim result As New List(Of ExchangeDrivePacket)
@@ -763,6 +779,18 @@ Friend NotInheritable Class ExchangeDriveQueue
         Return Array.Empty(Of ExchangeDrivePacket)()
     End Function
 
+    ''' <summary>A requester that gave up before the answer (ticket 269 P3.2: the viewer closed the folder) deletes its own REQUEST, so
+    ''' the producer does not answer it for nothing. Best effort; True when it was found and deleted.</summary>
+    Public Async Function WithdrawRequestAsync(requestPacketId As String, cancellation As CancellationToken) As Task(Of Boolean)
+        Dim listing As ExchangeDriveListing = Await _client.ListAllAsync(cancellation).ConfigureAwait(False)
+        Dim poll As ExchangeDriveQueuePoll = Await PollAsync(listing, cancellation).ConfigureAwait(False)
+        For Each packet As ExchangeDrivePacket In poll.Packets
+            If packet.IsOwn AndAlso packet.Manifest.PayloadKind = ExchangeDrivePayloadKind.Request AndAlso
+               String.Equals(packet.PacketId, requestPacketId, StringComparison.Ordinal) Then Return Await TryDeleteAsync(packet.FolderId, cancellation).ConfigureAwait(False)
+        Next
+        Return False
+    End Function
+
     ' ------------------------------------------------------------------------------------------ receiving
 
     ''' <summary>Takes the files of a FILES or MEDIA_FILES packet addressed to this device into <paramref name="destinationDirectory"/>:
@@ -779,7 +807,56 @@ Friend NotInheritable Class ExchangeDriveQueue
             Case Else
                 Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, "", False, "")
         End Select
+        Return Await TakeFilesAsync(packet, destinationDirectory, cancellation, progress).ConfigureAwait(False)
+    End Function
 
+    ''' <summary>Takes the files of a REPLY addressed to this device (ticket 269 P3.2, item CO) exactly as
+    ''' <see cref="ReceiveFilesAsync"/> takes a FILES packet: checked whole, placed under free names, the reply deleted once every
+    ''' file arrived (item CR). A reply with no files is only deleted. Any other packet is NotForThisDevice or NotReceivable.</summary>
+    Public Async Function ReceiveReplyAsync(packet As ExchangeDrivePacket, destinationDirectory As String, cancellation As CancellationToken,
+                                            Optional progress As Action(Of Long, Long) = Nothing) As Task(Of ExchangeDriveReceiveResult)
+        If packet Is Nothing Then Throw New ArgumentNullException(NameOf(packet))
+        Dim noFiles As IReadOnlyList(Of String) = Array.Empty(Of String)()
+        If packet.IsOwn OrElse packet.Address <> ExchangeDriveAddress.ThisDevice Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotForThisDevice, noFiles, "", False, "")
+        If packet.Manifest.PayloadKind <> ExchangeDrivePayloadKind.Reply Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, "", False, "")
+        Return Await TakeFilesAsync(packet, destinationDirectory, cancellation, progress).ConfigureAwait(False)
+    End Function
+
+    ''' <summary>The files of a FILES or MEDIA_FILES packet addressed to this device, checked whole like
+    ''' <see cref="ReceiveFilesAsync"/>, with the packet left as it is: for a consumer whose own next step can still fail (ticket 269 P4,
+    ''' a scheduled operation writing them to its destination). <see cref="ConfirmTakenAsync"/> takes the packet afterwards.</summary>
+    Public Async Function DownloadFilesAsync(packet As ExchangeDrivePacket, destinationDirectory As String, cancellation As CancellationToken,
+                                             Optional progress As Action(Of Long, Long) = Nothing) As Task(Of ExchangeDriveReceiveResult)
+        If packet Is Nothing Then Throw New ArgumentNullException(NameOf(packet))
+        Dim noFiles As IReadOnlyList(Of String) = Array.Empty(Of String)()
+        If packet.IsOwn OrElse packet.Address = ExchangeDriveAddress.OtherDevice Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotForThisDevice, noFiles, "", False, "")
+        Select Case packet.Manifest.PayloadKind
+            Case ExchangeDrivePayloadKind.Files, ExchangeDrivePayloadKind.MediaFiles
+            Case Else
+                Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, "", False, "")
+        End Select
+        Return Await FetchFilesAsync(packet, destinationDirectory, cancellation, progress).ConfigureAwait(False)
+    End Function
+
+    ''' <summary>Marks a packet handled and, if it was targeted at this device, deletes it from Drive (item CR). True when it was deleted.</summary>
+    Public Async Function ConfirmTakenAsync(packet As ExchangeDrivePacket, cancellation As CancellationToken) As Task(Of Boolean)
+        If packet Is Nothing Then Throw New ArgumentNullException(NameOf(packet))
+        _handled.Add(packet.PacketId)
+        If packet.Address <> ExchangeDriveAddress.ThisDevice Then Return False
+        Return Await TryDeleteAsync(packet.FolderId, cancellation).ConfigureAwait(False)
+    End Function
+
+    Private Async Function TakeFilesAsync(packet As ExchangeDrivePacket, destinationDirectory As String, cancellation As CancellationToken,
+                                          progress As Action(Of Long, Long)) As Task(Of ExchangeDriveReceiveResult)
+        Dim fetched As ExchangeDriveReceiveResult = Await FetchFilesAsync(packet, destinationDirectory, cancellation, progress).ConfigureAwait(False)
+        If Not fetched.Succeeded Then Return fetched
+        Dim deleted As Boolean = Await ConfirmTakenAsync(packet, cancellation).ConfigureAwait(False)
+        Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, fetched.SavedPaths, "", deleted, "")
+    End Function
+
+    Private Async Function FetchFilesAsync(packet As ExchangeDrivePacket, destinationDirectory As String, cancellation As CancellationToken,
+                                           progress As Action(Of Long, Long)) As Task(Of ExchangeDriveReceiveResult)
+        Dim noFiles As IReadOnlyList(Of String) = Array.Empty(Of String)()
         Dim items As IReadOnlyList(Of ExchangeDrivePacketItem) = ExchangeDrivePackets.ExpectedItems(packet.Manifest)
         Dim total As Long = 0
         For Each item As ExchangeDrivePacketItem In items
@@ -802,17 +879,15 @@ Friend NotInheritable Class ExchangeDriveQueue
             saved.Add(fetched.Path)
             done += If(item.Size >= 0, item.Size, driveFile.Size)
         Next
-
-        _handled.Add(packet.PacketId)
-        Dim deleted As Boolean = False
-        If packet.Address = ExchangeDriveAddress.ThisDevice Then deleted = Await TryDeleteAsync(packet.FolderId, cancellation).ConfigureAwait(False)
-        Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, saved, "", deleted, "")
+        Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, saved, "", False, "")
     End Function
 
-    ''' <summary>Reads the account's clipboard value (item CP). A text comes back in <see cref="ExchangeDriveReceiveResult.Text"/>; an
-    ''' image or a file is saved under <paramref name="destinationDirectory"/> like any received file. The value is NEVER deleted
-    ''' by the receiver, and it is not recorded as handled (it is read again on the next "get").</summary>
-    Public Async Function ReceiveClipboardAsync(packet As ExchangeDrivePacket, destinationDirectory As String, cancellation As CancellationToken) As Task(Of ExchangeDriveReceiveResult)
+    ''' <summary>Reads the account's clipboard value (item CP). A text within <see cref="MaxClipboardTextBytes"/> comes back in
+    ''' <see cref="ExchangeDriveReceiveResult.Text"/> without touching the disk; a longer text, an image or a file is saved under
+    ''' <paramref name="destinationDirectory"/> like any received file. The value is NEVER deleted by the receiver, and it is not
+    ''' recorded as handled (it is read again on the next "get").</summary>
+    Public Async Function ReceiveClipboardAsync(packet As ExchangeDrivePacket, destinationDirectory As String, cancellation As CancellationToken,
+                                                Optional progress As Action(Of Long, Long) = Nothing) As Task(Of ExchangeDriveReceiveResult)
         If packet Is Nothing Then Throw New ArgumentNullException(NameOf(packet))
         Dim noFiles As IReadOnlyList(Of String) = Array.Empty(Of String)()
         If packet.Manifest.PayloadKind <> ExchangeDrivePayloadKind.Clipboard Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, "", False, "")
@@ -822,29 +897,58 @@ Friend NotInheritable Class ExchangeDriveQueue
         Dim driveFile As ExchangeDriveFile = FindPayload(packet, item.Name)
         If driveFile Is Nothing Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.MissingFile, noFiles, item.Name, False, "")
 
-        Dim isText As Boolean = String.Equals(packet.Manifest.ClipKind, "text", StringComparison.Ordinal)
-        If isText Then
-            Dim expected As Long = If(item.Size >= 0, item.Size, driveFile.Size)
-            If expected > MaxClipboardTextBytes Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.TooLarge, noFiles, item.Name, False, "")
-            Directory.CreateDirectory(destinationDirectory)
-            Dim fetched As FetchResult = Await FetchAsync(driveFile, item, destinationDirectory, False, Nothing, cancellation).ConfigureAwait(False)
-            If Not fetched.Ok Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Corrupt, noFiles, item.Name, False, "")
-            Dim text As String
-            Try
-                text = File.ReadAllText(fetched.Path, New UTF8Encoding(False))
-            Finally
-                Try
-                    File.Delete(fetched.Path)
-                Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
-                End Try
-            End Try
-            Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, noFiles, "", False, text)
+        Dim size As Long = If(item.Size >= 0, item.Size, driveFile.Size)
+        If String.Equals(packet.Manifest.ClipKind, "text", StringComparison.Ordinal) AndAlso size <= MaxClipboardTextBytes Then
+            Dim read As ExchangeDriveReceiveResult = Await ReadClipboardAsync(packet, MaxClipboardTextBytes, cancellation, progress).ConfigureAwait(False)
+            If Not read.Succeeded Then Return read
+            Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, noFiles, "", False, New UTF8Encoding(False).GetString(read.Bytes))
         End If
 
         Directory.CreateDirectory(destinationDirectory)
-        Dim placed As FetchResult = Await FetchAsync(driveFile, item, destinationDirectory, True, Nothing, cancellation).ConfigureAwait(False)
+        Dim placed As FetchResult = Await FetchAsync(driveFile, item, destinationDirectory, True,
+                                                     Sub(copied As Long)
+                                                         If progress IsNot Nothing Then progress(copied, size)
+                                                     End Sub, cancellation).ConfigureAwait(False)
         If Not placed.Ok Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Corrupt, noFiles, item.Name, False, "")
         Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, New String() {placed.Path}, "", False, "")
+    End Function
+
+    ''' <summary>Reads the account's clipboard value into <see cref="ExchangeDriveReceiveResult.Bytes"/> and writes nothing to the disk (a
+    ''' text or an image a clipboard action keeps in memory): the same checks as a received file, and a value that fails them is wiped.
+    ''' A value over <paramref name="maxBytes"/> is <see cref="ExchangeDriveReceiveOutcome.NotReceivable"/>, before a byte is read.</summary>
+    Public Async Function ReadClipboardAsync(packet As ExchangeDrivePacket, maxBytes As Integer, cancellation As CancellationToken,
+                                             Optional progress As Action(Of Long, Long) = Nothing) As Task(Of ExchangeDriveReceiveResult)
+        If packet Is Nothing Then Throw New ArgumentNullException(NameOf(packet))
+        Dim noFiles As IReadOnlyList(Of String) = Array.Empty(Of String)()
+        If packet.Manifest.PayloadKind <> ExchangeDrivePayloadKind.Clipboard Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, "", False, "")
+        Dim items As IReadOnlyList(Of ExchangeDrivePacketItem) = ExchangeDrivePackets.ExpectedItems(packet.Manifest)
+        If items.Count <> 1 Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, "", False, "")
+        Dim item As ExchangeDrivePacketItem = items(0)
+        Dim driveFile As ExchangeDriveFile = FindPayload(packet, item.Name)
+        If driveFile Is Nothing Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.MissingFile, noFiles, item.Name, False, "")
+
+        Dim size As Long = If(item.Size >= 0, item.Size, driveFile.Size)
+        If size > maxBytes OrElse driveFile.Size > maxBytes Then Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.NotReceivable, noFiles, item.Name, False, "")
+        Using memory As New MemoryStream(CInt(Math.Max(0L, size)))
+            Try
+                Dim hashHex As String
+                Dim length As Long
+                Using hashing As New HashingWriteStream(memory)
+                    Await _client.DownloadAsync(driveFile.Id, hashing, cancellation,
+                                                Sub(copied As Long)
+                                                    If progress IsNot Nothing Then progress(copied, size)
+                                                End Sub).ConfigureAwait(False)
+                    hashHex = hashing.FinishHex()
+                    length = hashing.Length
+                End Using
+                If length <> size OrElse (item.Sha256.Length > 0 AndAlso Not String.Equals(hashHex, item.Sha256, StringComparison.OrdinalIgnoreCase)) Then
+                    Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Corrupt, noFiles, item.Name, False, "")
+                End If
+                Return New ExchangeDriveReceiveResult(ExchangeDriveReceiveOutcome.Received, noFiles, "", False, "", memory.ToArray())
+            Finally
+                Array.Clear(memory.GetBuffer(), 0, memory.GetBuffer().Length)
+            End Try
+        End Using
     End Function
 
     ''' <summary>One small payload file of a packet, whole and checked (a reply's `listing.json`, say), or Nothing when it is

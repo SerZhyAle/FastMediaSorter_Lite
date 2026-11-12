@@ -109,11 +109,16 @@ Friend NotInheritable Class ScheduledArchiveWriter
                     relative = FreeNameRule.Find("", leaf, Function(folder, name) name, Function(candidate) destination.Exists(candidate), Nothing)
                     If relative Is Nothing Then Throw New IOException("No free archive name.")
                 End If
-                Dim local As New LocalSide(owned)
-                Dim info As New FileInfo(stage)
-                Dim item As New SideEntry With {.Name = info.Name, .RelativePath = info.Name, .Length = info.Length, .LastWriteUtc = info.LastWriteTimeUtc}
-                Dim transfer As New ProviderTransfer()
-                transfer.CopyFile(local, item, destination, relative, False, ct)
+                Dim packets As IScheduledPacketTarget = TryCast(destination, IScheduledPacketTarget)
+                If packets IsNot Nothing Then
+                    packets.SendPacket(New ScheduledPacketFile() {New ScheduledPacketFile(relative, stage)}, ct)
+                Else
+                    Dim local As New LocalSide(owned)
+                    Dim info As New FileInfo(stage)
+                    Dim item As New SideEntry With {.Name = info.Name, .RelativePath = info.Name, .Length = info.Length, .LastWriteUtc = info.LastWriteTimeUtc}
+                    Dim transfer As New ProviderTransfer()
+                    transfer.CopyFile(local, item, destination, relative, False, ct)
+                End If
                 result.ArchivePath = destination.Combine(relative)
             Else
                 Directory.CreateDirectory(Path.GetDirectoryName(finalPath))

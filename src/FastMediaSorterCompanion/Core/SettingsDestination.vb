@@ -4,10 +4,12 @@ Option Infer On
 Option Compare Binary
 
 ''' <summary>UI ownership only. Routing never enables or starts a component. Two windows own pages (specification 253): the
-''' Manager window, which also holds the SFTP sharing pages, and the local Media Exchange Server window.</summary>
+''' Manager window, which also holds the SFTP sharing pages, and the local Media Exchange Server window. A third exists only
+''' while its own gate is open (L0278): the administration of a Media Exchange Server on another machine.</summary>
 Public Enum SettingsDestination
     Manager
     ExchangeServer
+    RemoteExchange
 End Enum
 
 Public NotInheritable Class SettingsRoutes
@@ -27,6 +29,7 @@ Public NotInheritable Class SettingsRoutes
     Public Shared Function Destination(page As String) As SettingsDestination
         Select Case page
             Case "exchange" : Return SettingsDestination.ExchangeServer
+            Case "remote-exchange" : Return SettingsDestination.RemoteExchange
             Case Else : Return SettingsDestination.Manager
         End Select
     End Function
@@ -41,10 +44,12 @@ Public NotInheritable Class SettingsRoutes
         Return page = "network" OrElse page = "hosting"
     End Function
 
-    ''' <summary>Whether a window can open at all. The Manager window is always available.</summary>
+    ''' <summary>Whether a window can open at all. The Manager window is always available. The remote administration window
+    ''' follows its gate only: a PC that administers a server elsewhere has no local server component (L0278 5.1, Q278-13).</summary>
     Public Shared Function Available(destination As SettingsDestination, exchangeInstalled As Boolean) As Boolean
         Select Case destination
             Case SettingsDestination.ExchangeServer : Return exchangeInstalled
+            Case SettingsDestination.RemoteExchange : Return ExchangeRemoteAdminFeatures.IsEnabled()
             Case Else : Return True
         End Select
     End Function
@@ -59,6 +64,7 @@ Public NotInheritable Class SettingsRoutes
     Public Shared Function ContextKey(destination As SettingsDestination) As String
         Select Case destination
             Case SettingsDestination.ExchangeServer : Return "Share_ExchangeSettingsContext"
+            Case SettingsDestination.RemoteExchange : Return "Share_RemoteExchangeSettingsContext"
             Case Else : Return "Share_ManagerSettingsContext"
         End Select
     End Function

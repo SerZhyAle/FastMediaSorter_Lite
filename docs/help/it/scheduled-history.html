@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Cronologia delle operazioni pianificate - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -14,7 +15,7 @@
   <h1 id="title">Cronologia delle operazioni pianificate</h1>
   <section id="purpose">
     <h2>Scopo</h2>
-    <p>Mostra le esecuzioni e le note recenti delle operazioni sui file pianificate, cos&#236; come registrate nel giornale. Si apre da &#171;Cronologia..&#187; nella pagina &#171;Operazioni sui file pianificate&#187; delle impostazioni di Share Manager.</p>
+    <p>Mostra le esecuzioni e le note recenti delle operazioni pianificate sui file, cos&#236; come registrate nel giornale. Le operazioni pianificate sui file vengono installate insieme a Share Manager - un unico pacchetto, nessun download separato e nessun servizio di Windows - e vengono eseguite finch&#233; Share Manager &#232; in esecuzione nella tua sessione di accesso; non richiedono condivisione di cartelle, server, porte aperte n&#233; diritti di amministratore. Si apre da &#171;Cronologia..&#187; nella finestra &#171;Operazioni pianificate&#187; e nella pagina &#171;Operazioni sui file pianificate&#187; delle impostazioni di Share Manager.</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="scheduled-history-light.png" alt="Cronologia delle operazioni pianificate">
@@ -27,7 +28,7 @@
   <section id="elements">
     <h2>Gli elementi</h2>
 <details id="columns"><summary>Colonne</summary><p>Ora, Operazione (il suo nome), Avvio e Risultato. Avvio &#232; Su pianificazione, Manuale, Esegui tutte o In ritardo e resta vuoto per una nota. La finestra legge le ultime 200 voci del giornale all&#39;apertura e con &#171;Aggiorna&#187;; non si aggiorna da sola.</p></details>
-<details id="results"><summary>Risultati di un&#39;esecuzione</summary><p>&#171;Completato: N file&#187;, con &#171;, saltati: M&#187; quando alcuni sono stati lasciati fuori e &#171;(nel Cestino)&#187; per le eliminazioni. &#171;Con errori: N; completati: M file&#187; seguito dalla prima causa, come un file in uso, nessun accesso, un file non trovato o modificato, o un disco pieno. &#171;Fermato: ..&#187; quando un ostacolo interrompe un&#39;esecuzione, per esempio una cartella irraggiungibile, una risorsa senza password memorizzata o con chiave del server non confermata, o un dispositivo non in linea. &#171;Non avviato: ..&#187; quando la definizione viene rifiutata, poi &#171;Saltato: ..&#187; e &#171;Interrotto&#187;. Il giornale conserva codici, non il testo grezzo degli errori, quindi la formulazione segue la lingua corrente.</p></details>
+<details id="results"><summary>Risultati di un&#39;esecuzione</summary><p>&#171;Completato: N file&#187;, con &#171;, saltati: M&#187; quando alcuni sono stati lasciati fuori e &#171;(nel Cestino)&#187; per le eliminazioni. &#171;Con errori: N; completati: M file&#187; seguito dalla prima causa, come un file in uso, nessun accesso, un file non trovato o modificato, o un disco pieno. &#171;Fermato: ..&#187; quando un ostacolo interrompe un&#39;esecuzione, per esempio una cartella irraggiungibile, una risorsa senza password memorizzata o con chiave del server non confermata, o un dispositivo non in linea. &#171;Non avviato: ..&#187; quando la definizione viene rifiutata, poi &#171;Saltato: ..&#187; e &#171;Interrotto&#187;. Il giornale conserva codici, non il testo grezzo degli errori, quindi la formulazione segue la lingua corrente. Quando un lato &#232; Google Drive, la causa pu&#242; essere anche la mancanza di connessione con Google Drive, lo spazio esaurito, la disconnessione o un file oltre il limite del pacchetto.</p></details>
 <details id="notes"><summary>Note</summary><p>Una riga senza Avvio &#232; una nota: &#171;Saltato: l&#39;ora di esecuzione (..) &#232; trascorsa mentre il manager era chiuso&#187;, &#171;In esecuzione in ritardo: l&#39;esecuzione era prevista per ..&#187;, &#171;Rifiutato: questa operazione &#232; gi&#224; in esecuzione o in coda&#187; e &#171;Ripresa: la causa dell&#39;arresto &#232; stata eliminata&#187;.</p></details>
 <details id="clear"><summary>Cancella cronologia</summary><p>Chiede &#171;Cancellare la cronologia delle operazioni pianificate? Le operazioni e la loro pianificazione non cambieranno.&#187; con No come risposta predefinita. Svuota solo questo giornale; le operazioni e le loro pianificazioni restano. Il pulsante &#232; disattivato finch&#233; la cronologia &#232; vuota.</p></details>
     <p><a href="share-settings.html">Impostazioni del gestore</a> · <a href="sftp-settings.html">Impostazioni condivisione SFTP</a> · <a href="exchange-server-settings.html">Impostazioni server di scambio</a></p>

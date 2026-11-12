@@ -150,6 +150,8 @@ type rigOpts struct {
 	pace bool
 	// sealed turns the `sealed` feature on (27 item DP); the older scenarios run without it, as they always did.
 	sealed bool
+	// settings keeps the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296); off for the older scenarios.
+	settings bool
 	admin      *config.Admin
 	webDir     string
 	verifyConc int
@@ -221,7 +223,7 @@ func newRig(seed string, o rigOpts) *rig {
 	opt := testkit.Options{
 		Now: r.clock.Now, Params: &params, Logins: o.logins, PublicEndpoint: publicEndpoint,
 		WithRelay: o.relay, Cast: o.cast, ServerVersion: "vectors",
-		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed,
+		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed, Settings: o.settings,
 		WebDir: o.webDir, VerifyConc: o.verifyConc, VerifyWait: o.verifyWait,
 		TLSIdentity: getVectorTLSIdentity(),
 	}

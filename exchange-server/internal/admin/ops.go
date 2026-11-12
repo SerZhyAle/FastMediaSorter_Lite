@@ -17,6 +17,7 @@ import (
 	"fms/exchange-server/internal/clipboard"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/settings"
 	"fms/exchange-server/internal/wire"
 )
 
@@ -47,6 +48,9 @@ type Ops struct {
 	SaveLimits func(accounts.Policy) error
 	// Clipboard is the running server's clipboard table (ticket 229); nil offline.
 	Clipboard Clipboard
+	// Settings is the store of the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296); nil
+	// when the server keeps none. The standards are erased with the account (item AU).
+	Settings *settings.Store
 	// Audit is the in-memory audit tracker for admin sessions and change history (spec 246 Group D).
 	Audit    *AuditTracker
 	AuditLog *logx.Audit
@@ -187,6 +191,12 @@ func (o *Ops) RemoveAccount(login string) error {
 	// the operator's removal (22 item BU, ticket 229 rule 8)
 	if o.Clipboard != nil {
 		o.Clipboard.Erase(l)
+	}
+	// the settings standards go with the account too (DEVICE-EXCHANGE 1.12 item EN, item AU)
+	if o.Settings != nil {
+		if _, serr := o.Settings.Erase(l); serr != nil && err == nil {
+			err = serr
+		}
 	}
 	for _, g := range received {
 		o.Dir.GrantRemoved(DirectoryGrant(g), true)

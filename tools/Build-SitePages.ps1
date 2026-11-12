@@ -6,9 +6,9 @@
 
 .DESCRIPTION
     The site is served from the repository ROOT (see .sza-canon.json: site.root ".").
-    The root index.html stays the trilingual EN/RU/UK entry page; every UI language
-    additionally gets its own URL with its own `lang`/`dir`, a full set of hreflang
-    alternates and a 13-language switcher.
+    The root index.html is the English-only entry page (ticket 207 F9: Russian and
+    Ukrainian are pages of their own); every other UI language gets its own URL with
+    its own `lang`/`dir`, a full set of hreflang alternates and a 13-language switcher.
 
     All 12 translated pages live under ONE root folder, `lang/` - GitHub Pages is
     branch-based here (source main:/), so a clean per-language URL needs a real
@@ -45,7 +45,7 @@
 
 .PARAMETER Check
     Render into memory and fail if any page or marked region on disk differs, or if any
-    of the 17 contract conformance checks fail. For a pre-flight sweep:
+    of the 18 contract conformance checks fail. For a pre-flight sweep:
     it proves the committed HTML still matches its source and contracts.
 
 .NOTES
@@ -95,6 +95,16 @@ $OgWidth  = [int]$ogSize.width
 $OgHeight = [int]$ogSize.height
 $TitleSeparator = [string]$disc.titles.separator
 $TitleSuffix    = [string]$disc.titles.suffix
+# The release facts every download control shows (ticket 207 site audit F3, F31, F35; canon DOCUMENTATION_CONCEPT section 4):
+# the version, its date and the asset names of the newest published release, written by tools/Set-ReleaseManifest.ps1 from
+# the published release once its assets are listed - never typed by hand, never fetched by the visitor's browser. Beside
+# every versioned link the durable /releases/latest stays.
+$ManifestFile = Join-Path $PSScriptRoot 'release-manifest.json'
+if (-not (Test-Path $ManifestFile)) { throw "Missing release manifest: $ManifestFile (tools/Set-ReleaseManifest.ps1 writes it)" }
+$Manifest = Get-Content $ManifestFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$ReleaseVersion = [string]$Manifest.version
+$ReleaseDate    = [string]$Manifest.date
+function AssetUrl([string]$name) { "$Repo/releases/download/v$ReleaseVersion/$name" }
 # The product names (docs/guides/PRODUCT_NAMING.md section 1; src/ProductNames.vb). The name is NOT translated: it is
 # written in Latin in all 13 languages, and "&" is part of it (Esc turns it into "&amp;" in HTML).
 # $ProductCompact is the compact name: the short title-length form only, NOT a Microsoft Store name.
@@ -104,6 +114,9 @@ $ProductCompact = 'Fast Media Sorter & Sharing'
 # The pre-paint resolver: PAGE-STYLE section 7, the one text every page carries (SITE-EXPERIENCE rule 7, specification 154).
 # It runs BEFORE the first stylesheet link so the theme and the language never flash; the hand-authored pages carry the
 # same text and -Check compares them whitespace-folded. sza-theme holds exactly dark|light, sza-lang exactly ru|en|ua.
+# The click line carries the reader's language into a link to the family's sites: a link that names its own language
+# (hreflang) is left alone, and a single-language page writes its own code (data-page-lang), not the visitor's choice
+# (PAGE-STYLE 3.5 amendment item 1; ticket 207 site audit F12).
 $ThemeResolver = @'
 <script>
 (function(){
@@ -111,12 +124,12 @@ $ThemeResolver = @'
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 '@
@@ -151,6 +164,38 @@ function Body([string]$s) {
 $ThemeGlyph = '<svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg>'
 # The two download commands (BUTTONS 2.0: a substantive command keeps its semantic glyph; the navigation link "All releases" does not).
 $DownloadGlyph = '<svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg>'
+# The release facts beside a download row: the version linked to its release, its date and the SHA-256 sidecar of each
+# offered asset. Language-neutral on purpose - a version, an ISO date and a file name read the same in all 13 languages.
+$AssetSumLabels = @{ setup = 'setup.exe'; zip = '.zip'; serverSetup = 'server-setup.exe' }
+# The version linked to its release page and its date: the head of every facts line (ticket 207 F36 - the hero's acquisition row
+# shows it beside the primary control, without the checksums).
+function ReleaseVersionDate {
+    '<a class="meta-strong" href="' + "$Repo/releases/tag/v$ReleaseVersion" + '">v' + $ReleaseVersion + '</a> &middot; <time datetime="' + $ReleaseDate + '">' + $ReleaseDate + '</time>'
+}
+# The size of an asset in MB and its SHA-256 value, from the `files` block the release step wrote (ticket L0301, Q300-2). A
+# fact the manifest does not hold is left out - the link stays, nothing is substituted.
+function AssetFact([string]$key, [string]$fact) {
+    if (-not $Manifest.PSObject.Properties['files'] -or -not $Manifest.files.PSObject.Properties[$key]) { return $null }
+    $f = $Manifest.files.$key
+    if (-not $f.PSObject.Properties[$fact]) { return $null }
+    return $f.$fact
+}
+function AssetSizeMb([string]$key) {
+    $size = AssetFact $key 'size'
+    if ($null -eq $size) { return '' }
+    ([double]$size / 1MB).ToString('0.0', [Globalization.CultureInfo]::InvariantCulture) + ' MB'
+}
+function ReleaseFacts([string[]]$assetKeys) {
+    $sums = ($assetKeys | ForEach-Object {
+        $size = AssetSizeMb $_
+        $hash = AssetFact $_ 'sha256'
+        $item = '<a href="' + (AssetUrl "$([string]$Manifest.assets.$_).sha256") + '">' + $AssetSumLabels[$_] + '</a>'
+        if ($size) { $item += ' ' + $size }
+        if ($hash) { $item += ' <code class="sha">' + $hash + '</code>' }
+        $item
+    }) -join ' &middot; '
+    '<span class="dl-facts" lang="en" dir="ltr">' + (ReleaseVersionDate) + ' &middot; SHA-256: ' + $sums + '</span>'
+}
 function ThemeButton([string]$labelHtml) {
     "<button class=`"theme-btn`" id=`"themeBtn`" type=`"button`" aria-pressed=`"true`">$ThemeGlyph<span>$labelHtml</span></button>"
 }
@@ -169,6 +214,13 @@ function ExtNameSpans { '<span class="sr-only">' + (SiteCopySpans 'externalLabel
 # The page's <title>, its og:title and its twitter:title: the job in the page's language, then the compact name, which is
 # the short title-length form (PRODUCT_NAMING section 1). The H1 and the structured data keep the full name.
 function PageTitle($e) { "$($e.pageTitle)$TitleSeparator$TitleSuffix" }
+# The Open Graph locale of a language (ticket 207 F49): `ogLocale` of its column in tools/site-copy.json, always ll_CC, so
+# og:locale and og:locale:alternate never carry a bare language code.
+function OgLocale([string]$code) {
+    $v = [string]$copy.$code.ogLocale
+    if ($v -cnotmatch '^[a-z]{2}_[A-Z]{2}$') { throw "site-copy.json: '$code' needs an ogLocale of the form ll_CC, has '$v'" }
+    $v
+}
 
 # The Open Graph and Twitter image sets of canon PROMOTION section 3: the 1200x630 card, its declared size and a text
 # alternative in the page's language - a crawler or a screen reader gets what the picture says.
@@ -199,6 +251,8 @@ function JsonLd([string]$code, $e) {
         'operatingSystem'     = 'Windows 7, Windows 8.1, Windows 10, Windows 11'
         'image'               = "$BaseUrl/$OgImage"
         'downloadUrl'         = $copy._channels.github.url
+        'installUrl'          = (AssetUrl $Manifest.assets.setup)
+        'license'             = 'https://opensource.org/licenses/MIT'
         'isAccessibleForFree' = $true
         'offers'              = [ordered]@{ '@type' = 'Offer'; 'price' = '0'; 'priceCurrency' = 'USD' }
         'author'              = [ordered]@{ '@type' = 'Person'; 'name' = $copy._contact.github }
@@ -281,51 +335,64 @@ function RenderIndexChannels {
         <button class="copy" data-copy="$($copy._channels.winget.command)">Copy</button></div>
     </div>
 
-    <div class="dl-row" id="dlRow">
-      <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">
-        $DownloadGlyph<span data-l="en">Install with setup (.exe)</span><span data-l="ru">Установить через setup (.exe)</span><span data-l="ua">Встановити через setup (.exe)</span>
+    <div class="dl-row">
+      <a class="btn btn-primary" href="$(AssetUrl $Manifest.assets.setup)">
+        ${DownloadGlyph}Install with setup (.exe)
       </a>
-      <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">
-        $DownloadGlyph<span data-l="en">Portable (.zip)</span><span data-l="ru">Портативная (.zip)</span><span data-l="ua">Портативна (.zip)</span>
+      <a class="btn btn-ghost" href="$(AssetUrl $Manifest.assets.zip)">
+        ${DownloadGlyph}Portable (.zip)
       </a>
       <a class="btn btn-ghost" href="$($copy._channels.github.url)">
-        <span data-l="en">All releases</span><span data-l="ru">Все релизы</span><span data-l="ua">Усі релізи</span>
+        All releases
       </a>
       <a class="btn btn-ghost" href="$($copy._channels.store.url)" target="_blank" rel="noopener noreferrer">
-        <span>Microsoft Store</span>$(ExtNameSpans)
+        <span>Microsoft Store</span>$(ExtName $copy.en.externalLabel)
       </a>
       <a class="btn btn-ghost" href="server.html">
-        <span data-l="en">$(Esc $copy.en.serverLink)</span><span data-l="ru">$(Esc $copy.ru.serverLink)</span><span data-l="ua">$(Esc $copy.uk.serverLink)</span>
+        $(Esc $copy.en.serverLink)
       </a>
-      <span class="dl-meta" id="dlMeta">
-        <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
-        <span data-l="ru">Готовы к работе офлайн - библиотеки VLC и пакеты OCR уже внутри. Windows 10 1607+ / 11; 32-битная сборка для Windows 7/8.1 - в том же файле.</span>
-        <span data-l="ua">Готові до роботи офлайн - бібліотеки VLC та пакети OCR уже всередині. Windows 10 1607+ / 11; 32-бітна збірка для Windows 7/8.1 - у тому ж файлі.</span>
+      <span class="dl-meta">
+        $(ReleaseFacts @('setup', 'zip'))
+        Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.
       </span>
     </div>
     <!-- /gen:channels -->
 "@ -replace "`r`n", "`n"
 }
 
-function RenderIndexFamily {
-    $familyItems = ($copy._family.members | ForEach-Object {
-        $m = $_
-        $name = $m.name
-        $url  = $m.url
-        $enType = $m.type
-        $ruType = if ($copy._familyTranslations.ru.types.PSObject.Properties[$name]) { $copy._familyTranslations.ru.types.$name } else { $enType }
-        $uaType = if ($copy._familyTranslations.uk.types.PSObject.Properties[$name]) { $copy._familyTranslations.uk.types.$name } else { $enType }
-        "    <a href=`"$url`"><b>$(Esc $name)</b><span data-l=`"en`">$(Esc $enType)</span><span data-l=`"ru`">$(Esc $ruType)</span><span data-l=`"ua`">$(Esc $uaType)</span></a>"
-    }) -join "`n"
+# The hero's acquisition row (ticket 207 F8, F36): directly under the family sentence, the full package's setup download of the
+# current release (primary), its version and date beside it, and the winget command in the copy box. It is the manager package
+# only - no link, command or word of the Media Exchange Server (POSITIONING.md: its shipping gate is shut). The root landing
+# carries it as the marked region gen:hero-get (written and checked by section 1 below); Render draws the same markup on the
+# twelve locale landings with their own labels. Arguments are already HTML-escaped.
+# Ticket L0301 (DEF-02) puts the Microsoft Store and the portable ZIP beside the setup download, the setup's size beside its
+# version where the manifest holds it, and the viewer window under the row, all on the first screen.
+function RenderHeroGet([string]$setupLabel, [string]$copyLabel, [string]$externalLabel, [string]$shotAlt, [string]$assetBase) {
+    $setupSize = AssetSizeMb 'setup'
+    $facts = (ReleaseVersionDate) + $(if ($setupSize) { ' &middot; ' + $setupSize } else { '' })
+    @"
+    <!-- gen:hero-get -->
+    <div class="hero-get">
+      <div class="hero-get-main">
+        <a class="btn btn-primary" href="$(AssetUrl $Manifest.assets.setup)">${DownloadGlyph}<span>$setupLabel</span></a>
+        <a class="btn btn-ghost" href="$($copy._channels.store.url)" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> ($externalLabel)</span></a>
+        <a class="btn btn-ghost" href="$(AssetUrl $Manifest.assets.zip)">${DownloadGlyph}<span>Portable (.zip)</span></a>
+        <span class="dl-facts" lang="en" dir="ltr">$facts</span>
+      </div>
+      <div class="copybox"><span class="tok">winget</span> install --id $($copy._channels.winget.id)
+        <button class="copy" data-copy="$($copy._channels.winget.command)">$copyLabel</button></div>
+    </div>
+    <figure class="hero-shot"><img src="${assetBase}assets/guides/viewer-main.png" width="652" height="372" alt="$shotAlt" decoding="async"></figure>
+    <!-- /gen:hero-get -->
+"@ -replace "`r`n", "`n"
+}
 
+# The root index.html is the English landing only (ticket 207 F9): Russian and Ukrainian have their own pages, so the
+# marked family region is the English grid, the same one the locale pages render for 'en'.
+function RenderIndexFamily {
     @"
   <!-- gen:family -->
-  <h2 class="sec-head sec-head-family">
-    <span data-l="en">$($copy._family.title)</span><span data-l="ru">$($copy._familyTranslations.ru.title)</span><span data-l="ua">$($copy._familyTranslations.uk.title)</span>
-  </h2>
-  <div class="tools-grid">
-$familyItems
-  </div>
+$(RenderFamilyGridForLocale 'en')
   <!-- /gen:family -->
 "@ -replace "`r`n", "`n"
 }
@@ -368,34 +435,66 @@ function Render([string]$code) {
         "      <article class=`"card`">`n        <h3>$(Esc $_[0])</h3>`n        <p>$(Esc $_[1])</p>`n      </article>"
     }) -join "`n"
 
-    $howtoAndroid = ($copy._howto.items | Where-Object { $_[0] -eq 'publish-folders-android.html' } | ForEach-Object { $_[1] })
     $note = ''
     if ($e.machine) { $note = "      <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
 
+    # HOW TO block and the footer's Documentation row (ticket L0207 F15). The guides exist in English, Russian and Ukrainian,
+    # so lang/ru/ and lang/uk/ render both from the `ru` / `ua` blocks of _howto in the page's own language (no lang="en"
+    # wrapper); the other ten pages keep the English block, marked lang="en" dir="ltr", exactly as before.
+    $howtoKey = switch ($code) { 'ru' { 'ru' } 'uk' { 'ua' } default { '' } }
+    $hl = if ($howtoKey) { $copy._howto.$howtoKey } else { $null }
+    $howtoLang = if ($hl) { '' } else { ' lang="en" dir="ltr"' }
+    $howtoTitle = if ($hl) { $hl.title } else { $copy._howto.title }
+    $howtoNote = if ($hl) { $hl.note } else { $copy._howto.note }
     $howto = ($copy._howto.items | ForEach-Object {
-        '      <li><a href="{0}/{1}">{2}</a></li>' -f $BaseUrl, $_[0], (Esc $_[1])
+        $label = if ($hl) { $hl.labels.($_[0]) } else { $_[1] }
+        if (-not $label) { throw "site-copy.json: _howto.$howtoKey.labels has no label for $($_[0])" }
+        '      <li><a href="{0}/{1}">{2}</a></li>' -f $BaseUrl, $_[0], (Esc $label)
     }) -join "`n"
+    # The sharing section's link to the Android guide takes the same label as its HOW TO item (ticket L0207 F83).
+    $howtoAndroid = if ($hl) { $hl.labels.'publish-folders-android.html' } else { $copy._howto.items | Where-Object { $_[0] -eq 'publish-folders-android.html' } | ForEach-Object { $_[1] } }
     # The shared media-exchange portal lives on another origin (the Android site), so it is one extra entry after the
-    # repository's own guides, opening in a new tab - not an item of the list, which is checked on disk.
+    # repository's own guides, opening in a new tab - not an item of the list, which is checked on disk. On ru and uk it
+    # is the portal's page in that language (index-ru.html / index-uk.html).
     $portal = $copy._howto.portal
     $portalFooter = ''
     if ($portal) {
-        $howto += "`n" + ('      <li><a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a></li>' -f $portal.url, (Esc $portal.label), (ExtName $e.externalLabel))
-        $portalFooter = "`n" + ('    <a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a>' -f $portal.url, (Esc $portal.footer), (ExtName $e.externalLabel))
+        $pl = if ($hl) { $hl.portal } else { $portal }
+        if (-not ($pl.url -and $pl.label -and $pl.footer)) { throw "site-copy.json: _howto.$howtoKey.portal needs url, label and footer" }
+        $howto += "`n" + ('      <li><a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a></li>' -f $pl.url, (Esc $pl.label), (ExtName $e.externalLabel))
+        $portalFooter = "`n" + ('    <a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a>' -f $pl.url, (Esc $pl.footer), (ExtName $e.externalLabel))
     }
+    # The Documentation row labels: English defaults for the ten pages that have no guides in their language.
+    $docRow = [ordered]@{ title = 'Documentation'; guides = $copy._howto.title; topics = 'Topics'; glossary = 'Glossary'; windowHelp = 'Window help'; privacy = 'Privacy'; whatsNew = "What's new"; support = 'Support'; issues = 'Issues' }
+    $techRow = [ordered]@{ privacy = 'Privacy'; license = 'LICENSE'; github = 'GitHub' }
+    if ($hl) {
+        foreach ($k in @($docRow.Keys)) {
+            if (-not $hl.footer.$k) { throw "site-copy.json: _howto.$howtoKey.footer.$k is missing" }
+            $docRow[$k] = $hl.footer.$k
+        }
+        foreach ($k in @($techRow.Keys)) {
+            if (-not $hl.techLinks.$k) { throw "site-copy.json: _howto.$howtoKey.techLinks.$k is missing" }
+            $techRow[$k] = $hl.techLinks.$k
+        }
+    }
+    foreach ($k in @($docRow.Keys)) { $docRow[$k] = Esc $docRow[$k] }
+    foreach ($k in @($techRow.Keys)) { $techRow[$k] = Esc $techRow[$k] }
 
-    # The three doors (ticket 132 section 3.2, specification 273): the manager, sharing and scheduling, and the exchange
-    # server. Door 3 describes the gated server in the present tense and carries no link and no download (POSITIONING.md
-    # section 2: no package carries it while its shipping gate is shut).
-    $doorHrefs = @('#get', "$BaseUrl/server.html", '')
-    $doorCards = (0..2 | ForEach-Object {
+    # The four doors (ticket 132 section 3.2, specifications 273 and L0297): the manager, local sharing, scheduled file
+    # operations and the exchange server. Door 3 leads to the full package, whose Setup ticks the scheduling item (the
+    # Share Manager payload). The exchange door describes the gated server in the present tense and carries no link and no
+    # download (POSITIONING.md section 2: no package carries it while its shipping gate is shut).
+    $doorHrefs = @('#get', "$BaseUrl/server.html", '#get', '')
+    if (@($e.doors).Count -ne $doorHrefs.Count) { throw "site-copy.json: $code.doors has $(@($e.doors).Count) doors, the landing has $($doorHrefs.Count)" }
+    $doorCards = (0..($doorHrefs.Count - 1) | ForEach-Object {
         $d = $e.doors[$_]
         $exchangeImage = ''
-        if (($_ + 1) -eq $copy._exchangeMark.door) {
+        $isExchangeDoor = ($_ + 1) -eq $copy._exchangeMark.door
+        if ($isExchangeDoor) {
             $alt = Esc $exchangeTerms[$code]
             $exchangeImage = "<span class=`"exchange-picture`"><img class=`"exchange-mark`" src=`"../../$($copy._exchangeMark.asset)`" width=`"32`" height=`"32`" alt=`"$alt`"></span> "
         }
-        $pillClass = if ($_ -eq 2) { 'pill gold' } else { 'pill' }
+        $pillClass = if ($isExchangeDoor) { 'pill gold' } else { 'pill' }
         $cta = ''
         if ($d[3]) {
             $btnClass = 'btn btn-ghost'
@@ -406,9 +505,17 @@ function Render([string]$code) {
 
     $familyGrid = RenderFamilyGridForLocale $code
 
+    # The header's brand (ticket 207 F20, F37): the full name at every width, written as the compact name plus the platform
+    # words so that assets/fms-site.css can show the compact form alone under 481 px (PRODUCT_NAMING section 1) while the
+    # accessible name and the text without CSS stay the full name. On a right-to-left page the whole name is one LTR run.
+    if ($ProductFull -ne "$ProductCompact for Windows") { throw 'Build-SitePages: the full product name is no longer the compact name plus " for Windows"; the header brand split needs a new rule' }
+    # The brand link is a flex box, so the name must be ONE child (a wrapper, or the <bdi>) or the space before "for" is dropped.
+    $brandName = (Esc $ProductCompact) + '<span class="brand-os"> for Windows</span>'
+    $brandName = if ($rtl) { "<bdi>$brandName</bdi>" } else { "<span>$brandName</span>" }
+
 @"
 <!DOCTYPE html>
-<html lang="$code"$(if ($rtl) { ' dir="rtl"' })$scriptClass>
+<html lang="$code" data-page-lang="$code"$(if ($rtl) { ' dir="rtl"' })$scriptClass>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -423,7 +530,7 @@ $alts
 <meta property="og:url" content="$(PageUrl $code)">
 $(OgImageMeta $e.ogAlt)
 <meta property="og:site_name" content="$(Esc $ProductCompact)">
-<meta property="og:locale" content="$code">
+<meta property="og:locale" content="$(OgLocale $code)">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$(Esc (PageTitle $e))">
 <meta name="twitter:description" content="$(Esc $e.tagline)">
@@ -441,10 +548,10 @@ $(TwitterImageMeta $e.ogAlt)
 </head>
 <body>
 <a class="skip-link" href="#main">$(Esc $e.skipLabel)</a>
-<header class="site-header">
+<header class="site-header site-header-landing">
   <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
-  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)">$(Body $ProductFull)</a>
-  <a class="nav-doc" href="$BaseUrl/topics.html">$(Esc $e.docsLink)</a>
+  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)">$brandName</a>
+  <a class="nav-doc" href="$(OwnSitePageUrl 'topics' $code)">$(Esc $e.docsLink)</a>
   <div class="seg" role="group" aria-label="$(Esc $e.langLabel)">$primaryLanguages</div>
   $(ThemeButton (Esc $e.themeLabel))
   <a class="btn btn-ghost" href="#get">$(Esc $e.dlSetup)</a>
@@ -464,15 +571,7 @@ $(TwitterImageMeta $e.ogAlt)
     </div>
     <h1>$(Body $e.outcome)</h1>
     <p class="lead lead-narrow">$(Body $e.family)</p>
-    <p class="lead lead-narrow">$(Body $e.tagline)</p>
-    <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
-    <div class="button-group">
-      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
-           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
-           channels, where naming each way to get the product is the rule. -->
-      <a class="btn btn-primary" href="#get">$(Esc $e.installAction)</a>
-      <a class="btn btn-ghost" href="$BaseUrl/topics.html">$(Esc $e.guidesAction)</a>
-    </div>
+$((RenderHeroGet (Esc $e.dlSetup) ($CopyWords[$code][0]) (Esc $e.externalLabel) (Esc $e.heroShotAlt) $A).Trim("`n"))
   </section>
 
   <section class="section doors" id="doors" aria-labelledby="doors-title">
@@ -507,13 +606,13 @@ $scenarioCards
         <div class="copybox"><span class="tok">winget</span> install --id $($copy._channels.winget.id)
           <button class="copy" data-copy="$($copy._channels.winget.command)">$($CopyWords[$code][0])</button></div>
       </div>
-      <div class="dl-row" id="dlRow">
-        <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">$DownloadGlyph<span>$(Esc $e.dlSetup)</span></a>
-        <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">$DownloadGlyph<span>Portable (.zip)</span></a>
+      <div class="dl-row">
+        <a class="btn btn-primary" href="$(AssetUrl $Manifest.assets.setup)">$DownloadGlyph<span>$(Esc $e.dlSetup)</span></a>
+        <a class="btn btn-ghost" href="$(AssetUrl $Manifest.assets.zip)">$DownloadGlyph<span>Portable (.zip)</span></a>
         <a class="btn btn-ghost" href="$($copy._channels.github.url)">All releases</a>
         <a class="btn btn-ghost" href="$($copy._channels.store.url)" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span>$(ExtName $e.externalLabel)</a>
         <a class="btn btn-ghost" href="$BaseUrl/server.html">$(Esc $e.serverLink)</a>
-        <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
+        <span class="dl-meta">$(ReleaseFacts @('setup', 'zip'))Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">$(Body $e.insideNote)</p>
       <p class="dl-meta">
@@ -525,6 +624,8 @@ $note    </div>
   <section class="section" id="features">
     <div class="sec-head">
       <h2 class="section-title"><span class="hash">#</span>$(Esc $e.knowTitle)</h2>
+      <p class="section-desc">$(Body $e.tagline)</p>
+      <p class="section-desc">$(Body $e.sharing) <a href="$BaseUrl/publish-folders-android.html"$howtoLang>$(Esc $howtoAndroid)</a></p>
     </div>
     <div class="grid">
 $featureGroupCards
@@ -539,32 +640,32 @@ $allFeatureCards
 
   <section class="section" id="howto">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span>$(Esc $copy._howto.title)</h2>
-      <p class="section-desc" lang="en" dir="ltr">$(Esc $copy._howto.note)</p>
+      <h2 class="section-title"><span class="hash">#</span>$(Esc $howtoTitle)</h2>
+      <p class="section-desc"$howtoLang>$(Esc $howtoNote)</p>
     </div>
-    <ul lang="en" dir="ltr">
+    <ul$howtoLang>
 $howto
     </ul>
   </section>
 
   <section class="tech-links">
-    <p><a href="$BaseUrl/docs/privacy.html">Privacy</a> &middot; <a href="$Repo/blob/main/LICENSE">LICENSE</a> &middot; <a href="$Repo">GitHub</a></p>
+    <p><a href="$(OwnSitePageUrl 'privacy' $code)">$($techRow.privacy)</a> &middot; <a href="$Repo/blob/main/LICENSE">$($techRow.license)</a> &middot; <a href="$Repo">$($techRow.github)</a></p>
   </section>
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="footer-title" lang="en" dir="ltr">Documentation</h2>
-  <div class="link-row" lang="en" dir="ltr">
-    <a href="#howto">$(Esc $copy._howto.title)</a>
-    <a href="$BaseUrl/topics.html">Topics</a>
-    <a href="$BaseUrl/glossary.html">Glossary</a>$portalFooter
+  <h2 class="footer-title"$howtoLang>$($docRow.title)</h2>
+  <div class="link-row"$howtoLang>
+    <a href="#howto">$($docRow.guides)</a>
+    <a href="$(OwnSitePageUrl 'topics' $code)">$($docRow.topics)</a>
+    <a href="$(OwnSitePageUrl 'glossary' $code)">$($docRow.glossary)</a>
+    <a href="$BaseUrl/docs/help/$code/index.html" hreflang="$code">$($docRow.windowHelp)</a>$portalFooter
     <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
-    <a href="$BaseUrl/docs/privacy.html">Privacy</a>
+    <a href="$(OwnSitePageUrl 'privacy' $code)">$($docRow.privacy)</a>
     <a href="$Repo#readme">README</a>
-    <a href="$BaseUrl/whats-new.html">What's new</a>
-    <a href="$Repo/blob/main/CHANGELOG.md">Changelog</a>
-    <a href="$BaseUrl/support.html">Support</a>
-    <a href="$Repo/issues">Issues</a>
+    <a href="$BaseUrl/whats-new.html">$($docRow.whatsNew)</a>
+    <a href="$BaseUrl/support.html">$($docRow.support)</a>
+    <a href="$Repo/issues">$($docRow.issues)</a>
   </div>
 $familyGrid
   <div class="footer-langs">
@@ -608,27 +709,6 @@ $LocaleListScript
   function fallback(txt){try{var ta=document.createElement('textarea');ta.value=txt;
     ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
     document.execCommand('copy');document.body.removeChild(ta);}catch(e){}}
-
-  (function(){
-    fetch('https://api.github.com/repos/SerZhyAle/FastMediaSorter_Lite/releases/latest')
-      .then(function(r){return r.ok?r.json():Promise.reject();})
-      .then(function(rel){
-        var assets=rel.assets||[];
-        function find(re){for(var i=0;i<assets.length;i++){if(re.test(assets[i].name))return assets[i];}return null;}
-        var setup=find(/windows-x64-setup\.exe$/);
-        var zip=find(/windows-x64\.zip$/);
-        var tag=rel.tag_name||'';
-        var s=document.getElementById('dl-setup'), z=document.getElementById('dl-zip');
-        if(setup&&s) s.href=setup.browser_download_url;
-        if(zip&&z) z.href=zip.browser_download_url;
-        if(tag){
-          var meta=document.getElementById('dlMeta');
-          if(meta){var b=document.createElement('span');b.className='meta-strong';
-            b.textContent=' '+tag;meta.appendChild(b);}
-        }
-      })
-      .catch(function(){});
-  })();
 })();
 </script>
 </body>
@@ -666,7 +746,7 @@ function RenderTrust([string]$code) {
 
 @"
 <!DOCTYPE html>
-<html lang="$code"$(if ($rtl) { ' dir="rtl"' })$scriptClass>
+<html lang="$code" data-page-lang="$code"$(if ($rtl) { ' dir="rtl"' })$scriptClass>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -681,7 +761,7 @@ $alts
 <meta property="og:url" content="$(TrustUrl $code)">
 $(OgImageMeta $e.ogAlt)
 <meta property="og:site_name" content="$(Esc $ProductCompact)">
-<meta property="og:locale" content="$code">
+<meta property="og:locale" content="$(OgLocale $code)">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$(Esc $t.title)">
 <meta name="twitter:description" content="$(Esc $t.desc)">
@@ -720,7 +800,7 @@ $sections
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="$($copy._channels.github.url)">$(Esc $t.dlLabel)</a>
-    <a class="btn btn-ghost" href="$BaseUrl/docs/privacy.html">$(Esc $t.privacyLabel)</a>
+    <a class="btn btn-ghost" href="$(OwnSitePageUrl 'privacy' $code)">$(Esc $t.privacyLabel)</a>
     <a class="btn btn-ghost" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
   </div>
 $mt</main>
@@ -761,12 +841,16 @@ $LocaleListScript
 # The not-found page (SITE-STRUCTURE rule 15, ticket 149). GitHub Pages serves a root 404.html for ANY unknown address under
 # the site, at whatever depth - so every reference is absolute from $BaseUrl, never relative. It is noindex, it is not in
 # the sitemap or the search index, and it carries the core three (en, ru, ua) in-page like the root pages do. The site has
-# no search at the guide tier, so the subject index (topics.html) is the way to find a page; the guides come from _howto.
+# no search at the guide tier, so the subject index (topics.html) is the way to find a page; the guides come from _howto,
+# each card titled in the core three like the rest of the page (ticket L0207 F83).
 function RenderNotFound {
     $nf = $copy._notFound
     $script:RtlPage = $false
     $guides = ($copy._howto.items | ForEach-Object {
-        '      <a href="{0}/{1}" lang="en" dir="ltr"><b>{2}</b></a>' -f $BaseUrl, $_[0], (Esc $_[1])
+        $path = $_[0]
+        $ru = $copy._howto.ru.labels.$path; $ua = $copy._howto.ua.labels.$path
+        if (-not ($ru -and $ua)) { throw "site-copy.json: _howto.ru and _howto.ua need a label for $path" }
+        '      <a href="{0}/{1}"><b><span data-l="en">{2}</span><span data-l="ru">{3}</span><span data-l="ua">{4}</span></b></a>' -f $BaseUrl, $path, (Esc $_[1]), (Esc $ru), (Esc $ua)
     }) -join "`n"
     $langs = 'en', 'ru', 'ua'
     function Spans([string]$key) { ($langs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $nf.$_.$key) }) -join '' }
@@ -877,14 +961,14 @@ $guides
 }
 
 # --- Support and What's new: the two small generated root pages (ticket 207 T-5; DOCUMENTATION_CONCEPT section 4) ------
-# Each has one address at the site root and is in-page trilingual (en, ru, ua) like the not-found page - the core three
-# every root page of this site carries. Both are listed in the sitemap and the search index with the other root pages,
+# Each has its English address at the site root and a lang/ru/ and a lang/uk/ sibling - the core three every root page
+# of this site carries. Both are listed in the sitemap and the search index with the other root pages,
 # and the topics page links them (Test-SiteQuality rule 1).
 $InPageLangs = 'en', 'ru', 'ua'
 
-# One page shell for both: head with the full SEO block, the header and footer of the root pages, the language and theme
-# script of the not-found page. $titles and $descs are keyed en/ru/ua; the <title> is the English one, the switcher
-# swaps document.title for the other two.
+# One page shell for both, in the in-page trilingual form of the one-source pages: section 5 splits it with RenderSitePage
+# into the English page and its ru and uk siblings (ticket L0301 P6), which write their own head from $titles and $descs
+# (keyed en/ru/ua, read through SitePageHead).
 function PlainPage([string]$file, $titles, $descs, [string]$kicker, [string]$h1, [string]$lead, [string]$body) {
     $url = "$BaseUrl/$file"
     $script:RtlPage = $false
@@ -903,7 +987,6 @@ function PlainPage([string]$file, $titles, $descs, [string]$kicker, [string]$h1,
         'isPartOf'   = [ordered]@{ '@type' = 'WebSite'; 'name' = $ProductFull; 'url' = "$BaseUrl/" }
         'author'     = [ordered]@{ '@type' = 'Person'; 'name' = $copy._contact.github }
     }
-    $metaTitles = ($InPageLangs | ForEach-Object { '{0}:"{1}"' -f $_, ('{0}{1}{2}' -f $titles.$_, $TitleSeparator, $TitleSuffix) }) -join ','
 @"
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-lang="en">
@@ -921,13 +1004,12 @@ $ThemeResolver
 <meta property="og:url" content="$url">
 $(OgImageMeta ([string]$disc.socialCard.alt))
 <meta property="og:site_name" content="$(Esc $ProductCompact)">
-<meta property="og:locale" content="en">
-<meta property="og:locale:alternate" content="ru">
-<meta property="og:locale:alternate" content="uk">
+<meta property="og:locale" content="$(OgLocale 'en')">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$(Esc $title)">
 <meta name="twitter:description" content="$(Esc $desc)">
 $(TwitterImageMeta ([string]$disc.socialCard.alt))
+<script type="application/ld+json">$($ld | ConvertTo-Json -Depth 5 -Compress)</script>
 <meta name="theme-color" content="#0a0f0a">
 <link rel="icon" href="$Favicon" sizes="any">
 <link rel="apple-touch-icon" href="assets/icons/store-icon-256.png">
@@ -937,7 +1019,6 @@ $(TwitterImageMeta ([string]$disc.socialCard.alt))
 <link rel="stylesheet" href="assets/sza-kit.css">
 <link rel="stylesheet" href="assets/fms-site.css">
 <link rel="stylesheet" href="assets/fms-buttons.css">
-<script type="application/ld+json">$($ld | ConvertTo-Json -Depth 5 -Compress)</script>
 <style>
 html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 .site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}
@@ -950,12 +1031,10 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
 <header class="site-header">
   <span id="site-nav-label" class="sr-only">$(Spans 'nav')</span>
   <nav class="site-nav" aria-labelledby="site-nav-label">
-  <a class="brand" href="$BaseUrl/" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$Favicon" alt="" width="24" height="24"></span>$(Esc $ProductFull)</a>
-  <div class="seg" role="group" aria-label="Language">
-    <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
-  </div>
+  <a class="brand" href="./" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$Favicon" alt="" width="24" height="24"></span>$(Esc $ProductFull)</a>
+  <div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button></div>
   $(ThemeButton (SiteCopySpans 'themeLabel'))
-  <a class="btn btn-primary" href="$BaseUrl/#get">$(Spans 'download')</a>
+  <a class="btn btn-primary" href="./#get">$(Spans 'download')</a>
   </nav>
 </header>
 
@@ -970,39 +1049,11 @@ $body
 </main>
 
 <footer class="site-footer"><div class="container"><div class="footer-bottom">
-  <span><a href="$BaseUrl/">$(Esc $ProductFull)</a> &middot; <a href="$BaseUrl/topics.html">$(Spans 'topicsTitle')</a> &middot; <a href="$BaseUrl/whats-new.html">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._whatsNew.short.$_) }) -join '')</a> &middot; <a href="$BaseUrl/support.html">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.short.$_) }) -join '')</a> &middot; <a href="$BaseUrl/docs/privacy.html">Privacy</a></span>
+  <span><a href="./">$(Esc $ProductFull)</a> &middot; <a href="topics.html">$(Spans 'topicsTitle')</a> &middot; <a href="whats-new.html">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._whatsNew.short.$_) }) -join '')</a> &middot; <a href="support.html">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.short.$_) }) -join '')</a> &middot; <a href="$Repo/issues">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.tracker.$_) }) -join '')</a> &middot; <a href="docs/privacy.html">Privacy</a></span>
   <span>&copy; $(Get-Date -Format 'yyyy') <a href="https://$($copy._contact.website)">$($copy._contact.github)</a> &middot; <a href="mailto:$($copy._contact.email)">$($copy._contact.email)</a></span>
 </div></div></footer>
 
-<script>
-(function(){
-  var doc=document.documentElement;
-  var TITLES={$metaTitles};
-  function setLang(l){
-    if(!TITLES[l]) l='en';
-    doc.setAttribute('data-lang',l);
-    doc.setAttribute('lang', l==='ua'?'uk':l);
-    try{localStorage.setItem('sza-lang',l);}catch(e){}
-    document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
-      b.setAttribute('aria-pressed', b.getAttribute('data-setlang')===l ? 'true':'false');
-    });
-    document.title=TITLES[l];
-  }
-  document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
-    b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
-  });
-  setLang(doc.getAttribute('data-lang')||'en');
-  var tb=document.getElementById('themeBtn');
-  function pressTheme(){ if(tb) tb.setAttribute('aria-pressed', doc.getAttribute('data-theme')==='light'?'false':'true'); }
-  pressTheme();
-  if(tb) tb.addEventListener('click',function(){
-    var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
-    doc.setAttribute('data-theme',v);
-    try{localStorage.setItem('sza-theme',v);}catch(e){}
-    pressTheme();
-  });
-})();
-</script>
+<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.dataset.theme!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body>
 </html>
 "@
@@ -1123,7 +1174,7 @@ function RenderWhatsNew {
             "      <h3>$(Esc $c)</h3>`n      <ul>`n$($lis -join "`n")`n      </ul>"
         }
         if (@($cats).Count -eq 0) { continue }
-        "  <section class=`"section`" id=`"v$($r.Version)`">`n    <h2>$($r.Version)<time datetime=`"$($r.Date)`">$($r.Date)</time></h2>`n    <div lang=`"en`" dir=`"ltr`">`n$(@($cats) -join "`n")`n    </div>`n  </section>"
+        "  <section class=`"section`" id=`"v$($r.Version)`">`n    <h2><a href=`"$Repo/releases/tag/v$($r.Version)`">$($r.Version)</a> <time datetime=`"$($r.Date)`">$($r.Date)</time></h2>`n    <div lang=`"en`" dir=`"ltr`">`n$(@($cats) -join "`n")`n    </div>`n  </section>"
     }
     $tail = "  <section class=`"section`">`n    <p class=`"note`">$(InPageSpans $wn.note)</p>`n    <p><a href=`"$Repo/releases`">$(InPageSpans $wn.all)</a></p>`n  </section>"
     PlainPage 'whats-new.html' $wn.short $wn.desc (InPageSpans $wn.kicker) (InPageSpans $wn.h1) (InPageSpans $wn.lead) ((@($blocks) + $tail) -join "`n`n")
@@ -1191,6 +1242,324 @@ $($factRows -join "`n")
 "@ -replace "`r`n", "`n"
 }
 
+# The Server edition's download as a marked region of server.html (ticket 207 F31): the asset name, its versioned link,
+# the date and the .sha256 link from tools/release-manifest.json, the durable /releases/latest beside it; the winget
+# commands after the region stay hand-authored. The words are `_serverDownload` in site-copy.json.
+function RenderServerDownload {
+    $sd = $copy._serverDownload
+    $asset = [string]$Manifest.assets.serverSetup
+    $lead = InPageSpans $sd.lead { param($s) [regex]::Replace((Esc $s), '`([^`]+)`', '<code>$1</code>').Replace('{0}', $asset) }
+    @"
+<!-- gen:server-download -->
+<p>$lead</p>
+<div class="dl-row">
+<a class="btn btn-primary" href="$(AssetUrl $asset)">$DownloadGlyph<span>$(InPageSpans $sd.button)</span></a>
+<a class="btn btn-ghost" href="$($copy._channels.github.url)">$(InPageSpans $sd.all)</a>
+<span class="dl-meta">$(ReleaseFacts @('serverSetup'))</span>
+</div>
+<pre class="cmd">Get-FileHash .\$asset -Algorithm SHA256</pre>
+<!-- /gen:server-download -->
+"@ -replace "`r`n", "`n"
+}
+
+# --- The one-source pages that have a page per language (ticket L0207 F1, F10, F16; owner decision 2026-11-08) ---------
+# docs/privacy.html, topics.html, glossary.html and the docs/how-to-*.html guides are authored once, three languages at a time, in
+# tools/site-pages/<name>.src.html (data-l="en|ru|ua" blocks and spans) and rendered into ONE single-language page per
+# language: the English page at the address that always answered (docs/privacy.html is the Store's privacy-policy link)
+# and a lang/ru/ and a lang/uk/ sibling, each declaring en, ru, uk and x-default (SITE-STRUCTURE rules 8 and 9). The other
+# eleven locales keep the English address. The head copy (title job word, description) is `_pages` of tools/site-copy.json;
+# the body words stay in the source. The in-page key of Ukrainian is `ua`; its directory, `lang` and `hreflang` code is `uk`.
+$SitePageDefs = [ordered]@{
+    privacy  = @{ Source = 'tools/site-pages/privacy.src.html';  English = 'docs/privacy.html'; Dir = 'docs' }
+    topics   = @{ Source = 'tools/site-pages/topics.src.html';   English = 'topics.html';       Dir = '' }
+    glossary = @{ Source = 'tools/site-pages/glossary.src.html'; English = 'glossary.html';     Dir = '' }
+    # the task guides (ticket L0301 P6): one source each, the English guide at its docs/ address plus a ru and a uk sibling
+    'how-to-archives'     = @{ Source = 'tools/site-pages/how-to-archives.src.html';     English = 'docs/how-to-archives.html';     Dir = 'docs' }
+    'how-to-keys'         = @{ Source = 'tools/site-pages/how-to-keys.src.html';         English = 'docs/how-to-keys.html';         Dir = 'docs' }
+    'how-to-editor'       = @{ Source = 'tools/site-pages/how-to-editor.src.html';       English = 'docs/how-to-editor.html';       Dir = 'docs' }
+    'how-to-ocr'          = @{ Source = 'tools/site-pages/how-to-ocr.src.html';          English = 'docs/how-to-ocr.html';          Dir = 'docs' }
+    'how-to-resources'    = @{ Source = 'tools/site-pages/how-to-resources.src.html';    English = 'docs/how-to-resources.html';    Dir = 'docs' }
+    'how-to-viewer'       = @{ Source = 'tools/site-pages/how-to-viewer.src.html';       English = 'docs/how-to-viewer.html';       Dir = 'docs' }
+    'how-to-setup'        = @{ Source = 'tools/site-pages/how-to-setup.src.html';        English = 'docs/how-to-setup.html';        Dir = 'docs' }
+    'how-to-filedo-disks' = @{ Source = 'tools/site-pages/how-to-filedo-disks.src.html'; English = 'docs/how-to-filedo-disks.html'; Dir = 'docs' }
+    # the Server edition page; its generated regions (section 1b) are written into the source
+    server = @{ Source = 'tools/site-pages/server.src.html'; English = 'server.html'; Dir = '' }
+    'publish-folders-android' = @{ Source = 'tools/site-pages/publish-folders-android.src.html'; English = 'publish-folders-android.html'; Dir = '' }
+    # generated, not authored: section 5 renders the trilingual page (RenderSupport, RenderWhatsNew) and splits it
+    support     = @{ Source = $null; English = 'support.html';   Dir = '' }
+    'whats-new' = @{ Source = $null; English = 'whats-new.html'; Dir = '' }
+}
+# The head copy of a page of the set: `_pages` of site-copy.json, or for the two generated pages their own short title and
+# description (keyed en/ru/ua there).
+function SitePageHead([string]$name, [string]$code) {
+    $block = switch ($name) { 'support' { $copy._support } 'whats-new' { $copy._whatsNew } default { $null } }
+    if (-not $block) { return $copy._pages.$name.$code }
+    $k = if ($code -eq 'uk') { 'ua' } else { $code }
+    [pscustomobject]@{ job = [string]$block.short.$k; desc = [string]$block.desc.$k }
+}
+$SitePageLangs = @('en', 'ru', 'uk')
+function SitePageKey([string]$code) { if ($code -eq 'uk') { 'ua' } else { $code } }
+function SitePagePath([string]$name, [string]$code) {
+    if ($code -eq 'en') { [string]$SitePageDefs[$name].English } else { "$LangDir/$code/$name.html" }
+}
+function SitePageUrl([string]$name, [string]$code) { "$BaseUrl/" + (SitePagePath $name $code) }
+# The address a page of locale $code links for one of these pages: its own sibling for ru and uk, the English page otherwise.
+function OwnSitePageUrl([string]$name, [string]$code) { if ($code -in @('ru', 'uk')) { SitePageUrl $name $code } else { SitePageUrl $name 'en' } }
+# The page group an address belongs to (privacy, topics, glossary), or nothing.
+function SitePageGroupOf([string]$url) {
+    foreach ($n in $SitePageDefs.Keys) { foreach ($c in $SitePageLangs) { if ((SitePageUrl $n $c) -eq $url) { return $n } } }
+    return $null
+}
+
+# A relative address from the folder $fromDir ('' = the site root) to a site path ('' = the root, a trailing '/' = a folder).
+function SiteRelative([string]$fromDir, [string]$target) {
+    $from = @($fromDir -split '/' | Where-Object { $_ })
+    $isDir = ($target -eq '' -or $target.EndsWith('/'))
+    $to = @($target -split '/' | Where-Object { $_ })
+    $common = 0
+    while ($common -lt $from.Count -and $common -lt $to.Count -and $from[$common] -eq $to[$common] -and ($common -lt $to.Count - 1 -or $isDir)) { $common++ }
+    $rel = ('../' * ($from.Count - $common)) + (($to | Select-Object -Skip $common) -join '/')
+    if ($isDir -and $rel -ne '' -and -not $rel.EndsWith('/')) { $rel += '/' }
+    if ($rel -eq '') { $rel = './' }
+    return $rel
+}
+
+# One relative link of a source page, re-expressed for the page it is rendered into. The source writes it for the folder it
+# is served from ($srcDir); a ru or uk page also points the landing and the sibling pages at their own language, and a help
+# page of the English folder at the help folder of the language when that page exists.
+function Convert-SitePageLink([string]$href, [string]$srcDir, [string]$outDir, [string]$code) {
+    if ($href -match '^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//|#|\?)' -or $href -eq '') { return $href }
+    $tail = ''
+    $cut = $href.IndexOfAny([char[]]'#?')
+    if ($cut -ge 0) { $tail = $href.Substring($cut); $href = $href.Substring(0, $cut) }
+    if ($href.StartsWith('/')) { return $href + $tail }
+    $segs = [System.Collections.Generic.List[string]]::new()
+    foreach ($s in @($srcDir -split '/' | Where-Object { $_ })) { $segs.Add($s) }
+    $names = @($href -split '/')
+    foreach ($s in $names) {
+        if ($s -eq '' -or $s -eq '.') { continue }
+        if ($s -eq '..') { if ($segs.Count -eq 0) { throw "site page link '$href' leaves the site" }; $segs.RemoveAt($segs.Count - 1) }
+        else { $segs.Add($s) }
+    }
+    $last = $names[$names.Count - 1]
+    $isDir = ($href.EndsWith('/') -or $last -eq '.' -or $last -eq '..')
+    $target = ($segs -join '/')
+    if ($isDir -and $target -ne '') { $target += '/' }
+    if ($code -ne 'en') {
+        if ($target -eq '' -or $target -eq 'index.html') { $target = "$LangDir/$code/" }
+        else {
+            foreach ($n in $SitePageDefs.Keys) { if ($target -eq [string]$SitePageDefs[$n].English) { $target = SitePagePath $n $code; break } }
+            # the trust page has a page per language too
+            if ($target -eq 'trust.html') { $target = "$LangDir/$code/trust.html" }
+        }
+        if ($target.StartsWith('docs/help/en/')) {
+            $local = 'docs/help/' + $code + '/' + $target.Substring('docs/help/en/'.Length)
+            if (Test-Path -LiteralPath (Join-Path $Root $local)) { $target = $local }
+        }
+    }
+    return (SiteRelative $outDir $target) + $tail
+}
+
+# Keeps one language of an in-page trilingual source: every element carrying data-l="en|ru|ua" of another language goes, and
+# the one of $key loses the attribute. A <div> that holds only the attribute is unwrapped; so is a bare <span> that is the
+# only content of its parent (a heading, a paragraph, a link, a bold name); a bare <span> beside other content (a card's
+# description under its title, the footer's flex items) stays as a plain <span>, because the page's own CSS styles it. A run
+# of sibling variants with none of $key stops the render: a missing translation is never silently dropped.
+function Select-InPageLanguage([string]$html, [string]$key) { [SitePageLanguage]::Select($html, $key) }
+# Compiled once per run: written as PowerShell, the walk cost a second per page and language on the larger sources.
+if (-not ('SitePageLanguage' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
+
+public static class SitePageLanguage {
+    const string AttrPattern = @"(?:\s+[^\s=>/]+(?:\s*=\s*(?:""[^""]*""|'[^']*'|[^\s>""']+))?)*";
+    static readonly Regex ProtectRx = new Regex(@"(?is)<script\b.*?</script>|<style\b.*?</style>|<!--.*?-->");
+    static readonly Regex OpenRx = new Regex(@"<(?<tag>[a-zA-Z][a-zA-Z0-9]*)(?<attrs>" + AttrPattern + @")\s*>");
+    static readonly Regex LangRx = new Regex(@"\sdata-l=""(?<l>en|ru|ua)""");
+    // an open tag that carries the attribute
+    static readonly Regex VariantRx = new Regex(@"<(?<tag>[a-zA-Z][a-zA-Z0-9]*)(?<attrs>" + AttrPattern + @"\s+data-l=""(?:en|ru|ua)""" + AttrPattern + @")\s*>");
+    // the open tag that ends right before a variant (whitespace aside), cut out from the last '<' before it
+    static readonly Regex ParentRx = new Regex(@"\A(?:<(?<p>[a-zA-Z][a-zA-Z0-9]*)\b[^<>]*[^/<>]>|<(?<p>[a-zA-Z][a-zA-Z0-9]*)>)\z");
+    const string Mark0 = "", Mark1 = "";
+
+    sealed class Variant { public string Tag; public Match Open; public Match Close; public string Lang; }
+
+    public static string Select(string html, string key) {
+        var raw = new List<string>();
+        string protectedText = ProtectRx.Replace(html, m => { raw.Add(m.Value); return Mark0 + (raw.Count - 1) + Mark1; });
+        var closeRx = new Dictionary<string, Regex>(StringComparer.OrdinalIgnoreCase);
+        string kept = ConvertPart(protectedText, key, closeRx);
+        return Regex.Replace(kept, Regex.Escape(Mark0) + @"(\d+)" + Regex.Escape(Mark1), m => raw[int.Parse(m.Groups[1].Value)]);
+    }
+
+    static Match FindClose(string s, string tag, int from, Dictionary<string, Regex> closeRx) {
+        Regex rx;
+        if (!closeRx.TryGetValue(tag, out rx)) { rx = new Regex("<(?<c>/?)" + tag + @"\b[^>]*>", RegexOptions.IgnoreCase); closeRx[tag] = rx; }
+        int depth = 1;
+        for (Match m = rx.Match(s, from); m.Success; m = m.NextMatch()) {
+            if (m.Groups["c"].Value == "/") depth--; else if (!m.Value.EndsWith("/>", StringComparison.Ordinal)) depth++;
+            if (depth == 0) return m;
+        }
+        throw new InvalidOperationException("data-l element <" + tag + "> has no closing tag");
+    }
+
+    static string ConvertPart(string s, string key, Dictionary<string, Regex> closeRx) {
+        var output = new StringBuilder();
+        int pos = 0;
+        while (true) {
+            Match m = VariantRx.Match(s, pos);
+            if (!m.Success) break;
+            // the run of sibling variants that starts here
+            var run = new List<Variant>();
+            var langs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            Match cursor = m;
+            while (true) {
+                string tag = cursor.Groups["tag"].Value;
+                Match close = FindClose(s, tag, cursor.Index + cursor.Length, closeRx);
+                string lang = LangRx.Match(cursor.Groups["attrs"].Value).Groups["l"].Value;
+                run.Add(new Variant { Tag = tag, Open = cursor, Close = close, Lang = lang });
+                langs.Add(lang);
+                int after = close.Index + close.Length;
+                Match next = OpenRx.Match(s, after);
+                // the next sibling joins the run unless its language is already in it (then it starts the next group)
+                if (next.Success && string.Equals(next.Groups["tag"].Value, tag, StringComparison.OrdinalIgnoreCase)
+                    && LangRx.IsMatch(next.Groups["attrs"].Value) && s.Substring(after, next.Index - after).Trim().Length == 0
+                    && !langs.Contains(LangRx.Match(next.Groups["attrs"].Value).Groups["l"].Value)) { cursor = next; continue; }
+                break;
+            }
+            int runStart = m.Index;
+            Variant last = run[run.Count - 1];
+            int runEnd = last.Close.Index + last.Close.Length;
+            var keep = run.FindAll(v => string.Equals(v.Lang, key, StringComparison.OrdinalIgnoreCase));
+            if (keep.Count != 1) throw new InvalidOperationException("an in-page run at offset " + runStart + " (" + run[0].Tag + ", languages "
+                + string.Join(",", run.ConvertAll(v => v.Lang)) + ") has " + keep.Count + " variant(s) in '" + key + "'");
+            Variant k = keep[0];
+            output.Append(s, pos, runStart - pos);
+            int innerStart = k.Open.Index + k.Open.Length;
+            string inner = ConvertPart(s.Substring(innerStart, k.Close.Index - innerStart), key, closeRx);
+            string rest = LangRx.Replace(k.Open.Groups["attrs"].Value, "", 1);
+            if (rest.Trim().Length != 0) {
+                output.Append('<').Append(k.Tag).Append(rest).Append('>').Append(inner).Append("</").Append(k.Tag).Append('>');
+            } else if (string.Equals(k.Tag, "div", StringComparison.OrdinalIgnoreCase)) {
+                output.Append(inner.Trim());
+            } else {
+                int i = runStart;
+                while (i > 0 && char.IsWhiteSpace(s[i - 1])) i--;
+                int lt = (i > 0 && s[i - 1] == '>') ? s.LastIndexOf('<', i - 1) : -1;
+                Match parent = lt >= 0 ? ParentRx.Match(s.Substring(lt, i - lt)) : Match.Empty;
+                int j = runEnd;
+                while (j < s.Length && char.IsWhiteSpace(s[j])) j++;
+                bool only = false;
+                if (parent.Success) {
+                    string closer = "</" + parent.Groups["p"].Value + ">";
+                    only = j + closer.Length <= s.Length && string.CompareOrdinal(s, j, closer, 0, closer.Length) == 0;
+                }
+                if (only) output.Append(inner);
+                else output.Append('<').Append(k.Tag).Append('>').Append(inner).Append("</").Append(k.Tag).Append('>');
+            }
+            pos = runEnd;
+        }
+        output.Append(s, pos, s.Length - pos);
+        return output.ToString();
+    }
+}
+'@
+}
+
+# The script at the bottom of a single-language page: the theme control only (the language control is a row of links).
+$SitePageScript = "<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>"
+
+function RenderSitePage([string]$name, [string]$code, [string]$srcText = $null) {
+    $def = $SitePageDefs[$name]
+    $key = SitePageKey $code
+    $outDir = if ($code -eq 'en') { [string]$def.Dir } else { "$LangDir/$code" }
+    $e = $copy.$code
+    $pg = SitePageHead $name $code
+    if (-not $pg -or -not $pg.job -or -not $pg.desc) { throw "site-copy.json: the head copy of $name ($code) needs job and desc" }
+    if ($srcText) { $src = $srcText -replace "`r`n", "`n" }
+    else {
+        $srcPath = Join-Path $Root ([string]$def.Source)
+        if (-not (Test-Path -LiteralPath $srcPath)) { throw "Missing page source: $($def.Source)" }
+        $src = ([IO.File]::ReadAllText($srcPath, [System.Text.UTF8Encoding]::new($false))) -replace "`r`n", "`n"
+    }
+
+    # the head facts the source carries once: the Open Graph type and the structured data (its type and extra properties)
+    $ogType = [regex]::Match($src, '<meta property="og:type" content="([^"]*)"').Groups[1].Value
+    if (-not $ogType) { $ogType = 'article' }
+    $ldMatch = [regex]::Match($src, '(?s)<script type="application/ld\+json">(.*?)</script>')
+    if (-not $ldMatch.Success) { throw "$($def.Source) carries no structured data" }
+    $ldSource = $ldMatch.Groups[1].Value | ConvertFrom-Json
+
+    $title = "$($pg.job)$TitleSeparator$TitleSuffix"
+    $url = SitePageUrl $name $code
+    $ld = [ordered]@{}
+    foreach ($p in $ldSource.PSObject.Properties) {
+        switch ($p.Name) {
+            'name'        { $ld['name'] = $title }
+            'headline'    { $ld['headline'] = $title }
+            'description' { $ld['description'] = $pg.desc }
+            'url'         { $ld['url'] = $url }
+            'inLanguage'  { $ld['inLanguage'] = $code }
+            default       { $ld[$p.Name] = $p.Value }
+        }
+    }
+    $alts = (($SitePageLangs | ForEach-Object { '<link rel="alternate" hreflang="{0}" href="{1}">' -f $_, (SitePageUrl $name $_) }) -join "`n")
+    $alts += "`n" + ('<link rel="alternate" hreflang="x-default" href="{0}">' -f (SitePageUrl $name 'en'))
+    $others = ($SitePageLangs | Where-Object { $_ -ne $code } | ForEach-Object { '<meta property="og:locale:alternate" content="{0}">' -f (OgLocale $_) }) -join "`n"
+    $head = @(
+        "<title>$(Esc $title)</title>",
+        "<meta name=`"description`" content=`"$(Esc $pg.desc)`">",
+        "<link rel=`"canonical`" href=`"$url`">",
+        $alts,
+        "<meta property=`"og:type`" content=`"$(Esc $ogType)`">",
+        "<meta property=`"og:site_name`" content=`"$(Esc $ProductCompact)`">",
+        "<meta property=`"og:title`" content=`"$(Esc $title)`">",
+        "<meta property=`"og:description`" content=`"$(Esc $pg.desc)`">",
+        "<meta property=`"og:url`" content=`"$url`">",
+        (OgImageMeta $e.ogAlt),
+        "<meta property=`"og:locale`" content=`"$(OgLocale $code)`">",
+        $others,
+        '<meta name="twitter:card" content="summary_large_image">',
+        "<meta name=`"twitter:title`" content=`"$(Esc $title)`">",
+        "<meta name=`"twitter:description`" content=`"$(Esc $pg.desc)`">",
+        (TwitterImageMeta $e.ogAlt),
+        ('<script type="application/ld+json">' + ($ld | ConvertTo-Json -Depth 5 -Compress) + '</script>')
+    ) -join "`n"
+
+    $html = Select-InPageLanguage $src $key
+    # every relative link of the source, re-expressed for the folder the page is served from (before the generated head and
+    # language control are put in: their addresses are already written for the page itself)
+    $html = [regex]::Replace($html, '(?<a>\b(?:href|src))="(?<v>[^"]*)"', [System.Text.RegularExpressions.MatchEvaluator]{
+        param($m) $m.Groups['a'].Value + '="' + (Convert-SitePageLink $m.Groups['v'].Value ([string]$def.Dir) $outDir $code) + '"' })
+
+    # the document element: one language, named once
+    $htmlTag = [regex]::Match($html, '<html\b[^>]*>').Value
+    $theme = if ($htmlTag -match '\sdata-theme="(dark|light)"') { ' data-theme="' + $Matches[1] + '"' } else { '' }
+    $html = $html.Replace($htmlTag, "<html lang=`"$code`" data-page-lang=`"$code`"$theme>")
+    # the pre-paint resolver, the head copy and the one rule that hid the other two languages
+    $html = [regex]::Replace($html, '(?s)<script>\s*\(function\(\)\{(?:(?!</script>).)*?sza-theme(?:(?!</script>).)*?data-lang(?:(?!</script>).)*?</script>', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $ThemeResolver }, 1)
+    $region = [regex]::Match($html, '(?s)[ \t]*<title>.*?</script>')
+    if (-not $region.Success) { throw "$($def.Source): no title-to-structured-data region in the head" }
+    $html = $html.Substring(0, $region.Index) + $head + $html.Substring($region.Index + $region.Length)
+    $html = [regex]::Replace($html, 'html\[data-lang="ru"\] \[data-l\]:not\(\[data-l="ru"\]\),html\[data-lang="en"\] \[data-l\]:not\(\[data-l="en"\]\),html\[data-lang="ua"\] \[data-l\]:not\(\[data-l="ua"\]\)\{display:none\}\n?', '')
+    # the language control: three links, the current one marked, choosing one writes sza-lang before navigating
+    $links = (@('ru', 'en', 'uk') | ForEach-Object {
+        $cur = if ($_ -eq $code) { ' aria-current="true"' } else { '' }
+        '<a hreflang="{0}" href="{1}"{2} onclick="try{{localStorage.setItem(''sza-lang'',''{3}'')}}catch(e){{}}">{4}</a>' -f $_, (SiteRelative $outDir (SitePagePath $name $_)), $cur, (SitePageKey $_), $(if ($_ -eq 'uk') { 'UA' } else { $_.ToUpperInvariant() })
+    }) -join ''
+    $seg = '<div class="seg" role="group" aria-label="' + (Esc $e.langLabel) + '">' + $links + '</div>'
+    $segRx = [regex]::new('<div class="seg" role="group" aria-label="[^"]*">.*?</div>')
+    if (-not $segRx.IsMatch($html)) { throw "$($def.Source): no language control (div.seg) to replace" }
+    $html = $segRx.Replace($html, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $seg }, 1)
+    $scriptRx = [regex]::new('(?s)<script>\(function\(\)\{var d=document\.documentElement;function lang\(v\).*?</script>')
+    if (-not $scriptRx.IsMatch($html)) { throw "$($def.Source): no language script to replace" }
+    $html = $scriptRx.Replace($html, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $SitePageScript }, 1)
+    return $html
+}
+
 $written = @(); $stale = @(); $compared = 0
 
 function Complete-ChildFooter([string]$html, [string]$pageCode = '') {
@@ -1199,17 +1568,18 @@ function Complete-ChildFooter([string]$html, [string]$pageCode = '') {
     # A single-language page (a trust page, one per language) names the link once, in its own language where the copy has it
     # and in English otherwise, like the locale index pages; the in-page trilingual pages keep the data-l spans, because only
     # they carry the script and the rule that hides two of the three.
-    $supportText = if ($pageCode) {
-        $supportKey = switch ($pageCode) { 'ru' { 'ru' } 'uk' { 'ua' } default { 'en' } }
-        Esc $copy._support.short.$supportKey
-    } else {
-        ($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.short.$_) }) -join ''
-    }
-    $contact = '<!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="{0}/support.html">{1}</a><span><a href="https://{2}">SZA</a> &middot; <a href="mailto:{3}">{3}</a></span></div></div><!-- /gen:child-contact -->' -f $BaseUrl, $supportText, $copy._contact.website, $copy._contact.email
+    # The child footer names both support paths, the Support page and the issue tracker (DOCUMENTATION_CONCEPT section 5,
+    # SUPPORT_AND_FEEDBACK section 1; ticket 207 site audit F25).
+    $supportKey = switch ($pageCode) { 'ru' { 'ru' } 'uk' { 'ua' } default { 'en' } }
+    $supportText = if ($pageCode) { Esc $copy._support.short.$supportKey }
+        else { ($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.short.$_) }) -join '' }
+    $trackerText = if ($pageCode) { Esc $copy._support.tracker.$supportKey }
+        else { ($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.tracker.$_) }) -join '' }
+    $contact = '<!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="{0}/support.html">{1}</a> &middot; <a href="{4}/issues">{5}</a></span><span><a href="https://{2}">SZA</a> &middot; <a href="mailto:{3}">{3}</a></span></div></div><!-- /gen:child-contact -->' -f $BaseUrl, $supportText, $copy._contact.website, $copy._contact.email, $Repo, $trackerText
     $current = $footer.Value
     if ($current -match '<!-- gen:child-contact -->') {
         $completed = [regex]::Replace($current, '(?s)<!-- gen:child-contact -->.*?<!-- /gen:child-contact -->', [Text.RegularExpressions.MatchEvaluator]{ param($m) $contact })
-    } elseif ($current.Contains('mailto:' + $copy._contact.email) -and $current.Contains('https://' + $copy._contact.website) -and $current.Contains('support.html')) {
+    } elseif ($current.Contains('mailto:' + $copy._contact.email) -and $current.Contains('https://' + $copy._contact.website) -and $current.Contains('support.html') -and $current.Contains("$Repo/issues")) {
         return $html
     } else {
         $completed = $current.Replace('</footer>', $contact + '</footer>')
@@ -1231,26 +1601,51 @@ foreach ($record in $registry | Where-Object { $_.role -eq 'source' -and $_.path
     }
 }
 
-# 1. Update/check root index.html marked regions (gen:channels, gen:family)
+# 1. Update/check root index.html marked regions (gen:channels, gen:family, gen:hero-get)
 $indexFile = Join-Path $Root 'index.html'
 if (Test-Path $indexFile) {
     $indexContent = Get-Content $indexFile -Raw -Encoding UTF8
     $expectedChannels = (RenderIndexChannels).Trim()
     $expectedFamily   = (RenderIndexFamily).Trim()
+    # The hero's acquisition row of the English landing: its words are the root #get's own (ticket 207 F8).
+    $expectedHeroGet  = (RenderHeroGet 'Install with setup (.exe)' ($CopyWords['en'][0]) (Esc $copy.en.externalLabel) (Esc $copy.en.heroShotAlt) '').Trim()
 
     $chanMatch = [regex]::Match($indexContent, '(?s)<!-- gen:channels -->.*?<!-- /gen:channels -->')
     $famMatch  = [regex]::Match($indexContent, '(?s)<!-- gen:family -->.*?<!-- /gen:family -->')
+    $heroMatch = [regex]::Match($indexContent, '(?s)<!-- gen:hero-get -->.*?<!-- /gen:hero-get -->')
+    # The landing's structured data (ticket L0301): the SoftwareApplication of the locale landings, with the page's own
+    # description, so its installUrl follows the release manifest like every download link.
+    $rootDesc = [Net.WebUtility]::HtmlDecode([regex]::Match($indexContent, '<meta name="description" content="([^"]*)"').Groups[1].Value)
+    $rootLd = (JsonLd 'en' ([pscustomobject]@{ title = $ProductFull; tagline = $rootDesc })) | ConvertFrom-Json
+    $expectedJsonLd = "<!-- gen:jsonld -->`n<script type=`"application/ld+json`">`n" + ($rootLd | ConvertTo-Json -Depth 5) + "`n</script>`n<!-- /gen:jsonld -->"
+    $expectedJsonLd = $expectedJsonLd -replace "`r`n", "`n"
+    $ldMatch = [regex]::Match($indexContent, '(?s)<!-- gen:jsonld -->.*?<!-- /gen:jsonld -->')
 
     if ($Check) {
         $compared++
+        if (-not $ldMatch.Success -or ($ldMatch.Value -replace "`r`n", "`n").Trim() -ne $expectedJsonLd) {
+            $stale += "index.html (gen:jsonld)"
+        }
         if (-not $chanMatch.Success -or $chanMatch.Value.Trim() -ne $expectedChannels) {
             $stale += "index.html (gen:channels)"
         }
         if (-not $famMatch.Success -or $famMatch.Value.Trim() -ne $expectedFamily) {
             $stale += "index.html (gen:family)"
         }
+        if (-not $heroMatch.Success -or $heroMatch.Value.Trim() -ne $expectedHeroGet) {
+            $stale += "index.html (gen:hero-get)"
+        }
     } else {
         $newIndex = $indexContent
+        $ldMatchNow = [regex]::Match($newIndex, '(?s)<!-- gen:jsonld -->.*?<!-- /gen:jsonld -->')
+        if ($ldMatchNow.Success) {
+            $newIndex = $newIndex.Substring(0, $ldMatchNow.Index) + $expectedJsonLd + $newIndex.Substring($ldMatchNow.Index + $ldMatchNow.Length)
+        }
+        $heroMatchNow =[regex]::Match($newIndex, '(?s)<!-- gen:hero-get -->.*?<!-- /gen:hero-get -->')
+        if ($heroMatchNow.Success) {
+            $newIndex = $newIndex.Substring(0, $heroMatchNow.Index) + $expectedHeroGet + $newIndex.Substring($heroMatchNow.Index + $heroMatchNow.Length)
+        }
+        $chanMatch = [regex]::Match($newIndex, '(?s)<!-- gen:channels -->.*?<!-- /gen:channels -->')
         if ($chanMatch.Success) {
             $newIndex = $newIndex.Substring(0, $chanMatch.Index) + $expectedChannels + $newIndex.Substring($chanMatch.Index + $chanMatch.Length)
         }
@@ -1265,26 +1660,33 @@ if (Test-Path $indexFile) {
     }
 }
 
-# 1b. Update/check the server page's marked region (gen:matrix, specification 249). server.html is hand-authored, trilingual,
-#     UTF-8 with a BOM and CRLF lines; the region is replaced in place and the file keeps its own BOM and line endings.
-$serverFile = Join-Path $Root 'server.html'
+# 1b. Update/check the server page's marked regions (gen:matrix, specification 249; gen:server-download, ticket 207 F31).
+#     The regions live in the page's trilingual source (ticket L0301 P6), which section 2b renders into server.html and its
+#     ru and uk siblings; each region is replaced in place and the file keeps its own BOM and line endings.
+$serverFile = Join-Path $Root ([string]$SitePageDefs['server'].Source -replace '/', '\')
 if (Test-Path $serverFile) {
     $serverBytes = [IO.File]::ReadAllBytes($serverFile)
     $serverBom = ($serverBytes.Length -ge 3 -and $serverBytes[0] -eq 0xEF -and $serverBytes[1] -eq 0xBB -and $serverBytes[2] -eq 0xBF)
     $serverContent = [Text.UTF8Encoding]::new($false).GetString($serverBytes, $(if ($serverBom) { 3 } else { 0 }), $serverBytes.Length - $(if ($serverBom) { 3 } else { 0 }))
     $serverCrlf = $serverContent.Contains("`r`n")
     $serverLf = $serverContent -replace "`r`n", "`n"
-    $expectedMatrix = (RenderServerMatrix).Trim()
-    $matrixMatch = [regex]::Match($serverLf, '(?s)<!-- gen:matrix -->.*?<!-- /gen:matrix -->')
+    $serverRegions = [ordered]@{ 'matrix' = (RenderServerMatrix).Trim(); 'server-download' = (RenderServerDownload).Trim() }
     if ($Check) {
         $compared++
-        if (-not $matrixMatch.Success -or $matrixMatch.Value.Trim() -ne $expectedMatrix) { $stale += 'server.html (gen:matrix)' }
-    } elseif ($matrixMatch.Success) {
-        $newServer = $serverLf.Substring(0, $matrixMatch.Index) + $expectedMatrix + $serverLf.Substring($matrixMatch.Index + $matrixMatch.Length)
+        foreach ($name in $serverRegions.Keys) {
+            $regionMatch = [regex]::Match($serverLf, "(?s)<!-- gen:$name -->.*?<!-- /gen:$name -->")
+            if (-not $regionMatch.Success -or $regionMatch.Value.Trim() -ne $serverRegions[$name]) { $stale += "$($SitePageDefs['server'].Source) (gen:$name)" }
+        }
+    } else {
+        $newServer = $serverLf
+        foreach ($name in $serverRegions.Keys) {
+            $regionMatch = [regex]::Match($newServer, "(?s)<!-- gen:$name -->.*?<!-- /gen:$name -->")
+            if ($regionMatch.Success) { $newServer = $newServer.Substring(0, $regionMatch.Index) + $serverRegions[$name] + $newServer.Substring($regionMatch.Index + $regionMatch.Length) }
+        }
         if ($newServer -ne $serverLf) {
             if ($serverCrlf) { $newServer = $newServer -replace "`n", "`r`n" }
             [IO.File]::WriteAllText($serverFile, $newServer, [Text.UTF8Encoding]::new($serverBom))
-            $written += 'server.html (marked region)'
+            $written += "$($SitePageDefs['server'].Source) (marked regions)"
         }
     }
 }
@@ -1307,6 +1709,33 @@ foreach ($code in $codes) {
     New-Item -ItemType Directory -Path (Split-Path $path -Parent) -Force | Out-Null
     [IO.File]::WriteAllText($path, $html, (New-Object Text.UTF8Encoding $false))
     $written += (Resolve-Path -Relative $path)
+}
+
+# 2b. Render/check the privacy, topics and glossary pages: English at the address that always answered, plus a ru and a uk
+#     sibling each (ticket 207 F1/F10/F16), from tools/site-pages/<name>.src.html
+foreach ($name in $SitePageDefs.Keys) {
+    if (-not $SitePageDefs[$name].Source) { continue }   # a generated page: section 5
+    foreach ($code in $SitePageLangs) {
+        $rel = SitePagePath $name $code
+        $path = Join-Path $Root ($rel -replace '/', '\')
+        $html = (RenderSitePage $name $code) -replace "`r`n", "`n"
+        $html = Complete-ChildFooter $html $code
+
+        if ($Check) {
+            $compared++
+            if (-not (Test-Path $path)) { $stale += "$rel (missing)"; continue }
+            $on = ([IO.File]::ReadAllText($path, [Text.UTF8Encoding]::new($false))) -replace "`r`n", "`n"
+            if ($on -ne $html) { $stale += $rel }
+            continue
+        }
+
+        New-Item -ItemType Directory -Path (Split-Path $path -Parent) -Force | Out-Null
+        $before = if (Test-Path $path) { [IO.File]::ReadAllText($path, [Text.UTF8Encoding]::new($false)) } else { $null }
+        if ($before -ne $html) {
+            [IO.File]::WriteAllText($path, $html, [Text.UTF8Encoding]::new($false))
+            $written += $rel
+        }
+    }
 }
 
 # 3. Render/check per-language index pages
@@ -1344,19 +1773,25 @@ if ($Check) {
     $written += '404.html'
 }
 
-# 5. Render/check the Support and What's new pages (ticket 207 T-5)
-foreach ($page in @(@('support.html', (RenderSupport)), @('whats-new.html', (RenderWhatsNew)))) {
-    $name = $page[0]; $html = ($page[1] -join "`n") -replace "`r`n", "`n"
-    $html = Complete-ChildFooter $html
-    $dest = Join-Path $Root $name
-    if ($Check) {
-        $compared++
-        if (-not (Test-Path $dest)) { $stale += "$name (missing)" }
-        elseif ((Get-Content $dest -Raw -Encoding UTF8) -replace "`r`n", "`n" -ne $html) { $stale += $name }
-        continue
+# 5. Render/check the Support and What's new pages (ticket 207 T-5): the trilingual page is rendered once and split into the
+#    English page at its root address and a ru and a uk sibling (ticket L0301 P6), like the pages of section 2b.
+foreach ($page in @(@('support', (RenderSupport)), @('whats-new', (RenderWhatsNew)))) {
+    $name = $page[0]; $tri = ($page[1] -join "`n") -replace "`r`n", "`n"
+    foreach ($code in $SitePageLangs) {
+        $rel = SitePagePath $name $code
+        $dest = Join-Path $Root ($rel -replace '/', '\')
+        $html = (RenderSitePage $name $code $tri) -replace "`r`n", "`n"
+        $html = Complete-ChildFooter $html $code
+        if ($Check) {
+            $compared++
+            if (-not (Test-Path $dest)) { $stale += "$rel (missing)" }
+            elseif (([IO.File]::ReadAllText($dest, [Text.UTF8Encoding]::new($false))) -replace "`r`n", "`n" -ne $html) { $stale += $rel }
+            continue
+        }
+        New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
+        [IO.File]::WriteAllText($dest, $html, (New-Object Text.UTF8Encoding $false))
+        $written += $rel
     }
-    [IO.File]::WriteAllText($dest, $html, (New-Object Text.UTF8Encoding $false))
-    $written += $name
 }
 
 # --- robots.txt + sitemap.xml -------------------------------------------------
@@ -1445,6 +1880,12 @@ function RenderSitemap {
                 '    <xhtml:link rel="alternate" hreflang="{0}" href="{1}"/>' -f $_, (PageUrl $_)
             }) -join "`n")
             "  <url>`n    <loc>$($_.url)</loc>$mod`n$alts`n    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$BaseUrl/`"/>`n  </url>"
+        } elseif ($group = SitePageGroupOf $_.url) {
+            # privacy, topics, glossary: the English page and its ru and uk siblings name one another (SITE-STRUCTURE rule 9)
+            $alts = (($SitePageLangs | ForEach-Object {
+                '    <xhtml:link rel="alternate" hreflang="{0}" href="{1}"/>' -f $_, (SitePageUrl $group $_)
+            }) -join "`n")
+            "  <url>`n    <loc>$($_.url)</loc>$mod`n$alts`n    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$(SitePageUrl $group 'en')`"/>`n  </url>"
         } else {
             "  <url>`n    <loc>$($_.url)</loc>$mod`n  </url>"
         }
@@ -1486,6 +1927,13 @@ function SiteEntries {
     foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) {
         $entries += [pscustomobject]@{ url = (PageUrl $code); lang = $code; title = (PageTitle $copy.$code); description = $copy.$code.tagline; path = "$LangDir/$code/index.html" }
         $entries += [pscustomobject]@{ url = (TrustUrl $code); lang = $code; title = $trust.$code.title; description = $trust.$code.desc; path = "$LangDir/$code/trust.html" }
+    }
+    # the ru and uk siblings of the privacy, topics and glossary pages (ticket 207 F1/F10/F16)
+    foreach ($name in $SitePageDefs.Keys) {
+        foreach ($code in ($SitePageLangs | Where-Object { $_ -ne 'en' })) {
+            $pg = SitePageHead $name $code
+            $entries +=[pscustomobject]@{ url = (SitePageUrl $name $code); lang = $code; title = "$($pg.job)$TitleSeparator$TitleSuffix"; description = $pg.desc; path = (SitePagePath $name $code) }
+        }
     }
     return $entries
 }
@@ -1632,12 +2080,40 @@ if ($Check) {
         }
     }
 
-    # 6. No hardcoded version
+    # 6. Release links name the manifest (ticket 207 F3; it replaced "No hardcoded version", which refused every versioned
+    #    link): a versioned asset link names the release of tools/release-manifest.json and one of its assets or their
+    #    .sha256 sidecars, a release link names a version CHANGELOG.md released, and the manifest names the newest released
+    #    section or the one before it - the window between a release's CHANGELOG section and the publication of its assets
+    #    (tools/Set-ReleaseManifest.ps1). A manifest older than that is a release whose facts were never written in.
+    $releasedVersions = @(foreach ($line in [IO.File]::ReadAllLines((Join-Path $Root 'CHANGELOG.md'))) {
+        $vm = [regex]::Match($line, '^## \[(?<v>\d+\.\d+\.\d+\.\d+)\]\s*-\s*\d{4}-\d{2}-\d{2}')
+        if ($vm.Success) { $vm.Groups['v'].Value }
+    })
+    if ($ReleaseVersion -notmatch '^\d{2}\.\d{1,2}\.\d{1,2}\.\d{4}$' -or $ReleaseDate -notmatch '^\d{4}-\d{2}-\d{2}$') {
+        $problems += "Release manifest: tools/release-manifest.json holds version '$ReleaseVersion' and date '$ReleaseDate', not YY.M.D.HHmm and YYYY-MM-DD"
+    }
+    $assetNames = @(foreach ($key in 'setup', 'zip', 'serverSetup') {
+        $n = [string]$Manifest.assets.$key
+        if (-not $n.Contains("-$ReleaseVersion-")) { $problems += "Release manifest: asset '$key' ('$n') does not name the version $ReleaseVersion" }
+        $n; "$n.sha256"
+    })
+    $at = [array]::IndexOf($releasedVersions, $ReleaseVersion)
+    if ($at -lt 0 -or $at -gt 1) {
+        $newest = if ($releasedVersions.Count) { $releasedVersions[0] } else { 'none' }
+        $problems += "Release manifest: names $ReleaseVersion, which is neither the newest released section of CHANGELOG.md ($newest) nor the one before it - run tools/Set-ReleaseManifest.ps1 -Version $newest once its assets are published"
+    }
     foreach ($f in $allServedFiles) {
         $fc = Get-Content $f -Raw -Encoding UTF8
-        if ($fc -match 'releases/download/v' -or $fc -match 'releases/tag/v') {
-            $rel = Resolve-Path -Relative $f
-            $problems += "No hardcoded version: $rel contains hardcoded release URL"
+        $rel = Resolve-Path -Relative $f
+        foreach ($lm in [regex]::Matches($fc, 'releases/download/v(?<v>[^/"''\s<>]+)/(?<f>[^"''\s<>#?]+)')) {
+            if ($lm.Groups['v'].Value -ne $ReleaseVersion -or $assetNames -notcontains $lm.Groups['f'].Value) {
+                $problems += "Release links: $rel links releases/download/v$($lm.Groups['v'].Value)/$($lm.Groups['f'].Value), not an asset of the manifest's v$ReleaseVersion"
+            }
+        }
+        foreach ($lm in [regex]::Matches($fc, 'releases/tag/v(?<v>\d+(?:\.\d+)*)')) {
+            if ($releasedVersions -notcontains $lm.Groups['v'].Value) {
+                $problems += "Release links: $rel links releases/tag/v$($lm.Groups['v'].Value), a version CHANGELOG.md never released"
+            }
         }
     }
 
@@ -1779,6 +2255,12 @@ if ($Check) {
             if (-not $btnLink.Success) { $problems += "Button adapter: $rel loads assets/fms-site.css but not assets/fms-buttons.css" }
             elseif ($btnLink.Index -lt $siteLink.Index) { $problems += "Button adapter: $rel loads assets/fms-buttons.css before assets/fms-site.css" }
         }
+        # 16. A page declares a further locale (og:locale:alternate) only where that locale has an address of its own, its
+        # hreflang alternate; an in-page language with no URL is no alternate (ticket 207 site audit F1, PROMOTION section 3).
+        foreach ($alt in [regex]::Matches($fc, '<meta property="og:locale:alternate" content="(?<l>[A-Za-z]{2,3})(?:_[A-Za-z]{2})?">')) {
+            $altLang = $alt.Groups['l'].Value.ToLowerInvariant()
+            if ($fc -notmatch ('<link rel="alternate" hreflang="' + [regex]::Escape($altLang) + '"')) { $problems += "Locale alternates: $rel declares og:locale:alternate '$altLang' with no hreflang address for it" }
+        }
     }
     if ($problems.Count -gt 0) {
         Write-Host "Conformance check problems found:"
@@ -1786,7 +2268,7 @@ if ($Check) {
         Exit-Verdict 'Build-SitePages' 1 ($problems -join '; ')
     }
 
-    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 17 conformance checks passed"
+    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 18 conformance checks passed"
 }
 
 Write-Host "Wrote $($written.Count) pages:"

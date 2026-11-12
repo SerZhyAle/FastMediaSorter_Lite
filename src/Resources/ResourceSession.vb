@@ -177,9 +177,10 @@ Friend NotInheritable Class ResourceSession
     End Function
 
     ''' <summary>Background F3 cards use the remote cache too, without preempting the file
-    ''' being displayed. Session cancellation stops the download when its resource is left.</summary>
+    ''' being displayed. Session cancellation stops the download when its resource is left.
+    ''' A provider that fetches on demand only shows names, sizes and dates and no card (269).</summary>
     Friend Function MaterializeForThumbnail(localPath As String) As Boolean
-        If Not OwnsLocalPath(localPath) Then Return False
+        If Provider.Capabilities.FetchOnDemandOnly OrElse Not OwnsLocalPath(localPath) Then Return False
         Return TryEnsureLocal(localPath, prefetch:=True) = EnsureLocalOutcome.Ready
     End Function
 

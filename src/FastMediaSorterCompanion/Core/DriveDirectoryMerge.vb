@@ -36,7 +36,8 @@ Friend NotInheritable Class DriveDirectoryMerge
             If Not deviceAt.TryGetValue(d.DeviceId, at) Then
                 deviceAt(d.DeviceId) = devices.Count
                 devices.Add(d)
-            ElseIf Not devices(at).IsOnline AndAlso d.IsOnline Then
+            ElseIf Not devices(at).IsOnline AndAlso (d.IsOnline OrElse (d.IsSharePaused AndAlso Not devices(at).IsSharePaused)) Then
+                ' item DC: on Drive the producer writes its reason itself, and a server path may hold only a plain offline
                 devices(at) = d
             End If
         Next

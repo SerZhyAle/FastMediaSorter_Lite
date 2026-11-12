@@ -25,6 +25,8 @@ Friend Enum ExchangeResourceState
     Available = 0
     ''' <summary>The producing device is offline: the resource is listed without its access, and comes back by itself.</summary>
     DeviceOffline = 1
+    ''' <summary>Item DD: the producing device is offline because a platform limit paused its sharing; it says so in place of plain offline.</summary>
+    SharePaused = 4
     ''' <summary>A successful full list does not hold the id (unpublished, or its device was revoked).</summary>
     NoLongerPublished = 2
     ''' <summary>The directory could not be fetched (no agent, not connected): nothing is known, so nothing changes.</summary>
@@ -115,6 +117,16 @@ Friend NotInheritable Class ExchangeAttach
         Return New ExchangeAttachDraft(descriptor, info.Code.Password)
     End Function
 
+    ''' <summary>The record of a folder attached through Google Drive (ticket 269 P3.3): nothing but the identity of the folder and of its
+    ''' device. No address, no credential and no entry - a Drive record carries no `access` (item X) and the agent keeps the sign-in - and
+    ''' read-only, because the channel only lists and fetches (item CO).</summary>
+    Friend Shared Function DriveDescriptor(resourceId As String, name As String, deviceId As String, deviceName As String, newId As Func(Of String)) As ResourceDescriptor
+        Return New ResourceDescriptor With {
+            .Id = newId(), .DisplayName = If(String.IsNullOrWhiteSpace(name), resourceId, name.Trim()), .Kind = ResourceKind.Drive,
+            .RootPath = "/", .ReadOnlyHint = True,
+            .Origin = ResourceOrigin.Exchange, .ExchangeResourceId = resourceId, .ExchangeDeviceId = deviceId, .ExchangeDeviceName = deviceName}
+    End Function
+
     ''' <summary>Whether the kept resource already says what the draft says: the same addresses in the same order, port, user, root, pin and password.</summary>
     Friend Shared Function SameAccess(existing As ResourceDescriptor, existingPassword As String, draft As ExchangeAttachDraft) As Boolean
         If existing Is Nothing OrElse draft Is Nothing Then Return False
@@ -179,7 +191,9 @@ Friend NotInheritable Class ExchangeAttach
         If record.DeviceId.Length > 0 AndAlso Not snapshot.Devices.Any(Function(d) String.Equals(d.DeviceId, record.DeviceId, StringComparison.Ordinal)) Then
             Return ExchangeResourceState.NoLongerPublished
         End If
-        Return If(String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal), ExchangeResourceState.Available, ExchangeResourceState.DeviceOffline)
+        If String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal) Then Return ExchangeResourceState.Available
+        Dim paused As Boolean = snapshot.Devices.Any(Function(d) String.Equals(d.DeviceId, record.DeviceId, StringComparison.Ordinal) AndAlso d.IsSharePaused)
+        Return If(paused, ExchangeResourceState.SharePaused, ExchangeResourceState.DeviceOffline)
     End Function
 
 End Class
@@ -215,12 +229,15 @@ Friend NotInheritable Class ExchangeDeviceGroup
     Friend ReadOnly Property DeviceId As String
     Friend ReadOnly Property Name As String
     Friend ReadOnly Property Online As Boolean
+    ''' <summary>Item DD: offline because a platform limit paused the device's sharing.</summary>
+    Friend ReadOnly Property SharePaused As Boolean
     Friend ReadOnly Property Rows As IReadOnlyList(Of ExchangeDeviceRow)
 
-    Friend Sub New(deviceId As String, name As String, online As Boolean, rows As IReadOnlyList(Of ExchangeDeviceRow))
+    Friend Sub New(deviceId As String, name As String, online As Boolean, rows As IReadOnlyList(Of ExchangeDeviceRow), Optional sharePaused As Boolean = False)
         Me.DeviceId = deviceId
         Me.Name = name
         Me.Online = online
+        Me.SharePaused = sharePaused
         Me.Rows = rows
     End Sub
 End Class
@@ -228,6 +245,30 @@ End Class
 Friend NotInheritable Class ExchangeDevicesModel
     Private Sub New()
     End Sub
+
+    ''' <summary>The rows of the "via Google Drive" group (ticket 269 P3.3), for the snapshot of the agent's pipe: only a folder for which this
+    ''' is the one road - a record without access, not listed by a server the viewer reads itself, not attached through a live road. A row is
+    ''' ticked by a record through Drive alone. A device left with no such folder is not shown.</summary>
+    Friend Shared Function BuildDriveGroups(snapshot As ExchangeDirectorySnapshot, listedElsewhere As ISet(Of String), attached As IEnumerable(Of ResourceDescriptor), ownDeviceId As String) As List(Of ExchangeDeviceGroup)
+        If snapshot Is Nothing Then Return New List(Of ExchangeDeviceGroup)
+        Dim resources As List(Of ResourceDescriptor) = If(attached, Enumerable.Empty(Of ResourceDescriptor)()).Where(Function(r) r IsNot Nothing).ToList()
+        Dim wanted As List(Of ExchangeResourceRecord) = snapshot.Resources.Where(
+            Function(r) Not r.HasAccess AndAlso Not r.HasSealedAccess AndAlso
+                        (listedElsewhere Is Nothing OrElse Not listedElsewhere.Contains(r.ResourceId)) AndAlso
+                        Not resources.Any(Function(d) IsLiveRecordOf(d, r.ResourceId))).ToList()
+        Dim onlyHere As New ExchangeDirectorySnapshot(snapshot.Revision, snapshot.Devices, wanted, snapshot.Broadcasts, snapshot.Grants)
+        Return Build(onlyHere, resources.Where(Function(d) d.Kind = ResourceKind.Drive), ownDeviceId).Where(Function(g) g.Rows.Count > 0).ToList()
+    End Function
+
+    ''' <summary>The records through Google Drive that a live record of the same folder has made pointless (item BB, one record per identity).</summary>
+    Friend Shared Function DriveTwins(attached As IEnumerable(Of ResourceDescriptor)) As List(Of ResourceDescriptor)
+        Dim resources As List(Of ResourceDescriptor) = If(attached, Enumerable.Empty(Of ResourceDescriptor)()).Where(Function(r) r IsNot Nothing).ToList()
+        Return resources.Where(Function(d) d.Kind = ResourceKind.Drive AndAlso resources.Any(Function(other) IsLiveRecordOf(other, d.ExchangeResourceId))).ToList()
+    End Function
+
+    Private Shared Function IsLiveRecordOf(resource As ResourceDescriptor, resourceId As String) As Boolean
+        Return resource.Kind <> ResourceKind.Drive AndAlso ResourceOrigin.IsExchange(resource) AndAlso String.Equals(resource.ExchangeResourceId, resourceId, StringComparison.Ordinal)
+    End Function
 
     ''' <summary>The directory grouped by device, with presence: online devices first, then by name; a device's resources by name. The
     ''' snapshot is the agent's - it already leaves out this device's own records (9 rule 1), but a record of this device is dropped here
@@ -250,7 +291,7 @@ Friend NotInheritable Class ExchangeDevicesModel
                 rows.Add(New ExchangeDeviceRow(r.ResourceId, r.Name, r.Kind, r.IsSupportedKind AndAlso r.CanAuthorize, device.IsOnline, isAttached,
                                                ExchangeAttach.StateOf(r.ResourceId, snapshot, fullList:=True), r.IsProtected))
             Next
-            groups.Add(New ExchangeDeviceGroup(device.DeviceId, If(device.DeviceName.Length > 0, device.DeviceName, device.Product), device.IsOnline, rows))
+            groups.Add(New ExchangeDeviceGroup(device.DeviceId, If(device.DeviceName.Length > 0, device.DeviceName, device.Product), device.IsOnline, rows, device.IsSharePaused))
         Next
         Return groups
     End Function

@@ -15,6 +15,7 @@ import (
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/password"
+	"fms/exchange-server/internal/settings"
 )
 
 // The account and device commands (ticket 162 section 4, ticket 224). They change accounts while a server
@@ -63,7 +64,13 @@ func withRunner(paths config.Paths, stderr io.Writer, f func(opRunner) int) int 
 		var audit *logx.Audit
 		defer func() { _ = logger.Close() }()
 		defer func() { _ = audit.Close() }()
-		ops := &admin.Ops{Accounts: store, Dir: dir, SaveLimits: saveLimitsTo(paths.Config)}
+		// the standards are erased with an account the operator removes offline too (DEVICE-EXCHANGE 1.12 item EN)
+		standards, err := settings.Open(paths.Dir, nil)
+		if err != nil {
+			printf(stderr, "cannot open the settings standards: %v\n", err)
+			return exitConfig
+		}
+		ops := &admin.Ops{Accounts: store, Dir: dir, SaveLimits: saveLimitsTo(paths.Config), Settings: standards}
 		code := f(func(req admin.Request) (admin.Response, error) {
 			if stateMutation(req.Op) && logger == nil {
 				if err := os.MkdirAll(paths.LogsDir, 0o700); err != nil {
@@ -232,6 +239,9 @@ func runAccount(cmd command, stdin io.Reader, stdout, stderr io.Writer) int {
 					if !a.Limits.IsEmpty() {
 						custom = "\town limits"
 					}
+					if memory := clipboardMemoryText(kind, a.Effective.ClipboardBytes); memory != "" {
+						custom += "\tclipboard memory " + memory
+					}
 					printf(stdout, "%s\t%s\t%s\t%d devices%s\n", a.Login, kind, a.CreatedAt, a.Devices, custom)
 				}
 			})
@@ -277,6 +287,9 @@ func runAccountLimits(cmd command, run opRunner, stdout, stderr io.Writer) int {
 			return exitOK
 		}
 		printf(stdout, "in force\t%s\n", describeLimits(cur.Effective))
+		if memory := clipboardMemoryText(cur.Kind, cur.Effective.ClipboardBytes); memory != "" {
+			printf(stdout, "clipboard memory\t%s (one value and one send in flight; a replaced value stays while a reader fetches it)\n", memory)
+		}
 		if cur.Limits.IsEmpty() {
 			printf(stdout, "own limits\tnone (the deployment's defaults apply)\n")
 		} else {

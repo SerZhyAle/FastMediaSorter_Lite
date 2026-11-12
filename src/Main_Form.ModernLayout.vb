@@ -338,7 +338,12 @@ Partial Public Class Main_Form
     Friend Sub RecolorChrome(back_Color As Color, opposite_Color As Color)
         If Not modern_Layout_Built Then Return
 
-        Dim hover_Color As Color = BlendColor(back_Color, opposite_Color, 0.18F)
+        Dim effectiveOpposite As Color = If(IsDarkColor(back_Color), Color.White, opposite_Color)
+        If Not IsDarkColor(back_Color) AndAlso Not IsDarkColor(effectiveOpposite) Then
+            effectiveOpposite = Color.Black
+        End If
+
+        Dim hover_Color As Color = BlendColor(back_Color, effectiveOpposite, 0.18F)
 
         ' Toolbar stays transparent (floats over the image in full-screen and
         ' shows the form's themed background when docked); only the buttons are
@@ -346,12 +351,12 @@ Partial Public Class Main_Form
         flow_Toolbar.BackColor = Color.Transparent
         panel_Status.BackColor = back_Color
 
-        RecolorContainer(flow_Toolbar, back_Color, opposite_Color, hover_Color)
-        RecolorContainer(panel_Status, back_Color, opposite_Color, hover_Color)
+        RecolorContainer(flow_Toolbar, back_Color, effectiveOpposite, hover_Color)
+        RecolorContainer(panel_Status, back_Color, effectiveOpposite, hover_Color)
 #If Not NETFRAMEWORK Then
 
         ' The floating panels follow the picture the way this toolbar does.
-        ChromeApplyScheme(back_Color, opposite_Color)
+        ChromeApplyScheme(back_Color, effectiveOpposite)
 #End If
 
 #If NETFRAMEWORK Then
@@ -415,7 +420,7 @@ Partial Public Class Main_Form
 
     Private Shared Function IsDarkColor(c As Color) As Boolean
         ' Rec. 601 luma; < 128 is treated as a dark background.
-        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 128.0
+        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 140.0
     End Function
 
     ''' <summary>Switch the native title bar between dark and light.</summary>

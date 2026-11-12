@@ -24,17 +24,24 @@
       6. tools\Test-FeatureGates.ps1      - an open exchange or live-broadcast gate names, in a committed
                                              evidence file, the rung and the date it was opened at (177
                                              section 3 item 3); a release never opens a gate by itself;
-      7. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
+      7. the Store channel (tools\lib\StoreChannel.ps1, the canon's shared read-only Store-Preflight;
+                                             WINDOWS-STORE 0.4 section D, rules 21 and 23) - stops the
+                                             release when a Store submission is already pending, when
+                                             the package version is not above the live one or when the
+                                             price is not Free; with the channel unconfigured, expired
+                                             or refused it prints one line that the Store step is manual
+                                             and the release goes on, as it does without the channel;
+      8. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
                                              ZIP and both installers;
-      8. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
+      9. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
                                              version being tagged (BUILD-EVIDENCE rule 2);
-      9. tools\Test-ImageBackendArtifacts.ps1 - no ImageSharp in any staged program, bundle or
+     10. tools\Test-ImageBackendArtifacts.ps1 - no ImageSharp in any staged program, bundle or
                                              embedded payload, and the image backend's natives are
                                              present (specification 270);
-     10. tools\Test-HtmlHostArtifacts.ps1    - one x64 WebView2 loader from the pinned SDK in
+     11. tools\Test-HtmlHostArtifacts.ps1    - one x64 WebView2 loader from the pinned SDK in
                                              webview2\win-x64 beside each staged viewer, none in the
                                              Manager-only Server root (specification 275).
-    Steps 1-6 all run whatever the one before returned. The build runs only when they all passed:
+    Steps 1-7 all run whatever the one before returned. The build runs only when they all passed:
     a release that is already blocked does not need the slowest step to say so.
 
     The preflight ends in one line, `Release-Preflight: <WORD> (v<version>; ..)`. Only a bare PASS
@@ -50,8 +57,8 @@
     script only shows the plan and runs the preflight.
 
 .PARAMETER SkipLocalCheck
-    Skip the local package build (step 4) and with it the version check (step 5). The preflight is
-    then COULD NOT VERIFY, so -Push refuses.
+    Skip the local package build (step 7) and with it the checks of what it built (steps 8-10). The
+    preflight is then COULD NOT VERIFY, so -Push refuses.
 
 .PARAMETER SkipTests
     Skip the test run (step 1). The preflight is then COULD NOT VERIFY, so -Push refuses.
@@ -87,6 +94,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $tag = "v$Version"
 . (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
+. (Join-Path $PSScriptRoot 'lib\StoreChannel.ps1')
 
 function Say([string]$msg, [string]$color = "Cyan") { Write-Host $msg -ForegroundColor $color }
 function Step([string]$msg) { Write-Host ""; Write-Host "==> $msg" -ForegroundColor Yellow }
@@ -153,22 +161,39 @@ if ($SkipTests) {
     Write-Warning "Tests skipped (-SkipTests). The preflight cannot pass without them."
     Add-Step 'Run-AllTests' $null 'skipped' 'skipped by -SkipTests'
 } else {
+    # A missing exchange server binary fails the real-binary facts here instead of skipping them (L0278 7.5).
+    $env:FMS_REQUIRE_BINARY = '1'
     Invoke-Step "Tests (viewer + Share Manager + worker)" 'Run-AllTests.ps1'
 }
 
-# 2 and 3. The generated artifacts still match their sources, and the published pages hold
-# the DOC-EXTERNAL-QUALITY gates (SEO block, links, freshness, termbase - ticket 059).
+# 2 to 5. The generated artifacts still match their sources, the published pages hold the
+# DOC-EXTERNAL-QUALITY gates (SEO block, links, freshness, termbase - ticket 059), and the vendored
+# glyphs and the exchange mark match the catalog.
 Invoke-Step "Site pages match their copy sources" 'Build-SitePages.ps1' @('-Check')
 Invoke-Step "Published site quality" 'Test-SiteQuality.ps1'
 Invoke-Step "Vendored glyphs match the catalog" 'Sync-IconGlyphs.ps1' @('-Check')
 Invoke-Step "Exchange mark matches the catalog" 'Sync-ExchangeMark.ps1' @('-Check')
 
-# 5. The gates of the exchange and the live broadcast (204 section 3 item 3, the table of 206 section 2):
+# 6. The gates of the exchange and the live broadcast (204 section 3 item 3, the table of 206 section 2):
 #    an open gate needs its evidence file, and the release itself never opens one.
 Invoke-Step "Exchange and live-broadcast gates name their evidence" 'Test-FeatureGates.ps1'
 
-# 4 and 5. The local package build (free; catches a CI failure before it is paid for), and the
-# version inside what it built.
+# 7. The Store channel, read-only (L0305; WINDOWS-STORE 0.4 section D). The shared preflight reads the live
+#    submission through the Store CLI and refuses a release that the Store step could not follow: a
+#    submission already pending, a version not above the live one, a price that is not Free (rule 23).
+#    Unconfigured, expired or refused, the channel is only a manual Store step and never a failed release
+#    (rule 21): that answer prints one line and adds no row to the verdict.
+Step "Microsoft Store channel (read-only)"
+$storeCheck = Invoke-StoreChannelCheck -RepoRoot $repoRoot -Version $Version
+foreach ($line in $storeCheck.Lines) { Write-Host "  $line" }
+switch ($storeCheck.Mode) {
+    'ready'   { Add-Step 'Store-Preflight' 0 'ran' "Store-Preflight: PASS ($($storeCheck.Detail))" }
+    'refused' { Add-Step 'Store-Preflight' 1 'ran' "Store-Preflight: FAIL ($($storeCheck.Detail))" }
+    default   { Say "  The Store step is manual; the other channels go on as without the channel." "Gray" }
+}
+
+# 8 to 11. The local package build (free; catches a CI failure before it is paid for), the version
+# inside what it built, and the image backend and WebView2 host of its stages.
 $blocked = @($steps | Where-Object { $_.Code -in 1, 2 })
 if ($SkipLocalCheck) {
     Write-Warning "Local package build skipped (-SkipLocalCheck). The preflight cannot pass without it."
@@ -264,18 +289,30 @@ if ($LASTEXITCODE -ne 0) { Say "Could not push the tag $tag. It exists locally -
 
 Say "Tag $tag pushed. GitHub Actions is building the release." "Green"
 
+# One evidence line per released version in the release record (WINDOWS-STORE 0.4 section D, rule 26): the Store ID,
+# the package version and the preflight's sanitized answer, no account identifier and no secret. It is
+# written once the tag exists, so a dry run or a refused run leaves the tree as it found it.
+$storeEvidencePath = Join-Path $repoRoot 'publishing\store\channel-evidence.jsonl'
+try { Add-StoreChannelEvidence $storeEvidencePath $tag $storeCheck.Evidence }
+catch { Write-Warning "The Store channel evidence line could not be written: $($_.Exception.Message)" }
+
 # --- After the release (manual steps) ------------------------------------------
 Step "Next, by hand (see docs/guides/BUILD_AND_RELEASE.md)"
 @"
 1) GitHub: wait for the build and its 6 assets - setup.exe + zip + server-setup.exe and three .sha256
    https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
-2) winget, User edition: a PR to microsoft/winget-pkgs for SerZhyAle.FastMediaSorter
+2) Site: pwsh -NoProfile -File tools/Set-ReleaseManifest.ps1 -Version $Version
+   (writes tools/release-manifest.json from the published release and re-renders the pages), then commit and push the site.
+3) winget, User edition: a PR to microsoft/winget-pkgs for SerZhyAle.FastMediaSorter
    (the Inno setup.exe directly, no dependencies, no Scope) -> docs/specifications/done/SPECIFICATION_WINGET_PUBLISHING.md
-3) winget, Server edition: a separate PR for SerZhyAle.FastMediaSorter.Server
+4) winget, Server edition: a separate PR for SerZhyAle.FastMediaSorter.Server
    (manifests in publishing/winget/server/; Scope: machine and MinimumOSVersion belong there)
    -> docs/guides/SERVER_EDITION_BUILD_AND_TEST.md
-4) Both PRs: fill the description with gh pr edit (never leave it empty).
-5) Microsoft Store (optional): cd publishing\msix; .\build-msix.ps1 -ReleaseVersion $Version -IdentityName "<name>" (NO -SelfSign),
+5) Both PRs: fill the description with gh pr edit (never leave it empty).
+6) Microsoft Store (optional): cd publishing\msix; .\build-msix.ps1 -ReleaseVersion $Version (NO -SelfSign; the identity is read from identity.json),
    upload the unsigned .msix to Partner Center -> docs/guides/STORE_PUBLISHING.md
+   The upload is manual; this script starts no Store submission. Before the tag it read the live Store state through the shared
+   read-only preflight (step 7) and appended its one evidence line to publishing\store\channel-evidence.jsonl - commit that line
+   with the site. A write through the Store CLI needs the owner's words that name the product and the package version.
    The Store takes the User edition only; the Server edition never goes there.
 "@ | Write-Host -ForegroundColor Cyan

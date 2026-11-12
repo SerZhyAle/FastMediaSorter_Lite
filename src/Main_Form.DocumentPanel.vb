@@ -35,6 +35,8 @@ Partial Public Class Main_Form
         Public Text As Func(Of String)
         ''' <summary>Every text the item can show, so its width is the widest and no neighbour moves while it changes.</summary>
         Public Reserved As Func(Of String())
+        ''' <summary>A fixed width in logical px (the page find's box, which must not grow with what is typed); 0 = measured.</summary>
+        Public PreferredWidth As Integer
         ''' <summary>A menu button's rows, built when it opens; the current choice is checked.</summary>
         Public Menu As Func(Of IEnumerable(Of ChromeMenuItem))
     End Class
@@ -91,6 +93,7 @@ Partial Public Class Main_Form
         panel.Host.Surface.PinItem = panel.Pin
         panel.Host.Surface.SetItems(Nothing)
         AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
+        panel.Host.Surface.ActionGate = AddressOf ChromeActionGate
         ' The wheel over the panel goes the same way as over the picture beside it (the document branches of MouseUse).
         AddHandler panel.Host.Surface.MouseWheel, Sub(sender, args) MouseUse(args)
         AddHandler panel.Host.Surface.OverflowRequested, Sub(sender, args) ChromeShowOverflow(panel)
@@ -245,6 +248,7 @@ Partial Public Class Main_Form
                 .MirrorInRtl = DocumentPanelRules.MirrorsInRtl(id),
                 .NeverOverflows = DocumentPanelRules.IsPinnedCore(kind, id),
                 .KeepsSlotWhenHidden = DocumentPanelRules.IsConditional(kind, id),
+                .PreferredWidth = command.PreferredWidth,
                 .Action = command.Action}
             If command.Menu IsNot Nothing Then
                 Dim menu As Func(Of IEnumerable(Of ChromeMenuItem)) = command.Menu
@@ -295,6 +299,65 @@ Partial Public Class Main_Form
         PlaceChromePanels()
     End Sub
 
+    ''' <summary>The language changed: the readouts a reader keeps as translated text are written again, then every item reads
+    ''' its words. A no-op with no reader on screen.</summary>
+    Private Sub LocalizeDocumentPanel()
+        If Not DocumentPanelPresent() Then Return
+        Select Case document_Panel_Kind
+            Case DocumentReaderKind.Epub : UpdateEpubReaderContext()
+            Case DocumentReaderKind.Html
+                UpdateHtmlViewContext()
+                LocalizeHtmlViewFind()
+        End Select
+        SyncDocumentPanel()
+    End Sub
+
+    ''' <summary>The settings changed while a reader is on screen: its items read their state again. The text panel is built
+    ''' again when the editing opt-in moved, because the editing group is on it only while the opt-in is on; never during an
+    ''' edit, which keeps its commands until it ends.</summary>
+    Private Sub DocumentPanelFollowsPreferences()
+        If Not DocumentPanelPresent() OrElse document_Commands Is Nothing Then Return
+        If document_Panel_Kind = DocumentReaderKind.Text AndAlso Not text_Editing AndAlso
+           document_Commands.ContainsKey(DocumentPanelRules.IdTextEdit) <> TextEditingOn() Then
+            ShowDocumentCommands(DocumentReaderKind.Text, TextReaderCommands())
+        Else
+            SyncDocumentPanel()
+        End If
+    End Sub
+
+    ''' <summary>Runs <paramref name="action"/> once the panel's window is on screen with the item <paramref name="id"/> laid out: a
+    ''' key (Ctrl+F) can ask for an edit while the panel has faded away, and a hidden host cannot take the keyboard. The panel is
+    ''' held up like a moved one; the chrome's tick shows it, and the edit starts on the next beat of a short timer. It gives up
+    ''' after about a second (the panel left, or the window is not shown).</summary>
+    Private Sub DocumentPanelRevealThen(id As String, action As Action)
+        If Not DocumentPanelPresent() OrElse document_Items Is Nothing Then Return
+        Dim panel As ChromePanel = chrome_Document_Panel
+        ChromeHoldMovedPanel(panel)
+        Dim ready As Func(Of Boolean) =
+            Function() As Boolean
+                Dim item As ChromeItem = Nothing
+                If Not DocumentPanelPresent() OrElse Not panel.Host.Visible OrElse Not document_Items.TryGetValue(id, item) Then Return False
+                If item.Bounds.IsEmpty Then panel.Host.Surface.LayoutItems()
+                Return Not item.Bounds.IsEmpty
+            End Function
+        If ready() Then
+            action()
+            Return
+        End If
+        Dim beats As Integer
+        Dim timer As New System.Windows.Forms.Timer With {.Interval = 30}
+        AddHandler timer.Tick,
+            Sub()
+                beats += 1
+                Dim go As Boolean = ready()
+                If Not go AndAlso beats < 34 AndAlso DocumentPanelPresent() Then Return
+                timer.Stop()
+                timer.Dispose()
+                If go Then action()
+            End Sub
+        timer.Start()
+    End Sub
+
     ''' <summary>The F10 ring is on the document panel: the keys are the chrome's, not the reader's and not the sort keys.</summary>
     Private Function ChromeKeyboardOnDocumentPanel() As Boolean
         If Not chrome_Keyboard_Mode OrElse Not DocumentPanelPresent() Then Return False
@@ -341,6 +404,8 @@ Partial Public Class Main_Form
         If DocumentPaneTop() = document_Pane_Top Then Return
         Select Case document_Panel_Kind
             Case DocumentReaderKind.Pdf : LayoutPdfReader(Me, EventArgs.Empty)
+            Case DocumentReaderKind.Epub : LayoutEpubReader(Me, EventArgs.Empty)
+            Case DocumentReaderKind.Text : LayoutTextEditor(Me, EventArgs.Empty)
         End Select
     End Sub
 

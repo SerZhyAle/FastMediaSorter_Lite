@@ -83,6 +83,8 @@ Partial Public NotInheritable Class MainWindow
         Dim offered As Boolean = _clipboard.IsOffered()
         Dim running As Boolean = _clipboard.IsRunning
         btnClipboardMenu.Visible = offered
+        If offered AndAlso mnuClipboardSend IsNot Nothing Then mnuClipboardSend.Text = ClipboardCoordinator.ActionText(isSend:=True)
+        If offered AndAlso mnuClipboardGet IsNot Nothing Then mnuClipboardGet.Text = ClipboardCoordinator.ActionText(isSend:=False)
         If mnuClipboardSend IsNot Nothing Then mnuClipboardSend.Enabled = Not running
         If mnuClipboardGet IsNot Nothing Then mnuClipboardGet.Enabled = Not running
         If mnuClipboardCancel IsNot Nothing Then mnuClipboardCancel.Enabled = running

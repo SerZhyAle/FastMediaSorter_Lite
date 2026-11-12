@@ -127,7 +127,7 @@
     <Application Id="FastMediaSorterShareManager" Executable="FastMediaSorterCompanion.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Share Manager - Fast Media Sorter &amp; Sharing"
-        Description="Local sharing and scheduling: shares your PC folders over SFTP (Android pairs by scanning a QR code), runs file operations on a schedule and connects this PC to an exchange account."
+        Description="Local sharing and scheduled file operations: shares your PC folders over SFTP (Android pairs by scanning a QR code), connects this PC to an exchange account and runs copy, move, delete and archive on a timetable while you are signed in."
         BackgroundColor="#171B26"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

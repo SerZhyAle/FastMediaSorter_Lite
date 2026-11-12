@@ -158,6 +158,29 @@ Friend Enum ClipboardLineCode
     ClipboardNoAnswer = 22
     ''' <summary>Detail: the limit, in whole GB. The value is larger than the default `clipboardBytes` of an account (item P), refused before a stream opens.</summary>
     OverServerLimit = 23
+    ' The Google Drive path (ticket 269 P4, item CP). Words: «через Google Drive», never a server's.
+    ''' <summary>The value is the Google account's value now.</summary>
+    SentViaDrive = 24
+    ''' <summary>The Google account holds no value.</summary>
+    EmptyViaDrive = 25
+    ''' <summary>Device: a text or an image is in the clipboard.</summary>
+    ReceivedValueViaDrive = 26
+    ''' <summary>Device + Detail (the folder): a file is saved and in the clipboard as a file drop.</summary>
+    ReceivedFileViaDrive = 27
+    ''' <summary>Detail: the free space in whole MB, "" when Drive said so itself mid-upload (item CS): nothing stays.</summary>
+    DriveFull = 28
+    ''' <summary>The stored sign-in no longer works.</summary>
+    DriveSignedOut = 29
+    DriveOffline = 30
+    ''' <summary>Drive's daily upload limit: never retried in a loop (item CS).</summary>
+    DriveDailyLimit = 31
+    ''' <summary>The value vanished between the listing and the download: a newer one replaced it.</summary>
+    DriveValueReplaced = 32
+    DriveUnavailable = 33
+    ''' <summary>Detail: the limit, in whole GB. The value is larger than the largest packet (item CS).</summary>
+    OverDriveLimit = 34
+    ''' <summary>The file's name is outside the forms of item CN.</summary>
+    DriveBadName = 35
 End Enum
 
 Friend NotInheritable Class ClipboardLine
@@ -217,6 +240,8 @@ Friend NotInheritable Class ClipboardExchangePorts
     ''' The caller disposes the result. A test hands in a directory it controls.</summary>
     Public Property Sealing As Func(Of ClipboardTarget, CancellationToken, Task(Of ExchangeClipboardSealing)) =
         Function(target As ClipboardTarget, ct As CancellationToken) ClipboardSealingProvider.ResolveAsync(target, ExchangeProductVersion.Current(), ct)
+    ''' <summary>The Google Drive path (ticket 269 P4), Nothing while the person has not turned the channel on. A test hands in its own.</summary>
+    Public Property Drive As Func(Of ClipboardDrivePath) = Function() ClipboardDrivePath.ForThisProcess()
 
 End Class
 
@@ -236,6 +261,8 @@ Friend NotInheritable Class ClipboardExchange
         For Each target As ClipboardTarget In targets
             queries.Add(QuerySlotAsync(target, ct))
         Next
+        Dim drive As ClipboardDrivePath = _ports.Drive.Invoke()
+        If drive IsNot Nothing Then queries.Add(QueryDriveSlotAsync(drive, ct))
         Return Await Task.WhenAll(queries).ConfigureAwait(False)
     End Function
 
@@ -243,6 +270,10 @@ Friend NotInheritable Class ClipboardExchange
         Dim result As ExchangeClipboardResult = Await ExchangeClipboardClient.StateAsync(
             target.Transport, target.Address, target.Pin, target.Credentials, _ports.ProductVersion, ct, _ports.StateIdle).ConfigureAwait(False)
         Return New ClipboardSlotStatus(target.Label, result)
+    End Function
+
+    Private Shared Async Function QueryDriveSlotAsync(drive As ClipboardDrivePath, ct As CancellationToken) As Task(Of ClipboardSlotStatus)
+        Return New ClipboardSlotStatus(ClipboardDrivePath.SlotLabel, Await drive.StateAsync(ct).ConfigureAwait(False))
     End Function
 
     Public ReadOnly Property IsRunning As Boolean
@@ -263,8 +294,9 @@ Friend NotInheritable Class ClipboardExchange
         If Interlocked.CompareExchange(_running, 1, 0) <> 0 Then Return One(ClipboardLineCode.OperationUnderWay)
         Try
             Dim targets As List(Of ClipboardTarget) = _ports.Targets.Invoke()
-            ' With no account nothing reads the clipboard (rule 9).
-            If targets.Count = 0 Then Return One(ClipboardLineCode.NoServer)
+            Dim drive As ClipboardDrivePath = _ports.Drive.Invoke()
+            ' With no account and no Google sign-in nothing reads the clipboard (rule 9).
+            If targets.Count = 0 AndAlso drive Is Nothing Then Return One(ClipboardLineCode.NoServer)
 
             Dim snapshot As ClipboardSnapshot = Await _ports.Port.ReadAsync(ct).ConfigureAwait(False)
             If ct.IsCancellationRequested Then Return One(ClipboardLineCode.Cancelled)
@@ -296,17 +328,23 @@ Friend NotInheritable Class ClipboardExchange
             ' a server with a lower limit still answers `limit-reached` on the declared size, which reads as its own sentence.
             If snapshot.Size > ExchangeClipboardRules.DefaultMaxBytes Then
                 _ports.Log.Invoke("Clipboard send: not sent (over the default limit)")
-                Return New ClipboardRunResult({New ClipboardLine(ClipboardLineCode.OverServerLimit, detail:=(ExchangeClipboardRules.DefaultMaxBytes \ GigaByte).ToString(CultureInfo.InvariantCulture))}, False)
+                Dim refused As New List(Of ClipboardLine)()
+                If targets.Count > 0 Then refused.Add(New ClipboardLine(ClipboardLineCode.OverServerLimit, detail:=(ExchangeClipboardRules.DefaultMaxBytes \ GigaByte).ToString(CultureInfo.InvariantCulture)))
+                If drive IsNot Nothing Then refused.Add(ClipboardDrivePath.OverLimitLine(ExchangeDrivePackets.DefaultPacketBytes))
+                Return New ClipboardRunResult(refused, False)
             End If
 
             Dim lines As New List(Of ClipboardLine)()
             Dim sent As Integer = 0
+            ' A press cancelled or a value that cannot be read stops every store, Drive too.
+            Dim stopped As Boolean = False
             ' The clear SHA-256 is stated by the sealed box, so it is known before the first byte leaves: a value in memory is hashed
             ' here, a file by one reading pass of its own - and only once, and only when a server can take the value (below).
             Dim clearSha As String = Nothing
             For Each target As ClipboardTarget In targets
                 If ct.IsCancellationRequested Then
                     lines.Add(New ClipboardLine(ClipboardLineCode.Cancelled))
+                    stopped = True
                     Exit For
                 End If
                 Using sealing As ExchangeClipboardSealing = Await _ports.Sealing.Invoke(target, ct).ConfigureAwait(False)
@@ -320,12 +358,14 @@ Friend NotInheritable Class ClipboardExchange
                         clearSha = Await ClearHashAsync(snapshot, ct).ConfigureAwait(False)
                         If clearSha Is Nothing Then
                             lines.Add(New ClipboardLine(If(ct.IsCancellationRequested, ClipboardLineCode.Cancelled, ClipboardLineCode.ClipboardUnreadable)))
+                            stopped = True
                             Exit For
                         End If
                     End If
                     Dim source As Stream = OpenSource(snapshot)
                     If source Is Nothing Then
                         lines.Add(New ClipboardLine(ClipboardLineCode.ClipboardUnreadable))
+                        stopped = True
                         Exit For
                     End If
                     Dim result As ExchangeClipboardResult
@@ -339,11 +379,27 @@ Friend NotInheritable Class ClipboardExchange
                     Dim line As ClipboardLine = LineOf(result, target.Label, isPut:=True)
                     If result.IsDone Then sent += 1
                     lines.Add(line)
-                    If result.Outcome = ExchangeClipboardOutcome.Transport AndAlso result.Open = ExchangeOpenOutcome.Cancelled Then Exit For
+                    If result.Outcome = ExchangeClipboardOutcome.Transport AndAlso result.Open = ExchangeOpenOutcome.Cancelled Then
+                        stopped = True
+                        Exit For
+                    End If
                 End Using
             Next
+            ' Item CP: a device holding member entries and Drive sends to all of them, one line each.
+            Dim driveWord As String = ""
+            If drive IsNot Nothing AndAlso Not stopped Then
+                Dim driveLine As ClipboardLine
+                If ct.IsCancellationRequested Then
+                    driveLine = New ClipboardLine(ClipboardLineCode.Cancelled)
+                Else
+                    driveLine = Await drive.SendAsync(snapshot, kind, name, If(snapshot.Kind = ClipboardReadKind.OneFile, mime, ""), progress, ct).ConfigureAwait(False)
+                End If
+                lines.Add(driveLine)
+                If driveLine.Code = ClipboardLineCode.SentViaDrive Then sent += 1
+                driveWord = " drive=" & driveLine.Code.ToString()
+            End If
             _ports.Log.Invoke("Clipboard send: kind=" & kind & " size=" & SizeClass(snapshot.Size) &
-                       " servers=" & targets.Count.ToString() & " sent=" & sent.ToString())
+                       " servers=" & targets.Count.ToString() & " sent=" & sent.ToString() & driveWord)
             Return New ClipboardRunResult(lines, sent > 0)
         Finally
             Volatile.Write(_running, 0)
@@ -411,7 +467,8 @@ Friend NotInheritable Class ClipboardExchange
         If Interlocked.CompareExchange(_running, 1, 0) <> 0 Then Return One(ClipboardLineCode.OperationUnderWay)
         Try
             Dim targets As List(Of ClipboardTarget) = _ports.Targets.Invoke()
-            If targets.Count = 0 Then Return One(ClipboardLineCode.NoServer)
+            Dim drive As ClipboardDrivePath = _ports.Drive.Invoke()
+            If targets.Count = 0 AndAlso drive Is Nothing Then Return One(ClipboardLineCode.NoServer)
 
             ' 1. What every server holds - without its bytes, all at once: a server that is down costs its own wait, not the sum.
             Dim asks As New List(Of Task(Of ExchangeClipboardResult))()
@@ -419,7 +476,9 @@ Friend NotInheritable Class ClipboardExchange
                 asks.Add(ExchangeClipboardClient.StateAsync(target.Transport, target.Address, target.Pin, target.Credentials,
                                                             _ports.ProductVersion, ct, _ports.StateIdle))
             Next
+            Dim driveAsk As Task(Of ClipboardDriveAnswer) = If(drive IsNot Nothing, drive.StateAsync(ct), Nothing)
             Dim answers As ExchangeClipboardResult() = Await Task.WhenAll(asks).ConfigureAwait(False)
+            Dim driveAnswer As ClipboardDriveAnswer = If(driveAsk IsNot Nothing, Await driveAsk.ConfigureAwait(False), Nothing)
             If ct.IsCancellationRequested Then Return One(ClipboardLineCode.Cancelled)
 
             Dim lines As New List(Of ClipboardLine)()
@@ -437,7 +496,28 @@ Friend NotInheritable Class ClipboardExchange
                 End If
             Next
 
+            ' Item CP: the latest by each store's own time, the exchange server first on equal times. Drive that cannot be asked is one
+            ' line and never hides a server's value.
+            Dim driveValue As ExchangeDrivePacket = Nothing
+            If driveAnswer IsNot Nothing Then
+                If driveAnswer.Failure <> ExchangeDriveFailure.None Then
+                    lines.Add(ClipboardDrivePath.LineOfFailure(driveAnswer.Failure))
+                Else
+                    driveValue = driveAnswer.Value
+                End If
+            End If
+            If driveValue IsNot Nothing AndAlso (bestIndex < 0 OrElse (driveValue.HasManifestCreatedAt AndAlso driveValue.ManifestCreatedAt.UtcDateTime > answers(bestIndex).Value.StoredAtUtc)) Then
+                Dim taken As ClipboardLine = Await drive.TakeAsync(driveValue, _ports, progress, ct).ConfigureAwait(False)
+                If taken.Code = ClipboardLineCode.ReceivedValueViaDrive OrElse taken.Code = ClipboardLineCode.ReceivedFileViaDrive Then
+                    lines.Insert(0, taken)
+                    Return New ClipboardRunResult(lines, True)
+                End If
+                lines.Add(taken)
+                Return New ClipboardRunResult(lines, False)
+            End If
+
             If bestIndex < 0 Then
+                If driveAnswer IsNot Nothing AndAlso driveAnswer.Failure = ExchangeDriveFailure.None Then lines.Insert(0, New ClipboardLine(ClipboardLineCode.EmptyViaDrive))
                 If empties > 0 Then lines.Insert(0, New ClipboardLine(ClipboardLineCode.ServerEmpty, "", "clipboard-empty"))
                 _ports.Log.Invoke("Clipboard get: servers=" & targets.Count.ToString() & " value=none empty=" & empties.ToString())
                 Return New ClipboardRunResult(lines, False)
@@ -581,6 +661,15 @@ Friend NotInheritable Class ClipboardExchange
         Return New ClipboardRunResult({New ClipboardLine(code)}, False)
     End Function
 
+    ''' <summary>The Windows "downloaded from the internet" mark, kept as for any download (default 3 of the specification). A file
+    ''' system without streams simply has none.</summary>
+    Friend Shared Sub MarkDownloaded(path As String)
+        Try
+            File.WriteAllText(path & ":Zone.Identifier", "[ZoneTransfer]" & vbCrLf & "ZoneId=3" & vbCrLf)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is NotSupportedException OrElse TypeOf ex Is ArgumentException
+        End Try
+    End Sub
+
     ''' <summary>A size class for a log line: enough to see what kind of value it was, never its exact length.</summary>
     Friend Shared Function SizeClass(size As Long) As String
         If size <= 4096L Then Return "xs"
@@ -684,15 +773,6 @@ Friend NotInheritable Class ClipboardExchange
             Discard()
             Return Nothing
         End Function
-
-        ''' <summary>The Windows "downloaded from the internet" mark, kept as for any download (default 3 of the specification). A file
-        ''' system without streams simply has none.</summary>
-        Private Shared Sub MarkDownloaded(path As String)
-            Try
-                File.WriteAllText(path & ":Zone.Identifier", "[ZoneTransfer]" & vbCrLf & "ZoneId=3" & vbCrLf)
-            Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is NotSupportedException OrElse TypeOf ex Is ArgumentException
-            End Try
-        End Sub
 
     End Class
 

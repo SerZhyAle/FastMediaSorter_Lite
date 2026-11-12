@@ -200,14 +200,26 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Async Sub ActivateScheduleEntryPoint()
         Try
-            Await ActivateScheduleEntryPointAsync()
+            Await ActivateScheduleEntryPointAsync(preferFolder:=True)
         Catch ex As Exception
             AppFileLogger.LogException("ScheduleLauncher", ex)
         End Try
     End Sub
 
-    Private Async Function ActivateScheduleEntryPointAsync() As Task
-        Dim folder As String = ResolveCurrentFolder()
+    ''' <summary>L0297: the folderless command into scheduled file operations - the assignable
+    ''' shortcut's action and the folder menu's window-level item. The Share Manager opens its
+    ''' scheduling window without starting an editor; an old Manager is woken plainly and told to
+    ''' be updated, exactly as the folder-specific entry does.</summary>
+    Friend Async Sub ActivateScheduleWindowEntryPoint()
+        Try
+            Await ActivateScheduleEntryPointAsync(preferFolder:=False)
+        Catch ex As Exception
+            AppFileLogger.LogException("ScheduleLauncher", ex)
+        End Try
+    End Sub
+
+    Private Async Function ActivateScheduleEntryPointAsync(preferFolder As Boolean) As Task
+        Dim folder As String = If(preferFolder, ResolveCurrentFolder(), "")
         Dim exePath As String = CompanionExePath()
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
             AppFileLogger.WriteLine("ScheduleLauncher: Companion exe not found at '" & If(exePath, "") & "'")

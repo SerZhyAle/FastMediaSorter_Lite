@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>共享 - 访问码 - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -26,7 +27,7 @@
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-<details id="folders-grid"><summary>此访问码的文件夹和设置</summary><p>每个共享文件夹一行，列为：开、文件夹、手机上的名称、类型、媒体类型、扫描子文件夹、子文件夹作为条目、隐藏、只读、只读提示、目标、备注和幻灯片，秒。点击单元格即可更改。这些值以各文件夹自己的设置为起点，所做修改只适用于本次代码。「只读」是服务器上的真正锁定；「只读提示」只是在应用中隐藏编辑按钮。目标文件夹始终可写，所以「只读」不适用于它。</p></details>
+<details id="folders-grid"><summary>此访问码的文件夹和设置</summary><p>每个共享文件夹一行，列为：开、文件夹、手机上的名称、类型、媒体类型、扫描子文件夹、子文件夹作为条目、隐藏、只读、只读提示、目标、备注、PIN 和幻灯片，秒。点击单元格即可更改。PIN 本身不会显示：勾选表示已设置，点击会打开一个隐藏输入框，可在其中设置、更改或清除 PIN。这些值以各文件夹自己的设置为起点，所做修改只适用于本次代码。「只读」是服务器上的真正锁定；「只读提示」只是在应用中隐藏编辑按钮。目标文件夹始终可写，所以「只读」不适用于它。</p></details>
 <details id="common-settings"><summary>通用传输设置</summary><p>「不在此代码中包含互联网地址」让手机只通过本地网络连接；它不会关闭服务器，整个共享的互联网访问需在管理器设置中关闭。「不要将密码写入文件/二维码」会从代码中去掉密码；请另行告知密码。手机是否接受不含密码的代码，取决于应用版本。</p></details>
 <details id="access-check"><summary>访问检查</summary><p>获取状态期间，窗口会提示。如果服务器未运行、没有勾选文件夹，或没有可用地址，会有提示说明缺少什么。检查未完成时，不会交出代码和文件：请点击「重新检查访问权限」。</p></details>
 <details id="qr-code"><summary>显示二维码</summary><p>二维码和 .fmscfg 文件会开放对文件夹的访问，并且包含密码和（若已设置）PIN - 请像对待钥匙一样保管和交接。如果设置太大，二维码装不下，请保存文件并改为发送文件。</p></details>

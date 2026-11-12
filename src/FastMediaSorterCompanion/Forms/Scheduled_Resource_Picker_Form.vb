@@ -55,7 +55,7 @@ Friend NotInheritable Class Scheduled_Resource_Picker_Form
                 .Text = Localization.T("В списке ресурсов нет подходящих ресурсов. Добавьте SFTP-сервер или сетевую папку в просмотрщике.")})
         Else
             table.Controls.Add(New Label With {.AutoSize = True, .Text = Localization.T("Ресурс"), .Margin = New Padding(0, 0, 0, 2)})
-            combo = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 380, .Name = "cmbSchedResource",
+            combo = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 380, .Name = "cmbSchedResource",
                 .Margin = New Padding(0, 0, 0, 8), .AccessibleName = Localization.T("Ресурс")}
             For Each descriptor As ResourceDescriptor In resources
                 combo.Items.Add(descriptor.DisplayName)

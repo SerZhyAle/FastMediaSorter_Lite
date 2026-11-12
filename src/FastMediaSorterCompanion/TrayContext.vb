@@ -79,8 +79,9 @@ Friend NotInheritable Class TrayContext
         ' server" scenario where Companion autostarts into the tray with no window.
         ResumeShareIfEnabled()
 
-        ' The device agent of the exchange (ticket 180). Dormant unless the client gate is open AND an account is configured: with
-        ' neither, no agent is even constructed - no connection, no pipe, no registry value, no file.
+        ' The device agent of the exchange (ticket 180). Dormant unless the client gate is open AND an account is configured or a Google
+        ' Drive sign-in is stored (ticket 269 P2: then the agent only serves the Drive listing, with no connection): with none of
+        ' these, no agent is even constructed - no connection, no pipe, no registry value, no file.
         ExchangeDeviceHost.StartIfConfigured()
         ' The Google Drive channel (spec 203 section 5.10). Same dormant rule: with the gate shut, or with no stored sign-in, nothing is
         ' constructed and nothing is asked of Google; with a stored sign-in the poller starts and tells the page if Google lost it.
@@ -91,6 +92,9 @@ Friend NotInheritable Class TrayContext
         ' Scheduled file operations (ticket 222): the engine lives in this tray process and nowhere else - it
         ' loads the stored operations and arms them. Not behind the Share opt-in (no port, no firewall).
         ScheduledHost.NotifyErrorHandler = AddressOf OnScheduledNotifyError
+        ' L0297: the standalone scheduling window routes its autostart link here - this class owns the
+        ' Manager settings window, so it is the one that can open its startup page.
+        Scheduled_Manager_Form.OpenManagerSettingsPage = AddressOf ShowSettingsPageFromTray
         ScheduledHost.Start()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
@@ -739,6 +743,10 @@ Friend NotInheritable Class TrayContext
                 Dim running As Boolean = _clipboard.IsRunning
                 miSend.Visible = offered
                 miGet.Visible = offered
+                If offered Then
+                    miSend.Text = ClipboardCoordinator.ActionText(isSend:=True)
+                    miGet.Text = ClipboardCoordinator.ActionText(isSend:=False)
+                End If
                 miSend.Enabled = Not running
                 miGet.Enabled = Not running
                 miCancel.Visible = offered AndAlso running
@@ -1054,10 +1062,16 @@ Friend NotInheritable Class TrayContext
             End Sub
     End Sub
 
-    ''' <summary>Opens the Scheduled file operations page of the settings, on top of the manager window.</summary>
+    ''' <summary>Opens the standalone Scheduled operations window (L0297), on top of whoever woke us.</summary>
     Private Sub ShowScheduledOperations(folder As String)
-        ShowSettingsWindow(SettingsDestination.Manager, "scheduled", folder)
+        Dim window As Scheduled_Manager_Form = Scheduled_Manager_Form.OpenScheduledManager(folder, Nothing)
+        If window IsNot Nothing AndAlso window.IsHandleCreated Then ForceToForeground(window)
+    End Sub
 
+    ''' <summary>The standalone scheduling window's autostart link: the Manager settings window's
+    ''' startup page (L0297).</summary>
+    Private Sub ShowSettingsPageFromTray(page As String)
+        ShowSettingsWindow(SettingsDestination.Manager, page)
     End Sub
 
     Private Sub ShowTrayNotice(text As String)
@@ -1086,6 +1100,7 @@ Friend NotInheritable Class TrayContext
             If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then _mainWindow.Close()
         Catch
         End Try
+        Share_Settings_Form.CloseRemoteWindowsForExit()
         ExitThread()
     End Sub
 

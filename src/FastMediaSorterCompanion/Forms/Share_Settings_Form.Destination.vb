@@ -64,6 +64,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Function DestinationCaption() As String
         Select Case Destination
             Case SettingsDestination.ExchangeServer : Return Localization.T("Настройки сервера обмена")
+            Case SettingsDestination.RemoteExchange : Return RemoteWindowCaption()
             Case Else : Return Localization.T("Настройки менеджера")
         End Select
     End Function
@@ -85,7 +86,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub BuildDestinationLinks()
         Dim links As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True,
             .FlowDirection = FlowDirection.TopDown, .WrapContents = False}
-        For Each target In {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
+        For Each target In RemoteDestinationLinkTargets()
             If target = Destination Then Continue For
             Dim caption As String
             Select Case target

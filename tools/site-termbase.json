@@ -91,12 +91,26 @@
       }
     },
     {
-      "id": "local-sharing-scheduling",
+      "id": "local-sharing",
       "scope": "lang",
       "stems": {
-        "en": ["local sharing and scheduling"],
-        "ru": ["раздачи и расписаний", "раздача и расписания"],
-        "uk": ["роздачі та розкладів", "роздача та розклади"],
+        "en": ["local sharing"],
+        "ru": ["локальная раздача", "служба раздачи"],
+        "uk": ["локальна роздача", "служба роздачі"],
+        "de": ["Freigabedienst"],
+        "it": ["servizio locale di condivisione"],
+        "es": ["servicio local de uso compartido"],
+        "fr": ["service local de partage"],
+        "pt": ["serviço local de partilha"],
+        "ar": ["خدمة محلية للمشاركة"],
+        "hi": ["स्थानीय साझाकरण सेवा"],
+        "bn": ["স্থানীয় শেয়ারিং সেবা"],
+        "ur": ["مقامی شیئرنگ سروس"],
+        "zh": ["本地共享服务"]
+      },
+      "forbidden": {
+        "ru": ["служба раздачи папок по SFTP", "раздача и расписания", "раздачи и расписаний"],
+        "uk": ["служба роздачі тек по SFTP", "роздача та розклади", "роздачі та розкладів"],
         "de": ["Freigabe- und Zeitplan"],
         "it": ["condivisione e pianificazione"],
         "es": ["uso compartido y tareas programadas"],
@@ -107,11 +121,27 @@
         "bn": ["শেয়ারিং ও সময়সূচি"],
         "ur": ["شیئرنگ اور شیڈولنگ"],
         "zh": ["共享与计划"]
-      },
-      "forbidden": {
-        "ru": ["служба раздачи папок по SFTP"],
-        "uk": ["служба роздачі тек по SFTP"]
       }
+    },
+    {
+      "id": "scheduled-file-operations",
+      "scope": "lang",
+      "stems": {
+        "en": ["scheduled file operations"],
+        "ru": ["файловые операции по расписанию"],
+        "uk": ["файлові операції за розкладом"],
+        "de": ["geplante Dateivorgänge"],
+        "it": ["operazioni pianificate sui file"],
+        "es": ["operaciones de archivos programadas"],
+        "fr": ["opérations planifiées sur les fichiers"],
+        "pt": ["operações agendadas de ficheiros"],
+        "ar": ["عمليات الملفات المجدولة"],
+        "hi": ["शेड्यूल किए गए फ़ाइल ऑपरेशन"],
+        "bn": ["নির্ধারিত ফাইল অপারেশন"],
+        "ur": ["شیڈولڈ فائل آپریشنز"],
+        "zh": ["计划文件操作"]
+      },
+      "forbidden": {}
     },
     {
       "id": "scheduled-operation",

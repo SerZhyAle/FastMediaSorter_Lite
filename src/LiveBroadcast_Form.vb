@@ -183,8 +183,9 @@ Friend NotInheritable Class LiveBroadcast_Form
         Me.Controls.Add(autoCastRow)
 
         Dim paste As New Button With {.Text = Localization.T("Вставить"), .Location = New Point(420, 66), .Size = New Size(106, 26)}
-        AddHandler paste.Click, Sub()
-                                   Dim qr As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+        AddHandler paste.Click, Async Sub()
+                                   Dim qr As QrDecodeResult = Await QrCodeDecoder.DecodeClipboardAsync()
+                                   If IsDisposed Then Return
                                    If qr.Succeeded Then
                                        txtInput.Text = qr.Text
                                    Else

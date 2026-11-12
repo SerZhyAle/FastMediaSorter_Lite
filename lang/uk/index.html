@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" data-page-lang="uk">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,15 +9,15 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
-<title>Сортування фото та відео | Fast Media Sorter &amp; Sharing</title>
+<title>Файловий менеджер для Windows | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/">
 <link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
@@ -35,7 +35,7 @@
 <link rel="alternate" hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">
 <link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Сортування фото та відео | Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Файловий менеджер для Windows | Fast Media Sorter &amp; Sharing">
 <meta property="og:description" content="Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.">
 <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/">
 <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
@@ -43,9 +43,9 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="uk">
+<meta property="og:locale" content="uk_UA">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Сортування фото та відео | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:title" content="Файловий менеджер для Windows | Fast Media Sorter &amp; Sharing">
 <meta name="twitter:description" content="Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.">
 <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
 <meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
@@ -58,14 +58,14 @@
 <link rel="stylesheet" href="../../assets/sza-kit.css">
 <link rel="stylesheet" href="../../assets/fms-site.css">
 <link rel="stylesheet" href="../../assets/fms-buttons.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/","inLanguage":"uk","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/","inLanguage":"uk","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","installUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe","license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
 <a class="skip-link" href="#main">Перейти до основного вмісту</a>
-<header class="site-header">
+<header class="site-header site-header-landing">
   <nav class="site-nav" aria-label="Основна навігація">
-  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
-  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Документація</a>
+  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span>Fast Media Sorter &amp; Sharing<span class="brand-os"> for Windows</span></span></a>
+  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html">Документація</a>
   <div class="seg" role="group" aria-label="Мова"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
   <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Темна тема</span></button>
   <a class="btn btn-ghost" href="#get">Інсталятор (GitHub)</a>
@@ -96,37 +96,47 @@
       </div>
     </div>
     <h1>Сортуйте фото та відео одним натисканням клавіші на файл</h1>
-    <p class="lead lead-narrow">Три необов'язкові частини: медіа- та файловий менеджер, який показує й сортує фото та відео однією клавішею і керує файлами в локальних теках, на серверах і підключених пристроях; локальна служба роздачі та розкладів, яка роздає теки по SFTP, виконує файлові операції за розкладом і підключає цей ПК до облікового запису обміну; і Media Exchange Server, який ви запускаєте самі і через який ваші пристрої зв'язуються між собою, - почніть із менеджера або з сервера роздачі тек, а решту додавайте, лише якщо потрібно.</p>
-    <p class="lead lead-narrow">Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.</p>
-    <p class="lead lead-narrow">«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
-    <div class="button-group">
-      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
-           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
-           channels, where naming each way to get the product is the rule. -->
-      <a class="btn btn-primary" href="#get">Встановити</a>
-      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Інструкції</a>
+    <p class="lead lead-narrow">Чотири необов'язкові частини: медіа- та файловий менеджер, який показує й сортує фото та відео однією клавішею і керує файлами в локальних теках, на серверах і підключених пристроях; локальна служба роздачі, яка роздає теки по SFTP і підключає цей ПК до облікового запису обміну; файлові операції за розкладом - копіювання, переміщення, видалення й архівація в заданий час, - які встановлюються разом із Менеджером спільного доступу; і Media Exchange Server, який ви запускаєте самі і через який ваші пристрої зв'язуються між собою, - почніть із менеджера або з сервера роздачі тек, а решту додавайте, лише якщо потрібно.</p>
+    <!-- gen:hero-get -->
+    <div class="hero-get">
+      <div class="hero-get-main">
+        <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Інсталятор (GitHub)</span></a>
+        <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> (відкриється в новій вкладці)</span></a>
+        <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64.zip"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
+        <span class="dl-facts" lang="en" dir="ltr"><a class="meta-strong" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830">v26.10.25.1830</a> &middot; <time datetime="2026-10-25">2026-10-25</time> &middot; 437.5 MB</span>
+      </div>
+      <div class="copybox"><span class="tok">winget</span> install --id SerZhyAle.FastMediaSorter
+        <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">Копіювати</button></div>
     </div>
+    <figure class="hero-shot"><img src="../../assets/guides/viewer-main.png" width="652" height="372" alt="Вікно перегляду: фото, над ним панель інструментів, під ним назва файлу, дата й розмір" decoding="async"></figure>
+    <!-- /gen:hero-get -->
   </section>
 
   <section class="section doors" id="doors" aria-labelledby="doors-title">
     <div class="sec-head">
-      <h2 class="section-title" id="doors-title"><span class="hash">#</span>Два входи, три необов'язкові частини</h2>
-      <p class="section-desc">Почніть звідти, де ви стоїте: з медіа- та файлового менеджера або із сервера роздачі тек. Кожна частина необов'язкова, а Media Exchange Server ви запускаєте самі.</p>
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span>Три входи, чотири необов'язкові частини</h2>
+      <p class="section-desc">Почніть звідти, де ви стоїте: з медіа- та файлового менеджера, із сервера роздачі тек або з файлових операцій за розкладом. Кожна частина необов'язкова, а Media Exchange Server ви запускаєте самі.</p>
     </div>
     <div class="grid">
     <article class="card scenario-card" id="door-1">
       <span class="pill">Спершу менеджер</span>
       <h3>Мені потрібен медіа- та файловий менеджер</h3>
-      <p>Переглядайте й сортуйте фото та відео однією клавішею на файл і керуйте файлами в локальних теках, на серверах SFTP та SMB і на пристроях облікового запису обміну. Повний пакет ставить менеджер, а локальну роздачу та розклади - як необов'язкову частину, що вимкнена, доки ви її не ввімкнете; виберіть в інсталяторі тип «Компактна», щоб її не було зовсім. Для сортування сервер не потрібен.</p>
+      <p>Переглядайте й сортуйте фото та відео однією клавішею на файл і керуйте файлами в локальних теках, на серверах SFTP та SMB і на пристроях облікового запису обміну. Повний пакет ставить менеджер, а локальну роздачу та файлові операції за розкладом - як необов'язкові частини, що вимкнені, доки ви їх не ввімкнете; виберіть в інсталяторі тип «Компактна», щоб їх не було зовсім. Для сортування сервер не потрібен.</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="#get">Завантажити повний пакет</a></div>
     </article>
     <article class="card scenario-card" id="door-2">
       <span class="pill">Спершу сервер</span>
       <h3>Мені потрібен сервер для моїх тек</h3>
-      <p>Відкрийте теки цього ПК на телефоні з Android, в іншій копії програми або в будь-якому SFTP-клієнті й запускайте файлові операції за розкладом. Серверна редакція (setup.exe або winget, потрібні права адміністратора) ставить Folder Share Server - службу роздачі та розкладів - як службу Windows, що працює, коли ніхто не ввійшов у систему; менеджер - необов'язкове доповнення без позначки.</p>
+      <p>Відкрийте теки цього ПК на телефоні з Android, в іншій копії програми або в будь-якому SFTP-клієнті. Серверна редакція (setup.exe або winget, потрібні права адміністратора) ставить Folder Share Server - локальну службу роздачі - як службу Windows, що працює, коли ніхто не ввійшов у систему; менеджер - необов'язкове доповнення без позначки. Файлові операції за розкладом у цій службі не працюють: вони виконуються в Менеджері спільного доступу в сеансі входу, а серверна редакція ставить їх разом зі своїм Менеджером спільного доступу.</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Серверна редакція: служба роздачі тек</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
+      <span class="pill">Спершу розклад</span>
+      <h3>Мені потрібні файлові операції за розкладом</h3>
+      <p>Копіюйте, переміщуйте, видаляйте й архівуйте файли за розкладом - із попереднім переглядом перед запуском завдання та журналом кожного запуску. Файловим операціям за розкладом не потрібні роздача тек, сервер, відкритий порт і права адміністратора: вони встановлюються разом із Менеджером спільного доступу (пункт «Операції за розкладом» інсталятора, позначений у повному пакеті) і працюють, поки він працює у вашому сеансі входу. Відкривайте їх із трея, з меню теки в переглядачі або клавішею, яку ви призначите.</p>
+      <div class="scenario-foot"><a class="btn btn-ghost" href="#get">Завантажити повний пакет</a></div>
+    </article>
+    <article class="card scenario-card" id="door-4">
       <span class="pill gold">Власний сервер</span>
       <h3><span class="exchange-picture"><img class="exchange-mark" src="../../assets/exchange-mark/svg/exchange-mark-small.svg" width="32" height="32" alt="Сервер обміну"></span> Media Exchange Server</h3>
       <p>Сервер, який ви запускаєте самі: ваші пристрої підключаються до створеного на ньому облікового запису обміну й зв'язуються між собою через нього, коли напряму не можуть. Це не роздача тек, і ні менеджеру, ні локальній роздачі він не потрібен.</p>
@@ -171,15 +181,15 @@
         <div class="copybox"><span class="tok">winget</span> install --id SerZhyAle.FastMediaSorter
           <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">Копіювати</button></div>
       </div>
-      <div class="dl-row" id="dlRow">
-        <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Інсталятор (GitHub)</span></a>
-        <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
+      <div class="dl-row">
+        <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Інсталятор (GitHub)</span></a>
+        <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64.zip"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
         <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> (відкриється в новій вкладці)</span></a>
         <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Серверна редакція: роздача без входу в систему</a>
-        <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
+        <span class="dl-meta"><span class="dl-facts" lang="en" dir="ltr"><a class="meta-strong" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830">v26.10.25.1830</a> &middot; <time datetime="2026-10-25">2026-10-25</time> &middot; SHA-256: <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe.sha256">setup.exe</a> 437.5 MB <code class="sha">653c070f87683cf2354b97a77ae0507721af869ab8bd14d9c5e0dadf538df050</code> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64.zip.sha256">.zip</a> 519.4 MB <code class="sha">64e1d6e63b8b1d8ff0e9d573c064d28f1579b961ece1f7c5c99b508d46d0ea91</code></span>Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
-      <p class="dl-meta">Усередині повного пакета: медіа- та файловий менеджер і - як необов'язкові частини, вимкнені, доки ви їх не ввімкнете, - локальна роздача та розклади (Менеджер спільного доступу та SFTP-воркер, операції за розкладом і підключення до облікового запису обміну; розміщення дисків FileDO .fdd - можливість роздачі), відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб роздача не ставилася. Media Exchange Server у цьому пакеті немає.</p>
+      <p class="dl-meta">Усередині повного пакета: медіа- та файловий менеджер і - як необов'язкові частини, вимкнені, доки ви їх не ввімкнете, - локальна роздача (Менеджер спільного доступу та SFTP-воркер, підключення до облікового запису обміну; розміщення дисків FileDO .fdd - можливість роздачі) і файлові операції за розкладом (встановлюються разом із Менеджером спільного доступу), відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб не ставилися ні роздача, ні файлові операції за розкладом. Media Exchange Server у цьому пакеті немає.</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html">Чому Windows попереджає про це завантаження</a>
       </p>
@@ -189,6 +199,8 @@
   <section class="section" id="features">
     <div class="sec-head">
       <h2 class="section-title"><span class="hash">#</span>Що варто знати</h2>
+      <p class="section-desc">Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.</p>
+      <p class="section-desc">«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">Публікація вибраних папок ПК через SFTP</a></p>
     </div>
     <div class="grid">
     <article class="card">
@@ -273,42 +285,42 @@
 
   <section class="section" id="howto">
     <div class="sec-head">
-      <h2 class="section-title"><span class="hash">#</span>HOW TO</h2>
-      <p class="section-desc" lang="en" dir="ltr">Step-by-step guides. The guide pages themselves are in English and Russian.</p>
+      <h2 class="section-title"><span class="hash">#</span>HOW TO - як це робиться</h2>
+      <p class="section-desc">Покрокові інструкції. Самі сторінки інструкцій - англійською, російською та українською.</p>
     </div>
-    <ul lang="en" dir="ltr">
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-viewer.html">Review and sort a media folder</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html">Keys, zoom and full screen</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html">Default viewer, language, file rules</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-ocr.html">Read and translate text on a picture</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html">Draw on a photo and crop it</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html">Read a ZIP or CBZ like a folder</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">Open a server or a network share like a folder</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">Share FileDO .fdd virtual disks</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">Share folders to Android over SFTP</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange between your devices (portal)<span class="sr-only"> (відкриється в новій вкладці)</span></a></li>
+    <ul>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-viewer.html">Перегляд і сортування медіафайлів</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html">Клавіші, масштаб і повний екран</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html">Переглядач за умовчанням, мова, правила для файлів</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-ocr.html">Розпізнати й перекласти текст на картинці</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html">Помалювати на фото й обрізати його</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html">Читати ZIP або CBZ як папку</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">Відкрити сервер або мережеву теку як теку</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">Спільний доступ до дисків FileDO .fdd</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">Публікація вибраних папок ПК через SFTP</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html" target="_blank" rel="noopener noreferrer">Обмін медіа між вашими пристроями: домашня мережа, ПК-сервер, прямі ефіри<span class="sr-only"> (відкриється в новій вкладці)</span></a></li>
     </ul>
   </section>
 
   <section class="tech-links">
-    <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE">LICENSE</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></p>
+    <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/privacy.html">Політика конфіденційності</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE">Ліцензія MIT</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Вихідний код (GitHub)</a></p>
   </section>
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="footer-title" lang="en" dir="ltr">Documentation</h2>
-  <div class="link-row" lang="en" dir="ltr">
-    <a href="#howto">HOW TO</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Topics</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">Glossary</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange portal<span class="sr-only"> (відкриється в новій вкладці)</span></a>
+  <h2 class="footer-title">Документація та довідка</h2>
+  <div class="link-row">
+    <a href="#howto">Інструкції</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/topics.html">Теми</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/glossary.html">Глосарій</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/help/uk/index.html" hreflang="uk">Довідка до вікон</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html" target="_blank" rel="noopener noreferrer">Портал обміну медіа<span class="sr-only"> (відкриється в новій вкладці)</span></a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html">Чому Windows попереджає про це завантаження</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/privacy.html">Конфіденційність</a>
     <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite#readme">README</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html">What's new</a>
-    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/CHANGELOG.md">Changelog</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a>
-    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issues</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html">Що нового</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Підтримка</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Повідомити про проблему</a>
   </div>
   <h2 class="sec-head sec-head-family">Інші інструменти SZA</h2>
   <div class="tools-grid">
@@ -377,27 +389,6 @@
   function fallback(txt){try{var ta=document.createElement('textarea');ta.value=txt;
     ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
     document.execCommand('copy');document.body.removeChild(ta);}catch(e){}}
-
-  (function(){
-    fetch('https://api.github.com/repos/SerZhyAle/FastMediaSorter_Lite/releases/latest')
-      .then(function(r){return r.ok?r.json():Promise.reject();})
-      .then(function(rel){
-        var assets=rel.assets||[];
-        function find(re){for(var i=0;i<assets.length;i++){if(re.test(assets[i].name))return assets[i];}return null;}
-        var setup=find(/windows-x64-setup\.exe$/);
-        var zip=find(/windows-x64\.zip$/);
-        var tag=rel.tag_name||'';
-        var s=document.getElementById('dl-setup'), z=document.getElementById('dl-zip');
-        if(setup&&s) s.href=setup.browser_download_url;
-        if(zip&&z) z.href=zip.browser_download_url;
-        if(tag){
-          var meta=document.getElementById('dlMeta');
-          if(meta){var b=document.createElement('span');b.className='meta-strong';
-            b.textContent=' '+tag;meta.appendChild(b);}
-        }
-      })
-      .catch(function(){});
-  })();
 })();
 </script>
 </body>

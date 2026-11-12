@@ -428,6 +428,10 @@ Partial Public NotInheritable Class Localization
             "Refused: this operation is already running or waiting in the queue", "Відхилено: ця операція вже виконується або чекає черги", "Abgelehnt: Dieser Vorgang wird bereits ausgeführt oder wartet in der Warteschlange", "Rifiutato: questa operazione è già in esecuzione o in coda",
             "Rechazado: esta operación ya se está ejecutando o está en cola", "Refusé : cette opération est déjà en cours d'exécution ou en attente", "Recusado: esta operação já está em execução ou aguardando a vez", "تم الرفض: هذه العملية قيد التنفيذ بالفعل أو في انتظار دورها",
             "अस्वीकृत: यह ऑपरेशन पहले से चल रहा है या कतार में प्रतीक्षा कर रहा है", "প্রত্যাখ্যাত: এই অপারেশন ইতিমধ্যে চলছে বা সারিতে অপেক্ষা করছে", "مسترد: یہ آپریشن پہلے سے چل رہا ہے یا قطار میں انتظار کر رہا ہے", "已拒绝：此操作已在运行或正在排队等待")
+        Add("Открыть в отдельном окне..",
+            "Open in a separate window..", "Відкрити в окремому вікні..", "In einem eigenen Fenster öffnen..", "Apri in una finestra separata..",
+            "Abrir en una ventana independiente..", "Ouvrir dans une fenêtre séparée..", "Abrir em uma janela separada..", "افتح في نافذة منفصلة..",
+            "अलग विंडो में खोलें..", "আলাদা উইন্ডোতে খুলুন..", "الگ ونڈو میں کھولیں..", "在独立窗口中打开..")
         Add("Открыть настройку автозапуска",
             "Open the autostart setting", "Відкрити налаштування автозапуску", "Autostart-Einstellung öffnen", "Apri l'impostazione di avvio automatico",
             "Abrir la configuración de inicio automático", "Ouvrir le paramètre de démarrage automatique", "Abrir a configuração de inicialização automática", "فتح إعداد التشغيل التلقائي",
@@ -748,14 +752,54 @@ Partial Public NotInheritable Class Localization
             "the device is offline right now: {0}", "пристрій зараз не в мережі: {0}", "das Gerät ist derzeit offline: {0}", "il dispositivo è attualmente offline: {0}",
             "el dispositivo está desconectado ahora mismo: {0}", "l'appareil est hors ligne pour le moment : {0}", "o dispositivo está offline no momento: {0}", "الجهاز غير متصل حاليًا: {0}",
             "डिवाइस अभी ऑफ़लाइन है: {0}", "ডিভাইসটি এখন অফলাইনে আছে: {0}", "ڈیوائس اس وقت آف لائن ہے: {0}", "设备当前不在线：{0}")
-        Add("Google Диск нельзя выбрать одновременно как источник и как назначение.",
-            "Google Drive cannot be chosen as both the source and the destination.", "Google Диск не можна вибрати одночасно як джерело і як призначення.", "Google Drive kann nicht gleichzeitig als Quelle und als Ziel ausgewählt werden.", "Google Drive non può essere scelto contemporaneamente come origine e come destinazione.",
+        Add("Google Drive нельзя выбрать одновременно как источник и как назначение.",
+            "Google Drive cannot be chosen as both the source and the destination.", "Google Drive не можна вибрати одночасно як джерело і як призначення.", "Google Drive kann nicht gleichzeitig als Quelle und als Ziel ausgewählt werden.", "Google Drive non può essere scelto contemporaneamente come origine e come destinazione.",
             "No se puede elegir Google Drive como origen y como destino al mismo tiempo.", "Google Drive ne peut pas être choisi à la fois comme source et comme destination.", "O Google Drive não pode ser escolhido como origem e destino ao mesmo tempo.", "لا يمكن اختيار Google Drive كمصدر ووجهة في الوقت نفسه.",
-            "Google ड्राइव को एक साथ स्रोत और गंतव्य दोनों के रूप में नहीं चुना जा सकता.", "Google ড্রাইভকে একই সঙ্গে উৎস ও গন্তব্য হিসেবে বেছে নেওয়া যাবে না।", "Google ڈرائیو کو بیک وقت ماخذ اور منزل دونوں کے طور پر منتخب نہیں کیا جا سکتا۔", "不能同时将 Google 云端硬盘选为来源和目标。")
-        Add("Удаление по расписанию через Google Диск не поддерживается.",
-            "Scheduled deletion via Google Drive is not supported.", "Видалення за розкладом через Google Диск не підтримується.", "Geplantes Löschen über Google Drive wird nicht unterstützt.", "L'eliminazione pianificata tramite Google Drive non è supportata.",
+            "Google Drive को एक साथ स्रोत और गंतव्य दोनों के रूप में नहीं चुना जा सकता।", "Google Drive-কে একই সঙ্গে উৎস ও গন্তব্য হিসেবে বেছে নেওয়া যাবে না।", "Google Drive کو بیک وقت ماخذ اور منزل دونوں کے طور پر منتخب نہیں کیا جا سکتا۔", "不能同时将 Google Drive 选为来源和目标。")
+        Add("Удаление по расписанию через Google Drive не поддерживается.",
+            "Scheduled deletion via Google Drive is not supported.", "Видалення за розкладом через Google Drive не підтримується.", "Geplantes Löschen über Google Drive wird nicht unterstützt.", "L'eliminazione pianificata tramite Google Drive non è supportata.",
             "La eliminación programada a través de Google Drive no es compatible.", "La suppression planifiée via Google Drive n'est pas prise en charge.", "A exclusão agendada pelo Google Drive não é suportada.", "الحذف المجدول عبر Google Drive غير مدعوم.",
-            "Google ड्राइव के माध्यम से शेड्यूल किया गया हटाना समर्थित नहीं है.", "Google ড্রাইভের মাধ্যমে সময়সূচিবদ্ধ মুছে ফেলা সমর্থিত নয়।", "Google ڈرائیو کے ذریعے شیڈول شدہ حذف معاونت یافتہ نہیں ہے۔", "不支持通过 Google 云端硬盘按计划删除。")
+            "Google Drive के माध्यम से शेड्यूल किया गया हटाना समर्थित नहीं है।", "Google Drive-এর মাধ্যমে সময়সূচিবদ্ধ মুছে ফেলা সমর্থিত নয়।", "Google Drive کے ذریعے شیڈول شدہ حذف معاونت یافتہ نہیں ہے۔", "不支持通过 Google Drive 按计划删除。")
+        Add("Возраст файла нельзя задавать для источника через Google Drive: время файла здесь - время его получения.",
+            "A file age cannot be set for a source via Google Drive: a file's time here is the time it was received.", "Вік файлу не можна задавати для джерела через Google Drive: час файлу тут - час його отримання.", "Für eine Quelle über Google Drive lässt sich kein Dateialter festlegen: Die Zeit einer Datei ist hier die Zeit ihres Empfangs.", "Non è possibile impostare l'età del file per un'origine tramite Google Drive: l'ora del file qui è quella della ricezione.",
+            "No se puede fijar la antigüedad del archivo para un origen a través de Google Drive: aquí la hora del archivo es la de su recepción.", "L'âge du fichier ne peut pas être défini pour une source via Google Drive : l'heure du fichier est ici celle de sa réception.", "A idade do arquivo não pode ser definida para uma origem pelo Google Drive: aqui, a hora do arquivo é a do seu recebimento.", "لا يمكن تحديد عمر الملف لمصدر عبر Google Drive: وقت الملف هنا هو وقت استلامه.",
+            "Google Drive के माध्यम से स्रोत के लिए फ़ाइल की आयु तय नहीं की जा सकती: यहाँ फ़ाइल का समय उसके प्राप्त होने का समय है।", "Google Drive-এর মাধ্যমে উৎসের জন্য ফাইলের বয়স ঠিক করা যায় না: এখানে ফাইলের সময় হলো তা পাওয়ার সময়।", "Google Drive کے ذریعے ماخذ کے لیے فائل کی عمر مقرر نہیں کی جا سکتی: یہاں فائل کا وقت اس کے موصول ہونے کا وقت ہے۔", "无法为通过 Google Drive 的来源设置文件时长：此处文件的时间是其接收时间。")
+        Add("файл больше предела пакета Google Drive: {0}",
+            "the file is larger than the Google Drive packet limit: {0}", "файл більший за межу пакета Google Drive: {0}", "die Datei überschreitet die Paketgrenze von Google Drive: {0}", "il file supera il limite del pacchetto di Google Drive: {0}",
+            "el archivo supera el límite de paquete de Google Drive: {0}", "le fichier dépasse la limite de paquet de Google Drive : {0}", "o arquivo excede o limite de pacote do Google Drive: {0}", "الملف أكبر من حد حزمة Google Drive: {0}",
+            "फ़ाइल Google Drive पैकेट की सीमा से बड़ी है: {0}", "ফাইলটি Google Drive প্যাকেটের সীমার চেয়ে বড়: {0}", "فائل Google Drive پیکٹ کی حد سے بڑی ہے: {0}", "文件超过 Google Drive 数据包上限：{0}")
+        Add("выполнен выход из Google Drive: {0}",
+            "signed out of Google Drive: {0}", "виконано вихід із Google Drive: {0}", "von Google Drive abgemeldet: {0}", "disconnesso da Google Drive: {0}",
+            "se cerró la sesión de Google Drive: {0}", "déconnecté de Google Drive : {0}", "a sessão do Google Drive foi encerrada: {0}", "تم تسجيل الخروج من Google Drive: {0}",
+            "Google Drive से साइन आउट हो गया: {0}", "Google Drive থেকে সাইন আউট হয়েছে: {0}", "Google Drive سے سائن آؤٹ ہو گیا: {0}", "已退出 Google Drive：{0}")
+        Add("на Google Drive не хватило места: {0}",
+            "Google Drive ran out of space: {0}", "на Google Drive забракло місця: {0}", "auf Google Drive reichte der Speicherplatz nicht aus: {0}", "spazio insufficiente su Google Drive: {0}",
+            "no hubo espacio suficiente en Google Drive: {0}", "espace insuffisant sur Google Drive : {0}", "não houve espaço suficiente no Google Drive: {0}", "لم تكن هناك مساحة كافية على Google Drive: {0}",
+            "Google Drive पर पर्याप्त जगह नहीं थी: {0}", "Google Drive-এ যথেষ্ট জায়গা ছিল না: {0}", "Google Drive پر کافی جگہ نہیں تھی: {0}", "Google Drive 空间不足：{0}")
+        Add("нет связи с Google Drive: {0}",
+            "no connection to Google Drive: {0}", "немає зв'язку з Google Drive: {0}", "keine Verbindung zu Google Drive: {0}", "nessuna connessione a Google Drive: {0}",
+            "sin conexión con Google Drive: {0}", "pas de connexion à Google Drive : {0}", "sem conexão com o Google Drive: {0}", "لا يوجد اتصال بـ Google Drive: {0}",
+            "Google Drive से कनेक्शन नहीं है: {0}", "Google Drive-এর সঙ্গে সংযোগ নেই: {0}", "Google Drive سے کنکشن نہیں ہے: {0}", "无法连接到 Google Drive：{0}")
+        Add("Что другие устройства присылают на этот ПК",
+            "What other devices send to this PC", "Що інші пристрої надсилають на цей ПК", "Was andere Geräte an diesen PC senden", "Ciò che gli altri dispositivi inviano a questo PC",
+            "Lo que otros dispositivos envían a este PC", "Ce que les autres appareils envoient à ce PC", "O que outros dispositivos enviam para este PC", "ما ترسله الأجهزة الأخرى إلى هذا الكمبيوتر",
+            "अन्य डिवाइस इस पीसी पर जो भेजते हैं", "অন্য ডিভাইস এই পিসিতে যা পাঠায়", "دوسرے آلات اس پی سی پر جو بھیجتے ہیں", "其他设备发送到此电脑的内容")
+        Add("Любое из моих устройств",
+            "Any of my devices", "Будь-який із моїх пристроїв", "Eines meiner Geräte", "Uno qualsiasi dei miei dispositivi",
+            "Cualquiera de mis dispositivos", "N'importe lequel de mes appareils", "Qualquer um dos meus dispositivos", "أي من أجهزتي",
+            "मेरे डिवाइसों में से कोई भी", "আমার যেকোনো ডিভাইস", "میرے آلات میں سے کوئی بھی", "我的任意设备")
+        Add("Файлы приходят во временную папку этого ПК и попадают в назначение с базовыми именами, без вложенных папок.",
+            "Files arrive in a temporary folder of this PC and reach the destination under their base names, without subfolders.", "Файли надходять до тимчасової папки цього ПК і потрапляють у призначення з базовими іменами, без вкладених папок.", "Dateien kommen in einem temporären Ordner dieses PCs an und gelangen mit ihren Basisnamen, ohne Unterordner, ins Ziel.", "I file arrivano in una cartella temporanea di questo PC e raggiungono la destinazione con i nomi base, senza sottocartelle.",
+            "Los archivos llegan a una carpeta temporal de este PC y pasan al destino con sus nombres base, sin subcarpetas.", "Les fichiers arrivent dans un dossier temporaire de ce PC et rejoignent la destination sous leur nom de base, sans sous-dossiers.", "Os arquivos chegam a uma pasta temporária deste PC e vão para o destino com os nomes base, sem subpastas.", "تصل الملفات إلى مجلد مؤقت على هذا الكمبيوتر وتنتقل إلى الوجهة بأسمائها الأساسية، دون مجلدات فرعية.",
+            "फ़ाइलें इस पीसी के एक अस्थायी फ़ोल्डर में आती हैं और अपने मूल नामों के साथ, बिना सबफ़ोल्डर के, गंतव्य तक पहुँचती हैं।", "ফাইলগুলো এই পিসির একটি অস্থায়ী ফোল্ডারে আসে এবং মূল নাম নিয়ে, সাবফোল্ডার ছাড়াই, গন্তব্যে পৌঁছায়।", "فائلیں اس پی سی کے ایک عارضی فولڈر میں آتی ہیں اور اپنے بنیادی ناموں کے ساتھ، ذیلی فولڈروں کے بغیر، منزل تک پہنچتی ہیں۔", "文件先到达此电脑的临时文件夹，再以基本名称进入目标位置，不保留子文件夹。")
+        Add("Файлы отправляются пакетами через ваш Google Drive и попадают на устройство, когда оно их заберёт. Вложенные папки не сохраняются.",
+            "Files go in packets through your Google Drive and reach the device when it picks them up. Subfolders are not kept.", "Файли надсилаються пакетами через ваш Google Drive і потрапляють на пристрій, коли він їх забере. Вкладені папки не зберігаються.", "Dateien werden paketweise über Ihr Google Drive gesendet und erreichen das Gerät, sobald es sie abholt. Unterordner bleiben nicht erhalten.", "I file vengono inviati a pacchetti tramite il tuo Google Drive e raggiungono il dispositivo quando li preleva. Le sottocartelle non vengono mantenute.",
+            "Los archivos se envían en paquetes a través de tu Google Drive y llegan al dispositivo cuando este los recoge. Las subcarpetas no se conservan.", "Les fichiers sont envoyés par paquets via votre Google Drive et parviennent à l'appareil quand il les récupère. Les sous-dossiers ne sont pas conservés.", "Os arquivos são enviados em pacotes pelo seu Google Drive e chegam ao dispositivo quando ele os busca. As subpastas não são mantidas.", "تُرسل الملفات على شكل حزم عبر Google Drive الخاص بك وتصل إلى الجهاز عندما يستلمها. لا يتم الاحتفاظ بالمجلدات الفرعية.",
+            "फ़ाइलें पैकेटों में आपके Google Drive के माध्यम से भेजी जाती हैं और डिवाइस के उन्हें लेने पर उस तक पहुँचती हैं। सबफ़ोल्डर नहीं रखे जाते।", "ফাইলগুলো প্যাকেটে আপনার Google Drive-এর মাধ্যমে পাঠানো হয় এবং ডিভাইস সেগুলো নিলে তার কাছে পৌঁছায়। সাবফোল্ডার রাখা হয় না।", "فائلیں پیکٹوں میں آپ کے Google Drive کے ذریعے بھیجی جاتی ہیں اور آلہ انہیں لینے پر اس تک پہنچتی ہیں۔ ذیلی فولڈر محفوظ نہیں رہتے۔", "文件通过您的 Google Drive 分包发送，设备取走时才会到达。不保留子文件夹。")
+        Add("Что придёт через Google Drive, станет известно при запуске.",
+            "What comes via Google Drive becomes known when the operation runs.", "Що прийде через Google Drive, стане відомо під час запуску.", "Was über Google Drive ankommt, zeigt sich erst bei der Ausführung.", "Ciò che arriva tramite Google Drive si saprà all'avvio.",
+            "Lo que llegue a través de Google Drive se sabrá al ejecutar la operación.", "Ce qui arrive via Google Drive ne sera connu qu'à l'exécution.", "O que vier pelo Google Drive só será conhecido na execução.", "ما سيصل عبر Google Drive سيُعرف عند التشغيل.",
+            "Google Drive के माध्यम से क्या आएगा, यह चलाने पर पता चलेगा।", "Google Drive-এর মাধ্যমে কী আসবে, তা চালানোর সময় জানা যাবে।", "Google Drive کے ذریعے کیا آئے گا، یہ چلانے پر معلوم ہوگا۔", "通过 Google Drive 会收到什么，要到运行时才知道。")
         Add("Пропущена: устройство не в сети",
             "Skipped: device is offline", "Пропущена: пристрій не в мережі", "Übersprungen: Gerät ist offline", "Saltata: dispositivo offline",
             "Omitida: el dispositivo está desconectado", "Ignorée : l'appareil est hors ligne", "Ignorada: dispositivo offline", "تم التخطي: الجهاز غير متصل",
@@ -764,10 +808,14 @@ Partial Public NotInheritable Class Localization
             "Skipped: {0}", "Пропущено: {0}", "Übersprungen: {0}", "Saltato: {0}",
             "Omitido: {0}", "Ignoré : {0}", "Ignorado: {0}", "تم التخطي: {0}",
             "छोड़ा गया: {0}", "বাদ দেওয়া হয়েছে: {0}", "چھوڑ دیا گیا: {0}", "已跳过：{0}")
-        Add("Через Google Диск",
-            "Through Google Drive", "Через Google Диск", "Über Google Drive", "Tramite Google Drive",
+        Add("Через Google Drive",
+            "Via Google Drive", "Через Google Drive", "Über Google Drive", "Tramite Google Drive",
             "A través de Google Drive", "Via Google Drive", "Pelo Google Drive", "عبر Google Drive",
-            "Google ड्राइव के माध्यम से", "Google ড্রাইভের মাধ্যমে", "Google ڈرائیو کے ذریعے", "通过 Google 云端硬盘")
+            "Google Drive के माध्यम से", "Google Drive-এর মাধ্যমে", "Google Drive کے ذریعے", "通过 Google Drive")
+        Add("Через Google Drive: {0}",
+            "Via Google Drive: {0}", "Через Google Drive: {0}", "Über Google Drive: {0}", "Tramite Google Drive: {0}",
+            "A través de Google Drive: {0}", "Via Google Drive : {0}", "Pelo Google Drive: {0}", "عبر Google Drive: {0}",
+            "Google Drive के माध्यम से: {0}", "Google Drive-এর মাধ্যমে: {0}", "Google Drive کے ذریعے: {0}", "通过 Google Drive：{0}")
         Add("Выполнить пропущенный запуск при старте программы",
             "Run a missed schedule once when the program starts", "Виконати пропущений запуск під час старту програми", "Verpasste Ausführung beim Programmstart einmal nachholen", "Esegui una volta l'avvio mancato all'apertura del programma",
             "Ejecutar una vez el inicio omitido al abrir el programa", "Exécuter une fois le lancement manqué au démarrage du programme", "Executar uma vez a execução perdida ao iniciar o programa", "تنفيذ التشغيل الفائت مرة واحدة عند بدء البرنامج",
@@ -804,5 +852,129 @@ Partial Public NotInheritable Class Localization
             "The export file could not be written.", "Не вдалося записати файл експорту.", "Die Exportdatei konnte nicht geschrieben werden.", "Impossibile scrivere il file di esportazione.",
             "No se pudo escribir el archivo de exportación.", "Impossible d'écrire le fichier d'exportation.", "Não foi possível gravar o arquivo de exportação.", "تعذّرت كتابة ملف التصدير.",
             "निर्यात फ़ाइल लिखी नहीं जा सकी।", "এক্সপোর্ট ফাইলটি লেখা যায়নি।", "ایکسپورٹ فائل لکھی نہیں جا سکی۔", "无法写入导出文件。")
+        ' Ticket L0299: the fifth action, fill free space with deletion (FileDO) - the editor's controls and note, and the
+        ' sentences of the run's outcomes. The product name FileDO stays Latin in every language.
+        Add("Заполнение свободного места с удалением (FileDO)",
+            "Fill free space with deletion (FileDO)", "Заповнення вільного місця з видаленням (FileDO)", "Freien Speicherplatz füllen und löschen (FileDO)", "Riempi spazio libero con eliminazione (FileDO)",
+            "Llenar espacio libre con eliminación (FileDO)", "Remplir l'espace libre avec suppression (FileDO)", "Preencher espaço livre com exclusão (FileDO)", "ملء المساحة الفارغة مع الحذف (FileDO)",
+            "खाली जगह भरें और बाद में हटाएं (FileDO)", "খালি জায়গা পূরণ এবং পরে মুছে ফেলা (FileDO)", "خالی جگہ بھریں اور بعد میں حذف کریں (FileDO)", "填充剩余空间并随后删除 (FileDO)")
+        Add("Размер временных файлов (МБ)",
+            "Chunk file size (MB)", "Розмір тимчасових файлів (МБ)", "Größe der temporären Dateien (MB)", "Dimensione file temporanei (MB)",
+            "Tamaño de archivos temporales (MB)", "Taille des fichiers temporaires (Mo)", "Tamanho dos arquivos temporários (MB)", "حجم الملفات المؤقتة (م.ب)",
+            "अस्थायी फ़ाइल का आकार (MB)", "অস্থায়ী ফাইলের আকার (MB)", "عارضی فائل کا سائز (MB)", "临时文件块大小 (MB)")
+        Add("Свободное место ({0}) будет заполнено временными файлами и затем очищено.",
+            "Free space ({0}) will be overwritten with temporary files and then deleted.", "Вільне місце ({0}) буде заповнено тимчасовими файлами та потім очищено.", "Freier Speicherplatz ({0}) wird mit temporären Dateien überschrieben und gelöscht.", "Lo spazio libero ({0}) verrà sovrascritto con file temporanei e poi eliminato.",
+            "El espacio libre ({0}) se sobrescribirá con archivos temporales y luego se eliminará.", "L'espace libre ({0}) sera écrasé par des fichiers temporaires puis supprimé.", "O espaço livre ({0}) será sobrescrito com arquivos temporários e depois excluído.", "سيتم ملء المساحة الفارغة ({0}) بملفات مؤقتة ثم حذفها.",
+            "खाली स्थान ({0}) अस्थायी फ़ाइलों से भरा जाएगा और फिर हटा दिया जाएगा।", "খালি স্থান ({0}) অস্থায়ী ফাইল দিয়ে পূরণ করা হবে এবং পরে মুছে ফেলা হবে।", "خالی جگہ ({0}) عارضی فائلوں سے بھری جائے گی اور پھر حذف کر دی جائے گی۔", "剩余空间 ({0}) 将写入临时文件并随后删除。")
+        Add("Перезапись свободного места на SSD увеличивает износ диска и не гарантирует полное удаление данных.",
+            "Overwriting free space on SSDs increases drive wear and does not guarantee complete data erasure.", "Перезапис вільного місця на SSD збільшує зношування диска та не гарантує повне видалення даних.", "Das Überschreiben auf SSDs erhöht den Verschleiß und garantiert kein vollständiges Löschen.", "La sovrascrittura su SSD aumenta l'usura e non garantisce la cancellazione completa dei dati.",
+            "Sobrescribir espacio libre en SSD aumenta el desgaste y no garantiza el borrado completo de datos.", "Écraser l'espace libre sur SSD augmente l'usure et ne garantit pas l'effacement complet des données.", "Sobrescrever espaço livre em SSDs aumenta o desgaste e não garante a exclusão completa dos dados.", "تؤدي الكتابة فوق المساحة الفارغة في أقراص SSD إلى زيادة التآكل ولا تضمن محو البيانات بالكامل.",
+            "SSD पर खाली स्थान को अधिलेखित करने से डिस्क का घिसाव बढ़ता है और पूर्ण डेटा मिटाने की गारंटी नहीं मिलती है।", "SSD-তে খালি জায়গা ওভাররাইট করলে ডিস্কের ক্ষয় বৃদ্ধি পায় এবং সম্পূর্ণ ডেটা মুছে ফেলার নিশ্চয়তা দেয় না।", "SSD پر خالی جگہ کو دوبارہ لکھنے سے ڈسک کی خرابی میں اضافہ ہوتا ہے اور مکمل ڈیٹا حذف کرنے کی ضمانت نہیں ملتی ہے۔", "在固态硬盘 (SSD) 上覆盖剩余空间会增加磨损，且不能保证数据完全擦除。")
+        Add("Для этой операции требуется FileDO. Установите компонент FileDO.",
+            "FileDO is required for this operation. Please install the FileDO component.", "Для цієї операції потрібен FileDO. Встановіть компонент FileDO.", "FileDO ist für diese Operation erforderlich. Bitte FileDO-Komponente installieren.", "FileDO è richiesto per questa operazione. Installare il componente FileDO.",
+            "Se requiere FileDO para esta operación. Instale el componente FileDO.", "FileDO est requis pour cette opération. Veuillez installer le composant FileDO.", "O FileDO é necessário para esta operação. Instale o componente FileDO.", "يلزم FileDO لهذه العملية. يرجى تثبيت مكون FileDO.",
+            "इस ऑपरेशन के लिए FileDO आवश्यक है। कृपया FileDO घटक स्थापित करें।", "এই অপারেশনের জন্য FileDO প্রয়োজন। দয়া করে FileDO উপাদানটি ইনস্টল করুন।", "اس آپریشن کے لیے FileDO درکار ہے۔ براہ کرم FileDO جزو انسٹال کریں۔", "此操作需要 FileDO。请安装 FileDO 组件。")
+        Add("Заполнение свободного места работает только с локальным диском или папкой на нём.",
+            "Filling free space works only with a local disk or a folder on it.", "Заповнення вільного місця працює лише з локальним диском або папкою на ньому.", "Das Füllen von freiem Speicherplatz funktioniert nur mit einem lokalen Laufwerk oder einem Ordner darauf.", "Il riempimento dello spazio libero funziona solo con un disco locale o una cartella al suo interno.",
+            "El llenado del espacio libre solo funciona con un disco local o una carpeta de este.", "Le remplissage de l'espace libre ne fonctionne qu'avec un disque local ou un dossier situé dessus.", "O preenchimento do espaço livre funciona apenas com um disco local ou uma pasta nele.", "يعمل ملء المساحة الفارغة مع قرص محلي أو مجلد عليه فقط.",
+            "खाली स्थान भरने की सुविधा केवल स्थानीय डिस्क या उस पर मौजूद फ़ोल्डर के साथ काम करती है।", "খালি জায়গা পূরণ শুধু লোকাল ডিস্ক বা তার ওপরের ফোল্ডারের সঙ্গে কাজ করে।", "خالی جگہ بھرنے کی سہولت صرف مقامی ڈسک یا اس پر موجود فولڈر کے ساتھ کام کرتی ہے۔", "填充剩余空间仅适用于本地磁盘或其上的文件夹。")
+        Add("FileDO не найден: установите компонент FileDO",
+            "FileDO not found: install the FileDO component", "FileDO не знайдено: встановіть компонент FileDO", "FileDO nicht gefunden: FileDO-Komponente installieren", "FileDO non trovato: installare il componente FileDO",
+            "FileDO no encontrado: instale el componente FileDO", "FileDO introuvable : installez le composant FileDO", "FileDO não encontrado: instale o componente FileDO", "لم يتم العثور على FileDO: ثبّت مكوّن FileDO",
+            "FileDO नहीं मिला: FileDO घटक स्थापित करें", "FileDO পাওয়া যায়নি: FileDO উপাদানটি ইনস্টল করুন", "FileDO نہیں ملا: FileDO جزو انسٹال کریں", "未找到 FileDO：请安装 FileDO 组件")
+        Add("не удалось запустить FileDO: {0}",
+            "could not start FileDO: {0}", "не вдалося запустити FileDO: {0}", "FileDO konnte nicht gestartet werden: {0}", "impossibile avviare FileDO: {0}",
+            "no se pudo iniciar FileDO: {0}", "impossible de démarrer FileDO : {0}", "não foi possível iniciar o FileDO: {0}", "تعذّر تشغيل FileDO: {0}",
+            "FileDO शुरू नहीं हो सका: {0}", "FileDO চালু করা যায়নি: {0}", "FileDO شروع نہیں ہو سکا: {0}", "无法启动 FileDO：{0}")
+        Add("FileDO не смог заполнить свободное место: {0}",
+            "FileDO could not fill the free space: {0}", "FileDO не зміг заповнити вільне місце: {0}", "FileDO konnte den freien Speicherplatz nicht füllen: {0}", "FileDO non è riuscito a riempire lo spazio libero: {0}",
+            "FileDO no pudo llenar el espacio libre: {0}", "FileDO n'a pas pu remplir l'espace libre : {0}", "O FileDO não conseguiu preencher o espaço livre: {0}", "تعذّر على FileDO ملء المساحة الفارغة: {0}",
+            "FileDO खाली स्थान नहीं भर सका: {0}", "FileDO খালি জায়গা পূরণ করতে পারেনি: {0}", "FileDO خالی جگہ نہیں بھر سکا: {0}", "FileDO 无法填充剩余空间：{0}")
+        Add("FileDO не подтвердил результат заполнения: {0}",
+            "FileDO did not confirm the result of the fill: {0}", "FileDO не підтвердив результат заповнення: {0}", "FileDO hat das Ergebnis des Füllens nicht bestätigt: {0}", "FileDO non ha confermato il risultato del riempimento: {0}",
+            "FileDO no confirmó el resultado del llenado: {0}", "FileDO n'a pas confirmé le résultat du remplissage : {0}", "O FileDO não confirmou o resultado do preenchimento: {0}", "لم يؤكد FileDO نتيجة الملء: {0}",
+            "FileDO ने भरने के परिणाम की पुष्टि नहीं की: {0}", "FileDO পূরণের ফলাফল নিশ্চিত করেনি: {0}", "FileDO نے بھرنے کے نتیجے کی تصدیق نہیں کی: {0}", "FileDO 未确认填充结果：{0}")
+        Add("в рабочей папке остались файлы, удалите её вручную: {0}",
+            "files are left in the work folder, delete it manually: {0}", "у робочій папці залишилися файли, видаліть її вручну: {0}", "im Arbeitsordner sind Dateien übrig geblieben, löschen Sie ihn manuell: {0}", "nella cartella di lavoro sono rimasti dei file, eliminarla manualmente: {0}",
+            "quedaron archivos en la carpeta de trabajo, elimínela manualmente: {0}", "des fichiers restent dans le dossier de travail, supprimez-le manuellement : {0}", "restaram arquivos na pasta de trabalho, exclua-a manualmente: {0}", "بقيت ملفات في مجلد العمل، احذفه يدويًا: {0}",
+            "कार्य फ़ोल्डर में फ़ाइलें रह गई हैं, उसे मैन्युअल रूप से हटाएँ: {0}", "কাজের ফোল্ডারে ফাইল রয়ে গেছে, এটি নিজে মুছে ফেলুন: {0}", "ورکنگ فولڈر میں فائلیں رہ گئی ہیں، اسے خود حذف کریں: {0}", "工作文件夹中仍有文件，请手动删除该文件夹：{0}")
+        Add("сетевой диск нельзя заполнять: {0}",
+            "a network drive cannot be filled: {0}", "мережевий диск не можна заповнювати: {0}", "ein Netzlaufwerk kann nicht gefüllt werden: {0}", "un'unità di rete non può essere riempita: {0}",
+            "no se puede llenar una unidad de red: {0}", "un lecteur réseau ne peut pas être rempli : {0}", "uma unidade de rede não pode ser preenchida: {0}", "لا يمكن ملء محرك أقراص الشبكة: {0}",
+            "नेटवर्क ड्राइव को भरा नहीं जा सकता: {0}", "নেটওয়ার্ক ড্রাইভ পূরণ করা যায় না: {0}", "نیٹ ورک ڈرائیو کو بھرا نہیں جا سکتا: {0}", "无法填充网络驱动器：{0}")
+        Add("свободно перед запуском: {0}, перезаписано: {1}",
+            "free before the run: {0}, overwritten: {1}", "вільно перед запуском: {0}, перезаписано: {1}", "frei vor dem Start: {0}, überschrieben: {1}", "libero prima dell'esecuzione: {0}, sovrascritto: {1}",
+            "libre antes de la ejecución: {0}, sobrescrito: {1}", "libre avant l'exécution : {0}, écrasé : {1}", "livre antes da execução: {0}, sobrescrito: {1}", "المساحة الفارغة قبل التشغيل: {0}، المكتوب فوقها: {1}",
+            "चलाने से पहले खाली: {0}, अधिलेखित: {1}", "চালানোর আগে খালি: {0}, ওভাররাইট করা: {1}", "چلانے سے پہلے خالی: {0}، دوبارہ لکھا گیا: {1}", "运行前可用空间：{0}，已覆盖：{1}")
+        Add("{0} ГБ",
+            "{0} GB", "{0} ГБ", "{0} GB", "{0} GB",
+            "{0} GB", "{0} Go", "{0} GB", "{0} غيغابايت",
+            "{0} GB", "{0} GB", "{0} GB", "{0} GB")
+        Add("{0} МБ",
+            "{0} MB", "{0} МБ", "{0} MB", "{0} MB",
+            "{0} MB", "{0} Mo", "{0} MB", "{0} ميغابايت",
+            "{0} MB", "{0} MB", "{0} MB", "{0} MB")
+        Add("Диск {0}: объём {1}, свободно {2}.",
+            "Drive {0}: capacity {1}, free {2}.", "Диск {0}: обсяг {1}, вільно {2}.", "Laufwerk {0}: Kapazität {1}, frei {2}.", "Disco {0}: capacità {1}, libero {2}.",
+            "Disco {0}: capacidad {1}, libre {2}.", "Disque {0} : capacité {1}, libre {2}.", "Disco {0}: capacidade {1}, livre {2}.", "القرص {0}: السعة {1}، المتاح {2}.",
+            "डिस्क {0}: क्षमता {1}, खाली {2}।", "ডিস্ক {0}: ধারণক্ষমতা {1}, খালি {2}।", "ڈسک {0}: گنجائش {1}، خالی {2}۔", "磁盘 {0}：容量 {1}，可用 {2}。")
+        Add("Это системный диск: FileDO оставит свободными не меньше 10 ГБ и не меньше 10 % его объёма.",
+            "This is the system drive: FileDO will keep at least 10 GB and at least 10 % of its capacity free.", "Це системний диск: FileDO залишить вільними не менше 10 ГБ і не менше 10 % його обсягу.", "Dies ist das Systemlaufwerk: FileDO lässt mindestens 10 GB und mindestens 10 % seiner Kapazität frei.", "Questo è il disco di sistema: FileDO lascerà liberi almeno 10 GB e almeno il 10 % della sua capacità.",
+            "Esta es la unidad del sistema: FileDO dejará libres al menos 10 GB y al menos el 10 % de su capacidad.", "Il s'agit du disque système : FileDO laissera libres au moins 10 Go et au moins 10 % de sa capacité.", "Este é o disco do sistema: o FileDO deixará livres pelo menos 10 GB e pelo menos 10 % da sua capacidade.", "هذا هو قرص النظام: سيُبقي FileDO ما لا يقل عن 10 غيغابايت وما لا يقل عن 10 % من سعته فارغًا.",
+            "यह सिस्टम ड्राइव है: FileDO कम से कम 10 GB और उसकी क्षमता का कम से कम 10 % खाली छोड़ देगा।", "এটি সিস্টেম ড্রাইভ: FileDO অন্তত 10 GB এবং এর ধারণক্ষমতার অন্তত 10 % খালি রাখবে।", "یہ سسٹم ڈرائیو ہے: FileDO کم از کم 10 GB اور اس کی گنجائش کا کم از کم 10 % خالی چھوڑے گا۔", "这是系统盘：FileDO 将保留至少 10 GB 且不少于其容量 10 % 的可用空间。")
+
+        ' --- backup of the folder (FileDO), ticket L0298 ---
+        Add("Резервная копия папки (FileDO)",
+            "Folder backup (FileDO)", "Резервна копія папки (FileDO)", "Ordnersicherung (FileDO)", "Backup della cartella (FileDO)",
+            "Copia de seguridad de la carpeta (FileDO)", "Sauvegarde du dossier (FileDO)", "Backup da pasta (FileDO)", "نسخة احتياطية من المجلد (FileDO)",
+            "फ़ोल्डर बैकअप (FileDO)", "ফোল্ডার ব্যাকআপ (FileDO)", "فولڈر کا بیک اپ (FileDO)", "文件夹备份 (FileDO)")
+        Add("пароль резервной копии не сохранён на этом компьютере: введите его в операции",
+            "the backup password is not stored on this PC: enter it in the operation", "пароль резервної копії не збережено на цьому комп'ютері: введіть його в операції", "das Sicherungskennwort ist auf diesem PC nicht gespeichert: geben Sie es in der Operation ein", "la password del backup non è salvata su questo PC: inseritela nell'operazione",
+            "la contraseña de la copia de seguridad no está guardada en este equipo: introdúzcala en la operación", "le mot de passe de la sauvegarde n'est pas enregistré sur ce PC : saisissez-le dans l'opération", "a senha do backup não está salva neste computador: digite-a na operação", "كلمة مرور النسخة الاحتياطية غير محفوظة على هذا الكمبيوتر: أدخلها في العملية",
+            "बैकअप का पासवर्ड इस कंप्यूटर पर सहेजा नहीं गया है: इसे ऑपरेशन में दर्ज करें", "ব্যাকআপের পাসওয়ার্ড এই কম্পিউটারে সংরক্ষিত নেই: অপারেশনে এটি লিখুন", "بیک اپ کا پاس ورڈ اس کمپیوٹر پر محفوظ نہیں ہے: اسے آپریشن میں درج کریں", "此电脑上未保存备份密码：请在操作中输入")
+        Add("установленный FileDO не умеет нумеровать резервные копии: обновите компонент FileDO",
+            "the installed FileDO cannot number backups: update the FileDO component", "встановлений FileDO не вміє нумерувати резервні копії: оновіть компонент FileDO", "das installierte FileDO kann Sicherungen nicht nummerieren: aktualisieren Sie die FileDO-Komponente", "il FileDO installato non sa numerare i backup: aggiornate il componente FileDO",
+            "el FileDO instalado no puede numerar copias de seguridad: actualice el componente FileDO", "le FileDO installé ne sait pas numéroter les sauvegardes : mettez à jour le composant FileDO", "o FileDO instalado não sabe numerar backups: atualize o componente FileDO", "لا يستطيع FileDO المثبّت ترقيم النسخ الاحتياطية: حدّث مكون FileDO",
+            "इंस्टॉल किया गया FileDO बैकअप को क्रमांकित नहीं कर सकता: FileDO घटक अपडेट करें", "ইনস্টল করা FileDO ব্যাকআপে নম্বর দিতে পারে না: FileDO উপাদানটি আপডেট করুন", "انسٹال شدہ FileDO بیک اپ کو نمبر نہیں دے سکتا: FileDO جزو اپ ڈیٹ کریں", "已安装的 FileDO 无法为备份编号：请更新 FileDO 组件")
+        Add("Резервная копия принимает только обычные папки, не ресурсы и не Google Drive.",
+            "A backup takes ordinary folders only, not resources and not Google Drive.", "Резервна копія приймає лише звичайні папки, не ресурси й не Google Drive.", "Eine Sicherung akzeptiert nur normale Ordner, keine Ressourcen und kein Google Drive.", "Un backup accetta solo cartelle normali, non risorse né Google Drive.",
+            "Una copia de seguridad solo admite carpetas normales, no recursos ni Google Drive.", "Une sauvegarde n'accepte que des dossiers ordinaires, ni ressources ni Google Drive.", "Um backup aceita apenas pastas comuns, não recursos nem o Google Drive.", "تقبل النسخة الاحتياطية المجلدات العادية فقط، لا الموارد ولا Google Drive.",
+            "बैकअप केवल सामान्य फ़ोल्डर लेता है, संसाधन या Google Drive नहीं।", "ব্যাকআপ শুধু সাধারণ ফোল্ডার নেয়, রিসোর্স বা Google Drive নয়।", "بیک اپ صرف عام فولڈر لیتا ہے، وسائل یا Google Drive نہیں۔", "备份只接受普通文件夹，不接受资源或 Google Drive。")
+        Add("Введите пароль для защищённой резервной копии.",
+            "Enter a password for the protected backup.", "Введіть пароль для захищеної резервної копії.", "Geben Sie ein Kennwort für die geschützte Sicherung ein.", "Inserite una password per il backup protetto.",
+            "Introduzca una contraseña para la copia de seguridad protegida.", "Saisissez un mot de passe pour la sauvegarde protégée.", "Digite uma senha para o backup protegido.", "أدخل كلمة مرور للنسخة الاحتياطية المحمية.",
+            "सुरक्षित बैकअप के लिए पासवर्ड दर्ज करें।", "সুরক্ষিত ব্যাকআপের জন্য একটি পাসওয়ার্ড লিখুন।", "محفوظ بیک اپ کے لیے پاس ورڈ درج کریں۔", "请为受保护的备份输入密码。")
+        Add("Хранить копий",
+            "Copies to keep", "Зберігати копій", "Aufzubewahrende Kopien", "Copie da conservare",
+            "Copias que conservar", "Copies à conserver", "Cópias a manter", "عدد النسخ المحفوظة",
+            "रखी जाने वाली प्रतियाँ", "যতগুলো কপি রাখা হবে", "محفوظ رکھی جانے والی کاپیاں", "保留的副本数")
+        Add("Защитить копии паролем (контейнер FileDO)",
+            "Protect the copies with a password (FileDO container)", "Захистити копії паролем (контейнер FileDO)", "Kopien mit Kennwort schützen (FileDO-Container)", "Proteggi le copie con una password (contenitore FileDO)",
+            "Proteger las copias con contraseña (contenedor FileDO)", "Protéger les copies par mot de passe (conteneur FileDO)", "Proteger as cópias com senha (contêiner FileDO)", "حماية النسخ بكلمة مرور (حاوية FileDO)",
+            "प्रतियों को पासवर्ड से सुरक्षित करें (FileDO कंटेनर)", "কপিগুলো পাসওয়ার্ড দিয়ে সুরক্ষিত করুন (FileDO কন্টেইনার)", "کاپیوں کو پاس ورڈ سے محفوظ کریں (FileDO کنٹینر)", "用密码保护副本 (FileDO 容器)")
+        Add("Каждый запуск сохраняет папку целиком как следующую копию с номером от 001 до {0}.",
+            "Each run saves the whole folder as the next copy, numbered 001 to {0}.", "Кожен запуск зберігає папку цілком як наступну копію з номером від 001 до {0}.", "Jeder Lauf speichert den ganzen Ordner als nächste Kopie, nummeriert von 001 bis {0}.", "Ogni esecuzione salva l'intera cartella come copia successiva, numerata da 001 a {0}.",
+            "Cada ejecución guarda la carpeta entera como la copia siguiente, numerada de 001 a {0}.", "Chaque exécution enregistre le dossier entier comme copie suivante, numérotée de 001 à {0}.", "Cada execução salva a pasta inteira como a próxima cópia, numerada de 001 a {0}.", "يحفظ كل تشغيل المجلد كاملًا كنسخة تالية مرقّمة من 001 إلى {0}.",
+            "हर रन पूरे फ़ोल्डर को अगली प्रति के रूप में सहेजता है, क्रमांक 001 से {0} तक।", "প্রতিটি রান পুরো ফোল্ডারটি পরবর্তী কপি হিসেবে সংরক্ষণ করে, নম্বর 001 থেকে {0}।", "ہر رن پورے فولڈر کو اگلی کاپی کے طور پر محفوظ کرتا ہے، نمبر 001 سے {0} تک۔", "每次运行将整个文件夹保存为下一个副本，编号 001 至 {0}。")
+        Add("Когда набор заполнен, новая копия после проверки заменяет самую старую. Исходная папка не изменяется. Имена копий: {0}.",
+            "Once the set is full, the new copy replaces the oldest one after it has been verified. The source folder is not changed. Copy names: {0}.", "Коли набір заповнено, нова копія після перевірки замінює найстаршу. Вихідна папка не змінюється. Імена копій: {0}.", "Ist der Satz voll, ersetzt die neue Kopie nach ihrer Prüfung die älteste. Der Quellordner wird nicht verändert. Namen der Kopien: {0}.", "Quando il set è pieno, la nuova copia, dopo la verifica, sostituisce la più vecchia. La cartella di origine non viene modificata. Nomi delle copie: {0}.",
+            "Cuando el conjunto está lleno, la copia nueva sustituye a la más antigua tras verificarse. La carpeta de origen no cambia. Nombres de las copias: {0}.", "Quand le jeu est plein, la nouvelle copie remplace la plus ancienne après vérification. Le dossier source n'est pas modifié. Noms des copies : {0}.", "Quando o conjunto está cheio, a nova cópia substitui a mais antiga depois de verificada. A pasta de origem não é alterada. Nomes das cópias: {0}.", "عندما تمتلئ المجموعة، تحل النسخة الجديدة بعد التحقق منها محل الأقدم. لا يتغير المجلد المصدر. أسماء النسخ: {0}.",
+            "सेट भर जाने पर, जाँच के बाद नई प्रति सबसे पुरानी की जगह लेती है। स्रोत फ़ोल्डर नहीं बदलता। प्रतियों के नाम: {0}।", "সেট পূর্ণ হলে, যাচাইয়ের পর নতুন কপি সবচেয়ে পুরোনোটির জায়গা নেয়। উৎস ফোল্ডার বদলায় না। কপির নাম: {0}।", "سیٹ بھر جانے پر، جانچ کے بعد نئی کاپی سب سے پرانی کی جگہ لے لیتی ہے۔ ماخذ فولڈر تبدیل نہیں ہوتا۔ کاپیوں کے نام: {0}۔", "副本集已满时，新副本经验证后替换最旧的副本。源文件夹不会更改。副本名称：{0}。")
+        Add("Пароль сохранён на этом компьютере. Оставьте поле пустым, чтобы не менять его. Без пароля копию открыть нельзя.",
+            "The password is stored on this PC. Leave the box empty to keep it. A copy cannot be opened without the password.", "Пароль збережено на цьому комп'ютері. Залиште поле порожнім, щоб не змінювати його. Без пароля копію відкрити неможливо.", "Das Kennwort ist auf diesem PC gespeichert. Lassen Sie das Feld leer, um es beizubehalten. Ohne Kennwort lässt sich eine Kopie nicht öffnen.", "La password è salvata su questo PC. Lasciate il campo vuoto per non cambiarla. Senza password la copia non si apre.",
+            "La contraseña está guardada en este equipo. Deje el campo vacío para conservarla. Sin la contraseña la copia no se puede abrir.", "Le mot de passe est enregistré sur ce PC. Laissez le champ vide pour le conserver. Sans mot de passe, la copie ne s'ouvre pas.", "A senha está salva neste computador. Deixe o campo vazio para mantê-la. Sem a senha a cópia não pode ser aberta.", "كلمة المرور محفوظة على هذا الكمبيوتر. اترك الحقل فارغًا للإبقاء عليها. لا يمكن فتح النسخة بدون كلمة المرور.",
+            "पासवर्ड इस कंप्यूटर पर सहेजा गया है। इसे न बदलने के लिए फ़ील्ड खाली छोड़ें। पासवर्ड के बिना प्रति नहीं खुल सकती।", "পাসওয়ার্ড এই কম্পিউটারে সংরক্ষিত আছে। এটি না বদলাতে ঘরটি খালি রাখুন। পাসওয়ার্ড ছাড়া কপি খোলা যায় না।", "پاس ورڈ اس کمپیوٹر پر محفوظ ہے۔ اسے برقرار رکھنے کے لیے خانہ خالی چھوڑیں۔ پاس ورڈ کے بغیر کاپی نہیں کھل سکتی۔", "密码已保存在此电脑上。保持此框为空即可不更改。没有密码无法打开副本。")
+        Add("Пароль хранится только на этом компьютере и не попадает в экспорт настроек. Без пароля копию открыть нельзя.",
+            "The password is stored only on this PC and is not part of the settings export. A copy cannot be opened without the password.", "Пароль зберігається лише на цьому комп'ютері й не потрапляє до експорту налаштувань. Без пароля копію відкрити неможливо.", "Das Kennwort wird nur auf diesem PC gespeichert und ist nicht Teil des Einstellungsexports. Ohne Kennwort lässt sich eine Kopie nicht öffnen.", "La password è salvata solo su questo PC e non entra nell'esportazione delle impostazioni. Senza password la copia non si apre.",
+            "La contraseña solo se guarda en este equipo y no entra en la exportación de la configuración. Sin la contraseña la copia no se puede abrir.", "Le mot de passe n'est enregistré que sur ce PC et ne fait pas partie de l'export des réglages. Sans mot de passe, la copie ne s'ouvre pas.", "A senha fica salva somente neste computador e não entra na exportação das configurações. Sem a senha a cópia não pode ser aberta.", "تُحفظ كلمة المرور على هذا الكمبيوتر فقط ولا تدخل في تصدير الإعدادات. لا يمكن فتح النسخة بدون كلمة المرور.",
+            "पासवर्ड केवल इस कंप्यूटर पर रहता है और सेटिंग्स निर्यात में शामिल नहीं होता। पासवर्ड के बिना प्रति नहीं खुल सकती।", "পাসওয়ার্ড শুধু এই কম্পিউটারে থাকে এবং সেটিংস রপ্তানিতে যায় না। পাসওয়ার্ড ছাড়া কপি খোলা যায় না।", "پاس ورڈ صرف اس کمپیوٹر پر محفوظ رہتا ہے اور ترتیبات کی برآمد میں شامل نہیں ہوتا۔ پاس ورڈ کے بغیر کاپی نہیں کھل سکتی۔", "密码只保存在此电脑上，不会包含在设置导出中。没有密码无法打开副本。")
+        Add("Пароль слишком простой: нужно не меньше 8 символов, и не один и тот же символ.",
+            "The password is too simple: it needs at least 8 characters, and not one character repeated.", "Пароль надто простий: потрібно щонайменше 8 символів, і не один і той самий символ.", "Das Kennwort ist zu einfach: mindestens 8 Zeichen, und nicht nur ein wiederholtes Zeichen.", "La password è troppo semplice: servono almeno 8 caratteri, e non un solo carattere ripetuto.",
+            "La contraseña es demasiado simple: necesita al menos 8 caracteres, y no un solo carácter repetido.", "Le mot de passe est trop simple : il faut au moins 8 caractères, et pas un seul caractère répété.", "A senha é simples demais: são necessários pelo menos 8 caracteres, e não um único caractere repetido.", "كلمة المرور بسيطة جدًا: يلزم 8 أحرف على الأقل، وليس حرفًا واحدًا مكررًا.",
+            "पासवर्ड बहुत सरल है: कम से कम 8 अक्षर चाहिए, और एक ही अक्षर दोहराया हुआ नहीं।", "পাসওয়ার্ডটি খুব সহজ: অন্তত 8টি অক্ষর দরকার, এবং একই অক্ষর বারবার নয়।", "پاس ورڈ بہت آسان ہے: کم از کم 8 حروف درکار ہیں، اور ایک ہی حرف بار بار نہیں۔", "密码过于简单：至少需要 8 个字符，且不能是同一字符重复。")
+        Add("Не удалось сохранить пароль на этом компьютере. Операция сохранена, но запустится только после того, как пароль будет сохранён.",
+            "The password could not be stored on this PC. The operation is saved, but it runs only once the password is stored.", "Не вдалося зберегти пароль на цьому комп'ютері. Операцію збережено, але вона запуститься лише після того, як пароль буде збережено.", "Das Kennwort konnte auf diesem PC nicht gespeichert werden. Die Operation ist gespeichert, läuft aber erst, wenn das Kennwort gespeichert ist.", "Impossibile salvare la password su questo PC. L'operazione è salvata, ma verrà eseguita solo dopo il salvataggio della password.",
+            "No se pudo guardar la contraseña en este equipo. La operación está guardada, pero solo se ejecutará cuando la contraseña se haya guardado.", "Le mot de passe n'a pas pu être enregistré sur ce PC. L'opération est enregistrée, mais ne s'exécutera qu'une fois le mot de passe enregistré.", "Não foi possível salvar a senha neste computador. A operação está salva, mas só será executada depois que a senha for salva.", "تعذّر حفظ كلمة المرور على هذا الكمبيوتر. حُفظت العملية، لكنها لن تعمل إلا بعد حفظ كلمة المرور.",
+            "इस कंप्यूटर पर पासवर्ड सहेजा नहीं जा सका। ऑपरेशन सहेज लिया गया है, लेकिन पासवर्ड सहेजे जाने के बाद ही चलेगा।", "এই কম্পিউটারে পাসওয়ার্ড সংরক্ষণ করা যায়নি। অপারেশনটি সংরক্ষিত হয়েছে, তবে পাসওয়ার্ড সংরক্ষিত হওয়ার পরেই চলবে।", "اس کمپیوٹر پر پاس ورڈ محفوظ نہیں کیا جا سکا۔ آپریشن محفوظ ہو گیا ہے، لیکن پاس ورڈ محفوظ ہونے کے بعد ہی چلے گا۔", "无法在此电脑上保存密码。操作已保存，但只有在密码保存后才会运行。")
     End Sub
 End Class

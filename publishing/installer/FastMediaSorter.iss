@@ -134,7 +134,8 @@ english.CompCore=Core - media and file manager (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
 english.CompPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the media and file manager
 english.CompOcr=OCR & translation models - offline on-image text recognition
-english.CompShare=Local sharing and scheduling service (Share Manager + SFTP worker) - optional; shares folders over SFTP, runs copy, move, delete and archive on a schedule and joins this PC to an exchange account; sharing is off until you enable it (bundles its own .NET runtime)
+english.CompShare=Local sharing service (Share Manager + SFTP worker) - optional; shares folders over SFTP and joins this PC to an exchange account; sharing is off until you enable it (bundles its own .NET runtime); scheduled file operations are the separate item below
+english.CompScheduled=Scheduled file operations - installed together with the Share Manager (the same component payload, no extra download, no Windows service); runs while the Share Manager runs in your signed-in session
 english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
 english.ShareDesktopIcon=Create a desktop shortcut for the Share Manager
 
@@ -145,7 +146,8 @@ russian.CompCore=Ядро - медиа- и файловый менеджер (о
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
 russian.CompPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в медиа- и файловом менеджере
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
-russian.CompShare=Служба раздачи и расписаний (Менеджер общего доступа + SFTP-воркер) - необязательно; раздаёт папки по SFTP, по расписанию копирует, переносит, удаляет и архивирует файлы и подключает этот ПК к учётной записи обмена; раздача выключена, пока вы её не включите (включает свой рантайм .NET)
+russian.CompShare=Локальная служба раздачи (Менеджер общего доступа + SFTP-воркер) - необязательно; раздаёт папки по SFTP и подключает этот ПК к учётной записи обмена; раздача выключена, пока вы её не включите (включает свой рантайм .NET); файловые операции по расписанию - отдельный пункт ниже
+russian.CompScheduled=Файловые операции по расписанию - устанавливаются вместе с менеджером общего доступа (тот же компонент, без отдельной загрузки и без службы Windows); выполняются, пока менеджер запущен в вашем сеансе
 russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
 russian.ShareDesktopIcon=Создать ярлык Менеджера общего доступа на рабочем столе
 
@@ -156,16 +158,17 @@ ukrainian.CompCore=Ядро - медіа- та файловий менеджер
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
 ukrainian.CompPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у медіа- та файловому менеджері
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
-ukrainian.CompShare=Служба роздачі та розкладів (Менеджер спільного доступу + SFTP-воркер) - необов’язково; роздає теки по SFTP, за розкладом копіює, переносить, видаляє та архівує файли і підключає цей ПК до облікового запису обміну; роздача вимкнена, доки ви її не ввімкнете (містить власний рантайм .NET)
+ukrainian.CompShare=Локальна служба роздачі (Менеджер спільного доступу + SFTP-воркер) - необов’язково; роздає теки по SFTP і підключає цей ПК до облікового запису обміну; роздача вимкнена, доки ви її не ввімкнете (містить власний рантайм .NET); файлові операції за розкладом - окремий пункт нижче
+ukrainian.CompScheduled=Файлові операції за розкладом - встановлюються разом із менеджером спільного доступу (той самий компонент, без окремого завантаження і без служби Windows); виконуються, поки менеджер запущений у вашому сеансі
 ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
 ukrainian.ShareDesktopIcon=Створити ярлик Менеджера спільного доступу на робочому столі
 
 ; Prepend an honest one-liner to the component-selection page: the viewer is light,
 ; the weight is optional offline payload the user can trim.
 [Messages]
-english.SelectComponentsLabel2=This is one program with a few roles. The media and file manager is required. The local sharing and scheduling service, FileDO disks, video codecs and OCR models are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need (codecs and models can download later on demand). Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Обязательная часть - медиа- и файловый менеджер. Служба раздачи и расписаний, диски FileDO, видео-кодеки и модели OCR необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное (кодеки и модели при необходимости скачаются позже). Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Обов'язкова частина - медіа- та файловий менеджер. Служба роздачі та розкладів, диски FileDO, відео-кодеки та моделі OCR необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне (кодеки та моделі за потреби завантажаться пізніше). Натисніть "Далі", коли будете готові продовжити.
+english.SelectComponentsLabel2=This is one program with a few roles. The media and file manager is required. The local sharing service and scheduled file operations (two separate items), FileDO disks, video codecs and OCR models are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need (codecs and models can download later on demand). Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Обязательная часть - медиа- и файловый менеджер. Локальная служба раздачи и файловые операции по расписанию (два отдельных пункта), диски FileDO, видео-кодеки и модели OCR необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное (кодеки и модели при необходимости скачаются позже). Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Обов'язкова частина - медіа- та файловий менеджер. Локальна служба роздачі та файлові операції за розкладом (два окремі пункти), диски FileDO, відео-кодеки та моделі OCR необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне (кодеки та моделі за потреби завантажаться пізніше). Натисніть "Далі", коли будете готові продовжити.
 
 ; Explain the admin choice at the exact spot it is made (the built-in "Select Setup
 ; Install Mode" screen shown by PrivilegesRequiredOverridesAllowed=dialog), so the user
@@ -187,7 +190,7 @@ ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити л�
 ; Only offered with the share component: here the viewer is the product and the Share
 ; Manager the side tool. Nothing else puts the manager on screen - it has no file
 ; association and its own tray icon only exists once something has started it.
-Name: "sharedesktopicon"; Description: "{cm:ShareDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Components: share; Flags: unchecked
+Name: "sharedesktopicon"; Description: "{cm:ShareDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Components: share scheduled; Flags: unchecked
 
 ; The viewer itself is tiny; almost all of the package weight is optional,
 ; offline-ready payload (VLC codecs, OCR models, the Share companion). Exposing it
@@ -214,6 +217,14 @@ Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
 ; not among the parameters [Components] accepts - only Name/Description/Types/
 ; ExtraDiskSpaceRequired/Flags plus the common Languages/MinVersion/OnlyBelowVersion.
 Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14393
+
+; Scheduled file operations as their own selectable item (L0297 quiz decision): scheduling is a
+; reason to install the product on its own, so it is offered by name - but it is NOT a second
+; payload. Ticking either this or `share` installs the SAME Share Manager payload once; there is
+; no separate scheduling package, no Windows service, and no extra download. The children below
+; (FileDO, exchange) stay children of `share` only - they are sharing capabilities, not
+; scheduling ones. Same floor as `share` (.NET 10 x64 companion).
+Name: "scheduled"; Description: "{cm:CompScheduled}"; Types: full; MinVersion: 10.0.14393
 
 Name: "share\filedo"; Description: "{cm:CompFileDO}"; Flags: dontinheritcheck; MinVersion: 10.0.14393
 #ifndef NoExchange
@@ -272,8 +283,8 @@ Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubd
 Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
 ; Android Folder Share - the self-contained .NET companion app + its SFTP worker.
 ; The companion carries its own .NET runtime, which is the bulk of this component.
-Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share
-Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share
+Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share scheduled
+Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share scheduled
 Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: share\filedo
 #ifndef NoExchange
 ; The Media Exchange Server tree: fms-exchange-server.exe, its .sha256, the firewall opt-in helper
@@ -294,14 +305,14 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Elevated helper for the deferred, in-app "enable server features" opt-in (adds /
 ; removes the SFTP firewall rule via one UAC prompt). Installed next to the exe so
 ; ServerFeatures.EnableViaElevation prefers it over a direct netsh fallback.
-Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
+Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share scheduled
 ; Elevated management helper for the in-app switch to always-on hosting: Share Manager
 ; -> "Manager settings.." -> Hosting -> switch to the Windows service. It is the SAME script the
 ; Server edition installer drives, so every machine-affecting step still lives in one
 ; auditable place; shipping it here is what lets an ordinary installation take that role
 ; on (behind one visible UAC prompt) instead of requiring a second download. It never
 ; runs by itself: nothing in this installer calls it during a normal install.
-Source: "install-share-service.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
+Source: "install-share-service.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share scheduled
 
 [InstallDelete]
 ; The Start-menu group has been renamed twice: "FastMediaSorter LITE" (the frozen
@@ -353,7 +364,7 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: UseLegacy
 ; "--show" is not optional: a bare launch deliberately obeys the manager's own
 ; "open the window at startup" option, which is OFF by default, so without it the
 ; Start-menu item would start a tray-only process and read as a click that did nothing.
-Name: "{group}\{#ShareManagerName}"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Components: share
+Name: "{group}\{#ShareManagerName}"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Components: share scheduled
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 ; The viewer gets a desktop shortcut on every install, including silent installs and
 ; upgrades where an earlier run remembered the old unchecked desktop task.
@@ -363,7 +374,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: Use
 ; check: the Share Manager is x64 .NET 10 only, which is why the component itself
 ; carries MinVersion 10.0.14393 - on the machines the x86 viewer exists for there is
 ; nothing here to point at.
-Name: "{autodesktop}\{#ShareManagerName}"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Tasks: sharedesktopicon; Components: share
+Name: "{autodesktop}\{#ShareManagerName}"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Tasks: sharedesktopicon; Components: share scheduled
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Check: UseModernExe

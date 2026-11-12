@@ -12,19 +12,35 @@ Partial Public NotInheritable Class Localization
     ''' links, and an address is opened on a click only.
     ''' </summary>
     Private Shared Sub AddAboutPageStrings()
-        Add("Локальная служба раздачи и расписаний: раздаёт папки этого компьютера телефонам и SFTP-клиентам, выполняет операции по расписанию и подключает компьютер к учётной записи обмена.",
-            "Local sharing and scheduling service: shares this computer's folders with phones and SFTP clients, runs scheduled operations and connects the computer to an exchange account.",
-            "Локальна служба роздачі та розкладів: роздає папки цього комп'ютера телефонам і SFTP-клієнтам, виконує операції за розкладом і підключає комп'ютер до облікового запису обміну.",
-            "Lokaler Freigabe- und Zeitplandienst: gibt Ordner dieses Computers für Telefone und SFTP-Clients frei, führt Vorgänge nach Zeitplan aus und verbindet den Computer mit einem Austauschkonto.",
-            "Servizio locale di condivisione e pianificazione: condivide le cartelle di questo computer con telefoni e client SFTP, esegue operazioni pianificate e collega il computer a un account di scambio.",
-            "Servicio local de uso compartido y programación: comparte las carpetas de este equipo con teléfonos y clientes SFTP, ejecuta operaciones programadas y conecta el equipo a una cuenta de intercambio.",
-            "Service local de partage et de planification : partage les dossiers de cet ordinateur avec les téléphones et clients SFTP, exécute des opérations planifiées et connecte l'ordinateur à un compte d'échange.",
-            "Serviço local de compartilhamento e agendamento: compartilha as pastas deste computador com celulares e clientes SFTP, executa operações agendadas e conecta o computador a uma conta de troca.",
-            "خدمة محلية للمشاركة والجدولة: تشارك مجلدات هذا الكمبيوتر مع الهواتف وعملاء SFTP، وتنفّذ العمليات المجدولة، وتربط الكمبيوتر بحساب التبادل.",
-            "स्थानीय साझाकरण और शेड्यूलिंग सेवा: इस कंप्यूटर के फ़ोल्डर फ़ोन और SFTP क्लाइंट के साथ साझा करती है, शेड्यूल किए गए ऑपरेशन चलाती है और कंप्यूटर को एक्सचेंज खाते से जोड़ती है।",
-            "স্থানীয় শেয়ারিং ও সময়সূচি সেবা: এই কম্পিউটারের ফোল্ডার ফোন ও SFTP ক্লায়েন্টের সঙ্গে শেয়ার করে, সময়সূচিবদ্ধ অপারেশন চালায় এবং কম্পিউটারকে এক্সচেঞ্জ অ্যাকাউন্টে যুক্ত করে।",
-            "مقامی شیئرنگ اور شیڈولنگ سروس: اس کمپیوٹر کے فولڈر فون اور SFTP کلائنٹس کے ساتھ شیئر کرتی ہے، شیڈول شدہ آپریشنز چلاتی ہے اور کمپیوٹر کو ایکسچینج اکاؤنٹ سے جوڑتی ہے۔",
-            "本地共享与计划服务：与手机和 SFTP 客户端共享此电脑的文件夹，运行计划操作，并将电脑连接到交换账户。")
+        ' The part list of the product (L0297, order: viewer, sharing, scheduled operations, Media Exchange Server): this page is
+        ' the Share Manager's own, so it states the two parts the Share Manager carries - the sharing line (no scheduling in it)
+        ' and the scheduled-operations line (installed with the Share Manager, run in the signed-in session).
+        Add("Локальная служба раздачи: раздаёт папки этого компьютера телефонам и SFTP-клиентам и подключает компьютер к учётной записи обмена.",
+            "Local sharing service: shares this computer's folders with phones and SFTP clients and connects the computer to an exchange account.",
+            "Локальна служба роздачі: роздає папки цього комп'ютера телефонам і SFTP-клієнтам і підключає комп'ютер до облікового запису обміну.",
+            "Lokaler Freigabedienst: gibt Ordner dieses Computers für Telefone und SFTP-Clients frei und verbindet den Computer mit einem Austauschkonto.",
+            "Servizio locale di condivisione: condivide le cartelle di questo computer con telefoni e client SFTP e collega il computer a un account di scambio.",
+            "Servicio local de uso compartido: comparte las carpetas de este equipo con teléfonos y clientes SFTP y conecta el equipo a una cuenta de intercambio.",
+            "Service local de partage : partage les dossiers de cet ordinateur avec les téléphones et clients SFTP et connecte l'ordinateur à un compte d'échange.",
+            "Serviço local de compartilhamento: compartilha as pastas deste computador com celulares e clientes SFTP e conecta o computador a uma conta de troca.",
+            "خدمة محلية للمشاركة: تشارك مجلدات هذا الكمبيوتر مع الهواتف وعملاء SFTP وتربط الكمبيوتر بحساب التبادل.",
+            "स्थानीय साझाकरण सेवा: इस कंप्यूटर के फ़ोल्डर फ़ोन और SFTP क्लाइंट के साथ साझा करती है और कंप्यूटर को एक्सचेंज खाते से जोड़ती है।",
+            "স্থানীয় শেয়ারিং সেবা: এই কম্পিউটারের ফোল্ডার ফোন ও SFTP ক্লায়েন্টের সঙ্গে শেয়ার করে এবং কম্পিউটারকে এক্সচেঞ্জ অ্যাকাউন্টে যুক্ত করে।",
+            "مقامی شیئرنگ سروس: اس کمپیوٹر کے فولڈر فون اور SFTP کلائنٹس کے ساتھ شیئر کرتی ہے اور کمپیوٹر کو ایکسچینج اکاؤنٹ سے جوڑتی ہے۔",
+            "本地共享服务：与手机和 SFTP 客户端共享此电脑的文件夹，并将电脑连接到交换账户。")
+        Add("Файловые операции по расписанию: копируют, перемещают, удаляют и архивируют файлы в заданное время. Устанавливаются вместе с Менеджером общего доступа и выполняются, пока он работает в вашем сеансе входа.",
+            "Scheduled file operations: copy, move, delete and archive files on a timetable. They are installed together with the Share Manager and run while it runs in your signed-in session.",
+            "Файлові операції за розкладом: копіюють, переміщують, видаляють та архівують файли в заданий час. Встановлюються разом із Менеджером спільного доступу й виконуються, поки він працює у вашому сеансі входу.",
+            "Geplante Dateivorgänge: kopieren, verschieben, löschen und archivieren Dateien nach Zeitplan. Sie werden zusammen mit dem Freigabe-Manager installiert und laufen, solange er in Ihrer angemeldeten Sitzung läuft.",
+            "Operazioni pianificate sui file: copiano, spostano, eliminano e archiviano i file in base a un programma. Si installano insieme a Gestione condivisione e vengono eseguite finché questo è in esecuzione nella tua sessione di accesso.",
+            "Operaciones de archivos programadas: copian, mueven, eliminan y archivan archivos según un horario. Se instalan junto con el gestor de uso compartido y se ejecutan mientras este funciona en tu sesión iniciada.",
+            "Opérations planifiées sur les fichiers : copient, déplacent, suppriment et archivent des fichiers selon un calendrier. Elles s'installent avec le gestionnaire de partage et s'exécutent tant qu'il fonctionne dans votre session ouverte.",
+            "Operações agendadas de arquivos: copiam, movem, excluem e arquivam arquivos em horários definidos. São instaladas junto com o Share Manager e executadas enquanto ele roda na sua sessão de login.",
+            "عمليات الملفات المجدولة: تنسخ الملفات وتنقلها وتحذفها وتؤرشفها في أوقات محددة. تُثبَّت مع مدير المشاركة وتعمل ما دام يعمل في جلسة تسجيل دخولك.",
+            "शेड्यूल किए गए फ़ाइल ऑपरेशन: तय समय पर फ़ाइलें कॉपी करते, ले जाते, हटाते और संग्रहित करते हैं। ये शेयर प्रबंधक के साथ इंस्टॉल होते हैं और तब तक चलते हैं जब तक वह आपके साइन-इन सत्र में चल रहा हो।",
+            "নির্ধারিত ফাইল অপারেশন: নির্দিষ্ট সময়ে ফাইল কপি করে, সরায়, মুছে ফেলে ও আর্কাইভ করে। এগুলি শেয়ার ম্যানেজারের সঙ্গে ইনস্টল হয় এবং সেটি আপনার সাইন-ইন সেশনে চলা পর্যন্ত চলে।",
+            "شیڈولڈ فائل آپریشنز: مقررہ وقت پر فائلیں کاپی کرتے، منتقل کرتے، حذف کرتے اور آرکائیو کرتے ہیں۔ یہ شیئر مینیجر کے ساتھ انسٹال ہوتے ہیں اور اس وقت تک چلتے ہیں جب تک وہ آپ کے سائن ان سیشن میں چل رہا ہو۔",
+            "计划文件操作：按计划时间复制、移动、删除和归档文件。它们随共享管理器一同安装，并在共享管理器运行于您已登录的会话期间运行。")
         Add("Новые версии", "Releases", "Нові версії", "Veröffentlichungen", "Versioni", "Versiones", "Versions", "Versões", "الإصدارات", "रिलीज़", "রিলিজ", "ریلیزز", "版本发布")
         Add("Установлена версия {0}. Программа сама не проверяет обновления и ничего не скачивает: новые версии выходят на странице релизов GitHub, в winget и в Microsoft Store.",
             "Version {0} is installed. The program does not check for updates by itself and downloads nothing: new versions are published on the GitHub releases page, in winget and in the Microsoft Store.",

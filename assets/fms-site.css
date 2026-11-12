@@ -45,6 +45,36 @@
 .language-row a.on,.language-row a[aria-current],.footer-langs a[aria-current]{color:var(--text);font-weight:700;text-decoration:underline}
 /* The segments of the language control (.seg a / .seg button) are sized and drawn by assets/fms-buttons.css, the BUTTONS 2.0 adapter. */
 
+/* The hero's acquisition row (ticket 207 F8, F36): under the family sentence, the primary download with its version and date
+   beside it, and the winget copy box. A generated region (tools/Build-SitePages.ps1, gen:hero-get); the copy box and the
+   buttons are the shared components, this only lays the row out. No width cap: the copy box takes its content size and shrinks
+   to the row, it does not stretch across a wide page. */
+.hero-get{display:flex;flex-wrap:wrap;align-items:center;gap:var(--btn-gap,.5rem) 1.4rem;margin:0}
+.hero-get-main{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .9rem}
+.hero-get .dl-facts{display:inline;margin:0;color:var(--muted);font-size:.85rem}
+.hero-get .copybox{flex:0 1 32rem;min-width:min(100%,18rem);margin:0}
+/* The viewer window under the acquisition row (ticket L0301): its own size on a wide page, the row's width on a phone. */
+.hero-shot{margin:1.2rem 0 0}
+.hero-shot img{display:block;width:auto;max-width:100%;height:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+/* A SHA-256 value beside its download (ticket L0301): 64 hex digits break anywhere rather than widen the row. */
+.dl-facts code.sha{font-size:.78rem;overflow-wrap:anywhere;word-break:break-all}
+
+/* Phones (<= 480 px; ticket 207 F20, F37). The header spends one row on the brand and the documentation link and one on the
+   language switch and the theme control: the brand shows the compact name (PRODUCT_NAMING section 1) because the identity block
+   directly under it already spells the full name, and the platform words stay in the markup for the accessible name and for
+   text without CSS. The documentation link keeps a whole-button width (its longer words wrap inside it) so the brand always
+   keeps the rest of its row. The secondary language codes share one row: each is as tall as the kit's command target
+   (--btn-min, 32 for a fine pointer and 48 for a coarse one, never under 44) and as wide as the row allows (at least 24 px; a
+   row that cannot hold them wraps whole codes). Scoped to the landing header, other pages keep theirs. */
+@media(max-width:480px){
+  .site-header-landing .brand-os{display:none}
+  .site-header-landing .brand{flex:1 1 10rem;min-width:0;margin-right:0;padding-inline:4px}
+  [dir="rtl"] .site-header-landing .brand{margin-left:0}
+  .site-header-landing .nav-doc{flex:0 1 9rem;justify-content:center;white-space:normal;text-align:center;line-height:1.2}
+  .language-row{gap:0}
+  .language-row a{flex:1 1 0;min-width:24px;min-height:max(44px,var(--btn-min))}
+}
+
 /* Non-landing pages may use the documentation language picker (PAGE-STYLE 4.2). */
 .lang-menu{position:relative}
 .lang-menu>summary,.site-nav .nav-doc{list-style:none;cursor:pointer;font-family:var(--font-heading);font-weight:700;

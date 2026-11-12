@@ -50,7 +50,7 @@ if ($Next) {
     $max = 0
     foreach ($d in @($dir, (Join-Path $dir 'done'))) {
         Get-ChildItem -LiteralPath $d -File -Filter '*.md' -ErrorAction SilentlyContinue | ForEach-Object {
-            if ($_.Name -match '^(\d{3})_') { $max = [Math]::Max($max, [int]$Matches[1]) }
+            if ($_.Name -match '^(?:L0?)?(\d{3})_') { $max = [Math]::Max($max, [int]$Matches[1]) }
         }
     }
     $fromFiles = $max + 1
@@ -64,8 +64,9 @@ if ($Next) {
 if ($Id) {
     $n = [int]$Id
     $r = $rows | Where-Object { $_.Ticket -eq $n } | Select-Object -First 1
-    $active = Get-ChildItem -LiteralPath $dir -File -Filter ('{0:D3}_*.md' -f $n) -ErrorAction SilentlyContinue | Select-Object -First 1
-    $done = Get-ChildItem -LiteralPath (Join-Path $dir 'done') -File -Filter ('{0:D3}_*.md' -f $n) -ErrorAction SilentlyContinue | Select-Object -First 1
+    $pattern = ('^(?:L0?)?{0:D3}_.*\.md$' -f $n)
+    $active = Get-ChildItem -LiteralPath $dir -File -Filter '*.md' -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $pattern } | Select-Object -First 1
+    $done = Get-ChildItem -LiteralPath (Join-Path $dir 'done') -File -Filter '*.md' -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $pattern } | Select-Object -First 1
     if (-not $r -and -not $active -and -not $done) { Write-Host "ticket ${n} - not in the ledger and no file"; exit 0 }
     if ($r) { Write-Host "ticket ${n}  $($r.Title)"; Write-Host "  note: $(Short $r.Note 900)" }
     foreach ($f in @($active, $done) | Where-Object { $_ }) {

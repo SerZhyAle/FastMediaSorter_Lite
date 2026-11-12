@@ -247,6 +247,8 @@
     <Compile Include="Resources\SmbConnectionLease.vb" />
     <Compile Include="Resources\SmbProvider.vb" />
     <Compile Include="Resources\SftpProvider.vb" />
+    <Compile Include="Resources\DriveProvider.vb" />
+    <Compile Include="Resources\ClipboardPaste.vb" />
     <Compile Include="Resources\QrCodeDecoder.vb" />
     <Compile Include="Resources\QrCodeGenerator.vb" />
     <Compile Include="Resources\CameraPresence.vb" />
@@ -782,6 +784,7 @@
     <Compile Include="Documents\TextDocumentModels.vb" />
     <Compile Include="Documents\TextEncodingDetector.vb" />
     <Compile Include="Documents\TextEncodingChoice.vb" />
+    <Compile Include="Documents\TextPositionMemory.vb" />
     <Compile Include="Documents\TextExcerpt.vb" />
     <Compile Include="Documents\TextFileSearch.vb" />
     <Compile Include="Text_Encoding_Form.vb">
@@ -789,6 +792,12 @@
     </Compile>
     <Compile Include="Documents\TextFilePager.vb" />
     <Compile Include="Documents\TextReaderLayout.vb" />
+    <Compile Include="Documents\TextDocumentBuffer.vb" />
+    <Compile Include="Documents\TextFileSaver.vb" />
+    <Compile Include="Documents\TextEditRules.vb" />
+    <Compile Include="Documents\TextDraftManager.vb" />
+    <Compile Include="Documents\TextSyntaxHighlighter.vb" />
+    <Compile Include="Documents\TextMarkdownRenderer.vb" />
     <Compile Include="Documents\DocumentPanelRules.vb" />
     <Compile Include="Documents\PdfDocumentSource.vb" />
     <Compile Include="Documents\PdfReaderNative.vb" />
@@ -802,6 +811,8 @@
     <Compile Include="Main_Form.DocumentConvert.vb"><DependentUpon>Main_Form.vb</DependentUpon></Compile>
     <Compile Include="Documents\DocHtmlJobArguments.vb" />
     <Compile Include="Documents\DocHtmlConverterLocator.vb" />
+    <Compile Include="Documents\DocHtmlResultReader.vb" />
+    <Compile Include="Documents\DocHtmlJobCache.vb" />
     <Compile Include="Documents\PdfReadingCanvas.vb" />
     <Compile Include="Localization\Localization.Documents.vb" />
     <Compile Include="Documents\EpubPackage.vb" />
@@ -837,6 +848,14 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.TextReader.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.TextEditor.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.TextMarkdown.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>

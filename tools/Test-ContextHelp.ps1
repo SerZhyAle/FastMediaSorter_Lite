@@ -9,7 +9,8 @@
       4. Subordinate settings pages and wizard steps are covered.
       5. Offline help corpus: all 13 locales contain index.html and all topic pages.
       6. Rule 8 anatomy: purpose, capture, order, elements, related sections present.
-      7. Rule 9 privacy & offline: no scripts, no-referrer meta, no external requests, no external CSS imports.
+      7. Rule 9 privacy & offline: no scripts, no-referrer meta, no external requests, no external CSS imports;
+       every page noindex (rule 12; DOC-EXTERNAL-QUALITY section 8 item O).
       8. Every topic is accounted for (spec 267): real-window captures with hash evidence, settings-test captures,
          or declared not capturable with a reason and a visible note; no generic text, placeholder or stray picture.
     Ends in CHECK-VERDICT (tools/lib/Verdict.ps1).
@@ -83,6 +84,15 @@ foreach ($surface in $map.surfaces) {
     if ($surface.form -eq 'inherit') {
         if (-not $surface.parent) {
             Problem "Surface '$($surface.id)' inherits without a parent"
+        }
+    }
+    $askMember = $surface.PSObject.Properties['ask']
+    if ($askMember) {
+        if ($askMember.Value -cne 'off') {
+            Problem "Surface '$($surface.id)' has ask '$($askMember.Value)'; the only value is 'off'"
+        }
+        if ($surface.form -cne 'inherit') {
+            Problem "Surface '$($surface.id)' has ask but form '$($surface.form)'; only an inherit row carries it (section 7 item B)"
         }
     }
     if ($surface.type) {
@@ -200,6 +210,8 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
             if ($indexHtml -match '<script\b|\bon\w+\s*=' -or $indexHtml -notmatch 'name="referrer" content="no-referrer"') {
                 Problem "Privacy violation or script detected in docs/help/$locale/index.html"
             }
+            # A window help page is app help, not a site page: noindex (DOC-EXTERNAL-QUALITY section 8 item O, CONTEXT-HELP rule 12).
+            if ($indexHtml -notmatch '<meta name="robots" content="noindex">') { Problem "docs/help/$locale/index.html is not marked noindex" }
         }
 
         # Check topic pages
@@ -238,6 +250,7 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
             if ($html -match '<script\b|\bon\w+\s*=' -or $html -notmatch 'name="referrer" content="no-referrer"') {
                 Problem "Privacy violation or script in docs/help/$locale/$topic.html"
             }
+            if ($html -notmatch '<meta name="robots" content="noindex">') { Problem "docs/help/$locale/$topic.html is not marked noindex" }
 
             # Rule 8 anatomy
             if ($topic -ne 'index') {

@@ -29,7 +29,18 @@ Public Class ContextHelpTests
             If s.form = "inherit" Then
                 Assert.Contains(s.parent, ids)
             End If
+            If Not String.IsNullOrEmpty(s.ask) Then
+                Assert.Equal("off", s.ask)
+                Assert.Equal("inherit", s.form)
+            End If
         Next
+    End Sub
+
+    <Fact>
+    Public Sub TheQrWindowTakesNoAddedControl()
+        Dim row = ContextHelp.Inventory.surfaces.Single(Function(s) s.id = "qr-zoom")
+        Assert.Equal("off", row.ask)
+        Assert.Equal("inherit", row.form)
     End Sub
 
     <Fact>

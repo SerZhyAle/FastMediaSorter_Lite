@@ -1,5 +1,6 @@
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.IO
 Imports System.Net.Http
 Imports System.Threading
@@ -49,19 +50,25 @@ Friend NotInheritable Class DriveChannelHost
     Private ReadOnly _landing As Func(Of String)
     Private ReadOnly _createService As Func(Of String, String, ExchangeDriveService)
     Private ReadOnly _createPublisher As Func(Of ExchangeDriveService, String, IDriveChannelPublisher)
+    Private ReadOnly _createProducer As Func(Of ExchangeDriveService, IDriveChannelPublisher, DriveRequestProducer)
     Private ReadOnly _lock As New Object()
 
     Private _service As ExchangeDriveService
     Private _publisher As IDriveChannelPublisher
+    Private _producer As DriveRequestProducer
     Private _deviceId As String = ""
     Private _signingIn As Boolean
     Private _signingOut As Boolean
     Private _disposed As Boolean
+    Private ReadOnly _oneActionGate As New Object()
     Private _consent As CancellationTokenSource
     Private _cancelRequested As Boolean
     Private _outcome As ExchangeDriveSignInOutcome?
     Private _outcomeCancelled As Boolean
     Private _signOutResult As ExchangeDriveSignOutResult
+    Private _queueView As DriveQueueView
+    ''' <summary>Folders deleted from the queue that a round in flight may still list: gone from the first round that does not.</summary>
+    Private ReadOnly _deletedPackets As New HashSet(Of String)(StringComparer.Ordinal)
 
     ''' <summary>Raised when the state, the failure, the outcome or the device id changed. May be raised on any thread.</summary>
     Public Event Changed As EventHandler
@@ -76,10 +83,13 @@ Friend NotInheritable Class DriveChannelHost
     ''' <param name="createService">Builds the service for an id and a name. Nothing: <see cref="ExchangeDriveService.Create"/> on the real stack.</param>
     ''' <param name="createPublisher">Builds what lists this PC's device and folders on Drive while the service runs (203 section 5.11).
     ''' Nothing: nothing is listed (a test of the sign-in alone).</param>
+    ''' <param name="createProducer">Builds what answers the REQUEST packets for the listed folders (ticket 269 P3.1). Nothing, or
+    ''' no publisher: no request is answered.</param>
     Public Sub New(http As HttpClient, store As ExchangeDriveTokenStore, config As ExchangeDriveClientConfig, ids As DriveDeviceId, deviceName As String,
                    openBrowser As Func(Of String, Boolean), landing As Func(Of String),
                    Optional createService As Func(Of String, String, ExchangeDriveService) = Nothing,
-                   Optional createPublisher As Func(Of ExchangeDriveService, String, IDriveChannelPublisher) = Nothing)
+                   Optional createPublisher As Func(Of ExchangeDriveService, String, IDriveChannelPublisher) = Nothing,
+                   Optional createProducer As Func(Of ExchangeDriveService, IDriveChannelPublisher, DriveRequestProducer) = Nothing)
         If http Is Nothing Then Throw New ArgumentNullException(NameOf(http))
         If store Is Nothing Then Throw New ArgumentNullException(NameOf(store))
         If config Is Nothing Then Throw New ArgumentNullException(NameOf(config))
@@ -93,6 +103,7 @@ Friend NotInheritable Class DriveChannelHost
         _landing = If(landing, Function() "")
         _createService = If(createService, Function(id As String, name As String) ExchangeDriveService.Create(_http, _store, _config, id, name))
         _createPublisher = createPublisher
+        _createProducer = createProducer
     End Sub
 
     ''' <summary>The channel on the real stack: the shared HTTP client, the per-user token folder, the build's OAuth client, the
@@ -101,7 +112,8 @@ Friend NotInheritable Class DriveChannelHost
         Return New DriveChannelHost(ExchangeDriveClient.CreateHttpClient(), ExchangeDriveTokenStore.CreateDefault(), ExchangeDriveClientConfig.Resolve(),
                                     DriveDeviceId.CreateDefault(), Environment.MachineName,
                                     Function(url As String) NetworkInfo.OpenInBrowser(url), Function() DriveChannelText.LandingPage(),
-                                    Nothing, Function(service As ExchangeDriveService, id As String) DriveChannelPublisher.CreateFor(service, id, Environment.MachineName))
+                                    Nothing, Function(service As ExchangeDriveService, id As String) DriveChannelPublisher.CreateFor(service, id, Environment.MachineName),
+                                    Function(service As ExchangeDriveService, publisher As IDriveChannelPublisher) New DriveRequestProducer(service.Packets, AddressOf publisher.ServedRoot))
     End Function
 
     ' ------------------------------------------------------------------------------------------ reading
@@ -208,6 +220,57 @@ Friend NotInheritable Class DriveChannelHost
         End Get
     End Property
 
+    ''' <summary>The queue as of the last good round, less what this program deleted since (item CS), or Nothing: not signed in, or no
+    ''' round has answered yet. A pure read: the poller's thread built it.</summary>
+    Public ReadOnly Property QueueView As DriveQueueView
+        Get
+            SyncLock _lock
+                Return _queueView
+            End SyncLock
+        End Get
+    End Property
+
+    ''' <summary>The person deleted a packet from the queue screen (item CS). What went wrong, or None; a packet already gone is None.
+    ''' Throws <see cref="OperationCanceledException"/> when <paramref name="cancellation"/> ends it.</summary>
+    Public Async Function DeleteQueuedPacketAsync(packet As ExchangeDrivePacket, cancellation As CancellationToken) As Task(Of ExchangeDriveFailure)
+        If packet Is Nothing Then Throw New ArgumentNullException(NameOf(packet))
+        Dim service As ExchangeDriveService
+        SyncLock _lock
+            service = _service
+        End SyncLock
+        If service Is Nothing Then Return ExchangeDriveFailure.SignedOut
+        Try
+            Await service.Packets.DeletePacketAsync(packet, cancellation).ConfigureAwait(False)
+        Catch ex As ExchangeDriveException
+            Return ex.Failure
+        End Try
+        SyncLock _lock
+            _deletedPackets.Add(packet.FolderId)
+            If _queueView IsNot Nothing Then
+                _queueView = New DriveQueueView(_queueView.Rows.Where(Function(r) Not String.Equals(r.Packet.FolderId, packet.FolderId, StringComparison.Ordinal)).ToList(),
+                                                _queueView.InProgress, _queueView.Unreadable)
+            End If
+        End SyncLock
+        service.PollSoon()
+        RaiseChanged()
+        Return ExchangeDriveFailure.None
+    End Function
+
+    Private Sub RememberQueue(service As ExchangeDriveService, update As ExchangeDriveUpdate)
+        If service Is Nothing OrElse update Is Nothing OrElse update.Poll Is Nothing Then Return
+        Dim packets As List(Of ExchangeDrivePacket)
+        SyncLock _lock
+            If Not Object.ReferenceEquals(service, _service) Then Return
+            _deletedPackets.IntersectWith(update.Poll.Packets.Select(Function(p) p.FolderId))
+            packets = update.Poll.Packets.Where(Function(p) Not _deletedPackets.Contains(p.FolderId)).ToList()
+        End SyncLock
+        ' outside the lock: the handled set may read its file on the first call
+        Dim view As DriveQueueView = DriveQueueScreen.Build(packets, update.Poll.InProgress, update.Poll.Skipped, AddressOf service.Packets.WasTaken)
+        SyncLock _lock
+            If Object.ReferenceEquals(service, _service) Then _queueView = view
+        End SyncLock
+    End Sub
+
     Private Function HasStoredSignIn() As Boolean
         If Not _config.IsConfigured Then Return False
         Dim token As String = ""
@@ -234,6 +297,27 @@ Friend NotInheritable Class DriveChannelHost
         RaiseChanged()
     End Sub
 
+    ''' <summary>The service for one clipboard action: the one that runs, else - in a process that never started the channel, a desktop
+    ''' shortcut's run - one built and NOT started: no poller, nothing listed, no request answered. Nothing without a usable stored
+    ''' sign-in, or while a sign-in or a sign-out runs.</summary>
+    Public Function ServiceForOneAction() As ExchangeDriveService
+        SyncLock _oneActionGate
+            SyncLock _lock
+                If _disposed OrElse _signingIn OrElse _signingOut Then Return Nothing
+                If _service IsNot Nothing Then Return _service
+            End SyncLock
+            If Not HasStoredSignIn() Then Return Nothing
+            Try
+                Dim id As String = _ids.Resolve()
+                If id.Length = 0 Then Return Nothing
+                BuildService(id, False)
+            Catch ex As Exception When Not IsFatal(ex)
+                Return Nothing
+            End Try
+            Return Service
+        End SyncLock
+    End Function
+
     ''' <summary>A screen that waits for something raises the poller to its 10 s rhythm; a no-op while there is no service.</summary>
     Public Sub SetActive(active As Boolean)
         Dim service As ExchangeDriveService
@@ -247,8 +331,11 @@ Friend NotInheritable Class DriveChannelHost
         Dim fresh As ExchangeDriveService = _createService(id, _deviceName)
         ' only a service that polls lists this PC; the sign-out path builds one without starting it and must write nothing
         Dim freshPublisher As IDriveChannelPublisher = If(start AndAlso _createPublisher IsNot Nothing, _createPublisher(fresh, id), Nothing)
+        ' only a PC that lists folders answers requests for them (item CO)
+        Dim freshProducer As DriveRequestProducer = If(freshPublisher IsNot Nothing AndAlso _createProducer IsNot Nothing, _createProducer(fresh, freshPublisher), Nothing)
         Dim old As ExchangeDriveService = Nothing
         Dim oldPublisher As IDriveChannelPublisher = Nothing
+        Dim oldProducer As DriveRequestProducer = Nothing
         Dim kept As Boolean
         SyncLock _lock
             ' a consent that completed at the very moment the host was disposed must not start a poller nobody will stop
@@ -256,16 +343,22 @@ Friend NotInheritable Class DriveChannelHost
             If kept Then
                 old = _service
                 oldPublisher = _publisher
+                oldProducer = _producer
                 _service = fresh
                 _publisher = freshPublisher
+                _producer = freshProducer
                 _deviceId = id
+                _queueView = Nothing
+                _deletedPackets.Clear()
             End If
         End SyncLock
         If Not kept Then
+            If freshProducer IsNot Nothing Then freshProducer.Dispose()
             If freshPublisher IsNot Nothing Then freshPublisher.Dispose()
             fresh.Dispose()
             Return
         End If
+        If oldProducer IsNot Nothing Then oldProducer.Dispose()
         If oldPublisher IsNot Nothing Then oldPublisher.Dispose()
         If old IsNot Nothing Then Detach(old)
         AddHandler fresh.StateChanged, AddressOf OnServiceChanged
@@ -285,9 +378,13 @@ Friend NotInheritable Class DriveChannelHost
     ''' <summary>Ends what lists this PC on Drive and waits for a write in flight. Sign-out calls it before it deletes the records.</summary>
     Private Async Function StopPublisherAsync() As Task
         Dim publisher As IDriveChannelPublisher
+        Dim producer As DriveRequestProducer
         SyncLock _lock
             publisher = _publisher
+            producer = _producer
         End SyncLock
+        ' a reply in flight is a write too
+        If producer IsNot Nothing Then Await producer.StopAsync().ConfigureAwait(False)
         If publisher IsNot Nothing Then Await publisher.StopAsync().ConfigureAwait(False)
     End Function
 
@@ -296,6 +393,12 @@ Friend NotInheritable Class DriveChannelHost
     End Sub
 
     Private Sub OnServiceUpdated(sender As Object, e As ExchangeDriveUpdate)
+        Dim producer As DriveRequestProducer
+        SyncLock _lock
+            producer = _producer
+        End SyncLock
+        If producer IsNot Nothing Then producer.OnUpdated(e)
+        RememberQueue(TryCast(sender, ExchangeDriveService), e)
         RaiseChanged()
     End Sub
 
@@ -445,14 +548,18 @@ Friend NotInheritable Class DriveChannelHost
         Finally
             Dim old As ExchangeDriveService
             Dim oldPublisher As IDriveChannelPublisher
+            Dim oldProducer As DriveRequestProducer
             SyncLock _lock
                 old = _service
                 oldPublisher = _publisher
+                oldProducer = _producer
                 _service = Nothing
                 _publisher = Nothing
+                _producer = Nothing
                 _signingOut = False
                 _signOutResult = result
             End SyncLock
+            If oldProducer IsNot Nothing Then oldProducer.Dispose()
             If oldPublisher IsNot Nothing Then oldPublisher.Dispose()
             If old IsNot Nothing Then Detach(old)
             RaiseChanged()
@@ -466,20 +573,24 @@ Friend NotInheritable Class DriveChannelHost
     Public Sub Dispose() Implements IDisposable.Dispose
         Dim service As ExchangeDriveService
         Dim publisher As IDriveChannelPublisher
+        Dim producer As DriveRequestProducer
         Dim source As CancellationTokenSource
         SyncLock _lock
             If _disposed Then Return
             _disposed = True
             service = _service
             publisher = _publisher
+            producer = _producer
             _service = Nothing
             _publisher = Nothing
+            _producer = Nothing
             source = _consent
         End SyncLock
         Try
             If source IsNot Nothing Then source.Cancel()
         Catch ex As ObjectDisposedException
         End Try
+        If producer IsNot Nothing Then producer.Dispose()
         If publisher IsNot Nothing Then publisher.Dispose()
         If service IsNot Nothing Then Detach(service)
     End Sub
@@ -494,16 +605,64 @@ Friend NotInheritable Class DriveChannelHosts
 
     Private Shared ReadOnly Gate As New Object()
     Private Shared _current As DriveChannelHost
+    ' Ticket 269 P2.3: whoever wants to hear the listing move (the device agent's long poll) subscribes HERE, not on the host, so asking to
+    ' listen never creates the host and a host created later is heard too. Guarded by Gate.
+    Private Shared ReadOnly _listeners As New List(Of EventHandler)
 
     Private Sub New()
     End Sub
 
     Public Shared Function Current() As DriveChannelHost
         SyncLock Gate
-            If _current Is Nothing Then _current = DriveChannelHost.CreateDefault()
+            If _current Is Nothing Then
+                _current = DriveChannelHost.CreateDefault()
+                AddHandler _current.Changed, AddressOf RelayChanged
+            End If
             Return _current
         End SyncLock
     End Function
+
+    ''' <summary>Calls <paramref name="handler"/> whenever the process's Drive host reports a change (any thread). Subscribing creates no host
+    ''' and starts nothing; the result ends the subscription.</summary>
+    Friend Shared Function SubscribeChanged(handler As EventHandler) As IDisposable
+        If handler Is Nothing Then Throw New ArgumentNullException(NameOf(handler))
+        SyncLock Gate
+            _listeners.Add(handler)
+        End SyncLock
+        Return New ChangedSubscription(handler)
+    End Function
+
+    Private Shared Sub RelayChanged(sender As Object, e As EventArgs)
+        Dim copy As EventHandler()
+        SyncLock Gate
+            copy = _listeners.ToArray()
+        End SyncLock
+        For Each listener As EventHandler In copy
+            Try
+                listener.Invoke(sender, e)
+            Catch ex As Exception When TypeOf ex Is ObjectDisposedException OrElse TypeOf ex Is InvalidOperationException
+                ' a listener that is going away: the others still hear it
+            End Try
+        Next
+    End Sub
+
+    Private NotInheritable Class ChangedSubscription
+        Implements IDisposable
+
+        Private _handler As EventHandler
+
+        Public Sub New(handler As EventHandler)
+            _handler = handler
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Dim handler As EventHandler = Interlocked.Exchange(_handler, Nothing)
+            If handler Is Nothing Then Return
+            SyncLock DriveChannelHosts.Gate
+                DriveChannelHosts._listeners.Remove(handler)
+            End SyncLock
+        End Sub
+    End Class
 
     ''' <summary>The application's start: with a stored sign-in the poller starts, otherwise nothing happens.</summary>
     Public Shared Sub StartIfSignedIn()
@@ -525,6 +684,7 @@ Friend NotInheritable Class DriveChannelHosts
         SyncLock Gate
             host = _current
             _current = Nothing
+            If host IsNot Nothing Then RemoveHandler host.Changed, AddressOf RelayChanged
         End SyncLock
         If host IsNot Nothing Then host.Dispose()
     End Sub
@@ -537,6 +697,17 @@ Friend NotInheritable Class DriveChannelHosts
             host = _current
         End SyncLock
         Return If(host Is Nothing, ExchangeDirectorySnapshot.Empty, host.ListedDirectory)
+    End Function
+
+    ''' <summary>Ticket 269 P3.2: the requester's view of the packet queue, or Nothing while there is no host or no service (not signed
+    ''' in). Asking creates nothing.</summary>
+    Public Shared Function RequestPort() As IDriveRequestPort
+        Dim host As DriveChannelHost
+        SyncLock Gate
+            host = _current
+        End SyncLock
+        Dim service As ExchangeDriveService = If(host Is Nothing, Nothing, host.Service)
+        Return If(service Is Nothing, Nothing, New DriveQueueRequestPort(service.Packets))
     End Function
 
     ''' <summary>Whether the process's host exists. Asking creates nothing (a diagnostic and test seam).</summary>
@@ -553,6 +724,8 @@ Friend NotInheritable Class DriveChannelHosts
         SyncLock Gate
             old = _current
             _current = host
+            If old IsNot Nothing Then RemoveHandler old.Changed, AddressOf RelayChanged
+            If host IsNot Nothing Then AddHandler host.Changed, AddressOf RelayChanged
         End SyncLock
         If old IsNot Nothing AndAlso Not Object.ReferenceEquals(old, host) Then old.Dispose()
     End Sub

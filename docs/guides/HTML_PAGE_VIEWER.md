@@ -18,7 +18,8 @@ The page is parsed by the program (AngleSharp) and served from a private origin:
 forms, downloads, permissions, pop-ups, `file:` addresses and folder mapping are refused, and the
 file on disk is never modified. Resources resolve only inside the page's folder; a link that leaves
 it is blocked and named. Remote images, styles and fonts of a local page are blocked and counted in
-the toolbar; allowing them is a per-site choice for the open page only, never saved. A link to
+the blocked-resources menu of the document panel; allowing them is a per-site choice for the open
+page only, never saved. A link to
 another site asks before the browser opens it, or opens nothing when Links to other sites is Block.
 A file from a secure `.fd-sec` container is refused before the host starts and shown as text.
 
@@ -26,12 +27,25 @@ A file from a secure `.fd-sec` container is refused before the host starts and s
 
 Original keeps the author's styling; Reading mode applies the theme, font, size, line spacing,
 column width and margins of the appearance group (sizes in page pixels, independent of screen
-scale). Zoom runs from 25 to 500 %, with Ctrl and the wheel over the page or the toolbar buttons.
-Ctrl+F finds on the page, Enter or F3 goes to the next match and Shift+F3 to the previous one; case
-and whole-word matching apply to a new search. While the page has focus it owns the keys - sorting
-keys and Delete do not act on the file; Escape returns to the file canvas. From the canvas, PageUp
-and PageDown scroll the page and the wheel over it scrolls rather than changing the file. Source
-text, Open in browser and Print are on the toolbar.
+scale). Zoom runs from 25 to 500 %, with Ctrl and the wheel over the page or the zoom buttons of the
+document panel. Ctrl+F opens the find box on the panel and types into it in place, Enter or F3 goes
+to the next match and Shift+Enter or Shift+F3 to the previous one; case and whole-word matching
+apply to a new search. While the page has focus it owns the keys - sorting keys and Delete do not
+act on the file; Escape clears the matches and then returns to the file canvas. From the canvas,
+PageUp and PageDown scroll the page and the wheel over it scrolls rather than changing the file.
+
+## The document panel
+
+The reading commands stand on the document panel, a floating panel at the top of the window under
+the file rows, shown only while a page is open. It hides and reveals like the other floating panels
+and keeps its place in the F10 keyboard ring; its corner pin holds it on screen, and the pin is off
+by default. The page fills the whole window and a pinned panel covers its top lines, as a pinned
+row covers a picture. In the panel's order: Back, Forward and Reload; the find box with Previous
+match, Next match and the match count; zoom out, the zoom value (a click resets it), zoom in and
+Fit width; Reading mode and Reset appearance; Source text (a file, not an online page), Open in
+browser and Print; the blocked-resources menu (when something was blocked); Return to files; and
+the line that says where the keys go. When the window is narrow the last of these collect behind
+the » button, in that order; the find box never does.
 
 ## Pages from the internet
 
@@ -57,7 +71,7 @@ requests does not make the Runtime itself silent.
 ## Maintainer notes
 
 - Code: `src/Documents/Html*.vb` (policy, sanitizer, sources and adapters, runtime service, host,
-  network fetcher, state), `src/Main_Form.HtmlView.vb` (window, toolbar, input gate),
+  network fetcher, state), `src/Main_Form.HtmlView.vb` (window, the commands it hands to the document panel, input gate),
   `src/Table_Form.Documents.vb` (settings rows), `src/ModernViewerPreferences.Html.vb`, strings in
   `src/Localization/Localization.Html*.vb`. All of it is whole-file `#If Not NETFRAMEWORK`.
 - Every host goes through `HtmlRuntimeService.PrepareLoader()`: the loader folder can be set once

@@ -55,7 +55,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Function ReadSettingsUiContext(ByRef invalid As Boolean) As SettingsUiContext
         Dim keys As New List(Of String) From {SettingsRoutes.ContextKey(Destination)}
         If Destination = SettingsDestination.Manager Then keys.Add(SettingsRoutes.SftpContextKey)
-        keys.Add(SettingsRoutes.LegacyContextKey)
+        If Destination <> SettingsDestination.RemoteExchange Then keys.Add(SettingsRoutes.LegacyContextKey)
         For Each key In keys
             Dim raw = GetSetting(App_name, Second_App_Name, key, String.Empty)
             If Not String.IsNullOrWhiteSpace(raw) Then Return SettingsUiContext.Read(raw, invalid)
@@ -66,7 +66,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Function RestoreSettingsWindowBounds() As Boolean
         Try
             Dim raw = GetSetting(App_name, Second_App_Name, SettingsRoutes.BoundsKey(Destination),
-                GetSetting(App_name, Second_App_Name, SettingsRoutes.LegacyBoundsKey, String.Empty))
+                If(Destination = SettingsDestination.RemoteExchange, String.Empty, GetSetting(App_name, Second_App_Name, SettingsRoutes.LegacyBoundsKey, String.Empty)))
             If String.IsNullOrEmpty(raw) Then Return False
             Dim values = JsonSerializer.Deserialize(Of Integer())(raw)
             If values Is Nothing OrElse values.Length <> 4 OrElse values(2) < 300 OrElse values(3) < 200 OrElse
@@ -91,7 +91,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         LoadSelectedSettingsPage()
         _pages(_selectedPage).PerformLayout()
         RestoreSettingsViewport()
-        HandleScheduledPrefill()
+        If _schedPanel IsNot Nothing Then _schedPanel.HandleScheduledPrefill()
     End Sub
 
     Private Function PageRows() As Control()

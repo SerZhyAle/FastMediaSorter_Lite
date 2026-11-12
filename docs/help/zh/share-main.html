@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Share Manager - Fast Media Sorter &amp; Sharing - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -14,7 +15,7 @@
   <h1 id="title">Share Manager - Fast Media Sorter &amp; Sharing</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>Share Manager 的主窗口，即本地共享与计划服务。它列出这台电脑通过 SFTP 与手机共享的文件夹，启动和停止共享，提供访问码，并显示手机如何才能连到这台电脑。计划操作和交换账户的页面在管理器设置中。它可从查看器或托盘图标打开；关闭窗口后应用仍留在托盘中。</p>
+    <p>Share Manager 的主窗口，即本地共享服务，同时也运行计划文件操作。它列出这台电脑通过 SFTP 与手机共享的文件夹，启动和停止共享，提供访问码，并显示手机如何才能连到这台电脑。计划文件操作无需文件夹共享即可运行，它有自己的窗口，可从托盘菜单或查看器文件夹菜单打开；它和交换账户的页面也在管理器设置中。它可从查看器或托盘图标打开；关闭窗口后应用仍留在托盘中。</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="share-main-light.png" alt="Share Manager - Fast Media Sorter &amp; Sharing">
@@ -28,7 +29,7 @@
     <h2>界面元素</h2>
 <details id="top-row"><summary>顶部一行</summary><p>「设置」打开管理器设置。服务器运行时，「开始共享」会变成「停止共享」。「共享」打开访问码向导，只在共享开启时可用；否则提示会要求先启动服务器。「全部展开」和「全部折叠」用于展开或折叠下面的各个组。</p></details>
 <details id="add-menu"><summary>「添加..」菜单</summary><p>「文件夹..」通过常用的选择框添加文件夹；「+ 当前」（带文件夹名）只在管理器是从查看器的某个文件夹打开时出现，并添加该文件夹。「.fdd 磁盘..」打开 FileDO 磁盘列表，「添加资源向导..」则带您一步步添加新资源。</p></details>
-<details id="list-buttons"><summary>编辑、移除、手机验证码和剪贴板</summary><p>「编辑」打开所选文件夹的选项。「移除」在询问后删除所选行：该文件夹自己的设置（PIN、过滤条件、目标）会一同消失，且无法找回。「手机验证码..」打开接收手机连接码的窗口。「剪贴板」菜单（「将剪贴板发送到服务器」「从服务器获取剪贴板」）只在剪贴板交换可用时显示。</p></details>
+<details id="list-buttons"><summary>编辑、移除、手机验证码和剪贴板</summary><p>「编辑」打开所选文件夹的选项。「移除」在询问后删除所选行：该文件夹自己的设置（PIN、过滤条件、目标）会一同消失，且无法找回。「手机验证码..」打开接收手机连接码的窗口。「剪贴板」菜单（「将剪贴板发送到服务器」「从服务器获取剪贴板」）只在剪贴板交换可用时显示。 登录 Google Drive 后，即使没有服务器也会显示该菜单，其项目为「通过 Google Drive 发送剪贴板」和「通过 Google Drive 获取剪贴板」。Google Drive 为每个 Google 账户保存一个剪贴板值，每次发送都会替换它。同时有服务器和 Google Drive 时，发送会到达两者，获取则取最新的值。</p></details>
 <details id="folder-list"><summary>共享的资源</summary><p>每个资源一行，带有复选框，以及「名称」「类型」「文件夹」三列。勾选的行会提供给手机；列表为空时显示「添加第一个资源..」。取消勾选最后一个已勾选的文件夹时，窗口会询问是否停止共享，因为已连接的手机会被断开。在没有任何勾选的情况下开始共享，只会显示提示「请先添加文件夹并勾选它。」。</p></details>
 <details id="phone-access"><summary>手机访问</summary><p>手机或任何 SFTP 客户端所需的连接数据：互联网上和家中（Wi-Fi）的地址、IPv6、主机密钥、登录名和密码。「显示密码」会显示密码，「隐藏密码」再次将其遮住。该组下方的文字说明手机只能在家中还是也能从外部连到这台电脑。</p></details>
 <details id="internet-access"><summary>互联网访问</summary><p>「测试互联网访问」打开互联网访问测试窗口。「如何设置互联网访问」打开路由器指南。「路由器：..」链接打开路由器自己的页面；没有找到路由器时显示「路由器：未知」。该组带有一条警告：任何得知地址、登录名和密码的人都能访问每个共享文件夹，所以不要公开二维码或 .fmscfg 文件，用完后请关闭共享。</p></details>

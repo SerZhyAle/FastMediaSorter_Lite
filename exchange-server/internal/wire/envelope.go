@@ -177,8 +177,15 @@ type Keepalive struct{ Head }
 // TypeName is "keepalive".
 func (*Keepalive) TypeName() string { return TypeKeepalive }
 
-// Bye is a device going offline on purpose; it is not answered.
-type Bye struct{ Head }
+// Bye is a device going offline on purpose; it is not answered. OfflineReason says why, for the server to put
+// on the device record it pushes (item DC).
+type Bye struct {
+	Head
+	OfflineReason string `json:"offlineReason,omitempty"`
+}
+
+// OfflineReasonTimeLimit is the one value of item DC in v1: a platform limit paused the device's sharing.
+const OfflineReasonTimeLimit = "time-limit"
 
 // TypeName is "bye".
 func (*Bye) TypeName() string { return TypeBye }

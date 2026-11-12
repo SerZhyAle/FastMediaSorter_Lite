@@ -89,6 +89,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : Return Localization.T("Хостинг")
             Case "exchange" : Return ExchangeText.Title()
             Case "exchange-account" : Return ExchangeDeviceText.GroupTitle()
+            Case "remote-exchange" : Return RemoteWindowName()
             Case "drive" : Return DriveChannelText.PageTitle()
             Case "scheduled" : Return ScheduledPageCaption()
             Case Else : Return Localization.T("Справка")
@@ -163,17 +164,21 @@ Partial Public NotInheritable Class Share_Settings_Form
                     Dim isClipboard = _clipRows.Contains(row)
                     nextId = If(row Is _pxGroup, "publishing", If(isClipboard, "clipboard", "account"))
                     caption = If(row Is _pxGroup, Function() ExchangePublishText.GroupTitle(), If(isClipboard, Function() Localization.T("Буфер на сервере"), Function() Localization.T("Основные параметры")))
+                Case "remote-exchange"
+                    ' One group per card of the remote administration window, in card order (5.6).
+                    nextId = RemoteRailId(row)
+                    caption = RemoteRailCaptionSource(row)
                 Case "drive"
-                    ' The sign-in and its commands, then what the app can see and this PC's name in the channel.
+                    ' The sign-in and its commands, what the channel holds, then what the app can see and this PC's name in the channel.
                     Dim onDevice = IsDriveDeviceRow(row)
-                    nextId = If(onDevice, "device", "account")
-                    caption = If(onDevice, Function() DriveChannelText.DeviceGroupTitle(), Function() DriveChannelText.AccountGroupTitle())
+                    Dim onQueue = IsDriveQueueRow(row)
+                    nextId = If(onDevice, "device", If(onQueue, "queue", "account"))
+                    caption = If(onDevice, Function() DriveChannelText.DeviceGroupTitle(), If(onQueue, Function() DriveChannelText.QueueGroupTitle(), Function() DriveChannelText.AccountGroupTitle()))
                 Case "scheduled"
-                    ' This PC's schedule switch and autostart come before the operations list.
-                    Dim machine = row Is PlacedControl(_schedFeature) OrElse
-                        row Is _schedAutostart OrElse row Is _schedAutostartLink
-                    nextId = If(machine, "machine", "operations")
-                    caption = If(machine, Function() Localization.T("Для этого компьютера"), Function() Localization.T("Операции"))
+                    ' The page hosts the one management body (L0297): the panel and the open-window
+                    ' link are one block, so every row lands in the same group.
+                    nextId = "operations"
+                    caption = Function() Localization.T("Операции")
                 Case "help"
                     Dim about = Array.IndexOf(rows, row) >= Array.IndexOf(rows, _aboutStart)
                     nextId = If(about, "about", "documentation")
@@ -467,7 +472,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' and a window with no saved bounds of its own must still open (250 section 10.1, kept by 253 R-7).
         Dim page = If(_pages.ContainsKey("startup"), _pages("startup"), _pages.Values.First())
         page.PerformLayout()
-        Dim height = page.Controls(0).PreferredSize.Height + LogicalToDeviceUnits(52) + _root.Padding.Vertical
+        Dim height = page.Controls(0).PreferredSize.Height + If(_remoteTop IsNot Nothing, _remoteTop.PreferredSize.Height, LogicalToDeviceUnits(52)) + _root.Padding.Vertical
         ' The rail as it will actually show: page rows plus the item lists their saved
         ' expansion state reveals (210 section 7.4), and the SFTP group heading when the window has one.
         Dim rail = SettingsNavRows().Sum(Function(row) row.Height + row.Margin.Vertical) + _root.Padding.Vertical +
@@ -510,6 +515,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 ApplyDriveState()
                 ApplyProducerState()
                 RefreshScheduledLanguage()
+                RefreshRemoteLanguage()
                 UpdateSummaries()
                 For Each section In AllSettingsSections()
                     _navButtons(section.Key).Text = SettingsPageCaption(section)

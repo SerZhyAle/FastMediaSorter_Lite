@@ -28,6 +28,7 @@ never the protocol core).
 | `cmd/exchange-probe` | the self-test client (ticket 205 T-2): `exchange-probe --server host:port --fingerprint SHA256:.. --login x --password-stdin` runs enroll, hello, publish, list, pairing, subscribe, tunnels by resourceId and shareId, relay upload and listen, cast and revoke, leaves the account as it found it and prints one verdict line. Developer and joint-test tool, never installed |
 | `internal/wire` | the typed envelopes of `schemaVersion` 2, the codec, the 4-byte length framing (`MaxFrame` 16384 before `welcome`, `MaxFrameAuth` 262144 after), the verbatim records, the nine reasons, the HTTP-opening reader - the only place that builds or parses a wire byte |
 | `internal/accounts` | accounts, enrolled devices, token hashes, tombstones (`accounts.json`, `devices.json`) and the in-memory pairing codes |
+| `internal/settings` | the application settings standards of `DEVICE-EXCHANGE` 1.12 (items EN to ER, ticket L0296): one JSON document per account and `appId`, `settings.json`, written at the first accepted save, readable by the operator, erased with the account |
 | `internal/directory` | the per-account directory: presence, `list`/`changed` with a revision per transaction, resources (on disk without `access`, `shareId`, `publicPort`) and broadcasts (memory only), `directory.json` |
 | `internal/tunnel` | the table of pending and bridged tunnels, the per-resource and per-broadcast caps, abort by resource, broadcast or device |
 | `internal/admin` | the operator's operations (shared by the running server and the offline commands) and the local admin channel protocol |
@@ -98,6 +99,7 @@ fms-exchange-server stop  [--config <file>]            asks that console server 
 fms-exchange-server serve --service [--config <file>]  only under the Windows service control manager
 fms-exchange-server account add <login> [--generate]    an account; the password is read from stdin or made by --generate and printed ONCE
 fms-exchange-server account passwd|remove|list ...      change, delete or list accounts (passwd --sign-out revokes every device)
+fms-exchange-server account limits <login> [..]         shows or changes one account's limits; shows the memory its full clipboard can take
 fms-exchange-server device list <login> | revoke <login> <deviceId>
 fms-exchange-server admin status [--json]               remote administration status and settings
 fms-exchange-server admin on [--generate] [--allowed <list>] [--lifetime <minutes>]
@@ -114,7 +116,7 @@ Windows - the first 4 bytes of SHA-256 over the lower-cased absolute data direct
 no secret ever returned; extra Windows SIDs from `admin.manageSids` in `exchange.json`). `exchange.json` holds
 no secret: accounts live in `accounts.json` (Argon2id records), devices and revoked-token tombstones in
 `devices.json` (SHA-256 of a token only), resource records and revisions in `directory.json` - never `access`,
-`shareId`, a broadcast or a pairing code. `set-endpoint <host:port|->` stores `publicEndpoint`, announced in
+`shareId`, a broadcast or a pairing code. The settings standards that devices save (`settings` in `features`) live in `settings.json` as plain JSON the operator can read; the server checks only their shape and size (65536 bytes), never their content, and removing an account removes its standards. `set-endpoint <host:port|->` stores `publicEndpoint`, announced in
 `welcome` (empty: the server serves and hides `tunnel` and `relay`). A leftover `passwordHash` member of the
 superseded design is ignored, logged once as `obsolete` and removed by the next config save.
 
@@ -175,6 +177,12 @@ remain pending. Developer tools are not installed; the feature gates remain shut
   delay measured from the connect. `TestUnavailableIsOneAnswerForUnknownEndedForeignOfflineAndFull` compares the bytes and the timing.
 * **Take a token before the expensive step, refund it on success** (`limits.Limiter.Refund`). Taking it
   after would let a parallel wave pass a "has a token" check before the first failure was counted.
+* **A handshake that sends no byte is free** (`DEVICE-EXCHANGE` item BQ). A peer that finishes TLS and closes before its
+  first byte is a reachability probe, so its `connection` token is given back; one that stays silent until the peek
+  window ends, or sends anything, keeps paying.
+* **A full clipboard is stated, not bounded in total** (item BZ). One account holds one value and one send in flight in
+  memory, each up to its `clipboardBytes`, so `account limits` and `account list` state twice that limit for each
+  account with one (a guest and a limit of 0 take nothing). A replaced value stays while a reader still fetches it.
 * **The control stream carries envelopes only, for its whole life.** Every tunnel gets its own data
   stream through `open` / `attach`; after `connected` (or at once on a published resource's port) a stream is
   raw bytes. A plain stream is answered only with a refusal (`tls-required`, `version-unsupported`); every
@@ -185,7 +193,9 @@ remain pending. Developer tools are not installed; the feature gates remain shut
 * **Presence is the control stream.** A device is online while its control stream lives and offline after a
   `bye` or three missed keepalive intervals; offline keeps its resources listed without `access`, `shareId` and
   port lease and ENDS its broadcasts, in one transaction with one revision. A second control stream of the
-  same device replaces the first and everything carries over.
+  same device replaces the first and everything carries over. A `bye` may carry `offlineReason`: `time-limit` from
+  the device's current stream goes on its record with `presence: offline`, any other value is dropped, and the
+  next `online` removes it. The reason lives in memory, so after a restart the device is plain offline.
 * **The logger takes typed fields only.** `internal/logx/guard_test.go` fails on `log`, `log/slog`,
   direct writes to the standard streams outside `cmd/`, and an id or a password passed to `logx.Text`.
   Every test that starts a server also checks, at its end, that no secret it handled is in the log.

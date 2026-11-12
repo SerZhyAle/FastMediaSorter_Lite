@@ -370,6 +370,7 @@ Public Class SettingsRailTests
     <Theory>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
+    <InlineData(2.0F)>
     Public Sub Every_row_is_at_least_the_target_tall_and_every_caption_stays_whole_in_every_language(factor As Single)
         Dim settings As SourceSettings = ReadSourceSettings()
         Dim entries As List(Of NavCaption) = ReadNavCaptions()
@@ -399,6 +400,7 @@ Public Class SettingsRailTests
     <Theory>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
+    <InlineData(2.0F)>
     Public Sub At_the_minimum_window_width_the_content_column_keeps_480_logical_px_in_every_language(factor As Single)
         Dim settings As SourceSettings = ReadSourceSettings()
         Dim entries As List(Of NavCaption) = ReadNavCaptions()
@@ -540,8 +542,9 @@ Public Class SettingsRailTests
     Private Shared Function ReadSourceSettings() As SourceSettings
         Dim text As String = BlankComments(File.ReadAllText(Path.Combine(SourceDir(), "Table_Form.ModernLayout.vb")))
         Dim result As New SourceSettings()
-        Dim minimum As Match = Regex.Match(text, "MinimumSize = New Size\(Sp\((\d+)\)")
-        Assert.True(minimum.Success, "MinimumSize not found.")
+        ' The minimum the window asks for before the work area bounds it (WindowPlacement.BoundMinimum, ticket 279).
+        Dim minimum As Match = Regex.Match(text, "settingsDesiredMinimum = New Size\(Sp\((\d+)\)")
+        Assert.True(minimum.Success, "The window's desired minimum size was not found.")
         result.MinWidthLogical = Integer.Parse(minimum.Groups(1).Value, CultureInfo.InvariantCulture)
         Dim side As Match = Regex.Match(text, "modernSettingsSidebar = New Panel With \{[^}]*?\.Padding = New Padding\((\d+),\s*\d+,\s*(\d+),\s*\d+\)")
         Assert.True(side.Success, "The sidebar's padding was not found.")

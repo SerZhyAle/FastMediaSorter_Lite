@@ -20,6 +20,7 @@ import (
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/rendezvous"
+	"fms/exchange-server/internal/settings"
 	"fms/exchange-server/internal/tlsid"
 )
 
@@ -144,6 +145,12 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		printf(stderr, "%s", noAccountMessage)
 		return exitPolicy
 	}
+	// the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296): on disk beside the accounts
+	standards, err := settings.Open(paths.Dir, nil)
+	if err != nil {
+		printf(stderr, "cannot open the settings standards: %v\n", err)
+		return exitConfig
+	}
 
 	if console {
 		// Created here so a stop that arrives while the identity is still being loaded is honoured:
@@ -239,7 +246,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		Verifier: limits.NewVerifier(nil, l.VerifierConcurrency, 2*time.Second),
 		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger, Audit: audit,
 		PublicEndpoint: cfg.PublicEndpoint, ServerVersion: version,
-		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler,
+		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler, Settings: standards,
 	})
 	srv := rendezvous.New(rendezvous.Config{
 		Params:          params,

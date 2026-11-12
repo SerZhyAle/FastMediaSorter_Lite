@@ -324,7 +324,7 @@ Partial Public Class Main_Form
                 .Action = Sub() ChromeResetPlaces(Nothing)}}
         Dim location As Point = btn_Video_Move.PointToScreen(New Point(0, btn_Video_Move.Height))
         Dim anchorTop As Integer = btn_Video_Move.PointToScreen(Point.Empty).Y
-        ChromeMenu.ShowPopup(Me, location, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+        ChromeMenu.ShowPopup(Me, location, entries, ChromeTheme.ForMenu(ThemeService.Palette), ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
                              focusFirstRow:=chrome_Keyboard_Mode, anchorTop:=anchorTop)
     End Sub
 

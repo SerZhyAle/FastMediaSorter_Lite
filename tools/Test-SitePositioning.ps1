@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     docs/guides/POSITIONING.md is the one positioning source; tools/site-facts.json is its machine form
-    (the family sentence, the three components in order and the state of each, the capability register, the
+    (the family sentence, the four components in order and the state of each, the capability register, the
     retired phrases, the two install profiles, the public editions, the component x channel availability matrix
     with the files that prove each cell, the rules for the gated component, the language count and the platform
     floor, and the surfaces that must follow them). Judged over the current files on disk, no network:
@@ -663,7 +663,10 @@ foreach ($it in $capItems) {
 }
 
 $rp = $decl.retiredPhrases
-$allowPaths = @($rp.allow | ForEach-Object { [string]$_.path })
+# An allow entry skips its whole path - unless it carries a 'phrases' array: that narrows it, the path is scanned like any
+# other and only the listed retired phrases are exempt there (planned claims always apply).
+$allowPaths = @($rp.allow | Where-Object { -not $_.PSObject.Properties['phrases'] } | ForEach-Object { [string]$_.path })
+$allowNarrow = @($rp.allow | Where-Object { $_.PSObject.Properties['phrases'] })
 $scanFiles = @(Expand-Patterns @($rp.scan) | Where-Object { $f = $_; -not @($allowPaths | Where-Object { $f -like $_ }).Count })
 $plannedAllow = @($reg.plannedAllow)
 $claimHits = 0
@@ -686,9 +689,10 @@ foreach ($it in @($capItems | Where-Object { [string]$_.state -eq 'planned' -and
 $retiredHits = 0
 foreach ($file in $scanFiles) {
     $text = Get-Text $file
+    $exempt = @($allowNarrow | Where-Object { $file -like [string]$_.path } | ForEach-Object { @($_.phrases) } | ForEach-Object { [string]$_ })
     foreach ($ph in @($rp.phrases)) {
         $w = [string]$ph.text
-        if (-not $w) { continue }
+        if (-not $w -or $exempt -contains $w) { continue }
         $i = $text.IndexOf($w, [StringComparison]::OrdinalIgnoreCase)
         while ($i -ge 0) {
             $retiredHits++

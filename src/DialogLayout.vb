@@ -36,11 +36,86 @@ Friend NotInheritable Class DialogLayout
     ''' once every child has been added: scaling runs on the first layout after the flag is set and only
     ''' touches the children that exist then. 96 dpi, not font metrics: these layouts are authored in 96-dpi
     ''' pixels, so the honest factor is the DPI ratio (font mode rounds to 2.0x vertically at 168 dpi).</summary>
+    ''' <remarks>The Windows "Text size" is composed here, once per window (ticket 279, T-2; UI-SIZING section 2 rule 3):
+    ''' at a factor above 1.0 the window's font grows by it and the authored positions and sizes grow with it
+    ''' (<see cref="UiSizing.LayoutBaseDpi"/>), so the text and the layout enlarge together and nothing is shrunk back.
+    ''' At 1.0 - the ordinary Text size - nothing differs from the plain 96-dpi scaling. A control that sets its own
+    ''' font (a bold heading, a monospaced preview) does not inherit the window's, so it is grown by the same factor
+    ''' (<see cref="GrowOwnFonts"/>) and its text follows its box; a second call on the same window is ignored.</remarks>
     Friend Shared Sub ApplyAutoScale(f As ContainerControl)
+        ApplyAutoScale(f, UiSizing.CurrentTextFactor())
+    End Sub
+
+    ''' <summary><see cref="ApplyAutoScale(ContainerControl)"/> at an explicit text factor (tests; the one-argument form
+    ''' reads <see cref="UiSizing.CurrentTextFactor"/>).</summary>
+    Friend Shared Sub ApplyAutoScale(f As ContainerControl, textFactor As Single)
         If f Is Nothing Then Return
-        f.AutoScaleDimensions = New SizeF(96.0F, 96.0F)
+        Dim composed As Object = Nothing
+        If composedTextFactors.TryGetValue(f, composed) Then Return
+        Dim factor As Single = UiSizing.NormalizeTextFactor(textFactor)
+        composedTextFactors.Add(f, CObj(factor))
+        If factor > 1.0F Then
+            ' Taken before the window font moves: a control whose font is still the same object afterwards owns it.
+            Dim before As New List(Of KeyValuePair(Of Control, Font))()
+            CollectFonts(f, before)
+            ' The font is set while the mode is still None, so it cannot start a font-mode scaling pass of its own.
+            Dim grown As New Font(f.Font.FontFamily, UiSizing.TextPoints(f.Font.SizeInPoints, factor), f.Font.Style, GraphicsUnit.Point)
+            f.Font = grown
+            Dim made As New List(Of Font)()
+            made.Add(grown)
+            GrowOwnFonts(before, factor, made)
+            AddHandler f.Disposed, Sub(sender As Object, e As EventArgs)
+                                       For Each font As Font In made
+                                           font.Dispose()
+                                       Next
+                                   End Sub
+        End If
+        Dim baseDpi As Single = UiSizing.LayoutBaseDpi(factor)
+        f.AutoScaleDimensions = New SizeF(baseDpi, baseDpi)
         f.AutoScaleMode = AutoScaleMode.Dpi
     End Sub
+
+    ''' <summary>Records the font every descendant reports now, depth first.</summary>
+    Private Shared Sub CollectFonts(parent As Control, found As List(Of KeyValuePair(Of Control, Font)))
+        For Each c As Control In parent.Controls
+            found.Add(New KeyValuePair(Of Control, Font)(c, c.Font))
+            CollectFonts(c, found)
+        Next
+    End Sub
+
+    ''' <summary>Grows the font of every control that did not follow the window font. A control that inherits reports the
+    ''' window's new font, so a control still holding the object it held before the window grew has its own font: a
+    ''' bold heading, a monospaced preview, a script face set on a child. Points only - a pixel font (the option row's
+    ''' explanation) is sized by its own control from the scale it reads. Equal fonts share one grown font; the caller
+    ''' disposes what is added to <paramref name="made"/> with the window.</summary>
+    Private Shared Sub GrowOwnFonts(before As List(Of KeyValuePair(Of Control, Font)), factor As Single, made As List(Of Font))
+        Dim byOld As New Dictionary(Of Font, Font)()
+        For Each entry As KeyValuePair(Of Control, Font) In before
+            Dim c As Control = entry.Key
+            Dim old As Font = entry.Value
+            If c.IsDisposed OrElse Not ReferenceEquals(c.Font, old) Then Continue For
+            If old.Unit <> GraphicsUnit.Point Then Continue For
+            Dim own As Font = Nothing
+            If Not byOld.TryGetValue(old, own) Then
+                own = New Font(old.FontFamily, UiSizing.TextPoints(old.SizeInPoints, factor), old.Style, GraphicsUnit.Point, old.GdiCharSet, old.GdiVerticalFont)
+                byOld.Add(old, own)
+                made.Add(own)
+            End If
+            c.Font = own
+        Next
+    End Sub
+
+    ''' <summary>The text factor <see cref="ApplyAutoScale(ContainerControl, Single)"/> composed into each window,
+    ''' so that the reflow measures its gaps at the scale the window really has.</summary>
+    Private Shared ReadOnly composedTextFactors As New System.Runtime.CompilerServices.ConditionalWeakTable(Of Control, Object)()
+
+    ''' <summary>The factor the authored 96-dpi pixels of this window are multiplied by: the display ratio times the
+    ''' text factor the window composed (1.0 for a window that never called <c>ApplyAutoScale</c>).</summary>
+    Private Shared Function LayoutScale(f As Form) As Single
+        Dim composed As Object = Nothing
+        Dim text As Single = If(composedTextFactors.TryGetValue(f, composed), DirectCast(composed, Single), 1.0F)
+        Return f.DeviceDpi / UiSizing.LogicalDpi * text
+    End Function
 
     ''' <summary>Scales a logical (96-dpi) width the way WinForms never scales a ListView column. Call it where
     ''' the control has its real DPI - OnLoad, not the constructor.</summary>
@@ -81,7 +156,7 @@ Friend NotInheritable Class DialogLayout
             Next
             If kids.Count = 0 Then Return
 
-            Dim scale As Single = f.DeviceDpi / 96.0F
+            Dim scale As Single = LayoutScale(f)
             Dim sizeBefore As Size = f.Size
             f.SuspendLayout()
             Try

@@ -13,8 +13,9 @@
 | `Package/Identity/Name` (`-IdentityName`) | резервируется на каждый продукт | **НЕТ** - своё имя для нового приложения (Partner Center > New product > reserve name > Product identity) |
 | IARC `Global Rating ID` = `7d9b315a-f211-8505-80d0-3f4bee633770` | привязан к анкете FastMediaSorter | **частично** - вставляй тот же ID, только если функционал нового приложения не меняет ответы анкеты; иначе пройди короткую анкету заново |
 
-Итог: `-Publisher` и `-PublisherDisplayName` уже известны и зашиты ниже. Для нового приложения
-нужно только зарезервировать имя и подставить `-IdentityName`.
+Итог: `Publisher` и `PublisherDisplayName` уже известны и зашиты ниже. Для нового приложения
+нужно только зарезервировать имя и записать `IdentityName` в `publishing/msix/identity.json`
+(рядом лежат `StoreId`, `PackageFamilyName` и `IarcRatingId` этого продукта).
 
 ---
 
@@ -29,8 +30,8 @@
 - PublisherDisplayName:                    SZA
 - IARC Global Rating ID (портативный):     7d9b315a-f211-8505-80d0-3f4bee633770
 ЭТИ ДВА (Publisher, PublisherDisplayName) - одинаковы для всех моих продуктов, не выясняй заново,
-подставляй их в build-msix.ps1 как -Publisher и -PublisherDisplayName по умолчанию.
-IdentityName (-IdentityName) - СВОЙ для этого приложения: зарезервируй имя в Partner Center
+записывай их в publishing/msix/identity.json (build-msix.ps1 читает этот файл и останавливается до сборки, если его нет).
+IdentityName - СВОЙ для этого приложения: зарезервируй имя в Partner Center
 (New product > MSIX or PWA app > reserve name) и возьми Package/Identity/Name из Product identity.
 IARC Global Rating ID вставляй тот же, только если функционал не меняет ответы анкеты; иначе пройди анкету.
 
@@ -77,11 +78,10 @@ MSIX запускает desktop-приложение в лёгком конте�
       Square44x44Logo(44), StoreLogo(50), Square71x71Logo(71), Square150x150Logo(150) -> stage/Assets.
    e) Подставляет плейсхолдеры в AppxManifest.xml, кладёт его в КОРЕНЬ stage.
    f) makeappx pack /d stage /p dist/<App>-<version>-x64.msix /o
-   g) Параметры (значения издателя по умолчанию уже мои):
-      -IdentityName (СВОЁ для приложения)
-      -Publisher            = 'CN=F98ACEDB-1E22-4C39-AF63-F9FCFE807DCD'   (default)
-      -PublisherDisplayName = 'SZA'                                       (default)
-      -Configuration -NoBuild -SelfSign [+ доменные флаги payload при необходимости].
+   g) Идентичность читается из identity.json рядом со скриптом (IdentityName, Publisher, PublisherDisplayName,
+      StoreId, PackageFamilyName, IarcRatingId); без файла или без одного из первых трёх значений скрипт
+      останавливается до сборки. Параметры -IdentityName / -Publisher / -PublisherDisplayName переопределяют
+      одно значение на один запуск. Остальное: -Configuration -NoBuild -SelfSign [+ доменные флаги payload].
    h) -SelfSign: New-SelfSignedCertificate (Subject == -Publisher!), signtool sign /fd SHA256,
       Export-Certificate, и ВЫВЕСТИ команды: Import-Certificate (как админ, в
       Cert:\LocalMachine\TrustedPeople) + Add-AppxPackage.
@@ -114,8 +114,8 @@ cd publishing\msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для т�
    - Package/Properties/PublisherDisplayName -> должно быть SZA (моё)
    Они должны совпадать ТОЧНО, иначе аплоад отклонят.
 4) Собрать Store-пакет БЕЗ -SelfSign и загрузить UNSIGNED .msix (Microsoft подпишет сам):
-   .\build-msix.ps1 -ReleaseVersion <тег релиза без v> -IdentityName "<новое Name>"
-   (-Publisher и -PublisherDisplayName уже зашиты как мои значения по умолчанию)
+   .\build-msix.ps1 -ReleaseVersion <тег релиза без v>
+   (имя, издатель и PublisherDisplayName берутся из identity.json; в него записано новое Name)
 
 === ФАЗА 5. Материалы листинга ===
 - Privacy policy: обязательна (если читает локальные файлы / делает сетевые вызовы). URL на GitHub Pages.
@@ -132,6 +132,17 @@ cd publishing\msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для т�
   Re-rating нужен только при изменениях, меняющих ответы (IAP, реклама, UGC-шаринг).
 
 === ФАЗА 6. Сабмит -> сертификация (несколько рабочих дней) ===
+Сабмит выполняется вручную в Partner Center. Store Developer CLI (msstore) и Store submission API
+показывают живое состояние только на чтение: msstore apps list, msstore submission status <StoreId>,
+msstore submission get <StoreId> (StoreId лежит в identity.json). Запись через этот канал (publish, update,
+delete, rollout) - только по прямому указанию владельца с именем продукта и версией пакета; сабмит,
+созданный в Partner Center, меняется только в Partner Center. Ключ доступа и идентификаторы аккаунта
+в репозиторий не записываются.
+Перед тегом релиз-флоу (tools\Release.ps1, шаг 7) вызывает общий read-only preflight канона (WINDOWS-STORE 0.4,
+раздел D, правила 21 и 23): релиз останавливается с причиной, если сабмит уже ожидает, версия пакета не строго выше
+живой или цена не Free. Если канал не настроен, ключ просрочен или токен отклонён, печатается одна строка "шаг Store -
+ручной", и релиз идёт как без канала. После пуша тега одна строка результата на релиз (StoreId, версия пакета, ответ
+preflight, без идентификаторов аккаунта и ключей) дописывается в publishing/store/channel-evidence.jsonl.
 Если есть опциональные сетевые вызовы (к настраиваемому пользователем endpoint) - прямо описать
 это в description + privacy policy, чтобы снять вопросы ревью о сетевой активности.
 
@@ -146,6 +157,6 @@ cd publishing\msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для т�
 
 ## Откуда взяты значения (для самопроверки)
 
-- `-Publisher` / `-PublisherDisplayName` по умолчанию - из [../../publishing/msix/build-msix.ps1](../../publishing/msix/build-msix.ps1) (параметры `$Publisher`, `$PublisherDisplayName`).
+- `Publisher` / `PublisherDisplayName` - из [../../publishing/msix/identity.json](../../publishing/msix/identity.json), который читает [../../publishing/msix/build-msix.ps1](../../publishing/msix/build-msix.ps1).
 - IARC Global Rating ID - из [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) (раздел "Age rating (IARC)").
 - Полный исходный плейбук этого проекта - [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) и [../../publishing/msix/README.md](../../publishing/msix/README.md).

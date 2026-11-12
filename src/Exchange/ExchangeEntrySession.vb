@@ -19,6 +19,9 @@ Imports System.Threading.Tasks
 '     server and login already known).
 '   - The directory is the account's full list with THIS entry's device removed (its own records are hidden from it, 9.1); another
 '     program's records on the same machine are another device's, which is how this PC's shared folders appear next to the others.
+'   - The entry holds its own device key (DEVICE-EXCHANGE 27 item DF), so a box sealed to this device opens here (items DI, DP). An
+'     entry enrolled before it had a key presents its first one on its own over the live stream (ExchangeKeyUpgrade), and an access
+'     request waits the short while the producers need to seal to the new key instead of refusing in that moment.
 '
 ' It never logs a server, a login, a fingerprint, a token or an `access` - only names of states and the log form of an id.
 
@@ -40,6 +43,13 @@ Friend NotInheritable Class ExchangeEntrySession
     Private _idleReason As String = ""
     Private _disposed As Boolean
     Private _waiter As TaskCompletionSource(Of Boolean)
+    Private ReadOnly _upgradeGate As New ExchangeKeyUpgradeGate()
+    ''' <summary>The old stream is gone and the new one is being enrolled: nobody may start another session meanwhile.</summary>
+    Private _swapping As Boolean
+    Private _trust As IExchangeSealedTrustStore
+
+    ''' <summary>Longest an access request waits for the session and for a producer to seal to this device. A test shortens it.</summary>
+    Friend Property AccessWaitMs As Integer = AccessOpenWaitMs
 
     ''' <param name="configure">A test's way to shorten the keepalive, the backoff and the clock of the control session.</param>
     Friend Sub New(entry As ExchangeEntry, ports As ExchangeConsumerPorts, Optional configure As Action(Of ExchangeControlOptions) = Nothing)
@@ -69,7 +79,7 @@ Friend NotInheritable Class ExchangeEntrySession
         SyncLock _gate
             If _disposed Then Return New LeaseToken(Nothing)
             _leases += 1
-            If _session Is Nothing Then StartLocked()
+            If _session Is Nothing AndAlso Not _swapping Then StartLocked()
         End SyncLock
         Return New LeaseToken(Me)
     End Function
@@ -102,17 +112,25 @@ Friend NotInheritable Class ExchangeEntrySession
 
     ' ---- the session ----------------------------------------------------------------------------------------
 
-    Private Sub StartLocked()
+    ''' <param name="adopted">A stream `enroll` just opened: the session's first connection, instead of a `hello`. This method owns it.</param>
+    Private Sub StartLocked(Optional adopted As ExchangeOpenResult = Nothing)
         Dim address As ExchangeServerAddress = Nothing
         Dim token As String = ""
         If Not _entry.TryGetAddress(address) OrElse Not _ports.Entries.TokenStoreFor(_entry.Id).TryLoad(_entry.DeviceId, token) Then
             _idleState = ExchangeAgentState.SignInAgain
             _idleReason = "no-token"
+            If adopted IsNot Nothing Then adopted.Dispose()
             Return
         End If
+        Dim keys As IExchangeDeviceKeyStore = _ports.Entries.DeviceKeysFor(_entry.Id)
+        Dim ownKem As String = ""
+        Using key As ExchangeDeviceKey = keys.TryLoad(_entry.DeviceId)
+            If key IsNot Nothing Then ownKem = key.Kem
+        End Using
         Dim options As New ExchangeControlOptions With {
             .Server = address, .Pin = _entry.Pin, .Credentials = New ExchangeDeviceCredentials(_entry.DeviceId, token),
-            .ProductVersion = _ports.ProductVersion, .Transport = _ports.Entries.TransportFor(_entry, _ports.Transport), .Log = _ports.Log}
+            .ProductVersion = _ports.ProductVersion, .Transport = _ports.Entries.TransportFor(_entry, _ports.Transport), .Log = _ports.Log,
+            .OwnKem = ownKem, .SealedTrust = TrustStore(), .OwnKey = Function() keys.TryLoad(_entry.DeviceId)}
         If _configure IsNot Nothing Then _configure.Invoke(options)
         Dim session As New ExchangeControlSession(options, Nothing)
         AddHandler session.StateChanged, AddressOf OnChanged
@@ -123,8 +141,16 @@ Friend NotInheritable Class ExchangeEntrySession
         _session = session
         _cts = New CancellationTokenSource()
         Dim cts As CancellationTokenSource = _cts
-        _run = Task.Run(Function() session.RunAsync(cts.Token))
+        _run = Task.Run(Function() session.RunAsync(cts.Token, adopted))
     End Sub
+
+    ''' <summary>The entry's kept first-seen keys: one object for the entry, so that every session of it sees the same trust (item DG).</summary>
+    Private Function TrustStore() As IExchangeSealedTrustStore
+        SyncLock _gate
+            If _trust Is Nothing Then _trust = _ports.Entries.TrustStoreFor(_entry.Id)
+            Return _trust
+        End SyncLock
+    End Function
 
     Private Async Function StopAsync() As Task
         Dim session As ExchangeControlSession
@@ -146,6 +172,12 @@ Friend NotInheritable Class ExchangeEntrySession
             Await session.SayByeAsync().ConfigureAwait(False)
         Catch ex As Exception When TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is ObjectDisposedException
         End Try
+        Await EndLoopAsync(session, cts, run).ConfigureAwait(False)
+        WakeWaiters()
+    End Function
+
+    ''' <summary>The session's loop ends, bounded, and the session is let go of.</summary>
+    Private Async Function EndLoopAsync(session As ExchangeControlSession, cts As CancellationTokenSource, run As Task) As Task
         Try
             cts?.Cancel()
             If run IsNot Nothing Then Await Task.WhenAny(run, Task.Delay(2000)).ConfigureAwait(False)
@@ -155,7 +187,144 @@ Friend NotInheritable Class ExchangeEntrySession
         RemoveHandler session.DirectoryChanged, AddressOf OnChanged
         RemoveHandler session.DeviceRevoked, AddressOf OnRevoked
         Try : cts?.Dispose() : Catch ex As ObjectDisposedException : End Try
+    End Function
+
+    ' ---- presenting the first key (ExchangeKeyUpgrade) -------------------------------------------------------
+
+    Private Sub ConsiderKeyUpgrade(session As ExchangeControlSession)
+        If Not ExchangeKeyUpgrade.IsDue(session) Then Return
+        SyncLock _gate
+            If _disposed OrElse _swapping OrElse Not Object.ReferenceEquals(session, _session) Then Return
+            If Not _upgradeGate.TryBegin(Environment.TickCount64) Then Return
+        End SyncLock
+        Dim t As Task = Task.Run(Function() UpgradeAsync(session))
+    End Sub
+
+    Private Async Function UpgradeAsync(session As ExchangeControlSession) As Task
+        Try
+            Await TryPresentKeyAsync(session).ConfigureAwait(False)
+        Catch ex As Exception When TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is System.IO.IOException OrElse TypeOf ex Is ExchangeWireException OrElse TypeOf ex Is ObjectDisposedException
+            _ports.Log.Invoke("Exchange: presenting the device key did not finish: " & ex.GetType().Name)
+        Finally
+            _upgradeGate.Finish(Environment.TickCount64)
+            WakeWaiters()
+        End Try
+    End Function
+
+    Private Async Function TryPresentKeyAsync(session As ExchangeControlSession) As Task(Of Boolean)
+        Dim kem As String
+        Using key As ExchangeDeviceKey = ExchangeDeviceKeys.LoadOrCreate(_ports.Entries.DeviceKeysFor(_entry.Id), _entry.DeviceId)
+            If key Is Nothing Then
+                _ports.Log.Invoke("Exchange: the device key could not be kept on this computer - it was not presented")
+                Return False
+            End If
+            kem = key.Kem
+        End Using
+
+        Dim pairing As ExchangePairingResult = Await session.RequestPairingCodeAsync(CancellationToken.None).ConfigureAwait(False)
+        If Not pairing.Succeeded Then
+            _ports.Log.Invoke("Exchange: no code to present the device key with: " & If(pairing.Answered, ExchangeRefusals.WireName(pairing.Refusal), "no answer"))
+            Return False
+        End If
+
+        Dim options As ExchangeControlOptions = session.ConnectionOptions
+        Dim description As ExchangeDeviceDescription = ExchangeConsumer.DescriptionOf(_entry, _ports, ExchangeKeyUpgrade.NameFor(session, _entry.DeviceName), kem)
+
+        ' the old stream goes first and without `bye`: to the server this device stays what it was until `enrolled`
+        Dim oldCts As CancellationTokenSource
+        Dim oldRun As Task
+        SyncLock _gate
+            If Not Object.ReferenceEquals(session, _session) Then Return False
+            oldCts = _cts
+            oldRun = _run
+            _session = Nothing
+            _cts = Nothing
+            _run = Nothing
+            _swapping = True
+            _idleState = ExchangeAgentState.Online      ' a moment of the same connection, not an outage the view should show
+            _idleReason = ""
+        End SyncLock
+        Dim adopted As ExchangeOpenResult = Nothing
+        Try
+            Await EndLoopAsync(session, oldCts, oldRun).ConfigureAwait(False)
+            adopted = Await EnrollWithKeyAsync(options, pairing.Code, description).ConfigureAwait(False)
+        Finally
+            ResumeAfterSwap(adopted)
+        End Try
+        Return adopted IsNot Nothing
+    End Function
+
+    ''' <summary>`enroll` with the code and the key, and the new token kept. The stream when all of that held; Nothing leaves the old token in charge.</summary>
+    Private Async Function EnrollWithKeyAsync(options As ExchangeControlOptions, code As String, description As ExchangeDeviceDescription) As Task(Of ExchangeOpenResult)
+        Dim opened As ExchangeOpenResult = Await ExchangeKeyUpgrade.PresentFirstKeyAsync(options, _entry.Login, code, description, CancellationToken.None).ConfigureAwait(False)
+        If Not opened.IsConnected Then
+            Dim refusal As String = If(opened.Outcome = ExchangeOpenOutcome.Refused, ExchangeRefusals.WireName(opened.Refusal), "")
+            _ports.Log.Invoke("Exchange: the device key was not accepted: " & opened.Outcome.ToString() & " " & refusal)
+            opened.Dispose()
+            Return Nothing
+        End If
+        Dim token As String = opened.Welcome.Text("deviceToken")
+        If Not ExchangeIds.IsValidToken(token) OrElse _ports.Entries.Find(_entry.Id) Is Nothing OrElse
+           Not _ports.Entries.TokenStoreFor(_entry.Id).Save(_entry.DeviceId, token) Then
+            _ports.Log.Invoke("Exchange: the device key was accepted, but the new key of the connection could not be kept")
+            opened.Dispose()
+            Return Nothing
+        End If
+        _ports.Log.Invoke("Exchange: device " & ExchangeIds.ForLog(_entry.DeviceId) & " presented its key")
+        Return opened
+    End Function
+
+    ''' <summary>The swap is over. With somebody still interested the session starts again - on the stream `enroll` opened, or on the kept token;
+    ''' with nobody the new stream says `bye` and goes (rule 8).</summary>
+    Private Sub ResumeAfterSwap(adopted As ExchangeOpenResult)
+        Dim toClose As ExchangeOpenResult = Nothing
+        SyncLock _gate
+            _swapping = False
+            If _disposed OrElse _leases = 0 Then
+                _idleState = ExchangeAgentState.Stopped
+                _idleReason = ""
+                toClose = adopted
+            Else
+                StartLocked(adopted)
+            End If
+        End SyncLock
+        If toClose IsNot Nothing Then
+            Dim t As Task = SayByeAndCloseAsync(toClose)
+        End If
         WakeWaiters()
+    End Sub
+
+    Private Shared Async Function SayByeAndCloseAsync(opened As ExchangeOpenResult) As Task
+        Using opened
+            Try
+                Using cts As New CancellationTokenSource(1500)
+                    Await opened.Writer.WriteAsync(ExchangeMessages.Simple(ExchangeEnvelopeTypes.Bye), cts.Token).ConfigureAwait(False)
+                End Using
+            Catch ex As Exception When TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is System.IO.IOException OrElse TypeOf ex Is ExchangeWireException OrElse TypeOf ex Is ObjectDisposedException
+            End Try
+        End Using
+    End Function
+
+    ''' <summary>False when signing in again would change nothing for a record the server keeps from this device: the device holds a key, so
+    ''' it already enrolled with everything it can do, or it is on its way to that by itself. The view then has nothing to ask of the person.</summary>
+    Friend ReadOnly Property SignInCuresMissingAccess As Boolean
+        Get
+            Dim session As ExchangeControlSession
+            SyncLock _gate
+                If _swapping Then Return False
+                session = _session
+            End SyncLock
+            If session Is Nothing Then Return True
+            Dim own As ExchangeDeviceRecord = ExchangeKeyUpgrade.OwnRecordOf(session)
+            If own IsNot Nothing AndAlso own.E2eKem.Length > 0 Then Return False
+            Return Not (ExchangeKeyUpgrade.IsDue(session) AndAlso _upgradeGate.IsPending(Environment.TickCount64))
+        End Get
+    End Property
+
+    Private Function IsSwapping() As Boolean
+        SyncLock _gate
+            Return _swapping
+        End SyncLock
     End Function
 
     Private Sub OnRevoked(sender As Object, e As EventArgs)
@@ -168,6 +337,7 @@ Friend NotInheritable Class ExchangeEntrySession
     End Sub
 
     Private Sub OnChanged(sender As Object, e As EventArgs)
+        ConsiderKeyUpgrade(TryCast(sender, ExchangeControlSession))
         WakeWaiters()
     End Sub
 
@@ -231,17 +401,19 @@ Friend NotInheritable Class ExchangeEntrySession
         Dim deadline As Long = Environment.TickCount64 + Math.Max(0, waitMs)
         While True
             ct.ThrowIfCancellationRequested()
-            Dim session As ExchangeControlSession = Current()
-            If session Is Nothing Then Return notReady
+            ' the waiter before the look: a change right after the look must end this wait
             Dim waiter As TaskCompletionSource(Of Boolean) = RegisterWaiter()
-            If StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then
+            Dim session As ExchangeControlSession = Current()
+            If session Is Nothing Then
+                If Not IsSwapping() Then Return notReady
+            ElseIf StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then
                 If session.Model.Revision <> sinceRevision OrElse sinceRevision = 0 Then Return Answer(session)
             ElseIf StateOf(session) <> ExchangeAgentState.Online AndAlso StateOf(session) <> ExchangeAgentState.Connecting AndAlso StateOf(session) <> ExchangeAgentState.Reconnecting Then
                 Return notReady     ' stopped for a reason (sign in again, a pin mismatch, update): nothing will arrive
             End If
             Dim remaining As Long = deadline - Environment.TickCount64
             If remaining <= 0 Then
-                If StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then Return Answer(session)
+                If session IsNot Nothing AndAlso StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then Return Answer(session)
                 Return notReady
             End If
             Await Task.WhenAny(waiter.Task, Task.Delay(CInt(Math.Min(remaining, Integer.MaxValue)), ct)).ConfigureAwait(False)
@@ -256,31 +428,70 @@ Friend NotInheritable Class ExchangeEntrySession
 
     Public Async Function GetAccessAsync(resourceId As String, ct As CancellationToken) As Task(Of ExchangeAgentAccessResult)
         Dim notRunning As New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.NotRunning, "", ""), "")
+        Dim lastRefusal As String = ""
         ' a session opened just for this: a lease for the length of the question (rule 8), the first directory awaited
         Using lease As IDisposable = Me.Lease()
             Dim started As Long = Environment.TickCount64
-            While Environment.TickCount64 - started < AccessOpenWaitMs
+            While Environment.TickCount64 - started < AccessWaitMs
                 ct.ThrowIfCancellationRequested()
-                Dim session As ExchangeControlSession = Current()
-                If session Is Nothing Then Return notRunning
+                ' the waiter before the look: a change right after the look must end this wait
                 Dim waiter As TaskCompletionSource(Of Boolean) = RegisterWaiter()
-                If StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then
+                Dim session As ExchangeControlSession = Current()
+                If session Is Nothing Then
+                    If Not IsSwapping() Then Return If(lastRefusal.Length > 0, RefusedAs(lastRefusal), notRunning)
+                ElseIf StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then
                     Dim record As ExchangeResourceRecord = session.Model.Snapshot().Resources.FirstOrDefault(Function(r) String.Equals(r.ResourceId, resourceId, StringComparison.Ordinal))
-                    ' spec 234 items DI and DP: this per-entry session has no device key (it enrolls without an `e2eKey`, so no producer seals to
-                    ' it), and a clear `access` that came through the server is never used - not even from an older producer. A record that carries
-                    ' an access of either kind is answered with the typed state (`e2e-missing`, or `server-no-e2e` on a server without `sealed`)
-                    ' instead of "no access". Resolve with no key never opens anything.
-                    Dim resolved As ExchangeSealedAccessResult = If(record Is Nothing, Nothing, ExchangeSealedAccess.Resolve(record, session.Sealed, Nothing, Nothing))
-                    Dim token As String = If(record Is Nothing, ExchangeAgentPipe.ErrorUnknownResource,
-                                             If(resolved IsNot Nothing AndAlso resolved.State IsNot Nothing, resolved.State.Code, ExchangeAgentPipe.ErrorNoAccess))
-                    Return New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Refused, token, ""), "")
+                    If record Is Nothing Then Return RefusedAs(ExchangeAgentPipe.ErrorUnknownResource)
+                    ' spec 234 items DI and DP: only a box sealed to this device's key opens. A clear `access` that came through the server is
+                    ' never used, not even from an older producer: it is answered with the typed state instead of "no access".
+                    Dim resolved As ExchangeSealedAccessResult
+                    Using ownKey As ExchangeDeviceKey = _ports.Entries.DeviceKeysFor(_entry.Id).TryLoad(_entry.DeviceId)
+                        resolved = ExchangeSealedAccess.Resolve(record, session.Sealed, TrustStore(), ownKey)
+                    End Using
+                    If resolved.Opened Then Return New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Ok, "", ""), resolved.AccessJson)
+                    Dim token As String = If(resolved.State IsNot Nothing, resolved.State.Code, ExchangeAgentPipe.ErrorNoAccess)
+                    If Not IsSettling(session, record, resolved) Then Return RefusedAs(token)
+                    lastRefusal = token
                 ElseIf StateOf(session) <> ExchangeAgentState.Online AndAlso StateOf(session) <> ExchangeAgentState.Connecting AndAlso StateOf(session) <> ExchangeAgentState.Reconnecting Then
-                    Return notRunning
+                    Return If(lastRefusal.Length > 0, RefusedAs(lastRefusal), notRunning)
                 End If
                 Await Task.WhenAny(waiter.Task, Task.Delay(500, ct)).ConfigureAwait(False)
             End While
         End Using
-        Return notRunning
+        Return If(lastRefusal.Length > 0, RefusedAs(lastRefusal), notRunning)
+    End Function
+
+    Private Shared Function RefusedAs(token As String) As ExchangeAgentAccessResult
+        Return New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Refused, token, ""), "")
+    End Function
+
+    ''' <summary>True while the answer can still change by itself: this device is presenting its key, or it holds one and an online producer has
+    ''' not sealed to it yet (a producer seals within seconds of seeing a key). A protection this client cannot honour, a producer that is
+    ''' away, a changed key or a damaged box will not mend while anyone waits.</summary>
+    Private Function IsSettling(session As ExchangeControlSession, record As ExchangeResourceRecord, resolved As ExchangeSealedAccessResult) As Boolean
+        ConsiderKeyUpgrade(session)
+        If IsSwapping() Then Return True
+        If ExchangeKeyUpgrade.IsDue(session) AndAlso _upgradeGate.IsPending(Environment.TickCount64) Then Return True
+        If Not session.Sealed.HasOwnKey OrElse Not record.CanAuthorize Then Return False
+        If Not String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal) Then Return False
+        If resolved.State Is Nothing Then Return True
+        Select Case resolved.State.Code
+            Case ExchangeAgentPipe.ErrorE2eMissing
+                Return True
+            Case ExchangeAgentPipe.ErrorSealedFailed
+                Return WaitsForBox(record)
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    ''' <summary>True when the record holds no box for this device yet. A box this device IS in, that did not open, is damaged: no reason to wait.</summary>
+    Private Function WaitsForBox(record As ExchangeResourceRecord) As Boolean
+        Dim json As String = If(record.GrantId.Length > 0, record.SealedGrantJson, record.SealedAccessJson)
+        If json.Length = 0 Then Return True
+        Dim box As ExchangeSealedBox = Nothing
+        If Not ExchangeSealedBox.TryParse(json, box) Then Return False
+        Return Not box.Keys.Any(Function(k) String.Equals(k.ToDeviceId, _entry.DeviceId, StringComparison.Ordinal))
     End Function
 
     ''' <summary>226 rule 4: change the account's password over this entry's own control stream. On success the fresh key of the answer
@@ -300,6 +511,28 @@ Friend NotInheritable Class ExchangeEntrySession
         End If
         Return result
     End Function
+
+    ''' <summary>Ticket L0296: True while this entry's live connection lists `settings` (item EO); the settings actions show only then.</summary>
+    Friend Function OffersSettings() As Boolean
+        Dim session As ExchangeControlSession = Current()
+        Return session IsNot Nothing AndAlso session.State = ExchangeAgentState.Online AndAlso session.OffersSettings()
+    End Function
+
+    ''' <summary>Ticket L0296: the person's "Save as STANDARD" over this entry's own control stream (item EO).</summary>
+    Friend Async Function SaveSettingsStandardAsync(appId As String, formatVersion As Integer, settingsPayload As String, timestamp As String,
+                                                    ct As CancellationToken) As Task(Of ExchangeSettingsRequestResult)
+        Dim session As ExchangeControlSession = Current()
+        If session Is Nothing Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.NoAnswer)
+        Return Await session.SaveSettingsStandardAsync(appId, formatVersion, settingsPayload, timestamp, ct).ConfigureAwait(False)
+    End Function
+
+    ''' <summary>Ticket L0296: the person's "Read STANDARD" over this entry's own control stream (item EO); the payload comes back untouched.</summary>
+    Friend Async Function GetSettingsStandardAsync(appId As String, ct As CancellationToken) As Task(Of ExchangeSettingsRequestResult)
+        Dim session As ExchangeControlSession = Current()
+        If session Is Nothing Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.NoAnswer)
+        Return Await session.GetSettingsStandardAsync(appId, ct).ConfigureAwait(False)
+    End Function
+
     Public Sub Dispose() Implements IDisposable.Dispose
         SyncLock _gate
             _disposed = True

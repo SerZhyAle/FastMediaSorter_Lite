@@ -47,7 +47,8 @@ End Class
 Friend NotInheritable Class ItemJournalEntry
     Friend Property Timestamp As DateTime
     Friend Property OperationId As String = ""
-    ''' <summary>"move", "delete" or "archive-delete" (the original removed after the archive was verified).</summary>
+    ''' <summary>"move", "delete", "archive-delete" (the original removed after the archive was verified) or
+    ''' "fill-free-space" (one FileDO fill, its source the run's work folder and its verdict the judged result).</summary>
     Friend Property Verb As String = ""
     Friend Property Source As String = ""
     Friend Property Destination As String = ""

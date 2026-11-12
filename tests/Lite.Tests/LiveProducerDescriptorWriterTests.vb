@@ -260,15 +260,16 @@ Public Class LiveProducerDescriptorWriterTests
 
     <Fact>
     Public Sub The_copied_link_targets_the_importer_and_reads_back_through_the_link_reader()
-        ' LIVE-BROADCAST 4.3: `fmsbcast://import?payload=` + the URL-encoded FMSBCAST1 text, the same description as the other channels.
+        ' LIVE-BROADCAST 4.3: the Android `intent://` link around `import?payload=` + the URL-encoded FMSBCAST1 text, the same
+        ' description as the other channels.
         Dim json As String = LiveProducerDescriptorWriter.BuildJson(VideoSample())
         Dim barcode As String = LiveProducerDescriptorWriter.BarcodePayload(json)
         Dim link As String = LiveProducerDescriptorWriter.LinkText(barcode)
 
-        Assert.StartsWith("fmsbcast://import?payload=", link, StringComparison.Ordinal)
-        Assert.Equal("fmsbcast://import?payload=" & Uri.EscapeDataString(barcode), link)
-        ' the Base64 text carries '+', '/' and '=': none of them travels raw inside the query
-        Assert.DoesNotContain("+", link.Substring("fmsbcast://import?payload=".Length), StringComparison.Ordinal)
+        Assert.StartsWith("intent://import?payload=" & Uri.EscapeDataString(barcode) & "#Intent;scheme=fmsbcast;package=com.sza.fastmediasorter;", link, StringComparison.Ordinal)
+        Assert.EndsWith(";end", link, StringComparison.Ordinal)
+        ' the Base64 text carries '+', '/' and '=': none of them travels raw anywhere in the link
+        Assert.DoesNotContain("+", link, StringComparison.Ordinal)
         Assert.DoesNotContain("FMSBCAST1:", link, StringComparison.Ordinal)
 
         Dim read As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(link)
@@ -283,7 +284,8 @@ Public Class LiveProducerDescriptorWriterTests
         input.AuthUser = "listener"
         Dim link As String = LiveProducerDescriptorWriter.LinkText(LiveProducerDescriptorWriter.BarcodePayload(LiveProducerDescriptorWriter.BuildJson(input)))
         Assert.Equal("listener", LiveBroadcastLinkReader.ReadLink(link).Descriptor.AuthUser)
-        Dim carried As String = Encoding.UTF8.GetString(DecodedPayloadBytes(Uri.UnescapeDataString(link.Substring(LiveProducerContract.LinkPrefix.Length))))
+        Dim start As Integer = link.IndexOf("payload=", StringComparison.Ordinal) + "payload=".Length
+        Dim carried As String = Encoding.UTF8.GetString(DecodedPayloadBytes(Uri.UnescapeDataString(link.Substring(start, link.IndexOf("#"c) - start))))
         Assert.Contains("""scheme"":""password-v1""", carried)
         Assert.DoesNotContain("""password""", carried, StringComparison.Ordinal)
         Assert.Equal("", LiveProducerDescriptorWriter.LinkText(""))
@@ -291,20 +293,31 @@ Public Class LiveProducerDescriptorWriterTests
     End Sub
 
     <Fact>
-    Public Sub The_reader_still_reads_the_earlier_live_link_form_that_is_already_out_in_the_world()
-        ' A link copied by an earlier build is `fmsbcast://live?payload=`. The importer's host is the writer's now, but a reader
-        ' reads every version that wrote data: the same barcode text opens through both hosts and yields the same description.
-        Dim barcode As String = LiveProducerDescriptorWriter.BarcodePayload(LiveProducerDescriptorWriter.BuildJson(VideoSample()))
-        Dim older As String = "fmsbcast://live?payload=" & Uri.EscapeDataString(barcode)
-        Dim current As String = LiveProducerDescriptorWriter.LinkText(barcode)
+    Public Sub The_link_is_the_phone_factorys_link_byte_for_byte()
+        ' The vector of the Android BroadcastShareLinkFactory test payload: URLEncoder with '+' rewritten to %20 encodes this alphabet
+        ' exactly as Uri.EscapeDataString does, and the fallback page carries the payload once more, encoded again.
+        Assert.Equal("intent://import?payload=FMSBCAST1%3Apayload%2B%2F%3D#Intent;scheme=fmsbcast;package=com.sza.fastmediasorter;" &
+                     "S.browser_fallback_url=https%3A%2F%2Fserzhyale.github.io%2FFastMediaSorter_mob_v2%2Fbroadcast-import.html%23payload%3DFMSBCAST1%253Apayload%252B%252F%253D;end",
+                     LiveProducerDescriptorWriter.LinkText("FMSBCAST1:payload+/="))
+    End Sub
 
-        Dim fromOlder As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(older)
+    <Fact>
+    Public Sub The_reader_still_reads_the_earlier_live_and_import_link_forms_that_are_already_out_in_the_world()
+        ' Links copied by earlier builds are `fmsbcast://live?payload=` and then `fmsbcast://import?payload=`. The writer writes the
+        ' `intent://` form now, but a reader reads every version that wrote data: the same barcode text opens through all three forms and
+        ' yields the same description.
+        Dim barcode As String = LiveProducerDescriptorWriter.BarcodePayload(LiveProducerDescriptorWriter.BuildJson(VideoSample()))
+        Dim current As String = LiveProducerDescriptorWriter.LinkText(barcode)
         Dim fromCurrent As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(current)
-        Assert.Equal(LiveReadStatus.Ok, fromOlder.Status)
         Assert.Equal(LiveReadStatus.Ok, fromCurrent.Status)
-        Assert.NotEqual(older, current)
-        Assert.Equal(fromCurrent.Descriptor.Url, fromOlder.Descriptor.Url)
-        Assert.Equal(fromCurrent.Descriptor.Endpoints.Count, fromOlder.Descriptor.Endpoints.Count)
+
+        For Each older As String In {"fmsbcast://live?payload=" & Uri.EscapeDataString(barcode), LiveProducerContract.LinkPrefix & Uri.EscapeDataString(barcode)}
+            Dim fromOlder As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(older)
+            Assert.Equal(LiveReadStatus.Ok, fromOlder.Status)
+            Assert.NotEqual(older, current)
+            Assert.Equal(fromCurrent.Descriptor.Url, fromOlder.Descriptor.Url)
+            Assert.Equal(fromCurrent.Descriptor.Endpoints.Count, fromOlder.Descriptor.Endpoints.Count)
+        Next
     End Sub
 
     <Fact>

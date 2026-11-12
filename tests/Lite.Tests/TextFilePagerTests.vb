@@ -98,7 +98,7 @@ Public Class TextFilePagerTests
     <Fact>
     Public Sub Shift_jis_without_line_breaks_cuts_after_a_single_byte_character()
 #If Not NETFRAMEWORK Then
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+        System.Text.Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
 #End If
         Dim encoding As Encoding = Encoding.GetEncoding(932)
         Dim content As String = Repeat("日本語のテキスト1", 8000)

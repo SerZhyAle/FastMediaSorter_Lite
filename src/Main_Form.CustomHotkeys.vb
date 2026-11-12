@@ -159,6 +159,9 @@ Partial Public Class Main_Form
             Case "fullScreen" : ToggleFullScreenMode()
             Case "settings" : ShowSettingsWindow()
             Case "imagePanel" : ShowImagePanelForm()
+                ' L0297: the assignable command into scheduled file operations - the same wake the
+                ' folder menu uses, with no folder: the Share Manager opens its scheduling window.
+            Case "scheduledOperations" : ActivateScheduleWindowEntryPoint()
             Case "help" : ShowFirstRunHelp()
                 ' The same implementation the NumPad / main-row zoom keys end in (UX-113 of 123): a text
                 ' document zooms its text, a picture its pixels.

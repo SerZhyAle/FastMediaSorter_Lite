@@ -14,21 +14,19 @@ Imports System.Windows.Forms
 
 ' Specification 275: the one Main_Form partial tying the HTML host to media generation,
 ' visibility, provenance, reading state and the existing commands. The host owns the page;
-' this file owns the window: toolbar, focus context, dialogs and the remembered state.
+' this file owns the window: the commands it hands to the document panel (280), focus context, dialogs and the remembered state.
 Partial Public Class Main_Form
     Private html_View_File As String = ""
     Private html_View_Identity As String = ""
     Private html_View_Host As HtmlDocumentHost
-    Private html_View_Toolbar As ToolStrip
-    Private html_View_Title As ToolStripLabel
-    Private html_View_Context As ToolStripLabel
-    Private html_View_Query As ToolStripTextBox
-    Private html_View_Matches As ToolStripLabel
-    Private html_View_ZoomLabel As ToolStripButton
-    Private html_View_Reader As ToolStripButton
-    Private html_View_Blocked As ToolStripDropDownButton
-    Private html_View_BackButton As ToolStripButton
-    Private html_View_ForwardButton As ToolStripButton
+    ' What the document panel (280) reads: the page find's term and its match count, and the context line. The page's title
+    ' goes to the status strip and the window caption; the panel does not carry it (Q280-4).
+    Private html_View_QueryText As String = ""
+    Private html_View_MatchesText As String = ""
+    Private html_View_Find_Active As Integer
+    Private html_View_Find_Count As Integer
+    Private html_View_ContextText As String = ""
+    ''' <summary>Samples the reading position only; the strip it used to hide is the document panel now (280 T-0 correction 2).</summary>
     Private html_View_Timer As System.Windows.Forms.Timer
     Private html_View_Entry As HtmlReaderEntry
     Private html_View_Position As HtmlPosition
@@ -37,7 +35,6 @@ Partial Public Class Main_Form
     Private html_View_Interaction As Boolean
     Private html_View_PositionBusy As Boolean
     Private html_View_StateTouched As Boolean
-    Private html_View_LastActivity As DateTime
     Private html_View_Zoom As Integer = 100
     ' Session-only acknowledgements of plain-http origins (section 13); never stored.
     Private ReadOnly html_View_InsecureOrigins As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
@@ -193,61 +190,9 @@ Partial Public Class Main_Form
         Return entry
     End Function
 
-    Private Sub HtmlViewButton(key As String, action As Action, Optional ByRef created As ToolStripButton = Nothing)
-        Dim button As New ToolStripButton(Localization.T(key)) With {.Tag = key, .DisplayStyle = ToolStripItemDisplayStyle.Text, .AccessibleName = Localization.T(key)}
-        AddHandler button.Click, Sub() action()
-        html_View_Toolbar.Items.Add(button)
-        created = button
-    End Sub
+    ' --- the document panel's commands (280) ----------------------------------------------------------------------------
 
     Private Sub BuildHtmlViewUi()
-        Dim scale = GetCurrentDpiScale()
-        html_View_Toolbar = New ToolStrip With {.Dock = DockStyle.None, .AutoSize = False, .Height = CInt(32 * scale), .GripStyle = ToolStripGripStyle.Hidden, .TabStop = True,
-            .AccessibleName = Localization.T("Просмотр HTML-страницы"), .RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)}
-        HtmlViewButton("Предыдущий файл", Sub() ReadShowMediaFile(Mode_Prev))
-        HtmlViewButton("Следующий файл", Sub() ReadShowMediaFile(Mode_Next))
-        html_View_Toolbar.Items.Add(New ToolStripSeparator())
-        HtmlViewButton("Назад", Sub() RunHtmlCommand(HtmlHostCommand.Back), html_View_BackButton)
-        HtmlViewButton("Вперёд", Sub() RunHtmlCommand(HtmlHostCommand.Forward), html_View_ForwardButton)
-        HtmlViewButton("Обновить", Sub() RunHtmlCommand(HtmlHostCommand.Reload))
-        html_View_Toolbar.Items.Add(New ToolStripSeparator())
-        html_View_Query = New ToolStripTextBox With {.AutoSize = False, .Width = CInt(160 * scale), .MaxLength = HtmlDocumentPolicy.MaxFindTermLength,
-            .AccessibleName = Localization.T("Поиск на странице"), .ToolTipText = Localization.T("Поиск на странице")}
-        AddHandler html_View_Query.KeyDown, AddressOf HtmlViewQueryKeyDown
-        html_View_Toolbar.Items.Add(html_View_Query)
-        HtmlViewButton("Предыдущее совпадение", Sub() RunHtmlCommand(HtmlHostCommand.FindPrevious))
-        HtmlViewButton("Следующее совпадение", Sub() RunHtmlCommand(HtmlHostCommand.FindNext))
-        html_View_Matches = New ToolStripLabel With {.AccessibleName = Localization.T("Совпадения")}
-        html_View_Toolbar.Items.Add(html_View_Matches)
-        html_View_Toolbar.Items.Add(New ToolStripSeparator())
-        HtmlViewButton("Уменьшить", Sub() RunHtmlCommand(HtmlHostCommand.ZoomOut))
-        html_View_ZoomLabel = New ToolStripButton("100 %") With {.DisplayStyle = ToolStripItemDisplayStyle.Text, .AccessibleName = Localization.T("Сбросить масштаб"), .ToolTipText = Localization.T("Сбросить масштаб")}
-        AddHandler html_View_ZoomLabel.Click, Sub() RunHtmlCommand(HtmlHostCommand.ZoomReset)
-        html_View_Toolbar.Items.Add(html_View_ZoomLabel)
-        HtmlViewButton("Увеличить", Sub() RunHtmlCommand(HtmlHostCommand.ZoomIn))
-        HtmlViewButton("По ширине", AddressOf FitHtmlViewWidth)
-        html_View_Toolbar.Items.Add(New ToolStripSeparator())
-        HtmlViewButton("Оформление для чтения", AddressOf ToggleHtmlReader, html_View_Reader)
-        html_View_Reader.CheckOnClick = False
-        HtmlViewButton("Сбросить оформление", AddressOf ResetHtmlViewAppearance)
-        If html_View_Online Is Nothing Then HtmlViewButton("Исходный текст", AddressOf ShowHtmlViewSource)
-        HtmlViewButton("Открыть в браузере", AddressOf OpenHtmlViewInBrowser)
-        HtmlViewButton("Печать", Sub() RunHtmlCommand(HtmlHostCommand.Print))
-        html_View_Blocked = New ToolStripDropDownButton With {.Visible = False, .DisplayStyle = ToolStripItemDisplayStyle.Text}
-        AddHandler html_View_Blocked.DropDownOpening, AddressOf FillHtmlViewBlockedMenu
-        html_View_Toolbar.Items.Add(html_View_Blocked)
-        HtmlViewButton("Настройки", AddressOf ShowSettingsWindow)
-        HtmlViewButton("Вернуться к файлам", AddressOf LeaveHtmlViewInteraction)
-        ' AsNeeded, never Never: with an Overflow.Never item on the strip, a UI Automation walk of the open
-        ' overflow drop-down (a screen reader, at high DPI where the commands overflow) loops on the UI thread
-        ' and the viewer stops responding (275 scene S9, 2026-10-29; reproduced in a bare WinForms strip).
-        ' Inserted first instead: a strip overflows from the end of its item list, so the label that says
-        ' where the keys go is the last to leave the strip, and Right alignment still draws it on the right.
-        html_View_Context = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.AsNeeded}
-        html_View_Toolbar.Items.Insert(0, html_View_Context)
-        html_View_Title = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right, .Overflow = ToolStripItemOverflow.AsNeeded}
-        html_View_Toolbar.Items.Add(html_View_Title)
-        panel_Media.Controls.Add(html_View_Toolbar)
         AddHandler panel_Media.SizeChanged, AddressOf LayoutHtmlView
         Dim host = html_View_Host
         AddHandler host.ContentReady, AddressOf HtmlViewContentReady
@@ -260,30 +205,77 @@ Partial Public Class Main_Form
         AddHandler host.ZoomChanged, AddressOf HtmlViewZoomChanged
         AddHandler host.StateChanged, AddressOf UpdateHtmlViewState
         AddHandler host.Enter, AddressOf EnterHtmlViewInteraction
-        html_View_Toolbar.AllowDrop = True
-        AddHandler html_View_Toolbar.DragEnter, AddressOf Form1_DragEnter
-        AddHandler html_View_Toolbar.DragDrop, AddressOf Form1_DragDrop
-        ThemeApplier.ApplyTree(html_View_Toolbar, ThemeService.Palette)
         html_View_Timer = New System.Windows.Forms.Timer With {.Interval = 500}
         AddHandler html_View_Timer.Tick, AddressOf TickHtmlView
-        html_View_LastActivity = DateTime.UtcNow
         html_View_Timer.Start()
+        html_View_ContextText = Localization.T("Просмотр: клавиши сортируют файлы")
+        ShowDocumentCommands(DocumentReaderKind.Html, HtmlViewCommands())
         LayoutHtmlView(Me, EventArgs.Empty)
-        UpdateHtmlViewContext()
     End Sub
 
+    ''' <summary>What the page offers the document panel: the commands in the panel's own reading order, each with the state it
+    ''' reads when <see cref="SyncDocumentPanel"/> asks. The previous / next file buttons and the settings button are the rows'.</summary>
+    Private Function HtmlViewCommands() As Dictionary(Of String, DocumentCommand)
+        Dim commands As New Dictionary(Of String, DocumentCommand)(StringComparer.Ordinal)
+        commands(DocumentPanelRules.IdBack) = New DocumentCommand With {
+            .Action = Sub() RunHtmlCommand(HtmlHostCommand.Back),
+            .IsEnabled = Function() IsHtmlViewShown() AndAlso html_View_Host.CanGoBack}
+        commands(DocumentPanelRules.IdForward) = New DocumentCommand With {
+            .Action = Sub() RunHtmlCommand(HtmlHostCommand.Forward),
+            .IsEnabled = Function() IsHtmlViewShown() AndAlso html_View_Host.CanGoForward}
+        commands(DocumentPanelRules.IdReload) = New DocumentCommand With {.Action = Sub() RunHtmlCommand(HtmlHostCommand.Reload)}
+        ' The find is a box of a fixed width: it shows the term (or its own words while there is none) and is typed into in place.
+        commands(DocumentPanelRules.IdFind) = New DocumentCommand With {
+            .Action = AddressOf BeginHtmlFindEdit,
+            .Text = Function() If(html_View_QueryText.Length = 0, Localization.T("Поиск на странице"), html_View_QueryText),
+            .PreferredWidth = 160}
+        commands(DocumentPanelRules.IdFindPrev) = New DocumentCommand With {.Action = Sub() RunHtmlCommand(HtmlHostCommand.FindPrevious)}
+        commands(DocumentPanelRules.IdFindNext) = New DocumentCommand With {.Action = Sub() RunHtmlCommand(HtmlHostCommand.FindNext)}
+        ' The count keeps the room of its widest text, so it appearing moves nothing after it.
+        commands(DocumentPanelRules.IdFindCount) = New DocumentCommand With {
+            .Text = Function() html_View_MatchesText,
+            .Reserved = Function() New String() {Localization.TF("{0} из {1}", 999, 999), Localization.T("Не найдено")}}
+        commands(DocumentPanelRules.IdZoomOut) = New DocumentCommand With {.Action = Sub() RunHtmlCommand(HtmlHostCommand.ZoomOut)}
+        commands(DocumentPanelRules.IdZoomValue) = New DocumentCommand With {
+            .Action = Sub() RunHtmlCommand(HtmlHostCommand.ZoomReset),
+            .Text = Function() Localization.TF("{0} %", html_View_Zoom),
+            .Reserved = Function() New String() {Localization.TF("{0} %", ModernViewerPreferences.HtmlZoomMax)}}
+        commands(DocumentPanelRules.IdZoomIn) = New DocumentCommand With {.Action = Sub() RunHtmlCommand(HtmlHostCommand.ZoomIn)}
+        commands(DocumentPanelRules.IdFitWidth) = New DocumentCommand With {.Action = AddressOf FitHtmlViewWidth}
+        commands(DocumentPanelRules.IdReaderMode) = New DocumentCommand With {
+            .Action = AddressOf ToggleHtmlReader,
+            .IsChecked = Function() IsHtmlViewShown() AndAlso HtmlViewAppearance().Reader}
+        commands(DocumentPanelRules.IdResetAppearance) = New DocumentCommand With {.Action = AddressOf ResetHtmlViewAppearance}
+        commands(DocumentPanelRules.IdViewSource) = New DocumentCommand With {
+            .Action = AddressOf ShowHtmlViewSource,
+            .IsVisible = Function() html_View_Online Is Nothing AndAlso document_Result_View Is Nothing}
+        ' L0276 Step 4.1: the result of doc-html-translate carries its own actions (original, folder, save, process again).
+        commands(DocumentPanelRules.IdConvertResult) = New DocumentCommand With {
+            .IsVisible = Function() document_Result_View IsNot Nothing,
+            .Menu = AddressOf DocumentResultMenu}
+        commands(DocumentPanelRules.IdOpenInBrowser) = New DocumentCommand With {.Action = AddressOf OpenHtmlViewInBrowser}
+        commands(DocumentPanelRules.IdPrint) = New DocumentCommand With {.Action = Sub() RunHtmlCommand(HtmlHostCommand.Print)}
+        commands(DocumentPanelRules.IdBlocked) = New DocumentCommand With {
+            .Text = Function() If(IsHtmlViewShown() AndAlso html_View_Host.BlockedResources > 0, Localization.TF("Заблокировано ресурсов: {0}", html_View_Host.BlockedResources), ""),
+            .IsVisible = Function() IsHtmlViewShown() AndAlso html_View_Host.BlockedResources > 0,
+            .Menu = AddressOf HtmlViewBlockedMenu}
+        commands(DocumentPanelRules.IdReturnToFiles) = New DocumentCommand With {.Action = AddressOf LeaveHtmlViewInteraction}
+        commands(DocumentPanelRules.IdContext) = New DocumentCommand With {.Text = Function() html_View_ContextText}
+        Return commands
+    End Function
+
+    ''' <summary>The page now fills the whole media area; a pinned document panel may cover its top lines as a pinned row covers a
+    ''' picture (280 section 3 rule 5). There is no side pane to keep clear of it.</summary>
     Private Sub LayoutHtmlView(sender As Object, e As EventArgs)
-        If Not IsHtmlViewShown() OrElse html_View_Toolbar Is Nothing Then Return
-        Dim top = If(html_View_Toolbar.Visible, html_View_Toolbar.Height, 0)
-        html_View_Toolbar.Bounds = New Rectangle(0, 0, panel_Media.ClientSize.Width, html_View_Toolbar.Height)
+        If Not IsHtmlViewShown() Then Return
         html_View_Host.Dock = DockStyle.None
-        html_View_Host.Bounds = New Rectangle(0, top, Math.Max(1, panel_Media.ClientSize.Width), Math.Max(1, panel_Media.ClientSize.Height - top))
+        html_View_Host.Bounds = New Rectangle(0, 0, Math.Max(1, panel_Media.ClientSize.Width), Math.Max(1, panel_Media.ClientSize.Height))
         html_View_Host.BringToFront()
-        html_View_Toolbar.BringToFront()
     End Sub
 
     Private Sub UpdateHtmlViewContext()
-        If html_View_Context IsNot Nothing Then html_View_Context.Text = Localization.T(If(html_View_Interaction, "Документ: клавиши работают с текстом", "Просмотр: клавиши сортируют файлы"))
+        html_View_ContextText = Localization.T(If(html_View_Interaction, "Документ: клавиши работают с текстом", "Просмотр: клавиши сортируют файлы"))
+        SyncDocumentPanel()
     End Sub
 
     Private Sub EnterHtmlViewInteraction(sender As Object, e As EventArgs)
@@ -306,40 +298,37 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub UpdateHtmlViewState()
-        If Not IsHtmlViewShown() OrElse html_View_Toolbar Is Nothing Then Return
+        If Not IsHtmlViewShown() Then Return
         Dim host = html_View_Host
-        Dim provenance = If(html_View_Online IsNot Nothing, HtmlAddressPolicy.OriginOf(html_View_Online), Path.GetFileName(html_View_File))
+        Dim provenance = If(html_View_Online IsNot Nothing, HtmlAddressPolicy.OriginOf(html_View_Online),
+            If(document_Result_View IsNot Nothing, Localization.TF("Результат doc-html-translate для «{0}»", document_Result_View.FileName), Path.GetFileName(html_View_File)))
         Dim title = host.Title
-        html_View_Title.Text = If(String.IsNullOrWhiteSpace(title), Localization.TF("{0} - {1}", provenance, HtmlViewModeName()),
+        lbl_Status.Text = If(String.IsNullOrWhiteSpace(title), Localization.TF("{0} - {1}", provenance, HtmlViewModeName()),
             Localization.TF("{0} - {1} - {2}", title.Trim(), provenance, HtmlViewModeName()))
-        html_View_Title.RightToLeft = If(host.Direction = "rtl", RightToLeft.Yes, html_View_Toolbar.RightToLeft)
-        html_View_BackButton.Enabled = host.CanGoBack
-        html_View_ForwardButton.Enabled = host.CanGoForward
-        html_View_Reader.Checked = HtmlViewAppearance().Reader
-        Dim blocked = host.BlockedResources
-        html_View_Blocked.Visible = blocked > 0
-        If blocked > 0 Then html_View_Blocked.Text = Localization.TF("Заблокировано ресурсов: {0}", blocked)
-        lbl_Status.Text = html_View_Title.Text
+        SyncDocumentPanel()
         UpdateContentWindowTitle()
     End Sub
 
-    ' The blocked summary: categories and origins, never a filesystem path (section 11.1).
-    Private Sub FillHtmlViewBlockedMenu(sender As Object, e As EventArgs)
-        If Not IsHtmlViewShown() Then Return
+    ' The blocked summary: categories and origins, never a filesystem path (section 11.1). Built when the menu opens.
+    Private Function HtmlViewBlockedMenu() As IEnumerable(Of ChromeMenuItem)
+        Dim entries As New List(Of ChromeMenuItem)()
+        If Not IsHtmlViewShown() Then Return entries
         Dim host = html_View_Host
-        html_View_Blocked.DropDownItems.Clear()
         Dim origins = host.BlockedOriginList
-        html_View_Blocked.DropDownItems.Add(New ToolStripMenuItem(Localization.TF("Заблокировано ресурсов: {0}", host.BlockedResources)) With {.Enabled = False})
+        entries.Add(New ChromeMenuItem("html_blocked_count") With {.Caption = Localization.TF("Заблокировано ресурсов: {0}", host.BlockedResources), .Enabled = False})
+        Dim index As Integer = 0
         For Each item In origins.Take(HtmlDocumentHost.MaxApprovedOrigins)
-            html_View_Blocked.DropDownItems.Add(New ToolStripMenuItem(item) With {.Enabled = False})
+            entries.Add(New ChromeMenuItem("html_blocked_" & index.ToString(Globalization.CultureInfo.InvariantCulture)) With {.Caption = item, .Enabled = False})
+            index += 1
         Next
         If origins.Count > 0 Then
-            Dim approve As New ToolStripMenuItem(Localization.T("Разрешить ресурсы этих адресов на время просмотра.."))
-            AddHandler approve.Click, Sub() ApproveHtmlViewOrigins(origins)
-            html_View_Blocked.DropDownItems.Add(New ToolStripSeparator())
-            html_View_Blocked.DropDownItems.Add(approve)
+            entries.Add(ChromeMenuItem.Separator())
+            entries.Add(New ChromeMenuItem("html_blocked_approve") With {
+                .Caption = Localization.T("Разрешить ресурсы этих адресов на время просмотра.."),
+                .Action = Sub() ApproveHtmlViewOrigins(origins)})
         End If
-    End Sub
+        Return entries
+    End Function
 
     ' Session-only approval: the URLs and the IP address go to those hosts; nothing is stored.
     Private Async Sub ApproveHtmlViewOrigins(origins As IReadOnlyList(Of String))
@@ -397,7 +386,7 @@ Partial Public Class Main_Form
             html_View_Restore = Nothing
             If restore IsNot Nothing Then Await host.RestorePositionAsync(restore)
             If host IsNot html_View_Host Then Return
-            If html_View_Query IsNot Nothing AndAlso html_View_Query.Text.Length > 0 AndAlso html_View_Matches.Text.Length > 0 Then StartHtmlViewFind()
+            If html_View_QueryText.Length > 0 AndAlso html_View_MatchesText.Length > 0 Then StartHtmlViewFind()
         Catch ex As Exception When Not TypeOf ex Is OutOfMemoryException
         End Try
         UpdateHtmlViewState()
@@ -410,8 +399,12 @@ Partial Public Class Main_Form
             ' Explicit choices after a renderer failure: retry, or the source / start page (section 11.3).
             Dim path = html_View_File
             Dim page = html_View_Online
+            Dim result = document_Result_View
             Dim answer = ViewerBox.Show(Me, HtmlViewerText.Outcome(outcome), Localization.T("Просмотр HTML-страницы"), MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning)
-            If answer = DialogResult.Retry Then
+            If result IsNot Nothing Then
+                ' A converter result is never a file of the list: retry shows it again, cancel returns to its document.
+                If answer = DialogResult.Retry Then ShowDocumentResultInViewer(result) Else ReturnToDocumentOriginal(result)
+            ElseIf answer = DialogResult.Retry Then
                 If page IsNot Nothing Then
                     LoadHtmlOnline(page, html_View_InsecureOrigins.Contains(HtmlAddressPolicy.OriginOf(page)))
                 ElseIf path.Length > 0 Then
@@ -430,15 +423,11 @@ Partial Public Class Main_Form
     Private Sub RunHtmlCommand(command As HtmlHostCommand)
         If Not IsHtmlViewShown() Then Return
         Dim host = html_View_Host
-        Dim preferences = GetModernPreferences()
-        html_View_LastActivity = DateTime.UtcNow
         Select Case command
             Case HtmlHostCommand.FindStart
-                RevealHtmlViewToolbar()
-                html_View_Query.Focus()
-                html_View_Query.SelectAll()
+                BeginHtmlFindEdit()
             Case HtmlHostCommand.FindNext, HtmlHostCommand.FindPrevious
-                If html_View_Matches.Text.Length = 0 Then
+                If html_View_MatchesText.Length = 0 Then
                     StartHtmlViewFind()
                 Else
                     host.FindStep(command = HtmlHostCommand.FindPrevious)
@@ -493,20 +482,32 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
-    Private Sub HtmlViewQueryKeyDown(sender As Object, e As KeyEventArgs)
-        Select Case e.KeyData
-            Case Keys.Enter, Keys.F3
-                If html_View_Matches.Text.Length = 0 Then StartHtmlViewFind() Else html_View_Host?.FindStep(False)
-            Case Keys.Shift Or Keys.Enter, Keys.Shift Or Keys.F3
-                html_View_Host?.FindStep(True)
-            Case Keys.Escape
-                HtmlViewEscape()
-            Case Else
-                Return
-        End Select
-        e.Handled = True
-        e.SuppressKeyPress = True
+    ''' <summary>The page find is typed into in place over its box on the panel (Ctrl+F, or a press on the box). Working with the
+    ''' page's text puts the keys with the document, as entering the page does, so Escape afterwards clears the matches first.</summary>
+    Private Sub BeginHtmlFindEdit()
+        If Not IsHtmlViewShown() Then Return
+        DocumentPanelRevealThen(DocumentPanelRules.IdFind,
+            Sub()
+                Dim item As ChromeItem = Nothing
+                If Not IsHtmlViewShown() OrElse document_Items Is Nothing OrElse Not document_Items.TryGetValue(DocumentPanelRules.IdFind, item) Then Return
+                EnterHtmlViewInteraction(Me, EventArgs.Empty)
+                BeginDocumentEdit(item, html_View_QueryText, ChromeEditMode.Text, AddressOf HtmlViewFindAccepted)
+            End Sub)
     End Sub
+
+    ''' <summary>Enter in the find box: a new term starts the search, the same term goes to the next match (Shift: the previous one).
+    ''' The box stays open, so the next Enter keeps stepping.</summary>
+    Private Function HtmlViewFindAccepted(text As String, previous As Boolean) As Boolean
+        If Not IsHtmlViewShown() Then Return True
+        If Not String.Equals(text, html_View_QueryText, StringComparison.Ordinal) OrElse html_View_MatchesText.Length = 0 Then
+            html_View_QueryText = text
+            SyncDocumentPanel()
+            StartHtmlViewFind()
+        Else
+            html_View_Host.FindStep(previous)
+        End If
+        Return False
+    End Function
 
     Private Async Sub StartHtmlViewFind()
         If Not IsHtmlViewShown() Then Return
@@ -514,24 +515,32 @@ Partial Public Class Main_Form
         Dim host = html_View_Host
         Dim preferences = GetModernPreferences()
         Try
-            Await host.FindAsync(html_View_Query.Text, preferences.HtmlFindCase, preferences.HtmlFindWholeWord)
+            Await host.FindAsync(html_View_QueryText, preferences.HtmlFindCase, preferences.HtmlFindWholeWord)
         Catch ex As Exception When Not TypeOf ex Is OutOfMemoryException
             If host Is html_View_Host Then Notify(Localization.T("Не удалось выполнить поиск на странице"), NotifyLevel.Warning)
         End Try
     End Sub
 
+    ''' <summary>The language changed: the find's readout, when there is one, is written again from its last numbers.</summary>
+    Private Sub LocalizeHtmlViewFind()
+        If html_View_MatchesText.Length > 0 Then HtmlViewFindChanged(html_View_Find_Active, html_View_Find_Count)
+    End Sub
+
     Private Sub HtmlViewFindChanged(activeIndex As Integer, count As Integer)
-        If html_View_Matches Is Nothing Then Return
+        If Not IsHtmlViewShown() Then Return
+        html_View_Find_Active = activeIndex
+        html_View_Find_Count = count
         If count <= 0 Then
-            html_View_Matches.Text = If(html_View_Query.Text.Length = 0, "", Localization.T("Не найдено"))
+            html_View_MatchesText = If(html_View_QueryText.Length = 0, "", Localization.T("Не найдено"))
         Else
-            html_View_Matches.Text = Localization.TF("{0} из {1}", Math.Max(1, activeIndex + 1), count)
+            html_View_MatchesText = Localization.TF("{0} из {1}", Math.Max(1, activeIndex + 1), count)
         End If
+        SyncDocumentPanel()
     End Sub
 
     Private Sub HtmlViewZoomChanged(percent As Integer)
-        If html_View_ZoomLabel IsNot Nothing Then html_View_ZoomLabel.Text = Localization.TF("{0} %", percent)
         html_View_Zoom = percent
+        SyncDocumentPanel()
     End Sub
 
     Private Async Sub FitHtmlViewWidth()
@@ -645,15 +654,6 @@ Partial Public Class Main_Form
         If Not IsHtmlViewShown() Then Return
         Dim host = html_View_Host
         If host.DocumentHasFocus AndAlso Not html_View_Interaction Then EnterHtmlViewInteraction(Me, EventArgs.Empty)
-        Dim pointer = panel_Media.PointToClient(Cursor.Position)
-        Dim visible = Not (is_Full_Screen_Mode OrElse is_Super_Full_Screen_Mode) OrElse GetModernPreferences().DocumentFullscreenChrome = "visible" OrElse
-            html_View_Toolbar.ContainsFocus OrElse (pointer.X >= 0 AndAlso pointer.X < panel_Media.Width AndAlso pointer.Y >= 0 AndAlso pointer.Y < html_View_Toolbar.Height)
-        If visible Then html_View_LastActivity = DateTime.UtcNow
-        Dim wanted = visible OrElse (DateTime.UtcNow - html_View_LastActivity).TotalSeconds < 3
-        If html_View_Toolbar.Visible <> wanted Then
-            html_View_Toolbar.Visible = wanted
-            LayoutHtmlView(Me, EventArgs.Empty)
-        End If
         If html_View_PositionBusy OrElse html_View_Restore IsNot Nothing OrElse Not Visible OrElse WindowState = FormWindowState.Minimized Then Return
         html_View_PositionBusy = True
         Try
@@ -663,12 +663,6 @@ Partial Public Class Main_Form
         Finally
             If host Is html_View_Host Then html_View_PositionBusy = False
         End Try
-    End Sub
-
-    Private Sub RevealHtmlViewToolbar()
-        If html_View_Toolbar Is Nothing OrElse html_View_Toolbar.Visible Then Return
-        html_View_Toolbar.Visible = True
-        LayoutHtmlView(Me, EventArgs.Empty)
     End Sub
 
     ' Memory only; the file is written once, when the page is left.
@@ -697,10 +691,10 @@ Partial Public Class Main_Form
 
     Private Sub HtmlViewEscape()
         If Not IsHtmlViewShown() Then Return
-        If html_View_Matches IsNot Nothing AndAlso html_View_Matches.Text.Length > 0 Then
+        If html_View_MatchesText.Length > 0 Then
             html_View_Host.StopFind()
-            html_View_Matches.Text = ""
-            If html_View_Query.Focused Then html_View_Host.FocusDocument()
+            html_View_MatchesText = ""
+            SyncDocumentPanel()
             Return
         End If
         LeaveHtmlViewInteraction()
@@ -710,9 +704,8 @@ Partial Public Class Main_Form
     ' owns the keys (never sorting or delete); on the host canvas the existing map applies.
     Private Function HtmlViewOwnsInput(e As KeyEventArgs) As Boolean
         If Not IsHtmlViewShown() Then Return False
-        html_View_LastActivity = DateTime.UtcNow
-        RevealHtmlViewToolbar()
-        Dim owns = html_View_Interaction OrElse html_View_Host.DocumentHasFocus OrElse html_View_Toolbar.ContainsFocus
+        ' The F10 ring on the document panel is the reader's input, as the old strip's focus was.
+        Dim owns = html_View_Interaction OrElse html_View_Host.DocumentHasFocus OrElse ChromeKeyboardOnDocumentPanel()
         If e.KeyCode = Keys.Escape AndAlso owns Then
             HtmlViewEscape()
             e.SuppressKeyPress = True
@@ -733,6 +726,8 @@ Partial Public Class Main_Form
                 RunHtmlCommand(HtmlHostCommand.FindStart)
             Case Keys.F3, Keys.Shift Or Keys.F3
                 RunHtmlCommand(If(e.Shift, HtmlHostCommand.FindPrevious, HtmlHostCommand.FindNext))
+            Case Keys.Control Or Keys.Shift Or Keys.M
+                If TextMarkdownRenderedShown() Then ToggleTextMarkdownView()
         End Select
         SlideShowStop()
         Return True
@@ -772,6 +767,11 @@ Partial Public Class Main_Form
         If IsHtmlViewShown() Then
             If Not preferences.HtmlViewerEnabled OrElse (html_View_Online IsNot Nothing AndAlso Not preferences.HtmlOnlinePagesEnabled) Then
                 Dim path = html_View_File
+                Dim result = document_Result_View
+                If result IsNot Nothing Then
+                    ReturnToDocumentOriginal(result)
+                    Return
+                End If
                 ReleaseHtmlView()
                 If path.Length > 0 Then LoadTextDocument(path) Else ShowContentPlaceholder("")
                 Return
@@ -832,20 +832,22 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub ReleaseHtmlView()
-        If html_View_Host Is Nothing AndAlso html_View_Toolbar Is Nothing Then Return
+        text_Markdown_Page = False
+        document_Result_View = Nothing
+        If html_View_Host Is Nothing Then Return
         Try
             RecordHtmlViewState()
             If html_View_StateTouched Then HtmlReaderState.Current.Save()
         Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is InvalidOperationException
         End Try
+        ' Other readers' load paths release this one too: the panel goes only when it is this reader's.
+        If document_Panel_Kind = DocumentReaderKind.Html OrElse document_Wanted_Kind = DocumentReaderKind.Html Then HideDocumentPanel()
         html_View_Timer?.Dispose()
         html_View_Timer = Nothing
         RemoveHandler panel_Media.SizeChanged, AddressOf LayoutHtmlView
         Dim host = html_View_Host
         html_View_Host = Nothing
         host?.Dispose()
-        html_View_Toolbar?.Dispose()
-        html_View_Toolbar = Nothing
         html_View_File = ""
         html_View_Identity = ""
         html_View_Entry = Nothing
@@ -853,6 +855,9 @@ Partial Public Class Main_Form
         html_View_Restore = Nothing
         html_View_Online = Nothing
         html_View_Interaction = False
+        html_View_QueryText = ""
+        html_View_MatchesText = ""
+        html_View_ContextText = ""
         html_View_PositionBusy = False
         html_View_StateTouched = False
     End Sub

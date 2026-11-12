@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn" class="script-bn">
+<html lang="bn" data-page-lang="bn" class="script-bn">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: প্রতিটি ফাইলের জন্য এক কী দিয়ে ছবি ও ভিডিও সাজান">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="bn">
+<meta property="og:locale" content="bn_BD">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে">
 <meta name="twitter:description" content="Fast Media Sorter &amp; Sharing-এ আসা SmartScreen সতর্কবার্তার অর্থ কী, কেন তা দেখা যায়, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">একটিমাত্র বাইরের পরিষেবার সঙ্গে যোগাযোগ হতে পারে, আর তা কেবল তখনই যখন আপনি শেয়ারিংয়ের জন্য ইন্টারনেট প্রবেশ চালু করেন: check-host.net-কে জিজ্ঞাসা করা হয় আপনার ফরওয়ার্ড করা পোর্ট বাইরে থেকে সাড়া দেয় কি না, তাতে সেই পরিষেবা আপনার সর্বজনীন ঠিকানা ও পোর্ট দেখে। এর বাইরে তাকে কিছু পাঠানো হয় না। আরও দুটি জিনিস আপনার নিজের নেটওয়ার্কের ভিতরেই থাকে: ইন্টারনেট প্রবেশ চালু থাকলে প্রোগ্রামটি আপনার রাউটারকে শেয়ারিং পোর্ট ফরওয়ার্ড করতে বলে (UPnP বা NAT-PMP), আর শেয়ারিং চলার সময় PC স্থানীয় নেটওয়ার্কে নিজের উপস্থিতি জানায় (mDNS), যাতে যুক্ত ফোন তাকে আবার খুঁজে পায়।</p>
-  <p class="note" id="site-origins">এই ওয়েবসাইটের কোনো পাতা খুললে (প্রোগ্রাম চালালে নয়) সর্বোচ্চ তিনটি বাইরের ঠিকানার সঙ্গে যোগাযোগ হয়: fonts.googleapis.com ও fonts.gstatic.com (Google Fonts, পাতার অক্ষরের জন্য) এবং প্রধান পাতা ও তার ভাষা-সংস্করণে api.github.com (GitHub, ডাউনলোড লিংকের জন্য সর্বশেষ রিলিজ দেখতে)। প্রতিটি আপনার IP ঠিকানা ও ব্রাউজারের user agent পায়, আর কিছু নয়। বিশ্লেষণ, ট্যাগ-ম্যানেজার বা বিজ্ঞাপনের কোনো ঠিকানার সঙ্গে যোগাযোগ করা হয় না। গোপনীয়তার পাতাতেও একই কথা বলা আছে।</p>
+  <p class="note" id="site-origins">এই ওয়েবসাইটের কোনো পাতা খুললে (প্রোগ্রাম চালালে নয়) দুটি বাইরের ঠিকানার সঙ্গে যোগাযোগ হয়: fonts.googleapis.com ও fonts.gstatic.com (Google Fonts, পাতার অক্ষরের জন্য)। প্রতিটি আপনার IP ঠিকানা ও ব্রাউজারের user agent পায়, আর কিছু নয়। বিশ্লেষণ, ট্যাগ-ম্যানেজার বা বিজ্ঞাপনের কোনো ঠিকানার সঙ্গে যোগাযোগ করা হয় না। গোপনীয়তার পাতাতেও একই কথা বলা আছে।</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">ডাউনলোড</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

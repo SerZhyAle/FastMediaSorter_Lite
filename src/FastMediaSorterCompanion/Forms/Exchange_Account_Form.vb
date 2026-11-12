@@ -365,19 +365,16 @@ Friend NotInheritable Class Exchange_Account_Form
         FitAccountToWorkingArea()
     End Sub
 
-    Private Sub OnPasteString(sender As Object, e As EventArgs)
-        Try
-            Dim decoded As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
-            If decoded.Succeeded Then
-                _txtString.Text = decoded.Text
-            Else
-                _lblString.ForeColor = CollapsibleSection.AttentionColor
-                _lblString.Text = decoded.FailureMessage
-                _lblString.Visible = True
-            End If
-        Catch ex As Exception When TypeOf ex Is System.Runtime.InteropServices.ExternalException OrElse TypeOf ex Is Threading.ThreadStateException
-            AppFileLogger.WriteLine("Exchange sign-in: the clipboard could not be read")
-        End Try
+    Private Async Sub OnPasteString(sender As Object, e As EventArgs)
+        Dim decoded As QrDecodeResult = Await QrCodeDecoder.DecodeClipboardAsync()
+        If IsDisposed Then Return
+        If decoded.Succeeded Then
+            _txtString.Text = decoded.Text
+        Else
+            _lblString.ForeColor = CollapsibleSection.AttentionColor
+            _lblString.Text = decoded.FailureMessage
+            _lblString.Visible = True
+        End If
     End Sub
 
     Private Sub OnOpenStringFile(sender As Object, e As EventArgs)

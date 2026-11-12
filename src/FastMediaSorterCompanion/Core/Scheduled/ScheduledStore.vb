@@ -167,8 +167,17 @@ Friend NotInheritable Class ScheduledStore
         SyncLock gate
             Dim file As String = FileFor(id)
             If System.IO.File.Exists(file) Then System.IO.File.Delete(file)
+            ' A backup's password goes with its operation (L0298, P2.1).
+            BackupCredentials.Delete(id)
         End SyncLock
     End Sub
+
+    ''' <summary>The passwords of this store's sealed backups (L0298).</summary>
+    Friend ReadOnly Property BackupCredentials As ScheduledBackupCredentialStore
+        Get
+            Return New ScheduledBackupCredentialStore(folder)
+        End Get
+    End Property
 
     ''' <summary>tmp + swap: no failure leaves half a definition (the same rule as the image writer).</summary>
     Private Shared Sub WriteAtomic(target As String, text As String)
@@ -291,6 +300,9 @@ End Class
 
 Friend Module ShareSettingsTransfer
 
+    ''' <summary>The halt detail of a sealed backup with no password on this PC; the editor's save with a password clears it.</summary>
+    Friend Const BackupNoPasswordCode As String = "backup-no-password"
+
     Private ReadOnly ExportJsonOptions As New System.Text.Json.JsonSerializerOptions With {
         .WriteIndented = True,
         .PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
@@ -354,6 +366,11 @@ Friend Module ShareSettingsTransfer
                     op.Enabled = False
                     op.Halt = ScheduledHalt.ResourceRemoved
                     op.HaltDetail = missingResourceName
+                ElseIf op.Action = ScheduledAction.Backup AndAlso op.BackupSealed AndAlso op.Halt = ScheduledHalt.None AndAlso
+                       Not store.BackupCredentials.Has(op.Id) Then
+                    ' An export never carries the password (231 rule 7): the sealed backup waits until it is entered here.
+                    op.Halt = ScheduledHalt.Wall
+                    op.HaltDetail = BackupNoPasswordCode
                 End If
                 store.SaveImported(op)
                 engine?.ReloadImported(op)

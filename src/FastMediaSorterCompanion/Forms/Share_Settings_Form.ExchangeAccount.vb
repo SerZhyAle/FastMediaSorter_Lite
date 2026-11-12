@@ -50,6 +50,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>226 rule 4: change the account's password from this device's own control stream.</summary>
     Private _btnAccChangePassword As Button
     Private _btnAccDisconnect As Button
+    Private _btnAccRemoteAdmin As Button
     ''' <summary>226 rule 7: link to the portal page 'how to delete an account' (FMS_A S4243).</summary>
     Private _lnkAccDelete As LinkLabel
     Private _accTimer As System.Windows.Forms.Timer
@@ -191,6 +192,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         disconnectRow.Controls.Add(_btnAccDisconnect)
         disconnectRow.Controls.Add(_lnkAccDelete)
         sec.AddBodyRow(disconnectRow)
+        If ExchangeRemoteAdminFeatures.IsEnabled() Then
+            _btnAccRemoteAdmin = AccButton(Localization.T("Администрирование сервера обмена.."), Sub() RaiseEvent NavigateRequested(SettingsDestination.RemoteExchange), "app.settings")
+            Dim remoteAdminRow As FlowLayoutPanel = AccFlow()
+            remoteAdminRow.Controls.Add(_btnAccRemoteAdmin)
+            sec.AddBodyRow(remoteAdminRow)
+        End If
 
         _accResult = AccNote("")
         _accResult.ForeColor = CollapsibleSection.AttentionColor
@@ -321,11 +328,13 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Dim isMe As Boolean = String.Equals(d.DeviceId, status.DeviceId, StringComparison.Ordinal)
                 Dim name As String = If(d.DeviceName.Length > 0, d.DeviceName, d.Product)
                 Dim item As New ListViewItem(ExchangeDeviceText.DeviceName(name, isMe)) With {.Tag = d.DeviceId}
-                item.SubItems.Add(ExchangeDeviceText.PresenceText(d.IsOnline))
+                item.SubItems.Add(ExchangeDeviceText.PresenceText(d))
                 item.SubItems.Add(FormatLastSeen(d.LastSeen))
                 _accDevices.Items.Add(item)
                 If String.Equals(d.DeviceId, selected, StringComparison.Ordinal) Then item.Selected = True
             Next
+            ' Item DD: the row of the message table is never shortened, so the column takes the width of its text
+            _accDevices.Columns(1).Width = If(records.Any(Function(r) r.IsSharePaused), -1, Me.LogicalToDeviceUnits(90))
         Finally
             _accDevices.EndUpdate()
         End Try

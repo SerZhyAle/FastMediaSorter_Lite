@@ -32,7 +32,7 @@ Public Class DriveSettingsPageLayoutTests
     Private Const ClientId As String = "layout-test-client.apps.example"
     Private Const ClientSecret As String = "layout-test-secret-value"
 
-    Private Shared ReadOnly Kinds As String() = {"not-configured", "signed-out", "signing-in", "signed-in", "unavailable"}
+    Private Shared ReadOnly Kinds As String() = {"not-configured", "signed-out", "signing-in", "signed-in", "unavailable", "queue"}
 
     ' --- harness (the same as the other settings-page tests: an STA thread, a scratch hive, a faked exchange component) ---
 
@@ -207,6 +207,16 @@ Public Class DriveSettingsPageLayoutTests
                     Drive.FailWhen(Function(r) r.Method = "GET" AndAlso r.Path = "/drive/v3/files", 100000, 503)
                     Host.StartIfSignedIn()
                     Assert.True(SpinWait.SpinUntil(Function() Host.State = DriveChannelState.Unavailable, 20000), "the failing round never showed")
+                Case "queue"
+                    ' a packet in each of the rows' longest forms, from a device with a long name
+                    StoreSignIn()
+                    Dim other As New ExchangeDriveClient(Http, New FakeDriveTokens(), Function(span As TimeSpan, token As CancellationToken) Task.CompletedTask, Function() 0.5)
+                    Dim phone As New ExchangeDriveQueue(other, "CCCCCCCCCCCCCCCCCCCCCA", "Phone of the household, second floor", New ExchangeDriveMemoryHandledStore())
+                    Dim payload As ExchangeDriveSendSource() = {ExchangeDriveSendSource.FromBytes("a.bin", "application/octet-stream", New Byte(2047) {})}
+                    Assert.True(phone.SendFilesAsync(payload, "BBBBBBBBBBBBBBBBBBBBBA", "Office PC", CancellationToken.None).GetAwaiter().GetResult().Succeeded)
+                    Assert.True(phone.SendFilesAsync(payload, "DDDDDDDDDDDDDDDDDDDDDA", "Laptop of the household, first floor", CancellationToken.None).GetAwaiter().GetResult().Succeeded)
+                    Host.StartIfSignedIn()
+                    Assert.True(SpinWait.SpinUntil(Function() Host.QueueView IsNot Nothing, 20000), "the first round never showed")
             End Select
         End Sub
 
@@ -246,7 +256,8 @@ Public Class DriveSettingsPageLayoutTests
         Dim result As Label = Member(Of Label)(window, "_drvResult")
         Dim wantSignIn As Boolean = kind = "not-configured" OrElse kind = "signed-out"
         Dim wantCancel As Boolean = kind = "signing-in"
-        Dim wantSignOut As Boolean = kind = "signed-in" OrElse kind = "unavailable"
+        Dim wantSignOut As Boolean = kind = "signed-in" OrElse kind = "unavailable" OrElse kind = "queue"
+        ExpectQueue(window, kind, lbl, found)
         ' One group card is on screen at a time: each line is read with its own card selected.
         ShowSettingsCardOf(window, signIn)
         If signIn.Visible <> wantSignIn Then found.Add(lbl & ": 'Sign in' is " & If(signIn.Visible, "shown", "hidden") & " in the state " & kind)
@@ -258,6 +269,35 @@ Public Class DriveSettingsPageLayoutTests
         If kind = "signed-out" AndAlso Not result.Visible Then found.Add(lbl & ": the sign-out result is not shown")
         ShowSettingsCardOf(window, device)
         If kind = "signed-in" AndAlso Not device.Visible Then found.Add(lbl & ": this PC's line is not shown while signed in")
+    End Sub
+
+    ''' <summary>The queue group: a list only when it has rows, as tall as those rows, and its one command on only with a row selected (item CS).</summary>
+    Private Shared Sub ExpectQueue(window As Share_Settings_Form, kind As String, lbl As String, found As List(Of String))
+        Dim list As ListView = Member(Of ListView)(window, "_lvDrvQueue")
+        Dim delete As Button = Member(Of Button)(window, "_btnDrvQueueDelete")
+        Dim note As Label = Member(Of Label)(window, "_drvQueueState")
+        ShowSettingsCardOf(window, note)
+        If kind <> "queue" Then
+            If list.Visible Then found.Add(lbl & ": the queue list is shown with no rows")
+            If delete.Visible Then found.Add(lbl & ": 'Delete packet' is shown with no rows")
+            If Not note.Visible Then found.Add(lbl & ": nothing says why there is no queue list")
+            Return
+        End If
+        ShowSettingsCardOf(window, list)
+        Application.DoEvents()
+        If Not list.Visible Then found.Add(lbl & ": the queue list is hidden although the queue has rows")
+        If list.Items.Count <> 2 Then found.Add(lbl & ": the queue list has " & list.Items.Count.ToString(CultureInfo.InvariantCulture) & " rows, not 2")
+        If list.Items.Count = 0 Then Return
+        If list.Columns.Count <> 5 Then found.Add(lbl & ": the queue list has no column for size or date")
+        Dim rowsBottom As Integer = list.GetItemRect(list.Items.Count - 1).Bottom
+        If rowsBottom > list.ClientSize.Height Then found.Add(lbl & ": the last queue row ends at " & rowsBottom.ToString(CultureInfo.InvariantCulture) & " below the list's " & list.ClientSize.Height.ToString(CultureInfo.InvariantCulture))
+        Dim spare As Integer = list.ClientSize.Height - rowsBottom
+        If spare > list.GetItemRect(0).Height + SystemInformation.HorizontalScrollBarHeight Then found.Add(lbl & ": the queue list stands " & spare.ToString(CultureInfo.InvariantCulture) & " px past its rows")
+        If delete.Enabled Then found.Add(lbl & ": 'Delete packet' is on with no row selected")
+        list.Items(0).Selected = True
+        Application.DoEvents()
+        If Not delete.Enabled Then found.Add(lbl & ": 'Delete packet' stays off with a row selected")
+        list.SelectedItems.Clear()
     End Sub
 
     Private Shared Function Audit(window As Share_Settings_Form, lbl As String, factor As Single, found As List(Of String)) As Integer

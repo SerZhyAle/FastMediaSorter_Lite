@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Пометки и обрезка фото | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Пометьте картинку, обрежьте её и сохраните результат на диск во встроенном редакторе Fast Media Sorter &amp; Sharing for Windows.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-editor.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-editor.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-editor.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Пометки и обрезка фото | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Пометьте картинку, обрежьте её и сохраните результат на диск во встроенном редакторе Fast Media Sorter &amp; Sharing for Windows.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-editor.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Пометки и обрезка фото | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Пометьте картинку, обрежьте её и сохраните результат на диск во встроенном редакторе Fast Media Sorter &amp; Sharing for Windows.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Пометки и обрезка фото | Fast Media Sorter & Sharing","description":"Пометьте картинку, обрежьте её и сохраните результат на диск во встроенном редакторе Fast Media Sorter & Sharing for Windows.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-editor.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="how-to-editor.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-editor.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/how-to-editor.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="./#get">Скачать</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · IMAGE EDITOR</span><h1>Пометить картинку и обрезать её, не выходя из просмотрщика</h1><p class="lead">Обвести важное, закрыть имя или номер, отрезать пустые края - и сохранить поверх оригинала или рядом с ним. Редактор открывается отдельным окном, поэтому случайное нажатие не перенесёт и не удалит файл за его спиной. Он есть только в 64-битном просмотрщике (Windows 10 версии 1607 и новее).</p></section>
+<section class="section"><div class="steps">
+<article class="step"><h2>Откройте редактор на неподвижном изображении</h2><p>Когда на экране фотография, нажмите кнопку <b>Редактировать</b> <svg class="glyph" data-glyph="action.edit" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z" fill="currentColor"/></svg> на панели (значок без подписи; во всплывающей подсказке: <i>Открыть изображение в редакторе</i>) или щёлкните по картинке <b>средней кнопкой мыши</b> и выберите первый пункт меню - <b>Редактировать..</b>. Кнопка появляется только для неподвижных изображений: в видео и в проигрываемой анимации править нечего.</p></article>
+<article class="step"><h2>Выберите инструмент, цвет и толщину</h2><p>Кнопки на панели - только значки; название и клавишу показывает подсказка. Инструменты: <svg class="glyph" data-glyph="tool.brush" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M7,14c-1.66,0 -3,1.34 -3,3 0,1.31 -1.16,2 -2,2 0.92,1.22 2.49,2 4,2 2.21,0 4,-1.79 4,-4 0,-1.66 -1.34,-3 -3,-3zM20.71,4.63l-1.34,-1.34c-0.39,-0.39 -1.02,-0.39 -1.41,0L9,12.25 11.75,15l8.96,-8.96c0.39,-0.39 0.39,-1.02 0,-1.41z" fill="currentColor"/></svg><b>Кисть</b>, <svg class="glyph" data-glyph="tool.rectangle" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3,3 L21,3 L21,21 L3,21 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg><b>Прямоугольник</b> и <b>Залитый прямоугольник</b>, <svg class="glyph" data-glyph="tool.oval" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12,4 C7,4 3,8 3,12 C3,16 7,20 12,20 C17,20 21,16 21,12 C21,8 17,4 12,4 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg><b>Овал</b> и <b>Залитый овал</b>, а также <svg class="glyph" data-glyph="action.crop" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M17,15h2V7c0,-1.1 -0.9,-2 -2,-2H9v2h8v8zM7,17V1H5v4H1v2h4v10c0,1.1 0.9,2 2,2h10v4h2v-4h4v-2H7z" fill="currentColor"/></svg><b>Обрезка</b>. Образцы цвета рядом для быстрого выбора, полная палитра - в одной кнопке (<b>Выбрать цвет</b>). <b>Толщина</b> считается в пикселях самой картинки, поэтому линия выглядит одинаково независимо от масштаба показа.</p><ul><li>Удерживайте <kbd>Shift</kbd> при протягивании фигуры, чтобы получить ровный квадрат или круг.</li><li><kbd>Ctrl</kbd>+<kbd>Z</kbd> или кнопка <b>Отменить</b> убирает последний штрих.</li></ul></article>
+<article class="step"><h2>Обрежьте по рамке и подтвердите</h2><p>Выберите инструмент <b>Обрезка</b> и протяните рамку: углы и стороны тянутся, а сама рамка перемещается целиком. Нажмите <kbd>Enter</kbd> или <b>Применить обрезку</b>, чтобы отрезать, либо <kbd>Esc</kbd>, чтобы снять рамку и оставить картинку целой. Обрезка - обычный шаг истории: отмена возвращает её так же, как любой штрих.</p></article>
+<div class="callout"><b>Сохранение поверх оригинала не отменить</b><p>Кнопка <b>Сохранить</b> заменяет открытый файл, а прежняя версия нигде не остаётся - даже в Корзине. JPEG при записи ещё и пересжимается, а это необратимо, поэтому редактор один раз за сеанс спрашивает подтверждение (этот вопрос отключает настройка <b>Не запрашивать подтверждение</b> на странице <b>Файлы</b>). Чтобы сохранить оригинал, используйте <b>Сохранить как..</b>.</p></div><article class="step"><h2>Сохраните поверх оригинала или в новый файл</h2><p>Кнопка <b>Сохранить</b> заменяет открытый файл; запись сначала идёт во временный файл и лишь потом подменяет исходный, поэтому сбой не оставит половину фотографии. <b>Сохранить как..</b> пишет новый файл и предлагается всегда, когда замена невозможна: файл только для чтения, формат не записывается, файл занят другой программой. В строке состояния указано, что именно из этого, а не просто отказ.</p></article>
+<article class="step"><h2>Знайте, что происходит с файлом</h2><p>Записываются PNG, JPEG, BMP, TIFF и WEBP. Дата съёмки и остальные EXIF-данные переносятся там, где формат это позволяет, вместе с цветовым профилем, XMP и IPTC, с тремя поправками: маленькая встроенная в EXIF миниатюра предпросмотра не сохраняется (она по-прежнему показывала бы картинку до правки), записанный размер в пикселях пересчитывается под новый, а тег ориентации приводится в соответствие с реально записанными пикселями. Если метаданные оригинала не удаётся прочитать, картинка всё равно сохраняется, но без них. GIF, ICO и ещё несколько форматов здесь намеренно только для чтения, а выход - <b>Сохранить как..</b> в другом формате.</p></article>
+</div></section>
+<section class="section two"><div class="callout"><b>Редактор работает с оригиналом</b><p>Он читает байты самого файла, а не то, что показано на экране, поэтому поворот, сделанный клавишей <kbd>R</kbd> в просмотрщике, не впечатывается, а WEBP не превращается тихо во что-то другое. Сохраняется та картинка, которую вы открыли, плюс ваши правки.</p></div><div class="callout"><b>Только 64-битная программа</b><p>Редактор входит в современную 64-битную сборку для Windows 10 и 11. 32-битная сборка для Windows 7 и 8.1 остаётся просмотрщиком и сортировщиком: она не записывает пиксели на диск.</p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавиши, масштаб и полный экран</span></a>
+<a href="how-to-ocr.html"><b>HOW TO · OCR</b><span>Распознавание и перевод текста</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Все страницы сайта по темам</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Что значат термины сайта</span></a>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

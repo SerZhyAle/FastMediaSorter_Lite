@@ -30,6 +30,9 @@ Partial Public Class Main_Form
     ''' <summary>Ticket 222 (7.4): the viewer's ONE entry into scheduled file operations - a launcher that wakes
     ''' the Share Manager, which owns the list, the editor and the history. Nothing else of the feature is here.</summary>
     Private folder_Menu_Schedule_Item As ToolStripMenuItem
+    ''' <summary>L0297: the same wake with no folder - the window-level command (the assignable shortcut's
+    ''' visible route). Always in the menu, whatever is on screen.</summary>
+    Private folder_Menu_Schedule_Window_Item As ToolStripMenuItem
     Private folder_Menu_Resources_Item As ToolStripMenuItem
     Private folder_Menu_StreamCatalog_Item As ToolStripMenuItem
     Private folder_Combo_Edit_Hook As ComboEditContextMenuHook
@@ -80,6 +83,12 @@ Partial Public Class Main_Form
             folder_Menu_Schedule_Item = New ToolStripMenuItem()
             AddHandler folder_Menu_Schedule_Item.Click, Sub() ActivateScheduleEntryPoint()
             folder_Context_Menu.Items.Add(folder_Menu_Schedule_Item)
+
+            ' L0297: the folderless command - the scheduling window on its own. The item above it is
+            ' folder-specific (its source prefill); this one is the shortcut action's visible route.
+            folder_Menu_Schedule_Window_Item = New ToolStripMenuItem()
+            AddHandler folder_Menu_Schedule_Window_Item.Click, Sub() ActivateScheduleWindowEntryPoint()
+            folder_Context_Menu.Items.Add(folder_Menu_Schedule_Window_Item)
 
             folder_Menu_Broadcast_Item = New ToolStripMenuItem()
             AddHandler folder_Menu_Broadcast_Item.Click, Sub() ActivateBroadcastEntryPoint(ResolveCurrentFolder())
@@ -179,6 +188,11 @@ Partial Public Class Main_Form
         If folder_Menu_Schedule_Item IsNot Nothing Then
             folder_Menu_Schedule_Item.Text = Localization.T("Запланировать операцию для этой папки..")
             folder_Menu_Schedule_Item.ToolTipText = Localization.T("Открыть Share Manager: новая операция по расписанию с этой папкой в качестве источника")
+        End If
+
+        If folder_Menu_Schedule_Window_Item IsNot Nothing Then
+            folder_Menu_Schedule_Window_Item.Text = Localization.T("Операции по расписанию..")
+            folder_Menu_Schedule_Window_Item.ToolTipText = Localization.T("Открыть управление операциями по расписанию")
         End If
 
         If folder_Menu_Broadcast_Item IsNot Nothing Then

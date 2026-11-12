@@ -173,8 +173,9 @@ Friend NotInheritable Class Resource_Phone_Code_Form
     ''' <summary>The same bounded clipboard door as every other intake (text, or a screenshot of the phone's QR),
     ''' checked by the one reader before the window closes - a clipboard that is not a code says so here and the
     ''' window stays open for the phone.</summary>
-    Private Sub OnPasteClicked(sender As Object, e As EventArgs)
-        Dim qr As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+    Private Async Sub OnPasteClicked(sender As Object, e As EventArgs)
+        Dim qr As QrDecodeResult = Await QrCodeDecoder.DecodeClipboardAsync()
+        If IsDisposed Then Return
         If Not qr.Succeeded Then
             _statusLabel.Text = qr.FailureMessage
             Return

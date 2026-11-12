@@ -86,19 +86,25 @@ Friend Module ScheduledDriveRegistry
     Friend Function IsSignedIn() As Boolean
         If IsSignedInOverride IsNot Nothing Then Return IsSignedInOverride.Invoke()
         Try
-            Dim raw As String = ResourceRegistry.HiveRead("Exchange_GoogleSignedIn")
-            Return raw = "1"
-        Catch
+            Return DriveChannelHosts.TokenPresent.Invoke()
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
             Return False
         End Try
     End Function
 
+    ''' <summary>Opens a Drive location over the process's channel (ticket 269 P4); no network is touched here.</summary>
     Friend Function OpenSide(location As ScheduledLocation) As ScheduledSideOpen
         If OpenSideOverride IsNot Nothing Then Return OpenSideOverride.Invoke(location)
         If Not IsSignedIn() Then
             Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.SignedOut, location.Describe()))
         End If
-        Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.Offline, location.Describe()))
+        Dim host As DriveChannelHost = DriveChannelHosts.Current()
+        host.StartIfSignedIn()
+        Dim service As ExchangeDriveService = host.Service
+        If service Is Nothing Then
+            Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.DriveUnavailable, location.Describe()))
+        End If
+        Return ScheduledSideOpen.Opened(New DriveScheduledSide(location, service.Packets, service.Client, New DriveQueueRequestPort(service.Packets), AddressOf service.PollSoon))
     End Function
 
 End Module
@@ -299,11 +305,25 @@ Friend NotInheritable Class ProviderTransfer
                                 targetRelative As String, overwrite As Boolean, ct As CancellationToken) As TransferOutcome
         Dim targetPath As String = target.Combine(targetRelative)
         EnsureParentFolders(target, targetPath)
-        Dim plan As New TransferPlan(kind, EndpointOf(source, source.Combine(entry.RelativePath)),
-                                     EndpointOf(target, targetPath),
-                                     If(overwrite, ConflictPolicy.Replace, ConflictPolicy.Fail), ScratchFolder())
-        Return TransferExecutor.Execute(plan, Nothing, ct)
+        Dim scratch As String = ScratchFolder()
+        Try
+            Dim plan As New TransferPlan(kind, EndpointOf(source, source.Combine(entry.RelativePath)),
+                                         EndpointOf(target, targetPath),
+                                         If(overwrite, ConflictPolicy.Replace, ConflictPolicy.Fail), scratch)
+            Return TransferExecutor.Execute(plan, Nothing, ct)
+        Finally
+            RemoveScratchFolder(scratch)
+        End Try
     End Function
+
+    ''' <summary>The executor takes its own files out of the scratch folder; the folder is ours, one per transfer.</summary>
+    Private Shared Sub RemoveScratchFolder(folder As String)
+        Try
+            Directory.Delete(folder, True)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            AppFileLogger.LogException("Scheduled operations: removing a transfer's temporary folder", ex)
+        End Try
+    End Sub
 
     ''' <summary>The structure of the source is kept (4.2), so a subfolder may not exist yet on the target. The
     ''' viewer's executor writes into a folder; it does not make one - so the folders are made here, one level at
@@ -373,6 +393,8 @@ Friend NotInheritable Class ProviderTransfer
     ''' <summary>Deleting on a resource is permanent: there is no bin on a server (4.3). The file must still be
     ''' the one that was listed, and the removal is confirmed by a stat - never assumed.</summary>
     Public Function DeleteFile(side As IScheduledSide, entry As SideEntry, ct As CancellationToken) As String Implements IScheduledTransfer.DeleteFile
+        Dim staged As DriveScheduledSide = TryCast(side, DriveScheduledSide)
+        If staged IsNot Nothing Then Return staged.DeleteStaged(entry)
         Dim provider As ProviderSide = TryCast(side, ProviderSide)
         If provider Is Nothing Then Throw New NotSupportedException()
         Dim path As String = side.Combine(entry.RelativePath)

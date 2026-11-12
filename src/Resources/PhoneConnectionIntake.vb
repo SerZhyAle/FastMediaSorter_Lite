@@ -2,6 +2,7 @@
 Option Strict On
 
 Imports System.IO
+Imports System.Threading.Tasks
 
 ''' <summary>
 ''' One intake for every input: typed/pasted text, config files (.fmscfg, .json, .txt),
@@ -81,8 +82,8 @@ Friend NotInheritable Class PhoneConnectionIntake
     End Function
 
     ''' <summary>Reads clipboard intake: decodes QR if screenshot image, otherwise reads text.</summary>
-    Friend Shared Function ReadClipboard() As FmsConfigReadResult
-        Dim qr As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+    Friend Shared Async Function ReadClipboardAsync() As Task(Of FmsConfigReadResult)
+        Dim qr As QrDecodeResult = Await QrCodeDecoder.DecodeClipboardAsync().ConfigureAwait(False)
         If qr.Succeeded Then
             Return ReadText(qr.Text)
         End If

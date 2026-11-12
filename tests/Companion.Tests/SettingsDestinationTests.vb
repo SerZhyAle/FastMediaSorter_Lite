@@ -19,6 +19,7 @@ Public Class SettingsDestinationTests
     <InlineData("network", SettingsDestination.Manager)>
     <InlineData("hosting", SettingsDestination.Manager)>
     <InlineData("exchange", SettingsDestination.ExchangeServer)>
+    <InlineData("remote-exchange", SettingsDestination.RemoteExchange)>
     <InlineData("exchange-account", SettingsDestination.Manager)>
     <InlineData("scheduled", SettingsDestination.Manager)>
     <InlineData("", SettingsDestination.Manager)>
@@ -32,10 +33,22 @@ Public Class SettingsDestinationTests
         Assert.True(SettingsRoutes.Available(SettingsDestination.Manager, True))
         Assert.False(SettingsRoutes.Available(SettingsDestination.ExchangeServer, False))
         Assert.True(SettingsRoutes.Available(SettingsDestination.ExchangeServer, True))
-        ' Two windows own pages (253 R-1): two records, two sets of bounds.
-        Assert.Equal(2, [Enum].GetValues(Of SettingsDestination)().Length)
-        Assert.Equal(2, [Enum].GetValues(Of SettingsDestination)().Select(Function(d) SettingsRoutes.ContextKey(d)).Distinct().Count())
-        Assert.Equal(2, [Enum].GetValues(Of SettingsDestination)().Select(Function(d) SettingsRoutes.BoundsKey(d)).Distinct().Count())
+        ' Two windows own pages (253 R-1) and a third exists while its gate is open (L0278): three records, three sets of bounds.
+        Assert.Equal(3, [Enum].GetValues(Of SettingsDestination)().Length)
+        Assert.Equal(3, [Enum].GetValues(Of SettingsDestination)().Select(Function(d) SettingsRoutes.ContextKey(d)).Distinct().Count())
+        Assert.Equal(3, [Enum].GetValues(Of SettingsDestination)().Select(Function(d) SettingsRoutes.BoundsKey(d)).Distinct().Count())
+    End Sub
+
+    ''' <summary>The remote administration window follows its own gate and nothing else: a PC that administers a server elsewhere
+    ''' has no local server component, and a machine with one gets no remote window while the gate is shut (L0278 5.1, Q278-13).</summary>
+    <Fact>
+    Public Sub The_remote_window_follows_its_gate_and_not_the_local_component()
+        Dim expected = ExchangeRemoteAdminFeatures.IsEnabled()
+        Assert.Equal(expected, SettingsRoutes.Available(SettingsDestination.RemoteExchange, False))
+        Assert.Equal(expected, SettingsRoutes.Available(SettingsDestination.RemoteExchange, True))
+        Assert.Equal(expected, SettingsRoutes.PageAvailable("remote-exchange", False, False))
+        Assert.Equal("Share_RemoteExchangeSettingsContext", SettingsRoutes.ContextKey(SettingsDestination.RemoteExchange))
+        Assert.Equal("Share_RemoteExchangeSettingsBounds", SettingsRoutes.BoundsKey(SettingsDestination.RemoteExchange))
     End Sub
 
     ''' <summary>A page is available by the component that owns it, not by the window that holds it (253 R-4): the SFTP pages
@@ -319,9 +332,11 @@ Public Class SettingsDestinationTests
                 Assert.Equal("hosting", OpenAndClose(SettingsDestination.Manager))
                 Assert.Equal("exchange", OpenAndClose(SettingsDestination.ExchangeServer))
             End Sub)
-            ' The retired record is a read-only seed; every destination now owns a record of its own.
+            ' The retired record is a read-only seed; every destination it seeded now owns a record of its own. The remote
+            ' administration window is younger than that record, seeds from nothing and was not opened here.
             Assert.Equal(legacyHosting, GetSetting(scratch, hive, SettingsRoutes.LegacyContextKey, ""))
-            For Each destination In [Enum].GetValues(Of SettingsDestination)()
+            Assert.Equal(String.Empty, GetSetting(scratch, hive, SettingsRoutes.ContextKey(SettingsDestination.RemoteExchange), ""))
+            For Each destination In {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
                 Assert.NotEqual(String.Empty, GetSetting(scratch, hive, SettingsRoutes.ContextKey(destination), ""))
                 Assert.NotEqual(String.Empty, GetSetting(scratch, hive, SettingsRoutes.BoundsKey(destination), ""))
             Next

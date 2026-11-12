@@ -385,6 +385,8 @@ Partial Public Class Main_Form
         If video_Chrome_Host IsNot Nothing AndAlso Not video_Chrome_Host.Visible Then
             PinToViewerBand(video_Chrome_Host)
             video_Chrome_Host.Show()
+            ' The transport bar shown under an open list stays under it (L0302).
+            ChromeMenu.RaiseOpenChain()
         End If
         If Not video_Controls.Visible Then
             video_Controls.Visible = True

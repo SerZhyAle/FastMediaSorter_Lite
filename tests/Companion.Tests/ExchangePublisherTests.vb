@@ -763,6 +763,82 @@ Public Class ExchangePublisherTests
         End Using
     End Function
 
+    ''' <summary>The state the producer hands the agent for a broadcast with no relay and no password.</summary>
+    Private Shared Function RunningBroadcast(id As String) As LiveProducerState
+        Dim input As New LiveDescriptorInput With {
+            .Url = "http://127.0.0.1:1/live.aac", .Mode = "AUDIO_ONLY", .Title = "t", .SourceId = "src", .AudioCodec = "aac",
+            .SampleRateHz = 44100, .Channels = 1, .AllowLanViewers = True, .InnerUrl = "http://127.0.0.1:1/live.aac"
+        }
+        Return New LiveProducerState With {
+            .Running = True, .Mode = "AUDIO_ONLY", .Url = input.Url, .Port = 1, .ListenerAddress = "127.0.0.1", .SourceName = "src",
+            .BroadcastId = id, .Credentials = LiveCredentialPairs.ForLink("", iterations:=2),
+            .DescriptorJson = LiveProducerDescriptorWriter.BuildJson(input)
+        }
+    End Function
+
+    <Fact>
+    Public Async Function Leaving_ends_the_running_broadcast_first_and_the_next_sign_in_starts_nothing() As Task
+        Using acc As New ExchangeStubAccount()
+            Using kit As New Kit()
+                kit.Settings.SetPublishShares(True)
+                Using agent As ExchangeDeviceAgent = Await EnrollOnlineAsync(kit, acc)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.PublishedNow().Count = 2))
+                    Dim state As LiveProducerState = RunningBroadcast("bcast-0123456789abcdeA")
+                    Dim hub As New LiveBroadcastHub(New LiveAudioJoinPolicy(), Function() 0L)
+                    agent.OnBroadcastStarted(state, hub, hub)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("broadcast-start") = 1))
+
+                    Assert.True(Await agent.LeaveAccountAsync(CancellationToken.None))
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("revoke") = 1))
+
+                    ' items AB and BL: broadcast-end, then every unpublish, then the revoke
+                    Dim types As List(Of String) = acc.Received().Select(Function(line) line.Substring(line.IndexOf(":"c) + 1)).ToList()
+                    Dim ended As Integer = types.IndexOf("broadcast-end")
+                    Dim firstUnpublish As Integer = types.IndexOf("unpublish")
+                    Dim lastUnpublish As Integer = types.LastIndexOf("unpublish")
+                    Dim revoked As Integer = types.IndexOf("revoke")
+                    Assert.True(ended >= 0, "the running broadcast is ended")
+                    Assert.True(ended < firstUnpublish, "the broadcast ends before the resources go")
+                    Assert.True(lastUnpublish < revoked, "the resources go before the device")
+
+                    ' nothing of it stays: no update goes out, and the welcome of a later sign-in starts nothing (170 rule 1)
+                    Assert.False(Await agent.OnBroadcastChangedAsync(state))
+                    Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.EnrollAsync(kit.Rig.Request(acc), CancellationToken.None)).Outcome)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetStatus().State = ExchangeAgentState.Online))
+                    Await Task.Delay(300)                                                   ' a start of the welcome would have arrived by now
+                    Assert.Equal(1, acc.CountOf("broadcast-start"))
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Leaving_or_disconnecting_with_a_broadcast_and_no_stream_keeps_nothing_for_the_next_sign_in() As Task
+        Using acc As New ExchangeStubAccount()
+            Using kit As New Kit()
+                Using agent As ExchangeDeviceAgent = Await EnrollOnlineAsync(kit, acc)
+                    Dim hub As New LiveBroadcastHub(New LiveAudioJoinPolicy(), Function() 0L)
+                    agent.OnBroadcastStarted(RunningBroadcast("bcast-0123456789abcdeA"), hub, hub)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("broadcast-start") = 1))
+                    Await agent.StopAsync()                                                 ' the stream is gone, the broadcast is still held
+                    Await agent.LeaveAccountAsync(CancellationToken.None)
+                    Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.EnrollAsync(kit.Rig.Request(acc), CancellationToken.None)).Outcome)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetStatus().State = ExchangeAgentState.Online))
+                    Await Task.Delay(300)
+                    Assert.Equal(1, acc.CountOf("broadcast-start"))
+
+                    agent.OnBroadcastStarted(RunningBroadcast("bcast-0123456789abcdeB"), hub, hub)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("broadcast-start") = 2))
+                    Await agent.DisconnectAsync()
+                    Assert.Equal(ExchangeEnrollOutcome.Enrolled, (Await agent.EnrollAsync(kit.Rig.Request(acc), CancellationToken.None)).Outcome)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetStatus().State = ExchangeAgentState.Online))
+                    Await Task.Delay(300)
+                    Assert.Equal(2, acc.CountOf("broadcast-start"))
+                End Using
+            End Using
+        End Using
+    End Function
+
     <Fact>
     Public Async Function Leaving_with_the_server_gone_still_forgets_locally_and_does_not_hang() As Task
         Dim agent As ExchangeDeviceAgent

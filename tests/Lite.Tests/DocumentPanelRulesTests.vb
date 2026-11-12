@@ -38,9 +38,10 @@ Public Class DocumentPanelRulesTests
                      String.Join(" ", DocumentPanelRules.ItemIds(DocumentReaderKind.Epub)))
         Assert.Equal("doc_Back doc_Forward doc_Reload doc_Find doc_FindPrev doc_FindNext doc_FindCount " &
                      "doc_ZoomOut doc_ZoomValue doc_ZoomIn doc_FitWidth doc_ReaderMode doc_ResetAppearance " &
-                     "doc_ViewSource doc_OpenInBrowser doc_Print doc_Blocked doc_ReturnToFiles doc_Context",
+                     "doc_ViewSource doc_OpenInBrowser doc_Print doc_Blocked doc_ConvertResult doc_ReturnToFiles doc_Context",
                      String.Join(" ", DocumentPanelRules.ItemIds(DocumentReaderKind.Html)))
-        Assert.Equal("doc_ZoomOut doc_ZoomIn doc_ZoomReset doc_Context",
+        Assert.Equal("doc_TextEdit doc_TextSave doc_TextSaveAs doc_TextExcerpt doc_TextExternal doc_TextFind doc_TextReplace doc_TextEncoding " &
+                     "doc_TextLineEnding doc_TextMarkdown doc_ZoomOut doc_ZoomIn doc_ZoomReset doc_Context",
                      String.Join(" ", DocumentPanelRules.ItemIds(DocumentReaderKind.Text)))
     End Sub
 
@@ -83,11 +84,15 @@ Public Class DocumentPanelRulesTests
     End Function
 
     <Fact>
-    Public Sub Only_the_html_blocked_menu_and_view_source_are_conditional()
+    Public Sub Only_the_items_that_come_and_go_are_conditional()
         For Each kind In Readers
             Dim conditional = DocumentPanelRules.ItemIds(kind).Where(Function(id) DocumentPanelRules.IsConditional(kind, id)).ToArray()
             If kind = DocumentReaderKind.Html Then
-                Assert.Equal({"doc_ViewSource", "doc_Blocked"}, conditional)
+                Assert.Equal({"doc_ViewSource", "doc_Blocked", "doc_ConvertResult"}, conditional)
+            ElseIf kind = DocumentReaderKind.Text Then
+                ' The saving half belongs to the editor, the zoom to the reader, the excerpt and the external program to a file over the limit.
+                Assert.Equal({"doc_TextExcerpt", "doc_TextExternal", "doc_TextLineEnding", "doc_TextMarkdown", "doc_TextReplace", "doc_TextSave", "doc_TextSaveAs", "doc_ZoomIn", "doc_ZoomOut", "doc_ZoomReset"},
+                             conditional.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
             Else
                 Assert.Empty(conditional)
             End If
@@ -101,7 +106,7 @@ Public Class DocumentPanelRulesTests
         For Each id In {"doc_PaneOutline", "doc_PaneSearch", "doc_PaneText", "doc_PaneBookmarks", "doc_PaneThumbnails", "doc_ReaderMode"}
             Assert.Equal(DocumentItemKind.Toggle, DocumentPanelRules.KindOf(id))
         Next
-        For Each id In {"doc_Layout", "doc_ColorMode", "doc_Blocked"}
+        For Each id In {"doc_Layout", "doc_ColorMode", "doc_Blocked", "doc_ConvertResult"}
             Assert.Equal(DocumentItemKind.MenuButton, DocumentPanelRules.KindOf(id))
         Next
         For Each id In {"doc_Context", "doc_FindCount"}

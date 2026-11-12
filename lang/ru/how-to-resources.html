@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru" data-page-lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Сервер как обычная папка | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Откройте SFTP-сервер или сетевую папку с паролем как обычную папку в Fast Media Sorter &amp; Sharing for Windows; ключ сервера закреплён.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-resources.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-resources.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-resources.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Сервер как обычная папка | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Откройте SFTP-сервер или сетевую папку с паролем как обычную папку в Fast Media Sorter &amp; Sharing for Windows; ключ сервера закреплён.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-resources.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Сервер как обычная папка | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Откройте SFTP-сервер или сетевую папку с паролем как обычную папку в Fast Media Sorter &amp; Sharing for Windows; ключ сервера закреплён.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортируйте фото и видео одной клавишей на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Сервер как обычная папка | Fast Media Sorter & Sharing","description":"Откройте SFTP-сервер или сетевую папку с паролем как обычную папку в Fast Media Sorter & Sharing for Windows; ключ сервера закреплён.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-resources.html","inLanguage":"ru","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основная навигация</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Язык"><a hreflang="ru" href="how-to-resources.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-resources.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="../uk/how-to-resources.html" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Тёмная тема</span></button><a class="btn btn-primary" href="./#get">Скачать</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · RESOURCES</span><h1>Открыть сервер или сетевую папку как обычную папку</h1><p class="lead">Домашний NAS, компьютер, раздающий папки через <a href="publish-folders-android.html">Share Manager</a>, любой SFTP-сервер, сетевая папка с паролем: добавьте её один раз - и картинки с видео листаются как файлы на диске, а ключ сервера проверяется при каждом подключении. Это возможность 64-битного просмотрщика (Windows 10 версии 1607 и новее); в 32-битной резервной сборке для Windows 7 и 8.1 ресурсов нет.</p></section>
+<section class="section"><div class="steps">
+<article class="step"><h2>Добавьте сервер</h2><p>Откройте <b>Настройки</b> (<kbd>F2</kbd>) &rarr; <b><svg class="glyph" data-glyph="source.resource" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M22,16V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v12c0,1.1 0.9,2 2,2h12C21.1,18 22,17.1 22,16zM13,6.5L13,13.5L18,10ZM2,6v14c0,1.1 0.9,2 2,2h14v-2H4V6H2z" fill="currentColor" fill-rule="evenodd"/></svg>Сервер и ресурсы</b> &rarr; <b>Ресурсы</b> и нажмите <b>«Добавить..»</b>: адрес, порт (по умолчанию 22), пользователь, пароль и папка на сервере. Тот же список - в меню папки, <b>«Ресурсы» - «Управление ресурсами..»</b>. Сетевая папка с паролем - второй тип в том же окне. Есть файл из Share Manager? Нажмите <b>«Импорт из файла..»</b> - или <b>«Импорт из буфера»</b> для текста кода, - и всё, включая ключ сервера, добавится сразу. Файл <b>.fmscfg</b> можно и просто перетащить на окно просмотрщика.</p></article>
+<article class="step"><h2>Откройте</h2><p>Выберите ресурс в списке и нажмите <b>«Открыть»</b> - или найдите его в одну кнопку <b><svg class="glyph" data-glyph="source.resource" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M22,16V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v12c0,1.1 0.9,2 2,2h12C21.1,18 22,17.1 22,16zM13,6.5L13,13.5L18,10ZM2,6v14c0,1.1 0.9,2 2,2h14v-2H4V6H2z" fill="currentColor" fill-rule="evenodd"/></svg>«Ресурс»</b> на панели инструментов (она появляется вместе с первым сохранённым ресурсом и открывает последние в один щелчок), в подменю <b>«Ресурсы»</b> меню папки. То же делает адрес <b>sftp://пользователь@сервер:порт/папка</b>, набранный в поле каталога, и <kbd>Enter</kbd>; если вы ушли с этой папки, при следующем запуске программа откроет её снова. В первый раз сервер, добавленный вручную, покажет отпечаток своего ключа и спросит, доверять ли ему; ответ по умолчанию - «Нет». Файл из Share Manager приносит ключ с собой, поэтому проверка идёт уже при первом подключении.</p></article>
+<article class="step"><h2>Листайте и разбирайте как обычно</h2><p>Картинки, видео, звук и документы открываются так, будто лежат на этом компьютере: программа подгружает файл, который собирается показать, и следующий, а копии удаляет, когда вы уходите. <kbd>RE</kbd> заново спрашивает сервер. <kbd>Del</kbd>, <kbd>0</kbd>-<kbd>9</kbd>, <kbd>Shift</kbd>+цифра, <kbd>F6</kbd> и <kbd>U</kbd> действуют на файлы самого сервера; перемещение проверяется по содержимому до того, как оригинал тронут, поэтому оборванное соединение не теряет файлов. Папка, которую владелец раздал только для чтения, честно об этом говорит, а не падает на полпути.</p></article>
+<div class="callout"><b>Экспортированный файл - ключ доступа</b><p>Передавайте его только тому, кому он нужен: у кого он есть, тот может открыть сервер.</p></div>
+<article class="step"><h2>Передайте сервер на другой компьютер</h2><p>Выберите ресурс в <b>Настройки</b> &rarr; <b>Сервер и ресурсы</b> &rarr; <b>Ресурсы</b> и нажмите <b>«Экспорт..»</b>: программа приготовит тот же файл <b>.fmscfg</b>, что делает Share Manager, с уже проверенным ключом сервера внутри, - на другом компьютере, на этом же или на телефоне он импортируется проверенным и откроется без вопроса о доверии. Сохраните его в файл или скопируйте в буфер как текст или код. По умолчанию файл уходит <b>без пароля</b>: получателя спросят его один раз. Сервер с неподтверждённым ключом и сетевая папка Windows не экспортируются - программа скажет, почему.</p></article>
+<article class="step"><h2>Сортируйте прямо в папку на сервере</h2><p>Папкой назначения <kbd>0</kbd>-<kbd>9</kbd> может быть папка сохранённого сервера: в <b>Настройки</b> &rarr; <b>Получатели</b> дважды щёлкните по папке слота и выберите ресурс вместо <b>«Папка на этом компьютере..»</b>, а при желании допишите после адреса подпапку. Слот показывает имя ресурса; первое нажатие подключается (один раз спросит пароль, если он не запомнен), файл отправляется, читается обратно и сверяется до того, как удалить оригинал. Слот работает только с сервером, ключ которого программа уже знает, - сначала откройте ресурс один раз, - и никогда с ресурсом только для чтения. Отмена перемещения клавишей <kbd>U</kbd> проверяет возвращённый файл и удаляет копию на сервере, если она не изменилась. Удаление из SFTP безвозвратно: общая настройка Корзины на него не влияет, восстановить удалённый оригинал нельзя. При перемещении оригинал удаляется после проверки копии и исходника; если удаление не удалось или его результат неизвестен, программа сообщает о незавершённом перемещении.</p></article>
+</div></section>
+<section class="section two"><div class="callout"><b>Если ключ изменился</b><p>Сервер, чей ключ не совпал с запомненным, не пускается, и показываются оба отпечатка: переустановленный сервер выглядит точно так же, как подделка. Если вы уверены в сервере, откройте ресурс через <b>«Изменить..»</b> и нажмите <b>«Забыть ключ сервера..»</b> - это осознанная кнопка, а не вопрос, который можно закрыть случайно.</p></div></section>
+<section class="section two"><div class="callout"><b>Папки под PIN-кодом</b><p>Общая папка, закрытая в Share Manager PIN-кодом, заставляет отказаться от импорта всего файла: просмотрщик не умеет открывать её без замка. Пароль хранится только в зашифрованном виде для вашей учётной записи Windows (или в памяти, если снять <b>«Запомнить пароль (защищён средствами Windows)»</b>).</p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавиши, масштаб и полный экран</span></a>
+<a href="publish-folders-android.html"><b>HOW TO · Android</b><span>Раздать папки на телефон Android по SFTP</span></a>
+<a href="how-to-ocr.html"><b>HOW TO · OCR</b><span>Распознавание и перевод текста</span></a>
+<a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-ru.html" target="_blank" rel="noopener noreferrer"><b>PORTAL · Домашняя сеть</b><span>Свой ПК или телефон как сервер, дома и в пути</span><span class="sr-only"> (откроется в новой вкладке)</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Все страницы сайта по темам</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Что значат термины сайта</span></a>
+</div></section>
+<section id="sharing-settings-windows">
+<h2>Где находятся настройки общего доступа</h2>
+<p>Настройки находятся в двух окнах. В настройках менеджера есть группа «Общий доступ SFTP» - порт SFTP, локальная сеть и страница хостинга; она видна, пока установлен этот компонент, - рядом с общими параметрами, удалённой учётной записью, публикацией и расписаниями. Установленный локальный сервер обмена настраивается в отдельном окне. Ссылка слева внизу открывает второе окно, сохраняя текущее. Открытие настроек не запускает сервер. В прежних сборках общий доступ SFTP был в отдельном окне.</p>
+<p><a href="../../docs/help/ru/sftp-settings.html">SFTP</a> · <a href="../../docs/help/ru/share-settings.html">Справка настроек менеджера</a></p>
+</section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Android &amp; SFTP HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Поддержка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

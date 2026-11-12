@@ -390,5 +390,34 @@ Public Class ChromeFoundationTests
         Assert.False(ChromeTheme.IsDark(Color.FromArgb(200, 210, 220)))
     End Sub
 
+    <Fact>
+    Public Sub Mid_tone_olive_and_khaki_colors_resolve_to_dark_with_white_ink()
+        Dim olive As Color = Color.FromArgb(80, 91, 69)
+        Dim khaki As Color = Color.FromArgb(148, 132, 119)
+        Assert.True(ChromeTheme.IsDark(olive))
+        Assert.True(ChromeTheme.IsDark(khaki))
+        Assert.Equal(Color.White, ChromeTheme.ContrastingText(olive))
+        Assert.Equal(Color.White, ChromeTheme.ContrastingText(khaki))
+        Dim themeOlive As ChromeTheme = ChromeTheme.FromScheme(olive, Color.Black, False)
+        Assert.Equal(Color.White, themeOlive.Foreground)
+        Dim themeKhaki As ChromeTheme = ChromeTheme.FromScheme(khaki, Color.Black, False)
+        Assert.Equal(Color.White, themeKhaki.Foreground)
+    End Sub
+
+    <Fact>
+    Public Sub Menu_theme_is_opaque_and_uses_palette_surfaces()
+        Dim menuDark As ChromeTheme = ChromeTheme.ForMenu(ThemePalette.Dark)
+        Assert.Equal(1.0R, menuDark.PanelOpacity)
+        Assert.False(menuDark.AllowsAnimation)
+        Assert.Equal(ThemePalette.Dark.SurfaceRaised, menuDark.PanelFill)
+        Assert.Equal(ThemePalette.Dark.TextPrimary, menuDark.Foreground)
+
+        Dim menuLight As ChromeTheme = ChromeTheme.ForMenu(ThemePalette.Light)
+        Assert.Equal(1.0R, menuLight.PanelOpacity)
+        Assert.False(menuLight.AllowsAnimation)
+        Assert.Equal(ThemePalette.Light.SurfaceRaised, menuLight.PanelFill)
+        Assert.Equal(ThemePalette.Light.TextPrimary, menuLight.Foreground)
+    End Sub
+
 End Class
 #End If

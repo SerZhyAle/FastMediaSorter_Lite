@@ -98,7 +98,8 @@ Public Class CustomHotkeysTests
         Dim map As Dictionary(Of String, String) = CustomHotkeys.Load(
             "{""noSuchAction"":""Ctrl+Q"",""undo"":""F11"",""help"":""Ctrl+H""}")
         Assert.Equal(2, map.Count)
-        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
+        Assert.True(CustomHotkeys.IsInert(map("undo")))
+        Assert.Equal(String.Empty, CustomHotkeys.EffectiveCombo(map, CustomHotkeys.Find("undo")))
         Assert.Equal("Ctrl+H", map("help"))
     End Sub
 
@@ -129,10 +130,103 @@ Public Class CustomHotkeysTests
     Public Sub An_unusable_stored_chord_disables_the_action_and_retires_its_default(written As String)
         Dim map = CustomHotkeys.Load(System.Text.Json.JsonSerializer.Serialize(
             New Dictionary(Of String, String) From {{"undo", written}}))
-        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
+        Assert.True(CustomHotkeys.IsInert(map("undo")))
         Assert.True(CustomHotkeys.IsRetiredDefault(map, "U"))
         Assert.Equal(String.Empty, CustomHotkeys.EffectiveCombo(map, CustomHotkeys.Find("undo")))
-        Assert.Equal(CustomHotkeys.NoShortcut, CustomHotkeys.Load(CustomHotkeys.Save(map))("undo"))
+        Assert.Equal(String.Empty, CustomHotkeys.OwnerOfOverride(map, written))
+        ' Ticket 294: the chord is never rewritten as "-" - a save writes back what was stored.
+        Dim reloaded = CustomHotkeys.Load(CustomHotkeys.Save(map))
+        Assert.Equal(map("undo"), reloaded("undo"))
+        Assert.NotEqual(CustomHotkeys.NoShortcut, reloaded("undo"))
+    End Sub
+
+    ''' <summary>Ticket 294, done criterion 1: a token the viewer does not know (a trigger a newer producer
+    ''' added, a mouse button token, two triggers) survives a load and a save byte for byte.</summary>
+    <Theory>
+    <InlineData("Ctrl+Shift+Hyper+F12")>
+    <InlineData("Ctrl+X1Click")>
+    <InlineData("Ctrl+A+B")>
+    <InlineData("Hyper")>
+    Public Sub An_unknown_stored_token_survives_a_load_and_a_save_unchanged(written As String)
+        Dim json = System.Text.Json.JsonSerializer.Serialize(New Dictionary(Of String, String) From {{"help", written}})
+        Dim saved = CustomHotkeys.Save(CustomHotkeys.Load(json))
+        Dim back = System.Text.Json.JsonSerializer.Deserialize(Of Dictionary(Of String, String))(saved)
+        Assert.Equal(written, back("help"))
+        Assert.Equal(saved, CustomHotkeys.Save(CustomHotkeys.Load(saved)))
+    End Sub
+
+    <Theory>
+    <InlineData("")>
+    <InlineData("   ")>
+    Public Sub A_blank_stored_value_still_means_no_shortcut(written As String)
+        Dim map = CustomHotkeys.Load(System.Text.Json.JsonSerializer.Serialize(
+            New Dictionary(Of String, String) From {{"undo", written}}))
+        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
+    End Sub
+
+    ''' <summary>Ticket 294, done criterion 1: every trigger family INPUT-CHORD 0.4/0.5 admits, in a
+    ''' conforming producer's spelling (any case, rule 2 and 0.5 item A), binds and saves canonically.</summary>
+    <Theory>
+    <InlineData("Ctrl+Shift+NumPad5", "Ctrl+Shift+Numpad5")>
+    <InlineData("numpadadd", "NumpadAdd")>
+    <InlineData("Alt+NUMPADSUBTRACT", "Alt+NumpadSubtract")>
+    <InlineData("NumpadMultiply", "NumpadMultiply")>
+    <InlineData("Ctrl+NumpadDivide", "Ctrl+NumpadDivide")>
+    <InlineData("Shift+NumpadDecimal", "Shift+NumpadDecimal")>
+    <InlineData("Ctrl+left", "Ctrl+Left")>
+    <InlineData("Alt+Right", "Alt+Right")>
+    <InlineData("Ctrl+Shift+Up", "Ctrl+Shift+Up")>
+    <InlineData("down", "Down")>
+    <InlineData("Ctrl+bracketleft", "Ctrl+BracketLeft")>
+    <InlineData("BRACKETRIGHT", "BracketRight")>
+    <InlineData("Ctrl+period", "Ctrl+Period")>
+    <InlineData("Comma", "Comma")>
+    <InlineData("Ctrl+Equal", "Ctrl+Equal")>
+    <InlineData("Ctrl+minus", "Ctrl+Minus")>
+    <InlineData("Backslash", "Backslash")>
+    <InlineData("mediaplaypause", "MediaPlayPause")>
+    <InlineData("Ctrl+MediaTrackNext", "Ctrl+MediaTrackNext")>
+    <InlineData("MediaTrackPrevious", "MediaTrackPrevious")>
+    <InlineData("audiovolumeup", "AudioVolumeUp")>
+    <InlineData("AudioVolumeDown", "AudioVolumeDown")>
+    <InlineData("Shift+AudioVolumeMute", "Shift+AudioVolumeMute")>
+    <InlineData("Control + Shift + Return", "Ctrl+Shift+Enter")>
+    <InlineData("Ctrl+PgDn", "Ctrl+PageDown")>
+    Public Sub A_conforming_token_binds_and_saves_in_the_canonical_spelling(written As String, canonical As String)
+        Dim keyData As Keys = CustomHotkeys.Parse(written)
+        Assert.NotEqual(Keys.None, keyData)
+        Assert.Equal(canonical, CustomHotkeys.Format(keyData))
+        Dim json = System.Text.Json.JsonSerializer.Serialize(New Dictionary(Of String, String) From {{"help", written}})
+        Dim map = CustomHotkeys.Load(json)
+        Assert.Equal(canonical, map("help"))
+        Assert.Equal("help", CustomHotkeys.OwnerOfOverride(map, canonical))
+        Dim back = System.Text.Json.JsonSerializer.Deserialize(Of Dictionary(Of String, String))(CustomHotkeys.Save(map))
+        Assert.Equal(canonical, back("help"))
+    End Sub
+
+    ''' <summary>Ticket 294, done criterion 3: the defaults that moved to VIEWER-KEYBOARD (F full screen, F4
+    ''' picker, G panel, Space and the arrows on video) leave every stored remap as it was - a remap onto one of
+    ''' those keys still owns it, and a moved action's old home stays retired.</summary>
+    <Fact>
+    Public Sub A_profile_with_remaps_keeps_every_remap_after_the_defaults_moved()
+        Dim json = "{""undo"":""G"",""randomFile"":""F"",""chooseFile"":""Ctrl+O"",""mute"":""Shift+Space"",""help"":""Ctrl+Hyper+F1""}"
+        Dim map = CustomHotkeys.Load(json)
+        Assert.Equal("undo", CustomHotkeys.OwnerOfOverride(map, "G"))
+        Assert.Equal("randomFile", CustomHotkeys.OwnerOfOverride(map, "F"))
+        Assert.Equal("chooseFile", CustomHotkeys.OwnerOfOverride(map, "Ctrl+O"))
+        Assert.Equal("mute", CustomHotkeys.OwnerOfOverride(map, "Shift+Space"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "F4"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "U"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Y"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "G"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "F"))
+        Dim back = System.Text.Json.JsonSerializer.Deserialize(Of Dictionary(Of String, String))(
+            CustomHotkeys.Save(map))
+        Assert.Equal("G", back("undo"))
+        Assert.Equal("F", back("randomFile"))
+        Assert.Equal("Ctrl+O", back("chooseFile"))
+        Assert.Equal("Shift+Space", back("mute"))
+        Assert.Equal("Ctrl+Hyper+F1", back("help"))
     End Sub
 
     <Fact>

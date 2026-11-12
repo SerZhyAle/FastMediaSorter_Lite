@@ -396,6 +396,12 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("admin-reply", N("id"),
             New ExchangeMemberSpec("ok", ExchangeMemberKind.Flag, False, ExchangeOmit.Never),
             AnyR("data", omit:=WhenEmpty), T("code", omit:=WhenEmpty), T("error", omit:=WhenEmpty))
+        ' --- ticket L0296 / DEVICE-EXCHANGE 1.12 items EN-ER: the application settings standard. The names are snake case as
+        ' filed in the vectors; `settingsPayload` is the payload JSON as a STRING member, never parsed by the codec. ---
+        Row("settings_save_standard", T("appId", True), N("formatVersion"), T("settingsPayload", True), T("timestamp", omit:=WhenEmpty))
+        Row("settings_saved", T("appId", True), N("version"), T("updatedAt"))
+        Row("settings_get_standard", T("appId", True))
+        Row("settings_standard_payload", T("appId", True), N("formatVersion"), T("settingsPayload", True), T("updatedAt"))
     End Sub
 
     ''' <summary>The members of a type in wire order, or Nothing for a type this wire does not define.</summary>

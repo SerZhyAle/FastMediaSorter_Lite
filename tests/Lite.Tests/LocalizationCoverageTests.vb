@@ -76,10 +76,12 @@ Public Class LocalizationCoverageTests
     '''     the Latin one beside it: it is matched against recognized text to tell a word
     '''     from a run of consonants, and never displayed. "Translating" an alphabet is not
     '''     a meaningful operation.
+    '''   * TextEncodingDetector - the Cyrillic letter frequencies: decoded bytes are scored
+    '''     against them to tell one encoding from another, and they are never displayed.
     ''' The Share Manager has its own tables and its own copy of this test.
     ''' </summary>
     Private Shared ReadOnly Exempt As String() = {
-        "OcrLanguageCatalog.vb", "TranslationQuality.vb", "OcrTextFilter.vb",
+        "OcrLanguageCatalog.vb", "TranslationQuality.vb", "OcrTextFilter.vb", "TextEncodingDetector.vb",
         "IconMap.vb", "ConnectionDiagnosisLocalization.vb"}
 
     Private Shared Function Skip(srcPath As String) As Boolean

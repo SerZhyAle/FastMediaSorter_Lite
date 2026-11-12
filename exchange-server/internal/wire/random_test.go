@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"math/rand"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -95,6 +96,31 @@ func TestEnrollWithANullReceiverIsAnEnrollWithNone(t *testing.T) {
 			`","deviceName":"n","product":"fms-windows",` + bad + `}`
 		if _, err := Decode([]byte(b)); !errors.Is(err, ErrMalformed) {
 			t.Errorf("%s must stay malformed: %v", bad, err)
+		}
+	}
+}
+
+// TestRegisterBoundsItsReceiverAsEnrollDoes is ticket 239 CR-11's first item: the `receiver` of a
+// `register` becomes the device record's, so it passes the same CheckReceiver as an `enroll` - a list
+// that is not one of strings and a list or a name over its bound are refused (the record bound sits
+// above what a frame can carry).
+func TestRegisterBoundsItsReceiverAsEnrollDoes(t *testing.T) {
+	frame := func(receiver string) []byte {
+		return []byte(`{"schemaVersion":2,"type":"register","invitation":"` + idC + `","login":"bob","password":"Passw0rdTest",` +
+			`"deviceId":"` + idB + `","deviceName":"Phone","product":"fms-android"` + receiver + `}`)
+	}
+	for _, ok := range []string{``, `,"receiver":null`, `,"receiver":{"modes":["AUDIO_ONLY"],"transports":["HTTP_ADTS"]}`} {
+		if _, err := Decode(frame(ok)); err != nil {
+			t.Errorf("%s must decode: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{
+		`,"receiver":[]`, `,"receiver":{"modes":"x"}`, `,"receiver":{"modes":[1]}`,
+		`,"receiver":{"modes":["a","b","c","d","e","f","g","h","i"]}`,
+		`,"receiver":{"transports":["` + strings.Repeat("x", 17) + `"]}`,
+	} {
+		if _, err := Decode(frame(bad)); err == nil {
+			t.Errorf("%.60s must be refused", bad)
 		}
 	}
 }

@@ -76,6 +76,22 @@ Partial Public Class Main_Form
         Return persisted
     End Function
 
+    ''' <summary>Ticket L0296: a read settings standard, applied the way an import is (live object, hotkeys, an immediate
+    ''' write). True when the write reached the registry.</summary>
+    Friend Function ApplyExchangeSettingsStandard(read As ModernViewerPreferences) As Boolean
+        Dim persisted As Boolean = ReplaceModernPreferences(read)
+        ReloadCustomHotkeys()
+        Return persisted
+    End Function
+
+    ''' <summary>Ticket L0296: after a read, the Settings window that hosts the exchange page still shows the values it was built
+    ''' with - rebuild it, as an import does. The resource manager dialog shows no preference and stays open.</summary>
+    Friend Sub RefreshAfterExchangeSettingsRead(host As Form)
+        If TypeOf host IsNot Table_Form Then Return
+        RequestSettingsWindowRestart()
+        host.Close()
+    End Sub
+
     ''' <summary>Applies changed domains and schedules a bounded save. An explicit import writes immediately;
     ''' a failed immediate write keeps the block dirty for retry (105 L09).</summary>
     Friend Function ApplyModernPreferencesFromSettings(Optional persistImmediately As Boolean = False) As Boolean
@@ -108,6 +124,7 @@ Partial Public Class Main_Form
             PurgeAnimationVideoStore()
         End If
         ApplyDocumentReaderPreferences(previous)
+        DocumentPanelFollowsPreferences()
         last_Applied_Preferences = modern_Preferences.Snapshot()
         If Not persistImmediately Then
             MarkSettingsDirty()

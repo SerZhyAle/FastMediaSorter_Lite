@@ -299,6 +299,8 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0051: " & read_Mode_Type & " refused - the folder is being read")
             Return
         End If
+        ' Specification 277: an edited text is not left without its answer; after Save the same read runs again.
+        If Not TextEditorAllowsLeaving(Sub() ReadShowMediaFile(read_Mode_Type, is_Auto_Skip, is_Continuation)) Then Return
 #End If
 
         If Not is_Continuation Then media_View_Count += 1
@@ -1722,6 +1724,9 @@ Partial Public Class Main_Form
                 ElseIf IsSecureContainerExtension(current_File_Extension) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1005: secure container to open")
                     DisplaySecureContainer(Current_File_Name)
+                ElseIf TakeOpenAsTextRequest(Current_File_Name) Then
+                    ' Specification 277 section 4.1: the user asked for this file as text.
+                    LoadTextDocument(Current_File_Name)
                 ElseIf Image_File_Extensions.Contains(current_File_Extension) Then
 #Else
                 If Image_File_Extensions.Contains(current_File_Extension) Then

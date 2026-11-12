@@ -33,10 +33,12 @@ Friend NotInheritable Class ExchangeDeviceRecord
     ''' <summary>The `kem` of the record's `e2eKey` (DEVICE-EXCHANGE 27 item DF) when it is a valid P-256 point, else "".
     ''' A public value; it lets others seal to the device and opens nothing.</summary>
     Public ReadOnly E2eKem As String
+    ''' <summary>The `offlineReason` of the record (item DC), "" when it has none. It never makes a device count as online.</summary>
+    Public ReadOnly OfflineReason As String
 
     Public Sub New(raw As String, deviceId As String, deviceName As String, product As String, productVersion As String, platform As String,
                    roles As IReadOnlyList(Of String), presence As String, lastSeen As String,
-                   Optional capabilities As IReadOnlyList(Of String) = Nothing, Optional e2eKem As String = "")
+                   Optional capabilities As IReadOnlyList(Of String) = Nothing, Optional e2eKem As String = "", Optional offlineReason As String = "")
         Me.Raw = raw
         Me.DeviceId = deviceId
         Me.DeviceName = deviceName
@@ -48,6 +50,7 @@ Friend NotInheritable Class ExchangeDeviceRecord
         Me.LastSeen = lastSeen
         Me.Capabilities = If(capabilities, Array.Empty(Of String)())
         Me.E2eKem = If(e2eKem, "")
+        Me.OfflineReason = If(offlineReason, "")
     End Sub
 
     ''' <summary>True when the record declares the capability (an exact, case-sensitive value; unknown values are ignored).</summary>
@@ -62,6 +65,15 @@ Friend NotInheritable Class ExchangeDeviceRecord
     Public ReadOnly Property IsOnline As Boolean
         Get
             Return String.Equals(Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal)
+        End Get
+    End Property
+
+    ''' <summary>Item DD: a platform limit paused this device's sharing. Only an offline record with the one value of v1: an online record
+    ''' ignores the member, and a value this version does not know is a plain offline (item DC).</summary>
+    Public ReadOnly Property IsSharePaused As Boolean
+        Get
+            Return String.Equals(Presence, ExchangeWire.PresenceOffline, StringComparison.Ordinal) AndAlso
+                String.Equals(OfflineReason, ExchangeWire.OfflineReasonTimeLimit, StringComparison.Ordinal)
         End Get
     End Property
 
@@ -229,7 +241,7 @@ Friend NotInheritable Class ExchangeRecordReader
             End If
             record = New ExchangeDeviceRecord(raw, id, Str(root, "deviceName"), Str(root, "product"), Str(root, "productVersion"),
                                               Str(root, "platform"), roles, Str(root, "presence"), Str(root, "lastSeen"),
-                                              capabilities, ReadE2eKem(root))
+                                              capabilities, ReadE2eKem(root), Str(root, "offlineReason"))
             Return True
         End Using
     End Function

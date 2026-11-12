@@ -11,6 +11,9 @@ Friend Enum ResourceKind
     Unc = 1
     Sftp = 2
     Smb = 3
+    ''' <summary>Ticket 269: a folder of another device of the account reached through Google Drive (DEVICE-EXCHANGE
+    ''' item CO). It has no address, no credential and no write verb; the agent's local channel carries it.</summary>
+    Drive = 4
 End Enum
 
 ''' <summary>How expensive the link behind a provider is - what the prefetch depth and a
@@ -54,7 +57,8 @@ Friend NotInheritable Class ProviderCapabilities
                    Optional costHint As ProviderCostHint = ProviderCostHint.Slow,
                    Optional supportsAtomicOverwriteRename As Boolean = False,
                    Optional supportsStableSourceDelete As Boolean = False,
-                   Optional supportsCheckedSourceDelete As Boolean = False)
+                   Optional supportsCheckedSourceDelete As Boolean = False,
+                   Optional fetchOnDemandOnly As Boolean = False)
         Me.CanWrite = canWrite
         Me.CanDelete = canDelete
         Me.CanRename = canRename
@@ -67,6 +71,7 @@ Friend NotInheritable Class ProviderCapabilities
         Me.SupportsAtomicOverwriteRename = supportsAtomicOverwriteRename
         Me.SupportsStableSourceDelete = supportsStableSourceDelete
         Me.SupportsCheckedSourceDelete = supportsCheckedSourceDelete
+        Me.FetchOnDemandOnly = fetchOnDemandOnly
     End Sub
 
     Friend ReadOnly Property CanWrite As Boolean
@@ -94,6 +99,9 @@ Friend NotInheritable Class ProviderCapabilities
     ''' <summary>Ordinary move: re-check source metadata, remove, then confirm absence.
     ''' Does not promise an atomic conditional delete (ticket 221).</summary>
     Friend ReadOnly Property SupportsCheckedSourceDelete As Boolean
+    ''' <summary>A file is fetched only when the person asks to see it: no prefetch ahead and no thumbnails, because
+    ''' each fetch is a packet through someone's Drive quota (ticket 269, DEVICE-EXCHANGE item CO).</summary>
+    Friend ReadOnly Property FetchOnDemandOnly As Boolean
 
     ''' <summary>A local disk or a UNC share: every verb, a Recycle Bin, nothing to
     ''' materialise.</summary>

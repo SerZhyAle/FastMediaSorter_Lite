@@ -117,6 +117,54 @@ Friend NotInheritable Class ExchangePasswordChangeResult
 
 End Class
 
+''' <summary>The outcome of one settings standard request (ticket L0296, DEVICE-EXCHANGE 1.12 items EO and ER).</summary>
+Friend Enum ExchangeSettingsRequestOutcome
+    ''' <summary>`settings_saved` (a save) or `settings_standard_payload` (a read) arrived.</summary>
+    Answered = 0
+    ''' <summary>The server answered `refused`; nothing changed on the server.</summary>
+    Refused = 1
+    ''' <summary>No stream, or no answer before the stream closed or the time ran out. After a read nothing was applied; after a
+    ''' save this client does not know whether the server stored it (a repeat is safe, item ER).</summary>
+    NoAnswer = 2
+    ''' <summary>The server of this connection does not list `settings`: nothing was sent (item EO).</summary>
+    NotOffered = 3
+    ''' <summary>The answer was not one a client can use.</summary>
+    Protocol = 4
+End Enum
+
+Friend NotInheritable Class ExchangeSettingsRequestResult
+
+    Public ReadOnly Outcome As ExchangeSettingsRequestOutcome
+    Public ReadOnly Refusal As ExchangeRefusal
+    ''' <summary>A save: the pair's new `version`; 0 otherwise.</summary>
+    Public ReadOnly Version As Long
+    ''' <summary>A read: the stored `formatVersion`; 0 otherwise.</summary>
+    Public ReadOnly FormatVersion As Long
+    ''' <summary>A read: the stored `settingsPayload` as the server holds it; "" otherwise.</summary>
+    Public ReadOnly SettingsPayload As String
+    ''' <summary>The server's `updatedAt` of the standard ("" when not answered).</summary>
+    Public ReadOnly UpdatedAt As String
+
+    Public Sub New(outcome As ExchangeSettingsRequestOutcome, refusal As ExchangeRefusal, version As Long, formatVersion As Long,
+                   settingsPayload As String, updatedAt As String)
+        Me.Outcome = outcome
+        Me.Refusal = refusal
+        Me.Version = version
+        Me.FormatVersion = formatVersion
+        Me.SettingsPayload = If(settingsPayload, "")
+        Me.UpdatedAt = If(updatedAt, "")
+    End Sub
+
+    Public Shared Function Without(outcome As ExchangeSettingsRequestOutcome, Optional refusal As ExchangeRefusal = ExchangeRefusal.Unknown) As ExchangeSettingsRequestResult
+        Return New ExchangeSettingsRequestResult(outcome, refusal, 0, 0, "", "")
+    End Function
+
+    Public Overrides Function ToString() As String
+        Return "ExchangeSettingsRequestResult " & Outcome.ToString()
+    End Function
+
+End Class
+
 Friend NotInheritable Class ExchangeControlSession
 
     Private ReadOnly _options As ExchangeControlOptions
@@ -502,6 +550,44 @@ Friend NotInheritable Class ExchangeControlSession
         Dim token As String = reply.Text("deviceToken")
         If Not ExchangeIds.IsValidToken(token) Then Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.Protocol, ExchangeRefusal.Unknown, "")
         Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.Changed, ExchangeRefusal.Unknown, token)
+    End Function
+
+    ''' <summary>True when the `welcome` of the live connection lists `settings` (item EO): only then are the settings actions shown
+    ''' and the frames sent.</summary>
+    Public Function OffersSettings() As Boolean
+        Dim features As IReadOnlyList(Of String) = FeaturesOfConnection()
+        If features Is Nothing Then Return False
+        For Each feature As String In features
+            If String.Equals(feature, ExchangeWire.FeatureSettings, StringComparison.Ordinal) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>`settings_save_standard` -> `settings_saved` or `refused` (item EO): one request, one answer (item EF). Sent only
+    ''' on the person's act; nothing in this session sends it on its own (item ER).</summary>
+    Public Async Function SaveSettingsStandardAsync(appId As String, formatVersion As Integer, settingsPayload As String, timestamp As String,
+                                                    ct As CancellationToken) As Task(Of ExchangeSettingsRequestResult)
+        If Not OffersSettings() Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.NotOffered)
+        Dim reply As ExchangeEnvelope = Await RequestAsync(ExchangeMessages.SettingsSaveStandard(appId, formatVersion, settingsPayload, timestamp),
+                                                           {ExchangeEnvelopeTypes.SettingsSaved}, 15000, ct).ConfigureAwait(False)
+        If reply Is Nothing Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.NoAnswer)
+        If reply.Is(ExchangeEnvelopeTypes.Refused) Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.Refused, reply.Refusal())
+        Dim version As Long = reply.Number("version", 0)
+        If version < 1 Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.Protocol)
+        Return New ExchangeSettingsRequestResult(ExchangeSettingsRequestOutcome.Answered, ExchangeRefusal.Unknown, version, 0, "", reply.Text("updatedAt"))
+    End Function
+
+    ''' <summary>`settings_get_standard` -> `settings_standard_payload` or `refused` (item EO). It returns the payload untouched; the
+    ''' caller understands the whole of it before it applies anything (item ER).</summary>
+    Public Async Function GetSettingsStandardAsync(appId As String, ct As CancellationToken) As Task(Of ExchangeSettingsRequestResult)
+        If Not OffersSettings() Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.NotOffered)
+        Dim reply As ExchangeEnvelope = Await RequestAsync(ExchangeMessages.SettingsGetStandard(appId),
+                                                           {ExchangeEnvelopeTypes.SettingsStandardPayload}, 15000, ct).ConfigureAwait(False)
+        If reply Is Nothing Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.NoAnswer)
+        If reply.Is(ExchangeEnvelopeTypes.Refused) Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.Refused, reply.Refusal())
+        If Not String.Equals(reply.Text("appId"), appId, StringComparison.Ordinal) Then Return ExchangeSettingsRequestResult.Without(ExchangeSettingsRequestOutcome.Protocol)
+        Return New ExchangeSettingsRequestResult(ExchangeSettingsRequestOutcome.Answered, ExchangeRefusal.Unknown, 0,
+                                                 reply.Number("formatVersion", 0), reply.Text("settingsPayload"), reply.Text("updatedAt"))
     End Function
 
     ''' <summary>`revoke`: the token of another device (or this one) dies; the change arrives as `changed`.</summary>

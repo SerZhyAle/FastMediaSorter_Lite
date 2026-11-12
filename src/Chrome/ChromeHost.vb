@@ -458,9 +458,18 @@ Friend NotInheritable Class ChromeInkWindow
     ''' <summary>Shows <paramref name="source"/> (premultiplied ARGB) at <paramref name="screenLocation"/>, over
     ''' <paramref name="host"/>, faded to <paramref name="alpha"/> of 255.</summary>
     Public Sub Present(host As Form, source As Bitmap, screenLocation As Point, alpha As Byte)
+        Dim reordered As Boolean = False
         If Owner IsNot host Then Owner = host
-        If TopMost <> host.TopMost Then TopMost = host.TopMost
-        If Not Visible Then Show()
+        If TopMost <> host.TopMost Then
+            TopMost = host.TopMost
+            reordered = True
+        End If
+        If Not Visible Then
+            Show()
+            reordered = True
+        End If
+        ' A panel's ink window that comes up or changes band would stand over an open list (L0302).
+        If reordered AndAlso TypeOf host IsNot ChromeMenu Then ChromeMenu.RaiseOpenChain()
 
         Dim screenDc As IntPtr = GetDC(IntPtr.Zero)
         Dim memoryDc As IntPtr = CreateCompatibleDC(screenDc)

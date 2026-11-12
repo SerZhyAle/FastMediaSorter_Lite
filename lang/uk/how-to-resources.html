@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="uk" data-page-lang="uk" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
+})();
+</script>
+<title>Сервер як звичайна тека | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="Відкрийте SFTP-сервер або мережеву теку з паролем як звичайну теку у Fast Media Sorter &amp; Sharing for Windows; ключ сервера закріплено.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-resources.html">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/how-to-resources.html">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-resources.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Сервер як звичайна тека | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="Відкрийте SFTP-сервер або мережеву теку з паролем як звичайну теку у Fast Media Sorter &amp; Sharing for Windows; ключ сервера закріплено.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-resources.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Сервер як звичайна тека | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="Відкрийте SFTP-сервер або мережеву теку з паролем як звичайну теку у Fast Media Sorter &amp; Sharing for Windows; ключ сервера закріплено.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Сервер як звичайна тека | Fast Media Sorter & Sharing","description":"Відкрийте SFTP-сервер або мережеву теку з паролем як звичайну теку у Fast Media Sorter & Sharing for Windows; ключ сервера закріплено.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/how-to-resources.html","inLanguage":"uk","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/sza-kit.css">
+<link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
+<style>
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}.steps{counter-reset:step;display:grid;gap:1rem}.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}.step h2{font-size:1.15rem;margin:0 0 .35rem}.step p,.step li{color:var(--text-2)}.step ul{margin:.55rem 0 0;padding-left:1.2rem}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти до основного вмісту</a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only">Основна навігація</span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Мова"><a hreflang="ru" href="../ru/how-to-resources.html" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="../../docs/how-to-resources.html" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="how-to-resources.html" aria-current="true" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div><button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>Темна тема</span></button><a class="btn btn-primary" href="./#get">Завантажити</a></nav></header>
+<main class="container" id="main" tabindex="-1">
+<section class="hero"><span class="kicker">HOW TO · RESOURCES</span><h1>Відкрийте сервер або мережеву теку як звичайну теку</h1><p class="lead">Домашній NAS, комп'ютер, що роздає теки через <a href="publish-folders-android.html">Share Manager</a>, будь-який SFTP-сервер, мережева тека, яка вимагає пароль: додайте її один раз - і зображення та відео гортаються як файли на диску, а ключ сервера перевіряється щоразу. Це можливість 64-бітного переглядача (Windows 10 версії 1607 і новіше); у 32-бітній резервній збірці для Windows 7 і 8.1 ресурсів немає.</p></section>
+<section class="section"><div class="steps">
+<article class="step"><h2>Додайте сервер</h2><p>Відкрийте <b>Налаштування</b> (<kbd>F2</kbd>) &rarr; <b><svg class="glyph" data-glyph="source.resource" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M22,16V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v12c0,1.1 0.9,2 2,2h12C21.1,18 22,17.1 22,16zM13,6.5L13,13.5L18,10ZM2,6v14c0,1.1 0.9,2 2,2h14v-2H4V6H2z" fill="currentColor" fill-rule="evenodd"/></svg>Сервер і ресурси</b> &rarr; <b>Ресурси</b> і натисніть <b>«Додати..»</b>: адреса, порт (типово 22), користувач, пароль і тека на сервері. Той самий список є в меню теки під <b>«Ресурси» - «Керування ресурсами..»</b>. Мережева тека, яка потребує логін, - другий тип у тому самому вікні. Уже маєте файл із Share Manager? Натисніть <b>«Імпорт із файлу..»</b> - або <b>«Імпорт із буфера»</b> для тексту коду - і все, разом із ключем сервера, додасться одразу. Файл <b>.fmscfg</b> також можна просто перетягнути на вікно переглядача.</p></article>
+<article class="step"><h2>Відкрийте його</h2><p>Виберіть ресурс у списку й натисніть <b>«Відкрити»</b> - або виберіть його кнопкою <b><svg class="glyph" data-glyph="source.resource" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M22,16V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v12c0,1.1 0.9,2 2,2h12C21.1,18 22,17.1 22,16zM13,6.5L13,13.5L18,10ZM2,6v14c0,1.1 0.9,2 2,2h14v-2H4V6H2z" fill="currentColor" fill-rule="evenodd"/></svg>«Ресурс»</b> на панелі інструментів (вона з'являється разом із першим збереженим ресурсом і відкриває кілька останніх одним клацанням), або в підменю <b>«Ресурси»</b> меню теки, де кілька останніх використаних чекають на одне клацання. Те саме робить адреса <b>sftp://user@host:port/folder</b>, введена в поле теки, і натискання <kbd>Enter</kbd>; якщо ви залишили програму на цій папці, під час наступного запуску вона відкриє її знову. Уперше сервер, доданий уручну, покаже відбиток свого ключа й запитає, чи довіряти йому; відповідь за замовчуванням - «Ні». Файл із Share Manager приносить ключ із собою, тому вже саме перше підключення перевіряється.</p></article>
+<article class="step"><h2>Гортайте й сортуйте як зазвичай</h2><p>Зображення, відео, звук і документи відкриваються так, ніби лежать на цьому комп'ютері: програма підвантажує файл, який збирається показати, і наступний, а копії видаляє, коли ви йдете. <kbd>RE</kbd> знову питає сервер. <kbd>Del</kbd>, <kbd>0</kbd>-<kbd>9</kbd>, <kbd>Shift</kbd>+цифра, <kbd>F6</kbd> і <kbd>U</kbd> діють на файли самого сервера; переміщення перевіряється за вмістом до того, як оригінал буде чіпано, тому розірване з'єднання не втрачає файлів. Тека, яку власник роздав лише для читання, прямо про це каже, а не зривається посеред дії.</p></article>
+<div class="callout"><b>Експортований файл - ключ доступу</b><p>Передавайте його лише тому, кому він потрібен: хто його має, той може відкрити сервер.</p></div>
+<article class="step"><h2>Передайте сервер на інший комп'ютер</h2><p>Виберіть ресурс у <b>Налаштування</b> &rarr; <b>Сервер і ресурси</b> &rarr; <b>Ресурси</b> і натисніть <b>«Експорт..»</b>: програма підготує той самий файл <b>.fmscfg</b>, що створює Share Manager, з уже перевіреним ключем сервера всередині, тож на іншому комп'ютері - або на цьому ж, або на телефоні - він імпортується перевіреним і відкривається без запитання про довіру. Збережіть його у файл або скопіюйте в буфер як текст чи як код. Типово файл іде <b>без пароля</b>: одержувача один раз попросять його ввести. Сервер із непідтвердженим ключем і мережева тека Windows не експортуються - програма скаже чому.</p></article>
+<article class="step"><h2>Сортуйте просто в теку на сервері</h2><p>Текою призначення <kbd>0</kbd>-<kbd>9</kbd> може бути тека збереженого сервера: у <b>Налаштування</b> &rarr; <b>Отримувачі</b> двічі клацніть по папці слота й виберіть ресурс замість <b>«Папка на цьому комп'ютері..»</b>, потім за бажання допишіть підтеку після адреси. Слот показує назву ресурсу; перше натискання підключається (один раз запитає пароль, якщо його не запам'ятано), а файл надсилається, зчитується назад і порівнюється до того, як оригінал буде видалено. Слот працює лише із сервером, ключ якого програма вже знає - спершу відкрийте ресурс один раз - і ніколи із сервером, роздаваним лише для читання. Скасування переміщення клавішею <kbd>U</kbd> перевіряє повернений файл і видаляє копію на сервері, якщо вона не змінилася. Видалення із SFTP незворотне: загальне налаштування Кошика на нього не впливає, відновити видалений оригінал неможливо. Під час переміщення оригінал видаляється після перевірки копії та джерела; якщо видалення не вдалося або результат невідомий, програма повідомляє про незавершене переміщення.</p></article>
+</div></section>
+<section class="section two"><div class="callout"><b>Якщо ключ змінився</b><p>Сервер, чий ключ не збігається із запам'ятаним, відхиляється, і показуються обидва відбитки: перевстановлений сервер виглядає точно так само, як підробка. Якщо ви певні щодо сервера, відкрийте ресурс через <b>«Змінити..»</b> і скористайтеся <b>«Забути ключ сервера..»</b> - це свідома кнопка, а не запитання, яке можна закрити випадково.</p></div></section>
+<section class="section two"><div class="callout"><b>Теки під PIN-кодом</b><p>Спільна тека, яку Share Manager закрив PIN-кодом, змушує відмовитися від імпорту всього файлу, бо переглядач не може відкрити її без замка. Пароль зберігається лише в зашифрованому вигляді для вашого облікового запису Windows (або в пам'яті, якщо зняти позначку <b>«Запам'ятати пароль (захищено засобами Windows)»</b>).</p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span>Перегляд і сортування медіафайлів</span></a>
+<a href="how-to-keys.html"><b>HOW TO · Keys</b><span>Клавіші, масштаб і повний екран</span></a>
+<a href="publish-folders-android.html"><b>HOW TO · Android</b><span>Роздати теки на телефон Android через SFTP</span></a>
+<a href="how-to-ocr.html"><b>HOW TO · OCR</b><span>Розпізнати й перекласти текст на зображенні</span></a>
+<a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-uk.html" target="_blank" rel="noopener noreferrer"><b>PORTAL · Домашня мережа</b><span>Свій ПК або телефон як сервер, вдома й у дорозі</span><span class="sr-only"> (відкриється в новій вкладці)</span></a>
+<a href="topics.html"><b>TOPICS</b><span>Усі сторінки сайту за темами</span></a>
+<a href="glossary.html"><b>GLOSSARY</b><span>Що означають терміни сайту</span></a>
+</div></section>
+<section id="sharing-settings-windows">
+<h2>Де знаходяться налаштування спільного доступу</h2>
+<p>Налаштування розташовані у двох вікнах. У налаштуваннях менеджера є група «Спільний доступ SFTP» - порт SFTP, локальна мережа й сторінка хостингу; вона видима, поки встановлено цей компонент, - поруч із загальними параметрами, віддаленим обліковим записом, публікацією й розкладами. Установлений локальний сервер обміну налаштовується в окремому вікні. Посилання зліва внизу відкриває друге вікно, зберігаючи поточне. Відкриття налаштувань не запускає сервер. У попередніх збірках спільний доступ SFTP був в окремому вікні.</p>
+<p><a href="../../docs/help/uk/sftp-settings.html">SFTP</a> · <a href="../../docs/help/uk/share-settings.html">Довідка налаштувань менеджера</a></p>
+</section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="publish-folders-android.html">Android &amp; SFTP HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Підтримка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+<script>(function(){var d=document.documentElement;var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
+</body></html>

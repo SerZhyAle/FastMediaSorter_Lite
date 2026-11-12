@@ -179,14 +179,9 @@ Friend NotInheritable Class ExchangeEntryText
             Case ExchangeConsumerEnrollOutcome.Untrusted
                 Return Localization.T("Сертификат сервера не подтверждён, поэтому ничего не отправлено.")
             Case ExchangeConsumerEnrollOutcome.Refused
-                Select Case refusal
-                    Case ExchangeRefusal.BadCredentials : Return Localization.T("Логин или пароль не подошли.")
-                    Case ExchangeRefusal.VersionUnsupported : Return TableText(ConnectionDiagnosisMessages.VersionUnsupported)   ' item CZ: no "update" demand
-                    Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток входа. Подождите минуту и повторите.")
-                    Case ExchangeRefusal.Capacity : Return Localization.T("Сервер сейчас не принимает новые устройства.")
-                    Case ExchangeRefusal.IdCollision : Return Localization.T("Сервер уже знает это устройство в другой учётной записи. Повторите попытку.")
-                    Case Else : Return Localization.T("Сервер отказал во входе.")
-                End Select
+                ' each refusal in the words of its own row of the common message table (items CZ, DA: never reworded), as the
+                ' Share Manager's EnrollRow does; an unknown reason is the generic refusal row
+                Return TableText(ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(refusal)))
             Case ExchangeConsumerEnrollOutcome.TlsFailed
                 Return Localization.T("По этому адресу нет сервера обмена, или он не использует защищённое соединение.")
             Case ExchangeConsumerEnrollOutcome.Network
@@ -348,6 +343,97 @@ Friend NotInheritable Class ExchangeEntryText
 
     Friend Shared Function ChangePasswordNoStream() As String
         Return Localization.T("Нет связи с сервером. Подключитесь и повторите.")
+    End Function
+
+    ' ---- the settings standard (ticket L0296, DEVICE-EXCHANGE 1.12 items EN-ER) ---------------------------------
+
+    Friend Shared Function SaveStandardButton() As String
+        Return Localization.T("Сохранить как СТАНДАРТ..")
+    End Function
+
+    Friend Shared Function ReadStandardButton() As String
+        Return Localization.T("Прочитать СТАНДАРТ..")
+    End Function
+
+    Friend Shared Function SaveStandardTitle(server As String) As String
+        Return Localization.TF("Сохранить настройки как СТАНДАРТ на «{0}»", server)
+    End Function
+
+    Friend Shared Function ReadStandardTitle(server As String) As String
+        Return Localization.TF("Прочитать СТАНДАРТ настроек с «{0}»", server)
+    End Function
+
+    Friend Shared Function SaveStandardExplanation() As String
+        Return Localization.T("Отмеченные группы настроек сохраняются на сервере как СТАНДАРТ учётной записи и целиком заменяют прежний. Пути, пароли, ключи и размеры окон остаются только на этом компьютере.")
+    End Function
+
+    Friend Shared Function ReadStandardExplanation() As String
+        Return Localization.T("Значения отмеченных групп из СТАНДАРТА заменят настройки на этом компьютере. Пути, пароли, ключи и размеры окон не меняются. Дальнейшие изменения здесь остаются местными, пока вы снова не прочитаете СТАНДАРТ.")
+    End Function
+
+    Friend Shared Function OperatorCanReadNote() As String
+        Return Localization.T("Оператор сервера может прочитать сохранённые настройки.")
+    End Function
+
+    Friend Shared Function SaveStandardConfirm() As String
+        Return Localization.T("Сохранить как СТАНДАРТ")
+    End Function
+
+    Friend Shared Function ReadStandardConfirm() As String
+        Return Localization.T("Прочитать СТАНДАРТ")
+    End Function
+
+    Friend Shared Function NoGroupChosen() As String
+        Return Localization.T("Отметьте хотя бы одну группу.")
+    End Function
+
+    ''' <summary>The person-facing name of a group id of <see cref="ExchangeSettingsStandard.Groups"/>.</summary>
+    Friend Shared Function GroupTitle(groupId As String) As String
+        Select Case groupId
+            Case ExchangeSettingsStandard.GroupGeneral : Return Localization.T("Общие")
+            Case ExchangeSettingsStandard.GroupAppearance : Return Localization.T("Внешний вид")
+            Case ExchangeSettingsStandard.GroupPlayback : Return Localization.T("Воспроизведение")
+            Case ExchangeSettingsStandard.GroupShortcuts : Return Localization.T("Сочетания клавиш")
+            Case Else : Return groupId
+        End Select
+    End Function
+
+    Friend Shared Function StandardSaved(version As Long, updatedAt As String) As String
+        Return Localization.TF("Настройки сохранены как СТАНДАРТ (версия {0}, {1}).", version, updatedAt)
+    End Function
+
+    Friend Shared Function StandardRead(updatedAt As String, count As Integer) As String
+        Return Localization.TF("СТАНДАРТ от {0} прочитан: применено значений - {1}.", updatedAt, count)
+    End Function
+
+    Friend Shared Function StandardReadNotStored() As String
+        Return Localization.T("СТАНДАРТ применён, но записать настройки на этом компьютере не удалось. Запись будет повторена.")
+    End Function
+
+    Friend Shared Function SaveStandardNoAnswer() As String
+        Return Localization.T("Сервер не ответил. Неизвестно, сохранён ли СТАНДАРТ; повторное сохранение безопасно.")
+    End Function
+
+    Friend Shared Function ReadStandardNoAnswer() As String
+        Return Localization.T("Сервер не ответил. Настройки на этом компьютере не изменились.")
+    End Function
+
+    Friend Shared Function StandardNotOffered() As String
+        Return Localization.T("Этот сервер не хранит СТАНДАРТ настроек.")
+    End Function
+
+    Friend Shared Function StandardProtocol() As String
+        Return Localization.T("Ответ сервера не удалось понять. Ничего не изменилось.")
+    End Function
+
+    Friend Shared Function StandardDamaged() As String
+        Return Localization.T("СТАНДАРТ на сервере повреждён. Настройки на этом компьютере не изменились.")
+    End Function
+
+    ''' <summary>A refusal of a settings request, in the words of its item EP row (one table for every exchange client).</summary>
+    Friend Shared Function StandardRefusal(refusal As ExchangeRefusal) As String
+        Dim message As ConnectionDiagnosisMessage = ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(refusal))
+        Return ConnectionDiagnosisLocalization.GetMessageText(message.Code, Localization.CurrentCode)
     End Function
 
 End Class

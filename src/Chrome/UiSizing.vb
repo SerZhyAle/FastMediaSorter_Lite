@@ -60,10 +60,12 @@ End Class
 ''' BOOLEAN-OPTION 2.0 section 2; COLLAPSIBLE-GROUP 1.1 section 3). Ticket 243, slice T-3. Pure apart from
 ''' <see cref="SystemTextScale"/>: no WinForms, no registry access in the functions that compose sizes.
 '''
-''' What it does not do yet: nothing calls <see cref="SystemTextScale"/> or <see cref="GlyphPx"/> from a layout.
-''' Wiring the stable profile, the text scale and the compact density into the windows is owed to the later
-''' slices of the ticket; the first adopters only take their ordinary pointer values from this table, so the
-''' default look does not move.
+''' The Windows "Text size" reaches two layouts (ticket 279, T-2): the viewer's code-built dialogs through
+''' <c>DialogLayout.ApplyAutoScale</c> (<see cref="LayoutBaseDpi"/>, <see cref="TextPoints"/>) and the Settings window
+''' through its one scale at open. At a text factor of 1.0 both are exactly what they were. What is still not wired:
+''' <see cref="GlyphPx"/> has no caller outside the rail rules, and the stable profile and the compact density are not
+''' offered by any window; the first adopters only take their ordinary pointer values from this table, so the default
+''' look does not move.
 '''
 ''' Interface scale and text enlargement are independent (UI-SIZING section 2 rule 3): the interface factor
 ''' composes the whole geometry (targets, padding, gaps, glyphs, box, marker); the text factor grows the text
@@ -208,7 +210,8 @@ Friend NotInheritable Class UiSizing
 
     ''' <summary>The Windows "Text size" accessibility setting as a factor, 1.0 .. <see cref="MaxTextFactor"/>.
     ''' Reads the DWORD <c>TextScaleFactor</c> (percent, 100..225) under <c>HKCU\Software\Microsoft\Accessibility</c>;
-    ''' a missing key or value, another type or any failure is 1.0. Never throws. NOT wired into any layout yet.</summary>
+    ''' a missing key or value, another type or any failure is 1.0. Never throws. A window takes it through
+    ''' <see cref="CurrentTextFactor"/>.</summary>
     Public Shared Function SystemTextScale() As Single
         Try
             Using key As RegistryKey = Registry.CurrentUser.OpenSubKey(TextScaleKeyPath, False)
@@ -227,6 +230,37 @@ Friend NotInheritable Class UiSizing
     ''' 1.0 .. <see cref="MaxTextFactor"/>.</summary>
     Public Shared Function TextScaleFromPercent(percent As Integer) As Single
         Return NormalizeTextFactor(percent / 100.0F)
+    End Function
+
+    ''' <summary>The text factor a window reads ONCE, when it is built: <see cref="TextFactorOverride"/> when a test
+    ''' pinned one, otherwise <see cref="SystemTextScale"/>. Always 1.0 .. <see cref="MaxTextFactor"/>.</summary>
+    Public Shared Function CurrentTextFactor() As Single
+        If TextFactorOverride >= 1.0F Then Return NormalizeTextFactor(TextFactorOverride)
+        Return SystemTextScale()
+    End Function
+
+    ''' <summary>Test seam of <see cref="CurrentTextFactor"/>: 0 (the default) reads the registry, 1.0 or more pins the
+    ''' factor so that a geometry test does not depend on the Windows Text size of the machine it runs on. Never set by
+    ''' product code.</summary>
+    Friend Shared TextFactorOverride As Single = 0.0F
+
+    ''' <summary>The logical resolution the layouts of the code-built windows are authored in (96 dpi).</summary>
+    Public Const LogicalDpi As Single = 96.0F
+
+    ''' <summary>The reference resolution a hand-positioned window gives <c>AutoScaleDimensions</c> in
+    ''' <c>AutoScaleMode.Dpi</c>. WinForms scales the authored positions and sizes by <c>DeviceDpi / base</c>, so a base
+    ''' of 96 / t makes that factor <c>DeviceDpi / 96 x t</c>: the layout grows with the text enlargement as well as with
+    ''' the display (UI-SIZING section 2 rule 3, "grow text and layout first"), while a hit target is not computed here
+    ''' (it takes the interface factor only, <see cref="TargetPx"/>). Exactly 96 at a text factor of 1.0, so a window at
+    ''' the ordinary Text size is untouched.</summary>
+    Public Shared Function LayoutBaseDpi(textFactor As Single) As Single
+        Return LogicalDpi / NormalizeTextFactor(textFactor)
+    End Function
+
+    ''' <summary>A font size in points grown by the text enlargement: the base size times the normalized text factor,
+    ''' never smaller than the base (the user's enlargement is neither shrunk back nor cancelled).</summary>
+    Public Shared Function TextPoints(basePoints As Single, textFactor As Single) As Single
+        Return basePoints * NormalizeTextFactor(textFactor)
     End Function
 
     Private Shared Function InterfaceFactorOrOne(factor As Single) As Double

@@ -145,6 +145,116 @@ Friend NotInheritable Class DriveChannelText
         Return Localization.TF("Имя этого ПК в Google Drive: «{0}». Идентификатор: {1}.", If(String.IsNullOrEmpty(name), "-", name), shortId)
     End Function
 
+    ' --- the queue screen (item CS) ---
+
+    Public Shared Function QueueGroupTitle() As String
+        Return Localization.T("Очередь на Google Drive")
+    End Function
+
+    Public Shared Function QueueNote() As String
+        Return Localization.T("Здесь видно, что ваши устройства передают друг другу через ваш Google Drive и сколько места это занимает. Любой пакет можно удалить.")
+    End Function
+
+    ''' <summary>The line above the list: why there is no list. "" when there are rows to read.</summary>
+    Public Shared Function QueueState(state As DriveChannelState, failure As ExchangeDriveFailure, view As DriveQueueView) As String
+        Select Case state
+            Case DriveChannelState.SignedIn, DriveChannelState.Unavailable
+                If view IsNot Nothing Then Return If(view.Rows.Count = 0, Localization.T("Очередь пуста."), "")
+                Return If(state = DriveChannelState.Unavailable, FailureDetail(failure), Localization.T("Чтение очереди.."))
+            Case Else
+                Return Localization.T("Очередь видна после входа в Google Drive.")
+        End Select
+    End Function
+
+    ''' <summary>What the queue holds beyond its rows. "" when it holds nothing else.</summary>
+    Public Shared Function QueueExtras(view As DriveQueueView) As String
+        If view Is Nothing Then Return ""
+        Dim lines As New List(Of String)
+        If view.InProgress > 0 Then lines.Add(Localization.TF("Ещё загружается пакетов: {0}.", view.InProgress))
+        If view.Unreadable > 0 Then lines.Add(Localization.TF("Не удалось прочитать пакетов: {0}.", view.Unreadable))
+        Return String.Join(" ", lines)
+    End Function
+
+    Public Shared Function QueueColumnState() As String
+        Return Localization.T("Состояние")
+    End Function
+
+    Public Shared Function QueueColumnKind() As String
+        Return Localization.T("Тип")
+    End Function
+
+    Public Shared Function QueueColumnDevice() As String
+        Return Localization.T("Устройство")
+    End Function
+
+    Public Shared Function QueueColumnSize() As String
+        Return Localization.T("Размер")
+    End Function
+
+    Public Shared Function QueueColumnCreated() As String
+        Return Localization.T("Создано")
+    End Function
+
+    Public Shared Function QueueRoleWord(role As DriveQueueRole) As String
+        Select Case role
+            Case DriveQueueRole.Sent : Return Localization.T("Отправлен")
+            Case DriveQueueRole.Waiting : Return Localization.T("Ждёт получения")
+            Case DriveQueueRole.Received : Return Localization.T("Получен")
+            Case Else : Return Localization.T("Между другими устройствами")
+        End Select
+    End Function
+
+    Public Shared Function QueueKindWord(kind As ExchangeDrivePayloadKind) As String
+        Select Case kind
+            Case ExchangeDrivePayloadKind.Files : Return Localization.T("Файлы")
+            Case ExchangeDrivePayloadKind.MediaFiles : Return Localization.T("Медиафайлы")
+            Case ExchangeDrivePayloadKind.Settings : Return Localization.T("Настройки")
+            Case ExchangeDrivePayloadKind.Clipboard : Return Localization.T("Буфер обмена")
+            Case ExchangeDrivePayloadKind.Request : Return Localization.T("Запрос")
+            Case ExchangeDrivePayloadKind.Reply : Return Localization.T("Ответ")
+            Case Else : Return Localization.T("Другое")
+        End Select
+    End Function
+
+    ''' <summary>The device a row is about, named from the manifest. A manifest may name a device by its id alone.</summary>
+    Public Shared Function QueuePeer(role As DriveQueueRole, manifest As ExchangeDrivePacketManifest) As String
+        Dim sender As String = DeviceWord(manifest.SenderDeviceName, manifest.SenderDeviceId)
+        Dim target As String = DeviceWord(manifest.TargetDeviceName, manifest.TargetDeviceId)
+        Select Case role
+            Case DriveQueueRole.Sent
+                Return If(target.Length = 0, Localization.T("для всех ваших устройств"), Localization.TF("для «{0}»", target))
+            Case DriveQueueRole.OtherDevices
+                Return Localization.TF("от «{0}» для «{1}»", sender, target)
+            Case Else
+                Return Localization.TF("от «{0}»", sender)
+        End Select
+    End Function
+
+    Private Shared Function DeviceWord(name As String, id As String) As String
+        If Not String.IsNullOrEmpty(name) Then Return name
+        If String.IsNullOrEmpty(id) Then Return ""
+        Return If(id.Length > 8, id.Substring(0, 8) & "..", id)
+    End Function
+
+    Public Shared Function QueueDeleteButton() As String
+        Return Localization.T("Удалить пакет")
+    End Function
+
+    ''' <summary>The one question before deleting: the safe answer is No; it names what happens.</summary>
+    Public Shared Function QueueDeleteQuestion() As String
+        Return Localization.T("Удалить этот пакет с вашего Google Drive? Устройства больше не смогут его получить.")
+    End Function
+
+    ''' <summary>Why the packet is still there. A delete is not retried by itself, so this never says it will be.</summary>
+    Public Shared Function QueueDeleteFailed(failure As ExchangeDriveFailure) As String
+        Select Case failure
+            Case ExchangeDriveFailure.None : Return ""
+            Case ExchangeDriveFailure.SignedOut : Return StateDetail(DriveChannelState.SignedOut, ExchangeDriveFailure.SignedOut)
+            Case ExchangeDriveFailure.Offline : Return Localization.T("Нет связи с Google Drive, пакет не удалён. Повторите попытку.")
+            Case Else : Return Localization.T("Google Drive не удалил пакет. Повторите попытку.")
+        End Select
+    End Function
+
     ''' <summary>The page the browser shows after Google redirects back. The same page whatever the answer was (it is sent before
     ''' the answer is examined), so it says neither "signed in" nor "failed". No script, no external resource.</summary>
     Public Shared Function LandingPage() As String

@@ -23,6 +23,8 @@ Friend Enum ManagerExchangeAvailability
     Locked
     Unsupported
     Revoked
+    ''' <summary>Item DD: the device is offline because a platform limit paused its sharing.</summary>
+    SharePaused
 End Enum
 
 ''' <summary>Display facts only. No access descriptors, tokens or session handles reach a control.</summary>
@@ -59,6 +61,7 @@ Friend NotInheritable Class ManagerExchangeNode
                 Case ManagerExchangeAvailability.Locked : Return Localization.T("защищено PIN-кодом")
                 Case ManagerExchangeAvailability.Unsupported : Return Localization.T("заблокировано: защита не поддерживается")
                 Case ManagerExchangeAvailability.Revoked : Return ExchangeEntryText.TableText(ConnectionDiagnosisMessages.DeviceRevoked)
+                Case ManagerExchangeAvailability.SharePaused : Return ExchangeEntryText.TableText(ConnectionDiagnosisMessages.SharePaused)
                 Case Else : Return ""
             End Select
         End Get
@@ -200,7 +203,8 @@ Friend NotInheritable Class ManagerExchangePlaces
             Dim prior As ManagerExchangeNode = previous.FirstOrDefault(Function(n) n.EntryId = entry.Id AndAlso n.DeviceId = deviceId AndAlso n.Kind = ManagerExchangeNodeKind.Device)
             Dim deviceTitle As String = If(device Is Nothing, If(prior?.Title, deviceId), If(device.DeviceName.Length > 0, device.DeviceName, device.Product))
             Dim deviceState As ManagerExchangeAvailability = If(availability <> ManagerExchangeAvailability.Available, availability,
-                If(device IsNot Nothing AndAlso device.IsOnline, ManagerExchangeAvailability.Available, ManagerExchangeAvailability.Offline))
+                If(device IsNot Nothing AndAlso device.IsOnline, ManagerExchangeAvailability.Available,
+                If(device IsNot Nothing AndAlso device.IsSharePaused, ManagerExchangeAvailability.SharePaused, ManagerExchangeAvailability.Offline)))
             Dim deviceKey As String = Identity(entry.Id, deviceId)
             result.Add(New ManagerExchangeNode(deviceKey, accountId, deviceTitle, ManagerExchangeNodeKind.Device, deviceState, entry.Id, deviceId, "", Nothing))
             Dim records As IEnumerable(Of ExchangeResourceRecord) = If(snapshot Is Nothing, Enumerable.Empty(Of ExchangeResourceRecord)(), snapshot.Resources.Where(Function(r) r.DeviceId = deviceId))

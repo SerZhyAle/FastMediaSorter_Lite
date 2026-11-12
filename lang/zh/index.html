@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" class="script-zh">
+<html lang="zh" data-page-lang="zh" class="script-zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,15 +9,15 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
-<title>整理照片和视频 | Fast Media Sorter &amp; Sharing</title>
+<title>Windows 文件管理器 | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">
 <link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
@@ -35,7 +35,7 @@
 <link rel="alternate" hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">
 <link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="整理照片和视频 | Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Windows 文件管理器 | Fast Media Sorter &amp; Sharing">
 <meta property="og:description" content="飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。">
 <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">
 <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
@@ -43,9 +43,9 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows：用一个按键整理每个照片和视频文件">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="zh">
+<meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="整理照片和视频 | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:title" content="Windows 文件管理器 | Fast Media Sorter &amp; Sharing">
 <meta name="twitter:description" content="飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。">
 <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
 <meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows：用一个按键整理每个照片和视频文件">
@@ -58,13 +58,13 @@
 <link rel="stylesheet" href="../../assets/sza-kit.css">
 <link rel="stylesheet" href="../../assets/fms-site.css">
 <link rel="stylesheet" href="../../assets/fms-buttons.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/","inLanguage":"zh","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/","inLanguage":"zh","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","installUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe","license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳到主要内容</a>
-<header class="site-header">
+<header class="site-header site-header-landing">
   <nav class="site-nav" aria-label="主导航">
-  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span>Fast Media Sorter &amp; Sharing<span class="brand-os"> for Windows</span></span></a>
   <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">文档（英文）</a>
   <div class="seg" role="group" aria-label="语言"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
   <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>深色主题</span></button>
@@ -96,37 +96,47 @@
       </div>
     </div>
     <h1>用一个按键整理每个照片和视频文件</h1>
-    <p class="lead lead-narrow">三个可选部分：媒体与文件管理器，用一个按键查看并整理照片和视频，并管理本地文件夹、服务器和已连接设备上的文件；本地共享与计划服务，通过 SFTP 共享文件夹、按计划运行文件操作，并把这台电脑连接到交换账户；以及由您自己运行的 Media Exchange Server，您的设备通过它彼此互通 - 可以从管理器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。</p>
-    <p class="lead lead-narrow">飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。</p>
-    <p class="lead lead-narrow">名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。 <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
-    <div class="button-group">
-      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
-           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
-           channels, where naming each way to get the product is the rule. -->
-      <a class="btn btn-primary" href="#get">安装</a>
-      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">指南</a>
+    <p class="lead lead-narrow">四个可选部分：媒体与文件管理器，用一个按键查看并整理照片和视频，并管理本地文件夹、服务器和已连接设备上的文件；本地共享服务，通过 SFTP 共享文件夹，并把这台电脑连接到交换账户；计划文件操作，按计划运行复制、移动、删除和归档，与 Share Manager 一起安装；以及由您自己运行的 Media Exchange Server，您的设备通过它彼此互通 - 可以从管理器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。</p>
+    <!-- gen:hero-get -->
+    <div class="hero-get">
+      <div class="hero-get-main">
+        <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>安装程序（GitHub）</span></a>
+        <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> (在新标签页中打开)</span></a>
+        <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64.zip"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
+        <span class="dl-facts" lang="en" dir="ltr"><a class="meta-strong" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830">v26.10.25.1830</a> &middot; <time datetime="2026-10-25">2026-10-25</time> &middot; 437.5 MB</span>
+      </div>
+      <div class="copybox"><span class="tok">winget</span> install --id SerZhyAle.FastMediaSorter
+        <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">复制</button></div>
     </div>
+    <figure class="hero-shot"><img src="../../assets/guides/viewer-main.png" width="652" height="372" alt="查看器窗口：一张照片，上方是工具栏，下方是文件名、日期和大小" decoding="async"></figure>
+    <!-- /gen:hero-get -->
   </section>
 
   <section class="section doors" id="doors" aria-labelledby="doors-title">
     <div class="sec-head">
-      <h2 class="section-title" id="doors-title"><span class="hash">#</span>两种入口，三个可选部分</h2>
-      <p class="section-desc">从您所在之处开始：用媒体与文件管理器，或用文件夹共享服务器。每个部分都是可选的，Media Exchange Server 由您自己运行。</p>
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span>三种入口，四个可选部分</h2>
+      <p class="section-desc">从您所在之处开始：用媒体与文件管理器、文件夹共享服务器，或计划文件操作。每个部分都是可选的，Media Exchange Server 由您自己运行。</p>
     </div>
     <div class="grid">
     <article class="card scenario-card" id="door-1">
       <span class="pill">先用管理器</span>
       <h3>我需要媒体与文件管理器</h3>
-      <p>每个文件一个按键，查看并整理照片和视频，并管理本地文件夹、SFTP 与 SMB 服务器以及交换账户设备上的文件。完整安装包会安装管理器，并把本地共享与计划作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可不装它。整理媒体不需要任何服务器。</p>
+      <p>每个文件一个按键，查看并整理照片和视频，并管理本地文件夹、SFTP 与 SMB 服务器以及交换账户设备上的文件。完整安装包会安装管理器，并把本地共享和计划文件操作作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可两者都不装。整理媒体不需要任何服务器。</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="#get">下载完整安装包</a></div>
     </article>
     <article class="card scenario-card" id="door-2">
       <span class="pill">先用服务器</span>
       <h3>我想为我的文件夹配一台服务器</h3>
-      <p>在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹，并按计划运行文件操作。服务器版（setup.exe 或 winget，需要管理员权限）把共享与计划服务 Folder Share Server 安装为 Windows 服务，无人登录时也能运行；管理器是可选的附加项，默认不勾选。</p>
+      <p>在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹。服务器版（setup.exe 或 winget，需要管理员权限）把本地共享服务 Folder Share Server 安装为 Windows 服务，无人登录时也能运行；管理器是可选的附加项，默认不勾选。计划文件操作不在该服务中运行：它们在已登录的会话里由 Share Manager 运行，服务器版随其 Share Manager 一并提供。</p>
       <div class="scenario-foot"><a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">服务器版：无需登录的共享（英文）</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
+      <span class="pill">先用计划</span>
+      <h3>我想按计划运行文件操作</h3>
+      <p>按计划复制、移动、删除和归档文件，任务运行前可预览，每次运行都有日志。计划文件操作不需要文件夹共享、服务器、开放端口或管理员权限：它们与 Share Manager 一起安装（安装程序中的「计划操作」项，完整安装包中默认勾选），并在 Share Manager 于您已登录的会话中运行期间运行。可从托盘、查看器的文件夹菜单打开，或用您指定的按键打开。</p>
+      <div class="scenario-foot"><a class="btn btn-ghost" href="#get">下载完整安装包</a></div>
+    </article>
+    <article class="card scenario-card" id="door-4">
       <span class="pill gold">您自己的服务器</span>
       <h3><span class="exchange-picture"><img class="exchange-mark" src="../../assets/exchange-mark/svg/exchange-mark-small.svg" width="32" height="32" alt="交换服务器"></span> Media Exchange Server</h3>
       <p>一台由您自己运行的服务器：您的设备加入在它上面创建的账户，在无法直接互相访问时通过它互通。它不是文件夹共享，管理器和本地共享都不需要它。</p>
@@ -171,15 +181,15 @@
         <div class="copybox"><span class="tok">winget</span> install --id SerZhyAle.FastMediaSorter
           <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">复制</button></div>
       </div>
-      <div class="dl-row" id="dlRow">
-        <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>安装程序（GitHub）</span></a>
-        <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
+      <div class="dl-row">
+        <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>安装程序（GitHub）</span></a>
+        <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64.zip"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
         <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> (在新标签页中打开)</span></a>
         <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">服务器版：无需登录的共享（英文）</a>
-        <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
+        <span class="dl-meta"><span class="dl-facts" lang="en" dir="ltr"><a class="meta-strong" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830">v26.10.25.1830</a> &middot; <time datetime="2026-10-25">2026-10-25</time> &middot; SHA-256: <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe.sha256">setup.exe</a> 437.5 MB <code class="sha">653c070f87683cf2354b97a77ae0507721af869ab8bd14d9c5e0dadf538df050</code> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64.zip.sha256">.zip</a> 519.4 MB <code class="sha">64e1d6e63b8b1d8ff0e9d573c064d28f1579b961ece1f7c5c99b508d46d0ea91</code></span>Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
-      <p class="dl-meta">完整安装包内含：媒体与文件管理器，以及启用前保持关闭的可选部分 - 本地共享与计划（Share Manager 与 SFTP 工作进程，含按计划运行的文件操作和到交换账户的连接；托管 FileDO .fdd 磁盘是共享的一项能力）、离线视频编解码器和 OCR 模型。选择「精简」类型即可不装共享。Media Exchange Server 不在此安装包中。</p>
+      <p class="dl-meta">完整安装包内含：媒体与文件管理器，以及启用前保持关闭的可选部分 - 本地共享（Share Manager 与 SFTP 工作进程，含到交换账户的连接；托管 FileDO .fdd 磁盘是共享的一项能力）和计划文件操作（与 Share Manager 一起安装）、离线视频编解码器和 OCR 模型。选择「精简」类型即可两者都不装。Media Exchange Server 不在此安装包中。</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html">为什么 Windows 会对这个下载发出警告</a>
       </p>
@@ -190,6 +200,8 @@
   <section class="section" id="features">
     <div class="sec-head">
       <h2 class="section-title"><span class="hash">#</span>值得一提</h2>
+      <p class="section-desc">飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。</p>
+      <p class="section-desc">名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。 <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     </div>
     <div class="grid">
     <article class="card">
@@ -275,7 +287,7 @@
   <section class="section" id="howto">
     <div class="sec-head">
       <h2 class="section-title"><span class="hash">#</span>HOW TO</h2>
-      <p class="section-desc" lang="en" dir="ltr">Step-by-step guides. The guide pages themselves are in English and Russian.</p>
+      <p class="section-desc" lang="en" dir="ltr">Step-by-step guides. The guide pages themselves are in English, Russian and Ukrainian.</p>
     </div>
     <ul lang="en" dir="ltr">
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-viewer.html">Review and sort a media folder</a></li>
@@ -302,12 +314,12 @@
     <a href="#howto">HOW TO</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Topics</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">Glossary</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/help/zh/index.html" hreflang="zh">Window help</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange portal<span class="sr-only"> (在新标签页中打开)</span></a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html">为什么 Windows 会对这个下载发出警告</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a>
     <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite#readme">README</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html">What's new</a>
-    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/CHANGELOG.md">Changelog</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a>
     <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issues</a>
   </div>
@@ -378,27 +390,6 @@
   function fallback(txt){try{var ta=document.createElement('textarea');ta.value=txt;
     ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
     document.execCommand('copy');document.body.removeChild(ta);}catch(e){}}
-
-  (function(){
-    fetch('https://api.github.com/repos/SerZhyAle/FastMediaSorter_Lite/releases/latest')
-      .then(function(r){return r.ok?r.json():Promise.reject();})
-      .then(function(rel){
-        var assets=rel.assets||[];
-        function find(re){for(var i=0;i<assets.length;i++){if(re.test(assets[i].name))return assets[i];}return null;}
-        var setup=find(/windows-x64-setup\.exe$/);
-        var zip=find(/windows-x64\.zip$/);
-        var tag=rel.tag_name||'';
-        var s=document.getElementById('dl-setup'), z=document.getElementById('dl-zip');
-        if(setup&&s) s.href=setup.browser_download_url;
-        if(zip&&z) z.href=zip.browser_download_url;
-        if(tag){
-          var meta=document.getElementById('dlMeta');
-          if(meta){var b=document.createElement('span');b.className='meta-strong';
-            b.textContent=' '+tag;meta.appendChild(b);}
-        }
-      })
-      .catch(function(){});
-  })();
 })();
 </script>
 </body>

@@ -29,6 +29,9 @@ Friend Module ResourceMessages
 
     Friend Function ForFailure(failure As ResourceFailure) As String
         If failure Is Nothing Then Return Localization.T("Не удалось подключиться к ресурсу")
+        ' a refusal through Google Drive says the channel's own sentence: no server is involved, and "the server does not answer" would mislead
+        Dim driveReason As String = DriveFailures.ReasonOf(failure)
+        If driveReason.Length > 0 Then Return ExchangeResourceText.DriveFailure(driveReason)
         Select Case failure.Kind
             Case ResourceFailureKind.Auth
                 Return Localization.T("Сервер не принял логин или пароль")
@@ -95,6 +98,8 @@ Friend Module ResourceMessages
                 Return Localization.T("SFTP-сервер")
             Case ResourceKind.Smb, ResourceKind.Unc
                 Return Localization.T("Сетевая папка (SMB)")
+            Case ResourceKind.Drive
+                Return Localization.T("через Google Drive")
             Case Else
                 Return Localization.T("Папка")
         End Select

@@ -160,6 +160,11 @@ Friend NotInheritable Class ExchangeAccountStore
         Return If(ExchangeIds.IsValidId(id), id, ExchangeIds.NewId())
     End Function
 
+    ''' <summary>True when this device already holds an id: <see cref="ProposeDeviceId"/> then answers with it, not with a fresh one.</summary>
+    Public Function HasDeviceId() As Boolean
+        Return ExchangeIds.IsValidId(_port.GetValue(DeviceIdName))
+    End Function
+
     ''' <summary>The device id of this Windows user, created once on first use (a Windows user is a device).</summary>
     Public Function EnsureDeviceId() As String
         Dim id As String = _port.GetValue(DeviceIdName)

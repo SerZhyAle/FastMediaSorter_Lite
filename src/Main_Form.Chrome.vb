@@ -392,6 +392,7 @@ Partial Public Class Main_Form
         panel.Host.Surface.StatusLayout = name = "chrome_Status"
         panel.Host.Surface.SetItems(items)
         AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
+        panel.Host.Surface.ActionGate = AddressOf ChromeActionGate
         ' A panel floats over the picture: the wheel over it still pages the files (or zooms), as it does over the
         ' picture beside it, instead of going nowhere (125 UX-313a). The middle click is NOT forwarded: it is a
         ' gesture of the media surface, and on a button it has no meaning to borrow.
@@ -490,7 +491,7 @@ Partial Public Class Main_Form
             End If
         Next
         ' The ring on the first row only when the keyboard (the F10 ring) opened it (125 UX-313j).
-        ChromeMenu.ShowPopup(Me, location, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+        ChromeMenu.ShowPopup(Me, location, entries, ChromeTheme.ForMenu(ThemeService.Palette), ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
                              focusFirstRow:=chrome_Keyboard_Mode)
     End Sub
 
@@ -583,7 +584,9 @@ Partial Public Class Main_Form
             Dim source As ChromeItem = item
             entries.Add(New ChromeMenuItem(item.Id) With {.Caption = If(item.AccessibleName.Length > 0, item.AccessibleName, item.Caption),
                 .Enabled = item.Enabled, .Checked = item.Checked, .Destructive = item.Destructive,
-                .Action = Sub() source.Action?.Invoke()})
+                .Action = Sub()
+                              If ChromeActionGate(source, source.Action) Then source.Action?.Invoke()
+                          End Sub})
         Next
         ' Under the » button itself, like every other menu button - not at the panel's start edge.
         Dim button As ChromeItem = panel.Host.Surface.Items.FirstOrDefault(Function(candidate) candidate.Id = panel.Host.Surface.OverflowId)
@@ -591,7 +594,7 @@ Partial Public Class Main_Form
             ChromeShowMenu(button, entries)
         Else
             ChromeMenu.ShowPopup(Me, panel.Host.PointToScreen(New Point(0, panel.Host.Height)), entries,
-                                 chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+                                 ChromeTheme.ForMenu(ThemeService.Palette), ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
                                  focusFirstRow:=chrome_Keyboard_Mode)
         End If
     End Sub
@@ -994,6 +997,9 @@ Partial Public Class Main_Form
 
     Private Sub Chrome_ItemInvoked(sender As Object, item As ChromeItem)
         If item.Id <> "cmbox_Media_Folder" AndAlso chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus Then chrome_Path.EndEditing(True)
+        ' Another command ran while a page or chapter number was being typed: Enter would go back to the old place, so the box
+        ' closes and keeps nothing. The item that opened the box raises this too, after its action, so it is left alone.
+        If chrome_Document_Edit IsNot Nothing AndAlso chrome_Document_Edit.EditsNumber AndAlso item IsNot chrome_Document_Edit_Item Then chrome_Document_Edit.EndEdit(True)
         For Each panel In chrome_Panels
             For Each pair In panel.Legacy
                 SyncChromeItem(pair.Key, pair.Value)
@@ -1445,7 +1451,7 @@ Partial Public Class Main_Form
             location = p.Host.PointToScreen(New Point(0, p.Host.Height))
         End If
         ' The ring on the first row only when the keyboard (the F10 ring) or a reader opened it, as for every chrome menu.
-        ChromeMenu.ShowPopup(Me, location, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+        ChromeMenu.ShowPopup(Me, location, entries, ChromeTheme.ForMenu(ThemeService.Palette), ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
                              focusFirstRow:=chrome_Keyboard_Mode, anchorTop:=anchorTop)
     End Sub
 
@@ -1462,6 +1468,8 @@ Partial Public Class Main_Form
         If controls IsNot Nothing Then ChromeRaiseWindow(controls.Host)
         ChromeRaiseWindow(video_Chrome_Host)
         ChromeRaiseWindow(recipients_Overlay)
+        ' An open list stands above them all and they take their band back when it closes (L0302, Q302-2).
+        ChromeMenu.RaiseOpenChain()
     End Sub
 
     ''' <summary>The panel just moved is raised above the other movable ones; the protected surfaces keep the top.</summary>
@@ -1717,6 +1725,8 @@ Partial Public Class Main_Form
             ' A free panel is fitted by ChromePanelRect above, so it is whole the moment it appears; a window shown after
             ' the protected surfaces would stand over them, so they take the top again (L0281 §3.5).
             If ChromePanelIsFree(p) OrElse TransportPlaceIsFree() Then ChromeRaiseProtectedSurfaces()
+            ' A panel revealed while a list is open (the pointer crossing its hot zone on the way into the list) stays under it (L0302).
+            ChromeMenu.RaiseOpenChain()
         Else
             Dim r As Rectangle = ChromePanelRect(p)
             If p.Host.Bounds <> r Then p.Host.Bounds = r
@@ -1862,6 +1872,7 @@ Partial Public Class Main_Form
             PositionRecipientsOverlay()
             PinToViewerBand(recipients_Overlay)
             recipients_Overlay.Visible = True
+            ChromeMenu.RaiseOpenChain()
         End If
         Dim configured As Double = If(chrome_High_Contrast, 1.0R,
                                       Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)))

@@ -106,4 +106,21 @@ Friend NotInheritable Class ThemedComboBox
         If (e.State And DrawItemState.Focus) <> 0 Then ControlPaint.DrawFocusRectangle(e.Graphics, e.Bounds, ink, back)
     End Sub
 End Class
+
+''' <summary>A drop-down list for a table or flow row. ThemedComboBox.Apply raises ItemHeight and the native list takes its
+''' height from that, but a panel sizes a stock ComboBox from the height it was created with, so the row stays short and the
+''' list covers whatever stands under it. A MinimumSize does not reach the row. This one reports its real height and goes
+''' through AutoSize, which is what makes a panel ask; the width stays the one the window set (the stock answer).</summary>
+Friend NotInheritable Class RowFittingComboBox
+    Inherits ComboBox
+
+    Public Sub New()
+        AutoSize = True
+    End Sub
+
+    Public Overrides Function GetPreferredSize(proposedSize As Size) As Size
+        Dim preferred As Size = MyBase.GetPreferredSize(proposedSize)
+        Return New Size(preferred.Width, Math.Max(preferred.Height, ItemHeight + LogicalToDeviceUnits(6)))
+    End Function
+End Class
 #End If

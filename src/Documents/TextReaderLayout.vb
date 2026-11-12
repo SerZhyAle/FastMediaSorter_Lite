@@ -27,18 +27,58 @@ Public Structure TextMatch
     End Sub
 End Structure
 
+''' <summary>What a highlighted span is (P3.8, `TextSyntaxHighlighter`). The highlighter only says which kind a
+''' stretch of a line is; the colour of a kind is decided here, in <see cref="TextReaderPalette"/>, per theme.
+''' The values index the palette's token table, so a new kind goes at the end.</summary>
+Public Enum TextTokenKind
+    ''' <summary>A property name, an attribute, an INI or YAML key, a link text.</summary>
+    Key = 0
+    ''' <summary>A string value, a code span or a fenced code line.</summary>
+    StringValue = 1
+    ''' <summary>A number or a timestamp.</summary>
+    Number = 2
+    ''' <summary>true / false / null, a tag name, a list marker, a log level of no concern.</summary>
+    Keyword = 3
+    ''' <summary>A comment, a link address, a stack-trace frame.</summary>
+    Comment = 4
+    ''' <summary>A Markdown heading or an INI section header.</summary>
+    Heading = 5
+    ''' <summary>A log level of an error or worse.</summary>
+    ErrorLevel = 6
+    ''' <summary>A log level of a warning.</summary>
+    WarningLevel = 7
+End Enum
+
 ''' <summary>The colours of one reader theme: the surface, the text and the dimmer ink of the gutter and the
-''' status line. The one table of reader colours (section 4.2, `TextTheme`).</summary>
+''' status line, and one ink per <see cref="TextTokenKind"/>. The one table of reader colours (section 4.2,
+''' `TextTheme`).</summary>
 Public Structure TextReaderPalette
     Public ReadOnly Back As Color
     Public ReadOnly Ink As Color
     Public ReadOnly Muted As Color
+    Private ReadOnly tokens As Color()
 
     Public Sub New(back As Color, ink As Color, muted As Color)
         Me.Back = back
         Me.Ink = ink
         Me.Muted = muted
+        Me.tokens = Nothing
     End Sub
+
+    ''' <summary>A palette with a token table: one ink per <see cref="TextTokenKind"/>, in the enum's order.</summary>
+    Public Sub New(back As Color, ink As Color, muted As Color, tokenInks As Color())
+        Me.Back = back
+        Me.Ink = ink
+        Me.Muted = muted
+        Me.tokens = tokenInks
+    End Sub
+
+    ''' <summary>The ink of a token kind; the plain ink when the palette has no table or no entry for it.</summary>
+    Public Function TokenInk(kind As TextTokenKind) As Color
+        Dim index As Integer = CInt(kind)
+        If tokens Is Nothing OrElse index < 0 OrElse index >= tokens.Length Then Return Ink
+        Return tokens(index)
+    End Function
 End Structure
 
 ''' <summary>The lines of one window: what a copy takes (tabs expanded) and what is drawn (the same text with
@@ -140,16 +180,88 @@ Public Module TextReaderLayout
     Public Function Palette(theme As String, systemBack As Color, systemInk As Color) As TextReaderPalette
         Select Case theme
             Case "light"
-                Return New TextReaderPalette(Color.FromArgb(250, 250, 250), Color.FromArgb(32, 32, 32), Color.FromArgb(118, 118, 118))
+                Return New TextReaderPalette(Color.FromArgb(250, 250, 250), Color.FromArgb(32, 32, 32), Color.FromArgb(118, 118, 118), LightTokenInks)
             Case "dark"
-                Return New TextReaderPalette(Color.FromArgb(30, 30, 30), Color.FromArgb(220, 220, 220), Color.FromArgb(140, 140, 140))
+                Return New TextReaderPalette(Color.FromArgb(30, 30, 30), Color.FromArgb(220, 220, 220), Color.FromArgb(140, 140, 140), DarkTokenInks)
             Case "sepia"
-                Return New TextReaderPalette(Color.FromArgb(244, 236, 216), Color.FromArgb(91, 70, 54), Color.FromArgb(140, 118, 96))
+                Return New TextReaderPalette(Color.FromArgb(244, 236, 216), Color.FromArgb(91, 70, 54), Color.FromArgb(140, 118, 96), SepiaTokenInks)
             Case "black"
-                Return New TextReaderPalette(Color.Black, Color.FromArgb(204, 204, 204), Color.FromArgb(128, 128, 128))
+                Return New TextReaderPalette(Color.Black, Color.FromArgb(204, 204, 204), Color.FromArgb(128, 128, 128), DarkTokenInks)
             Case Else
-                Return New TextReaderPalette(systemBack, systemInk, Color.FromArgb(150, systemInk))
+                Return New TextReaderPalette(systemBack, systemInk, Color.FromArgb(150, systemInk), SystemTokenInks(systemBack))
         End Select
+    End Function
+
+    ' --- token inks (P3.8) --------------------------------------------------------------------------
+    ' One ink per TextTokenKind, in the enum's order: Key, StringValue, Number, Keyword, Comment, Heading,
+    ' ErrorLevel, WarningLevel. Each set is at 4.5 : 1 or better against the surface it belongs to
+    ' (TextSyntaxHighlighterTests holds it for all five themes, by name).
+
+    ''' <summary>The contrast a token ink must keep against its surface (WCAG AA for text).</summary>
+    Public Const TokenContrastFloor As Double = 4.5R
+
+    Private ReadOnly LightTokenInks As Color() = {
+        Color.FromArgb(0, 90, 170), Color.FromArgb(163, 21, 21), Color.FromArgb(0, 110, 70), Color.FromArgb(135, 40, 170),
+        Color.FromArgb(80, 110, 60), Color.FromArgb(150, 60, 0), Color.FromArgb(190, 0, 0), Color.FromArgb(140, 85, 0)}
+
+    ''' <summary>For both dark surfaces: the near-black "dark" and the pure black.</summary>
+    Private ReadOnly DarkTokenInks As Color() = {
+        Color.FromArgb(86, 156, 214), Color.FromArgb(206, 145, 120), Color.FromArgb(181, 206, 168), Color.FromArgb(197, 134, 192),
+        Color.FromArgb(106, 153, 85), Color.FromArgb(220, 220, 170), Color.FromArgb(244, 135, 113), Color.FromArgb(220, 180, 80)}
+
+    Private ReadOnly SepiaTokenInks As Color() = {
+        Color.FromArgb(0, 70, 140), Color.FromArgb(140, 40, 20), Color.FromArgb(20, 95, 50), Color.FromArgb(115, 40, 140),
+        Color.FromArgb(85, 105, 55), Color.FromArgb(125, 60, 0), Color.FromArgb(165, 20, 20), Color.FromArgb(120, 72, 0)}
+
+    ''' <summary>The "system" theme follows the viewer's own surface, which is pure white or pure black; any other
+    ''' surface still gets the light or the dark set pulled to <see cref="TokenContrastFloor"/>.</summary>
+    Private Function SystemTokenInks(back As Color) As Color()
+        If back.ToArgb() = Color.White.ToArgb() Then Return LightTokenInks
+        If back.ToArgb() = Color.Black.ToArgb() Then Return DarkTokenInks
+        Dim source As Color() = If(TokenLuminance(back) > 0.179R, LightTokenInks, DarkTokenInks)
+        Dim result(source.Length - 1) As Color
+        For i As Integer = 0 To source.Length - 1
+            result(i) = EnsureTokenContrast(source(i), back, TokenContrastFloor)
+        Next
+        Return result
+    End Function
+
+    ' The names carry "Token": Utils (a Module of the same namespace) already owns RelativeLuminance and
+    ' ContrastRatio, and a second module member of the same name would make every unqualified call ambiguous.
+
+    ''' <summary>WCAG relative luminance of a colour (alpha ignored).</summary>
+    Public Function TokenLuminance(c As Color) As Double
+        Return 0.2126R * SrgbLinear(c.R) + 0.7152R * SrgbLinear(c.G) + 0.0722R * SrgbLinear(c.B)
+    End Function
+
+    Private Function SrgbLinear(channel As Byte) As Double
+        Dim v As Double = channel / 255.0R
+        Return If(v <= 0.04045R, v / 12.92R, Math.Pow((v + 0.055R) / 1.055R, 2.4R))
+    End Function
+
+    ''' <summary>WCAG contrast ratio of two colours, 1 to 21, whichever order.</summary>
+    Public Function TokenContrast(a As Color, b As Color) As Double
+        Dim la As Double = TokenLuminance(a)
+        Dim lb As Double = TokenLuminance(b)
+        Return (Math.Max(la, lb) + 0.05R) / (Math.Min(la, lb) + 0.05R)
+    End Function
+
+    ''' <summary>The ink itself when it already reads at <paramref name="minimum"/> on the surface, else the ink
+    ''' blended towards whichever of black and white contrasts more, in twentieths, up to that colour (which
+    ''' reads at 4.58 : 1 on any surface at worst).</summary>
+    Public Function EnsureTokenContrast(ink As Color, back As Color, minimum As Double) As Color
+        If TokenContrast(ink, back) >= minimum Then Return ink
+        Dim target As Color = If(TokenContrast(Color.Black, back) >= TokenContrast(Color.White, back), Color.Black, Color.White)
+        For stepIndex As Integer = 1 To 19
+            Dim t As Double = stepIndex / 20.0R
+            ' Channels are Bytes: widen before subtracting, or a darker target overflows.
+            Dim candidate As Color = Color.FromArgb(
+                CInt(CInt(ink.R) + (CInt(target.R) - CInt(ink.R)) * t),
+                CInt(CInt(ink.G) + (CInt(target.G) - CInt(ink.G)) * t),
+                CInt(CInt(ink.B) + (CInt(target.B) - CInt(ink.B)) * t))
+            If TokenContrast(candidate, back) >= minimum Then Return candidate
+        Next
+        Return target
     End Function
 
     ''' <summary>The tint under a search hit; the current hit is stronger. Translucent like the selection band,
@@ -239,6 +351,28 @@ Public Module TextReaderLayout
         If current < 0 Then Return If(forward, 0, count - 1)
         If forward Then Return (current + 1) Mod count
         Return (current - 1 + count) Mod count
+    End Function
+
+    ''' <summary>The code page a binary file is shown in (section 4.1): one byte is one character.</summary>
+    Public Const BinaryViewCodePage As Integer = 28591
+
+    ''' <summary>A binary file on screen (section 4.1): every control character becomes a visible sign of the same length, so
+    ''' nothing draws as nothing, no NUL ends a drawn string and a column stays where it was. Tabs and line ends keep their work.</summary>
+    Public Function EscapeControlCharacters(text As String) As String
+        If String.IsNullOrEmpty(text) Then Return text
+        Dim characters As Char() = text.ToCharArray()
+        For index As Integer = 0 To characters.Length - 1
+            Dim code As Integer = Convert.ToInt32(characters(index))
+            If code = 9 OrElse code = 10 OrElse code = 13 Then Continue For
+            If code < 32 Then
+                characters(index) = Convert.ToChar(&H2400 + code)
+            ElseIf code = 127 Then
+                characters(index) = Convert.ToChar(&H2421)
+            ElseIf code >= 128 AndAlso code < 160 Then
+                characters(index) = Convert.ToChar(&HB7)
+            End If
+        Next
+        Return New String(characters)
     End Function
 
     ''' <summary>The encoding's short name for the status line: UTF-8, UTF-16 LE, windows-1251, ..</summary>

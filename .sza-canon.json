@@ -38,7 +38,7 @@
   "privacy": {
     "page": "docs/privacy.html",
     "carveOut": null,
-    "sensitiveAccess": false
+    "sensitiveAccess": true
   },
 
   "byteIdenticalPairs": [],

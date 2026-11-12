@@ -197,6 +197,9 @@ End Class
 Friend Module ResourceLocator
 
     Friend Const Sftp_Scheme As String = "sftp://"
+    ''' <summary>Ticket 269: a folder reached through Google Drive. The authority is the exchange resource's id, because the
+    ''' channel has no address. <see cref="TryParse"/> refuses it, so it can never become a slot or a file manager place.</summary>
+    Friend Const Drive_Scheme As String = "gd://"
 
     ''' <summary>The locator of <paramref name="remoteDir"/> inside <paramref name="resource"/>.
     ''' An empty directory means the resource's root.</summary>
@@ -213,6 +216,10 @@ Friend Module ResourceLocator
                 Dim host As String = If(resource.Host.Contains(":"c) AndAlso Not resource.Host.StartsWith("[", StringComparison.Ordinal),
                                         "[" & resource.Host & "]", resource.Host)
                 Return Sftp_Scheme & user & host & port & EscapePath(remote)
+            Case ResourceKind.Drive
+                Dim inside As String = If(dir, "").Replace("\"c, "/"c)
+                If Not inside.StartsWith("/", StringComparison.Ordinal) Then inside = "/" & inside
+                Return Drive_Scheme & EscapeComponent(If(resource.ExchangeResourceId, ""), True) & EscapePath(inside)
             Case Else
                 ' A UNC resource is addressed by its own path - Windows already knows how.
                 Return If(dir, "")
@@ -221,8 +228,39 @@ Friend Module ResourceLocator
 
     ''' <summary>Is this string a resource locator rather than a folder path?</summary>
     Friend Function IsLocator(value As String) As Boolean
+        Return IsSftpLocator(value) OrElse IsDriveLocator(value)
+    End Function
+
+    Private Function IsSftpLocator(value As String) As Boolean
         Return Not String.IsNullOrEmpty(value) AndAlso
                value.StartsWith(Sftp_Scheme, StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    Friend Function IsDriveLocator(value As String) As Boolean
+        Return Not String.IsNullOrEmpty(value) AndAlso
+               value.StartsWith(Drive_Scheme, StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    ''' <summary>
+    ''' Splits a "gd://" locator into the exchange resource's id and the folder inside it ("/" for its root). False for
+    ''' anything else and for one that half-parses, by the same rules as <see cref="TryParse"/>: a query or fragment, a bad
+    ''' percent escape, an empty id, or a path segment that decodes to a separator, a control character, "." or "..". Pure.
+    ''' </summary>
+    Friend Function TryParseDrive(locator As String, ByRef resourceId As String, ByRef remotePath As String) As Boolean
+        resourceId = "" : remotePath = "/"
+        If Not IsDriveLocator(locator) Then Return False
+        Dim rest As String = locator.Substring(Drive_Scheme.Length)
+        If rest.IndexOf("?"c) >= 0 OrElse rest.IndexOf("#"c) >= 0 Then Return False
+        Dim slash As Integer = rest.IndexOf("/"c)
+        Dim rawId As String = If(slash >= 0, rest.Substring(0, slash), rest)
+        Dim rawPath As String = If(slash >= 0, rest.Substring(slash), "/")
+        Dim decodedId As String = Nothing
+        If Not TryDecode(rawId, decodedId) OrElse decodedId.Length = 0 Then Return False
+        Dim decodedPath As String = Nothing
+        If Not TryDecodePath(rawPath, decodedPath) Then Return False
+        resourceId = decodedId
+        remotePath = decodedPath
+        Return True
     End Function
 
     ''' <summary>
@@ -235,7 +273,7 @@ Friend Module ResourceLocator
     Friend Function TryParse(locator As String, ByRef userName As String, ByRef host As String,
                              ByRef port As Integer, ByRef remotePath As String) As Boolean
         userName = "" : host = "" : port = 0 : remotePath = "/"
-        If Not IsLocator(locator) Then Return False
+        If Not IsSftpLocator(locator) Then Return False
 
         Dim rest As String = locator.Substring(Sftp_Scheme.Length)
         If rest.IndexOf("?"c) >= 0 OrElse rest.IndexOf("#"c) >= 0 Then Return False
@@ -351,7 +389,7 @@ Friend Module ResourceLocator
     ''' when the locator has no path at all.</summary>
     Private Function AuthorityEnd(locator As String) As Integer
         If Not IsLocator(locator) Then Return -1
-        Return locator.IndexOf("/"c, Sftp_Scheme.Length)
+        Return locator.IndexOf("/"c, If(IsDriveLocator(locator), Drive_Scheme.Length, Sftp_Scheme.Length))
     End Function
 
     Private Function HasForbiddenHostChar(host As String) As Boolean
@@ -757,6 +795,8 @@ Friend Module ResourceRegistry
                 Return Not String.IsNullOrWhiteSpace(item.Host) AndAlso item.Port >= 0 AndAlso item.Port <= 65535
             Case ResourceKind.Unc, ResourceKind.Smb
                 Return Not String.IsNullOrWhiteSpace(item.RootPath)
+            Case ResourceKind.Drive
+                Return Not String.IsNullOrWhiteSpace(item.ExchangeResourceId)
             Case Else
                 Return False
         End Select

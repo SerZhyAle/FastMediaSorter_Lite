@@ -158,7 +158,7 @@ Public Class TrustPageContractTests
     <Fact>
     Public Sub EveryDeclaredSiteOriginIsNamedInEveryTrustLocaleAndInEachPrivacyBlock()
         ' tools/Test-SiteOrigins.ps1 holds the pages against tools/site-origins.json; this holds the
-        ' two disclosures: each locale of the trust copy and each language block of the privacy page
+        ' two disclosures: each locale of the trust copy and each language page of the privacy policy
         ' names every declared host, so a host added to the declaration cannot go undisclosed.
         Dim hosts As New List(Of String)()
         Using decl As JsonDocument = ReadJson("tools", "site-origins.json")
@@ -175,10 +175,12 @@ Public Class TrustPageContractTests
                 Next
             Next
         End Using
-        Dim privacy As String = ReadText("docs", "privacy.html")
-        For Each host As String In hosts
-            Assert.True(Regex.Matches(privacy, Regex.Escape(host)).Count >= 3,
-                        $"docs/privacy.html names {host} fewer than three times (one per language block: en, ru, ua)")
+        ' The privacy policy has one page per core language (ticket L0207 F1/F10/F16); each of them names every host.
+        For Each page As String() In {New String() {"docs", "privacy.html"}, New String() {"lang", "ru", "privacy.html"}, New String() {"lang", "uk", "privacy.html"}}
+            Dim privacy As String = ReadText(page)
+            For Each host As String In hosts
+                Assert.True(privacy.Contains(host, StringComparison.Ordinal), $"{String.Join("/", page)} does not name {host}")
+            Next
         Next
     End Sub
     ' --- rule 7 -------------------------------------------------------------------------

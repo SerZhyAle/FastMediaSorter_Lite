@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="script-ar">
+<html lang="ar" data-page-lang="ar" dir="rtl" class="script-ar">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>لماذا يحذّر Windows من هذا التنزيل</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: فرز الصور والفيديو بمفتاح واحد لكل ملف">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="ar">
+<meta property="og:locale" content="ar_AR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="لماذا يحذّر Windows من هذا التنزيل">
 <meta name="twitter:description" content="ما معنى تحذير SmartScreen في Fast Media Sorter &amp; Sharing، ولماذا يظهر، وعلى ماذا تضغط بالضبط، وما الذي لا يفعله البرنامج أبدًا.">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">قد يُتصل بخدمة خارجية واحدة، وفقط إذا فعّلت الوصول من الإنترنت للمشاركة: يُسأل check-host.net ما إذا كان المنفذ المعاد توجيهه يستجيب من الخارج، وبذلك ترى تلك الخدمة عنوانك العام والمنفذ. ولا يُرسل إليها شيء آخر. وأمران آخران يبقيان داخل شبكتك: عند تفعيل الوصول من الإنترنت يطلب البرنامج من الموجّه إعادة توجيه منفذ المشاركة (UPnP أو NAT-PMP)، وما دامت المشاركة تعمل يعلن الكمبيوتر عن نفسه في الشبكة المحلية (mDNS) كي يعثر عليه هاتف مقترن من جديد.</p>
-  <p class="note" id="site-origins">فتح صفحة من هذا الموقع (وليس استخدام البرنامج) يتصل بثلاثة عناوين خارجية على الأكثر: fonts.googleapis.com وfonts.gstatic.com (خطوط Google لعرض الصفحات)، وفي الصفحة الرئيسية ونسخها اللغوية يتصل أيضاً بـ api.github.com (GitHub، للاستعلام عن أحدث إصدار لرابط التنزيل). يتلقى كل منها عنوان IP الخاص بك ووكيل المستخدم (user agent) في متصفحك ولا شيء غير ذلك. لا يتم الاتصال بأي عنوان للتحليلات أو لإدارة الوسوم أو للإعلانات. وتذكر صفحة الخصوصية الأمر نفسه.</p>
+  <p class="note" id="site-origins">فتح صفحة من هذا الموقع (وليس استخدام البرنامج) يتصل بعنوانين خارجيين: fonts.googleapis.com وfonts.gstatic.com (خطوط Google لعرض الصفحات). يتلقى كل منها عنوان IP الخاص بك ووكيل المستخدم (user agent) في متصفحك ولا شيء غير ذلك. لا يتم الاتصال بأي عنوان للتحليلات أو لإدارة الوسوم أو للإعلانات. وتذكر صفحة الخصوصية الأمر نفسه.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">التنزيلات</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

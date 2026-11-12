@@ -1,6 +1,6 @@
 # Positioning
 
-The one source every external surface is written from: the landing and its twelve locale pages, the server page, the three authored READMEs, the Store listing and the winget descriptions. No surface is written from another
+The one source every external surface is written from: the landing and its twelve locale pages, the server page, the authored READMEs (English, Russian, Ukrainian), the Store listing and the winget descriptions. No surface is written from another
 surface; where two disagree, this file decides which one is wrong (`SITE-REPRESENTATION` rules 1 and 2, tickets 155, 249 and 273).
 
 The machine form of everything below is [tools/site-facts.json](../../tools/site-facts.json), and
@@ -13,12 +13,22 @@ gate, so a change starts here and in the data file, and only then in a surface.
 Every surface that says what the product is leads with this sentence, in the reader's language (the product name is
 kept, [PRODUCT_NAMING](PRODUCT_NAMING.md)):
 
-> Three optional parts: a media and file manager that views and sorts photos and videos with one key and manages files in local folders, on servers and on connected devices; a local sharing and scheduling service that shares folders over SFTP, runs file operations on a schedule and connects this PC to an exchange account; and a Media Exchange Server that you run yourself, through which your devices reach each other - start with the manager or with the folder-sharing server, and add the rest only if you want it.
+> Four optional parts: a media and file manager that views and sorts photos and videos with one key and manages files in local folders, on servers and on connected devices; a local sharing service that shares folders over SFTP and connects this PC to an exchange account; scheduled file operations that run copy, move, delete and archive on a timetable, installed together with the Share Manager; and a Media Exchange Server that you run yourself, through which your devices reach each other - start with the manager or with the folder-sharing server, and add the rest only if you want it.
 
-The wording was decided by the owner on 2026-10-26 (specification 273, decisions Q273-1 to Q273-8). It replaces the
-sentence of specification 249, which still called the first part a viewer and sorter and the second a folder-sharing
-service only; the tree had outgrown both (specification 273 section 2). The Russian and Ukrainian forms are the
+The wording was decided by the owner on 2026-10-26 (specification 273, decisions Q273-1 to Q273-8) and amended on
+2026-11-10 (specification L0297): scheduled file operations are a component of their own, the fourth part, recognised
+on the same level as the manager, local sharing and the exchange server, because they are a reason to use the product
+even when no folder is shared. The 2026-10-26 sentence named three parts and folded scheduling into the second; the
+2026-10-26 sentence itself replaced that of specification 249, which still called the first part a viewer and sorter
+and the second a folder-sharing service only (specification 273 section 2). The Russian and Ukrainian forms are the
 `ru.family` and `uk.family` of [tools/site-copy.json](../../tools/site-copy.json).
+
+**Four components, one shared payload.** Scheduled file operations are a component of the positioning, not a package:
+they are run by the Share Manager, so every channel that carries the Share Manager carries them, and the User
+installer's "Scheduled operations" item lays down the same Share Manager payload as "Local sharing" (specification
+L0297 P3). Every surface that names them as a part says so - installed together with the Share Manager, no separate
+download, no Windows service - and says that they run while the Share Manager runs in the user's signed-in session. A
+surface never implies a separate scheduling package, a background service or execution with nobody signed in.
 
 **The cross-link blurb.** A sibling product's page that links here copies one line verbatim beside the link, in the
 reader's language: EN *Media and file manager for Windows: sort photos and videos with one key*. The 13 forms are
@@ -27,10 +37,12 @@ reader's language: EN *Media and file manager for Windows: sort photos and video
 **Every surface states facts in the present tense** (canon invariant 17, owner ruling of 2026-10-26). No surface
 carries a promise marker of any kind, in any language, and no surface names what is only planned. The words that
 were used for that, together with the definitions the product outgrew, are `retiredPhrases` of the data file; the
-gate fails on each of them in every scanned file, case-insensitively. History is not rewritten: the release notes and
-`whats-new.html` keep what each release said.
+gate fails on each of them in every scanned file, case-insensitively. History keeps what each release said, with one
+exception: the release notes and `whats-new.html` carry no promise or hedge marker either - those are rewritten as
+present-tense facts or dropped (owner decision 2026-11-08, ticket 207 F28); an old product definition in an old entry
+stays, admitted by name in the data file's allow list.
 
-## 2. The three components, in order
+## 2. The four components, in order
 
 A surface that lists what the product does lists these in this order. A surface too short for all of them names the
 first ones. Each part is independently optional: the manager is not a prerequisite of the server and a server is not a
@@ -39,13 +51,15 @@ prerequisite of the manager. No store policy asks for a different first function
 | # | Component | What it is | Availability |
 | --- | --- | --- | --- |
 | 1 | **Media and file manager** | The viewer program: fast paging through huge folders of photos and video, one key per file (move, copy, rename, delete), slideshow, playback, archives opened like folders, offline OCR and translation; and a file manager - the Grid panel's file manager mode (F3) - over local drives, SFTP servers and SMB shares with a login, and the devices of an exchange account, with queued file operations. Documents in the sorting loop are shown as previews: text as text, PDF pages, the cover of an EPUB, any other file as a card. | Shipped in every package. Always installed by the full package; an optional, unticked component of the Server edition. |
-| 2 | **Local sharing and scheduling** | The Share Manager and its SFTP worker: the folders you pick open on an Android phone, another copy of the program or any SFTP client, over your own network, paired by QR code; file operations (copy, move, delete, archive) run on a timetable; this PC joins an account on an exchange server, with the account's devices as places, the server clipboard and end-to-end encryption; live broadcast of a screen, a window, a camera or audio. Hosting FileDO `.fdd` virtual disks is a capability of this component, not a part of its own. | Shipped, optional, off until you switch it on. Included (ticked in the Full type) in the User installer, winget and the ZIP, as a second application of the Store package, and as the whole point of the Server edition. |
-| 3 | **Media Exchange Server** | A separate server you run yourself: your devices enroll into an account you create on it and reach each other through it when neither can be reached directly; it holds accounts, devices, invitations and limits, and is administered in the browser. It is not folder sharing, it is not a public relay anybody hosts for you, and neither the manager nor local sharing needs it. | Not in this package, in any channel: its shipping gate is shut (state `gated`). |
+| 2 | **Local sharing** | The Share Manager and its SFTP worker: the folders you pick open on an Android phone, another copy of the program or any SFTP client, over your own network, paired by QR code; this PC joins an account on an exchange server, with the account's devices as places, the server clipboard and end-to-end encryption; live broadcast of a screen, a window, a camera or audio. Hosting FileDO `.fdd` virtual disks is a capability of this component, not a part of its own. | Shipped, optional, off until you switch it on. Included (ticked in the Full type) in the User installer, winget and the ZIP, as a second application of the Store package, and as the whole point of the Server edition. |
+| 3 | **Scheduled file operations** | Copy, move, delete and archive files on a timetable, with a preview before a task runs and a journal of every run, managed in their own scheduling window (opened from the Share Manager's tray, from the viewer's folder menu or with a viewer command the user can give a key) and on the Share Manager settings page. They need no folder sharing, no server, no open port and no administrator rights, and run while the Share Manager runs in the signed-in session - never in the Server edition's Windows service. | Shipped, optional. Installed together with the Share Manager - the same payload, no separate download and no Windows service: the User installer's "Scheduled operations" item (ticked in the Full type), the ZIP and winget, the Store package's Share Manager, and the Server edition's Share Manager. |
+| 4 | **Media Exchange Server** | A separate server you run yourself: your devices enroll into an account you create on it and reach each other through it when neither can be reached directly; it holds accounts, devices, invitations and limits, and is administered in the browser. It is not folder sharing, it is not a public relay anybody hosts for you, and neither the manager nor local sharing needs it. | Not in this package, in any channel: its shipping gate is shut (state `gated`). |
 
 What the table never says: that a browser can open SFTP, that anybody hosts a public relay for the user, that an
 account has to be registered to use the manager or local sharing, or that the manager reads documents, e-books or
-texts (the shipped previews are previews; reading is `planned`, section 2.2). Those are not consequences of the
-three-part model.
+texts (the shipped previews are previews; reading is `planned`, section 2.2), that scheduled file operations are a
+separate download, run as a Windows service or run with nobody signed in. Those are not consequences of the
+four-part model.
 
 ### 2.1 A gated component on the surfaces
 
@@ -86,12 +100,17 @@ sibling products' pages.
 | Component | Released | Gated | Planned |
 | --- | --- | --- | --- |
 | Media and file manager | view and sort with one key (with slideshow, playback, archives as folders, editor, OCR and translation); SFTP servers and SMB shares opened like folders; the file manager mode of the Grid panel; secure `.fd-sec` containers; document previews | - | reading documents, e-books and texts |
-| Local sharing and scheduling | folder sharing over SFTP with QR pairing and FileDO hosting; scheduled file operations; the Server edition; live broadcast; the exchange account | guest invitations and password links of an exchange account; the Google Drive channel | - |
+| Local sharing | folder sharing over SFTP with QR pairing and FileDO hosting; the Server edition; live broadcast; the exchange account | guest invitations and password links of an exchange account; the Google Drive channel | - |
+| Scheduled file operations | copy, move, delete and archive on a timetable, with preview and run history, in their own scheduling window and on the settings page; the viewer's folder action and command | - | - |
 | Media Exchange Server | - | the server itself: accounts, devices, invitations and registration, limits, service management, administration in the browser | - |
 
 `built`, in no published release yet: the optional HTML page viewer of the media and file manager (specification
-275, row `html-pages`) and its optional full PDF and EPUB reader (specification 274, row `document-reader`) - each
-named in classes A to C only until the release that carries it is published.
+275, row `html-pages`), its optional full PDF and EPUB reader (specification 274, row `document-reader`) and its
+optional full text reader and editor (specification 277, row `text-reader`), and the scheduled operation that fills a
+local drive's free space with FileDO and deletes it again (specification L0299, row `scheduled-fill-free-space`) - each
+named in classes A to C only until the release that carries it is published. The settings standard of an exchange
+account (specification L0296, row `exchange-settings-standard`) is `built` too and is also named in the Settings help
+(class D), which ships with the build that carries it.
 
 The coverage sets: the three READMEs and the landing page (in English, Russian and Ukrainian) name every `released`
 capability whose row lists them. A released capability a coverage set does not name fails the gate, naming the file
@@ -99,14 +118,14 @@ and the language.
 
 ## 3. Two install intents, and the public editions
 
-The three components are not three downloads and not three editions. A visitor arrives with one of two intents and
+The four components are not four downloads and not four editions. A visitor arrives with one of two intents and
 each has one entry page; each entry page links the other in one sentence and does not bury its own path in a catalogue
 of downloads.
 
 | Intent | The visitor wants .. | Entry page | Obtained as | What gets installed | The manager |
 | --- | --- | --- | --- | --- | --- |
-| **Manager first** | to sort and look at photos and videos and manage files across places | the landing page, the Store listing and the READMEs | the full package: the User installer, the portable ZIP, winget `SerZhyAle.FastMediaSorter`, the Microsoft Store | the manager; local sharing and scheduling as an optional part that is off until switched on (left out by the Compact type) | always installed |
-| **Server first** | a machine that stays reachable with nobody signed in | the Server edition page, [server.html](../../server.html) | the Server edition: its own setup.exe and winget `SerZhyAle.FastMediaSorter.Server` | the folder-sharing service as a Windows service, plus FileDO hosting (ticked, optional); the Media Exchange Server is not in this package | optional, unticked; the package is complete without it |
+| **Manager first** | to sort and look at photos and videos and manage files across places | the landing page, the Store listing and the READMEs | the full package: the User installer, the portable ZIP, winget `SerZhyAle.FastMediaSorter`, the Microsoft Store | the manager; local sharing and scheduled file operations as optional parts that are off until switched on (both left out by the Compact type); a visitor who comes for scheduled operations takes this package, whose Setup ticks the scheduling item | always installed |
+| **Server first** | a machine that stays reachable with nobody signed in | the Server edition page, [server.html](../../server.html) | the Server edition: its own setup.exe and winget `SerZhyAle.FastMediaSorter.Server` | the folder-sharing service as a Windows service, plus FileDO hosting (ticked, optional); its Share Manager brings scheduled file operations, which run in the signed-in session, not in the service; the Media Exchange Server is not in this package | optional, unticked; the package is complete without it |
 
 The machine ids of the two intents stay `viewer-first` and `server-first` (the `profiles` block): ids, not wording.
 
@@ -115,7 +134,7 @@ shown the same on every page.
 
 | Edition | Display name | Obtained as | Leads with |
 | --- | --- | --- | --- |
-| **The full package** | `Fast Media Sorter & Sharing for Windows` | the User installer, the portable ZIP, winget, the Microsoft Store; carries the manager, the Share Manager and both viewer exes (the x64 mainline and the x86 fallback) | component 1; local sharing and scheduling is an optional part, the exchange server is not in this package |
+| **The full package** | `Fast Media Sorter & Sharing for Windows` | the User installer, the portable ZIP, winget, the Microsoft Store; carries the manager, the Share Manager and both viewer exes (the x64 mainline and the x86 fallback) | component 1; local sharing and scheduled file operations are optional parts, the exchange server is not in this package |
 | **The Server edition** | `Fast Media Sorter & Sharing: Folder Share Server` | its own setup.exe and its own winget package | component 2 - the folder-sharing server leads and the manager rides along as an unticked component (specification 132 section 3.3); this is a focused package, not a second order of the components |
 
 The Server edition's own page and manifest lead with the server because that is the package's job. They are
@@ -153,13 +172,15 @@ component is `absent` in every channel.
 | Component | Installer (.exe) | Portable ZIP | winget | Microsoft Store | Server setup (.exe) | winget (Server) |
 | --- | --- | --- | --- | --- | --- | --- |
 | Media and file manager | core | core | core | core (x64 mainline only) | optional, unticked | optional, unticked |
-| Local sharing and scheduling | optional, ticked in Full; Compact leaves it out | bundled | optional, ticked (Full) | bundled (a second application, in your session) | required | required |
+| Local sharing | optional, ticked in Full; Compact leaves it out | bundled | optional, ticked (Full) | bundled (a second application, in your session) | required | required |
+| Scheduled file operations (installed with the Share Manager) | optional, ticked in Full (the "Scheduled operations" item, the same payload as local sharing); Compact leaves it out | bundled | optional, ticked (Full) | bundled (in the Share Manager, in your session) | required (in its Share Manager) | required (in its Share Manager) |
 | FileDO hosting (a capability of sharing) | optional, unticked | bundled | optional, unticked | absent | optional, ticked | optional, ticked |
 | Media Exchange Server | absent | absent | absent | absent | absent | absent |
 
 | Fact per channel | User installer, ZIP, winget | Microsoft Store | Server edition (setup and winget) |
 | --- | --- | --- | --- |
 | Where sharing runs | the Share Manager, in your session; it can hand sharing to a Windows service later | the Share Manager, in your session; no Windows service (a Store package cannot register one) | a Windows service that starts with Windows, nobody signed in |
+| Where scheduled operations run | the Share Manager, in your signed-in session | the Share Manager, in your signed-in session | the Share Manager, in the signed-in session - never in the Windows service |
 | To install | no administrator rights (per user) | the Store | administrator rights |
 | To switch sharing on | one approval for the firewall rule | none: the package declares the firewall rule of its worker | the installer already did it |
 | Windows floor | 10 1607 for sharing; Windows 7/8.1 and 32-bit get the viewer only | 10 1809 | 10 1607, 64-bit |
@@ -216,7 +237,7 @@ An attribute without a pointer is cut.
 | Photos and videos in one sorter, video played offline through the built-in LibVLC engine | README "What the 64-bit program adds"; `src/Main_Form.VideoPlayer.vb` |
 | Archives (ZIP, CBZ, 7z, RAR) and remote SFTP folders and SMB shares open like ordinary folders | `src/Archives/`, `src/Resources/`; [how-to-archives.html](../how-to-archives.html), [how-to-resources.html](../how-to-resources.html) |
 | One file manager over local drives, SFTP and SMB resources and the devices of an exchange account, with queued file operations | `src/Image_Panel_Form.FileManager.vb`, `src/FileManager/`; specification 257 |
-| File operations on a timetable (copy, move, delete, archive), set up in the Share Manager and reached from the viewer's folder menu | specifications 222 and 231; the Share Manager's scheduled operations page |
+| File operations on a timetable (copy, move, delete, archive) in their own scheduling window, reached from the tray, the viewer's folder menu and an assignable viewer command, with no folder sharing needed | specifications 222, 231 and L0297; `src/FastMediaSorterCompanion/Forms/Scheduled_Manager_Form.vb` |
 | This PC as a device of an exchange account: the account's devices as places, the server clipboard, end-to-end encryption | specifications 224, 226 and 234; `src/Exchange/` |
 | Offline OCR (Tesseract) with optional on-image translation by a local model or a server the user chooses | `src/Ocr/`, `src/Translate/`; [how-to-ocr.html](../how-to-ocr.html) |
 | Optional folder sharing to an Android phone over SFTP, paired by QR code, off until switched on | the Share Manager; contract `FMSCFG`; [publish-folders-android.html](../../publish-folders-android.html) |
@@ -233,6 +254,9 @@ the recurring copies and clean-ups run on their own, so I stop doing the same fi
 
 Component 2: when I want this PC's folder on my phone, I want to scan a code once, so I can open it from the phone
 without a cloud in between.
+
+Component 3: when the same copy, move or clean-up comes back every day or week, I want to set it once with a preview
+and see a journal of every run, so the chore happens without me and without sharing anything.
 
 ### 6.4 Target persona
 

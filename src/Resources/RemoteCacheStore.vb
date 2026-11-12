@@ -123,7 +123,7 @@ Friend Module RemoteCacheStore
     ''' that runs ahead of a user about to leave the folder is pure cost on a metered link.
     ''' </summary>
     Friend Function PrefetchDepth(capabilities As ProviderCapabilities) As Integer
-        If capabilities Is Nothing OrElse Not capabilities.NeedsMaterialisation Then Return 0
+        If capabilities Is Nothing OrElse Not capabilities.NeedsMaterialisation OrElse capabilities.FetchOnDemandOnly Then Return 0
         If capabilities.CostHint = ProviderCostHint.Fast AndAlso Not capabilities.IsMetered Then Return 3
         Return 1
     End Function

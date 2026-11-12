@@ -83,6 +83,17 @@ Friend NotInheritable Class ManagerBox
         End Using
     End Function
 
+    ''' <summary>One line of text through the same window, masked when the spec says so: the text, or Nothing when the
+    ''' question was cancelled (an empty answer is not a cancel).</summary>
+    Friend Shared Function Prompt(owner As IWin32Window, spec As PromptSpec) As String
+        Dim parent As IWin32Window = ViewerBoxMapping.UsableOwner(owner)
+        Using dialog As New Ask_Dialog(spec)
+            Prepare(dialog, parent)
+            If parent Is Nothing Then dialog.ShowDialog() Else dialog.ShowDialog(parent)
+            Return If(dialog.Answer = 0, dialog.TypedText, Nothing)
+        End Using
+    End Function
+
     ''' <summary>The topmost band, the place and the look of the window right before it is shown.</summary>
     Private Shared Sub Prepare(dialog As Ask_Dialog, owner As IWin32Window)
         If owner Is Nothing Then

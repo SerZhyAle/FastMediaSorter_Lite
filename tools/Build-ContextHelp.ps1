@@ -59,19 +59,19 @@ $relatedHeadings = @{
 }
 
 $indexIntros = @{
-    'en' = 'Offline help for the windows of Fast Media Sorter &amp; Sharing for Windows: the media and file manager, the local sharing and scheduling service and the Media Exchange Server.'
-    'ru' = 'Встроенная справка по окнам Fast Media Sorter &amp; Sharing for Windows: медиа- и файлового менеджера, локальной службы раздачи и расписаний и Media Exchange Server.'
-    'uk' = 'Вбудована довідка з вікон Fast Media Sorter &amp; Sharing for Windows: медіа- та файлового менеджера, локальної служби роздачі та розкладів і Media Exchange Server.'
-    'de' = 'Offline-Hilfe zu den Fenstern von Fast Media Sorter &amp; Sharing for Windows: Medien- und Dateimanager, lokaler Dienst für Freigabe und Zeitplanung und Media Exchange Server.'
-    'it' = 'Guida offline per le finestre di Fast Media Sorter &amp; Sharing for Windows: il gestore di media e file, il servizio locale di condivisione e pianificazione e Media Exchange Server.'
-    'es' = 'Ayuda sin conexión para las ventanas de Fast Media Sorter &amp; Sharing for Windows: el gestor de medios y archivos, el servicio local de uso compartido y programación y Media Exchange Server.'
-    'fr' = 'Aide hors ligne pour les fenêtres de Fast Media Sorter &amp; Sharing for Windows : le gestionnaire de médias et fichiers, le service local de partage et de planification et Media Exchange Server.'
-    'pt' = 'Ajuda offline para as janelas do Fast Media Sorter &amp; Sharing for Windows: o gerenciador de mídia e arquivos, o serviço local de compartilhamento e agendamento e o Media Exchange Server.'
-    'ar' = 'مساعدة دون اتصال لنوافذ Fast Media Sorter &amp; Sharing for Windows: مدير الوسائط والملفات، خدمة المشاركة والجدولة المحلية، Media Exchange Server.'
-    'hi' = 'Fast Media Sorter &amp; Sharing for Windows की विंडो के लिए ऑफ़लाइन सहायता: मीडिया और फ़ाइल मैनेजर, स्थानीय साझाकरण और शेड्यूलिंग सेवा तथा Media Exchange Server।'
-    'bn' = 'Fast Media Sorter &amp; Sharing for Windows-এর উইন্ডোগুলোর অফলাইন সহায়তা: মিডিয়া ও ফাইল ম্যানেজার, স্থানীয় শেয়ারিং ও সময়সূচি পরিষেবা এবং Media Exchange Server।'
-    'ur' = 'Fast Media Sorter &amp; Sharing for Windows کی ونڈوز کے لیے آف لائن مدد: میڈیا اور فائل مینیجر، مقامی شیئرنگ اور شیڈولنگ سروس اور Media Exchange Server۔'
-    'zh' = 'Fast Media Sorter &amp; Sharing for Windows 各窗口的离线帮助：媒体与文件管理器、本地共享与计划服务以及 Media Exchange Server。'
+    'en' = 'Offline help for the windows of Fast Media Sorter &amp; Sharing for Windows: the media and file manager, the local sharing service, scheduled file operations and the Media Exchange Server.'
+    'ru' = 'Встроенная справка по окнам Fast Media Sorter &amp; Sharing for Windows. Четыре части: медиа- и файловый менеджер, локальная служба раздачи, файловые операции по расписанию и Media Exchange Server.'
+    'uk' = 'Вбудована довідка з вікон Fast Media Sorter &amp; Sharing for Windows. Чотири частини: медіа- та файловий менеджер, локальна служба роздачі, файлові операції за розкладом і Media Exchange Server.'
+    'de' = 'Offline-Hilfe zu den Fenstern von Fast Media Sorter &amp; Sharing for Windows: Medien- und Dateimanager, ein lokaler Freigabedienst, geplante Dateivorgänge und Media Exchange Server.'
+    'it' = 'Guida offline per le finestre di Fast Media Sorter &amp; Sharing for Windows: il gestore di media e file, il servizio locale di condivisione, le operazioni pianificate sui file e Media Exchange Server.'
+    'es' = 'Ayuda sin conexión para las ventanas de Fast Media Sorter &amp; Sharing for Windows: el gestor de medios y archivos, el servicio local de uso compartido, las operaciones de archivos programadas y Media Exchange Server.'
+    'fr' = 'Aide hors ligne pour les fenêtres de Fast Media Sorter &amp; Sharing for Windows : le gestionnaire de médias et fichiers, le service local de partage, les opérations planifiées sur les fichiers et Media Exchange Server.'
+    'pt' = 'Ajuda offline para as janelas do Fast Media Sorter &amp; Sharing for Windows: o gerenciador de mídia e arquivos, o serviço local de compartilhamento, as operações de arquivo agendadas e o Media Exchange Server.'
+    'ar' = 'مساعدة دون اتصال لنوافذ Fast Media Sorter &amp; Sharing for Windows: مدير الوسائط والملفات، خدمة محلية للمشاركة، عمليات الملفات المجدولة، Media Exchange Server.'
+    'hi' = 'Fast Media Sorter &amp; Sharing for Windows की विंडो के लिए ऑफ़लाइन सहायता: मीडिया और फ़ाइल मैनेजर, स्थानीय साझाकरण सेवा, शेड्यूल किए गए फ़ाइल ऑपरेशन तथा Media Exchange Server।'
+    'bn' = 'Fast Media Sorter &amp; Sharing for Windows-এর উইন্ডোগুলোর অফলাইন সহায়তা: মিডিয়া ও ফাইল ম্যানেজার, স্থানীয় শেয়ারিং সেবা, নির্ধারিত ফাইল অপারেশন এবং Media Exchange Server।'
+    'ur' = 'Fast Media Sorter &amp; Sharing for Windows کی ونڈوز کے لیے آف لائن مدد: میڈیا اور فائل مینیجر، مقامی شیئرنگ سروس، شیڈولڈ فائل آپریشنز اور Media Exchange Server۔'
+    'zh' = 'Fast Media Sorter &amp; Sharing for Windows 各窗口的离线帮助：媒体与文件管理器、本地共享服务、计划文件操作以及 Media Exchange Server。'
 }
 
 # "1. .. 2. .." becomes the numbered order list; a number that does not continue the sequence stays text.
@@ -198,6 +198,7 @@ foreach ($locale in $locales) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>$title - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
@@ -263,6 +264,7 @@ $elementDetails
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
   <title>$helpWord - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">

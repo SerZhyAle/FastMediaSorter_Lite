@@ -340,6 +340,18 @@ Partial Public NotInheritable Class Localization
             "Share Manager খুলুন: এই ফোল্ডারকে উৎস করে একটি নতুন নির্ধারিত অপারেশন",
             "Share Manager کھولیں: اس فولڈر کو ماخذ بنا کر نیا طے شدہ آپریشن",
             "打开 Share Manager：以此文件夹为源的新计划操作")
+        ' L0297: the folderless window-level command and its tooltip.
+        Add("Операции по расписанию..",
+            "Scheduled operations..", "Операції за розкладом..", "Geplante Vorgänge..", "Operazioni pianificate..",
+            "Operaciones programadas..", "Opérations planifiées..", "Operações agendadas..", "العمليات المجدولة..",
+            "शेड्यूल किए गए ऑपरेशन..", "নির্ধারিত অপারেশন..", "شیڈولڈ آپریشنز..", "计划操作..")
+        Add("Открыть управление операциями по расписанию",
+            "Open the scheduled operations management", "Відкрити керування операціями за розкладом",
+            "Die Verwaltung geplanter Vorgänge öffnen", "Apri la gestione delle operazioni pianificate",
+            "Abrir la gestión de operaciones programadas", "Ouvrir la gestion des opérations planifiées",
+            "Abrir o gerenciamento de operações agendadas", "افتح إدارة العمليات المجدولة",
+            "शेड्यूल किए गए ऑपरेशनों का प्रबंधन खोलें", "নির্ধারিত অপারেশন পরিচালনা খুলুন",
+            "شیڈولڈ آپریشنز کا انتظام کھولیں", "打开计划操作管理")
         Add("Share Manager старой версии не умеет открывать расписание отсюда. Обновите его.",
             "An older Share Manager cannot open the schedule from here. Update it.",
             "Старіша версія Share Manager не вміє відкривати розклад звідси. Оновіть її.",

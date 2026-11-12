@@ -58,8 +58,14 @@ Friend NotInheritable Class ExchangeAgentStateInfo
     Public ReadOnly DeviceName As String
     ''' <summary>The last refusal of the server, as its wire reason ("" when none).</summary>
     Public ReadOnly LastReason As String
+    ''' <summary>Ticket 269 P2.4: the agent serves a Google Drive listing in its directory (a Drive sign-in is present), so the directory may be read
+    ''' with no exchange account (<see cref="Configured"/> False). Additive on the wire: written only when True, and an absent member reads False,
+    ''' so an older agent and a newer viewer (or the reverse) keep working.</summary>
+    Public ReadOnly Drive As Boolean
 
-    Public Sub New(configured As Boolean, state As ExchangeAgentState, features As IEnumerable(Of String), deviceId As String, deviceName As String, lastReason As String)
+    Public Sub New(configured As Boolean, state As ExchangeAgentState, features As IEnumerable(Of String), deviceId As String, deviceName As String, lastReason As String,
+                   Optional drive As Boolean = False)
+        Me.Drive = drive
         Me.Configured = configured
         Me.State = state
         Me.Features = New List(Of String)(If(features, Array.Empty(Of String)()))
@@ -86,6 +92,7 @@ Friend NotInheritable Class ExchangeAgentStateInfo
         o("deviceId") = DeviceId
         o("deviceName") = DeviceName
         o("lastReason") = LastReason
+        If Drive Then o("drive") = True
         Return o.ToJsonString()
     End Function
 
@@ -111,12 +118,133 @@ Friend NotInheritable Class ExchangeAgentStateInfo
                 Dim deviceId As String = If(r.TryGetProperty("deviceId", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
                 Dim deviceName As String = If(r.TryGetProperty("deviceName", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
                 Dim lastReason As String = If(r.TryGetProperty("lastReason", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
-                info = New ExchangeAgentStateInfo(configured, state, feats, deviceId, deviceName, lastReason)
+                Dim drive As Boolean = r.TryGetProperty("drive", el) AndAlso el.ValueKind = JsonValueKind.True
+                info = New ExchangeAgentStateInfo(configured, state, feats, deviceId, deviceName, lastReason, drive)
                 Return True
             End Using
         Catch ex As JsonException
             Return False
         End Try
+    End Function
+
+End Class
+
+''' <summary>Where a Drive job stands (ticket 269 P3.2).</summary>
+Friend Enum ExchangeAgentDriveJobState
+    ''' <summary>The REQUEST is on Drive and the device has not answered in full yet.</summary>
+    Waiting = 0
+    ''' <summary>The answer arrived: a listing, or every requested file saved whole.</summary>
+    Done = 1
+    ''' <summary>Refused, not answered, or not readable: <see cref="ExchangeAgentDriveJob.Error"/> says which.</summary>
+    Failed = 2
+End Enum
+
+''' <summary>One fetched file: the path the viewer asked for and the file the agent saved for it.</summary>
+Friend NotInheritable Class ExchangeAgentDriveFile
+    Public ReadOnly Path As String
+    Public ReadOnly SavedPath As String
+    Public Sub New(path As String, savedPath As String)
+        Me.Path = If(path, "")
+        Me.SavedPath = If(savedPath, "")
+    End Sub
+End Class
+
+''' <summary>The state of a Drive job as the agent reports it (ticket 269 P3.2): this product's private pipe, not a catalog shape. The
+''' listing travels as the `listing.json` of the reply, verbatim in form, so one reader serves both.</summary>
+Friend NotInheritable Class ExchangeAgentDriveJob
+
+    Public ReadOnly JobId As String
+    Public ReadOnly State As ExchangeAgentDriveJobState
+    ''' <summary>The machine token of a failed job ("" otherwise).</summary>
+    Public ReadOnly [Error] As String
+    ''' <summary>The device the job waits for, as its record names it - for "waiting for .. via Google Drive".</summary>
+    Public ReadOnly DeviceName As String
+    ''' <summary>The listing of a done `list` job, or Nothing.</summary>
+    Public ReadOnly Listing As ExchangeDriveListingReply
+    ''' <summary>The saved files of a done `fetch` job, in the order asked.</summary>
+    Public ReadOnly Files As IReadOnlyList(Of ExchangeAgentDriveFile)
+    ''' <summary>When that device last wrote its record on Drive, as the record says it ("" when not known). The waiting line of
+    ''' item CQ shows it; only the answer that starts a job carries it, because it does not move while one waits.</summary>
+    Public ReadOnly LastRecordAt As String
+
+    Public Sub New(jobId As String, state As ExchangeAgentDriveJobState, [error] As String, deviceName As String, listing As ExchangeDriveListingReply,
+                   files As IReadOnlyList(Of ExchangeAgentDriveFile), Optional lastRecordAt As String = "")
+        Me.LastRecordAt = If(lastRecordAt, "")
+        Me.JobId = If(jobId, "")
+        Me.State = state
+        Me.Error = If([error], "")
+        Me.DeviceName = If(deviceName, "")
+        Me.Listing = listing
+        Me.Files = If(files, Array.Empty(Of ExchangeAgentDriveFile)())
+    End Sub
+
+    ''' <summary>The JSON of the state. <paramref name="listingBody"/> is the reply's `listing.json` as received (Nothing when none).</summary>
+    Public Shared Function ToJson(jobId As String, state As ExchangeAgentDriveJobState, [error] As String, deviceName As String, listingBody As Byte(),
+                                  files As IEnumerable(Of ExchangeAgentDriveFile), Optional lastRecordAt As String = "") As String
+        Dim o As New JsonObject()
+        o("jobId") = If(jobId, "")
+        o("state") = state.ToString()
+        If Not String.IsNullOrEmpty([error]) Then o("error") = [error]
+        o("deviceName") = If(deviceName, "")
+        If Not String.IsNullOrEmpty(lastRecordAt) Then o("lastRecordAt") = lastRecordAt
+        If listingBody IsNot Nothing Then o("listing") = JsonNode.Parse(Encoding.UTF8.GetString(listingBody))
+        If files IsNot Nothing Then
+            Dim list As New JsonArray()
+            For Each f As ExchangeAgentDriveFile In files
+                Dim item As New JsonObject()
+                item("path") = f.Path
+                item("saved") = f.SavedPath
+                list.Add(item)
+            Next
+            o("files") = list
+        End If
+        Return o.ToJsonString()
+    End Function
+
+    Public Shared Function TryParse(json As String, ByRef job As ExchangeAgentDriveJob) As Boolean
+        job = Nothing
+        If String.IsNullOrEmpty(json) Then Return False
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(json)
+                Dim r As JsonElement = doc.RootElement
+                If r.ValueKind <> JsonValueKind.Object Then Return False
+                Dim el As JsonElement = Nothing
+                Dim id As String = If(r.TryGetProperty("jobId", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
+                If String.IsNullOrEmpty(id) Then Return False
+                Dim state As ExchangeAgentDriveJobState = ExchangeAgentDriveJobState.Waiting
+                If r.TryGetProperty("state", el) AndAlso el.ValueKind = JsonValueKind.String Then
+                    Dim parsed As ExchangeAgentDriveJobState
+                    If Not [Enum].TryParse(el.GetString(), False, parsed) Then Return False
+                    state = parsed
+                End If
+                Dim err As String = If(r.TryGetProperty("error", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
+                Dim deviceName As String = If(r.TryGetProperty("deviceName", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
+                Dim lastRecordAt As String = If(r.TryGetProperty("lastRecordAt", el) AndAlso el.ValueKind = JsonValueKind.String, el.GetString(), "")
+                Dim listing As ExchangeDriveListingReply = Nothing
+                If r.TryGetProperty("listing", el) AndAlso el.ValueKind = JsonValueKind.Object Then
+                    If Not ExchangeDriveRequests.TryParseListing(Encoding.UTF8.GetBytes(el.GetRawText()), listing) Then Return False
+                End If
+                Dim files As New List(Of ExchangeAgentDriveFile)
+                If r.TryGetProperty("files", el) AndAlso el.ValueKind = JsonValueKind.Array Then
+                    For Each item As JsonElement In el.EnumerateArray()
+                        If item.ValueKind <> JsonValueKind.Object Then Continue For
+                        Dim p As JsonElement = Nothing
+                        Dim s As JsonElement = Nothing
+                        If item.TryGetProperty("path", p) AndAlso p.ValueKind = JsonValueKind.String AndAlso
+                           item.TryGetProperty("saved", s) AndAlso s.ValueKind = JsonValueKind.String Then files.Add(New ExchangeAgentDriveFile(p.GetString(), s.GetString()))
+                    Next
+                End If
+                job = New ExchangeAgentDriveJob(id, state, err, deviceName, listing, files, lastRecordAt)
+                Return True
+            End Using
+        Catch ex As JsonException
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Never the paths: they name the person's files.</summary>
+    Public Overrides Function ToString() As String
+        Return "ExchangeAgentDriveJob " & State.ToString()
     End Function
 
 End Class
@@ -142,6 +270,14 @@ Friend NotInheritable Class ExchangeAgentPipe
     Public Const RequestGetCastOffer As String = "GetCastOffer"
     Public Const RequestGetBroadcast As String = "GetBroadcast"
     Public Const RequestGetLiveDirectory As String = "GetLiveDirectory"
+    ''' <summary>Ticket 269 P3.2: ask the device that lists a folder on Google Drive for a listing or files (`list` / `fetch`, item CO).
+    ''' Answered at once with a job id; the answer arrives through <see cref="RequestDriveJob"/>, because a Drive device may take up to
+    ''' two minutes and one pipe connection is held for 40 s at most.</summary>
+    Public Const RequestDriveStart As String = "DriveStart"
+    ''' <summary>Long-polls one Drive job (`waitMs` up to 30 s) for its state; a finished job is forgotten once it was read.</summary>
+    Public Const RequestDriveJob As String = "DriveJob"
+    ''' <summary>Gives a Drive job up: its REQUEST is deleted from Drive and nothing more is saved.</summary>
+    Public Const RequestDriveCancel As String = "DriveCancel"
 
     ' --- the machine errors of a refused request ---
     Public Const ErrorNotConfigured As String = "not-configured"
@@ -156,6 +292,18 @@ Friend NotInheritable Class ExchangeAgentPipe
     Public Const ErrorKeyChanged As String = "key-changed"
     Public Const ErrorServerNoE2e As String = "server-no-e2e"
     Public Const ErrorSealedFailed As String = "sealed-failed"
+    ' Ticket 269 P3.2: a Drive job's own failures. The producer's refusals (`unavailable`, `not-permitted`, `pin-required`, `too-large`,
+    ' `drive-full`, ExchangeDriveRequests) pass through as they are.
+    ''' <summary>The device did not answer via Google Drive within two minutes (item CQ); its REQUEST was deleted.</summary>
+    Public Const ErrorNoAnswer As String = "no-answer"
+    ''' <summary>A file of the answer did not arrive whole (size or SHA-256), or the answer was not readable: nothing partial was kept.</summary>
+    Public Const ErrorCorrupt As String = "corrupt"
+    ''' <summary>The job id is not (or no longer) known to the agent.</summary>
+    Public Const ErrorUnknownJob As String = "unknown-job"
+    ''' <summary>Too many Drive jobs run at once.</summary>
+    Public Const ErrorBusy As String = "busy"
+    ''' <summary>The Google Drive channel is not signed in, or Drive cannot be reached right now.</summary>
+    Public Const ErrorDriveOffline As String = "drive-offline"
 
     ''' <summary>The sealed state a refusal token names, or Nothing for any other token.</summary>
     Public Shared Function SealedMessageOf(errorToken As String) As ConnectionDiagnosisMessage
@@ -326,6 +474,16 @@ Friend NotInheritable Class ExchangeAgentAccessResult
     End Property
 End Class
 
+''' <summary>Ticket 269 P3.2: a Drive job's reply; <see cref="Job"/> is set when the reply is ok.</summary>
+Friend NotInheritable Class ExchangeAgentDriveJobResult
+    Public ReadOnly Reply As ExchangeAgentReply
+    Public ReadOnly Job As ExchangeAgentDriveJob
+    Public Sub New(reply As ExchangeAgentReply, job As ExchangeAgentDriveJob)
+        Me.Reply = reply
+        Me.Job = job
+    End Sub
+End Class
+
 ''' <summary>The viewer's end of the local channel.</summary>
 Friend NotInheritable Class ExchangeAgentClient
 
@@ -460,6 +618,66 @@ Friend NotInheritable Class ExchangeAgentClient
         Dim reply As ExchangeAgentReply = Await SendAsync(req, 4000, ct).ConfigureAwait(False)
         If Not reply.IsOk Then Return New ExchangeAgentAccessResult(reply, "")
         Return New ExchangeAgentAccessResult(reply, reply.DataJson)
+    End Function
+
+    ''' <summary>Ticket 269 P3.2: asks the PC that lists <paramref name="resourceId"/> on Google Drive for the listing of
+    ''' <paramref name="path"/> ("" is the root). The answer is a waiting job; follow it with <see cref="DriveJobAsync"/>.</summary>
+    Public Function DriveListAsync(resourceId As String, path As String, ct As CancellationToken) As Task(Of ExchangeAgentDriveJobResult)
+        Return DriveStartAsync(Sub(o As JsonObject)
+                                   o("action") = ExchangeDriveRequests.ActionList
+                                   o("resourceId") = resourceId
+                                   o("path") = If(path, "")
+                               End Sub, ct)
+    End Function
+
+    ''' <summary>Ticket 269 P3.2: asks for files of a folder listed on Google Drive, saved by the agent into <paramref name="directory"/> -
+    ''' an existing folder under the viewer's remote cache, refused anywhere else. Paths with one base name are refused (a reply names
+    ''' files by base name only), and so is a request longer than the pipe's request bound: ask a file or a few at a time.</summary>
+    Public Function DriveFetchAsync(resourceId As String, paths As IEnumerable(Of String), directory As String, ct As CancellationToken) As Task(Of ExchangeAgentDriveJobResult)
+        Return DriveStartAsync(Sub(o As JsonObject)
+                                   o("action") = ExchangeDriveRequests.ActionFetch
+                                   o("resourceId") = resourceId
+                                   Dim list As New JsonArray()
+                                   For Each p As String In If(paths, Array.Empty(Of String)())
+                                       list.Add(p)
+                                   Next
+                                   o("paths") = list
+                                   o("directory") = If(directory, "")
+                               End Sub, ct)
+    End Function
+
+    Private Async Function DriveStartAsync(fill As Action(Of JsonObject), ct As CancellationToken) As Task(Of ExchangeAgentDriveJobResult)
+        Dim req As String = ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestDriveStart, fill)
+        If Encoding.UTF8.GetByteCount(req) >= ExchangeAgentPipe.MaxRequestBytes Then
+            Return New ExchangeAgentDriveJobResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Refused, ExchangeAgentPipe.ErrorBadRequest, ""), Nothing)
+        End If
+        Return ParseJob(Await SendAsync(req, 4000, ct).ConfigureAwait(False))
+    End Function
+
+    ''' <summary>The state of a Drive job, after waiting up to <paramref name="waitMs"/> (at most 30 s) for it to finish. A finished
+    ''' job is answered once; asking again is `unknown-job`.</summary>
+    Public Async Function DriveJobAsync(jobId As String, waitMs As Integer, ct As CancellationToken) As Task(Of ExchangeAgentDriveJobResult)
+        Dim wait As Integer = Math.Min(Math.Max(waitMs, 0), 30000)
+        Dim req As String = ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestDriveJob,
+            Sub(o As JsonObject)
+                o("jobId") = If(jobId, "")
+                o("waitMs") = wait
+            End Sub)
+        Return ParseJob(Await SendAsync(req, wait + 5000, ct).ConfigureAwait(False))
+    End Function
+
+    ''' <summary>Gives a Drive job up (the viewer left the folder); the agent withdraws its REQUEST.</summary>
+    Public Function DriveCancelAsync(jobId As String, ct As CancellationToken) As Task(Of ExchangeAgentReply)
+        Dim req As String = ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestDriveCancel, Sub(o As JsonObject) o("jobId") = If(jobId, ""))
+        Return SendAsync(req, 3000, ct)
+    End Function
+
+    Private Shared Function ParseJob(reply As ExchangeAgentReply) As ExchangeAgentDriveJobResult
+        Dim job As ExchangeAgentDriveJob = Nothing
+        If reply.IsOk AndAlso Not ExchangeAgentDriveJob.TryParse(reply.DataJson, job) Then
+            Return New ExchangeAgentDriveJobResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Malformed, "", ""), Nothing)
+        End If
+        Return New ExchangeAgentDriveJobResult(reply, job)
     End Function
 
 End Class

@@ -16,6 +16,8 @@ writes them must do to be safe. A user-facing "pack a file" feature is not part 
   prose. Head fields are read only after slot 0 authenticates; an unknown version, suite, flag or slot type is
   *unsupported*. Suite 3 is refused by name; a suite-2 file falls to the length screen or the wrong-credential
   class (13.3, 18.8), which the contract says a reader without those suites does without doing anything wrong.
+  Reading suite 1 only is a permanent variant (owner, 2026-10-30, ticket 252, on specification 026's reader-only
+  decision), reviewed before any user-facing pack feature.
 - **Three outcomes, never merged (BEHAVIOUR 7).** *Wrong credential / not a container / tampering*, *damaged* and
   *unsupported* stay apart; a wrong key and a flipped byte fail an AEAD tag identically.
 - **Sealed names and sizes (FORMAT 7, 11, 20).** An unsafe sealed true name and an impossible sealed size are refused

@@ -1,11 +1,11 @@
 package wire
 
-// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Sixteen
-// exist (the ten of 0.20 and the six of 19 - accounts, invitations, passwords); a client shows an
+// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Twenty-one
+// exist (the ten of 0.20, the six of 19 - accounts, invitations, passwords -, admin-disabled and the four of 1.12 item EP); a client shows an
 // unknown value as a generic refusal.
 type Reason string
 
-// The sixteen reasons. Refuse is the only way a `refused` envelope is built, and a source scan
+// The reasons. Refuse is the only way a `refused` envelope is built, and a source scan
 // (guard_test.go) fails any other construction and any Refuse argument that is not one of these.
 const (
 	ReasonBadCredentials        Reason = "bad-credentials"
@@ -37,6 +37,17 @@ const (
 
 	// ReasonAdminDisabled is an `admin-auth` when administration is turned off (DEVICE-EXCHANGE 1.4, ticket 245).
 	ReasonAdminDisabled Reason = "admin-disabled"
+
+	// DEVICE-EXCHANGE 1.12 item EP (ticket L0296): the application settings standard.
+
+	// ReasonNotFound is a `settings_get_standard` for a pair that has no standard.
+	ReasonNotFound Reason = "not-found"
+	// ReasonInvalidPayload is a `settingsPayload` that is not one JSON object of the shape of item EO.
+	ReasonInvalidPayload Reason = "invalid-payload"
+	// ReasonAppIDMismatch is an `appId` that is not registered or not the one of the device's `product`.
+	ReasonAppIDMismatch Reason = "app-id-mismatch"
+	// ReasonVersionIncompatible is a `formatVersion` the server does not implement.
+	ReasonVersionIncompatible Reason = "version-incompatible"
 )
 
 // AllReasons is the closed list of 7.10, in the order of the contract.
@@ -45,9 +56,10 @@ var AllReasons = []Reason{
 	ReasonIDCollision, ReasonCapacity, ReasonPortUnavailable, ReasonUnavailable, ReasonRateLimited, ReasonProtectionUnsupported,
 	ReasonInvitationInvalid, ReasonLoginTaken, ReasonPasswordPolicy, ReasonLimitReached, ReasonNotPermitted, ReasonSignedOut,
 	ReasonAdminDisabled,
+	ReasonNotFound, ReasonInvalidPayload, ReasonAppIDMismatch, ReasonVersionIncompatible,
 }
 
-// Valid reports whether r is one of the seventeen.
+// Valid reports whether r is one of the twenty-one.
 func (r Reason) Valid() bool {
 	for _, k := range AllReasons {
 		if r == k {
@@ -70,7 +82,7 @@ const (
 // which is also what answers a peer that spoke the legacy one.
 func Refuse(r Reason) *Refused {
 	if !r.Valid() {
-		panic("wire: Refuse with a reason outside the seventeen of DEVICE-EXCHANGE 7.10: " + string(r))
+		panic("wire: Refuse with a reason outside the twenty-one of DEVICE-EXCHANGE 7.10: " + string(r))
 	}
 	return &Refused{Head: Head{SchemaVersion, TypeRefused}, Reason: string(r)}
 }

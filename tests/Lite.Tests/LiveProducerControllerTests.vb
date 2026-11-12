@@ -117,6 +117,58 @@ Public Class LiveProducerControllerTests
     End Sub
 
     <Fact>
+    Public Sub Rotating_the_link_password_on_air_replaces_the_link_pair_and_publishes_the_same_broadcast()
+        ' Ticket 263 Q263-5: the link pair gets a new password, the own pair and the broadcast stay, the agent is told once.
+        Dim harness As New FakeHarness With {.Address = ""}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim changed As Integer
+        ports.BroadcastChanged = Sub(s) changed += 1
+        Dim controller As New LiveBroadcastController(ports)
+        Assert.False(controller.CanRotateLinkPassword)
+        Assert.False(controller.RotateLinkPassword("fresh-pass"))
+        Try
+            Assert.True(controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Microphone, .Mode = "AUDIO_ONLY", .Password = "secret"}).Ok)
+            Dim id As String = controller.State.BroadcastId
+            Dim ownPassword As String = controller.State.Credentials.PasswordFor(LiveCredentialPairs.OwnUser)
+            Dim descriptor As String = controller.State.DescriptorJson
+            Assert.True(controller.CanRotateLinkPassword)
+
+            Assert.True(controller.RotateLinkPassword("fresh-pass"))
+            Assert.Equal("fresh-pass", controller.State.Credentials.PasswordFor(LiveCredentialPairs.LinkUser))
+            Assert.Equal(ownPassword, controller.State.Credentials.PasswordFor(LiveCredentialPairs.OwnUser))
+            Assert.Equal("fresh-pass", controller.State.Password)
+            Assert.Equal(id, controller.State.BroadcastId)
+            Assert.Equal(descriptor, controller.State.DescriptorJson)    ' the link carries no password: the same link stays valid
+            Assert.Equal(1, changed)
+            Assert.False(harness.Encoder.Stopped)
+            Assert.False(controller.RotateLinkPassword("fresh-pass"))      ' unchanged: nothing to announce
+            Assert.Equal(1, changed)
+        Finally
+            controller.Stop()
+        End Try
+        Assert.False(controller.RotateLinkPassword("after-stop"))
+    End Sub
+
+    <Fact>
+    Public Sub A_broadcast_without_a_link_password_has_no_link_password_to_rotate()
+        Dim harness As New FakeHarness With {.Address = ""}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim changed As Integer
+        ports.BroadcastChanged = Sub(s) changed += 1
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Assert.True(controller.Start(MicrophoneRequest("Open")).Ok)
+            Assert.False(controller.CanRotateLinkPassword)
+            Assert.False(controller.RotateLinkPassword("fresh-pass"))
+            Assert.Equal(0, changed)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
     Public Sub Losing_the_lan_address_moves_an_exchange_broadcast_to_the_private_listener()
         Dim address As String = LiveTestMachine.LanAddress()
         If address.Length = 0 Then Throw Xunit.Sdk.SkipException.ForSkip("No LAN address is available for the listener rebind")

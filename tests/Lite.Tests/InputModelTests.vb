@@ -245,9 +245,11 @@ Public Class InputModelTests
         Assert.True(CustomHotkeys.IsReserved(Keys.Apps))
         Assert.Equal(String.Empty, CustomHotkeys.Format(Keys.F10))
         Assert.Equal(Keys.None, CustomHotkeys.Parse("F10"))
-        ' Refusing a stored chord must also retire the factory key (INPUT-CHORD rule 3).
+        ' Refusing a stored chord must also retire the factory key (INPUT-CHORD rule 3); the chord is
+        ' kept as written and binds nothing (ticket 294).
         Dim map = CustomHotkeys.Load("{""undo"":""F10""}")
-        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
+        Assert.True(CustomHotkeys.IsInert(map("undo")))
+        Assert.Equal(String.Empty, CustomHotkeys.EffectiveCombo(map, CustomHotkeys.Find("undo")))
         Assert.True(CustomHotkeys.IsRetiredDefault(map, "U"))
     End Sub
 
@@ -275,7 +277,9 @@ Public Class InputModelTests
         Assert.Equal("mediaMenu", CustomHotkeys.OwnerOfOverride(map, "Ctrl+M"))
         ' ... and the two reserved keys can never be bound to anything else.
         Assert.Equal(Keys.None, CustomHotkeys.Parse("Apps"))
-        Assert.Equal(CustomHotkeys.NoShortcut, CustomHotkeys.Load("{""mediaMenu"":""Apps""}")("mediaMenu"))
+        Dim refused As Dictionary(Of String, String) = CustomHotkeys.Load("{""mediaMenu"":""Apps""}")
+        Assert.True(CustomHotkeys.IsInert(refused("mediaMenu")))
+        Assert.Equal(String.Empty, CustomHotkeys.OwnerOfOverride(refused, "Apps"))
     End Sub
 
     ' --- UX-106: F7 then F11 ---------------------------------------------------------------

@@ -181,6 +181,9 @@ Partial Public Class Table_Form
                 Next
             End If
             ApplySendLogsScriptFont(dialog, header, ownedFonts)
+            ' After the fonts above: the bold header and a script face are the controls' own fonts, and the Text size
+            ' grows exactly those (ticket 279, T-2). It also scales the authored 96-dpi positions by the display ratio.
+            DialogLayout.ApplyAutoScale(dialog)
             ' The authored 150x32 buttons stay as they are while caption and glyph fit; a longer caption in
             ' another language, or the glyph's picture at a high DPI, widens the button instead of clipping it
             ' (WINDOWS-UI section 11 item 3).

@@ -90,6 +90,11 @@ Public NotInheritable Class CustomHotkeys
         ' defaults half): F is the family's fullscreen key and F4 the picker; the viewer's historical F7
         ' alias remains, as the table allows ("the inherited F7 alias may remain on Windows"). G opens the
         ' thumbnail panel beside the viewer's F3.
+        ' L0297: scheduledOperations (below, between imagePanel and help) is scheduled file
+        ' operations - the product's fourth principal function. One visible command with an
+        ' ASSIGNABLE shortcut only: no factory key is chosen (the letters near the concept are
+        ' taken), no system-wide hotkey. The collision checking, the shortcuts dialog and the
+        ' F1 card are the mechanism's own.
         Dim actions As New List(Of HotkeyAction) From {
             New HotkeyAction("nextFile", "Следующий файл", "Right", "Space", "PageDown", "BrowserForward"),
             New HotkeyAction("prevFile", "Предыдущий файл", "Left", "P", "B", "Backspace", "PageUp", "BrowserBack"),
@@ -116,6 +121,7 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("fullScreen", "Полноэкранный режим", "F7", "F"),
             New HotkeyAction("settings", "Настройки", "F2"),
             New HotkeyAction("imagePanel", "Панель изображений", "F3", "G"),
+            New HotkeyAction("scheduledOperations", "Операции по расписанию", ""),
             New HotkeyAction("help", "Справка", "F1"),
             New HotkeyAction("zoomIn", "Увеличить масштаб", "Num +", "Oemplus", "Shift+Oemplus"),
             New HotkeyAction("zoomOut", "Уменьшить масштаб", "Num -", "OemMinus"),
@@ -426,9 +432,10 @@ Public NotInheritable Class CustomHotkeys
     ' ------------------------------------------------------------------- store ----
 
     ''' <summary>
-    ''' Unknown ids and redundant defaults are dropped. An unusable, reserved or duplicate
-    ''' stored binding stays explicitly disabled: INPUT-CHORD rule 3 forbids resurrecting
-    ''' its factory action. Old spellings are normalized without changing their key.
+    ''' Unknown ids and redundant defaults are dropped. An unusable or reserved stored binding
+    ''' is kept as written and is inert (<see cref="IsInert"/>); a duplicate becomes the
+    ''' no-shortcut marker. Either way INPUT-CHORD rule 3 forbids resurrecting its factory
+    ''' action. Old spellings are normalized without changing their key.
     ''' </summary>
     Public Shared Function Load(json As String) As Dictionary(Of String, String)
         Dim map As New Dictionary(Of String, String)(StringComparer.Ordinal)
@@ -455,7 +462,11 @@ Public NotInheritable Class CustomHotkeys
 
             Dim combo As String = Canonical(stored)
             If combo.Length = 0 OrElse Parse(combo) = Keys.None Then
-                map(action.Id) = NoShortcut
+                ' INPUT-CHORD 0.5 rule 3 with VERSIONING section 4 rule 5 (ticket 294): a chord this viewer
+                ' cannot bind - a trigger a newer producer added, two triggers, a Win or reserved chord - is
+                ' inert (no key does it, its factory keys stay retired) and is kept as it was stored, so the
+                ' next save writes it back instead of replacing it with "-". Only a blank value means nothing.
+                map(action.Id) = If(String.IsNullOrWhiteSpace(stored), NoShortcut, If(combo.Length > 0, combo, stored))
                 Continue For
             End If
             If String.Equals(combo, Canonical(action.DefaultCombo), StringComparison.OrdinalIgnoreCase) Then Continue For
@@ -493,9 +504,16 @@ Public NotInheritable Class CustomHotkeys
         If action Is Nothing Then Return String.Empty
         Dim combo As String = Nothing
         If map IsNot Nothing AndAlso map.TryGetValue(action.Id, combo) AndAlso Not String.IsNullOrEmpty(combo) Then
-            Return If(combo = NoShortcut, String.Empty, combo)
+            Return If(IsInert(combo), String.Empty, combo)
         End If
         Return Canonical(action.DefaultCombo)
+    End Function
+
+    ''' <summary>True for a stored value that binds no key: the no-shortcut marker, or a chord
+    ''' the map keeps but this viewer cannot bind (INPUT-CHORD rule 3, ticket 294).</summary>
+    Public Shared Function IsInert(stored As String) As Boolean
+        If String.IsNullOrEmpty(stored) OrElse stored = NoShortcut Then Return True
+        Return Parse(stored) = Keys.None
     End Function
 
     ''' <summary>The action that has been MOVED onto this combination, or "". Defaults are
@@ -505,7 +523,7 @@ Public NotInheritable Class CustomHotkeys
         If map Is Nothing OrElse String.IsNullOrEmpty(combo) Then Return String.Empty
         combo = InCurrentVocabulary(combo)
         For Each pair As KeyValuePair(Of String, String) In map
-            If pair.Value = NoShortcut Then Continue For
+            If IsInert(pair.Value) Then Continue For
             If String.Equals(pair.Value, combo, StringComparison.OrdinalIgnoreCase) Then Return pair.Key
         Next
         Return String.Empty

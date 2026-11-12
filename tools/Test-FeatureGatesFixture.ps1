@@ -19,7 +19,12 @@
       7. INCLUDE_EXCHANGE twice in release.yml                 -> FAIL;
       8. release.yml missing                                   -> COULD NOT VERIFY;
       9. the shipped StreamsPlayer page switch of the $shipped
-         registry on with every gate shut                      -> PASS.
+         registry on with every gate shut                      -> PASS;
+     10. the remote administration gate (L0278) shut, its
+         evidence holding a PASS line                          -> FAIL;
+     11. the same gate open, one PASS line for E1 and one for
+         E2, the path existing                                 -> PASS;
+     12. the same gate open, E2 only a placeholder line        -> FAIL.
 
     Each case runs the check in its own pwsh process and holds the exit code against the expectation;
     a case that answers anything else names the code it got.
@@ -57,8 +62,14 @@ function New-FixtureTree {
     New-Item -ItemType Directory -Path (Join-Path $tree 'src\Exchange') | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $tree 'src\LiveBroadcast') | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $tree 'docs\specifications') | Out-Null
+    # the remote administration gate (L0278) is shut in every tree unless a case says otherwise
+    New-Item -ItemType Directory -Path (Join-Path $tree 'src\FastMediaSorterCompanion\Core\RemoteAdmin') | Out-Null
+    Set-Offered $tree $remoteAdminSource $false
     return $tree
 }
+
+$remoteAdminSource = 'src\FastMediaSorterCompanion\Core\RemoteAdmin\ExchangeRemoteAdminFeatures.vb'
+$remoteAdminEvidence = 'remote-admin-gate-evidence.md'
 
 function Set-Workflow([string]$tree, $line) {
     if ($null -eq $line) {
@@ -189,8 +200,46 @@ $cases.Add([pscustomobject]@{
         Set-Workflow $tree $shutWorkflow
         Set-Offered $tree 'src\Exchange\ExchangeFeatures.vb' $false
         Set-Offered $tree 'src\LiveBroadcast\LiveBroadcastFeatures.vb' $false
-        New-Item -ItemType Directory -Path (Join-Path $tree 'src\FastMediaSorterCompanion\Core') | Out-Null
+        New-Item -ItemType Directory -Force -Path (Join-Path $tree 'src\FastMediaSorterCompanion\Core') | Out-Null
         Set-Offered $tree 'src\FastMediaSorterCompanion\Core\BroadcastPage.vb' $true
+    }
+})
+$cases.Add([pscustomobject]@{
+    Name = 'the remote administration gate shut with a PASS line in its evidence is a defect'
+    Code = 1
+    Build = {
+        param($tree)
+        Set-Workflow $tree $shutWorkflow
+        Set-Offered $tree 'src\Exchange\ExchangeFeatures.vb' $false
+        Set-Offered $tree 'src\LiveBroadcast\LiveBroadcastFeatures.vb' $false
+        Set-Content -LiteralPath (Join-Path $tree 'docs\run.log') -Value 'binary-used' -Encoding UTF8
+        Set-Evidence $tree $remoteAdminEvidence "Free text.`nEVIDENCE E1 PASS 2026-10-01 SZ docs/run.log`n"
+    }
+})
+$cases.Add([pscustomobject]@{
+    Name = 'the remote administration gate open with one PASS line per id and an existing path passes'
+    Code = 0
+    Build = {
+        param($tree)
+        Set-Workflow $tree $shutWorkflow
+        Set-Offered $tree 'src\Exchange\ExchangeFeatures.vb' $false
+        Set-Offered $tree 'src\LiveBroadcast\LiveBroadcastFeatures.vb' $false
+        Set-Offered $tree $remoteAdminSource $true
+        Set-Content -LiteralPath (Join-Path $tree 'docs\run.log') -Value 'binary-used' -Encoding UTF8
+        Set-Evidence $tree $remoteAdminEvidence "EVIDENCE E1 PASS 2026-10-01 SZ docs/run.log`nEVIDENCE E2 PASS 2026-10-02 SZ docs/run.log`n"
+    }
+})
+$cases.Add([pscustomobject]@{
+    Name = 'the remote administration gate open with only E1, or a placeholder line for E2, is a defect'
+    Code = 1
+    Build = {
+        param($tree)
+        Set-Workflow $tree $shutWorkflow
+        Set-Offered $tree 'src\Exchange\ExchangeFeatures.vb' $false
+        Set-Offered $tree 'src\LiveBroadcast\LiveBroadcastFeatures.vb' $false
+        Set-Offered $tree $remoteAdminSource $true
+        Set-Content -LiteralPath (Join-Path $tree 'docs\run.log') -Value 'binary-used' -Encoding UTF8
+        Set-Evidence $tree $remoteAdminEvidence "EVIDENCE E1 PASS 2026-10-01 SZ docs/run.log`nEVIDENCE E2 PASS 2026-MM-DD <owner-initials> <path>`nrung 2 on 2026-10-01`n"
     }
 })
 

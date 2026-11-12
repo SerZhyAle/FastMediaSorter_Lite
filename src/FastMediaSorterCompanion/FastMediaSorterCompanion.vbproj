@@ -84,6 +84,16 @@
     <InternalsVisibleTo Include="ContextHelpCaptures" />
   </ItemGroup>
 
+  <!-- Google Drive sign-in (specification 269, Q269-7): the desktop OAuth client of the owner's
+       Google Cloud project, read by ExchangeDriveClientConfig.Resolve. MSBuild takes the two
+       properties from same-named environment variables, so the release workflow sets them from
+       its secrets on the publish step and no file of this repository ever holds a value. A build
+       without them carries no item at all and stays "not configured in this build". -->
+  <ItemGroup>
+    <AssemblyMetadata Include="FmsDriveClientId" Value="$(FmsDriveClientId)" Condition="'$(FmsDriveClientId)' != '' And '$(FmsDriveClientSecret)' != ''" />
+    <AssemblyMetadata Include="FmsDriveClientSecret" Value="$(FmsDriveClientSecret)" Condition="'$(FmsDriveClientId)' != '' And '$(FmsDriveClientSecret)' != ''" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Offline trilingual port-forward guide, opened by ShareGuide. Keyed by the
          same relative path ShareGuide passes (help/port-forward.html). -->
@@ -287,6 +297,7 @@
     <Compile Include="..\Resources\TransferPlan.vb" Link="Core\Scheduled\Linked\Resources\TransferPlan.vb" />
     <Compile Include="..\Resources\ResourceTransfer.vb" Link="Core\Scheduled\Linked\Resources\ResourceTransfer.vb" />
     <Compile Include="..\Security\DpapiSecrets.vb" Link="Core\Scheduled\Linked\Resources\DpapiSecrets.vb" />
+    <Compile Include="..\Resources\ClipboardPaste.vb" Link="Core\ClipboardPaste.vb" />
     <Compile Include="..\Resources\QrCodeDecoder.vb" Link="Core\QrCodeDecoder.vb" />
     <Compile Include="..\Imaging\ImageSignature.vb" Link="Core\Imaging\ImageSignature.vb" />
     <Compile Include="..\Imaging\AnimationHeader.vb" Link="Core\Imaging\AnimationHeader.vb" />

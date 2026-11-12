@@ -154,7 +154,7 @@ func generate(commit string) (files map[string][]byte, err error) {
 	for _, sc := range []func() *transcript{scenarioEnrollAndHello, scenarioPairing, scenarioRefusals, scenarioDirectory,
 		scenarioTunnels, scenarioRelay, scenarioCast, scenarioRegistration, scenarioPasswordAndSignOut, scenarioPace,
 		scenarioClipboard, scenarioSealedDevices, scenarioSealedFolder, scenarioSealedGrant, scenarioSealedClipboard,
-		scenarioAdminNative, scenarioAdminWebSocket} {
+		scenarioAdminNative, scenarioAdminWebSocket, scenarioSettingsStandard} {
 		transcripts = append(transcripts, sc())
 	}
 	frames := framesFile{

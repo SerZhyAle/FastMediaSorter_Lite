@@ -96,7 +96,7 @@ Public Module FileDoDiskManager
         Return If(value, "").Trim().Trim(""""c).TrimEnd("\"c)
     End Function
 
-    Private Iterator Function RegisteredInstallDirectories() As IEnumerable(Of String)
+    Friend Iterator Function RegisteredInstallDirectories() As IEnumerable(Of String)
         For Each view As RegistryView In {RegistryView.Registry64, RegistryView.Registry32}
             Dim own As String = ""
             Try

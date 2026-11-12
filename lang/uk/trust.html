@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" data-page-lang="uk">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Чому Windows попереджає про це завантаження</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="uk">
+<meta property="og:locale" content="uk_UA">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Чому Windows попереджає про це завантаження">
 <meta name="twitter:description" content="Що означає попередження SmartScreen під час встановлення Fast Media Sorter &amp; Sharing, чому воно з'являється, на що натиснути і чого програма не робить ніколи.">
@@ -129,11 +129,11 @@
   </section>
 
   <p class="note">Один сторонній сервіс усе ж може бути викликаний, і лише якщо ви ввімкнете доступ з інтернету для спільного доступу до папок: у check-host.net запитують, чи відповідає переспрямований порт ззовні, і цей сервіс бачить вашу публічну адресу та порт. Більше йому нічого не надсилається. Ще дві речі не виходять за межі вашої мережі: коли доступ з інтернету ввімкнено, програма просить ваш роутер переспрямувати порт роздачі (UPnP або NAT-PMP), а поки роздача працює, комп'ютер оголошує про себе в локальній мережі (mDNS), щоб прив'язаний телефон знову його знайшов.</p>
-  <p class="note" id="site-origins">Відкриття сторінок цього сайту (а не робота програми) звертається щонайбільше до трьох зовнішніх адрес: fonts.googleapis.com і fonts.gstatic.com (Google Fonts, накреслення сторінок) та - на головній сторінці й її мовних версіях - api.github.com (GitHub, щоб дізнатися про останній випуск для посилання на завантаження). Кожна з них отримує вашу IP-адресу та user agent вашого браузера і більше нічого. Адреси аналітики, менеджера тегів чи реклами не використовуються. Те саме сказано на сторінці конфіденційності.</p>
+  <p class="note" id="site-origins">Відкриття сторінок цього сайту (а не робота програми) звертається до двох зовнішніх адрес: fonts.googleapis.com і fonts.gstatic.com (Google Fonts, накреслення сторінок). Кожна з них отримує вашу IP-адресу та user agent вашого браузера і більше нічого. Адреси аналітики, менеджера тегів чи реклами не використовуються. Те саме сказано на сторінці конфіденційності.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Завантаження</a>
-    <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Конфіденційність</a>
+    <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/privacy.html">Конфіденційність</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/">На головну сторінку</a>
   </div>
 </main>
@@ -170,7 +170,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Підтримка</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Підтримка</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Трекер задач</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

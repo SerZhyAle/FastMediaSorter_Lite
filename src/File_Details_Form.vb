@@ -220,17 +220,40 @@ Public NotInheritable Class File_Details_Form
 
     Private Sub AppendTitle(text As String)
         box.SelectionStart = box.TextLength
-        box.SelectionFont = header_Font
+        box.SelectionFont = HeaderFont()
         box.SelectedText = text
-        box.SelectionFont = ui_Font
+        box.SelectionFont = BodyFont()
         box.SelectedText = Environment.NewLine
     End Sub
 
     Private Sub AppendLine(text As String)
         box.SelectionStart = box.TextLength
-        box.SelectionFont = ui_Font
+        box.SelectionFont = BodyFont()
         box.SelectedText = text & Environment.NewLine
     End Sub
+
+    ''' <summary>The face of a row. On the mainline it is the box's own (inherited) font: the window font after the Windows
+    ''' Text size grew it (ticket 279, T-2) - <c>ui_Font</c> is the 9 pt it grew from and a rich-text selection font does not
+    ''' follow its box.</summary>
+    Private Function BodyFont() As Font
+#If Not NETFRAMEWORK Then
+        Return box.Font
+#Else
+        Return ui_Font
+#End If
+    End Function
+
+    ''' <summary>The face of a section title: bold, 10/9 of the row font (10 pt over 9 pt), rebuilt when that font changes.</summary>
+    Private Function HeaderFont() As Font
+#If Not NETFRAMEWORK Then
+        Dim points As Single = box.Font.SizeInPoints * (10.0F / 9.0F)
+        If header_Font Is Nothing OrElse Math.Abs(header_Font.SizeInPoints - points) > 0.01F Then
+            header_Font?.Dispose()
+            header_Font = New Font(box.Font.FontFamily, points, FontStyle.Bold, GraphicsUnit.Point)
+        End If
+#End If
+        Return header_Font
+    End Function
 
     Private Sub CopyAllText(sender As Object, e As EventArgs)
         ' Nothing rendered yet (the read is still running): the clipboard keeps its

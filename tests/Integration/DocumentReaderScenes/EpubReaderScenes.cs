@@ -71,7 +71,7 @@ static class EpubReaderScenes
                 preferences.FullEpubReader = true;
                 var watch = Stopwatch.StartNew();
                 Call(window, "LoadEpubReader", fixture);
-                await Until(() => Get(window, "epub_Reader_Host") is not null && Get(window, "epub_Reader_Toolbar") is not null, "EPUB host initialization");
+                await Until(() => Get(window, "epub_Reader_Host") is not null && (bool)Call(window, "DocumentPanelPresent"), "EPUB host and document panel initialization");
                 var host = Get(window, "epub_Reader_Host");
                 var view = (WebView2)Get(host, "view");
                 await Until(() => view.CoreWebView2?.DocumentTitle == "One", "First chapter");
@@ -104,6 +104,7 @@ static class EpubReaderScenes
                 preferences.FullEpubReader = false;
                 Call(window, "ApplyEpubReaderPreferences");
                 Check(Get(window, "epub_Reader_Host") is null, "Independent disable disposes host");
+                Check(!(bool)Call(window, "DocumentPanelPresent"), "Independent disable removes the document panel");
                 observations.Add(new { name = "input-and-independent-disable", pass = true });
                 File.Move(fixture, fixture + ".moved");
                 File.Delete(fixture + ".moved");

@@ -106,4 +106,14 @@ func clipboardText(n int64) string {
 	return itoa(n) + " bytes"
 }
 
+// clipboardMemoryText is item BZ: what one account's full clipboard can take of the server's memory - the
+// slot holds one value and one send in flight, each up to the limit. A guest has no clipboard (19 item AO)
+// and 0 turns it off, so both take nothing.
+func clipboardMemoryText(kind string, limit int64) string {
+	if limit <= 0 || kind == accounts.KindGuest {
+		return ""
+	}
+	return itoa(2*limit) + " bytes"
+}
+
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }

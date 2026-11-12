@@ -512,7 +512,7 @@ Friend NotInheritable Class DiskOptionsForm
     Public ReadOnly Password As New TextBox With {.Width = 330, .UseSystemPasswordChar = True}
     Public ReadOnly ReadOnlyAccess As New CheckBox With {.AutoSize = True, .Text = Localization.T("Только чтение")}
     Public ReadOnly OpenNow As New CheckBox With {.AutoSize = True, .Text = Localization.T("Открыть после регистрации"), .Checked = True}
-    Public ReadOnly Letter As New ComboBox With {.Width = 330, .DropDownStyle = ComboBoxStyle.DropDownList}
+    Public ReadOnly Letter As ComboBox = New RowFittingComboBox With {.Width = 330, .DropDownStyle = ComboBoxStyle.DropDownList}
     Private _answerRow As DialogButtonRow
 
     Public Sub New(register As Boolean, encrypted As Boolean, Optional showLetter As Boolean = True)

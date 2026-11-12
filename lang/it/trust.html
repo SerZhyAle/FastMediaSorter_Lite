@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-page-lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>Perché Windows avvisa su questo download</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: ordina foto e video con un tasto per file">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="it">
+<meta property="og:locale" content="it_IT">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Perché Windows avvisa su questo download">
 <meta name="twitter:description" content="Che cosa significa l'avviso SmartScreen su Fast Media Sorter &amp; Sharing, perché compare, su cosa cliccare esattamente e cosa il programma non fa mai.">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">Può essere contattato un solo servizio di terze parti, e solo se attivate l'accesso da internet per la condivisione: a check-host.net si chiede di confermare che la porta inoltrata risponde dall'esterno, e così quel servizio vede il vostro indirizzo pubblico e la porta. Non gli viene inviato nient'altro. Altre due cose restano dentro la vostra rete: con l'accesso da internet attivo, il programma chiede al router di inoltrare la porta di condivisione (UPnP o NAT-PMP), e mentre la condivisione è attiva il PC si annuncia sulla rete locale (mDNS), così un telefono associato può ritrovarlo.</p>
-  <p class="note" id="site-origins">Aprire una pagina di questo sito web (a differenza di usare il programma) contatta al massimo tre indirizzi esterni: fonts.googleapis.com e fonts.gstatic.com (Google Fonts, per i caratteri delle pagine) e, nella pagina iniziale e nelle sue versioni linguistiche, api.github.com (GitHub, per cercare l'ultima versione per il link di download). Ciascuno riceve il tuo indirizzo IP e lo user agent del browser, nient'altro. Non viene contattato alcun indirizzo di analisi, tag manager o pubblicità. La pagina sulla privacy dice lo stesso.</p>
+  <p class="note" id="site-origins">Aprire una pagina di questo sito web (a differenza di usare il programma) contatta due indirizzi esterni: fonts.googleapis.com e fonts.gstatic.com (Google Fonts, per i caratteri delle pagine). Ciascuno riceve il tuo indirizzo IP e lo user agent del browser, nient'altro. Non viene contattato alcun indirizzo di analisi, tag manager o pubblicità. La pagina sulla privacy dice lo stesso.</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Download</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

@@ -348,6 +348,18 @@ Public Class DriveChannelPublisherTests
     End Sub
 
     <Fact>
+    Public Sub The_reason_of_an_offline_device_survives_the_union_whichever_channel_has_it()
+        Dim paused As New ExchangeDeviceRecord("{}", DeviceA, "A", "fms-android", "", "android", New String() {}, "offline", "", offlineReason:="time-limit")
+        Dim withReason As ExchangeDirectorySnapshot = Snap(1, {paused}, NoResources)
+        Dim plain As ExchangeDirectorySnapshot = Snap(1, {DeviceRec(DeviceA, "A", "offline")}, NoResources)
+        Assert.True(DriveDirectoryMerge.Union(plain, withReason).Devices.Single().IsSharePaused)
+        Assert.True(DriveDirectoryMerge.Union(withReason, plain).Devices.Single().IsSharePaused)
+        Dim online As ExchangeDirectorySnapshot = Snap(1, {DeviceRec(DeviceA, "A", "online")}, NoResources)
+        Assert.True(DriveDirectoryMerge.Union(online, withReason).Devices.Single().IsOnline)
+        Assert.True(DriveDirectoryMerge.Union(withReason, online).Devices.Single().IsOnline)
+    End Sub
+
+    <Fact>
     Public Sub The_server_row_wins_a_shared_id_unless_it_is_not_online_and_Drive_says_it_is()
         Dim serverOnline As ExchangeDirectorySnapshot = Snap(1, {DeviceRec(DeviceA, "ServerName", "online")}, {ResourceRec(IdPhotos, DeviceA, "ServerPhotos", "online", True)})
         Dim serverOffline As ExchangeDirectorySnapshot = Snap(1, {DeviceRec(DeviceA, "ServerName", "offline")}, {ResourceRec(IdPhotos, DeviceA, "ServerPhotos", "offline", True)})

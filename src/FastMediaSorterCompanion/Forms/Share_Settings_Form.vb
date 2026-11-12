@@ -114,6 +114,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         DisposeProducerResources()
         DisposeAccountResources()
         DisposeDriveResources()
+        ReleaseRemoteResources()
     End Sub
 
     Private Sub BuildUi()
@@ -171,12 +172,15 @@ Partial Public NotInheritable Class Share_Settings_Form
                 BuildAboutRows(_secHelp)
             Case SettingsDestination.ExchangeServer
                 _secExchange = CreateExchangeSection()
+            Case SettingsDestination.RemoteExchange
+                _secRemote = CreateRemoteExchangeSection()
         End Select
         BuildSettingsPages()
         BuildDestinationLinks()
         SettingsBuildTimings("pages") = settingsBuildWatch.ElapsedMilliseconds
 
         Me.Controls.Add(_root)
+        AddRemoteTopToForm()
 
         HoldSettingsLayout()
         ConfigureSettingsContract()
@@ -188,6 +192,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         SettingsBuildTimings("hosting-state") = settingsBuildWatch.ElapsedMilliseconds
         UpdateSummaries()
         RestoreSettingsUiContext()
+        StartRemoteWindow()
         _built = True
 
         DpiLayout.ApplyAutoScale(Me)
@@ -274,7 +279,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             .WrapContents = False, .Margin = New Padding(0, 6, 0, 2)}
         Dim lblTheme As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0),
             .Text = Localization.T("Тема оформления")}
-        cmbTheme = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180, .Margin = New Padding(0, 2, 0, 0)}
+        cmbTheme = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180, .Margin = New Padding(0, 2, 0, 0)}
         cmbTheme.Items.AddRange(New Object() {Localization.T("Как в системе"), Localization.T("Светлая"), Localization.T("Тёмная")})
         cmbTheme.SelectedIndex = CInt(ThemeService.Mode)
         AddHandler cmbTheme.SelectedIndexChanged, AddressOf OnThemeChanged
@@ -289,7 +294,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             .WrapContents = False, .Margin = New Padding(0, 6, 0, 2)}
         Dim lblLanguage As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0),
             .Text = Localization.T("Язык интерфейса")}
-        cmbLanguage = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180, .Margin = New Padding(0, 2, 0, 0)}
+        cmbLanguage = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180, .Margin = New Padding(0, 2, 0, 0)}
         cmbLanguage.Items.AddRange(Localization.Names)
         cmbLanguage.SelectedIndex = Localization.CurrentIndex
         AddHandler cmbLanguage.SelectedIndexChanged, AddressOf OnUiLanguageChanged

@@ -114,9 +114,11 @@ Partial Public Class Main_Form
 
         UpdateContentWindowTitle()
         GetActivePictureBox()?.Invalidate()
+        If fullReader Then TextReaderOpened(filePath)
     End Sub
 
     Friend Sub ReleaseTextDocument()
+        TextReaderReleasing()
         text_Current_File_Path = ""
         text_Scroll_Offset = 0
         text_Font_Scale = 1.0F

@@ -190,6 +190,16 @@ Friend Enum ScheduledIssueCode
     DriveBothSides = 19
     ''' <summary>Delete is not offered when a side is Google Drive (ticket 231, 3.2).</summary>
     DriveDeleteUnsupported = 20
+    ''' <summary>A file through Google Drive carries the time it arrived here, so an age bound would drop it while the run's mark moves on
+    ''' (ticket 269 P4).</summary>
+    DriveAgeUnsupported = 21
+    ''' <summary>Filling free space works on a local drive or a folder on it only: no resource, no Google Drive, no network
+    ''' path (L0299, AC299-5).</summary>
+    LocalStorageRequired = 22
+    ''' <summary>A backup takes two plain folders: no resource, no Google Drive (L0298).</summary>
+    BackupNeedsPaths = 23
+    ''' <summary>A sealed backup has no stored password on this PC (L0298, Q298-3).</summary>
+    BackupPasswordMissing = 24
 End Enum
 
 Friend NotInheritable Class ScheduledIssue
@@ -247,6 +257,15 @@ Friend NotInheritable Class ProtectedFolders
         For Each e As String In Exact
             If String.Equals(canonical, e, StringComparison.OrdinalIgnoreCase) Then Return True
         Next
+        Return CoversTree(canonical)
+    End Function
+
+    ''' <summary>Only the Windows and program trees. Filling free space reads and moves no file of the folder it is
+    ''' given - it makes its own work folder there - so the drive root and the profile are ordinary places for it,
+    ''' the system volume included (L0299, Q299-2).</summary>
+    Friend Function CoversTree(folder As String) As Boolean
+        Dim canonical As String = FolderPaths.Clean(folder)
+        If canonical.Length = 0 Then Return False
         For Each tree As String In Trees
             If FolderPaths.IsSameOrInside(canonical, tree) Then Return True
         Next
@@ -344,6 +363,94 @@ Friend Module ScheduledValidation
         ' "Delete originals after verification" belongs to archive alone; a delete has no destination.
         If op.Action <> ScheduledAction.Archive Then op.DeleteOriginalsAfterVerify = False
         If op.Action = ScheduledAction.Delete Then op.Destination = New ScheduledLocation()
+        op.ChunkSizeMb = NormalizeChunkSize(op.ChunkSizeMb)
+        If op.Action = ScheduledAction.FillFreeSpace Then
+            ' Free space has no files to select, no names to collide and no target folder (L0299).
+            op.Destination = New ScheduledLocation()
+            op.Conditions = New ScheduledConditions()
+            op.Conflict = ScheduledConflict.Skip
+            op.Source.Recursive = False
+        End If
+        op.BackupKeepCount = NormalizeKeepCount(op.BackupKeepCount)
+        If op.Action = ScheduledAction.Backup Then
+            ' The folder is backed up as one unit, subfolders included: no selection, no names to collide (L0298).
+            op.Conditions = New ScheduledConditions()
+            op.Conflict = ScheduledConflict.Skip
+            op.Source.Recursive = True
+        Else
+            op.BackupSealed = False
+        End If
+    End Sub
+
+    ''' <summary>The keep-count clamped into 1..999 (CLI-EVENT-STREAM 0.17 item D1).</summary>
+    Friend Function NormalizeKeepCount(count As Integer) As Integer
+        Return Math.Max(ScheduledOperation.MinBackupKeepCount, Math.Min(ScheduledOperation.MaxBackupKeepCount, count))
+    End Function
+
+    ''' <summary>The refusals of a backup: two plain folders (no resource, no Google Drive), the destination outside the source,
+    ''' and a sealed backup with a stored password.</summary>
+    Private Sub ValidateBackup(op As ScheduledOperation, protectedFolders As ProtectedFolders,
+                               hasBackupPassword As Func(Of String, Boolean), issues As List(Of ScheduledIssue))
+        If op.Source.Kind <> ScheduledLocationKind.Path OrElse op.Destination.Kind <> ScheduledLocationKind.Path Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.BackupNeedsPaths))
+            Return
+        End If
+        Dim sourceFolder As String = ""
+        If op.Source.IsEmpty Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceMissing))
+        Else
+            sourceFolder = CompanionCommand.CanonicalFolder(op.Source.Path)
+            If sourceFolder.Length = 0 Then
+                issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceNotAbsolute, op.Source.Path))
+            ElseIf protectedFolders IsNot Nothing AndAlso protectedFolders.Covers(sourceFolder) Then
+                issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceProtected, sourceFolder))
+            End If
+        End If
+        Dim destinationFolder As String = ""
+        If op.Destination.IsEmpty Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationMissing))
+        Else
+            destinationFolder = CompanionCommand.CanonicalFolder(op.Destination.Path)
+            If destinationFolder.Length = 0 Then
+                issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationNotAbsolute, op.Destination.Path))
+            ElseIf protectedFolders IsNot Nothing AndAlso protectedFolders.Covers(destinationFolder) Then
+                issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationProtected, destinationFolder))
+            End If
+        End If
+        ' A set inside its own source would back itself up into every next generation.
+        If sourceFolder.Length > 0 AndAlso destinationFolder.Length > 0 AndAlso
+           FolderPaths.IsSameOrInside(destinationFolder, sourceFolder) Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationInsideSource, destinationFolder))
+        End If
+        If op.BackupSealed AndAlso hasBackupPassword IsNot Nothing AndAlso Not hasBackupPassword.Invoke(op.Id) Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.BackupPasswordMissing))
+        End If
+    End Sub
+
+    ''' <summary>One of the offered chunk sizes; anything else (a hand-edited file) is the default (Q299-1).</summary>
+    Friend Function NormalizeChunkSize(megabytes As Integer) As Integer
+        Return If(Array.IndexOf(ScheduledOperation.ChunkSizesMb, megabytes) >= 0, megabytes, ScheduledOperation.DefaultChunkSizeMb)
+    End Function
+
+    ''' <summary>The refusals of a fill: a local drive or folder only, and never inside the Windows or program trees.</summary>
+    Private Sub ValidateFill(op As ScheduledOperation, protectedFolders As ProtectedFolders, issues As List(Of ScheduledIssue))
+        If op.Source.Kind <> ScheduledLocationKind.Path Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.LocalStorageRequired, op.Source.Describe()))
+            Return
+        End If
+        If op.Source.IsEmpty Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceMissing))
+            Return
+        End If
+        Dim folder As String = CompanionCommand.CanonicalFolder(op.Source.Path)
+        If folder.Length = 0 Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceNotAbsolute, op.Source.Path))
+        ElseIf folder.StartsWith("\\", StringComparison.Ordinal) Then
+            ' A network path: a fill of a share would hang on a remote disk for hours (4.4).
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.LocalStorageRequired, folder))
+        ElseIf protectedFolders IsNot Nothing AndAlso protectedFolders.CoversTree(folder) Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceProtected, folder))
+        End If
     End Sub
 
     ''' <summary>
@@ -352,8 +459,17 @@ Friend Module ScheduledValidation
     ''' a sleeping share. A path must be absolute (drive or UNC) and free of device-namespace spellings.
     ''' </summary>
     Friend Function Validate(op As ScheduledOperation, protectedFolders As ProtectedFolders,
-                             Optional resources As Func(Of String, ScheduledResourceFacts) = Nothing) As List(Of ScheduledIssue)
+                             Optional resources As Func(Of String, ScheduledResourceFacts) = Nothing,
+                             Optional hasBackupPassword As Func(Of String, Boolean) = Nothing) As List(Of ScheduledIssue)
         Dim issues As New List(Of ScheduledIssue)()
+        If op.Action = ScheduledAction.FillFreeSpace Then
+            ValidateFill(op, protectedFolders, issues)
+            Return issues
+        End If
+        If op.Action = ScheduledAction.Backup Then
+            ValidateBackup(op, protectedFolders, hasBackupPassword, issues)
+            Return issues
+        End If
 
         Dim sourceFolder As String = ""
         If op.Source.IsEmpty Then
@@ -399,6 +515,10 @@ Friend Module ScheduledValidation
 
         If op.Action = ScheduledAction.Delete AndAlso op.Source.Kind = ScheduledLocationKind.Drive Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.DriveDeleteUnsupported))
+        End If
+
+        If op.Source.Kind = ScheduledLocationKind.Drive AndAlso (op.Conditions.MinAgeHours.HasValue OrElse op.Conditions.MaxAgeHours.HasValue) Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.DriveAgeUnsupported))
         End If
 
         ' Registered resources (4.3): the registry belongs to another program, so its answers come in as facts.

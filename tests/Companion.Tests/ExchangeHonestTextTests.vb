@@ -10,7 +10,9 @@ Public Class ExchangeHonestTextTests
     Public Sub Contract_languages_are_verbatim_in_the_app_and_privacy_page_and_other_languages_are_complete()
         Dim root = ExchangeTestSupport.RepoRoot()
         Dim go = File.ReadAllText(Path.Combine(root, "exchange-server/internal/statement/honest.go"))
-        Dim privacy = System.Net.WebUtility.HtmlDecode(File.ReadAllText(Path.Combine(root, "docs/privacy.html")))
+        ' The privacy policy has one page per contract language (ticket L0207 F1/F10/F16): en at docs/, ru and uk under lang/.
+        Dim privacyPages As New Dictionary(Of String, String) From {
+            {"en", "docs/privacy.html"}, {"ru", "lang/ru/privacy.html"}, {"uk", "lang/uk/privacy.html"}}
         Dim saved = Localization.CurrentCode
         Try
             For Each language In Localization.Codes
@@ -22,6 +24,7 @@ Public Class ExchangeHonestTextTests
                     Dim canonical = Regex.Match(go, "honest" & language.ToUpperInvariant() & " = `([^`]+)`").Groups(1).Value
                     Assert.NotEmpty(canonical)
                     Assert.Equal(canonical, paragraphs(0))
+                    Dim privacy = System.Net.WebUtility.HtmlDecode(File.ReadAllText(Path.Combine(root, privacyPages(language))))
                     Assert.Contains(canonical, privacy)
                     Dim drive As New Dictionary(Of String, String) From {
                         {"en", "Via Google Drive, files and the clipboard are kept in your own Google account, like your other files on Google Drive; no exchange server takes part."},

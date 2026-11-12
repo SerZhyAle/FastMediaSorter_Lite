@@ -1,6 +1,6 @@
 ﻿param(
     # Skip the pre-build housekeeping (tools\Clean-Build.ps1) that prunes
-    # superseded stage\ trees, orphaned bin\ folders and temp files.
+    # superseded stage\ trees and orphaned bin\ folders.
     [switch]$NoClean,
     # Skip building the .NET 10 Companion (the Share Manager). By
     # default this script now builds BOTH exes so you can build everything locally.
@@ -292,7 +292,7 @@ Write-Host "Using MSBuild: $msbuild"
 # and temp scratch so they do not accumulate. Leaves dist\ alone - the installer
 # step at the end runs its own pass that prunes dist\ while keeping this version.
 if (-not $NoClean) {
-    & (Join-Path $SolutionDir "tools\Clean-Build.ps1") -Stage -Bin -Temp
+    & (Join-Path $SolutionDir "tools\Clean-Build.ps1") -Stage -Bin
 }
 
 # Restore NuGet packages (packages.config). Needed for a fresh clone; a no-op when

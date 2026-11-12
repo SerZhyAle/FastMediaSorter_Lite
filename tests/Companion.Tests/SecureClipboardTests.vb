@@ -146,6 +146,13 @@ Public Class SecureClipboardTests
         Assert.Equal(15, ClipboardWin32.OpenPauseMs)
     End Sub
 
+    ''' <summary>CLIPBOARD-GUARD item N: a read whose owner does not answer is abandoned after 5 seconds, also a number the contract
+    ''' states.</summary>
+    <Fact>
+    Public Sub A_read_is_abandoned_after_the_five_seconds_of_the_contract()
+        Assert.Equal(5, ClipboardWin32.ReadBoundSeconds)
+    End Sub
+
     Private Shared Function FindRepoRoot() As String
         Dim dir = New DirectoryInfo(AppContext.BaseDirectory)
         While dir IsNot Nothing

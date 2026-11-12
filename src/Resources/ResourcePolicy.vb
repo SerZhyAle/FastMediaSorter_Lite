@@ -144,7 +144,8 @@ Friend NotInheritable Class ResourceRootPolicy
                                             isMetered:=baseCaps.IsMetered,
                                             costHint:=baseCaps.CostHint,
                                             supportsAtomicOverwriteRename:=False,
-                                            supportsStableSourceDelete:=False)
+                                            supportsStableSourceDelete:=False,
+                                            fetchOnDemandOnly:=baseCaps.FetchOnDemandOnly)
         End If
 
         Dim writable As Boolean = EffectiveWritable AndAlso baseCaps.CanWrite
@@ -163,7 +164,8 @@ Friend NotInheritable Class ResourceRootPolicy
                                         costHint:=baseCaps.CostHint,
                                         supportsAtomicOverwriteRename:=writable AndAlso baseCaps.SupportsAtomicOverwriteRename,
                                         supportsStableSourceDelete:=deletable AndAlso baseCaps.SupportsStableSourceDelete,
-                                        supportsCheckedSourceDelete:=deletable AndAlso baseCaps.SupportsCheckedSourceDelete)
+                                        supportsCheckedSourceDelete:=deletable AndAlso baseCaps.SupportsCheckedSourceDelete,
+                                        fetchOnDemandOnly:=baseCaps.FetchOnDemandOnly)
     End Function
 
 End Class

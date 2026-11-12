@@ -486,6 +486,31 @@ Friend Class LiveBroadcastController
         End SyncLock
     End Sub
 
+    ''' <summary>True while a broadcast with a link password is on air: only then is there a link pair to give a new password.</summary>
+    Public ReadOnly Property CanRotateLinkPassword As Boolean
+        Get
+            SyncLock _stateLock
+                Return _state.Running AndAlso _state.Credentials IsNot Nothing AndAlso
+                       _state.Credentials.PasswordFor(LiveCredentialPairs.LinkUser) IsNot Nothing
+            End SyncLock
+        End Get
+    End Property
+
+    ''' <summary>Ticket 263 Q263-5: withdraws the broadcast link on air by giving its pair (`listener`) a new password. The producer's
+    ''' Digest refuses the old password at the next request; the agent's `broadcast-update` carries the new `verifiers`, so the relay
+    ''' does the same. The account's own pair is untouched, and a stream already open plays on until its listener leaves (the password
+    ''' is checked when a stream opens). False when nothing is on air, the broadcast has no link password, or the password is unchanged.</summary>
+    Public Function RotateLinkPassword(newPassword As String) As Boolean
+        If String.IsNullOrEmpty(newPassword) Then Return False
+        SyncLock _stateLock
+            If Not _state.Running OrElse _state.Credentials Is Nothing Then Return False
+            If Not _state.Credentials.Replace(LiveCredentialPairs.LinkUser, newPassword) Then Return False
+            _state.Password = newPassword
+            _ports.BroadcastChanged?.Invoke(_state)
+            Return True
+        End SyncLock
+    End Function
+
     ''' <summary>Rebinds only the HTTP listener when the selected LAN address or the video LAN choice changes. The hubs,
     ''' encoder, source, broadcast id, keys and start time survive. A failed explicit change keeps the previous setting.</summary>
     Public Function UpdateNetwork(Optional allowLanVideoViewers As Boolean? = Nothing) As LiveStartResult

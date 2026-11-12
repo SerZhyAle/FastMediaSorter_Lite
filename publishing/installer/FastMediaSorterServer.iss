@@ -158,9 +158,9 @@ Name: "exchangeservice"; Description: "{cm:ExchangeServiceTask}"; Components: ex
 [CustomMessages]
 ; Role order (ticket 132 section 3.3): the server leads and is the only required part; the
 ; two secondary roles are one-line, optional, and say they are off until chosen.
-english.CompServer=Folder Share Server - Share Manager, SFTP worker and the Windows service (required)
-russian.CompServer=Сервер раздачи папок - Менеджер общего доступа, SFTP-воркер и служба Windows (обязательно)
-ukrainian.CompServer=Сервер роздачі тек - Менеджер спільного доступу, SFTP-воркер і служба Windows (обов’язково)
+english.CompServer=Folder Share Server - Share Manager, SFTP worker and the Windows service (required); scheduled file operations come with it and run in the Share Manager, in your signed-in session
+russian.CompServer=Сервер раздачи папок - Менеджер общего доступа, SFTP-воркер и служба Windows (обязательно); файловые операции по расписанию входят в него и выполняются менеджером в вашем сеансе
+ukrainian.CompServer=Сервер роздачі тек - Менеджер спільного доступу, SFTP-воркер і служба Windows (обов’язково); файлові операції за розкладом входять до нього і виконуються менеджером у вашому сеансі
 english.CompFileDO=FileDO virtual disk host - optional extra (disk sharing stays off until you enable it)
 russian.CompFileDO=Хост виртуальных дисков FileDO - необязательное дополнение (общий доступ к дискам включается отдельно)
 ukrainian.CompFileDO=Хост віртуальних дисків FileDO - необов’язкове доповнення (спільний доступ до дисків вмикається окремо)

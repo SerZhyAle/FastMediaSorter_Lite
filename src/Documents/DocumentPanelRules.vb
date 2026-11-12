@@ -103,8 +103,21 @@ Friend NotInheritable Class DocumentPanelRules
     Friend Const IdOpenInBrowser As String = "doc_OpenInBrowser"
     Friend Const IdPrint As String = "doc_Print"
     Friend Const IdBlocked As String = "doc_Blocked"
+    ''' <summary>276 Step 4.1: the actions of a doc-html-translate result shown in the HTML view (original, browser, folder, save,
+    ''' process again). Present only while such a result is on screen.</summary>
+    Friend Const IdConvertResult As String = "doc_ConvertResult"
     Friend Const IdReturnToFiles As String = "doc_ReturnToFiles"
     Friend Const IdContext As String = "doc_Context"
+    Friend Const IdTextEdit As String = "doc_TextEdit"
+    Friend Const IdTextSave As String = "doc_TextSave"
+    Friend Const IdTextSaveAs As String = "doc_TextSaveAs"
+    Friend Const IdTextExcerpt As String = "doc_TextExcerpt"
+    Friend Const IdTextExternal As String = "doc_TextExternal"
+    Friend Const IdTextFind As String = "doc_TextFind"
+    Friend Const IdTextReplace As String = "doc_TextReplace"
+    Friend Const IdTextEncoding As String = "doc_TextEncoding"
+    Friend Const IdTextLineEnding As String = "doc_TextLineEnding"
+    Friend Const IdTextMarkdown As String = "doc_TextMarkdown"
 
     ''' <summary>The commands that rows 1 and 2 already carry while a document is on screen: they are never repeated on the
     ''' panel (280 section 4, T-0 record section 3).</summary>
@@ -134,10 +147,14 @@ Friend NotInheritable Class DocumentPanelRules
         New String() {IdReaderMode, IdResetAppearance},
         New String() {IdViewSource, IdOpenInBrowser, IdPrint},
         New String() {IdBlocked},
+        New String() {IdConvertResult},
         New String() {IdReturnToFiles},
         New String() {IdContext}}
 
     Private Shared ReadOnly TextGroups As String()() = {
+        New String() {IdTextEdit, IdTextSave, IdTextSaveAs, IdTextExcerpt, IdTextExternal},
+        New String() {IdTextFind, IdTextReplace},
+        New String() {IdTextEncoding, IdTextLineEnding, IdTextMarkdown},
         New String() {IdZoomOut, IdZoomIn, IdZoomReset},
         New String() {IdContext}}
 
@@ -181,10 +198,18 @@ Friend NotInheritable Class DocumentPanelRules
     End Function
 
     ''' <summary>An item that is present only sometimes keeps its place as soft air while it is hidden, so no neighbour moves:
-    ''' the blocked-content menu appears when something was blocked, "view source" only for a file (not an online page).</summary>
+    ''' the blocked-content menu appears when something was blocked, "view source" only for a file (not an online page);
+    ''' in a text the saving half belongs to the editor, the zoom to the reader and the excerpt and the external program
+    ''' to a file over the editing limit.</summary>
     Friend Shared Function IsConditional(kind As DocumentReaderKind, id As String) As Boolean
-        If kind <> DocumentReaderKind.Html Then Return False
-        Return id = IdBlocked OrElse id = IdViewSource
+        If kind = DocumentReaderKind.Html Then Return id = IdBlocked OrElse id = IdViewSource OrElse id = IdConvertResult
+        If kind <> DocumentReaderKind.Text Then Return False
+        Select Case id
+            Case IdTextSave, IdTextSaveAs, IdTextExcerpt, IdTextExternal, IdTextReplace, IdTextLineEnding, IdTextMarkdown, IdZoomOut, IdZoomIn, IdZoomReset
+                Return True
+            Case Else
+                Return False
+        End Select
     End Function
 
     ''' <summary>The readout that gives its room up first when the row is short.</summary>
@@ -196,9 +221,9 @@ Friend NotInheritable Class DocumentPanelRules
 
     Friend Shared Function KindOf(id As String) As DocumentItemKind
         Select Case id
-            Case IdPaneOutline, IdPaneSearch, IdPaneText, IdPaneBookmarks, IdPaneThumbnails, IdReaderMode
+            Case IdPaneOutline, IdPaneSearch, IdPaneText, IdPaneBookmarks, IdPaneThumbnails, IdReaderMode, IdTextEdit, IdTextMarkdown
                 Return DocumentItemKind.Toggle
-            Case IdLayout, IdColorMode, IdBlocked
+            Case IdLayout, IdColorMode, IdBlocked, IdConvertResult, IdTextEncoding, IdTextLineEnding
                 Return DocumentItemKind.MenuButton
             Case IdPagePosition, IdChapterPosition
                 Return DocumentItemKind.Position
@@ -240,7 +265,7 @@ Friend NotInheritable Class DocumentPanelRules
             Case IdColorMode : Return "Цвет страницы"
             Case IdResetAppearance : Return "Сбросить оформление"
             Case IdOpenWith : Return "Открыть с помощью"
-            Case IdTranslate : Return "doc-html-translate"
+            Case IdTranslate, IdConvertResult : Return "doc-html-translate"
             Case IdFind : Return "Поиск на странице"
             Case IdFindPrev : Return "Предыдущее совпадение"
             Case IdFindNext : Return "Следующее совпадение"
@@ -254,6 +279,16 @@ Friend NotInheritable Class DocumentPanelRules
             Case IdOpenInBrowser : Return "Открыть в браузере"
             Case IdPrint : Return "Печать"
             Case IdReturnToFiles : Return "Вернуться к файлам"
+            Case IdTextEdit : Return "Править"
+            Case IdTextSave : Return "Сохранить"
+            Case IdTextSaveAs : Return "Сохранить как.."
+            Case IdTextExcerpt : Return "Сохранить выделенное как новый файл"
+            Case IdTextExternal : Return "Открыть во внешней программе"
+            Case IdTextFind : Return "Найти"
+            Case IdTextReplace : Return "Заменить"
+            Case IdTextEncoding : Return "Кодировка"
+            Case IdTextLineEnding : Return "Концы строк"
+            Case IdTextMarkdown : Return "Оформленный вид"
             Case Else : Return ""
         End Select
     End Function
@@ -299,12 +334,18 @@ Friend NotInheritable Class DocumentPanelRules
             Case IdPaneThumbnails : Return "view.grid"
             Case IdResetAppearance : Return "action.reset"
             Case IdOpenWith, IdOpenInBrowser : Return "nav.open-external"
-            Case IdTranslate : Return "action.translate"
+            Case IdTranslate, IdConvertResult : Return "action.translate"
             Case IdCopy : Return "action.copy"
             Case IdStopSpeech : Return "media.stop"
             Case IdBlocked : Return "status.warning"
             Case IdReturnToFiles : Return "content.folder"
             Case IdSpeak : Return "media.volume"
+            Case IdTextEdit : Return "action.edit"
+            Case IdTextSave : Return "action.save"
+            Case IdTextExcerpt : Return "action.export"
+            Case IdTextExternal : Return "nav.open-external"
+            Case IdTextFind : Return "action.search"
+            Case IdTextReplace : Return "action.replace"
             Case Else : Return ""
         End Select
     End Function

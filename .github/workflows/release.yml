@@ -116,7 +116,13 @@ jobs:
       # users without the .NET 10 runtime can still run it. Output goes to
       # companion-publish/FastMediaSorterCompanion.exe, staged below. ReleaseVersion
       # stamps it with the tag's version like the two viewers (ticket 055 I-08).
+      # The Google Drive OAuth client (specification 269, Q269-7) reaches the exe as assembly
+      # metadata: MSBuild reads these two environment variables as properties. An unset secret
+      # is an empty string, and then the exe carries no metadata and says "not configured".
       - name: Publish Companion (Share Manager, net10 self-contained)
+        env:
+          FmsDriveClientId: ${{ secrets.FMS_DRIVE_CLIENT_ID }}
+          FmsDriveClientSecret: ${{ secrets.FMS_DRIVE_CLIENT_SECRET }}
         run: dotnet publish src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj -c Release -r win-x64 -p:ReleaseVersion=${{ steps.ver.outputs.version }} -o companion-publish -v minimal --nologo
 
       # The exchange server (Go, specification 133) is compiled FROM SOURCE here - nothing is

@@ -264,18 +264,15 @@ Friend NotInheritable Class Exchange_Connect_Form
         DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
-    Private Sub OnPaste(sender As Object, e As EventArgs)
-        Try
-            Dim decoded As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
-            If decoded.Succeeded Then
-                inputBox.Text = decoded.Text
-            Else
-                destination.ForeColor = Color.Firebrick
-                destination.Text = decoded.FailureMessage
-            End If
-        Catch ex As Exception When TypeOf ex Is System.Runtime.InteropServices.ExternalException OrElse TypeOf ex Is Threading.ThreadStateException
-            statusLabel.Text = Localization.T("Не удалось прочитать буфер обмена.")
-        End Try
+    Private Async Sub OnPaste(sender As Object, e As EventArgs)
+        Dim decoded As QrDecodeResult = Await QrCodeDecoder.DecodeClipboardAsync()
+        If IsDisposed Then Return
+        If decoded.Succeeded Then
+            inputBox.Text = decoded.Text
+        Else
+            destination.ForeColor = Color.Firebrick
+            destination.Text = decoded.FailureMessage
+        End If
     End Sub
 
     Private Sub OnOpenFile(sender As Object, e As EventArgs)

@@ -5,7 +5,7 @@
 | **Ids** | `PAGE-CONTENT`, `PAGE-STYLE`, `SITE-FAMILY-MAP` |
 | **Version** | catalog 1.5 / 3.1 / 1.5, active (read 2026-10-20, specification 244; the vendored kit is the `PAGE-STYLE` 3.1 file since 2026-10-20; the rest of the text below was written against 1.4 / 1.6 / 1.3, read 2026-10-07). `PAGE-STYLE` moved through 2.0 and 3.0 (breaking) and 2.1 and 3.1 (additive) on 2026-10-17, see "What `PAGE-STYLE` 2.0 to 3.1 ask of this site"; the `PAGE-CONTENT` and `SITE-FAMILY-MAP` 1.5 are the consolidation's records and corrections. Owner: the sza.od.ua hub |
 | **Home** | `product-web-pages/` in the shared contracts catalog, with `reference/sza-kit.css` |
-| **Role here** | consumer - the product site served from the repository root; audit in `specification 030` and `specification 181` (local specifications) |
+| **Role here** | consumer - the product site served from a Pages artifact of the files declared in `tools/site-served.json`; audit in `specification 030` and `specification 181` (local specifications) |
 
 ## What this repository must do to stay conformant
 

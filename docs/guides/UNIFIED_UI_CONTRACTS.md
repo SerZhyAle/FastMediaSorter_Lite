@@ -75,6 +75,12 @@ refinement; a shared-source change that is mainline-only keeps net48 behaviour b
      obstacle rather than cutting it.
   6. The pin button of a panel is laid out apart from the row, so overflow never takes it. Right-to-left mirrors the finished
      row; reading order, not left to right, is the contract.
+  7. **The document panel** (specification 280; `DocumentPanelRules`, `Main_Form.DocumentPanel.vb`) is a further surface on the same
+     algebra: its own "»" button (`btn_Overflow_3`) and one fixed reading order per reader (PDF, EPUB, HTML page, text; the lists in
+     `DocumentPanelRules.Groups`). Its pinned core, never in the menu, is the page box of a PDF, the chapter box of an EPUB and the
+     find box of an HTML page; its conditional items (the blocked-resources menu and Source text of an HTML page, the editing half
+     of a text) keep a soft slot while they are away. It stands as a third top row under the lowest anchored row, is not movable
+     and has no stored place, and is in the chrome's list of panels only while a document is on screen.
   **Decided by the owner on 2026-10-27 (Q-9): the menu is the permanent policy.** `BUTTONS` section 3 rule 4 and section 4 rule 2 ask a
   whole button to wrap to the next row before a caption wraps and a command caption never to be ellipsized; wrapping rows would grow
   a floating panel over the picture, so the floating panels keep the "»" menu and `ChromeSurface` keeps `TextFormatFlags.EndEllipsis`

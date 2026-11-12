@@ -40,8 +40,14 @@ Friend NotInheritable Class ExchangeResourceText
         Return Localization.T("Не удалось запустить Share Manager.")
     End Function
 
-    Friend Shared Function DeviceHeader(name As String, online As Boolean) As String
+    Friend Shared Function DeviceHeader(name As String, online As Boolean, Optional sharePaused As Boolean = False) As String
+        If sharePaused Then Return name & " - " & ExchangeResourceText.SharePaused()
         Return name & " - " & If(online, Localization.T("в сети"), Localization.T("не в сети"))
+    End Function
+
+    ''' <summary>Item DD: the row of the common message table, shown in place of plain offline on the device and on each of its resources.</summary>
+    Friend Shared Function SharePaused() As String
+        Return SealedText(ConnectionDiagnosisMessages.SharePaused)
     End Function
 
     Friend Shared Function NoFolders() As String
@@ -50,6 +56,7 @@ Friend NotInheritable Class ExchangeResourceText
 
     ''' <summary>The state text of a row of the view: an attached one says what it is now; an unattached one says why it cannot be ticked.</summary>
     Friend Shared Function RowState(row As ExchangeDeviceRow) As String
+        If row.State = ExchangeResourceState.SharePaused Then Return SharePaused()
         If row.PinProtected Then Return If(row.Supported, Localization.T("защищено PIN-кодом"), Localization.T("заблокировано: защита не поддерживается"))
         If Not row.Supported Then Return Localization.T("не поддерживается этой версией")
         If row.Attached Then
@@ -65,6 +72,7 @@ Friend NotInheritable Class ExchangeResourceText
     ''' <summary>The state text of an attached resource in the main list (the same words).</summary>
     Friend Shared Function ListState(state As ExchangeResourceState) As String
         Select Case state
+            Case ExchangeResourceState.SharePaused : Return SharePaused()
             Case ExchangeResourceState.DeviceOffline : Return Localization.T("недоступно: устройство не в сети")
             Case ExchangeResourceState.NoLongerPublished : Return Localization.T("больше не опубликовано")
             Case Else : Return ""
@@ -125,6 +133,64 @@ Friend NotInheritable Class ExchangeResourceText
 
     Friend Shared Function CertificateTitle() As String
         Return Localization.T("Новый сервер обмена")
+    End Function
+
+    ' --- a folder reached through Google Drive (ticket 269 P3.3, DEVICE-EXCHANGE items CL, CO, CQ) ---
+
+    ''' <summary>Item CQ's waiting line: the device and the time it last wrote its record, when known.</summary>
+    Friend Shared Function WaitingViaDrive(device As String, lastRecord As DateTimeOffset?) As String
+        If lastRecord.HasValue Then
+            Return Localization.TF("Ожидание «{0}» через GD - последняя запись устройства: {1}", device, lastRecord.Value.ToLocalTime().ToString("g", Globalization.CultureInfo.CurrentCulture))
+        End If
+        Return Localization.TF("Ожидание «{0}» через GD..", device)
+    End Function
+
+    Friend Shared Function OpenedViaDrive(name As String) As String
+        Return Localization.TF("Папка «{0}» открыта через GD: ответы приходят с задержкой до двух минут.", name)
+    End Function
+
+    ''' <summary>The sentence of a refusal of this channel (<see cref="DriveFailures"/>). A reason this build does not know reads as the
+    ''' producer's general refusal, never as the token itself.</summary>
+    Friend Shared Function DriveFailure(reason As String) As String
+        Select Case reason
+            Case ExchangeAgentPipe.ErrorNoAnswer : Return Localization.T("Устройство не ответило через GD.")
+            Case ExchangeDriveRequests.ReasonNotPermitted : Return Localization.T("Устройство отказало: этот путь вне опубликованной папки (ответ через GD).")
+            Case ExchangeDriveRequests.ReasonPinRequired : Return Localization.T("Папка защищена PIN-кодом, через GD она не открывается.")
+            Case ExchangeDriveRequests.ReasonTooLarge : Return Localization.T("Файл или список слишком велик для передачи через GD.")
+            Case ExchangeDriveRequests.ReasonDriveFull : Return Localization.T("На Google Drive закончилось место, запрос через GD не отправлен.")
+            Case ExchangeAgentPipe.ErrorDriveOffline : Return Localization.T("Нет связи с Google Drive: войдите в Share Manager или проверьте сеть.")
+            Case ExchangeAgentPipe.ErrorUnknownResource : Return Localization.T("Другое устройство не публикует эту папку через GD.")
+            Case ExchangeAgentPipe.ErrorCorrupt : Return Localization.T("Ответ через GD пришёл повреждённым.")
+            Case ExchangeAgentPipe.ErrorBusy : Return Localization.T("Слишком много запросов через GD, повторите чуть позже.")
+            Case DriveFailures.ReasonAgentAbsent : Return Localization.T("Share Manager не запущен, поэтому папки ваших устройств не видны.")
+            Case Else : Return Localization.T("Этот файл или папка сейчас недоступны на устройстве (ответ через GD).")
+        End Select
+    End Function
+
+    Friend Shared Function DriveAnswered() As String
+        Return Localization.T("Устройство ответило через GD.")
+    End Function
+
+    Friend Shared Function DriveEditRefused() As String
+        Return Localization.T("Папку, подключённую через GD, нельзя изменить - только удалить.")
+    End Function
+
+    Friend Shared Function DriveExportRefused() As String
+        Return Localization.T("Папку, подключённую через GD, нельзя экспортировать: у неё нет адреса.")
+    End Function
+
+    ''' <summary>The word beside a row of the "via Google Drive" group. Unlike a row of a server, attaching needs no answer from the device:
+    ''' nothing has to be fetched from it, so "offline" stays a remark and not a refusal.</summary>
+    Friend Shared Function RowStateViaDrive(row As ExchangeDeviceRow) As String
+        If row.State = ExchangeResourceState.SharePaused Then Return SharePaused()
+        If row.PinProtected Then Return Localization.T("заблокировано: PIN-код через GD не передаётся")
+        If Not row.Supported Then Return Localization.T("не поддерживается этой версией")
+        If row.Attached Then
+            If row.State = ExchangeResourceState.NoLongerPublished Then Return Localization.T("больше не опубликовано")
+            If row.State = ExchangeResourceState.DeviceOffline Then Return Localization.T("недоступно: устройство не в сети")
+            Return ""
+        End If
+        Return If(row.DeviceOnline, "", Localization.T("не в сети"))
     End Function
 
 End Class

@@ -657,6 +657,9 @@
     <Compile Include="..\..\src\Resources\PhoneConnectionIntake.vb">
       <Link>Linked\Resources\PhoneConnectionIntake.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Resources\ClipboardPaste.vb">
+      <Link>Linked\Resources\ClipboardPaste.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Resources\QrCodeDecoder.vb">
       <Link>Linked\Resources\QrCodeDecoder.vb</Link>
     </Compile>
@@ -675,6 +678,7 @@
     <Compile Include="..\..\src\Resources\ResourceProbe.vb">
       <Link>Linked\Resources\ResourceProbe.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Resources\DriveProvider.vb"><Link>Linked\Resources\DriveProvider.vb</Link></Compile>
     <!-- Ticket 171: the consumer half of the device exchange (My devices, attach, the tunnel candidate, the FMSSFTP link path).
          Whole-file "#If Not NETFRAMEWORK"; the net48 viewer project lists none of them (DualModeGateGuardTests). -->    <Compile Include="..\..\src\Resources\ExchangeAttach.vb"><Link>Linked\Resources\ExchangeAttach.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeDevices.vb"><Link>Linked\Resources\ExchangeDevices.vb</Link></Compile>
@@ -682,8 +686,10 @@
     <Compile Include="..\..\src\Resources\ExchangeEntryText.vb"><Link>Linked\Resources\ExchangeEntryText.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeEntryApi.vb"><Link>Linked\Resources\ExchangeEntryApi.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeViewerEntries.vb"><Link>Linked\Resources\ExchangeViewerEntries.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeSettingsStandard.vb"><Link>Linked\Resources\ExchangeSettingsStandard.vb</Link></Compile>
     <Compile Include="..\..\src\Exchange_Connect_Form.vb"><Link>Linked\Exchange_Connect_Form.vb</Link></Compile>
     <Compile Include="..\..\src\Exchange_Password_Change_Form.vb"><Link>Linked\Exchange_Password_Change_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\Exchange_Settings_Standard_Form.vb"><Link>Linked\Exchange_Settings_Standard_Form.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeTunnel.vb"><Link>Linked\Resources\ExchangeTunnel.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\FmsTunnelPaths.vb"><Link>Linked\Resources\FmsTunnelPaths.vb</Link></Compile>
     <Compile Include="..\..\src\Exchange_Devices_Panel.vb"><Link>Linked\Exchange_Devices_Panel.vb</Link></Compile>
@@ -1185,10 +1191,17 @@
     <Compile Include="..\..\src\Documents\TextDocumentModels.vb" />
     <Compile Include="..\..\src\Documents\TextEncodingDetector.vb" />
     <Compile Include="..\..\src\Documents\TextEncodingChoice.vb" />
+    <Compile Include="..\..\src\Documents\TextPositionMemory.vb" />
     <Compile Include="..\..\src\Documents\TextExcerpt.vb" />
     <Compile Include="..\..\src\Documents\TextFilePager.vb" />
     <Compile Include="..\..\src\Documents\TextFileSearch.vb" />
     <Compile Include="..\..\src\Documents\TextReaderLayout.vb" />
+    <Compile Include="..\..\src\Documents\TextDocumentBuffer.vb" />
+    <Compile Include="..\..\src\Documents\TextFileSaver.vb" />
+    <Compile Include="..\..\src\Documents\TextEditRules.vb" />
+    <Compile Include="..\..\src\Documents\TextDraftManager.vb" />
+    <Compile Include="..\..\src\Documents\TextSyntaxHighlighter.vb" />
+    <Compile Include="..\..\src\Documents\TextMarkdownRenderer.vb" />
     <Compile Include="..\..\src\Documents\DocumentPanelRules.vb" />
     <Compile Include="..\..\src\Documents\PdfDocumentSource.vb">
       <Link>Linked\Documents\PdfDocumentSource.vb</Link>
@@ -1204,6 +1217,8 @@
     <!-- Specification 276 T-2: the document command line and converter discovery (whole-file modern-only). -->
     <Compile Include="..\..\src\Documents\DocHtmlJobArguments.vb" />
     <Compile Include="..\..\src\Documents\DocHtmlConverterLocator.vb" />
+    <Compile Include="..\..\src\Documents\DocHtmlResultReader.vb" />
+    <Compile Include="..\..\src\Documents\DocHtmlJobCache.vb" />
     <!-- Specification 275: models/policy compile on both legs (DOCUMENT_PREVIEW_TESTS); the
          rest is modern-only and compiles to nothing on net48. No WebView2 host here. -->
     <Compile Include="..\..\src\Documents\HtmlDocumentModels.vb" />

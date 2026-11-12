@@ -36,6 +36,7 @@ Public Class ExchangeDormancyTests
                            sealingCalls += 1
                            Throw New InvalidOperationException("Unexpected sealing session.")
                        End Function,
+            .Drive = Function() Nothing,
             .Log = Sub(line) logs += 1}
         Dim exchange As New ClipboardExchange(ports)
         Dim coordinator As New ClipboardCoordinator(exchange, Function() ClipboardTargets.AnyConfigured(accounts, entries))
@@ -118,6 +119,25 @@ Public Class ExchangeDormancyTests
             Assert.Equal(0, accountReads)
             Assert.False(Directory.Exists(root))
         End Using
+    End Sub
+
+    ''' <summary>L0278 T-4 (specification 7.6, "Dormancy"): the remote administration gate is shut in this build, its own
+    ''' switch is the only way to light it, and the gate class reads the environment and nothing else - no registry, no file, no
+    ''' network - so asking it can never wake anything. The control, registry-write and network halves of the case drive the real
+    ''' window, so they live with its rig: RemoteAdminWindowTests "With_the_gate_shut.." and "The_window_starts_at_no_target..".</summary>
+    <Fact>
+    Public Sub Remote_admin_gate_is_shut_and_asking_it_touches_no_registry_file_or_network()
+        Using ExchangeRemoteAdminFeatures.ForFlow(switchOn:=False, offered:=ExchangeRemoteAdminFeatures.Offered)
+            Assert.False(ExchangeRemoteAdminFeatures.IsEnabled(), "the remote administration gate must be shut in this build")
+        End Using
+        Dim code As String = ExchangeTestSupport.CodeOnly(
+            ExchangeTestSupport.ReadSource(Path.Combine("Core", "RemoteAdmin", "ExchangeRemoteAdminFeatures.vb")))
+        For Each denied As String In {"Microsoft.Win32", "Registry", "File.", "Directory.", "FileStream", "StreamReader",
+                                      "System.Net", "Socket", "TcpClient", "HttpClient", "Dns.", "ExchangeTransport", "WorkerIpc"}
+            Assert.True(code.IndexOf(denied, StringComparison.Ordinal) < 0,
+                        "ExchangeRemoteAdminFeatures must read the environment only; its code names " & denied)
+        Next
+        Assert.Contains("Environment.GetEnvironmentVariable", code)
     End Sub
 
 End Class

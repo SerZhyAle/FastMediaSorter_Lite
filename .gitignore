@@ -5,6 +5,8 @@ bin/
 obj/
 dist/
 stage/
+# the GitHub Pages artifact assembled by tools/Build-SiteArtifact.ps1 (ticket L0207)
+_site/
 # payload/ is generated/vendored and ignored, EXCEPT the committed SFTP worker
 # (release CI has no way to build it - it comes from the separate fms_companion repo).
 payload/*

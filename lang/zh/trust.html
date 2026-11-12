@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" class="script-zh">
+<html lang="zh" data-page-lang="zh" class="script-zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
   var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
-  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  var q=new URLSearchParams(location.search),requested=q.get('lang');if(!/^(en|ru|ua|uk)$/i.test(requested||''))requested=q.get('l');
   if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('hreflang'))return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){var d=document.documentElement,p=d.getAttribute('data-page-lang')||d.getAttribute('data-lang');u.searchParams.delete('l');u.searchParams.set('lang',p==='ua'?'uk':p);a.href=u.href;}}catch(ignore){}});
 })();
 </script>
 <title>为什么 Windows 会对这个下载发出警告</title>
@@ -43,7 +43,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows：用一个按键整理每个照片和视频文件">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
-<meta property="og:locale" content="zh">
+<meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="为什么 Windows 会对这个下载发出警告">
 <meta name="twitter:description" content="Fast Media Sorter &amp; Sharing 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。">
@@ -129,7 +129,7 @@
   </section>
 
   <p class="note">只有一项第三方服务可能被访问，而且只在您为共享打开互联网访问时：程序会请 check-host.net 确认您转发的端口能否从外部响应，这会让该服务看到您的公网地址和端口。除此之外不会向它发送任何内容。另外两件事只在您自己的网络内进行：打开互联网访问后，程序会请您的路由器转发共享端口（UPnP 或 NAT-PMP）；共享运行期间，电脑会在局域网中广播自己（mDNS），以便已配对的手机重新找到它。</p>
-  <p class="note" id="site-origins">打开本网站的页面（而不是使用程序）最多会访问三个外部地址：fonts.googleapis.com 和 fonts.gstatic.com（Google Fonts，用于页面字体），以及在主页及其各语言版本上访问 api.github.com（GitHub，用于查询最新发行版以生成下载链接）。每个地址只会收到您的 IP 地址和浏览器的 user agent，别无其他。不会访问任何分析、标签管理或广告地址。隐私页面说的是同一件事。</p>
+  <p class="note" id="site-origins">打开本网站的页面（而不是使用程序）会访问两个外部地址：fonts.googleapis.com 和 fonts.gstatic.com（Google Fonts，用于页面字体）。每个地址只会收到您的 IP 地址和浏览器的 user agent，别无其他。不会访问任何分析、标签管理或广告地址。隐私页面说的是同一件事。</p>
 
   <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">下载</a>
@@ -171,7 +171,7 @@
     <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
     <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
   </div>
-</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
+</div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">Support</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issue tracker</a></span><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 
 <script>
 (function(){

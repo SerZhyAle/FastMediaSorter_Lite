@@ -276,6 +276,38 @@ Public Class LiveCredentialPairsTests
         Assert.Single(pairs.VerifierRecords())
     End Sub
 
+    ' ------------------------------------------------------------------------------------------------ rotating the link pair (Q263-5)
+
+    <Fact>
+    Public Sub Replacing_the_link_password_keeps_its_user_and_place_and_rehashes_that_pair_alone()
+        Dim pairs As LiveCredentialPairs = LiveCredentialPairs.ForLink(LinkPassword, iterations:=2)
+        Dim before As IReadOnlyList(Of String) = pairs.VerifierRecords()
+        Dim ownPassword As String = pairs.PasswordFor("own")
+
+        Assert.True(pairs.Replace("listener", "rotated-secret"))
+        Assert.Equal("rotated-secret", pairs.PasswordFor("listener"))
+        Assert.Equal(ownPassword, pairs.PasswordFor("own"))
+        Assert.Equal(New String() {"listener", "own"}, pairs.Users().ToArray())
+        Dim after As IReadOnlyList(Of String) = pairs.VerifierRecords()
+        Assert.Equal(2, after.Count)
+        Assert.NotEqual(before(0), after(0))
+        Assert.True(Accepts(Parsed(pairs)(0), "rotated-secret", 2))
+        Assert.False(Accepts(Parsed(pairs)(0), LinkPassword, 2))
+        Assert.Equal(before(1), after(1))                    ' the own pair is the same entry, not re-hashed
+    End Sub
+
+    <Fact>
+    Public Sub Replace_refuses_an_unknown_user_an_empty_password_and_the_same_password()
+        Dim pairs As LiveCredentialPairs = LiveCredentialPairs.ForLink(LinkPassword, iterations:=2)
+        Assert.False(pairs.Replace("nobody", "x"))
+        Assert.False(pairs.Replace(Nothing, "x"))
+        Assert.False(pairs.Replace("listener", ""))
+        Assert.False(pairs.Replace("listener", Nothing))
+        Assert.False(pairs.Replace("listener", LinkPassword))
+        Assert.Equal(LinkPassword, pairs.PasswordFor("listener"))
+        Assert.False(LiveCredentialPairs.None().Replace("listener", "x"))
+    End Sub
+
     <Fact>
     Public Sub Nothing_leaks_a_password_through_ToString()
         Dim pairs As LiveCredentialPairs = LiveCredentialPairs.ForLink(LinkPassword, "own-password-cccccccccccccccc", 2)
@@ -376,6 +408,18 @@ Public Class LiveCredentialDigestTests
         Assert.True(pairs.Revoke("listener"))
         Assert.False(rig.Try_(lookup, "listener", "link-secret"))
         Assert.True(rig.Try_(lookup, "own", "own-secret-eeeeeeeeeeeeeeee"))
+    End Sub
+
+    <Fact>
+    Public Sub A_rotated_link_password_refuses_the_old_one_at_once_and_the_own_pair_keeps_opening()
+        Dim pairs As LiveCredentialPairs = LiveCredentialPairs.ForLink("link-secret", "own-secret-hhhhhhhhhhhhhhhh", 2)
+        Dim lookup As Func(Of String, String) = AddressOf pairs.PasswordFor
+        Dim rig As New Rig()
+        Assert.True(rig.Try_(lookup, "listener", "link-secret"))
+        Assert.True(pairs.Replace("listener", "rotated-secret"))
+        Assert.False(rig.Try_(lookup, "listener", "link-secret"))
+        Assert.True(rig.Try_(lookup, "listener", "rotated-secret"))
+        Assert.True(rig.Try_(lookup, "own", "own-secret-hhhhhhhhhhhhhhhh"))
     End Sub
 
     <Fact>

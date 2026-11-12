@@ -25,8 +25,9 @@
   verdict line that reports counts writes `run=N skipped=M` (run is what executed, skipped is what did not pass;
   non-negative integers), and an aggregator that counts checks, not tests, keeps rule 14's form (the 2026-10-18
   clarification). `Invoke-Tests.ps1` writes the tokens per target (`Invoke-Tests: PASS (companion ok run=14
-  skipped=0)`), and a run with `run=0` is `COULD NOT VERIFY`, never a pass. `Run-AllTests.ps1` still prints
-  `N tests skipped (id n)`: whether an aggregator of suites is bound by the tokens is open with the contract's owner.
+  skipped=0)`), and a run with `run=0` is `COULD NOT VERIFY`, never a pass. `Run-AllTests.ps1` counts its child
+  checks (`(4 passed)`) and keeps rule 14's form, as that clarification says; its `N tests skipped (id n)` tail is
+  not bound by the tokens (registry row closed 2026-10-30, ticket 252).
   A child check that exits `0` and prints no verdict line is read as `COULD NOT VERIFY` by `Invoke-ChildCheck`
   (section 6), and `Invoke-Tests.ps1` ends as `COULD NOT VERIFY` on an unexpected error of its own.
 - **Placement is declared, and held both ways.** `tools/check-placement.jsonl` carries the one
