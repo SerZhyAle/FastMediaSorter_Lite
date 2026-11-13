@@ -66,8 +66,10 @@ function Expect-Throw([string]$name, [string]$message, [scriptblock]$action) {
 
 # --- tier 1: the mapping against both scripts --------------------------------------------------
 Write-Host 'Tier 1 - the mapping'
-$userText = [IO.File]::ReadAllText($userIss, [Text.Encoding]::UTF8)
-$serverText = [IO.File]::ReadAllText($serverIss, [Text.Encoding]::UTF8)
+# A fresh Windows clone (core.autocrlf=true) holds the scripts in CRLF, and a (?m) '$' matches only before a
+# bare LF, so every '[^\r\n]*$' below would miss every line there: read them as LF.
+$userText = [IO.File]::ReadAllText($userIss, [Text.Encoding]::UTF8).Replace("`r`n", "`n")
+$serverText = [IO.File]::ReadAllText($serverIss, [Text.Encoding]::UTF8).Replace("`r`n", "`n")
 
 function Get-SourceLines([string]$text, [string]$stagePath, [string]$prefix) {
     $esc = [regex]::Escape($stagePath)
