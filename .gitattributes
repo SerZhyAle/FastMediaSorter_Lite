@@ -43,3 +43,17 @@ tests/Lite.Tests/TestData/input-chord-vectors/** -text
 # OCR-PIPELINE 1.7 A / 1.8 shared cases (ticket 183): the reference implementation's two fixtures byte for byte,
 # LF as written, pinned by SHA-256 in tests/Lite.Tests/TestData/ocr-pipeline-vectors/PROVENANCE.txt.
 tests/Lite.Tests/TestData/ocr-pipeline-vectors/** -text
+
+# Vendored conformance corpora pinned byte for byte by SHA-256 in their PROVENANCE.txt / MANIFEST.txt (exchange
+# frames, records, protection, e2e and connection-string vectors; the anywhere descriptor; the FMSCFG fixture
+# corpus; the user-playlist vectors; the broadcast fixtures). A fresh Windows clone with core.autocrlf=true wrote
+# them CRLF and failed 50+ digest checks (found by the 26.11.13.0130 release preflight run from a clean worktree).
+tests/Lite.Tests/TestData/exchange-vectors/** -text
+tests/Lite.Tests/TestData/anywhere-descriptor-vectors/** -text
+tests/Lite.Tests/TestData/resources/fmscfg/** -text
+tests/Lite.Tests/TestData/user-playlist-vectors/** -text
+tests/Companion.Tests/TestData/broadcast/** -text
+
+# A PDF has no NUL in its first 8000 bytes often enough for text=auto to call it text, and a CRLF checkout then
+# corrupts it (48-pages.pdf grew from 14756 to 15305 bytes).
+*.pdf binary
