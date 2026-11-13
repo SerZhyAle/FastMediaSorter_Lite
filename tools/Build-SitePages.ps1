@@ -1595,7 +1595,9 @@ foreach ($record in $registry | Where-Object { $_.role -eq 'source' -and $_.path
     $sourceText = [IO.File]::ReadAllText($sourcePath)
     $updated = [regex]::Replace($sourceText, '(?s)<script>\s*\(function\(\)\{(?:(?!</script>).)*?sza-theme(?:(?!</script>).)*?data-lang(?:(?!</script>).)*?</script>', [Text.RegularExpressions.MatchEvaluator]{ param($m) $ThemeResolver }, 1)
     $updated = Complete-ChildFooter $updated
-    if ($sourceText -ne $updated) {
+    # Compared as LF: git normalises these files, and the resolver's own line breaks follow this script's checkout,
+    # so a fresh Windows clone (core.autocrlf=true) differed only in CR and failed every page.
+    if (($sourceText -replace "`r`n", "`n") -ne ($updated -replace "`r`n", "`n")) {
         if ($Check) { $stale += $record.path + ' shared locale resolver' }
         else { [IO.File]::WriteAllText($sourcePath, $updated, (New-Object Text.UTF8Encoding $false)); $written += $record.path + ' shared locale resolver' }
     }
@@ -1626,13 +1628,14 @@ if (Test-Path $indexFile) {
         if (-not $ldMatch.Success -or ($ldMatch.Value -replace "`r`n", "`n").Trim() -ne $expectedJsonLd) {
             $stale += "index.html (gen:jsonld)"
         }
-        if (-not $chanMatch.Success -or $chanMatch.Value.Trim() -ne $expectedChannels) {
+        # The marked regions are compared as LF too, for the same reason as the shared locale resolver above.
+        if (-not $chanMatch.Success -or ($chanMatch.Value -replace "`r`n", "`n").Trim() -ne ($expectedChannels -replace "`r`n", "`n")) {
             $stale += "index.html (gen:channels)"
         }
-        if (-not $famMatch.Success -or $famMatch.Value.Trim() -ne $expectedFamily) {
+        if (-not $famMatch.Success -or ($famMatch.Value -replace "`r`n", "`n").Trim() -ne ($expectedFamily -replace "`r`n", "`n")) {
             $stale += "index.html (gen:family)"
         }
-        if (-not $heroMatch.Success -or $heroMatch.Value.Trim() -ne $expectedHeroGet) {
+        if (-not $heroMatch.Success -or ($heroMatch.Value -replace "`r`n", "`n").Trim() -ne ($expectedHeroGet -replace "`r`n", "`n")) {
             $stale += "index.html (gen:hero-get)"
         }
     } else {
