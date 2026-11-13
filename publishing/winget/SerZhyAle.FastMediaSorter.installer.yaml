@@ -12,15 +12,15 @@
 # as validated - it matches the release asset name and the mainline target.
 
 PackageIdentifier: SerZhyAle.FastMediaSorter
-PackageVersion: "26.10.25.1830"
+PackageVersion: "26.11.13.0130"
 InstallerType: inno
 InstallerSwitches:
   Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
   SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART /SP-
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.10.25.1830/FastMediaSorter-26.10.25.1830-windows-x64-setup.exe
-  InstallerSha256: 653C070F87683CF2354B97A77AE0507721AF869AB8BD14D9C5E0DADF538DF050
+  InstallerUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.11.13.0130/FastMediaSorter-26.11.13.0130-windows-x64-setup.exe
+  InstallerSha256: F70EEFF822B2E39B2056EA031C76818D418BBD4EDFFCBA5E1B6C64106DAB6008
 ManifestType: installer
 ManifestVersion: 1.12.0
-ReleaseDate: 2026-10-25
+ReleaseDate: 2026-11-13
