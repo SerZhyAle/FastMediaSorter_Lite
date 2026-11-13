@@ -13,6 +13,8 @@ publishing/store/listingData.csv -text
 # A CRLF rewrite on checkout would break every hash on a fresh Windows clone.
 assets/glyphs/*.svg -text
 assets/exchange-mark/svg/*.svg binary
+# Sync-ExchangeMark -Check compares this record with the LF text it generates, byte for byte.
+assets/exchange-mark/PROVENANCE.txt -text
 docs/help/exchange-mark/*.svg binary
 tests/Lite.Tests/TestData/icon-vocabulary/vocabulary.jsonl -text
 
