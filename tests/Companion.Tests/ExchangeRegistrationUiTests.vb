@@ -100,7 +100,7 @@ Public Class ExchangeRegistrationUiTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Account_Form")>
     Public Sub A_Tall_Registration_Form_Scrolls_Instead_Of_Losing_Its_Buttons()
         OnUi(Sub()
                  Using rig As New ExchangeDeviceAgentTests.Rig(), agent As ExchangeDeviceAgent = rig.NewAgent(), form As New Exchange_Account_Form(agent)

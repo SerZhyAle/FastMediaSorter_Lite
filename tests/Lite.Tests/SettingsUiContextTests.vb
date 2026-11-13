@@ -119,7 +119,7 @@ Public Class SettingsUiContextTests
         Assert.Equal(4096, state.Page("video").AnchorOffsetLogical)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     Public Sub Collapsing_a_focused_group_preserves_values_and_removes_its_body_from_focus()
         Dim failure As Exception = Nothing
         Dim thread As New Thread(

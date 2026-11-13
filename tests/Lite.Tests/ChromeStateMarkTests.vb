@@ -86,7 +86,7 @@ Public Class ChromeStateMarkTests
 
     ' --- 1. the non-colour mark of a checked toggle ---------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_checked_toggle_differs_from_an_unchecked_one_by_a_bar_that_survives_one_colour_everywhere()
         OnSta(Sub()
                   Dim ltrOffset As New Dictionary(Of String, Point)()
@@ -146,7 +146,7 @@ Public Class ChromeStateMarkTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_bar_is_painted_in_the_ink_layer_with_the_accent_ink_so_it_reads_on_a_translucent_face()
         OnSta(Sub()
                   For Each dark As Boolean In New Boolean() {False, True}
@@ -336,7 +336,7 @@ Public Class ChromeStateMarkTests
 
     ' --- 3. the sort button's reserved width ----------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_sort_button_reserves_the_widest_caption_in_all_thirteen_languages_and_its_width_never_changes_with_the_order()
         Assert.Equal(13, Localization.Codes.Length)
         OnSta(Sub()
@@ -393,7 +393,7 @@ Public Class ChromeStateMarkTests
         Return String.Join("|", parts)
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Changing_the_sort_order_moves_no_neighbour_and_changes_no_overflow_and_the_pinned_core_keeps_the_button()
         OnSta(Sub()
                   For index As Integer = 0 To Localization.Codes.Length - 1

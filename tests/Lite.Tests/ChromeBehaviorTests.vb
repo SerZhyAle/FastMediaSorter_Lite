@@ -22,7 +22,7 @@ Public Class ChromeBehaviorTests
         If failure IsNot Nothing Then System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Overflow_preserves_actions_order_and_the_row_automation_name()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -46,7 +46,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Corner_pin_sits_at_the_end_of_the_row_and_is_never_swallowed_by_overflow()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -81,7 +81,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Keyboard_skips_text_and_disabled_items_and_escape_returns_focus_state()
         OnSta(Sub()
                   Using surface As New ChromeSurface With {.Size = New Size(400, 40)}
@@ -107,7 +107,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeMenu"), Trait("Form", "ChromeSurface")>
     Public Sub Popup_items_stack_vertically_without_overlap_and_do_not_dispose_borrowed_fonts()
         OnSta(Sub()
                   Using font As New Font("Segoe UI", 12, GraphicsUnit.Pixel), symbols As New Font("Segoe UI Symbol", 14, GraphicsUnit.Pixel)
@@ -147,7 +147,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Holding_a_secondary_action_invokes_it_once_and_suppresses_the_primary_click()
         OnSta(Sub()
                   Using surface As New ChromeSurface With {.Size = New Size(100, 44)}
@@ -172,7 +172,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromePathBox")>
     Public Sub Editing_the_path_ends_when_the_box_loses_the_keyboard()
         OnSta(Sub()
                   Using path As New ChromePathBox()
@@ -194,7 +194,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_slow_mouse_click_is_still_a_click_and_never_the_secondary_action()
         OnSta(Sub()
                   Using surface As New ChromeSurface With {.Size = New Size(100, 44)}
@@ -266,7 +266,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub AlignLeft_item_and_Delete_button_with_caption_measure_and_layout_properly()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -295,7 +295,7 @@ Public Class ChromeBehaviorTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Corner_pin_does_not_paint_accent_fill_when_pinned()
         OnSta(Sub()
                   Using surface As New ChromeSurface()

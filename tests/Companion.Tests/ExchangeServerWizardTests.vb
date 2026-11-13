@@ -454,7 +454,7 @@ Public Class ExchangeServerWizardTests
                                  End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Server_Wizard_Form")>
     Public Sub First_setup_keeps_the_login_start_and_generated_credentials_reachable()
         ExchangeTestSupport.OnUi(Sub()
                                      Using dlg As New Exchange_Server_Wizard_Form(New StubPorts(), "Owner")

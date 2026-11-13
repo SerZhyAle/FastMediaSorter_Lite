@@ -517,7 +517,7 @@ Public Class ResourceUiTests
         Assert.False(ResourceUiRules.ResourceButtonShouldShow(0, False))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel"), Trait("Form", "Resource_Manager_Form")>
     Public Sub ThePanelForBothHostsHasTheSameNames_ButtonOrder_AndEnabledMatrix()
         ' T-U2, revised by 131: the panel embedded by the dialog and by the Settings page is one
         ' control. The action row reads Add, Edit, Remove, Test, then the overflow; the Settings
@@ -625,7 +625,7 @@ Public Class ResourceUiTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub ThePanelButtonsKeepTheTwentyEightPixelFloorAtBothHostScales_AndTheListCarriesItsAccessibleName()
         ' T-U5: the ICON-RENDER floor scales with the host window - 1.0 is the manager
         ' dialog's own metrics, 1.5 stands for the settings window's scale. The list's
@@ -649,7 +649,7 @@ Public Class ResourceUiTests
 
     ' ---------------------------------------------------------------- ticket 131 ----
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub CommandsStayInReadingOrderAndInsideTheHostAcrossLanguagesAndScales()
         OnSta(Sub()
                   Dim saved As String = Localization.CurrentCode
@@ -725,7 +725,7 @@ Public Class ResourceUiTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub ChangingTheSettingsDeviceScaleResizesCommandsAndColumnMinimums()
         OnSta(Sub()
                   Dim hive As MemoryRegistry = SeededRegistry()
@@ -752,7 +752,7 @@ Public Class ResourceUiTests
         say.Invoke(panel, New Object() {text, [Enum].ToObject(kind, severity)})
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub DisabledCommandsExposeTheirReasonThroughTheParentsHoverTooltip()
         OnSta(Sub()
                   Dim hive As New MemoryRegistry()
@@ -771,7 +771,7 @@ Public Class ResourceUiTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub SelectedAndUnselectedCellsUseTheDarkPaletteInsteadOfNativeLightSelection()
         OnSta(Sub()
                   Dim hive As MemoryRegistry = SeededRegistry()
@@ -808,7 +808,7 @@ Public Class ResourceUiTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub TheSummaryCountsAndTheEmptyStateTakesOver()
         ' 131 §3.1/§3.4: the row's summary says the count (nothing when empty); with no
         ' resources the empty state replaces the list body and the column headers do not
@@ -865,7 +865,7 @@ Public Class ResourceUiTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_List_Panel")>
     Public Sub TheListKeepsTheMinimumWidths_GrowsAddress_AndCarriesNoLeadingGlyph()
         ' 131 §3.3: the five columns hold their minimums at the window's narrowest, Address
         ' absorbs what is left and is therefore the widest on a wide host; a row carries no

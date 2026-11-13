@@ -327,7 +327,7 @@ Public Class RemoteAdminWindowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Every_phase_shows_its_own_controls()
         Run(Sub(rig As Rig)
                 rig.AddTarget()
@@ -763,7 +763,7 @@ Public Class RemoteAdminWindowTests
 
     ' ------------------------------------------------------------------------------------------------ T-7: confirmations and the dialogs themselves
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Remote_Admin_Confirm_Form")>
     Public Sub Every_confirmation_names_the_target_declines_by_default_and_on_escape_and_on_enter()
         Run(Sub(rig As Rig)
                 rig.AddTarget()

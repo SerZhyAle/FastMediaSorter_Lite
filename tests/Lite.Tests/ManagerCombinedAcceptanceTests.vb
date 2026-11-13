@@ -426,7 +426,7 @@ Public Class ManagerCombinedAcceptanceTests
         End Using
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ManagerDestinationForm"), Trait("Form", "ManagerArchiveForm")>
     Public Sub G8_WinFormsDialogs_ThemeAndRtlLayout_KeepTechnicalPathsLeftToRight()
         Dim staError As Exception = Nothing
         Dim staThread As New Thread(Sub()

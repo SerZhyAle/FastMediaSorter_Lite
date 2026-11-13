@@ -98,7 +98,7 @@ Public Class SettingsCheckBoxRowTests
 
     ' ---------------------------------------------------------------- section 3 rule 1 / 5
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub Only_the_checkbox_and_its_caption_toggle_the_option_the_explanation_does_not()
         OnSta(
             Sub()
@@ -127,7 +127,7 @@ Public Class SettingsCheckBoxRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_disabled_option_has_no_toggle_path_from_any_element()
         OnSta(
             Sub()
@@ -193,7 +193,7 @@ Public Class SettingsCheckBoxRowTests
         Return result
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_long_explanation_grows_the_row_and_is_never_clipped_at_100_and_150_percent()
         Dim texts As List(Of String) = LongExplanationsInEveryLanguage()
         OnSta(
@@ -241,7 +241,7 @@ Public Class SettingsCheckBoxRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_longer_text_makes_a_taller_row_and_the_checkbox_stays_on_the_first_heading_line()
         OnSta(
             Sub()
@@ -300,7 +300,7 @@ Public Class SettingsCheckBoxRowTests
 
     ' ---------------------------------------------------------------- section 2 rule 4
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub The_hit_target_is_at_least_32_and_the_box_at_least_20_with_an_8_unit_gap()
         OnSta(
             Sub()
@@ -324,7 +324,7 @@ Public Class SettingsCheckBoxRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub The_painted_box_is_20_units_wide_inside_the_32_unit_target()
         OnSta(
             Sub()
@@ -366,7 +366,7 @@ Public Class SettingsCheckBoxRowTests
 
     ' ---------------------------------------------------------------- section 2 rule 1 (RTL)
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
     Public Sub Under_RightToLeft_the_checkbox_stands_at_the_right_and_the_text_cell_mirrors()
         OnSta(
             Sub()

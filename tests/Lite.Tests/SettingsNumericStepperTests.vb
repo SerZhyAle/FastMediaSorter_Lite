@@ -57,7 +57,7 @@ Public Class SettingsNumericStepperTests
         SendMessage(buttons.Handle, &H202, IntPtr.Zero, point)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsNumericStepper")>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
     <InlineData(1.75F)>
@@ -118,7 +118,7 @@ Public Class SettingsNumericStepperTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsNumericStepper")>
     Public Sub Right_to_left_keeps_the_native_button_and_text_order()
         WithNumber(1.75F,
             Sub(number, buttons)
@@ -131,7 +131,7 @@ Public Class SettingsNumericStepperTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsNumericStepper")>
     Public Sub Reapplying_the_scale_updates_the_existing_controls_and_palette()
         WithNumber(1.0F,
             Sub(number, buttons)

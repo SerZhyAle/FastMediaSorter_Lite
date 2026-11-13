@@ -50,7 +50,7 @@ Public Class CheckBoxLayoutTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "CheckBoxLayout")>
     Public Sub A_flow_hint_aligns_under_the_caption_without_widening_its_text_budget()
         OnSta(Sub()
                   Using flow As New FlowLayoutPanel With {.Width = 300, .FlowDirection = FlowDirection.TopDown,
@@ -75,7 +75,7 @@ Public Class CheckBoxLayoutTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "CheckBoxLayout")>
     Public Sub A_coordinate_based_hint_preserves_its_right_edge_and_the_following_row()
         OnSta(Sub()
                   Using form As New Form(), check As New CheckBox With {.Left = 14, .Top = 20,

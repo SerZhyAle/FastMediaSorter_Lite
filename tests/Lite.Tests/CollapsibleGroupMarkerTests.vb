@@ -156,7 +156,7 @@ Public Class CollapsibleGroupMarkerTests
         Return mask
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     Public Sub The_three_states_are_three_different_triangles_pointing_the_stated_way()
         Dim right As Integer(,) = StateMask(expanded:=False, rtl:=False)
         Dim down As Integer(,) = StateMask(expanded:=True, rtl:=False)
@@ -180,7 +180,7 @@ Public Class CollapsibleGroupMarkerTests
 
     ' ------------------------------------------------------------------ the reading start ----
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     <InlineData(False)>
     <InlineData(True)>
     Public Sub The_triangle_stands_at_the_reading_start_and_the_caption_follows_it(rtl As Boolean)
@@ -231,7 +231,7 @@ Public Class CollapsibleGroupMarkerTests
         End If
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     <InlineData(False)>
     <InlineData(True)>
     Public Sub A_collapsed_summary_line_and_a_wrapped_caption_keep_the_marker_on_the_first_line(rtl As Boolean)
@@ -283,7 +283,7 @@ Public Class CollapsibleGroupMarkerTests
 
     ' ------------------------------------------------------------------ the tier ----
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     <InlineData(1.0F)>
     <InlineData(1.25F)>
     <InlineData(1.5F)>
@@ -310,7 +310,7 @@ Public Class CollapsibleGroupMarkerTests
 
     ' ------------------------------------------------------------------ live changes ----
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     Public Sub The_marker_follows_a_toggle_a_right_to_left_change_a_scale_change_and_the_ink_live()
         WithGroup(1.0F, "Group", expanded:=False, rtl:=False,
             Sub(group)
@@ -356,7 +356,7 @@ Public Class CollapsibleGroupMarkerTests
 
     ' ------------------------------------------------------------------ what it must not break ----
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     Public Sub A_click_on_the_header_toggles_the_group_once_whatever_the_marker_does()
         WithGroup(1.0F, "Group", expanded:=True, rtl:=False,
             Sub(group)

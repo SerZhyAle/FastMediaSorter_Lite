@@ -81,7 +81,7 @@ Public Class ChromeWindowCommandsMovableTests
 
     ' --------------------------------------------------------------------------- the real strip ----
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_strip_reads_pin_handle_grip_then_the_three_commands_in_their_one_physical_order()
         OnSta(Sub()
                   Dim pin As ChromeItem = Nothing
@@ -106,7 +106,7 @@ Public Class ChromeWindowCommandsMovableTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_strip_at_the_floor_width_is_exactly_the_window_footprint_with_the_handle_slot()
         OnSta(Sub()
                   Dim pin As ChromeItem = Nothing

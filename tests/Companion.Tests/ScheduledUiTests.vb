@@ -117,7 +117,7 @@ Public Class ScheduledUiTests
                                  End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form")>
     Public Sub A_delete_shows_its_verdict_and_hides_what_does_not_apply()
         ExchangeTestSupport.OnUi(Sub()
                                      Using kit As New Kit()
@@ -185,7 +185,7 @@ Public Class ScheduledUiTests
                                  End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "Scheduled_Manager_Form"), Trait("Form", "Scheduled_Manager_Panel"), Trait("Form", "OptionRowHost")>
     Public Sub Both_schedule_hosts_fit_the_option_and_the_complete_management_panel()
         ExchangeTestSupport.OnUi(Sub()
                                      ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset

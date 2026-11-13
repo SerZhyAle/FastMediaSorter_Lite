@@ -160,7 +160,7 @@ Public Class ThemeApplierTests
 
     ''' <summary>The Share Manager's settings dialog, built for real, walks without a failure and
     ''' leaves no role-bearing system colour behind in dark mode.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "ThemeApplier")>
     Public Sub The_real_settings_dialog_is_fully_themed()
         Using f As New Share_Settings_Form()
             ThemeApplier.ApplyTree(f, ThemePalette.Dark)

@@ -91,7 +91,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog"), Trait("Form", "ButtonGlyphs")>
     Public Sub In_an_irreversible_confirmation_only_the_acting_button_has_a_red_face()
         ' WINDOWS-UI section 11 item 7 / BUTTONS 2.0 section 3: the dismissing answer is neutral with no tint, the
         ' acting button alone takes the danger face, and the default focus stays on the safe answer.
@@ -132,7 +132,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     <InlineData(False)>
     <InlineData(True)>
     Public Sub No_non_destructive_answer_tints_its_face_and_cancel_matches_a_neutral_button(dark As Boolean)
@@ -154,7 +154,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog")>
     Public Sub Escape_enter_and_the_default_focus_are_what_the_spec_said()
         ' WINDOWS-UI section 11 item 7: a hue never moves the default focus, the cancel path or the order.
         OnSta(Sub()
@@ -173,7 +173,7 @@ Public Class AnswerButtonGlyphTests
 
     ' --- what the numbers are -----------------------------------------------------------------------------
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     <InlineData(False)>
     <InlineData(True)>
     Public Sub Glyphs_hold_three_to_one_and_captions_four_and_a_half_on_the_face_they_are_drawn_on(dark As Boolean)
@@ -221,7 +221,7 @@ Public Class AnswerButtonGlyphTests
 
     ' --- live, disabled, direction, scale -------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub The_hue_follows_a_live_theme_change()
         OnSta(Sub()
                   Using form As New Form()
@@ -243,7 +243,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub An_unavailable_answer_shows_no_hue_and_no_tint()
         OnSta(Sub()
                   Using form As New Form()
@@ -259,7 +259,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub The_gap_is_eight_logical_pixels_on_the_caption_side_and_follows_the_reading_direction()
         OnSta(Sub()
                   Assert.Equal(8, ButtonGlyphs.GapLogicalSize)
@@ -305,7 +305,7 @@ Public Class AnswerButtonGlyphTests
         Return -1
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub The_glyphs_of_stacked_wide_buttons_stand_in_one_column_at_the_reading_start()
         OnSta(Sub()
                   Using form As New Form()
@@ -328,7 +328,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub A_narrow_button_keeps_the_pair_centred_and_a_widened_one_gets_its_alignment_back()
         OnSta(Sub()
                   Using form As New Form()
@@ -349,7 +349,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub In_a_right_to_left_layout_the_inset_is_on_the_right_where_the_reading_starts()
         OnSta(Sub()
                   Using form As New Form()
@@ -364,7 +364,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub A_button_the_owner_aligned_left_is_left_as_the_owner_set_it()
         OnSta(Sub()
                   Using form As New Form()
@@ -379,7 +379,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     <InlineData(144, 24, 9)>
     <InlineData(192, 32, 12)>
     Public Sub The_glyph_and_the_gap_scale_with_the_device_dpi(dpi As Integer, glyph As Integer, gap As Integer)
@@ -398,7 +398,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs"), Trait("Form", "DialogLayout")>
     Public Sub A_fixed_width_button_grows_for_its_longest_caption_instead_of_clipping_it()
         OnSta(Sub()
                   Using form As New Form()
@@ -416,7 +416,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ButtonGlyphs")>
     Public Sub The_face_of_an_answer_is_painted_like_the_face_of_a_neutral_button()
         OnSta(Sub()
                   Using form As New Form()
@@ -466,7 +466,7 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog"), Trait("Form", "ButtonGlyphs")>
     Public Sub The_widest_answer_row_in_every_language_is_measured_and_fits_its_window()
         ' The row of answers is laid out by the dialog's own table, so a long caption grows the window; what is
         ' measured here is that no button is narrower than its caption plus glyph in any of the shipped languages, and

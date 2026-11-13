@@ -58,7 +58,7 @@ Public Class DialogGlueTests
 
     ' --- the toast -------------------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "NotifyToast")>
     Public Sub A_toast_shows_over_the_media_without_taking_the_keyboard_and_lets_clicks_through()
         OnSta(Sub()
                   Using owner As New Form()

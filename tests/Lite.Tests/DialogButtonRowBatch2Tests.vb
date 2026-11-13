@@ -299,6 +299,7 @@ Public Class DialogButtonRowBatch2Tests
     ' --- the checks --------------------------------------------------------------------------
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Convert_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "File_Details_Form"), Trait("Form", "Connection_Diagnosis_Dialog")>
     <InlineData("en")>
     <InlineData("de")>
     <InlineData("ar")>
@@ -331,6 +332,7 @@ Public Class DialogButtonRowBatch2Tests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Convert_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "File_Details_Form"), Trait("Form", "Connection_Diagnosis_Dialog")>
     <InlineData("en", False)>
     <InlineData("ar", True)>
     Public Sub The_batch2_windows_read_cancel_first_and_bind_escape_and_enter(code As String, rightToLeft As Boolean)
@@ -384,6 +386,7 @@ Public Class DialogButtonRowBatch2Tests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Convert_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "File_Details_Form"), Trait("Form", "Connection_Diagnosis_Dialog")>
     Public Sub The_batch2_windows_keep_their_control_names_and_hold_every_answer_in_the_row()
         OnSta(Sub()
                   For Each spec As Spec In Specs()
@@ -410,6 +413,7 @@ Public Class DialogButtonRowBatch2Tests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Convert_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "File_Details_Form"), Trait("Form", "Connection_Diagnosis_Dialog")>
     Public Sub The_row_is_last_in_the_tab_order_and_numbers_its_buttons_in_reading_order()
         OnSta(Sub()
                   For Each spec As Spec In Specs()
@@ -449,7 +453,7 @@ Public Class DialogButtonRowBatch2Tests
 
     ''' <summary>The confirmation deletes the original past the Recycle Bin: its acting answer takes the affirmative place (last),
     ''' Cancel reads first and is the default, so one Enter never converts.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow"), Trait("Form", "Video_Replace_Confirm_Form")>
     Public Sub The_replace_confirmation_puts_the_destructive_answer_last_and_never_makes_it_the_default()
         OnSta(Sub()
                   Using form As New Video_Replace_Confirm_Form("a.webp", "a.mp4", warnAboutAlpha:=False)
@@ -468,7 +472,7 @@ Public Class DialogButtonRowBatch2Tests
     End Sub
 
     ''' <summary>The registration mode renames the Connect button; the row re-measures it and the window keeps the room.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow"), Trait("Form", "Exchange_Connect_Form")>
     Public Sub The_connect_window_row_follows_the_caption_of_the_mode()
         OnSta(Sub()
                   Using form As New Exchange_Connect_Form("exchange.example:443", Nothing, New ExchangeConsumerPorts())

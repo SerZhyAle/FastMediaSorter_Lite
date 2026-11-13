@@ -225,6 +225,7 @@ Public Class DialogButtonRowManagerBatchATests
     ' --- the checks --------------------------------------------------------------------------
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Link_Form"), Trait("Form", "Exchange_Connection_String_Form"), Trait("Form", "Exchange_Invitation_Create_Form"), Trait("Form", "Exchange_Invitation_Created_Form"), Trait("Form", "Exchange_Shared_Invitation_Form"), Trait("Form", "Exchange_Account_Limits_Form"), Trait("Form", "Exchange_Admin_Audit_Form"), Trait("Form", "Exchange_Admin_Browser_Form"), Trait("Form", "Share_Access_Test_Form"), Trait("Form", "Share_Status_Form"), Trait("Form", "Folder_Outside_Access_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en")>
     <InlineData("ru")>
     <InlineData("ar")>
@@ -268,6 +269,7 @@ Public Class DialogButtonRowManagerBatchATests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Link_Form"), Trait("Form", "Exchange_Connection_String_Form"), Trait("Form", "Exchange_Invitation_Create_Form"), Trait("Form", "Exchange_Invitation_Created_Form"), Trait("Form", "Exchange_Shared_Invitation_Form"), Trait("Form", "Exchange_Account_Limits_Form"), Trait("Form", "Exchange_Admin_Audit_Form"), Trait("Form", "Exchange_Admin_Browser_Form"), Trait("Form", "Share_Access_Test_Form"), Trait("Form", "Share_Status_Form"), Trait("Form", "Folder_Outside_Access_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en", False)>
     <InlineData("ru", False)>
     <InlineData("ar", True)>
@@ -325,6 +327,7 @@ Public Class DialogButtonRowManagerBatchATests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Link_Form"), Trait("Form", "Exchange_Connection_String_Form"), Trait("Form", "Exchange_Invitation_Create_Form"), Trait("Form", "Exchange_Invitation_Created_Form"), Trait("Form", "Exchange_Shared_Invitation_Form"), Trait("Form", "Exchange_Account_Limits_Form"), Trait("Form", "Exchange_Admin_Audit_Form"), Trait("Form", "Exchange_Admin_Browser_Form"), Trait("Form", "Share_Access_Test_Form"), Trait("Form", "Share_Status_Form"), Trait("Form", "Folder_Outside_Access_Form"), Trait("Form", "DialogButtonRow")>
     Public Sub The_twelve_windows_keep_their_answer_names_inside_the_row_and_number_the_tab_order_in_reading_order()
         ExchangeTestSupport.OnUi(
             Sub()

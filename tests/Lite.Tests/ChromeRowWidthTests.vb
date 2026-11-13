@@ -18,6 +18,7 @@ Imports Xunit
 ''' items that carry a measurable width: which carry words, which are a glyph and which reserve a text. A new
 ''' button on the row is a new line here, and the budget is the thing that says whether it still fits.
 ''' </summary>
+<Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
 Public Class ChromeRowWidthTests
 
     ''' <summary>The widest the row may be, in logical px (the row's natural width: items, gaps, the corner pin

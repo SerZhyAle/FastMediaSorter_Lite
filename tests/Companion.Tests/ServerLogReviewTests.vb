@@ -73,7 +73,7 @@ Public Class ServerLogReviewTests
         End Try
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SendLogsFlow")>
     <InlineData(1.0F, "en", False)>
     <InlineData(1.0F, "en", True)>
     <InlineData(1.75F, "ru", False)>

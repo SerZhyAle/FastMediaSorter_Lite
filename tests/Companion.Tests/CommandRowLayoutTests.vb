@@ -10,7 +10,7 @@ Imports System.Windows.Forms
 Imports FastMediaSorterCompanion
 Imports Xunit
 
-<Collection(UiLanguageCollection.Name)>
+<Collection(UiLanguageCollection.Name), Trait("Kind", "UiForm"), Trait("Form", "CollapsibleSection")>
 Public Class CommandRowLayoutTests
     <Fact>
     Public Sub Section_commands_fit_content_wrap_and_keep_notes_in_order()

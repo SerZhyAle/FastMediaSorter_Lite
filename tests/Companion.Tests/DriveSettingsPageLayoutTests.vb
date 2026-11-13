@@ -25,7 +25,7 @@ Imports Xunit
 ''' acceptance. The page is in <see cref="ManagerSettingsPageOptionRowTests"/>'s window too (its pages are walked there), but it has
 ''' no check box, so nothing of it is audited there - this is its audit.
 ''' </summary>
-<Collection(ScheduledCollection.Name)>
+<Collection(ScheduledCollection.Name), Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
 Public Class DriveSettingsPageLayoutTests
 
     Private Const Flags As BindingFlags = BindingFlags.Instance Or BindingFlags.NonPublic

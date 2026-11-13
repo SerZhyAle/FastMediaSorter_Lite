@@ -40,7 +40,7 @@ Public Class DiskAutostartDisplayTests
         End Try
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Disks_Form")>
     <InlineData(96)>
     <InlineData(144)>
     <InlineData(192)>
@@ -127,7 +127,7 @@ Public Class DiskAutostartDisplayTests
                End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Disks_Form"), Trait("Form", "DialogButtonRow")>
     Public Sub Disk_dialog_bounds_long_lists_by_the_space_above_its_actions()
         RunSta(Sub()
                    Dim status As WorkerStatus = SupportedStatus()

@@ -15,6 +15,7 @@ Imports Xunit
 ''' only a tooltip can read is a defect), the palette arrives only through ApplyPalette,
 ''' and a palette change (the theme switch) reaches the next repaint.
 ''' </summary>
+<Trait("Kind", "UiForm"), Trait("Form", "SettingsCheckBox")>
 Public Class SettingsCheckBoxTests
 
     Private Shared Sub WithShownCheckBox(test As Action(Of CheckBox))

@@ -357,6 +357,7 @@ Public Class DialogButtonRowManagerBatchCTests
     ' --- the checks --------------------------------------------------------------------------
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Scheduled_Preview_Form"), Trait("Form", "Scheduled_Resource_Picker_Form"), Trait("Form", "Scheduled_History_Form"), Trait("Form", "Share_Enable_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "Share_Disks_Form"), Trait("Form", "DiskOptionsForm"), Trait("Form", "Phone_Code_Intake_Form"), Trait("Form", "SendLogsFlow"), Trait("Form", "Resource_Add_Form"), Trait("Form", "PackageWizardForm"), Trait("Form", "DialogButtonRow")>
     <InlineData("en")>
     <InlineData("ru")>
     <InlineData("ar")>
@@ -385,6 +386,7 @@ Public Class DialogButtonRowManagerBatchCTests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Scheduled_Preview_Form"), Trait("Form", "Scheduled_Resource_Picker_Form"), Trait("Form", "Scheduled_History_Form"), Trait("Form", "Share_Enable_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "Share_Disks_Form"), Trait("Form", "DiskOptionsForm"), Trait("Form", "Phone_Code_Intake_Form"), Trait("Form", "SendLogsFlow"), Trait("Form", "Resource_Add_Form"), Trait("Form", "PackageWizardForm"), Trait("Form", "DialogButtonRow")>
     <InlineData("en", False)>
     <InlineData("ru", False)>
     <InlineData("ar", True)>
@@ -436,6 +438,7 @@ Public Class DialogButtonRowManagerBatchCTests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Scheduled_Preview_Form"), Trait("Form", "Scheduled_Resource_Picker_Form"), Trait("Form", "Scheduled_History_Form"), Trait("Form", "Share_Enable_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "Share_Disks_Form"), Trait("Form", "DiskOptionsForm"), Trait("Form", "Phone_Code_Intake_Form"), Trait("Form", "SendLogsFlow"), Trait("Form", "Resource_Add_Form"), Trait("Form", "PackageWizardForm"), Trait("Form", "DialogButtonRow")>
     Public Sub The_third_batch_keeps_its_answer_names_inside_the_row_and_numbers_the_tab_order_in_reading_order()
         InLanguage("en",
             Sub(kit As Kit)
@@ -580,7 +583,7 @@ Public Class DialogButtonRowManagerBatchCTests
 
     ''' <summary>The guided add is a wizard: Cancel, then Back, then the forward button last - and the forward button is the
     ''' affirmative answer until the add is done, when it becomes a plain Close.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Add_Form"), Trait("Form", "DialogButtonRow")>
     Public Sub The_guided_add_reads_cancel_back_next_and_the_forward_button_is_the_affirmative_until_it_is_done()
         InLanguage("en",
             Sub(kit As Kit)

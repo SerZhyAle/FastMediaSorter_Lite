@@ -606,7 +606,7 @@ Public Class ExchangeGroupTests
     ''' page the dialog fits (the prose wraps at the content width), and the section reports a real height.
     ''' This is the headless half of the 142 T-7 acceptance; the 175 percent display, the dark theme and the
     ''' right-to-left rendering still need a person (not done here).</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "CollapsibleSection"), Trait("Form", "OptionRowHost")>
     Public Sub The_unfolded_group_fits_the_page_in_english_russian_and_arabic()
         ExchangeProcess.ExeDirectoryOverride = Component(withExe:=True)
         Dim saved As String = Localization.CurrentCode

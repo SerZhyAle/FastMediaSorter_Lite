@@ -16,7 +16,7 @@ Imports Xunit
 ''' nothing, whatever the scale, the language, the file name or the path - at 100 %, 175 % and 250 % emulated
 ''' the way DialogLayoutTests does (font grown by the factor, fixed pixels scaled with Control.Scale).
 ''' </summary>
-<Collection("AppFileLogger")>
+<Collection("AppFileLogger"), Trait("Kind", "UiForm"), Trait("Form", "File_Details_Form")>
 Public Class FileDetailsLayoutTests
 
     Private Shared Sub OnSta(action As Action)

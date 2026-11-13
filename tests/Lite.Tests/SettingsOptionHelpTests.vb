@@ -417,7 +417,7 @@ Public Class SettingsOptionHelpTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHelpButton"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox")>
     Public Sub Rows_with_help_still_fit_their_page_at_the_usual_interface_scales_in_russian_and_english()
         OnSta(
             Sub()

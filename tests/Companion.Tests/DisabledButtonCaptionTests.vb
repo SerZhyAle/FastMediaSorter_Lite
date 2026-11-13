@@ -9,6 +9,7 @@ Imports System.Windows.Forms
 Imports FastMediaSorterCompanion
 Imports Xunit
 
+<Trait("Kind", "UiForm"), Trait("Form", "ThemeApplier")>
 Public Class DisabledButtonCaptionTests
     Private Shared Sub WithButton(test As Action(Of Form, Button))
         Dim failure As Exception = Nothing

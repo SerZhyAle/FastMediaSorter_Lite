@@ -45,6 +45,23 @@ The full release command is `pwsh -NoProfile -File tools/Release.ps1`: its prefl
 `tools/Run-AllTests.ps1` and `tools/Build-OfflineRelease.ps1`. Other areas have no measured fast selector;
 do not treat that absence as a passing test.
 
+### UI form checks run per change, never in the release (owner decision 2026-11-13)
+
+A test that judges how a form or control looks or behaves on screen - layout, sizes, scale factors / DPI,
+RightToLeft mirroring, real clicks and keys, focus, painted pixels, theme coverage, button rows and glyphs - carries
+the xUnit traits `Kind=UiForm` and `Form=<type name>` (one per form or shared control type it covers). They are
+**not** part of the release: `tools/Run-AllTests.ps1` runs both .NET suites with `--filter "Kind!=UiForm"`, and
+`-UiAll` brings them back only on the owner's explicit request. They run **only for forms a change creates or
+edits**, at the close of that change: `pwsh -NoProfile -File tools/Test-UiForms.ps1 -Forms <type>[,<type>..]`
+(viewer net10 + Share Manager; `-Net48` adds the fallback leg). Several click real windows, so they need an
+unlocked desktop (a locked workstation's LockApp swallows every click). Rules:
+- A new form, or a new UI test, gets both traits in the same change; a test whose form is only a vehicle for logic
+  (stored values, wire frames, results, leak counts, refusal codes) stays untagged and keeps running in the release.
+- A change that edits a form's layout, controls, theme or input handling names that form in `-Forms`; a shared
+  control (e.g. `DialogButtonRow`) names the control type. `Test-UiForms` answers COULD NOT VERIFY when nothing is
+  tagged for a named type - tag the tests, never read that as a pass.
+- Never add the UI form checks back to `Release.ps1` or the default run.
+
 ### Prerequisites
 - **.NET 10 SDK** builds the mainline x64 viewer and the Companion (both via `dotnet publish`); the **.NET Framework 4.8** targeting pack builds the x86 fallback viewer; plus Visual Studio 2022 (or MSBuild CLI). A full build spans two toolchains (MSBuild/net48 + dotnet/net10) across **three programs**, and `build.ps1` orchestrates all of them. **`msbuild` alone does NOT produce the mainline exe** - the sln yields only the x86 viewer + Companion in `bin\Release`; the self-contained single-file x64 build comes only out of `dotnet publish` (which is why every packager runs its own).
 - **Go (64-bit)**, the version pinned by `exchange-server/go.mod`, builds the exchange server (`exchange-server/`, spec 133, `fms-exchange-server.exe`) via `exchange-server/build.ps1`, which `build.ps1` calls. A 32-bit `go` can be first on `PATH`: the scripts resolve a 64-bit one and pin `GOARCH=amd64`. Without Go, `build.ps1` stops with an error unless `-SkipExchange` is given, so setups are never packaged without the server by accident; `Run-AllTests.ps1 -SkipExchangeGo` skips the Go suite and says so. `-race` runs inside `Run-AllTests.ps1` only with a MinGW-w64 gcc installed (`winget install BrechtSanders.WinLibs.POSIX.UCRT`), otherwise the row says `race not run`; the `GOOS=linux` WSL run is a hand step (`exchange-server/README.md`).

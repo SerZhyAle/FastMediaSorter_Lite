@@ -329,7 +329,7 @@ Public Class ManagerSettingsPageOptionRowTests
 
     ' --- the real pages at 100 and 175 percent, left to right and right to left -------------------------
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "OptionRowHost")>
     <InlineData("en", 1.0F)>
     <InlineData("en", 1.75F)>
     <InlineData("ru", 1.0F)>
@@ -399,7 +399,7 @@ Public Class ManagerSettingsPageOptionRowTests
 
     ' --- hiding and disabling go through the row --------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "OptionRowHost")>
     Public Sub A_hidden_exchange_option_hides_its_whole_row_and_a_disabled_one_dims_its_caption()
         InLanguage("en",
             Sub()

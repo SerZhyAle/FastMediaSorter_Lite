@@ -335,7 +335,7 @@ Public Class ManagerOptionRowTests
 
     ' --- the subjects are what they were -------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost"), Trait("Form", "SettingsCheckBox")>
     Public Sub The_two_windows_hold_thirty_one_check_boxes_and_every_one_stands_in_an_option_row()
         InLanguage("en",
             Sub(kit As Kit)
@@ -386,7 +386,7 @@ Public Class ManagerOptionRowTests
 
     ''' <summary>The destination note is the destination's explanation now: it stands under its caption for good, in the same
     ''' row, and the check box carries it as its description.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_destination_note_is_the_explanation_of_the_destination_row()
         InLanguage("en",
             Sub(kit As Kit)
@@ -408,7 +408,7 @@ Public Class ManagerOptionRowTests
     End Sub
 
     ''' <summary>The row hides and shows as one: a caption left behind by a hidden box would be the old bug in a new place.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_delete_originals_row_hides_and_shows_with_the_action_caption_and_all()
         InLanguage("en",
             Sub(kit As Kit)
@@ -437,7 +437,7 @@ Public Class ManagerOptionRowTests
     ''' <summary>A hidden control takes no cell in a TableLayoutPanel, so a page row that hides must hide its empty cell too: in
     ''' every shape of the editor each field and each full-width row stands in the wide column and each caption in the narrow
     ''' one (a shift by one cell put the full-width rows into the narrow column).</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form")>
     Public Sub The_editor_page_keeps_its_two_columns_in_every_shape()
         InLanguage("en",
             Sub(kit As Kit)
@@ -474,7 +474,7 @@ Public Class ManagerOptionRowTests
 
     ' --- the size of the box and its target, the layout, the overlaps -------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost"), Trait("Form", "SettingsCheckBox")>
     Public Sub The_box_is_at_least_20_px_and_its_hit_target_at_least_32_px_at_100_and_175_percent()
         InLanguage("en",
             Sub(kit As Kit)
@@ -502,7 +502,7 @@ Public Class ManagerOptionRowTests
             End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     <InlineData("en")>
     <InlineData("de")>
     <InlineData("ru")>
@@ -522,7 +522,7 @@ Public Class ManagerOptionRowTests
             End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "OptionRowHost")>
     <InlineData("en")>
     <InlineData("de")>
     <InlineData("ru")>
@@ -640,7 +640,7 @@ Public Class ManagerOptionRowTests
 
     ' --- what a click does ----------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     Public Sub A_click_on_the_caption_toggles_once_a_click_on_the_explanation_never_does_and_the_key_route_toggles()
         InLanguage("en",
             Sub(kit As Kit)
@@ -691,7 +691,7 @@ Public Class ManagerOptionRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     Public Sub A_disabled_row_never_toggles_and_toggles_again_when_enabled()
         InLanguage("en",
             Sub(kit As Kit)
@@ -729,7 +729,7 @@ Public Class ManagerOptionRowTests
 
     ''' <summary>A window's own interlock stays: all-files switches the four types off and disables them, and the sub-items
     ''' option follows the scan option - through the rows exactly as through the stock boxes.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_windows_own_interlocks_work_through_the_rows()
         InLanguage("en",
             Sub(kit As Kit)
@@ -776,7 +776,7 @@ Public Class ManagerOptionRowTests
 
     ' --- order, direction, accessibility ----------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_tab_order_of_each_window_is_the_one_it_had()
         InLanguage("en",
             Sub(kit As Kit)
@@ -805,7 +805,7 @@ Public Class ManagerOptionRowTests
             End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Scheduled_Operation_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost"), Trait("Form", "SettingsCheckBox")>
     <InlineData("en", False)>
     <InlineData("ar", True)>
     Public Sub The_box_leads_at_the_reading_start_and_mirrors_under_right_to_left(code As String, isRtl As Boolean)
@@ -889,7 +889,7 @@ Public Class ManagerOptionRowTests
 
     ' --- the guided add hosts the folder parameters ---------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Add_Form"), Trait("Form", "Share_Root_Params_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_guided_add_arranges_the_rows_of_the_editor_it_hosts()
         InLanguage("en",
             Sub(kit As Kit)
@@ -924,7 +924,7 @@ Public Class ManagerOptionRowTests
 
     ' --- the facade for a hand-positioned window and the fitting --------------------------------------
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "OptionRows"), Trait("Form", "OptionRowHost")>
     <InlineData(1.0F)>
     <InlineData(1.75F)>
     Public Sub A_hand_positioned_window_gets_its_rows_in_place_and_the_controls_under_a_grown_row_move_down(factor As Single)

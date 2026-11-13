@@ -4,6 +4,7 @@ Imports System.Drawing
 Imports System.Windows.Forms
 Imports Xunit
 
+<Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
 Public Class ChromeCaptionFitTests
     <Fact>
     Public Sub Captions_fit_measured_slots_in_all_thirteen_script_fonts_at_four_monitor_scales()

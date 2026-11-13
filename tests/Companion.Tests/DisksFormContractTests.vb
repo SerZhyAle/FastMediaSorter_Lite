@@ -23,7 +23,7 @@ Public Class DisksFormContractTests
         End Using
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Disks_Form")>
     Public Sub The_disks_window_hides_what_cannot_work_instead_of_greying_it()
         Using form As New Share_Disks_Form()
             ' No worker status yet = disk sharing is not available: no dead toolbar, no empty list.
@@ -37,7 +37,7 @@ Public Class DisksFormContractTests
         End Using
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Disks_Form")>
     Public Sub The_disk_manager_button_stays_offered_while_disk_sharing_is_unavailable()
         Using form As New Share_Disks_Form()
             form.Show()
@@ -53,7 +53,7 @@ Public Class DisksFormContractTests
         Return CBool(getState.Invoke(c, New Object() {2}))
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ThemeApplier")>
     Public Sub A_disabled_dark_button_keeps_its_caption_legible()
         Using form As New Form(), button As New Button With {.Text = "Open..", .Width = 160, .Height = 60, .Enabled = False}
             form.Controls.Add(button)

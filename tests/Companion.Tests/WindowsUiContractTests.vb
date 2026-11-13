@@ -32,7 +32,7 @@ Public Class WindowsUiContractTests
         If failure IsNot Nothing Then Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "CollapsibleSection")>
     Public Sub Collapsing_a_focused_group_returns_focus_and_exposes_its_real_state()
         OnUi(Sub()
                  Using host As New Form With {.ShowInTaskbar = False, .StartPosition = FormStartPosition.Manual,
@@ -56,7 +56,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Revealing_the_menu_items_preserves_the_user_window_size()
         OnUi(Sub()
                  Using window As New Share_Settings_Form()
@@ -76,7 +76,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "SettingsGroupCard")>
     Public Sub The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks()
         OnUi(Sub()
                  ExchangeTestSupport.Reset()
@@ -204,7 +204,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Manager_pages_keep_window_geometry_and_restore_each_viewport()
         ' The SFTP sharing pages are part of the Manager window while the worker payload is installed (253 R-2).
         ExchangeTestSupport.Reset()
@@ -274,7 +274,7 @@ Public Class WindowsUiContractTests
     End Sub
 
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "ManagerSettingRow")>
     Public Sub Manager_contract_anatomy_keeps_hints_visible_and_about_last()
         OnUi(Sub()
                  Using window As New Share_Settings_Form()
@@ -325,7 +325,7 @@ Public Class WindowsUiContractTests
         Next
     End Function
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     <InlineData(1.0F)>
     <InlineData(1.75F)>
     <InlineData(2.0F)>
@@ -453,7 +453,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "ManagerSettingRow")>
     <InlineData(Share_Settings_Form.MinimumWidthLogical)>
     <InlineData(820)>
     Public Sub Every_page_contains_its_editors_after_resize_and_server_state_changes(width As Integer)
@@ -551,7 +551,7 @@ Public Class WindowsUiContractTests
              End Sub, 60)   ' every rail group of every page in four server states: a loaded full run needs more than the default
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "ManagerSettingRow")>
     <InlineData("ru")>
     <InlineData("de")>
     <InlineData("ar")>
@@ -660,7 +660,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ThemeApplier")>
     Public Sub Secondary_window_numeric_buttons_keep_their_width_and_native_value_semantics()
         OnUi(Sub()
                  Using window As New Form(), number As New NumericUpDown With {.Width = 140, .Value = 5,
@@ -678,7 +678,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ThemeApplier")>
     Public Sub Dropdown_field_and_arrow_are_painted_in_the_current_palette()
         OnUi(Sub()
                  Using window As New Form(), combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 200}
@@ -712,7 +712,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "CheckBoxLayout"), Trait("Form", "ThemeApplier")>
     Public Sub Native_checkboxes_keep_the_language_direction_and_hint_indent()
         OnUi(Sub()
                  Using window As New Form With {.RightToLeft = RightToLeft.Yes},
@@ -730,7 +730,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "MainWindow")>
     Public Sub Main_window_toolbar_and_context_menus_streamline_per_spec_237()
         OnUi(Sub()
                  Dim previous = Localization.CurrentCode
@@ -824,7 +824,7 @@ Public Class WindowsUiContractTests
 
     ''' <summary>WINDOWS-UI section 2 item 3: the header carries "expand all" and "collapse all"
     ''' for the window's groups; glyph-only, so each has a localized accessible name.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "MainWindow"), Trait("Form", "CollapsibleSection")>
     Public Sub Main_window_header_tools_expand_and_collapse_all_groups()
         OnUi(Sub()
                  Dim previous = Localization.CurrentCode
@@ -873,7 +873,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "MainWindow"), Trait("Form", "CollapsibleSection")>
     Public Sub Main_window_resources_fold_and_content_sized_list_per_spec_237_zone_d()
         OnUi(Sub()
                  Dim previous = Localization.CurrentCode
@@ -957,7 +957,7 @@ Public Class WindowsUiContractTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "MainWindow")>
     Public Sub Main_window_header_gives_state_text_a_readable_column_or_stacks_the_buttons()
         OnUi(Sub()
                  Dim previous = Localization.CurrentCode

@@ -29,7 +29,7 @@ Public Class RowFittingComboBoxTests
         Return combo
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ManagerSettingRow"), Trait("Form", "RowFittingComboBox"), Trait("Form", "ThemedComboBox")>
     Public Sub A_setting_row_holds_the_whole_themed_list()
         ExchangeTestSupport.OnUi(Sub()
             Dim combo As ComboBox = NewList()
@@ -42,7 +42,7 @@ Public Class RowFittingComboBoxTests
         End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "RowFittingComboBox"), Trait("Form", "ThemedComboBox")>
     Public Sub A_label_in_a_flow_stays_clear_of_the_themed_list()
         ExchangeTestSupport.OnUi(Sub()
             Dim combo As ComboBox = NewList()

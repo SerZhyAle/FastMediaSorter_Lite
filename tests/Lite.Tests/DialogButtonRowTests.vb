@@ -244,7 +244,7 @@ Public Class DialogButtonRowTests
         Return host
     End Function
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow")>
     <InlineData(False)>
     <InlineData(True)>
     Public Sub The_row_reads_cancel_apply_save_from_the_reading_start_mirrored_in_a_right_to_left_window(rightToLeft As Boolean)
@@ -297,7 +297,7 @@ Public Class DialogButtonRowTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow")>
     Public Sub Widths_follow_the_caption_are_unequal_and_every_button_in_a_line_has_one_height()
         OnSta(Sub()
                   Dim row As DialogButtonRow = Nothing
@@ -316,7 +316,7 @@ Public Class DialogButtonRowTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow")>
     Public Sub A_narrow_window_wraps_whole_buttons_keeps_their_widths_and_one_height_per_line()
         OnSta(Sub()
                   Dim wide As DialogButtonRow = Nothing
@@ -363,7 +363,7 @@ Public Class DialogButtonRowTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow")>
     Public Sub A_new_caption_or_a_new_font_measures_again_and_widens_the_button()
         OnSta(Sub()
                   Dim row As DialogButtonRow = Nothing
@@ -382,7 +382,7 @@ Public Class DialogButtonRowTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogButtonRow")>
     Public Sub A_row_in_a_self_sizing_container_reports_its_natural_size()
         OnSta(Sub()
                   Using host As New Form()
@@ -479,6 +479,7 @@ Public Class DialogButtonRowTests
     End Function
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Batch_Report_Form"), Trait("Form", "Resource_Manager_Form"), Trait("Form", "Hotkeys_Form"), Trait("Form", "Download_Progress_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("de")>
     <InlineData("fr")>
     <InlineData("pt")>
@@ -507,6 +508,7 @@ Public Class DialogButtonRowTests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Batch_Report_Form"), Trait("Form", "Resource_Manager_Form"), Trait("Form", "Hotkeys_Form"), Trait("Form", "Download_Progress_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en", False)>
     <InlineData("ar", True)>
     Public Sub The_adopting_windows_read_their_answers_cancel_first_and_bind_escape_and_enter(code As String, rightToLeft As Boolean)

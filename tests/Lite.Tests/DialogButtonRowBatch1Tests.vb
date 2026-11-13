@@ -232,6 +232,7 @@ Public Class DialogButtonRowBatch1Tests
     ' --- the checks --------------------------------------------------------------------------
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Export_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Resource_Phone_Code_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en")>
     <InlineData("de")>
     <InlineData("ar")>
@@ -264,6 +265,7 @@ Public Class DialogButtonRowBatch1Tests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Export_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Resource_Phone_Code_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en", False)>
     <InlineData("ar", True)>
     Public Sub The_six_windows_read_cancel_first_and_bind_escape_and_enter(code As String, rightToLeft As Boolean)
@@ -309,6 +311,7 @@ Public Class DialogButtonRowBatch1Tests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Export_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Resource_Phone_Code_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "DialogButtonRow")>
     Public Sub The_six_windows_keep_their_control_names_and_hold_every_answer_in_the_row()
         OnSta(Sub()
                   For Each spec As Spec In Specs()
@@ -331,6 +334,7 @@ Public Class DialogButtonRowBatch1Tests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Export_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Resource_Phone_Code_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "DialogButtonRow")>
     Public Sub The_row_is_last_in_the_tab_order_and_numbers_its_buttons_in_reading_order()
         OnSta(Sub()
                   For Each spec As Spec In Specs()
@@ -370,7 +374,7 @@ Public Class DialogButtonRowBatch1Tests
 
     ''' <summary>The export window had a label anchored to the bottom edge, which a docked row that wraps would have
     ''' ended up under; the room the row needs is made by growing the window, so a longer language never overlaps.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Export_Form")>
     Public Sub The_export_window_does_not_anchor_its_status_line_to_the_edge_under_the_row()
         OnSta(Sub()
                   Dim pinned As New ResourceDescriptor With {.Id = "r1", .DisplayName = "NAS", .Kind = ResourceKind.Sftp, .Host = "nas.local", .Port = 22, .UserName = "me", .RootPath = "/photos"}

@@ -158,6 +158,10 @@ a pass. The measured list and release command are in [.claude/rules/build-releas
 Record each deferred build or test as a RELEASE audit item naming its command and report "not built, not
 tested until the release". The owner can explicitly request a slower run.
 
+**UI form checks (layout, scaling, clicks) never run in the release** (owner decision 2026-11-13): tests tagged
+`Kind=UiForm` / `Form=<type>` are filtered out of `Run-AllTests`; run them only for forms a change creates or
+edits, with `tools/Test-UiForms.ps1 -Forms <type>` on an unlocked desktop. Rules: [build-release.md](.claude/rules/build-release.md).
+
 **Release and explicitly requested test commands:**
 
 ```powershell

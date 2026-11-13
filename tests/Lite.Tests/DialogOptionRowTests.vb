@@ -352,6 +352,7 @@ Public Class DialogOptionRowTests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow"), Trait("Form", "SettingsCheckBox")>
     Public Sub The_box_is_at_least_20_px_and_its_hit_target_at_least_32_px_at_100_and_175_percent()
         InLanguage("en",
             Sub()
@@ -378,6 +379,7 @@ Public Class DialogOptionRowTests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow"), Trait("Form", "SettingsCheckBox")>
     <InlineData("en")>
     <InlineData("de")>
     <InlineData("ru")>
@@ -459,6 +461,7 @@ Public Class DialogOptionRowTests
     End Function
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_click_on_the_caption_toggles_once_a_click_on_the_explanation_never_does_and_the_key_route_toggles()
         InLanguage("en",
             Sub()
@@ -529,6 +532,7 @@ Public Class DialogOptionRowTests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_disabled_row_never_toggles_and_toggles_again_when_enabled()
         InLanguage("en",
             Sub()
@@ -556,7 +560,7 @@ Public Class DialogOptionRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_disabled_box_paints_dimmed_in_a_light_and_a_dark_palette_without_an_error()
         InLanguage("en",
             Sub()
@@ -587,6 +591,7 @@ Public Class DialogOptionRowTests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow")>
     Public Sub The_tab_order_of_each_window_is_the_one_it_had()
         InLanguage("en",
             Sub()
@@ -624,6 +629,7 @@ Public Class DialogOptionRowTests
     End Function
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "LiveBroadcast_Form"), Trait("Form", "Video_Replace_Confirm_Form"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow"), Trait("Form", "SettingsCheckBox")>
     <InlineData("en", False)>
     <InlineData("ar", True)>
     Public Sub The_box_leads_at_the_reading_start_and_mirrors_under_right_to_left(code As String, isRtl As Boolean)
@@ -676,7 +682,7 @@ Public Class DialogOptionRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "OptionRowHost"), Trait("Form", "DialogOptionRow")>
     Public Sub A_theme_change_repaints_the_box_with_the_palette_roles_the_theme_walk_hands_it()
         InLanguage("en",
             Sub()
@@ -711,7 +717,7 @@ Public Class DialogOptionRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "OptionRowHost")>
     Public Sub A_hosted_row_that_owns_its_palette_paints_the_hosts_colours()
         InLanguage("en",
             Sub()

@@ -511,6 +511,7 @@ Public Class ManagerDialogOptionRowTests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "Exchange_Account_Admin_Form"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Password_Form"), Trait("Form", "Resource_Add_Form"), Trait("Form", "PackageWizardForm"), Trait("Form", "Live_Broadcast_Form"), Trait("Form", "DiskOptionsForm"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_box_is_at_least_20_px_and_its_hit_target_at_least_32_px_at_100_and_175_percent()
         InLanguage("en",
             Sub(kit As Kit)
@@ -538,6 +539,7 @@ Public Class ManagerDialogOptionRowTests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "Exchange_Account_Admin_Form"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Password_Form"), Trait("Form", "Resource_Add_Form"), Trait("Form", "PackageWizardForm"), Trait("Form", "Live_Broadcast_Form"), Trait("Form", "DiskOptionsForm"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "OptionRowHost")>
     <InlineData("en")>
     <InlineData("ru")>
     <InlineData("ar")>
@@ -559,6 +561,7 @@ Public Class ManagerDialogOptionRowTests
     ' --- what a click does ----------------------------------------------------------------------------
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "Exchange_Account_Admin_Form"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "Exchange_Password_Change_Form"), Trait("Form", "Exchange_Password_Form"), Trait("Form", "Resource_Add_Form"), Trait("Form", "PackageWizardForm"), Trait("Form", "Live_Broadcast_Form"), Trait("Form", "DiskOptionsForm"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "OptionRowHost")>
     Public Sub A_click_on_the_caption_toggles_once_a_click_on_the_explanation_never_does_and_the_key_route_toggles()
         InLanguage("en",
             Sub(kit As Kit)
@@ -607,7 +610,7 @@ Public Class ManagerDialogOptionRowTests
 
     ' --- what the windows do with a row -----------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_internet_warning_is_the_explanation_of_the_internet_row_and_shows_only_while_the_option_is_on()
         InLanguage("en",
             Sub(kit As Kit)
@@ -643,7 +646,7 @@ Public Class ManagerDialogOptionRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_sign_in_hides_the_whole_show_password_row_in_the_code_mode_and_nothing_below_it_shifts_sideways()
         InLanguage("en",
             Sub(kit As Kit)
@@ -675,7 +678,7 @@ Public Class ManagerDialogOptionRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Live_Broadcast_Form"), Trait("Form", "OptionRowHost")>
     Public Sub The_live_window_shows_the_lan_row_for_the_video_sources_only_and_keeps_its_cell()
         InLanguage("en",
             Sub(kit As Kit)
@@ -709,7 +712,7 @@ Public Class ManagerDialogOptionRowTests
             End Sub)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "OptionRowHost")>
     <InlineData("en")>
     <InlineData("ar")>
     Public Sub The_gateway_page_keeps_its_bold_caption_and_the_status_lines_start_where_the_caption_starts(code As String)

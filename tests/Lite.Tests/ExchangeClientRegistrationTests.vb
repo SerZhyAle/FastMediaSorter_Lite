@@ -32,7 +32,7 @@ Public Class ExchangeClientRegistrationTests
         End Using
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Connect_Form")>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
     <InlineData(1.75F)>

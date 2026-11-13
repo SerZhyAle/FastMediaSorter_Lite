@@ -120,7 +120,7 @@ Public Class SettingsRailTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow")>
     Public Sub The_rail_is_one_tab_stop_that_follows_the_selected_page()
         OnSta(Sub()
                   Using font As New Font("Segoe UI Semibold", 8.5F)
@@ -149,7 +149,7 @@ Public Class SettingsRailTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow")>
     Public Sub Arrow_keys_move_only_the_focus_ring_and_never_choose_a_page()
         OnSta(Sub()
                   Using font As New Font("Segoe UI Semibold", 8.5F)
@@ -196,7 +196,7 @@ Public Class SettingsRailTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow")>
     Public Sub Enter_and_space_choose_the_focused_row_through_the_click_path_once()
         OnSta(Sub()
                   Using font As New Font("Segoe UI Semibold", 8.5F)
@@ -233,7 +233,7 @@ Public Class SettingsRailTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow")>
     Public Sub Left_and_right_do_nothing_and_a_modified_key_is_left_to_the_window()
         OnSta(Sub()
                   Using font As New Font("Segoe UI Semibold", 8.5F)
@@ -269,7 +269,7 @@ Public Class SettingsRailTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailRow")>
     Public Sub A_row_claims_the_navigation_keys_but_lets_tab_leave_the_rail()
         OnSta(Sub()
                   Using font As New Font("Segoe UI Semibold", 8.5F)
@@ -285,7 +285,7 @@ Public Class SettingsRailTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow")>
     Public Sub The_tab_stop_returns_to_the_selected_row_when_the_focus_leaves()
         OnSta(Sub()
                   Using font As New Font("Segoe UI Semibold", 8.5F)
@@ -323,7 +323,7 @@ Public Class SettingsRailTests
         SettingsRailList.ApplyDirection(Nothing, True)
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList")>
     <InlineData(False)>
     <InlineData(True)>
     Public Sub Under_right_to_left_the_rail_ends_up_on_the_right_of_a_real_window(isRtl As Boolean)
@@ -367,7 +367,7 @@ Public Class SettingsRailTests
 
     ' --- sizes (rule 5) and the narrow window (rule 6) -----------------------------------------
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow"), Trait("Form", "Table_Form")>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
     <InlineData(2.0F)>
@@ -397,7 +397,7 @@ Public Class SettingsRailTests
         Assert.True(problems.Count = 0, String.Join(vbLf, problems))
     End Sub
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow"), Trait("Form", "Table_Form")>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
     <InlineData(2.0F)>
@@ -432,7 +432,7 @@ Public Class SettingsRailTests
                                   settings.MinWidthLogical, factor, worst.ContentLogical, worst.Code, MinContentLogical))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsRailList"), Trait("Form", "SettingsRailRow"), Trait("Form", "Table_Form")>
     Public Sub The_rail_width_follows_the_captions_it_is_not_a_fixed_number()
         Dim settings As SourceSettings = ReadSourceSettings()
         Dim entries As List(Of NavCaption) = ReadNavCaptions()

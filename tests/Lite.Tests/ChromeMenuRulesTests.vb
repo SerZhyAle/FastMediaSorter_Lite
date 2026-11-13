@@ -399,7 +399,7 @@ Public Class ChromeMenuRulesTests
 
     ' --- surface and menu (window handle, no screen) ---------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_vertical_surface_stacks_slim_separators_and_skips_them_for_hit_test_and_focus()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -426,7 +426,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_menu_row_with_a_hint_or_a_submenu_arrow_is_wider_than_the_same_row_without()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -444,7 +444,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_menu_button_keeps_room_for_its_chevron_and_a_plain_button_does_not()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -460,7 +460,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_reserved_text_keeps_the_slot_of_a_text_that_changes_length()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -474,7 +474,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_zoom_value_that_is_away_still_measures_its_reserved_text_and_not_a_bare_square()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -488,7 +488,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_conditional_button_that_is_away_keeps_its_place_so_the_next_one_does_not_move()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -518,7 +518,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_kept_place_with_nothing_visible_after_it_holds_nothing_and_adds_no_width()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -559,7 +559,7 @@ Public Class ChromeMenuRulesTests
         Assert.Equal(expected, ChromeMenuRules.KeepsSlotWhenHidden(name, companion))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_small_size_never_goes_under_the_28_pixel_floor_and_the_touch_size_reaches_48()
         OnSta(Sub()
                   Using surface As New ChromeSurface()
@@ -641,7 +641,7 @@ Public Class ChromeMenuRulesTests
         End Using
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeMenu"), Trait("Form", "ChromeSurface")>
     Public Sub A_submenu_opens_beside_its_row_keeps_the_parent_and_a_digit_runs_its_slot()
         OnSta(Sub()
                   Dim ran As String = ""
@@ -702,7 +702,7 @@ Public Class ChromeMenuRulesTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeMenu"), Trait("Form", "ChromeSurface")>
     Public Sub A_menu_opened_by_the_mouse_shows_no_ring_until_an_arrow_key_asks_for_one()
         OnSta(Sub()
                   Dim items As New List(Of ChromeMenuItem) From {

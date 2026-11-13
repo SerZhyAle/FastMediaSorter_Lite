@@ -171,7 +171,7 @@ Public Class DialogLayoutTests
         End Sub
     End Class
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogLayout")>
     Public Sub The_audit_catches_a_clipped_label_and_the_reflow_repairs_it()
         OnSta(Sub()
                   Using form As New CrampedForm()
@@ -212,7 +212,7 @@ Public Class DialogLayoutTests
         End Sub
     End Class
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogLayout")>
     Public Sub A_text_enlargement_grows_the_font_and_the_authored_layout_together_and_the_ordinary_size_changes_nothing()
         OnSta(Sub()
                   Using plain As New TextScaledForm(1.0F)
@@ -290,7 +290,7 @@ Public Class DialogLayoutTests
         End Sub
     End Class
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "DialogLayout")>
     Public Sub A_control_with_its_own_font_grows_with_the_window_text_size_and_the_ordinary_size_keeps_it()
         OnSta(Sub()
                   Using plain As New OwnFontForm(1.0F)
@@ -333,7 +333,7 @@ Public Class DialogLayoutTests
         End Try
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Resource_Credential_Form")>
     Public Sub Two_secondary_windows_stay_clean_at_a_150_percent_Windows_text_size()
         OnSta(Sub()
                   Dim all As New List(Of String)()
@@ -366,7 +366,7 @@ Public Class DialogLayoutTests
     ''' windows are the long-caption ones; every question of <c>AskSpecs.All()</c> is built too, so a new question joins the
     ''' matrix on its own. The display scale is the one of the machine; the Text size is pinned per window by
     ''' <c>AtTextSize</c>. The look on a real screen (real fonts, RTL, the Settings window) stays the hand run of T-5.</summary>
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Secure_Password_Form"), Trait("Form", "Resource_Credential_Form"), Trait("Form", "Resource_Edit_Form"), Trait("Form", "Ask_Dialog")>
     <MemberData(NameOf(ShippedLanguages))>
     Public Sub The_secondary_windows_and_the_questions_stay_clean_at_100_150_and_200_percent_Windows_text_size(code As String)
         Dim saved As String = Localization.CurrentCode
@@ -401,27 +401,27 @@ Public Class DialogLayoutTests
 
     ' --- the windows ------------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Secure_Password_Form")>
     Public Sub The_container_password_window_fits_at_every_scale_with_a_long_name_and_a_retry()
         OnSta(Sub() AssertCleanAtEveryScale("Secure_Password_Form", Function() New Secure_Password_Form(LongName, retry:=True)))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Secure_Password_Form")>
     Public Sub The_container_password_window_fits_on_the_first_ask()
         OnSta(Sub() AssertCleanAtEveryScale("Secure_Password_Form(first)", Function() New Secure_Password_Form("a.fd-sec", retry:=False)))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Credential_Form")>
     Public Sub The_resource_password_window_fits_at_every_scale()
         OnSta(Sub() AssertCleanAtEveryScale("Resource_Credential_Form", Function() New Resource_Credential_Form("My server with a rather long display name", "somebody-with-a-long-user-name", retry:=True)))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Edit_Form")>
     Public Sub The_new_resource_window_fits_at_every_scale()
         OnSta(Sub() AssertCleanAtEveryScale("Resource_Edit_Form(new)", Function() New Resource_Edit_Form(Nothing)))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Edit_Form")>
     Public Sub The_edit_resource_window_with_a_pinned_key_fits_at_every_scale()
         Dim existing As New ResourceDescriptor With {
             .Id = "r1", .DisplayName = "NAS", .Kind = ResourceKind.Sftp, .Host = "nas.local", .Port = 22, .UserName = "me", .RootPath = "/photos",
@@ -464,7 +464,7 @@ Public Class DialogLayoutTests
         End Function
     End Class
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Resource_Export_Form")>
     Public Sub The_export_resource_window_fits_at_every_scale()
         Dim existing As New ResourceDescriptor With {
             .Id = "r1", .DisplayName = "NAS", .Kind = ResourceKind.Sftp, .Host = "nas.local", .Port = 22, .UserName = "me", .RootPath = "/photos",
@@ -472,12 +472,12 @@ Public Class DialogLayoutTests
         OnSta(Sub() AssertCleanAtEveryScale("Resource_Export_Form", Function() New Resource_Export_Form(existing, New NoSecrets())))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "LiveBroadcast_Form")>
     Public Sub The_live_broadcast_window_fits_at_every_scale()
         OnSta(Sub() AssertCleanAtEveryScale("LiveBroadcast_Form", Function() New LiveBroadcast_Form()))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Video_Convert_Form"), Trait("Form", "Video_Replace_Confirm_Form")>
     Public Sub The_video_progress_and_confirmation_windows_fit_at_every_scale()
         OnSta(Sub()
                   AssertCleanAtEveryScale("Video_Convert_Form", Function() New Video_Convert_Form(determinate:=True))
@@ -485,7 +485,7 @@ Public Class DialogLayoutTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Hotkeys_Form"), Trait("Form", "Batch_Report_Form")>
     Public Sub The_hotkey_and_report_windows_stay_on_the_monitor_at_every_scale()
         Dim report As New BatchReport()
         report.Results.Add(New BatchItemResult With {.Path = "C:\a\b.jpg", .State = BatchItemState.Done})
@@ -501,12 +501,12 @@ Public Class DialogLayoutTests
 
     ''' <summary>The full audit, not only the monitor bound: "Сбросить всё" used to start 30 px inside "Снять
     ''' сочетание" on the capture row, so one hid part of the other.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Hotkeys_Form")>
     Public Sub The_hotkey_window_has_no_overlapping_controls_at_every_scale()
         OnSta(Sub() AssertCleanAtEveryScale("Hotkeys_Form", Function() New Hotkeys_Form(New Dictionary(Of String, String)())))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Batch_Report_Form")>
     Public Sub The_batch_report_window_is_clean_at_every_scale()
         Dim report As New BatchReport()
         report.Results.Add(New BatchItemResult With {.Path = "C:\a\b.jpg", .State = BatchItemState.Done})
@@ -515,7 +515,7 @@ Public Class DialogLayoutTests
 
     ''' <summary>A window that grows in OnLoad (a wrapped warning) must still open centred on its owner: the reflow
     ''' changes its size after the start position was decided.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Secure_Password_Form")>
     Public Sub A_window_that_grew_in_OnLoad_is_still_centred_on_its_owner()
         OnSta(Sub()
                   Using owner As New Form()
@@ -545,13 +545,13 @@ Public Class DialogLayoutTests
 
     ' --- the question window -----------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog")>
     Public Sub The_name_collision_window_fits_at_every_scale_with_both_files_described()
         Dim facts As New AskFileFacts(5L * 1024 * 1024, New Date(2026, 1, 2, 3, 4, 5))
         OnSta(Sub() AssertCleanAtEveryScale("Ask_Dialog(collision)", Function() New Ask_Dialog(AskSpecs.NameCollision(LongName & ".jpg", facts, facts))))
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog")>
     Public Sub The_prompt_windows_fit_at_every_scale()
         OnSta(Sub()
                   AssertCleanAtEveryScale("Ask_Dialog(rename)", Function() New Ask_Dialog(AskSpecs.RenamePrompt("photo", ".jpg", Nothing)))
@@ -560,7 +560,7 @@ Public Class DialogLayoutTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog")>
     Public Sub The_import_and_conflict_windows_fit_at_every_scale()
         OnSta(Sub()
                   AssertCleanAtEveryScale("Ask_Dialog(import)", Function() New Ask_Dialog(AskSpecs.SettingsImport("Changed: 12" & vbCrLf & "Merging changes: 3" & vbCrLf & String.Join(vbCrLf, Enumerable.Range(1, 12).Select(Function(i) "Setting number " & i.ToString())))))

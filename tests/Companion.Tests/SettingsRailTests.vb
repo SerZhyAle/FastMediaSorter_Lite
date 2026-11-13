@@ -219,7 +219,7 @@ Public Class SettingsRailTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Choosing_a_child_reveals_its_parent_page_row()
         OnUi(Sub()
                  Using window = OpenWindow()
@@ -234,7 +234,7 @@ Public Class SettingsRailTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub The_rail_has_one_roving_tab_stop_that_returns_to_the_selected_row()
         OnUi(Sub()
                  Using window = OpenWindow()
@@ -261,7 +261,7 @@ Public Class SettingsRailTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Arrow_keys_move_the_focus_over_the_visible_rows_and_skip_folded_children()
         OnUi(Sub()
                  Using window = OpenWindow()
@@ -305,7 +305,7 @@ Public Class SettingsRailTests
 
     ' --- rule 4: select and expand are two targets --------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub The_chevron_toggles_without_selecting_and_the_row_selects_without_toggling()
         OnUi(Sub()
                  Using window = OpenWindow()
@@ -347,7 +347,7 @@ Public Class SettingsRailTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Left_Right_fold_and_unfold_and_Enter_and_Space_choose()
         OnUi(Sub()
                  Using window = OpenWindow()
@@ -394,7 +394,7 @@ Public Class SettingsRailTests
 
     ' --- rule 5: sizes ------------------------------------------------------------------------------
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     <InlineData(1.0F)>
     <InlineData(1.5F)>
     Public Sub Rows_are_at_least_32_logical_px_with_a_16_glyph_an_8_gap_and_a_measured_rail(factor As Single)
@@ -440,7 +440,7 @@ Public Class SettingsRailTests
 
     ' --- rule 1: the mirror --------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Under_RightToLeft_the_rail_its_chevron_its_indent_and_its_glyph_side_mirror()
         OnUi(Sub()
                  Using window = OpenWindow()
@@ -581,7 +581,7 @@ Public Class SettingsRailTests
     ''' <summary>An item draws a glyph only where the vocabulary already has its meaning (no glyph file is invented for
     ''' this); every other item is a missing meaning for the catalog's proposal procedure and keeps its caption where its
     ''' siblings' captions are. The set of missing meanings is pinned by name so an item joins or leaves it on purpose.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Items_draw_a_catalogued_glyph_or_are_reported_as_missing_meanings()
         Dim missing As New List(Of String)()
         Dim drawn As New List(Of String)()
@@ -661,7 +661,7 @@ Public Class SettingsRailTests
         Public RootPaddingLogical As Single
     End Class
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub At_the_minimum_window_width_the_page_column_keeps_480_logical_px_in_every_language()
         Dim captured As New List(Of Captions)()
         Dim frameLogical As Single = 0

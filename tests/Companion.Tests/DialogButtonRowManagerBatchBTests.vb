@@ -280,6 +280,7 @@ Public Class DialogButtonRowManagerBatchBTests
     ' --- the checks --------------------------------------------------------------------------
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Exchange_Account_Admin_Form"), Trait("Form", "Exchange_Password_Form"), Trait("Form", "Exchange_Local_Account_Picker_Form"), Trait("Form", "InternetAccessForm"), Trait("Form", "Camera_Scan_Form"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en")>
     <InlineData("ru")>
     <InlineData("ar")>
@@ -329,6 +330,7 @@ Public Class DialogButtonRowManagerBatchBTests
     End Sub
 
     <Theory>
+    <Trait("Kind", "UiForm"), Trait("Form", "Exchange_Account_Admin_Form"), Trait("Form", "Exchange_Password_Form"), Trait("Form", "Exchange_Local_Account_Picker_Form"), Trait("Form", "InternetAccessForm"), Trait("Form", "Camera_Scan_Form"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "DialogButtonRow")>
     <InlineData("en", False)>
     <InlineData("ru", False)>
     <InlineData("ar", True)>
@@ -390,6 +392,7 @@ Public Class DialogButtonRowManagerBatchBTests
     End Sub
 
     <Fact>
+    <Trait("Kind", "UiForm"), Trait("Form", "Exchange_Account_Admin_Form"), Trait("Form", "Exchange_Password_Form"), Trait("Form", "Exchange_Local_Account_Picker_Form"), Trait("Form", "InternetAccessForm"), Trait("Form", "Camera_Scan_Form"), Trait("Form", "Broadcast_Create_Form"), Trait("Form", "Share_Broadcasts_Form"), Trait("Form", "Exchange_Account_Form"), Trait("Form", "DialogButtonRow")>
     Public Sub The_second_batch_keeps_its_answer_names_inside_the_row_and_numbers_the_tab_order_in_reading_order()
         ExchangeTestSupport.OnUi(
             Sub()

@@ -109,7 +109,7 @@ Public Class ExchangeMarkTests
 #If Not COMPANION_TESTS Then
     ''' <summary>Spec 248 V3 and V4: the two fixed-coordinate viewer dialogs name the mark by the CW term, keep it in
     ''' the reading-start padding column of their heading and leave every authored row below the heading.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Connect_Form"), Trait("Form", "Exchange_Password_Change_Form")>
     Public Sub Viewer_account_dialogs_carry_the_named_mark_clear_of_their_rows()
         Dim failure As Exception = Nothing
         Dim thread As New Threading.Thread(
@@ -142,7 +142,7 @@ Public Class ExchangeMarkTests
     ''' <summary>Spec 248 V1, V5 and V7: the "My devices" heading and the diagnosis heading wear the named mark, and an
     ''' account header of the panel draws its 16 px mark at the reading-start edge (left, or right in the right-to-left
     ''' languages) and nothing at the opposite edge: the picture is never mirrored.</summary>
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Exchange_Devices_Panel"), Trait("Form", "Connection_Diagnosis_Dialog")>
     Public Sub Viewer_panel_heading_diagnosis_heading_and_account_header_carry_the_mark()
         Dim failure As Exception = Nothing
         Dim thread As New Threading.Thread(

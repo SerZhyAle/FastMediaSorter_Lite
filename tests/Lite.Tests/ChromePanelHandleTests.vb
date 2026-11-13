@@ -58,7 +58,7 @@ Public Class ChromePanelHandleTests
 
     ' --- the slot in the row ------------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_handle_widens_the_panel_and_the_minimum_row_by_exactly_one_slot()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -74,7 +74,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_handle_is_never_taken_by_overflow_and_overlaps_nothing()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(140, False)
@@ -97,7 +97,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_handle_stands_between_the_pin_and_the_row_in_every_direction()
         OnSta(Sub()
                   For Each rightToLeft As Boolean In {False, True}
@@ -129,7 +129,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Without_a_pin_the_handle_takes_the_pins_corner()
         OnSta(Sub()
                   For Each rightToLeft As Boolean In {False, True}
@@ -150,7 +150,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_surface_without_a_handle_lays_out_exactly_as_it_did_before()
         OnSta(Sub()
                   Using fresh As ChromeSurface = NewSurface(300, False)
@@ -174,7 +174,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_menu_surface_ignores_a_handle()
         OnSta(Sub()
                   Using plain As ChromeSurface = NewSurface(200, False)
@@ -269,7 +269,7 @@ Public Class ChromePanelHandleTests
 
     ' --- the keyboard move mode ---------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_f10_ring_reaches_the_handle_between_the_row_and_the_pin()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -289,7 +289,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Enter_or_space_on_the_focused_handle_enters_the_move_mode_and_the_arrows_move()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -346,7 +346,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_move_mode_ends_when_the_ring_leaves_the_handle_or_the_panel()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -402,7 +402,7 @@ Public Class ChromePanelHandleTests
         Return handle
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Press_and_travel_raise_press_then_drag_then_release_and_never_the_move_grip()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -432,7 +432,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_press_that_never_travels_is_a_click()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -447,7 +447,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_press_event_carries_the_screen_point_and_the_drag_event_follows_the_pointer()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -468,7 +468,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_capture_lost_in_the_middle_of_a_drag_ends_it_as_a_canceled_release()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)
@@ -489,7 +489,7 @@ Public Class ChromePanelHandleTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_disabled_handle_starts_no_gesture()
         OnSta(Sub()
                   Using surface As ChromeSurface = NewSurface(800, False)

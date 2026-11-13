@@ -89,7 +89,7 @@ Public Class DocumentPanelSurfaceTests
         Return surface.OverflowItems.Select(Function(item) item.Id).ToList()
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub The_page_box_chapter_box_and_page_find_never_go_into_the_menu_at_any_width()
         OnSta(Sub()
                   Dim failures As New List(Of String)()
@@ -108,7 +108,7 @@ Public Class DocumentPanelSurfaceTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub Only_the_last_items_in_reading_order_collapse_and_never_fewer_as_the_row_narrows()
         OnSta(Sub()
                   Dim failures As New List(Of String)()
@@ -145,7 +145,7 @@ Public Class DocumentPanelSurfaceTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub At_the_natural_width_nothing_collapses_and_every_visible_item_is_placed()
         OnSta(Sub()
                   For Each kind As DocumentReaderKind In AllKinds
@@ -167,7 +167,7 @@ Public Class DocumentPanelSurfaceTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_conditional_html_item_that_is_away_keeps_its_place_so_the_next_one_does_not_move()
         OnSta(Sub()
                   Dim kind As DocumentReaderKind = DocumentReaderKind.Html
@@ -189,7 +189,7 @@ Public Class DocumentPanelSurfaceTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "ChromeSurface")>
     Public Sub A_right_to_left_row_collapses_the_same_items_as_a_left_to_right_row()
         OnSta(Sub()
                   Dim differences As New List(Of String)()

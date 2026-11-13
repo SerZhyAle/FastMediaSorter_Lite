@@ -164,7 +164,7 @@ Public Class OptionHelpRowTests
 
     ' ---------------------------------------------------------------- section 2 rules 2, 4 and 6
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub The_heading_runs_glyph_caption_help_with_8_unit_gaps_and_mirrors_for_an_rtl_row()
         OnSta(
             Sub()
@@ -208,7 +208,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub An_arabic_caption_reads_from_the_right_glyph_first_then_name_then_help()
         OnSta(
             Sub()
@@ -229,7 +229,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub An_absent_glyph_or_help_reserves_no_slot()
         OnSta(
             Sub()
@@ -259,7 +259,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox")>
     Public Sub A_row_with_neither_part_is_laid_out_exactly_as_a_row_that_never_heard_of_the_heading()
         OnSta(
             Sub()
@@ -285,7 +285,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub A_long_caption_wraps_and_keeps_reading_order_without_overlap_at_100_and_175_percent()
         OnSta(
             Sub()
@@ -318,7 +318,7 @@ Public Class OptionHelpRowTests
 
     ' ---------------------------------------------------------------- section 2 rule 4 / UI-SIZING
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub The_help_target_and_the_glyph_follow_the_size_tokens()
         OnSta(
             Sub()
@@ -351,7 +351,7 @@ Public Class OptionHelpRowTests
 
     ' ---------------------------------------------------------------- section 3 rule 1: one toggle path
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton"), Trait("Form", "OptionHelpController")>
     Public Sub The_caption_the_glyph_and_the_box_toggle_once_the_explanation_and_the_help_never()
         OnSta(
             Sub()
@@ -394,7 +394,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton"), Trait("Form", "OptionHelpController")>
     Public Sub The_keyboard_activates_the_help_with_space_and_enter_and_never_the_option()
         OnSta(
             Sub()
@@ -441,7 +441,7 @@ Public Class OptionHelpRowTests
         Return CBool(method.Invoke(form, New Object() {key}))
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton"), Trait("Form", "OptionHelpController")>
     Public Sub A_disabled_option_never_toggles_but_its_help_stays_available()
         OnSta(
             Sub()
@@ -502,7 +502,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub The_tab_order_is_the_box_then_its_help_and_the_heading_adds_no_stop()
         OnSta(
             Sub()
@@ -546,7 +546,7 @@ Public Class OptionHelpRowTests
         Return control.RectangleToScreen(control.ClientRectangle)
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup"), Trait("Form", "OptionHelpButton")>
     Public Sub Hover_opens_a_summary_that_takes_no_focus_and_does_not_cover_the_box()
         OnSta(
             Sub()
@@ -588,7 +588,7 @@ Public Class OptionHelpRowTests
         Return CType(prop.GetValue(form), CreateParams)
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup"), Trait("Form", "OptionHelpButton")>
     Public Sub The_summary_stays_while_the_pointer_moves_into_it_and_closes_after_it_has_left_both()
         OnSta(
             Sub()
@@ -624,7 +624,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup"), Trait("Form", "OptionHelpButton")>
     Public Sub Keyboard_focus_opens_the_summary_and_leaving_the_button_closes_it()
         OnSta(
             Sub()
@@ -644,7 +644,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup"), Trait("Form", "OptionHelpMessageFilter")>
     Public Sub Escape_dismisses_the_summary_without_the_pointer_moving_and_it_does_not_come_back_while_the_pointer_rests()
         OnSta(
             Sub()
@@ -683,7 +683,7 @@ Public Class OptionHelpRowTests
 
     ' ---------------------------------------------------------------- section 4 rules 2 to 4: the persistent explanation
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup"), Trait("Form", "OptionHelpMessageFilter")>
     Public Sub The_persistent_explanation_closes_by_its_button_by_escape_and_by_an_outside_press_and_returns_the_focus()
         OnSta(
             Sub()
@@ -736,7 +736,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup"), Trait("Form", "OptionHelpButton")>
     Public Sub Opening_the_explanation_replaces_the_summary_and_closing_it_does_not_bring_the_summary_back()
         OnSta(
             Sub()
@@ -762,7 +762,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup")>
     Public Sub The_popup_follows_the_reading_direction_of_the_row()
         OnSta(
             Sub()
@@ -780,7 +780,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpController"), Trait("Form", "OptionHelpPopup")>
     Public Sub A_long_explanation_grows_the_popup_and_is_never_clipped()
         OnSta(
             Sub()
@@ -810,7 +810,7 @@ Public Class OptionHelpRowTests
 
     ' ---------------------------------------------------------------- section 3 rule 4 / 5: live updates, glyph, contrast
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox"), Trait("Form", "OptionHelpButton")>
     Public Sub Focus_survives_a_theme_and_a_language_update()
         OnSta(
             Sub()
@@ -847,7 +847,7 @@ Public Class OptionHelpRowTests
         Return False
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "SettingsCheckBox")>
     Public Sub The_heading_glyph_is_drawn_in_the_captions_colour_and_follows_it_live()
         OnSta(
             Sub()
@@ -869,7 +869,7 @@ Public Class OptionHelpRowTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "OptionHeading"), Trait("Form", "OptionHelpButton")>
     Public Sub The_question_mark_is_the_catalog_glyph_centred_in_its_target_and_holds_3_to_1_in_both_themes()
         OnSta(
             Sub()

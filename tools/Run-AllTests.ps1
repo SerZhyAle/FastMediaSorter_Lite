@@ -42,6 +42,12 @@
 
     Every suite runs whatever the one before it returned, and the summary names all of them.
 
+    UI form checks are NOT part of this run (owner decision 2026-11-13). A test that judges how a form or
+    control looks or behaves on screen - layout, scale factors, clicks, keys, focus, painted pixels - carries
+    the xUnit traits Kind=UiForm and Form=<type>, and both .NET suites run with --filter "Kind!=UiForm".
+    They run per change instead, only for the forms a change creates or edits:
+    the per-change script tools/Test-UiForms with -Forms <type>[,<type>..]. -UiAll brings every one of them back into this run.
+
 .PARAMETER Integration
     Also run tests/Integration/WorkerRoundTrip.ps1 (needs a running worker - start the Share
     Manager first; without one the suite is COULD NOT VERIFY, not a pass).
@@ -62,6 +68,10 @@
     profile). It drives a real interactive session of the built viewer (injected keys,
     clipboard, storms), so without -Confirm quiet-session and a quiet machine it answers
     COULD NOT VERIFY, never a pass - an opt-in hand-run switch, never a default run.
+
+.PARAMETER UiAll
+    Also run every UI form check (Kind=UiForm) inside the viewer and Share Manager suites. Only on the
+    owner's explicit request; the release and the default run leave them out.
 
 .PARAMETER SkipGo
     Skip the Go worker suite. It is reported as SKIPPED, never as passed.
@@ -97,6 +107,7 @@ param(
     [switch]$OcrScenes,
     [switch]$HtmlScenes,
     [switch]$DynAudit,
+    [switch]$UiAll,
     [switch]$SkipGo,
     [switch]$SkipExchangeGo,
     [string]$WorkerRepo = ''
@@ -125,7 +136,8 @@ if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
 if ($HtmlScenes)  { $plan += 'html-scenes' }
 if ($DynAudit)     { $plan += 'dynaudit' }
-Write-Subject 'Run-AllTests' "$($plan -join ', '); $(Get-TreeLabel $root)"
+$uiNote = if ($UiAll) { 'UI form checks included' } else { 'UI form checks left out (they run per change)' }
+Write-Subject 'Run-AllTests' "$($plan -join ', '); $uiNote; $(Get-TreeLabel $root)"
 
 # One row per suite. Code: 0 / 1 / 2, or $null for a suite the caller switched off. SkippedTests is the
 # number of tests a .NET suite skipped (CHECK-VERDICT rule 13: the verdict line carries it); NotApplicable
@@ -143,7 +155,9 @@ function Invoke-DotnetTest([string]$id, [string]$name, [string]$proj) {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'   # dotnet writes warnings to stderr; they are output here
     try {
-        $log = @(& dotnet test $proj -v minimal --nologo 2>&1 | ForEach-Object { $t = "$_"; Write-Host $t; $t })
+        # UI form checks run per change (the per-change UI form script), not here, unless -UiAll asks for them.
+        $filterArgs = if ($UiAll) { @() } else { @('--filter', 'Kind!=UiForm') }
+        $log = @(& dotnet test $proj -v minimal --nologo @filterArgs 2>&1 | ForEach-Object { $t = "$_"; Write-Host $t; $t })
         $exit = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prevEap

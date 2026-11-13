@@ -10,7 +10,7 @@ Imports System.Windows.Forms
 Imports FastMediaSorterCompanion
 Imports Xunit
 
-<Collection(UiLanguageCollection.Name)>
+<Collection(UiLanguageCollection.Name), Trait("Kind", "UiForm"), Trait("Form", "Exchange_Connection_String_Form"), Trait("Form", "DialogButtonRow")>
 Public Class ExchangeConnectionStringLayoutTests
     <Theory>
     <InlineData("ru")>

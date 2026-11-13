@@ -15,7 +15,7 @@ Imports Xunit
 ''' right-to-left one. The specs keep listing the acting answer first and the cancel answer last (indexes are
 ''' call-site contracts); the strip shows them the other way round, and Tab follows what the eye reads.
 ''' </summary>
-<Collection("LocalizationState")>
+<Collection("LocalizationState"), Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog")>
 Public Class AskAnswerOrderTests
 
     Private Shared Sub OnSta(action As Action)

@@ -306,7 +306,7 @@ Public Class GroupMarkerHeaderTests
 
     ' --- the headers --------------------------------------------------------------------------------
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub Both_header_kinds_draw_the_state_triangle_at_the_reading_start_pointing_by_state()
         OnUi(Sub()
                  For Each kind In Kinds
@@ -330,7 +330,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub The_marker_cell_is_16_px_at_100_percent_and_28_px_at_175_percent_and_stays_inside_the_header()
         OnUi(Sub()
                  For Each kind In Kinds
@@ -353,7 +353,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub The_marker_is_drawn_in_the_caption_ink_in_a_light_and_a_dark_palette()
         OnUi(Sub()
                  For Each kind In Kinds
@@ -383,7 +383,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub The_marker_mirrors_under_rtl()
         OnUi(Sub()
                  For Each kind In Kinds
@@ -422,7 +422,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub A_long_russian_or_german_caption_wraps_beside_the_marker_instead_of_running_under_it()
         OnUi(Sub()
                  For Each kind In {"card", "section-wrap"}
@@ -463,7 +463,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub A_one_line_caption_keeps_the_marker_centred_and_clear_of_the_text()
         OnUi(Sub()
                  For Each kind In Kinds
@@ -486,7 +486,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub A_click_anywhere_on_the_header_toggles_it_once()
         OnUi(Sub()
                  For Each kind In Kinds
@@ -514,7 +514,7 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
     Public Sub Space_and_enter_toggle_and_the_arrows_follow_the_reading_direction_and_the_state_reaches_assistive_tech()
         OnUi(Sub()
                  For Each kind In Kinds

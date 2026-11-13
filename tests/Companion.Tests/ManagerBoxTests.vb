@@ -344,7 +344,7 @@ Public Class ManagerBoxTests
         Return found
     End Function
 
-    <Theory>
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "Ask_Dialog")>
     <InlineData("en", False)>
     <InlineData("ru", False)>
     <InlineData("ar", True)>

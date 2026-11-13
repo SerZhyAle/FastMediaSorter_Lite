@@ -197,7 +197,7 @@ Public Class ExchangeAccountGroupTests
         GetType(Share_Settings_Form).GetMethod(name, BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, Nothing)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "CollapsibleSection")>
     Public Sub With_no_agent_the_group_shows_the_state_line_and_only_the_sign_in()
         ExchangeTestSupport.OnUi(Sub()
                                      Using form As New Share_Settings_Form()

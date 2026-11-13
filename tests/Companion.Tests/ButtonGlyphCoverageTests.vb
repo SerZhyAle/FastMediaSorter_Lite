@@ -64,7 +64,7 @@ Public Class ButtonGlyphCoverageTests
         Return missing
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Enable_Form"), Trait("Form", "Share_Status_Form"), Trait("Form", "Share_Settings_Form")>
     Public Sub Every_captioned_command_button_of_the_walked_windows_has_a_glyph()
         OnSta(Sub()
                   ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
@@ -82,7 +82,7 @@ Public Class ButtonGlyphCoverageTests
               End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Enable_Form")>
     Public Sub The_enable_dialog_answers_are_an_amber_install_and_a_neutral_cancel()
         OnSta(Sub()
                   ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset

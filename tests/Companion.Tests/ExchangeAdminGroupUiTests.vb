@@ -96,7 +96,7 @@ Public Class ExchangeAdminGroupUiTests
         Return target.Visible
     End Function
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub An_account_selected_shows_its_devices_a_device_selected_offers_revoke_and_a_refresh_keeps_both_selections()
         ExchangeTestSupport.OnUi(
             Sub()
@@ -158,7 +158,7 @@ Public Class ExchangeAdminGroupUiTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub The_wizard_button_is_not_drawn_when_accounts_exist_and_the_group_shows_the_totals()
         ExchangeTestSupport.OnUi(
             Sub()

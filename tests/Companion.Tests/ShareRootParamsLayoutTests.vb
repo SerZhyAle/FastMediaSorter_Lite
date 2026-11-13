@@ -8,7 +8,7 @@ Imports Xunit
 
 ''' <summary>The geometry of the "Resource settings" window, on the real controls with the theme applied. The theme raises the
 ''' drop-down list's ItemHeight, so the list is taller than a stock ComboBox tells its row: the note under it was half covered.</summary>
-<Collection("manager-welcome")>
+<Collection("manager-welcome"), Trait("Kind", "UiForm"), Trait("Form", "Share_Root_Params_Form")>
 Public Class ShareRootParamsLayoutTests
     Private Const Flags As BindingFlags = BindingFlags.Instance Or BindingFlags.NonPublic
 

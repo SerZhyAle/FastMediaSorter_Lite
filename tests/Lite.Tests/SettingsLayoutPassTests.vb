@@ -139,7 +139,7 @@ Public Class SettingsLayoutPassTests
         Assert.True(held.Body <= 1, "held: " & held.ToString())
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     Public Sub The_event_of_a_toggle_arrives_after_the_page_has_been_laid_out()
         OnStaThread(
             Sub()
@@ -172,7 +172,7 @@ Public Class SettingsLayoutPassTests
             End Sub)
     End Sub
 
-    <Fact>
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
     Public Sub Expand_all_held_by_the_page_costs_no_more_than_the_scroll_range_settle()
         OnStaThread(
             Sub()
