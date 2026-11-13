@@ -408,11 +408,17 @@ Friend NotInheritable Class PanelColourModel
 
     ''' <summary>R-8: the lowest contrast of an opaque ink over the fill composited at
     ''' <paramref name="opacity"/> over any content. The backdrop's luminance lies between the fill
-    ''' over black and the fill over white and the contrast is V-shaped in it, so the two endpoints
-    ''' decide.</summary>
+    ''' over black and the fill over white. If it spans the ink luminance, conservatively use 1:1;
+    ''' otherwise the nearer endpoint determines the minimum.</summary>
     Public Shared Function WorstCaseContrast(fill As Color, ink As Color, opacity As Double) As Double
-        Return Math.Min(ContrastRatio(ink, Composite(fill, opacity, Color.Black)),
-                        ContrastRatio(ink, Composite(fill, opacity, Color.White)))
+        Return ContrastAcrossBackdropRange(ink, Composite(fill, opacity, Color.Black),
+                                          Composite(fill, opacity, Color.White))
+    End Function
+
+    Private Shared Function ContrastAcrossBackdropRange(ink As Color, low As Color, high As Color) As Double
+        Dim inkLuminance As Double = RelativeLuminance(ink)
+        If inkLuminance >= RelativeLuminance(low) AndAlso inkLuminance <= RelativeLuminance(high) Then Return 1.0R
+        Return Math.Min(ContrastRatio(ink, low), ContrastRatio(ink, high))
     End Function
 
     ''' <summary>R-9: the smallest opacity (a whole byte, as a layered window composes) at which the
@@ -434,15 +440,16 @@ Friend NotInheritable Class PanelColourModel
     ''' at the set opacity; 0 when the set opacity already holds it.</summary>
     Public Shared Function ScrimAlpha(fill As Color, ink As Color, floor As Double, setOpacity As Double) As Double
         Dim p As Double = Clamp01(setOpacity)
-        If WorstCaseContrast(fill, ink, p) >= floor Then Return 0.0R
+        Dim needed As Double = OpacityNeeded(fill, ink, floor)
+        If p >= needed Then Return 0.0R
         If ScrimmedWorstCase(fill, ink, p, 1.0R) < floor Then Return 1.0R
-        Dim lo As Integer = 0
-        Dim hi As Integer = 255
-        While hi - lo > 1
-            Dim mid As Integer = (lo + hi) \ 2
-            If ScrimmedWorstCase(fill, ink, p, mid / 255.0R) >= floor Then hi = mid Else lo = mid
+        ' Round the specified closed form up to a byte, then compensate for rounding in the
+        ' two actual compositing passes if necessary. Never choose a smaller, darker scrim.
+        Dim alpha As Integer = CInt(Math.Ceiling(ScrimAlphaFrom(needed, p) * 255.0R))
+        While alpha < 255 AndAlso ScrimmedWorstCase(fill, ink, p, alpha / 255.0R) < floor
+            alpha += 1
         End While
-        Return hi / 255.0R
+        Return alpha / 255.0R
     End Function
 
     ''' <summary>The closed form of R-10: s = 1 - (1 - p_needed) / (1 - p) below the needed opacity,
@@ -459,7 +466,7 @@ Friend NotInheritable Class PanelColourModel
     Public Shared Function ScrimmedWorstCase(fill As Color, ink As Color, setOpacity As Double, scrim As Double) As Double
         Dim overBlack As Color = Composite(fill, scrim, Composite(fill, setOpacity, Color.Black))
         Dim overWhite As Color = Composite(fill, scrim, Composite(fill, setOpacity, Color.White))
-        Return Math.Min(ContrastRatio(ink, overBlack), ContrastRatio(ink, overWhite))
+        Return ContrastAcrossBackdropRange(ink, overBlack, overWhite)
     End Function
 
     ''' <summary>R-11: the smallest window opacity at which a surface whose ink fades with it keeps the

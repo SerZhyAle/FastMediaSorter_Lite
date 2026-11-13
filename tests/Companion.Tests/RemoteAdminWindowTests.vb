@@ -1074,10 +1074,12 @@ Public Class RemoteAdminWindowTests
             End Sub)
     End Sub
 
-    Private Const LeakCycles As Integer = 50
+    ' The handler count is checked exactly after every cycle, so one leaked handler fails the first cycle; ten cycles keep
+    ' the run (about 0.8 s per settings window) well inside the 30 s limit of OnUi, also on a loaded machine.
+    Private Const LeakCycles As Integer = 10
 
     <Fact>
-    Public Sub Fifty_openings_and_closings_leave_no_handler_behind()
+    Public Sub Repeated_openings_and_closings_leave_no_handler_behind()
         Run(Sub(rig As Rig)
                 Dim before As Integer = Share_Settings_Form.RemoteAttachedHandlerCount
                 For i As Integer = 1 To LeakCycles

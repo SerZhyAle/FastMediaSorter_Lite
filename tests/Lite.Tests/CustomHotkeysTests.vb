@@ -288,10 +288,9 @@ Public Class CustomHotkeysTests
     Public Sub Every_catalogue_entry_has_a_usable_unique_default()
         Dim seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
         For Each action As HotkeyAction In CustomHotkeys.Catalog
-            ' The one action with no default of its own (123 Q123-6): its keys, Menu and Shift+F10, are
-            ' reserved OS-standard keys that always work, so the catalogue offers only an EXTRA key for it.
+            ' The media menu has the reserved OS keys; scheduled operations intentionally starts unbound (L0297).
             If action.DefaultCombo.Length = 0 Then
-                Assert.Equal("mediaMenu", action.Id)
+                Assert.Contains(action.Id, {"mediaMenu", "scheduledOperations"})
                 Continue For
             End If
             Dim combo As String = CustomHotkeys.Canonical(action.DefaultCombo)

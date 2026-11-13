@@ -284,7 +284,7 @@ Friend NotInheritable Class ExchangeDriveService
                 ' the token is gone or no longer honoured (CT): the loop ends, the host offers the sign-in
                 SetState(ExchangeDriveServiceState.SignedOut, ExchangeDriveFailure.SignedOut)
                 Return
-            ElseIf failure = ExchangeDriveFailure.DailyLimit OrElse failure = ExchangeDriveFailure.DriveFull Then
+            ElseIf failure = ExchangeDriveFailure.DailyLimit OrElse failure = ExchangeDriveFailure.DriveFull OrElse failure = ExchangeDriveFailure.ClientRejected Then
                 ' a refusal that does not improve by asking again (item CS): the long idle interval, no back-off ladder
                 SetState(ExchangeDriveServiceState.Unavailable, failure)
                 wait = TimeSpan.FromSeconds(ExchangeDrivePolling.IdleSeconds)

@@ -29,6 +29,8 @@ Imports System.Threading.Tasks
 '   - Frame limits: 16384 until admin-auth-ok, 262144 after (MarkAuthenticated on the reader AND the writer).
 '   - An end of stream is Lapsed, a socket reset is Unreachable, `refused{bad-credentials}` after sign-in is Lapsed (the server reuses
 '     the reason for a lapsed token), any other refusal after sign-in, a wrong type or a malformed frame is Protocol.
+'   - A real TLS connection keeps one frame read pending while idle, so a clean close is noticed before a later write; there is no
+'     keepalive or additional request, and the same pending read is used for the next reply or the end handshake.
 '   - Log lines are `remote-admin: <event> <kind> <ms>` and nothing else: <event> is connect, trust, sign-in, call or end, <kind> an
 '     outcome kind or an operation name of the 18, <ms> a duration. No host, port, name, login, password, token, fingerprint,
 '     invitation or reply body ever reaches the log; an unexpected exception is named by its type only, inside Detail.
@@ -313,6 +315,9 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
     Private _connection As ExchangeTlsConnection
     Private _reader As ExchangeFrameReader
     Private _writer As ExchangeFrameWriter
+    ' A TLS peer can close an idle session before the next request. Keep one read pending so its
+    ' close_notify is consumed before a later write turns the already-closed socket into a reset.
+    Private _pendingTlsRead As Task(Of ExchangeEnvelope)
     Private _token As String
     Private _nextId As Long = 1
     Private _inFlight As Boolean
@@ -560,6 +565,7 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
                 _connection = conn
                 _reader = reader
                 _writer = writer
+                If TypeOf conn.Stream Is System.Net.Security.SslStream Then _pendingTlsRead = StartTlsRead(reader)
                 _token = ok.Token
                 _nextId = 1
                 _inFlight = False
@@ -587,6 +593,12 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
 
     ' ------------------------------------------------------------------------------------------------- a call
 
+    Private Shared Function StartTlsRead(reader As ExchangeFrameReader) As Task(Of ExchangeEnvelope)
+        Dim pending As Task(Of ExchangeEnvelope) = reader.ReadAsync(CancellationToken.None)
+        Dim observed As Task = pending.ContinueWith(AddressOf ObserveFault, TaskContinuationOptions.ExecuteSynchronously)
+        Return pending
+    End Function
+
     ''' <summary>One request and its reply. <paramref name="members"/> builds the `admin-request` for the token and the id this session
     ''' holds - one of the builders of <c>ExchangeAdminWire</c>, e.g. <c>Function(token, id) ExchangeAdminWire.AccountList(token, id)</c> -
     ''' and its op must be <paramref name="op"/> (one of the 18). Ids count from 1; one call is in flight at a time (a second is Busy and
@@ -600,6 +612,7 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
         Dim token As String
         Dim id As Long
         Dim cts As CancellationTokenSource
+        Dim pendingTlsRead As Task(Of ExchangeEnvelope)
         SyncLock _gate
             If _phase <> Phase.Live Then Return EndedOutcomeLocked()
             If _endRequested Then Return ExchangeRemoteAdminOutcome.NewLapsed("session-ended")    ' EndAsync owns the stream from here on
@@ -612,6 +625,7 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
             writer = _writer
             token = _token
             id = _nextId
+            pendingTlsRead = _pendingTlsRead
         End SyncLock
 
         Dim started As Long = _clock.Invoke()
@@ -635,7 +649,7 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
             End If
 
             Try
-                result = Await BoundedAsync(Of CallResult)(Function(t As CancellationToken) ExchangeAsync(request, op, id, reader, writer, t), RequestBound, cts.Token).ConfigureAwait(False)
+                result = Await BoundedAsync(Of CallResult)(Function(t As CancellationToken) ExchangeAsync(request, op, id, reader, writer, pendingTlsRead, t), RequestBound, cts.Token).ConfigureAwait(False)
             Catch ex As TimeoutException
                 result = New CallResult(ExchangeRemoteAdminOutcome.NewUnreachable(ExchangeRemoteAdminUnreachableReason.Timeout, "request-timeout"), True)
             Catch ex As OperationCanceledException
@@ -666,6 +680,9 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
                 If Not finished OrElse (result IsNot Nothing AndAlso result.EndsSession) Then
                     EndLocked(If(result IsNot Nothing, result.Outcome.Kind, ExchangeRemoteAdminOutcomeKind.Unreachable),
                               If(result IsNot Nothing, result.Outcome.Reason, ExchangeRemoteAdminUnreachableReason.Reset))
+                ElseIf result IsNot Nothing AndAlso _pendingTlsRead IsNot Nothing AndAlso
+                       (result.Outcome.Kind = ExchangeRemoteAdminOutcomeKind.Done OrElse result.Outcome.Kind = ExchangeRemoteAdminOutcomeKind.Failed) Then
+                    _pendingTlsRead = StartTlsRead(_reader)
                 End If
             End SyncLock
             cts.Dispose()
@@ -681,9 +698,19 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
 
     ''' <summary>Writes the request, then reads until the reply that carries its id. Frames of another id are skipped (at most
     ''' <see cref="MaxSkippedFrames"/>); a refusal, a frame of another type or a malformed one ends the session.</summary>
-    Private Async Function ExchangeAsync(request As ExchangeEnvelope, op As String, id As Long, reader As ExchangeFrameReader, writer As ExchangeFrameWriter, ct As CancellationToken) As Task(Of CallResult)
+    Private Async Function ExchangeAsync(request As ExchangeEnvelope, op As String, id As Long, reader As ExchangeFrameReader, writer As ExchangeFrameWriter, pendingTlsRead As Task(Of ExchangeEnvelope), ct As CancellationToken) As Task(Of CallResult)
+        If pendingTlsRead IsNot Nothing AndAlso pendingTlsRead.IsCompleted Then
+            ' A clean close or reset is propagated to the normal outcome mapping; a frame received
+            ' without a request is a protocol failure, not a reply to the request we have not sent.
+            Await pendingTlsRead.ConfigureAwait(False)
+            Return New CallResult(ExchangeRemoteAdminOutcome.NewProtocol("unsolicited-frame"), True)
+        End If
         Try
             Await writer.WriteAsync(request, ct).ConfigureAwait(False)
+        Catch ex As IOException When pendingTlsRead IsNot Nothing AndAlso pendingTlsRead.IsCompleted
+            ' Prefer a close already observed by the reader over a secondary write failure.
+            pendingTlsRead.GetAwaiter().GetResult()
+            Throw
         Catch ex As ExchangeWireException When ex.Error = ExchangeWireError.FrameSize OrElse ex.Error = ExchangeWireError.BadMessage
             ' refused by the writer BEFORE a byte went out: the stream is as it was and the session lives
             Return New CallResult(ExchangeRemoteAdminOutcome.NewProtocol("request-not-built"), False)
@@ -694,7 +721,13 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
 
         Dim skipped As Integer = 0
         While True
-            Dim frame As ExchangeEnvelope = Await reader.ReadAsync(ct).ConfigureAwait(False)
+            Dim frame As ExchangeEnvelope
+            If pendingTlsRead IsNot Nothing Then
+                frame = Await pendingTlsRead.WaitAsync(ct).ConfigureAwait(False)
+                pendingTlsRead = Nothing
+            Else
+                frame = Await reader.ReadAsync(ct).ConfigureAwait(False)
+            End If
             If frame.Is(ExchangeEnvelopeTypes.Refused) Then
                 If frame.Refusal() = ExchangeRefusal.BadCredentials Then
                     Return New CallResult(ExchangeRemoteAdminOutcome.NewLapsed("refused-bad-credentials"), True)
@@ -755,6 +788,7 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
         _connection = Nothing
         _reader = Nothing
         _writer = Nothing
+        _pendingTlsRead = Nothing
         If conn IsNot Nothing Then conn.Dispose()
     End Sub
 
@@ -783,11 +817,13 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
         Dim conn As ExchangeTlsConnection
         Dim reader As ExchangeFrameReader
         Dim writer As ExchangeFrameWriter
+        Dim pendingTlsRead As Task(Of ExchangeEnvelope)
         SyncLock _gate
             If _phase <> Phase.Live Then Return
             conn = _connection
             reader = _reader
             writer = _writer
+            pendingTlsRead = _pendingTlsRead
             _phase = Phase.Ended
             _endKind = ExchangeRemoteAdminOutcomeKind.Lapsed
             _endReason = ExchangeRemoteAdminUnreachableReason.None
@@ -795,11 +831,12 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
             _connection = Nothing
             _reader = Nothing
             _writer = Nothing
+            _pendingTlsRead = Nothing
         End SyncLock
 
         Dim started As Long = _clock.Invoke()
         Try
-            Await BoundedAsync(Of Boolean)(Function(t As CancellationToken) ByeAsync(writer, reader, t), ByeBound, CancellationToken.None).ConfigureAwait(False)
+            Await BoundedAsync(Of Boolean)(Function(t As CancellationToken) ByeAsync(writer, reader, pendingTlsRead, t), ByeBound, CancellationToken.None).ConfigureAwait(False)
         Catch ex As Exception When TypeOf ex Is TimeoutException OrElse TypeOf ex Is OperationCanceledException OrElse TypeOf ex Is ExchangeWireException OrElse IsStreamFault(ex)
             ' the end is best effort: a server that does not close, a reset or a cut frame are all "over"
         Finally
@@ -808,10 +845,18 @@ Friend NotInheritable Class ExchangeRemoteAdminSession
         LogEvent("end", "Bye", started)
     End Function
 
-    Private Shared Async Function ByeAsync(writer As ExchangeFrameWriter, reader As ExchangeFrameReader, ct As CancellationToken) As Task(Of Boolean)
-        Await writer.WriteAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.Bye), ct).ConfigureAwait(False)
+    Private Shared Async Function ByeAsync(writer As ExchangeFrameWriter, reader As ExchangeFrameReader, pendingTlsRead As Task(Of ExchangeEnvelope), ct As CancellationToken) As Task(Of Boolean)
         Try
-            Await reader.ReadAsync(ct).ConfigureAwait(False)    ' the server's close (a clean end of stream) or a refusal of a late bye: both end the wait
+            If pendingTlsRead IsNot Nothing AndAlso pendingTlsRead.IsCompleted Then
+                Await pendingTlsRead.ConfigureAwait(False)
+                Return True
+            End If
+            Await writer.WriteAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.Bye), ct).ConfigureAwait(False)
+            If pendingTlsRead Is Nothing Then
+                Await reader.ReadAsync(ct).ConfigureAwait(False)
+            Else
+                Await pendingTlsRead.WaitAsync(ct).ConfigureAwait(False)
+            End If
         Catch ex As EndOfStreamException
         End Try
         Return True

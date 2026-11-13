@@ -1,0 +1,38 @@
+﻿; The wording of the offline support payloads (VLC codecs, PDFium, OCR models) that BOTH installers
+; offer - the User setup (FastMediaSorter.iss) and the Server setup (FastMediaSorterServer.iss) -
+; written once so the two cannot describe the same payload differently (L0307).
+;
+; Whether OCR models are bundled is an explicit choice of the PAIR: the packagers pass /DNoOcrModels
+; when both setups were built without them (Build-Installer.ps1 -SkipOcr) and the fragments below then
+; say so. It never becomes the default because a folder was missing: an absent folder with no
+; /DNoOcrModels fails the compile. /DOcrBest says the best models are bundled as well.
+;
+; Included with:  #include "OfflineSupportText.isi"   (after SourceDir is checked, before [Messages])
+
+#ifdef NoOcrModels
+  #define SupportListEn    "video codecs and PDF preview"
+  #define SupportListRu    "видео-кодеки и просмотр PDF"
+  #define SupportListUk    "відеокодеки і перегляд PDF"
+  #define SupportOfflineEn "the offline video codecs (VLC) and the PDF preview"
+  #define SupportOfflineRu "оффлайн видео-кодеки (VLC) и просмотр PDF"
+  #define SupportOfflineUk "офлайн відеокодеки (VLC) і перегляд PDF"
+  #define SupportLaterEn   "codecs can download later on demand"
+  #define SupportLaterRu   "кодеки при необходимости скачаются позже"
+  #define SupportLaterUk   "кодеки за потреби завантажаться пізніше"
+  #define SupportNoteEn    " This setup carries no OCR models: they download the first time OCR is used."
+  #define SupportNoteRu    " В этой сборке нет моделей OCR: они скачиваются при первом использовании OCR."
+  #define SupportNoteUk    " У цій збірці немає моделей OCR: вони завантажуються під час першого використання OCR."
+#else
+  #define SupportListEn    "video codecs, PDF preview and OCR models"
+  #define SupportListRu    "видео-кодеки, просмотр PDF и модели OCR"
+  #define SupportListUk    "відеокодеки, перегляд PDF і моделі OCR"
+  #define SupportOfflineEn "the offline video codecs (VLC), the PDF preview and the OCR / translation models"
+  #define SupportOfflineRu "оффлайн видео-кодеки (VLC), просмотр PDF и модели OCR / перевода"
+  #define SupportOfflineUk "офлайн відеокодеки (VLC), перегляд PDF і моделі OCR / перекладу"
+  #define SupportLaterEn   "codecs and models can download later on demand"
+  #define SupportLaterRu   "кодеки и модели при необходимости скачаются позже"
+  #define SupportLaterUk   "кодеки та моделі за потреби завантажаться пізніше"
+  #define SupportNoteEn    ""
+  #define SupportNoteRu    ""
+  #define SupportNoteUk    ""
+#endif

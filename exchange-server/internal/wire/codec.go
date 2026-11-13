@@ -181,7 +181,38 @@ func Encode(e Envelope) ([]byte, error) {
 	if err := enc.Encode(e); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBadMessage, err)
 	}
-	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+	body := bytes.TrimRight(buf.Bytes(), "\n")
+	// encoding/json rewrites literal U+2028/U+2029 even with HTML escaping disabled.
+	// A sealed clipboard box is opaque: preserve its string and number bytes while
+	// still compacting whitespace, as required by the clipboard wire contract.
+	var sealed json.RawMessage
+	switch v := e.(type) {
+	case *ClipboardPut:
+		sealed = v.Sealed
+	case *ClipboardValue:
+		sealed = v.Sealed
+	case *ClipboardState:
+		if v.Value != nil {
+			sealed = v.Value.Sealed
+		}
+	}
+	if len(sealed) != 0 {
+		encoded, err := marshalNoEscape(sealed)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrBadMessage, err)
+		}
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, sealed); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrBadMessage, err)
+		}
+		prefix := []byte(`"sealed":`)
+		needle := append(append([]byte(nil), prefix...), encoded...)
+		if !bytes.Contains(body, needle) {
+			return nil, fmt.Errorf("%w: sealed clipboard member missing", ErrBadMessage)
+		}
+		body = bytes.Replace(body, needle, append(prefix, compact.Bytes()...), 1)
+	}
+	return body, nil
 }
 
 func nonNil(s []json.RawMessage) []json.RawMessage {

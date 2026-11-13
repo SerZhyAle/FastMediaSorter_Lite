@@ -11,7 +11,7 @@ Imports Xunit
 ''' Ticket 187 T-6 (rules 5, 10, 11, 12 and the dual-mode rule of 204): the gate and the honesty of the viewer's OWN exchange entries.
 '''
 '''   - no surface exists without <c>ExchangeFeatures.IsEnabled</c>: the section, the dialog, the dropped file and the pasted line;
-'''   - the viewer is a complete client: the section and the dialog never name the Share Manager, its agent, its pipe or its locator;
+'''   - direct exchange entries use the viewer's own client; L0269 permits the separate read-only Drive feed;
 '''   - the entries' library is reached only from the entries' own files, so nothing else of the viewer can open a connection for them;
 '''   - no log call of an entry's file takes a server, a login, a fingerprint, a token or a device id (rule 11);
 '''   - a machine with no entry reads, creates and connects to nothing.
@@ -72,16 +72,20 @@ Public Class ExchangeEntryGuardTests
     ' ---------------------------------------------------------------- the viewer is complete
 
     <Fact>
-    Public Sub The_viewers_entry_surfaces_never_reach_for_the_share_manager_or_its_agent()
+    Public Sub Direct_exchange_entries_use_the_viewer_client_and_only_the_Drive_feed_uses_the_agent()
         Dim files As String() = {"Exchange_Devices_Panel.vb", "Exchange_Connect_Form.vb", "Resources/ExchangeEntryApi.vb", "Resources/ExchangeViewerEntries.vb",
                                  "Resources/ExchangeEntryText.vb", "Exchange/ExchangeEntrySession.vb", "Exchange/ExchangeConsumer.vb", "Exchange/ExchangeConnectFlow.vb",
                                  "Exchange/ExchangeEntries.vb"}
-        Dim banned As New Regex("\bExchangeAgentApi\b|ExchangeAgentLocator|\bExchangeAgentClient\b|ExchangeAgentPipe\.PipeName|FastMediaSorterCompanion\.exe|ExchangeDevicesFeed\.CreateDefault")
+        ' L0269 D2 explicitly uses the Share Manager's Drive-only read feed. The direct
+        ' exchange entries still own their sessions and must never use the agent API.
+        Dim banned As New Regex("\bExchangeAgentApi\b|ExchangeAgentLocator|\bExchangeAgentClient\b|ExchangeAgentPipe\.PipeName|FastMediaSorterCompanion\.exe")
         For Each f As String In files
             Dim code As String = CodeOnly(Source(f))
             Dim m As Match = banned.Match(code)
             Assert.False(m.Success, f & " reaches the Share Manager's agent (" & m.Value & ") - the viewer is a complete client (187 rule 5)")
+            If f <> "Exchange_Devices_Panel.vb" Then Assert.DoesNotContain("ExchangeDevicesFeed.CreateDefault", code)
         Next
+        Assert.Contains("_driveFeed = ExchangeDevicesFeed.CreateDefault()", CodeOnly(Source("Exchange_Devices_Panel.vb")))
         ' the one remaining use of the agent's road is the older resources that no entry claims, and it is named in one place
         Dim users As New List(Of String)
         For Each f As String In Directory.GetFiles(Path.Combine(Root(), "src"), "*.vb", SearchOption.AllDirectories)

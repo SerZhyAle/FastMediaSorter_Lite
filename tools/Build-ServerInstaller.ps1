@@ -12,12 +12,10 @@
     from publishing\installer\FastMediaSorterServer.iss - see
     docs/specifications/done/SPECIFICATION_SHARE_SYSTEM_SERVICE.md.
 
-    The staged payload is deliberately LEAN and unlike the User installer's: the Share
-    Manager (self-contained .NET 10), the Go SFTP worker and the two elevated helper
-    scripts - no VLC codecs, no OCR models. The viewer is an OPTIONAL, unticked component
-    (ticket 132; tools\Stage-ServerViewerPayload.ps1 stages it from the User stage of the
-    same version), so a machine whose job is to keep folders reachable installs no image
-    sorter unless asked, and the default package stays hundreds of megabytes smaller.
+    The Share Manager, worker and FileDO are copied from the matching User stage. The viewer remains
+    an optional, unticked component, and the offline support the User setup carries (VLC codecs,
+    PDFium and the OCR models the pair was built with) is offered under it as optional items taken
+    from the same stage through its payload manifest (L0307).
 
     The Server edition is a packaging and host-mode variant, NOT a fork: it ships the
     same worker binary, the same IPC schema and the same .fmscfg format as the User
@@ -25,12 +23,12 @@
 
 .PARAMETER Version
     Version stamp (default: current yy.M.d.HHmm). Feeds the installer file name.
-    Keep it identical to the User edition build of the same release.
+    A User stage for this exact version is required. Run Build-Installer.ps1 with
+    the same -Version and desired payload options before invoking this script.
 
 .PARAMETER SkipBuild
-    Reuse an existing Share Manager build instead of re-publishing the Companion:
-    the one staged by the User installer of the SAME version
-    (stage\FastMediaSorter-<version>-windows-x64\), else bin\Release.
+    Retained for existing callers. The Share Manager always comes from the matching
+    User stage, regardless of this switch.
 
 .PARAMETER MaxCompress
     Use the published-release compression (lzma2/ultra, solid) - smallest file but
@@ -40,8 +38,8 @@
     THE SHIPPING GATE of the exchange server (specification 133 section 8, ticket 141): off by
     default. Off, the stage has no exchange\ folder and ISCC is called with /DNoExchange - the
     optional `exchange` component and the `exchangeservice` task compile out. On, exchange\ is
-    staged (tools\Stage-ExchangePayload.ps1) from the User stage of the SAME version, else from
-    bin\Release\exchange, and the build throws when the binary or its sidecar is missing.
+    staged (tools\Stage-ExchangePayload.ps1) from the User stage of the SAME version,
+    and the build throws when the binary or its sidecar is missing.
 
 .PARAMETER Open
     Reveal the finished installer in Explorer when done.
@@ -59,13 +57,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot 'lib\InstallerPayloadSelection.ps1')
 
 $solutionDir   = Split-Path $PSScriptRoot -Parent
-$payloadDir    = Join-Path $solutionDir "payload\companion"
+$userStage     = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64")
 $stageDir      = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64-server")
 $distDir       = Join-Path $solutionDir "dist"
 $issFile       = Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss"
-$companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
 
 function Resolve-Iscc {
     $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
@@ -105,77 +103,34 @@ foreach ($extra in @("README.md", "LICENSE", "THIRD-PARTY-NOTICES.txt")) {
     if (Test-Path $source) { Copy-Item $source $stageDir -Force }
 }
 
-# The Share Manager. Self-contained single-file, so this one exe is the whole .NET
-# side of the package - there is no shared runtime to depend on on a bare server.
-if (-not (Test-Path $companionProj)) {
-    throw "Companion project not found ($companionProj) - the Server package would have nothing to install."
-}
-if ($SkipBuild) {
-    # The User installer of the same version publishes the Share Manager fresh into
-    # its own stage, so take THAT one when it exists: the two setup.exe files of one
-    # build must carry the same Share Manager. bin\Release is only the fallback - it
-    # can hold an exe from an earlier build (build.ps1 -SkipCompanion rebuilds none,
-    # and msbuild Rebuild never removes it), which is how dist\ used to end up with
-    # two setups of one version carrying different Share Managers.
-    $userStageExe = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64\FastMediaSorterCompanion.exe")
-    $binExe = Join-Path $solutionDir "bin\Release\FastMediaSorterCompanion.exe"
-    if (Test-Path $userStageExe) {
-        $prebuilt = $userStageExe
-    } elseif (Test-Path $binExe) {
-        $prebuilt = $binExe
-    } else {
-        throw "-SkipBuild was given but neither $userStageExe nor $binExe exists. Run without -SkipBuild first."
-    }
-    Copy-Item $prebuilt $stageDir -Force
-    Write-Host "Reused the existing Share Manager build: $prebuilt"
-} else {
-    $companionPub = Join-Path $stageDir "companion-publish-tmp"
-    Write-Host "Publishing the Share Manager (net10, self-contained single-file).."
-    & dotnet publish $companionProj -c Release -r win-x64 -p:ReleaseVersion=$Version -o $companionPub -v minimal --nologo
-    if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed with exit code $LASTEXITCODE." }
-    $companionExe = Join-Path $companionPub "FastMediaSorterCompanion.exe"
-    if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }
-    Copy-Item $companionExe $stageDir -Force
-    Remove-Item -LiteralPath $companionPub -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "Bundled the Share Manager -> FastMediaSorterCompanion.exe"
-}
-
-# The Go SFTP worker - the thing the Windows service actually runs. Without it the
-# package installs a console with nothing to manage, so this is a hard failure, not a
-# warning like in the User installer (where the viewer still works on its own).
-if (-not (Test-Path $payloadDir)) {
-    throw "Companion worker payload not found ($payloadDir). The Server edition IS the worker - build it in its own repository (P:\windows\fms_companion) and vendor it to payload\companion first."
-}
-$companionDest = Join-Path $stageDir "companion"
-New-Item -ItemType Directory -Path $companionDest -Force | Out-Null
-Copy-Item -Path (Join-Path $payloadDir "*") -Destination $companionDest -Recurse -Force
-    & (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $stageDir
-if (-not (Test-Path (Join-Path $companionDest "fms-share-worker.exe"))) {
-    throw "fms-share-worker.exe is missing from $companionDest - the service would have no executable to run."
-}
-Write-Host "Bundled the SFTP worker -> companion\"
-
-# The OPTIONAL viewer component (ticket 132): staged from the User stage of THIS version, so the
-# viewer in the Server package is the one the same build produced. Absent stage = no component
-# (a warning, never a half-viewer); build.ps1 stages the User installer first, so a full local
-# build always has it. The shipping packagers pass -Require.
+# The OPTIONAL viewer component (ticket 132) and its offline support - the VLC codecs, PDFium and the
+# OCR models the pair was built with (L0307): staged from the User stage of THIS version, through its
+# payload manifest, so the Server package offers the same set the User package does and the viewer in
+# it is the one the same build produced. A missing manifest, mismatched executables or a stage changed
+# after it was recorded fail packaging; build.ps1 / Build-Installer.ps1 stage the User installer first.
+# It runs FIRST: it is the step that proves the User stage is the build's own before anything is
+# copied out of it.
 & (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") `
-    -UserStage (Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64")) `
-    -Destination $stageDir
+    -UserStage $userStage `
+    -Destination $stageDir -Version $Version -Require
+
+# Both packages use the same staged sharing files, including the same FileDO release.
+& (Join-Path $PSScriptRoot "Stage-ServerSharePayload.ps1") -UserStage $userStage -Destination $stageDir
+
+# The options of the pair are the User stage's recorded ones; this run's switches must agree with them.
+$payloadManifest = Read-InstallerPayloadManifest -Stage $userStage -Version $Version
+if ([bool]$payloadManifest.exchange -ne [bool]$IncludeExchange) {
+    $recorded = if ($payloadManifest.exchange) { "open (built with -IncludeExchange)" } else { "shut" }
+    throw "The User stage was built with the exchange gate $recorded but this run has -IncludeExchange $([bool]$IncludeExchange). Use the same gate option for both installers."
+}
 
 # The exchange server (specification 133, ticket 141) - behind the shipping gate. The two
 # editions of one build carry the SAME binary, so it is taken from the User stage of this
-# version when that stage holds it, else from bin\Release\exchange (build.ps1 deploys it).
+# version; a missing tree cannot be replaced by another build.
 # Stage-ExchangePayload.ps1 throws when the exe or its sidecar is missing: a Server setup that
 # claims the component without the binary is worse than a failed build.
 if ($IncludeExchange) {
-    $userExchange = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64\exchange")
-    $binExchange  = Join-Path $solutionDir "bin\Release\exchange"
-    if (Test-Path (Join-Path $userExchange "fms-exchange-server.exe")) {
-        $exchangeSource = $userExchange
-    } else {
-        $exchangeSource = $binExchange
-    }
+    $exchangeSource = Join-Path $userStage "exchange"
     Write-Host "Exchange server source: $exchangeSource"
     & (Join-Path $PSScriptRoot "Stage-ExchangePayload.ps1") -Source $exchangeSource -Destination $stageDir -Server
 } else {
@@ -186,15 +141,17 @@ if ($IncludeExchange) {
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs  = (Resolve-Path $distDir).Path
 $isccArgs = @("/DVersion=$Version", "/DSourceDir=$stageAbs", "/O$distAbs")
-# The gate, proven on the stage: the component compiles in exactly when the stage carries it.
+# The gate, proven on the stage: the component compiles in exactly when the stage carries it. The
+# defines (/DNoExchange, /DNoOcrModels, /DOcrBest) come from the same record the User setup was
+# compiled with.
 if ($IncludeExchange) {
     if (-not (Test-Path (Join-Path $stageDir "exchange\fms-exchange-server.exe"))) {
         throw "-IncludeExchange was given but the stage has no exchange\fms-exchange-server.exe."
     }
 } else {
     if (Test-Path (Join-Path $stageDir "exchange")) { throw "The stage carries an exchange\ folder but the shipping gate is shut (-IncludeExchange not given)." }
-    $isccArgs += "/DNoExchange"
 }
+$isccArgs += Get-InstallerIsccDefines -Manifest $payloadManifest
 if (-not $MaxCompress) {
     $isccArgs += "/DFastCompression"
     Write-Host "Compression: lzma2/fast (local build - pass -MaxCompress for the smaller ultra build)"

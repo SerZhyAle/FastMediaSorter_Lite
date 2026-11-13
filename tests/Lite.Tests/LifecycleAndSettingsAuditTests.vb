@@ -30,7 +30,7 @@ Public Class LifecycleAndSettingsAuditTests
     Public Sub F01_a_shutdown_only_persists_in_FormClosing_and_tears_down_in_FormClosed()
         Dim lifecycle As String = ReadSource("Main_Form.Lifecycle.vb")
         Dim closing As String = MethodBody(lifecycle, "Form1_FormClosing")
-        Assert.Matches(New Regex("If e\.CloseReason = CloseReason\.WindowsShutDown Then\s+(?:PersistSettings|SettingsFlush\.SaveNow)\(\)\s+Return"), closing)
+        Assert.Matches(New Regex("(?s)If e\.CloseReason = CloseReason\.WindowsShutDown Then\s+(?:PersistSettings|SettingsFlush\.SaveNow)\(\).*?Return\s+End If"), closing)
         Assert.DoesNotContain("Dispose()", closing)
 
         Dim closed As String = MethodBody(lifecycle, "Form1_FormClosed")

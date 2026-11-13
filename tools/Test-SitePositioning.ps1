@@ -628,7 +628,7 @@ foreach ($it in $capItems) {
     $evs = @($it.evidence | ForEach-Object { [string]$_ } | Where-Object { $_ })
     if (-not $evs.Count) { Problem "capability '$cid' cites no evidence" }
     foreach ($ev in $evs) {
-        $spec = [regex]::Match($ev, '^specification (?<n>\d+)$')
+        $spec = [regex]::Match($ev, '^specification L?(?<n>\d+)$')
         if ($spec.Success) {
             # A ticket file is named either NNN_.. (the archive's historical names) or L0NNN_.. (the catalog form).
             $n = $spec.Groups['n'].Value

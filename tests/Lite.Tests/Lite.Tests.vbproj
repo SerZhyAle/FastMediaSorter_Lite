@@ -277,6 +277,7 @@
          WinForms glue, and the tests that matter (overflow, RTL mirroring, the 24 px minimum, high
          contrast) need none of it. Whole-file "#If Not NETFRAMEWORK", like ZoomMath. -->
     <Compile Include="..\..\src\Chrome\ChromePathCompletion.vb"><Link>Linked\Chrome\ChromePathCompletion.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\PanelColourModel.vb"><Link>Linked\Chrome\PanelColourModel.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeItem.vb"><Link>Linked\Chrome\ChromeItem.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeSurface.vb"><Link>Linked\Chrome\ChromeSurface.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeHost.vb"><Link>Linked\Chrome\ChromeHost.vb</Link></Compile>

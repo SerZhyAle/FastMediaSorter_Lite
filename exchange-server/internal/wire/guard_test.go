@@ -100,18 +100,18 @@ func TestEveryReasonConstantIsInTheList(t *testing.T) {
 	}
 }
 
-// TestTheReasonsTheServerCanEmitAreExactlyTheSeventeenOfTheContract is ticket 167 rule 7 (ten), ticket 224 (six more) and ticket 245: the set of
+// TestTheReasonsTheServerCanEmitAreExactlyTheContractReasons covers the original seventeen and the four settings reasons of 1.12: the set of
 // reasons the server can emit is built by scanning the sources for every Reason constant a non-test
-// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the seventeen must
+// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the twenty-one must
 // be emitted somewhere (a reason nothing can produce would be a promise the server cannot keep).
-func TestTheReasonsTheServerCanEmitAreExactlyTheSeventeenOfTheContract(t *testing.T) {
+func TestTheReasonsTheServerCanEmitAreExactlyTheContractReasons(t *testing.T) {
 	ident := regexp.MustCompile(`\b(?:wire\.)?(Reason[A-Z]\w*)\b`)
 	declared := map[string]bool{}
 	for _, m := range regexp.MustCompile(`(?m)^\s*(Reason[A-Z]\w*)\s+Reason\s*=`).FindAllStringSubmatch(moduleGoFiles(t, false)["internal/wire/reason.go"], -1) {
 		declared[m[1]] = true
 	}
-	if len(declared) != 17 || len(AllReasons) != 17 {
-		t.Fatalf("%d declared, %d listed: the contract has seventeen reasons", len(declared), len(AllReasons))
+	if len(declared) != 21 || len(AllReasons) != 21 {
+		t.Fatalf("%d declared, %d listed: the contract has twenty-one reasons", len(declared), len(AllReasons))
 	}
 	emitted := map[string]bool{}
 	for name, src := range moduleGoFiles(t, false) {
@@ -120,7 +120,7 @@ func TestTheReasonsTheServerCanEmitAreExactlyTheSeventeenOfTheContract(t *testin
 		}
 		for _, m := range ident.FindAllStringSubmatch(src, -1) {
 			if !declared[m[1]] {
-				t.Errorf("%s names %s, which is not one of the sixteen reasons of 7.10", name, m[1])
+				t.Errorf("%s names %s, which is not one of the reasons of 7.10", name, m[1])
 			}
 			emitted[m[1]] = true
 		}
@@ -130,7 +130,7 @@ func TestTheReasonsTheServerCanEmitAreExactlyTheSeventeenOfTheContract(t *testin
 			t.Errorf("%s is in the list but nothing in the server emits it", r)
 		}
 	}
-	// the scan can fail: a seventeenth constant, and a reason used but not declared, are seen
+	// the scan can fail: a reason used but not declared is seen
 	if declared["ReasonTeapot"] || !ident.MatchString("wire.ReasonTeapot") {
 		t.Error("the pattern must see a reason constant that is not declared")
 	}

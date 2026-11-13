@@ -307,8 +307,12 @@ Public Class ExchangeProcessTests
             scanned += 1
             Dim code As String = ExchangeTestSupport.CodeOnly(File.ReadAllText(sourcePath))
             Dim forbidden As New List(Of String) From {"File.WriteAllText", "File.Create", "File.AppendAllText"}
-            ' the admin channel builds ITS request in memory (never a file); nothing else builds JSON for the server
-            If Not name.Equals("ExchangeAdmin.vb", StringComparison.Ordinal) Then forbidden.AddRange({"JsonNode", "Utf8JsonWriter", "JsonSerializer.Serialize"})
+            ' The admin channel builds its wire request in memory. The remote-target store serializes
+            ' its own registry value, not the server configuration; file writes remain forbidden above.
+            If Not name.Equals("ExchangeAdmin.vb", StringComparison.Ordinal) AndAlso
+               Not name.Equals("ExchangeAdminTargets.vb", StringComparison.Ordinal) Then
+                forbidden.AddRange({"JsonNode", "Utf8JsonWriter", "JsonSerializer.Serialize"})
+            End If
             For Each word As String In forbidden
                 Assert.False(code.Contains(word), name & " writes or builds JSON itself (" & word & ") - every value goes through the binary's verbs")
             Next

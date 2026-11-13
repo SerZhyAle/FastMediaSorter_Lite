@@ -125,6 +125,21 @@ jobs:
           FmsDriveClientSecret: ${{ secrets.FMS_DRIVE_CLIENT_SECRET }}
         run: dotnet publish src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj -c Release -r win-x64 -p:ReleaseVersion=${{ steps.ver.outputs.version }} -o companion-publish -v minimal --nologo
 
+      # Specification L0308 section 2.1: a released Share Manager carries the Google Drive client pair, or the
+      # release stops here. An unset secret is an empty string and would ship "not configured" silently; the
+      # check reads the exe itself and never prints a value. The secrets reach this step only, as the names the
+      # check compares against.
+      - name: Check the Share Manager carries the Google Drive client
+        env:
+          FMS_DRIVE_CLIENT_ID: ${{ secrets.FMS_DRIVE_CLIENT_ID }}
+          FMS_DRIVE_CLIENT_SECRET: ${{ secrets.FMS_DRIVE_CLIENT_SECRET }}
+        run: |
+          pwsh -NoProfile -File tools/Test-DriveClientArtifact.ps1 -Path companion-publish/FastMediaSorterCompanion.exe -Expect Configured -CompareEnvironment
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::The Share Manager of this release carries no usable Google Drive client. Set both repository secrets FMS_DRIVE_CLIENT_ID and FMS_DRIVE_CLIENT_SECRET (tools/Set-DriveClientSecrets.ps1, specification L0306), then run the release for this tag again."
+            exit 1
+          }
+
       # The exchange server (Go, specification 133) is compiled FROM SOURCE here - nothing is
       # vendored (owner answer Q-133-3) - and only behind the shipping gate (INCLUDE_EXCHANGE at
       # the top of this file). The action is pinned to a commit SHA (ticket 109 section 3), never
@@ -259,7 +274,17 @@ jobs:
 
       - name: Add offline OCR payload
         run: .\tools\Prepare-OcrOfflinePayload.ps1 -StageDir '${{ steps.stage.outputs.stage }}' -IncludeBest
-      
+
+      # Judge and record the stage (L0307). The release carries the best OCR models, the VLC codecs
+      # and PDFium, and the exchange tree only while the gate is open; a stage that lacks a payload
+      # its options ask for (or carries one they leave out) stops the job here, before any package.
+      # The record sits beside the stage; both setups take their options from it and the Server
+      # stage is derived from it, so the pair cannot differ.
+      - name: Record the payload manifest
+        run: |
+          . .\tools\lib\InstallerPayloadSelection.ps1
+          [void](New-InstallerPayloadManifest -Stage '${{ steps.stage.outputs.stage }}' -Version '${{ steps.ver.outputs.version }}' -OcrModels best -Exchange ($env:INCLUDE_EXCHANGE -eq 'true'))
+
       - name: Show staged layout
         run: Get-ChildItem '${{ steps.stage.outputs.stage }}' -Recurse | Format-Table -AutoSize
 
@@ -306,7 +331,13 @@ jobs:
           # Gate shut = the `exchange` component and all that belongs to it compile out.
           $exchangeArgs = @()
           if ($env:INCLUDE_EXCHANGE -ne 'true') { $exchangeArgs = @('/DNoExchange') }
-          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" @exchangeArgs publishing\installer\FastMediaSorter.iss
+
+          # The pair's other recorded options (OCR models), from the stage's payload manifest.
+          . .\tools\lib\InstallerPayloadSelection.ps1
+          $manifest = Read-InstallerPayloadManifest -Stage $stage -Version $version
+          if ([bool]$manifest.exchange -ne ($env:INCLUDE_EXCHANGE -eq 'true')) { throw "The payload manifest records another exchange gate than INCLUDE_EXCHANGE." }
+          $ocrArgs = @([string[]](Get-InstallerIsccDefines -Manifest $manifest) | Where-Object { $_ -ne '/DNoExchange' })
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" @exchangeArgs @ocrArgs publishing\installer\FastMediaSorter.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed (exit $LASTEXITCODE)" }
 
           $setupName = "FastMediaSorter-$version-windows-x64-setup.exe"
@@ -326,11 +357,11 @@ jobs:
       # with its own AppId, ARP name and winget package, so it is a separate asset
       # rather than a mode of the one above.
       #
-      # Its payload is deliberately LEAN and therefore staged separately: the Share
-      # Manager, the Go worker and the two elevated helper scripts, plus the viewer as
-      # an UNCHECKED optional component (ticket 132) - and still no VLC codecs, no OCR
-      # models. Reusing the whole User stage would ship hundreds of megabytes a headless
-      # server never runs.
+      # Its payload is staged separately: the Share Manager, the Go worker and the
+      # two elevated helper scripts, plus the viewer as an UNCHECKED optional component
+      # (ticket 132) with the offline support the User setup carries under it - the VLC
+      # codecs, PDFium and the OCR models (L0307). Sharing files and the viewer's files are
+      # copied from the User stage through its payload manifest so the two packages match.
       - name: Build Server edition installer
         id: serversetup
         run: |
@@ -344,29 +375,19 @@ jobs:
           if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
           if (Test-Path THIRD-PARTY-NOTICES.txt) { Copy-Item THIRD-PARTY-NOTICES.txt $stage }
 
-          $companionExe = "companion-publish/FastMediaSorterCompanion.exe"
-          if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe" }
-          Copy-Item $companionExe $stage
+          # Copy the exact sharing payload already selected for the User package.
+          .\tools\Stage-ServerSharePayload.ps1 -UserStage '${{ steps.stage.outputs.stage }}' -Destination $stage
 
-          $worker = "payload/companion/fms-share-worker.exe"
-          if (-not (Test-Path $worker)) { throw "SFTP worker not found at $worker - the Server edition IS the worker" }
-          $stageCompanion = Join-Path $stage "companion"
-          New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
-          Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
-
-          # FileDO disk hosting, the Server edition's ticked optional component: the
-          # installer's `filedo` component installs this tree (specification 249).
-          .\tools\Stage-FileDoPayload.ps1 -Destination $stage
-
-          # The optional, unticked viewer component (ticket 132): the SAME viewer files the
-          # User installer's Compact type installs, taken from the stage above. -Require: a
-          # release never ships a Server installer that silently lacks the component.
-          .\tools\Stage-ServerViewerPayload.ps1 -UserStage '${{ steps.stage.outputs.stage }}' -Destination $stage -Require
+          # The optional, unticked viewer component (ticket 132) and its offline support (VLC
+          # codecs, PDFium, OCR models): the SAME files the User installer installs, taken from
+          # the stage above through its payload manifest. -Require: a release never ships a
+          # Server installer that silently lacks the component.
+          .\tools\Stage-ServerViewerPayload.ps1 -UserStage '${{ steps.stage.outputs.stage }}' -Destination $stage -Version $version -Require
 
           # The exchange tree, the SAME binary as the User stage - only with the gate open.
           $exchangeArgs = @()
           if ($env:INCLUDE_EXCHANGE -eq 'true') {
-            .\tools\Stage-ExchangePayload.ps1 -Source (Join-Path '${{ steps.stage.outputs.stage }}' 'exchange') -Destination $stage
+            .\tools\Stage-ExchangePayload.ps1 -Source (Join-Path '${{ steps.stage.outputs.stage }}' 'exchange') -Destination $stage -Server
           } else {
             if (Test-Path (Join-Path $stage 'exchange')) { throw "The Server stage carries an exchange\ folder but INCLUDE_EXCHANGE is not 'true'." }
             $exchangeArgs = @('/DNoExchange')
@@ -374,12 +395,25 @@ jobs:
 
           $stageAbs = (Resolve-Path $stage).Path
           $distAbs  = (Resolve-Path dist).Path
-          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" @exchangeArgs publishing\installer\FastMediaSorterServer.iss
+
+          # The same recorded options as the User setup (OCR models) - the Server stage above was
+          # derived from that manifest, so the two setups offer the same set.
+          . .\tools\lib\InstallerPayloadSelection.ps1
+          $manifest = Read-InstallerPayloadManifest -Stage '${{ steps.stage.outputs.stage }}' -Version $version
+          if ([bool]$manifest.exchange -ne ($env:INCLUDE_EXCHANGE -eq 'true')) { throw "The payload manifest records another exchange gate than INCLUDE_EXCHANGE." }
+          $ocrArgs = @([string[]](Get-InstallerIsccDefines -Manifest $manifest) | Where-Object { $_ -ne '/DNoExchange' })
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" @exchangeArgs @ocrArgs publishing\installer\FastMediaSorterServer.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC (Server edition) failed (exit $LASTEXITCODE)" }
 
           $setupName = "FastMediaSorter-$version-windows-x64-server-setup.exe"
           $setupPath = "dist/$setupName"
           if (-not (Test-Path $setupPath)) { throw "Server installer not produced at $setupPath" }
+
+          # Specification L0308 section 2.1: every package of the release carries the SAME Google Drive pair - the
+          # portable ZIP, the User stage the User setup was compiled from, and this Server stage. A compressed
+          # setup.exe cannot be read, so its stage stands for it.
+          pwsh -NoProfile -File tools/Test-DriveClientArtifact.ps1 -Path "dist/${{ steps.pkg.outputs.name }},${{ steps.stage.outputs.stage }},$stage" -Expect Configured
+          if ($LASTEXITCODE -ne 0) { throw "A package of this release carries no Google Drive client or another one than the Share Manager publish: the check's lines above name the package. Re-run the release; no package is published." }
 
           $hash = (Get-FileHash -Algorithm SHA256 $setupPath).Hash
           "$hash  $setupName" | Out-File -FilePath "$setupPath.sha256" -Encoding ascii

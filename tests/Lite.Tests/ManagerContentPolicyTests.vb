@@ -66,6 +66,7 @@ Public Class ManagerContentPolicyTests
     <InlineData("notes.txt")>
     <InlineData("sheet.xlsx")>
     <InlineData("report.docx")>
+    <InlineData("script.bat")>
     Public Sub DocumentsAndBooks_HiddenInMedia_VisibleInDocsAndAll(name As String)
         Dim entry = MakeEntry(name)
         Assert.False(ManagerContentPolicy.IsVisible(entry, ManagerContentMode.Media, False))
@@ -78,7 +79,6 @@ Public Class ManagerContentPolicyTests
     <InlineData("disk.iso")>
     <InlineData("archive.tar")>
     <InlineData("program.exe")>
-    <InlineData("script.bat")>
     Public Sub UnknownAndUnsupported_OnlyVisibleInAllFiles(name As String)
         Dim entry = MakeEntry(name)
         Assert.False(ManagerContentPolicy.IsVisible(entry, ManagerContentMode.Media, False))

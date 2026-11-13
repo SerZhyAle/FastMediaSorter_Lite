@@ -56,9 +56,18 @@ Friend NotInheritable Class DriveChannelText
 
     ''' <summary>The muted line under it: the reason, or what to do. "" when there is nothing to add.</summary>
     Public Shared Function StateDetail(state As DriveChannelState, failure As ExchangeDriveFailure) As String
+        Return StateDetail(state, failure, reached:=True)
+    End Function
+
+    ''' <summary>
+    ''' The same line, told whether a Drive round has answered since the start or the sign-in (specification L0308 section 2.5):
+    ''' a stored sign-in alone is not a working connection, so "signed in" with no answered round says the check is running
+    ''' instead of "this PC is linked".
+    ''' </summary>
+    Public Shared Function StateDetail(state As DriveChannelState, failure As ExchangeDriveFailure, reached As Boolean) As String
         Select Case state
             Case DriveChannelState.NotConfigured
-                Return Localization.T("Эта сборка не содержит ключа доступа к Google Drive, поэтому вход недоступен. Остальные функции менеджера работают как обычно.")
+                Return Localization.T("Эта сборка не содержит ключа доступа к Google Drive, поэтому вход недоступен. Чтобы войти, установите текущую версию приложения с официального сайта. Остальные функции менеджера работают как обычно.")
             Case DriveChannelState.SignedOut
                 Return If(failure = ExchangeDriveFailure.SignedOut,
                           Localization.T("Вход больше не действует: доступ отозван или истёк. Войдите снова."),
@@ -66,7 +75,7 @@ Friend NotInheritable Class DriveChannelText
             Case DriveChannelState.SigningIn
                 Return Localization.T("Завершите вход в открывшемся окне браузера. Чтобы отказаться, нажмите «Отмена».")
             Case DriveChannelState.SignedIn
-                Return Localization.T("Этот ПК связан с вашим Google Drive.")
+                Return If(reached, Localization.T("Этот ПК связан с вашим Google Drive."), Localization.T("Проверка связи с Google Drive.."))
             Case DriveChannelState.Unavailable
                 Return FailureDetail(failure)
             Case Else
@@ -83,6 +92,8 @@ Friend NotInheritable Class DriveChannelText
                 Return Localization.T("Достигнут суточный лимит Google Drive на загрузку. Повторите завтра.")
             Case ExchangeDriveFailure.DriveFull
                 Return Localization.T("На вашем Google Drive нет свободного места.")
+            Case ExchangeDriveFailure.ClientRejected
+                Return Localization.T("Google больше не принимает ключ входа этой установки. Установите текущую версию приложения с официального сайта; вход на этом ПК сохранён.")
             Case Else
                 Return Localization.T("Google Drive отвечает ошибкой или ограничивает запросы. Повторная попытка выполняется автоматически.")
         End Select
@@ -97,6 +108,8 @@ Friend NotInheritable Class DriveChannelText
                 Return StateDetail(DriveChannelState.NotConfigured, ExchangeDriveFailure.None)
             Case ExchangeDriveSignInOutcome.ConsentDenied
                 Return Localization.T("Доступ не предоставлен. Вход отменён.")
+            Case ExchangeDriveSignInOutcome.AccountRestricted
+                Return Localization.T("Google не разрешил вход этим аккаунтом: его ограничивает организация или сам Google. Войдите другим аккаунтом Google или обратитесь к администратору аккаунта.")
             Case ExchangeDriveSignInOutcome.TimedOut
                 Return If(cancelled, Localization.T("Вход отменён."), Localization.T("Вход не завершён вовремя. Попробуйте ещё раз."))
             Case ExchangeDriveSignInOutcome.NoBrowser
@@ -132,6 +145,16 @@ Friend NotInheritable Class DriveChannelText
     ''' <summary>What the app can see and where the sign-in is kept: the scope is the app's own hidden folder, nothing else.</summary>
     Public Shared Function ScopeNote() As String
         Return Localization.T("Приложению доступна только его собственная скрытая папка на вашем Google Drive, а не ваши файлы. Вход хранится на этом ПК под защитой Windows.")
+    End Function
+
+    ''' <summary>The help entry beside "Sign in..": opens the six-step guide (specification L0308 section 3.1).</summary>
+    Public Shared Function HelpLink() As String
+        Return Localization.T("Как подключить Google Drive..")
+    End Function
+
+    ''' <summary>What a sign-in needs, in one line under the buttons (specification L0308 section 3.1).</summary>
+    Public Shared Function AccessNote() As String
+        Return Localization.T("Нужны аккаунт Google и интернет; приложение Google Drive не требуется. Пароль вводится только на странице Google в браузере.")
     End Function
 
     Public Shared Function PrivacyNote() As String

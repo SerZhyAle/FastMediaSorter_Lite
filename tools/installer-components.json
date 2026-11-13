@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "about": "The canonical component and prerequisite mapping of the two Windows installers (L0307). One row per capability both installers must be able to install. 'stage' lists the User-stage paths that carry the capability's files; 'payload' says when a stage must carry them: always, ocr-fast (OCR models are bundled), ocr-best (best OCR models are bundled) or gate (the exchange shipping gate is open). 'user' and 'server' name the Inno component each installer installs it through and the stage root its files are laid down from (the User setup compiles the User stage directly; the Server setup compiles a stage whose viewer files sit under viewer\\ and whose offline support files sit under viewer-support\\). A child component is written 'parent\\child'. tools/lib/InstallerPayloadSelection.ps1 stages by this file and tests/Integration/InstallerComponentParity.ps1 holds both .iss files to it; change the three together.",
+  "serverViewerRoot": "viewer",
+  "serverSupportRoot": "viewer-support",
+  "capabilities": [
+    {
+      "id": "viewer", "label": "Media and file manager", "payload": "always",
+      "user":   { "component": "core",   "default": "fixed" },
+      "server": { "component": "viewer", "default": "unticked", "root": "viewer" },
+      "note": "Both viewer executables and the libraries they load; everything of the User stage that no other row claims. The Server setup does not offer it next to an installed User edition (coexistence rule)."
+    },
+    {
+      "id": "codecs", "label": "Video codecs (VLC)", "payload": "always", "stage": ["libvlc"],
+      "requires": "viewer",
+      "user":   { "component": "codecs",        "default": "ticked-in-full" },
+      "server": { "component": "viewer\\codecs", "default": "unticked", "root": "viewer-support" }
+    },
+    {
+      "id": "pdf", "label": "PDF preview (PDFium)", "payload": "always", "stage": ["pdfium.dll"],
+      "requires": "viewer",
+      "user":   { "component": "pdf",         "default": "ticked-in-full" },
+      "server": { "component": "viewer\\pdf", "default": "unticked", "root": "viewer-support" }
+    },
+    {
+      "id": "ocr-fast", "label": "OCR and translation models (fast)", "payload": "ocr-fast", "stage": ["tessdata"],
+      "requires": "viewer",
+      "user":   { "component": "ocr",         "default": "ticked-in-full" },
+      "server": { "component": "viewer\\ocr", "default": "unticked", "root": "viewer-support" }
+    },
+    {
+      "id": "ocr-best", "label": "OCR and translation models (best)", "payload": "ocr-best", "stage": ["tessdata-best"],
+      "requires": "viewer",
+      "user":   { "component": "ocr",         "default": "ticked-in-full" },
+      "server": { "component": "viewer\\ocr", "default": "unticked", "root": "viewer-support" }
+    },
+    {
+      "id": "share", "label": "Local sharing and scheduled file operations (Share Manager and SFTP worker)", "payload": "always",
+      "stage": ["FastMediaSorterCompanion.exe", "companion"],
+      "user":   { "component": "share scheduled", "default": "ticked-in-full" },
+      "server": { "component": "server", "default": "fixed", "root": "" },
+      "note": "One payload for both User components (share and scheduled, L0297); the Server setup always installs it."
+    },
+    {
+      "id": "filedo", "label": "FileDO disk hosting", "payload": "always", "stage": ["filedo"],
+      "requires": "share",
+      "user":   { "component": "share\\filedo", "default": "unticked" },
+      "server": { "component": "filedo", "default": "ticked", "root": "" }
+    },
+    {
+      "id": "exchange", "label": "Media Exchange Server", "payload": "gate", "stage": ["exchange"],
+      "requires": "share",
+      "user":   { "component": "share\\exchange", "default": "unticked" },
+      "server": { "component": "exchange", "default": "unticked", "root": "" },
+      "note": "Present in both setups only while the shared shipping gate is open; compiled out of both with /DNoExchange otherwise."
+    }
+  ]
+}

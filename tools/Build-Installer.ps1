@@ -87,6 +87,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if ($SkipOcr -and $IncludeBest) {
+    throw "-SkipOcr and -IncludeBest cannot be combined. Choose either no bundled OCR models or the fast and best models."
+}
+. (Join-Path $PSScriptRoot 'lib\InstallerPayloadSelection.ps1')
+
 $solutionDir  = Split-Path $PSScriptRoot -Parent
 $solutionFile = Join-Path $solutionDir "FastMediaSorter.sln"
 $releaseDir   = Join-Path $solutionDir "bin\Release"
@@ -201,6 +206,8 @@ if ($IncludeExchange) {
 
 # --- stage (bin\Release minus pdb/xml/log) ----------------------------------
 Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+# The record of an earlier run of this version must not outlive the stage it described.
+Remove-Item -LiteralPath (Get-InstallerPayloadManifestPath -Stage $stageDir) -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
@@ -215,7 +222,7 @@ Get-ChildItem $releaseDir -Recurse -File |
         # development copy that build.ps1 deployed into bin\Release must not ride into a setup.exe
         # by luck. With the gate open the tree is staged below by tools\Stage-ExchangePayload.ps1
         # (exactly five files, checked); with it shut there is no exchange\ in the stage at all.
-        if ($relative -like 'exchange\*') { return }
+        if (-not (Test-InstallerStageFile -RelativePath $relative -SkipOcr:$SkipOcr)) { return }
         $destination = Join-Path $stageDir $relative
         New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
         Copy-Item $_.FullName $destination -Force
@@ -233,14 +240,14 @@ if ($IncludeExchange) {
 # The Android-share worker must ship in companion\ next to the exe or the Share
 # Manager finds nothing at runtime. MSBuild does not stage it - mirror the
 # vendored payload in explicitly (same rule as build.ps1's Deploy-Companion).
-if (Test-Path $payloadDir) {
+if (Test-Path -LiteralPath (Join-Path $payloadDir 'fms-share-worker.exe') -PathType Leaf) {
     $companionDest = Join-Path $stageDir "companion"
     New-Item -ItemType Directory -Path $companionDest -Force | Out-Null
     Copy-Item -Path (Join-Path $payloadDir "*") -Destination $companionDest -Recurse -Force
     & (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $stageDir
     Write-Host "Bundled companion worker -> companion\"
 } else {
-    Write-Warning "Companion payload not found ($payloadDir) - the installer will ship without the Android Share worker."
+    throw "SFTP worker not found at '$payloadDir\fms-share-worker.exe'. Restore the required payload before packaging."
 }
 
 # The .NET 10 x64 mainline viewer - the exe that carries the frozen name and
@@ -285,17 +292,14 @@ if (Test-Path $companionProj) {
     Remove-Item -LiteralPath $companionPub -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "Bundled Companion exe -> FastMediaSorterCompanion.exe"
 } else {
-    Write-Warning "Companion project not found ($companionProj) - the installer will ship without the Share Manager app."
+    throw "Companion project not found ($companionProj). Restore the required project before packaging."
 }
 
 # --- OCR offline payload ----------------------------------------------------
 if ($SkipOcr) {
     Write-Host "Skipping OCR payload (-SkipOcr) - models download on demand."
-    # Still trim the x86-only runtime trees the x64 installer never needs.
-    foreach ($x86 in @("x86", "libvlc\win-x86", "runtimes\win-x86")) {
-        $p = Join-Path $stageDir $x86
-        if (Test-Path $p) { Remove-Item -LiteralPath $p -Recurse -Force }
-    }
+    # The initial copy excluded models and downloadable x86 runtimes, while retaining
+    # x86\libwebpdecoder.dll for the fallback viewer.
 } else {
     $ocrArgs = @{ StageDir = $stageDir }
     if ($IncludeBest) { $ocrArgs.IncludeBest = $true }
@@ -307,21 +311,25 @@ if ($SkipOcr) {
 & (Join-Path $PSScriptRoot "Test-HtmlHostArtifacts.ps1") -Path $stageDir
 if ($LASTEXITCODE -ne 0) { throw "The installer stage does not hold the WebView2 host of specification 275 (exit $LASTEXITCODE)." }
 
+# --- judge and record the stage (L0307) ---------------------------------------
+# One User stage feeds BOTH setups. It is judged against the options this run was given - the
+# viewer, the Share Manager, the worker and FileDO at this version, the offline support payloads
+# (VLC codecs, PDFium, the OCR models the options select) and the exchange gate - and recorded in a
+# payload manifest beside it. tools\Build-ServerInstaller.ps1 packages the Server setup from that
+# record, so the pair cannot silently differ. An incomplete stage stops here, before ISCC.
+$ocrMode = if ($SkipOcr) { 'none' } elseif ($IncludeBest) { 'best' } else { 'fast' }
+$payloadManifest = New-InstallerPayloadManifest -Stage $stageDir -Version $Version -OcrModels $ocrMode -Exchange ([bool]$IncludeExchange)
+
 # --- compile installer ------------------------------------------------------
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs  = (Resolve-Path $distDir).Path
 $isccArgs = @("/DVersion=$Version", "/DSourceDir=$stageAbs", "/O$distAbs")
 # The shipping gate, proven on the stage rather than assumed: the component is compiled in
 # exactly when the stage carries the tree, and a stage with an exchange\ that the gate did not
-# ask for (or none when it did) stops the build.
-$stageHasExchange = Test-Path (Join-Path $stageDir "exchange")
-if ($IncludeExchange -and -not (Test-Path (Join-Path $stageDir "exchange\fms-exchange-server.exe"))) {
-    throw "-IncludeExchange was given but the stage has no exchange\fms-exchange-server.exe."
-}
-if (-not $IncludeExchange) {
-    if ($stageHasExchange) { throw "The stage carries an exchange\ folder but the shipping gate is shut (-IncludeExchange not given)." }
-    $isccArgs += "/DNoExchange"
-}
+# ask for (or none when it did) stops the build. The manifest above already refused both; the
+# defines (/DNoExchange, /DNoOcrModels, /DOcrBest) are derived from the same record the Server
+# setup is packaged from.
+$isccArgs += Get-InstallerIsccDefines -Manifest $payloadManifest
 if (-not $MaxCompress) {
     $isccArgs += "/DFastCompression"
     Write-Host "Compression: lzma2/fast (local build - pass -MaxCompress for the smaller ultra build)"

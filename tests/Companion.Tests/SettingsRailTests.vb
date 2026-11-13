@@ -641,9 +641,9 @@ Public Class SettingsRailTests
             drawn.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
         ' Reported to the catalog's proposal procedure (ICON-SET): none of these has a meaning in the vocabulary today.
         Assert.Equal(New String() {
-            "drive/account", "drive/device", "exchange-account/clipboard", "exchange-account/publishing", "exchange/accounts", "exchange/configuration",
+            "drive/account", "drive/device", "drive/queue", "exchange-account/clipboard", "exchange-account/publishing", "exchange/accounts", "exchange/configuration",
             "exchange/devices", "exchange/remote-admin", "exchange/service", "hosting/service", "hosting/status",
-            "network/access", "network/connections", "scheduled/machine", "scheduled/operations", "startup/startup"},
+            "network/access", "network/connections", "scheduled/operations", "startup/startup"},
             missing.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
     End Sub
 

@@ -16,8 +16,8 @@ Imports FastMediaSorterCompanion
 Imports Xunit
 
 ''' <summary>
-''' BOOLEAN-OPTION 2.0 in the Share Manager (ticket 243, slice T-11c-b1): the 30 check boxes of the scheduled-operation editor
-''' (15) and of the folder parameters window (15) stand in <see cref="OptionRowHost"/> rows made by <see cref="OptionRows"/>
+''' BOOLEAN-OPTION 2.0 in the Share Manager: the 31 check boxes of the scheduled-operation editor
+''' (16) and of the folder parameters window (15) stand in <see cref="OptionRowHost"/> rows made by <see cref="OptionRows"/>
 ''' - the viewer's own row, linked: a drawn box of at least 20 px inside a 32 px hit target at the reading start, a caption
 ''' that toggles once, an explanation that never toggles, one accessible check box, and a row as tall as its content.
 ''' The real windows are built and shown on an STA thread, at 100 % and 175 % (the scale is EMULATED the way the other
@@ -65,12 +65,12 @@ Public Class ManagerOptionRowTests
 
     Private Shared Function ScheduledSubject() As Subject
         Dim fields As New List(Of KeyValuePair(Of String, Boolean)) From {
-            Pair("chkRecursive", True), Pair("chkDeleteOriginals", False),
+            Pair("chkRecursive", True), Pair("chkDeleteOriginals", False), Pair("chkBackupSeal", False),
             Pair("chkAllFiles", True), Pair("chkImages", False), Pair("chkAudio", False), Pair("chkVideo", False), Pair("chkDocuments", False),
             Pair("chkOlder", False), Pair("chkYounger", False), Pair("chkLarger", False), Pair("chkSmaller", False), Pair("chkHidden", False),
             Pair("chkEnabled", True), Pair("chkRetryMissed", True), Pair("chkBalloonOnError", False)}
         Dim names As New Dictionary(Of String, String)(StringComparer.Ordinal) From {
-            {"chkRecursive", "chkSchedRecursive"}, {"chkDeleteOriginals", "chkSchedDeleteOriginals"},
+            {"chkRecursive", "chkSchedRecursive"}, {"chkDeleteOriginals", "chkSchedDeleteOriginals"}, {"chkBackupSeal", "chkSchedBackupSeal"},
             {"chkAllFiles", "chkSchedAllFiles"}, {"chkImages", "chkSchedImages"}, {"chkAudio", "chkSchedAudio"},
             {"chkVideo", "chkSchedVideo"}, {"chkDocuments", "chkSchedDocuments"},
             {"chkOlder", "chkSchedOlder"}, {"chkYounger", "chkSchedYounger"}, {"chkLarger", "chkSchedLarger"},
@@ -79,7 +79,7 @@ Public Class ManagerOptionRowTests
         Return New Subject("Scheduled_Operation_Form",
                            Function(kit As Kit) New Scheduled_Operation_Form(kit.Engine, Nothing),
                            Sub(form As Form)
-                               ' An archive offers to delete its originals, so all 15 rows stand in the page; the conditions open.
+                               ' An archive offers to delete its originals; the backup-only option stays hidden.
                                Find(Of ComboBox)(form, "cmbSchedAction").SelectedIndex = CInt(ScheduledAction.Archive)
                                Find(Of Control)(form, "pnlSchedConditions").Visible = True
                            End Sub,
@@ -336,18 +336,18 @@ Public Class ManagerOptionRowTests
     ' --- the subjects are what they were -------------------------------------------------------------
 
     <Fact>
-    Public Sub The_two_windows_hold_thirty_check_boxes_and_every_one_stands_in_an_option_row()
+    Public Sub The_two_windows_hold_thirty_one_check_boxes_and_every_one_stands_in_an_option_row()
         InLanguage("en",
             Sub(kit As Kit)
                 Dim total As Integer = 0
                 For Each subject As Subject In Subjects()
                     Using shown As Shown = Open(subject, kit, 1.0F)
                         Dim keys As Dictionary(Of CheckBox, String) = KeysOf(shown.Form)
-                        Assert.Equal(15, subject.Fields.Count)
+                        Assert.Equal(If(subject.Window = "Scheduled_Operation_Form", 16, 15), subject.Fields.Count)
                         Assert.Equal(subject.Fields.Select(Function(f) f.Key).OrderBy(Function(k) k, StringComparer.Ordinal).ToArray(),
                                      keys.Values.OrderBy(Function(k) k, StringComparer.Ordinal).ToArray())
                         Dim everyCheck As List(Of CheckBox) = AllOf(shown.Form).OfType(Of CheckBox)().ToList()
-                        Assert.Equal(15, everyCheck.Count)
+                        Assert.Equal(subject.Fields.Count, everyCheck.Count)
                         For Each check As CheckBox In everyCheck
                             Assert.True(TypeOf check.Parent Is OptionRowHost, subject.Window & ": " & keys(check) & " is a native check box on " & check.Parent.GetType().Name)
                             Assert.True(SettingsCheckBox.IsAttached(check), subject.Window & ": " & keys(check) & " is not the drawn Settings box")
@@ -355,7 +355,7 @@ Public Class ManagerOptionRowTests
                         total += everyCheck.Count
                     End Using
                 Next
-                Assert.Equal(30, total)
+                Assert.Equal(31, total)
             End Sub)
     End Sub
 
@@ -522,6 +522,27 @@ Public Class ManagerOptionRowTests
             End Sub)
     End Sub
 
+    <Theory>
+    <InlineData("en")>
+    <InlineData("de")>
+    <InlineData("ru")>
+    <InlineData("ar")>
+    Public Sub The_backup_seal_option_fits_when_its_action_is_selected(code As String)
+        InLanguage(code,
+            Sub(kit As Kit)
+                For Each factor As Single In New Single() {1.0F, 1.75F}
+                    Using shown As Shown = Open(ScheduledSubject(), kit, factor)
+                        Find(Of ComboBox)(shown.Form, "cmbSchedAction").SelectedIndex = CInt(ScheduledAction.Backup)
+                        Application.DoEvents()
+                        Dim row As OptionRowHost = RowOf(CheckOf(shown.Form, "chkBackupSeal"))
+                        Assert.True(row.Visible, code & ": backup seal row is hidden")
+                        Assert.True(TextFits(row.Caption), code & ": backup seal caption is cut")
+                        Assert.True(row.Width > 0 AndAlso row.Height > 0, code & ": backup seal row has no size")
+                    End Using
+                Next
+            End Sub)
+    End Sub
+
     Private Shared Sub Audit(subject As Subject, form As Form, lbl As String, factor As Single, found As List(Of String))
         Dim keys As Dictionary(Of CheckBox, String) = KeysOf(form)
         Dim rows As List(Of OptionRowHost) = AllOf(form).OfType(Of OptionRowHost)().ToList()
@@ -531,6 +552,7 @@ Public Class ManagerOptionRowTests
             Dim check As CheckBox = row.Check
             Dim tag As String = lbl & " " & If(keys.ContainsKey(check), keys(check), Describe(check))
             If Not row.Visible Then
+                If tag.EndsWith(" chkBackupSeal", StringComparison.Ordinal) Then Continue For
                 found.Add(tag & ": the row is not visible")
                 Continue For
             End If
@@ -770,8 +792,8 @@ Public Class ManagerOptionRowTests
                             Dim check As CheckBox = TryCast(current, CheckBox)
                             If check IsNot Nothing AndAlso check.TabStop AndAlso check.Visible Then walked.Add(keys(check))
                         Next
-                        ' The windows' own order: the order the check boxes were authored in (every one is visible in this state).
-                        Assert.Equal(subject.Fields.Select(Function(f) f.Key).ToArray(), walked.ToArray())
+                        ' The order of the options visible for this action; backup-only controls have their own state.
+                        Assert.Equal(subject.Fields.Where(Function(f) CheckOf(form, f.Key).Visible).Select(Function(f) f.Key).ToArray(), walked.ToArray())
                         ' A row and its labels are never a tab stop of their own; only the box is.
                         For Each row As OptionRowHost In AllOf(form).OfType(Of OptionRowHost)()
                             Assert.False(row.TabStop)
@@ -1050,7 +1072,7 @@ Public Class ManagerOptionRowTests
     Public Sub Neither_window_adds_a_native_check_box_to_its_parent_every_one_goes_through_the_option_row()
         Dim problems As New List(Of String)()
         Dim expected As New Dictionary(Of String, Integer)(StringComparer.Ordinal) From {
-            {Path.Combine("Forms", "Scheduled_Operation_Form.vb"), 15}, {Path.Combine("Forms", "Share_Root_Params_Form.vb"), 8}}
+            {Path.Combine("Forms", "Scheduled_Operation_Form.vb"), 16}, {Path.Combine("Forms", "Share_Root_Params_Form.vb"), 8}}
         For Each pair As KeyValuePair(Of String, Integer) In expected
             Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource(pair.Key))
             Dim made As Integer = Regex.Matches(code, "\bNew CheckBox\b").Count

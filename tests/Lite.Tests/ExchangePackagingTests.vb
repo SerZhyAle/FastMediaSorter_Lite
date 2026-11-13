@@ -49,7 +49,9 @@ Public Class ExchangePackagingTests
             Assert.Contains("-IncludeExchange", text)
         Next
         ' The wildcard copies of bin\Release never carry the tree by luck, gate or no gate.
-        Assert.Contains("exchange\*", ReadText("tools", "Build-Installer.ps1"))
+        ' The standalone installer delegates the copy filter to the shared selection function.
+        Assert.Contains("Test-InstallerStageFile -RelativePath $relative", ReadText("tools", "Build-Installer.ps1"))
+        Assert.Contains("'exchange\*'", ReadText("tools", "lib", "InstallerPayloadSelection.ps1"))
         Assert.Contains("exchange\*", ReadText("tools", "Build-OfflineRelease.ps1"))
         Assert.Contains("exchange\*", ReadText(".github", "workflows", "release.yml"))
     End Sub
@@ -58,7 +60,11 @@ Public Class ExchangePackagingTests
     Public Sub TheServerViewerComponentNeverCarriesTheExchangeTree()
         ' The Server .iss installs viewer\* with the viewer component alone. A User stage built with -IncludeExchange holds
         ' exchange\, so without this exclusion ticking only "viewer" would write the exchange tree past its own component.
-        Assert.Matches("(?m)^\$excludeDirs\s*=\s*@\([^)]*'exchange'", ReadText("tools", "Stage-ServerViewerPayload.ps1"))
+        ' Since L0307 the exclusion is the component map: the exchange row claims the exchange\ tree, the viewer row takes
+        ' only what no other row claims, and the Server staging copies nothing but the viewer and its offline support.
+        Assert.Matches("""id"":\s*""exchange""[^}]*""stage"":\s*\[\s*""exchange""\s*\]", ReadText("tools", "installer-components.json"))
+        Assert.Contains("[string]$_.id -ne 'viewer'", ReadText("tools", "lib", "InstallerPayloadSelection.ps1"))
+        Assert.Contains("$capability.server.component -ne 'viewer' -and $root -ne [string]$map.serverSupportRoot", ReadText("tools", "Stage-ServerViewerPayload.ps1"))
     End Sub
 
     <Fact>

@@ -105,7 +105,6 @@ Friend NotInheritable Class ExchangeFirstRunActions
             End Using
         Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException OrElse TypeOf ex Is System.ComponentModel.Win32Exception
             ' No report means no link: the window still makes, copies, saves and shows the string.
-            AppFileLogger.LogException("Exchange: the report for the sign-in link", ex)
             Return New ExchangeProcess.InspectReport()
         End Try
     End Function

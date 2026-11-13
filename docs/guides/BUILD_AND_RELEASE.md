@@ -94,12 +94,31 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 **Второй инсталлятор - серверная редакция.**
 [publishing/installer/FastMediaSorterServer.iss](../../publishing/installer/FastMediaSorterServer.iss) пакует
 **отдельный продукт**: раздачу папок как службу Windows (`FastMediaSorterCompanionSFTP`), которая
-стартует с загрузкой и раздаёт без входа в систему. Вьюера в нём нет вообще - только Share Manager,
-Go-воркер и два повышающих helper-скрипта (~43 МБ против сотен). У него **свои** `AppId`, ARP-имя,
-папка установки, имя ассета и пакет winget - иначе `winget upgrade` перепутал бы две редакции.
-Собирается [tools/Build-ServerInstaller.ps1](../../tools/Build-ServerInstaller.ps1) (и внутри `build.ps1`),
-а на релизе - тем же `.iss` из [release.yml](../../.github/workflows/release.yml).
+стартует с загрузкой и раздаёт без входа в систему. Ведёт сервер (Share Manager, Go-воркер, FileDO и
+два повышающих helper-скрипта), а медиа- и файловый менеджер лежит в нём **неотмеченным** компонентом
+`viewer` с теми же оффлайн-пунктами под ним, что у пользовательского установщика: `viewer\codecs`
+(видео-кодеки VLC), `viewer\pdf` (PDFium) и `viewer\ocr` (модели OCR). Набор возможностей у двух
+установщиков общий, различаются только выбор по умолчанию, права и служба (L0307). У него **свои**
+`AppId`, ARP-имя, папка установки, имя ассета и пакет winget - иначе `winget upgrade` перепутал бы две
+редакции. Собирается [tools/Build-ServerInstaller.ps1](../../tools/Build-ServerInstaller.ps1) (и внутри
+`build.ps1`), а на релизе - тем же `.iss` из [release.yml](../../.github/workflows/release.yml).
 Полностью: [SERVER_EDITION_BUILD_AND_TEST.md](SERVER_EDITION_BUILD_AND_TEST.md).
+
+**Пара установщиков из одного стейджа (L0307).** Пользовательский стейдж одной версии кормит оба
+установщика: после сборки пользовательского `Build-Installer.ps1` / `Build-OfflineRelease.ps1` /
+`release.yml` пишут рядом со стейджем манифест `<стейдж>.payload.json` (версия, режим моделей OCR
+`none` / `fast` / `best`, состояние шлюза обмена, размер и SHA-256 каждого файла) и отказываются его писать,
+если стейдж не полон для выбранных опций (нет libvlc, PDFium, моделей, Share Manager, FileDO или версии
+exe не совпадают). Серверный стейдж выводится из него: `tools\Stage-ServerViewerPayload.ps1` кладёт
+файлы вьюера в `viewer\`, а оффлайн-поддержку (libvlc, PDFium, модели) - в `viewer-support\`; отсутствие
+манифеста, чужая версия, изменённый, удалённый или добавленный после записи файл останавливают сборку с
+понятным сообщением. Параметры обоих `.iss` берутся из манифеста: `/DNoExchange` (шлюз закрыт),
+`/DNoOcrModels` (`-SkipOcr`: пара собрана без моделей - явный выбор обоих установщиков, мастер тогда
+говорит, что модели скачаются при первом использовании OCR) и `/DOcrBest`. В `[Files]` нет
+`skipifsourcedoesntexist` у оффлайн-поддержки: отсутствующая нагрузка роняет компиляцию, а не даёт
+меньший, на вид полный установщик. Карта компонентов и путей - `tools\installer-components.json`; её
+держит `tests\Integration\InstallerComponentParity.ps1` (без реальной установки: установка, обновление и
+соседство - ручной прогон на отдельной машине).
 
 **Оффлайн-payload** ([tools/Prepare-OcrOfflinePayload.ps1](../../tools/Prepare-OcrOfflinePayload.ps1))
 по умолчанию **вырезает** 32-битные нативы (~100 МБ): x86-вьюер догрузит их сам при первом запуске.
@@ -256,6 +275,11 @@ The preflight has ten local steps in the order implemented by `tools/Release.ps1
 
 The ten-step PASS proves the automated preflight for the named version. Candidate scope, security
 disposition and real prior-install upgrade acceptance remain required under specifications 264-268.
+A dry run can inspect a dirty working tree with `-AllowDirty`, but `-Push` requires a clean tree and
+refuses a changed commit, branch or tree after preflight. The net48 build regenerates the tracked
+`src/My Project/VersionInfo.vb`, so commit its generated candidate-version stamp before `-Push`.
+The preflight also refuses a version whose stage or release artifact already exists; choose a fresh
+version to preserve the existing output.
 A full test PASS alone accepts neither an installer nor a device row. During readiness work without a
 GitHub operation, run the child checks directly: `Release.ps1` itself inspects Git state. Preserve the
 exchange packaging gate (`INCLUDE_EXCHANGE: 'false'`, no `-IncludeExchange`). Move `[Unreleased]` entries
@@ -272,7 +296,15 @@ on the Share Manager publish step from the repository secrets `FMS_DRIVE_CLIENT_
 a local packager (the MSIX build included) gets them only when the owner sets both variables in that shell. With
 either value missing the exe carries no metadata and the Drive page says the sign-in is not configured in this
 build. No file of the repository holds a value (`DriveClientDeliveryTests`); access and refresh tokens never
-leave the user's DPAPI file.
+leave the user's DPAPI file. The Google Cloud side (project, Drive API, consent screen with the one
+`drive.appdata` scope, the Desktop-app client) and the acceptance rows are specification L0306. A secret reference in the workflow
+proves nothing about the exe it produced, so judge the artifact itself, printing no value:
+`pwsh -NoProfile -File tools\Test-DriveClientArtifact.ps1 -Path <exe, folder, .zip or .msix>[,..]` (`-Expect
+Unconfigured` for a build without the client, `-CompareEnvironment` to require the pair of the owner's shell;
+an Inno setup is compressed - install it and name the installed folder). For a local diagnostic run without a
+configured build, `pwsh -NoProfile -File tools\Start-ShareManagerWithDriveClient.ps1` asks for both values
+without echo and starts one fresh Share Manager with them in its own environment only; it refuses while
+another Share Manager runs, the tray one included, because a new launch would hand over to it.
 
 ### Чек-лист релиза (что нельзя забыть)
 

@@ -47,7 +47,15 @@ param(
     [switch] $NoBuild,
     [switch] $SelfSign,
     [switch] $IncludeBestOcr,
-    [switch] $SkipOcrPayload
+    [switch] $SkipOcrPayload,
+    # Specification L0308 section 2.1: the Store package's Share Manager carries the Google Drive client pair.
+    # Either the client file Google Cloud downloads for a Desktop client (its "installed" section), or the
+    # owner's shell variables FMS_DRIVE_CLIENT_ID and FMS_DRIVE_CLIENT_SECRET. The values reach the Companion
+    # publish only and are never printed; the packed archive is checked by tools\Test-DriveClientArtifact.ps1.
+    [string] $DriveClientJson      = '',
+    # A development package without Google Drive sign-in. Never for a Store upload: such a package says
+    # "not configured" to every Store user.
+    [switch] $AllowUnconfiguredDrive
 )
 $ErrorActionPreference = 'Stop'
 
@@ -224,10 +232,39 @@ foreach ($extra in 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt') {
 $companionProj = Join-Path $RepoRoot 'src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj'
 $companionPub  = Join-Path $MsixDir 'companion-publish-tmp'
 Write-Host 'Publishing Companion (Share Manager, net10 self-contained)...'
-& dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo @versionArgs
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed (exit $LASTEXITCODE)." }
+# The Google Drive pair (L0308 section 2.1): MSBuild reads the environment variables FmsDriveClientId and
+# FmsDriveClientSecret as the properties that emit the exe's AssemblyMetadata. They are set for this publish
+# only and removed in finally, so nothing later in the script (or the shell) holds them.
+$driveId = ''; $driveSecret = ''
+if ($DriveClientJson) {
+    if (-not (Test-Path -LiteralPath $DriveClientJson)) { throw "The Google Drive client file named by -DriveClientJson does not exist. Name the client JSON downloaded from Google Cloud for the Desktop client." }
+    $installed = (Get-Content -LiteralPath $DriveClientJson -Raw -Encoding utf8 | ConvertFrom-Json).installed
+    if ($null -eq $installed) { throw "The Google Drive client file has no 'installed' section: it is not the file of a Desktop client. Download the JSON of the Desktop client from Google Cloud > Clients." }
+    $driveId = [string]$installed.client_id; $driveSecret = [string]$installed.client_secret
+} elseif ($env:FMS_DRIVE_CLIENT_ID -and $env:FMS_DRIVE_CLIENT_SECRET) {
+    $driveId = $env:FMS_DRIVE_CLIENT_ID; $driveSecret = $env:FMS_DRIVE_CLIENT_SECRET
+}
+if ((-not $driveId -or -not $driveSecret) -and -not $AllowUnconfiguredDrive) {
+    throw "No Google Drive client pair for the Share Manager: pass -DriveClientJson <the Desktop client JSON from Google Cloud>, or set both FMS_DRIVE_CLIENT_ID and FMS_DRIVE_CLIENT_SECRET in this shell. A development package without Google Drive takes -AllowUnconfiguredDrive; never upload one to the Store."
+}
+$priorDriveId = $env:FmsDriveClientId; $priorDriveSecret = $env:FmsDriveClientSecret
+try {
+    if ($driveId -and $driveSecret) { $env:FmsDriveClientId = $driveId; $env:FmsDriveClientSecret = $driveSecret }
+    else { Remove-Item Env:FmsDriveClientId, Env:FmsDriveClientSecret -ErrorAction SilentlyContinue }
+    & dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo @versionArgs
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed (exit $LASTEXITCODE)." }
+} finally {
+    # the shell gets back exactly what it had (usually nothing)
+    $env:FmsDriveClientId = $priorDriveId; $env:FmsDriveClientSecret = $priorDriveSecret
+    $driveId = $null; $driveSecret = $null; $priorDriveId = $null; $priorDriveSecret = $null
+}
 $companionExe = Join-Path $companionPub 'FastMediaSorterCompanion.exe'
 if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }
+$driveExpect = if ($AllowUnconfiguredDrive) { $null } else { 'Configured' }
+if ($driveExpect) {
+    & pwsh -NoProfile -File (Join-Path $RepoRoot 'tools\Test-DriveClientArtifact.ps1') -Path $companionExe -Expect Configured
+    if ($LASTEXITCODE -ne 0) { throw "The published Share Manager carries no usable Google Drive client (the check's lines above say why). Check the client file or the two FMS_DRIVE_CLIENT_* variables and build again." }
+}
 Copy-Item $companionExe $Stage -Force
 Remove-Item $companionPub -Recurse -Force
 
@@ -324,6 +361,11 @@ if ($LASTEXITCODE -ne 0) { $packageReadBack = $false }
 & (Join-Path $RepoRoot 'tools\Test-WindowsStoreConformance.ps1') -MsixPath $MsixPath -ExpectedVersion $MsixVersion `
     -ExpectedIdentityName $IdentityName -ExpectedPublisher $Publisher -ExpectedPublisherDisplayName $PublisherDisplayName
 if ($LASTEXITCODE -ne 0) { $packageReadBack = $false }
+if ($driveExpect) {
+    # L0308 section 2.1: the Share Manager inside the PACKED archive carries the Google Drive pair.
+    & pwsh -NoProfile -File (Join-Path $RepoRoot 'tools\Test-DriveClientArtifact.ps1') -Path $MsixPath -Expect Configured
+    if ($LASTEXITCODE -ne 0) { $packageReadBack = $false }
+}
 if (-not $packageReadBack) {
     Remove-Item -LiteralPath $MsixPath -Force -ErrorAction SilentlyContinue
     throw "The packed MSIX does not read back as the package this build meant to make; it was deleted and nothing is offered."

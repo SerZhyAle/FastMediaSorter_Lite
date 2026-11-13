@@ -186,6 +186,37 @@ Public Class ScheduledUiTests
     End Sub
 
     <Fact>
+    Public Sub Both_schedule_hosts_fit_the_option_and_the_complete_management_panel()
+        ExchangeTestSupport.OnUi(Sub()
+                                     ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
+                                     Using hive As New ScratchHive()
+                                         Using settings As New Share_Settings_Form()
+                                             settings.FocusScheduledPage()
+                                             settings.Show()
+                                             Application.DoEvents()
+                                             Dim panel As Scheduled_Manager_Panel = Find(Of Scheduled_Manager_Panel)(settings, "managerSchedPanel")
+                                             Dim root As Control = Find(Of Control)(panel, "schedPanelRoot")
+                                             Dim row As OptionRowHost = OptionRows.RowOf(Find(Of CheckBox)(panel, "managerSchedFeature"))
+                                             Assert.True(panel.Width > 300, "The settings panel must fill the page width.")
+                                             Assert.True(root.Bottom <= panel.ClientSize.Height, "The settings panel must contain all its rows.")
+                                             Assert.True(row.Caption.Bottom <= row.Height AndAlso row.Explanation.Bottom <= row.Height,
+                                                         "The settings option text must fit its row.")
+                                         End Using
+                                         Using window As Scheduled_Manager_Form = Scheduled_Manager_Form.OpenScheduledManager("", Nothing)
+                                             Application.DoEvents()
+                                             Dim row As OptionRowHost = OptionRows.RowOf(Find(Of CheckBox)(window, "managerSchedFeature"))
+                                             Assert.True(row.Caption.Height > 0 AndAlso row.Explanation.Height > 0)
+                                             Assert.True(row.Caption.Bottom <= row.Height AndAlso row.Explanation.Bottom <= row.Height,
+                                                         "The standalone option text must fit its row.")
+                                             Dim root As Control = Find(Of Control)(window, "schedPanelRoot")
+                                             Assert.True(DirectCast(root.Parent, Scheduled_Manager_Panel).AutoScroll,
+                                                         "The standalone panel must scroll when its content does not fit.")
+                                         End Using
+                                     End Using
+                                 End Sub)
+    End Sub
+
+    <Fact>
     Public Sub The_page_is_in_every_share_manager_window_with_its_statement_and_commands()
         ExchangeTestSupport.OnUi(Sub()
                                      ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset

@@ -162,10 +162,8 @@ Public Class ExchangeForwarderTests
         opener.Behaviour = Function(n) Task.FromResult(ExchangeOpenResult.Failed(ExchangeOpenOutcome.Network))
         Using fwd As New ExchangeForwarder(opener)
             fwd.Start()
-            Dim endpoints As IPEndPoint() = Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners()
-            Dim mine As IPEndPoint = Array.Find(endpoints, Function(e) e.Port = fwd.Port)
-            Assert.NotNull(mine)
-            Assert.True(IPAddress.IsLoopback(mine.Address), mine.Address.ToString())
+            Assert.True(fwd.Port > 0)
+            Assert.Equal(IPAddress.Loopback, fwd.BoundAddress)
         End Using
     End Sub
 

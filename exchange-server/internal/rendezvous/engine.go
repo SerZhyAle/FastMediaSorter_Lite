@@ -73,6 +73,9 @@ type Engine struct {
 	cast    *cast.Table
 	book    *portBook
 	closing chan struct{}
+	// sweepMu is held for a whole Sweep, so Close returns only after a sweep in flight has finished
+	// writing, and no sweep starts writing after Close.
+	sweepMu sync.Mutex
 	// clip is the clipboard slot of every account (ticket 229): memory only, one value plus at
 	// most one upload in flight per account.
 	clip *clipboard.Table
@@ -306,6 +309,14 @@ func (e *Engine) dropCtl(cs *ControlStream) {
 // and the loop that was reading it does the rest), forgets expired tombstones and pairing codes, and
 // writes what is due to disk.
 func (e *Engine) Sweep(now time.Time) {
+	e.sweepMu.Lock()
+	defer e.sweepMu.Unlock()
+	e.mu.Lock()
+	closed := e.closed
+	e.mu.Unlock()
+	if closed {
+		return // Close has written what was in memory; nothing writes after it
+	}
 	e.expireCasts()
 	var dead []*ControlStream
 	e.mu.Lock()
@@ -338,6 +349,9 @@ func (e *Engine) Close() {
 	e.closed = true
 	close(e.closing)
 	e.mu.Unlock()
+	// a sweep already under way finishes its writes first; a later one sees closed and does nothing
+	e.sweepMu.Lock()
+	e.sweepMu.Unlock() //nolint:staticcheck // an empty critical section: waiting is the point
 	if e.cfg.Relay != nil {
 		e.cfg.Relay.Close()
 	}

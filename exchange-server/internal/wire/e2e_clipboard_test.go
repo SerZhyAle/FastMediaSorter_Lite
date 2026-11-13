@@ -112,6 +112,7 @@ func TestAnyBoxIsDeliveredAsItCame(t *testing.T) {
 		"raw utf-8":             `{"s":"é 日本語 😀"}`,
 		"html characters":       `{"s":"<b>&amp;</b>"}`,
 		"line separators":       "{\"s\":\"a b c\"}",
+		"escaped separators":    `{"s":"a\u2028b\u2029c"}`,
 		"numbers kept as typed": `{"big":18446744073709551616,"f":1.0,"e":1E2,"neg":-0,"z":0.10}`,
 		"nested":                `{"keys":[{"to":"a"},{"to":"b"}],"x":{"y":{"z":[]}},"t":true,"n":null}`,
 	}

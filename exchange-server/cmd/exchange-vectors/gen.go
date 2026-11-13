@@ -139,6 +139,24 @@ func recordNotes() []string {
 }
 
 // generate runs every scenario and renders the files. The returned map is name -> bytes.
+func generateSettingsTranscript() (data []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if f, ok := r.(genFailure); ok {
+				err = f
+				return
+			}
+			panic(r)
+		}
+	}()
+	data, err = render(scenarioSettingsStandard())
+	if err == nil {
+		err = closeErr
+	}
+	return data, err
+}
+
+// generate renders the adopted 1.1 corpus without changing its transcripts.
 func generate(commit string) (files map[string][]byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -154,7 +172,7 @@ func generate(commit string) (files map[string][]byte, err error) {
 	for _, sc := range []func() *transcript{scenarioEnrollAndHello, scenarioPairing, scenarioRefusals, scenarioDirectory,
 		scenarioTunnels, scenarioRelay, scenarioCast, scenarioRegistration, scenarioPasswordAndSignOut, scenarioPace,
 		scenarioClipboard, scenarioSealedDevices, scenarioSealedFolder, scenarioSealedGrant, scenarioSealedClipboard,
-		scenarioAdminNative, scenarioAdminWebSocket, scenarioSettingsStandard} {
+		scenarioAdminNative, scenarioAdminWebSocket} {
 		transcripts = append(transcripts, sc())
 	}
 	frames := framesFile{

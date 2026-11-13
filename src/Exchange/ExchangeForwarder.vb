@@ -86,6 +86,15 @@ Friend NotInheritable Class ExchangeForwarder
         End Get
     End Property
 
+    ''' <summary>The actual bound address, or Nothing before the listener starts.</summary>
+    Friend ReadOnly Property BoundAddress As IPAddress
+        Get
+            Dim l As TcpListener = _listener
+            If l Is Nothing Then Return Nothing
+            Return DirectCast(l.LocalEndpoint, IPEndPoint).Address
+        End Get
+    End Property
+
     ''' <summary>How many `connect`s were started: one per accepted connection.</summary>
     Public ReadOnly Property ConnectsStarted As Integer
         Get

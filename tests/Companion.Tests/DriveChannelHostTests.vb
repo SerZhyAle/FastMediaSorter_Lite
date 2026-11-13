@@ -557,6 +557,10 @@ Public Class DriveChannelHostTests
             Assert.Equal(DriveChannelState.SignedIn, host.State) ' stored, not yet started: reading it asks nobody
             Assert.Equal(0, rig.Drive.RequestCount)
             Assert.Equal(0, rig.Created)
+            ' L0308 section 2.5: a token file is not a working connection - the page says it is being checked
+            Assert.False(host.HasReachedDrive)
+            Assert.Equal(DriveChannelText.StateDetail(DriveChannelState.SignedIn, ExchangeDriveFailure.None, reached:=False),
+                         DriveChannelText.StateDetail(host.State, host.LastFailure, host.HasReachedDrive))
 
             host.StartIfSignedIn()
             host.StartIfSignedIn() ' a second start changes nothing
@@ -565,6 +569,9 @@ Public Class DriveChannelHostTests
             Await Until(Function() rig.Gate.Asked().Count = 1)
             Assert.Equal(ExchangeDriveServiceState.Running, host.Service.State)
             Assert.Equal(DriveChannelState.SignedIn, host.State)
+            Assert.True(host.HasReachedDrive) ' the first round answered
+            Assert.Equal(DriveChannelText.StateDetail(DriveChannelState.SignedIn, ExchangeDriveFailure.None),
+                         DriveChannelText.StateDetail(host.State, host.LastFailure, host.HasReachedDrive))
 
             host.SetActive(True) ' a screen waits: the next round is the short interval
             Await Until(Function() rig.Gate.Asked().Count = 2)
@@ -677,8 +684,10 @@ Public Class DriveChannelHostTests
         For Each state As DriveChannelState In [Enum].GetValues(Of DriveChannelState)()
             AssertPlain(DriveChannelText.StateLine(state))
             For Each failure As ExchangeDriveFailure In [Enum].GetValues(Of ExchangeDriveFailure)()
-                Dim detail As String = DriveChannelText.StateDetail(state, failure)
-                If detail.Length > 0 Then AssertPlain(detail)
+                For Each reached As Boolean In New Boolean() {False, True}
+                    Dim detail As String = DriveChannelText.StateDetail(state, failure, reached)
+                    If detail.Length > 0 Then AssertPlain(detail)
+                Next
             Next
         Next
         For Each outcome As ExchangeDriveSignInOutcome In [Enum].GetValues(Of ExchangeDriveSignInOutcome)()
@@ -688,6 +697,8 @@ Public Class DriveChannelHostTests
             Next
         Next
         AssertPlain(DriveChannelText.ScopeNote())
+        AssertPlain(DriveChannelText.HelpLink())
+        AssertPlain(DriveChannelText.AccessNote())
         AssertPlain(DriveChannelText.SignOutQuestion())
         Assert.Equal("", DriveChannelText.DeviceLine("Office PC", ""))
         AssertPlain(DriveChannelText.DeviceLine("Office PC", IdFresh))

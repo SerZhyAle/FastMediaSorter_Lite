@@ -53,6 +53,15 @@ func TestRegeneratingGivesTheSameBytes(t *testing.T) {
 	}
 }
 
+// The settings scenario belongs to DEVICE-EXCHANGE 1.12, not the adopted 1.1
+// frames-v2 corpus. Run it independently so adding it cannot rewrite old vectors.
+func TestSettingsStandardScenario(t *testing.T) {
+	tr := scenarioSettingsStandard()
+	if tr == nil || tr.Name != "settings-standard" || len(tr.Steps) == 0 {
+		t.Fatal("the settings-standard scenario produced no transcript")
+	}
+}
+
 func TestBothAdministrationOpeningsCoverTheContract(t *testing.T) {
 	var corpus framesFile
 	if err := json.Unmarshal(generated(t)[framesFileName], &corpus); err != nil {
@@ -212,6 +221,15 @@ func TestTheFramesCoverEveryEnvelopeEveryReasonAndEveryOpening(t *testing.T) {
 	if err := json.Unmarshal(generated(t)[framesFileName], &doc); err != nil {
 		t.Fatal(err)
 	}
+	settings, err := generateSettingsTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var extra framesDoc
+	if err := json.Unmarshal(append(append([]byte(`{"transcripts":[`), settings...), []byte(`]}`)...), &extra); err != nil {
+		t.Fatal(err)
+	}
+	doc.Transcripts = append(doc.Transcripts, extra.Transcripts...)
 	types, reasons := map[string]bool{}, map[string]bool{}
 	var plain, tlsStreams int
 	statuses := map[int]bool{}

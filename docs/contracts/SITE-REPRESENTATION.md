@@ -58,8 +58,8 @@ Specification 147 (`done/`), specification 155 (rules 1 to 4) and the catalog re
 ## State on 2026-11-10 (specification L0297)
 
 The positioning has four components (owner decision 2026-11-10): the media and file manager, local sharing,
-scheduled file operations (installed together with the Share Manager, one payload, no service) and the Media
-Exchange Server, now fourth and still gated. The rules of the contract are unchanged - one positioning source, the
+scheduled file operations (installed together with the Share Manager, one payload, no service) and the
+Media Exchange Server, now fourth and still gated. The rules of the contract are unchanged - one positioning source, the
 components in its order on every declared surface, the editions declared once - so no catalog amendment is needed;
 only this product's data (`tools/site-facts.json`, POSITIONING.md) and its surfaces changed, and the landing has four
 doors (the exchange door is door 4).

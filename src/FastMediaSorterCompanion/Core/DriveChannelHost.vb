@@ -155,6 +155,18 @@ Friend NotInheritable Class DriveChannelHost
         End Get
     End Property
 
+    ''' <summary>True once a Drive round has answered for the running service (specification L0308 section 2.5). A stored sign-in
+    ''' alone proves nothing: until a round answers, the page says the connection is being checked, not that it works.</summary>
+    Public ReadOnly Property HasReachedDrive As Boolean
+        Get
+            Dim service As ExchangeDriveService
+            SyncLock _lock
+                service = _service
+            End SyncLock
+            Return service IsNot Nothing AndAlso service.Latest IsNot Nothing
+        End Get
+    End Property
+
     ''' <summary>How the last sign-in attempt of this session ended, or Nothing before any.</summary>
     Public ReadOnly Property LastOutcome As ExchangeDriveSignInOutcome?
         Get

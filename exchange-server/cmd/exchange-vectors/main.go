@@ -4,6 +4,7 @@
 //
 //	go run ./cmd/exchange-vectors -out testdata/vectors          write the files
 //	go run ./cmd/exchange-vectors -check -out testdata/vectors   regenerate and compare with what is there
+//	go run ./cmd/exchange-vectors -settings                       print the separate 1.12 settings transcript
 //
 // The generator is the only author of these files: a hand edit is detected by the hash in PROVENANCE.txt,
 // and regenerating is the only way to change them. They are developer artifacts and do not ship.
@@ -29,8 +30,22 @@ func run(args []string, stdout, stderr io.Writer) int {
 	out := fs.String("out", filepath.Join("testdata", "vectors"), "the directory the vectors are written to, or checked in")
 	commit := fs.String("commit", "", "the commit the generator ran at, recorded in PROVENANCE.txt (git rev-parse HEAD)")
 	check := fs.Bool("check", false, "regenerate and compare with the files in -out instead of writing")
+	settings := fs.Bool("settings", false, "print the settings-standard transcript without changing the adopted 1.1 corpus")
 	if err := fs.Parse(args); err != nil {
 		return 2
+	}
+	if *settings {
+		data, err := generateSettingsTranscript()
+		if err != nil {
+			fmt.Fprintf(stderr, "settings transcript: %v\n", err)
+			return 2
+		}
+		_, err = stdout.Write(data)
+		if err != nil {
+			fmt.Fprintf(stderr, "settings transcript: %v\n", err)
+			return 2
+		}
+		return 0
 	}
 	files, err := generate(*commit)
 	if err == nil {

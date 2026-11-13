@@ -31,6 +31,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _btnDrvSignIn As Button
     Private _btnDrvCancel As Button
     Private _btnDrvSignOut As Button
+    Private _lnkDrvHelp As LinkLabel
+    Private _drvAccess As Label
     Private _drvResult As Label
     Private _drvScope As Label
     Private _drvPrivacy As Label
@@ -91,7 +93,15 @@ Partial Public NotInheritable Class Share_Settings_Form
         _drvButtons.Controls.Add(_btnDrvSignIn)
         _drvButtons.Controls.Add(_btnDrvCancel)
         _drvButtons.Controls.Add(_btnDrvSignOut)
+        ' Specification L0308 section 3.1: the guide sits beside "Sign in..", is reached with Tab and opened with Enter or Space,
+        ' and stays in every state - a person who cannot sign in is the one who needs it most.
+        _lnkDrvHelp = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2), .Name = "managerDriveHelpLink", .TabStop = True,
+            .Text = DriveChannelText.HelpLink(), .AccessibleName = DriveChannelText.HelpLink(), .AccessibleRole = AccessibleRole.Link}
+        AddHandler _lnkDrvHelp.LinkClicked, Sub() OpenDriveHelp()
+        _drvButtons.Controls.Add(_lnkDrvHelp)
         sec.AddBodyRow(_drvButtons)
+        _drvAccess = DrvNote(DriveChannelText.AccessNote())
+        sec.AddBodyRow(_drvAccess)
 
         _drvResult = DrvNote("")
         _drvResult.ForeColor = CollapsibleSection.AttentionColor
@@ -101,6 +111,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' the second group: what the channel holds (item CS)
         _drvQueueNote = DrvNote(DriveChannelText.QueueNote())
         _drvQueueState = DrvNote("")
+        ' A short status must not shrink to the exact measured glyph width: at large scales
+        ' GDI can wrap the last word into a second line after the label has chosen one-line height.
+        _drvQueueState.MinimumSize = New Size(200, 0)
         _lvDrvQueue = New ListView With {.View = View.Details, .FullRowSelect = True, .MultiSelect = False, .HideSelection = False,
             .HeaderStyle = ColumnHeaderStyle.Nonclickable, .Width = DriveContentWidth, .Height = 100, .Margin = New Padding(0, 2, 0, 4), .Visible = False}
         _lvDrvQueue.Columns.Add(DriveChannelText.QueueColumnState())
@@ -190,7 +203,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim failure As ExchangeDriveFailure = host.LastFailure
 
         _drvState.Text = DriveChannelText.StateLine(state)
-        Dim detail As String = DriveChannelText.StateDetail(state, failure)
+        Dim detail As String = DriveChannelText.StateDetail(state, failure, host.HasReachedDrive)
         _drvDetail.Text = detail
         _drvDetail.Visible = detail.Length > 0
 
@@ -201,7 +214,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnDrvSignIn.Enabled = host.IsConfigured
         _btnDrvCancel.Visible = waiting
         _btnDrvSignOut.Visible = signedIn
-        _drvButtons.Visible = canSignIn OrElse waiting OrElse signedIn
+        ' the row always shows: it carries the help entry, which no state hides (L0308 section 3.1)
+        _drvButtons.Visible = True
+        _lnkDrvHelp.Text = DriveChannelText.HelpLink()
+        _drvAccess.Text = DriveChannelText.AccessNote()
 
         Dim result As String = DriveResultText(host, state)
         _drvResult.Text = result
@@ -336,6 +352,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         ExchangeDeviceHost.DriveSignInChanged()
         If Not IsDisposed Then ApplyDriveState()
     End Sub
+
+    ''' <summary>The six-step guide: the Manager settings help page at its Google Drive section, in the interface language.</summary>
+    Friend Shared Sub OpenDriveHelp()
+        ContextHelp.Open(DriveHelpId, Localization.CurrentCode)
+    End Sub
+
+    ''' <summary>The help-map page id of this page (help-map.json, anchor "drive").</summary>
+    Friend Const DriveHelpId As String = "share-settings.drive"
 
     Private Sub OnDriveCancel()
         DriveChannelHosts.Current().CancelSignIn()

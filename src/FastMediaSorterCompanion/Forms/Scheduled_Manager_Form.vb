@@ -43,7 +43,7 @@ Friend NotInheritable Class Scheduled_Manager_Form
         MinimumSize = New Size(560, 380)
         ClientSize = New Size(760, 560)
 
-        _panel = New Scheduled_Manager_Panel() With {.Dock = DockStyle.Fill}
+        _panel = New Scheduled_Manager_Panel() With {.Dock = DockStyle.Fill, .AutoScroll = True}
         AddHandler _panel.AutostartLinkRequested, Sub() RaiseAutostartLink()
         Controls.Add(_panel)
 
@@ -87,6 +87,7 @@ Friend NotInheritable Class Scheduled_Manager_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         RestoreSavedBounds()
+        OptionRows.ArrangeAll(Me)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

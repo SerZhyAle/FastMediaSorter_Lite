@@ -10,6 +10,12 @@
   #error SourceDir must be defined (path to the staged build output)
 #endif
 
+; The wording of the offline support payloads (VLC codecs, PDFium, OCR models), shared with the
+; Server setup so the two describe the same payload the same way (L0307). The packagers pass
+; /DNoOcrModels when the PAIR was built without OCR models and /DOcrBest when the best models are
+; bundled too (tools\lib\InstallerPayloadSelection.ps1 derives both from the stage's payload manifest).
+#include "OfflineSupportText.isi"
+
 ; Display name shown throughout the wizard screens, Start-menu shortcuts and the
 ; setup.exe file properties. The channel/identity name below is kept separate on
 ; purpose (docs/guides/PRODUCT_NAMING.md owns the names and section 2 the frozen anchors).
@@ -166,9 +172,9 @@ ukrainian.ShareDesktopIcon=Створити ярлик Менеджера спі
 ; Prepend an honest one-liner to the component-selection page: the viewer is light,
 ; the weight is optional offline payload the user can trim.
 [Messages]
-english.SelectComponentsLabel2=This is one program with a few roles. The media and file manager is required. The local sharing service and scheduled file operations (two separate items), FileDO disks, video codecs and OCR models are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need (codecs and models can download later on demand). Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Обязательная часть - медиа- и файловый менеджер. Локальная служба раздачи и файловые операции по расписанию (два отдельных пункта), диски FileDO, видео-кодеки и модели OCR необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное (кодеки и модели при необходимости скачаются позже). Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Обов'язкова частина - медіа- та файловий менеджер. Локальна служба роздачі та файлові операції за розкладом (два окремі пункти), диски FileDO, відео-кодеки та моделі OCR необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне (кодеки та моделі за потреби завантажаться пізніше). Натисніть "Далі", коли будете готові продовжити.
+english.SelectComponentsLabel2=This is one program with a few roles. The media and file manager is required. The local sharing service and scheduled file operations (two separate items), FileDO disks, {#SupportListEn} are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need ({#SupportLaterEn}).{#SupportNoteEn} Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Обязательная часть - медиа- и файловый менеджер. Локальная служба раздачи и файловые операции по расписанию (два отдельных пункта), диски FileDO, {#SupportListRu} необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное ({#SupportLaterRu}).{#SupportNoteRu} Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Обов'язкова частина - медіа- та файловий менеджер. Локальна служба роздачі та файлові операції за розкладом (два окремі пункти), диски FileDO, {#SupportListUk} необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне ({#SupportLaterUk}).{#SupportNoteUk} Натисніть "Далі", коли будете готові продовжити.
 
 ; Explain the admin choice at the exact spot it is made (the built-in "Select Setup
 ; Install Mode" screen shown by PrivilegesRequiredOverridesAllowed=dialog), so the user
@@ -179,12 +185,12 @@ ukrainian.SelectComponentsLabel2=Це одна програма з кілько�
 ; Firewall rule. %1 = application name, %n = line break. Text1 is shown when "all users"
 ; is the default and Text2 when "you only" is (our default is lowest -> Text2), so both
 ; carry the same explanation.
-english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Folder sharing can be switched on in either mode - Windows asks for approval once for its firewall rule. The real difference is only where the program lands and whether the other accounts on this PC see it.
-english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Folder sharing can be switched on in either mode - Windows asks for approval once for its firewall rule. The real difference is only where the program lands and whether the other accounts on this PC see it.
-russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Раздачу папок можно включить в любом из них - Windows один раз попросит подтверждение для правила брандмауэра. Разница только в том, куда попадёт программа и увидят ли её другие учётные записи этого ПК.
-russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Раздачу папок можно включить в любом из них - Windows один раз попросит подтверждение для правила брандмауэра. Разница только в том, куда попадёт программа и увидят ли её другие учётные записи этого ПК.
-ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
-ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
+english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nBoth modes install the same features, including the Android folder-sharing companion, {#SupportOfflineEn}. Folder sharing can be switched on in either mode - Windows asks for approval once for its firewall rule. The real difference is only where the program lands and whether the other accounts on this PC see it.
+english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nBoth modes install the same features, including the Android folder-sharing companion, {#SupportOfflineEn}. Folder sharing can be switched on in either mode - Windows asks for approval once for its firewall rule. The real difference is only where the program lands and whether the other accounts on this PC see it.
+russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nОба режима ставят одинаковый набор возможностей, включая компаньон для раздачи папок на Android, {#SupportOfflineRu}. Раздачу папок можно включить в любом из них - Windows один раз попросит подтверждение для правила брандмауэра. Разница только в том, куда попадёт программа и увидят ли её другие учётные записи этого ПК.
+russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nОба режима ставят одинаковый набор возможностей, включая компаньон для раздачи папок на Android, {#SupportOfflineRu}. Раздачу папок можно включить в любом из них - Windows один раз попросит подтверждение для правила брандмауэра. Разница только в том, куда попадёт программа и увидят ли её другие учётные записи этого ПК.
+ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з компаньйоном для роздачі тек на Android, {#SupportOfflineUk}. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
+ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з компаньйоном для роздачі тек на Android, {#SupportOfflineUk}. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
 
 [Tasks]
 ; Only offered with the share component: here the viewer is the product and the Share
@@ -207,7 +213,13 @@ Name: "custom";  Description: "{cm:TypeCustom}"; Flags: iscustom
 Name: "core";   Description: "{cm:CompCore}";   Types: full compact custom; Flags: fixed
 Name: "codecs"; Description: "{cm:CompCodecs}"; Types: full
 Name: "pdf"; Description: "{cm:CompPdf}"; Types: full; MinVersion: 10.0.14393
+#ifndef NoOcrModels
+; The OCR models are an explicit choice of the PAIR (L0307): the packagers pass /DNoOcrModels when both
+; setups were built without them (Build-Installer.ps1 -SkipOcr), the item then does not exist and the
+; wizard text says the models download on first use. A build that carries models never lists them
+; without the files: the [Files] lines below have no skipifsourcedoesntexist.
 Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
+#endif
 ; Share is offered ONLY where it can actually run. The Share Manager companion is
 ; .NET 10 x64, so on Windows 7/8.1 - which the setup-wide MinVersion=6.1 still lets
 ; Setup run on - it cannot start at all, and installing it there would put a button in
@@ -276,15 +288,24 @@ Source: "{#SourceDir}\pdfium.dll"; DestDir: "{app}"; Flags: ignoreversion; Compo
 ; which to carry lives in ONE place, Prepare-OcrOfflinePayload.ps1 (-KeepX86). By
 ; default it trims win-x86, so this x64 package ships win-x64 only and the x86
 ; viewer downloads its 32-bit codecs on first use.
-Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs
-; OCR/translation language models (fast + best). Absent = packs download on first
-; OCR use instead of shipping in the installer.
-Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
-Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
+; No skipifsourcedoesntexist (L0307): a setup that lists the item carries it, so a stage without
+; libvlc\ fails the compile instead of producing a smaller, apparently complete installer.
+Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: codecs
+#ifndef NoOcrModels
+; OCR/translation language models: the fast set always, the best set when the pair was built with
+; /DOcrBest. Both are required by the compile (no skipifsourcedoesntexist). Without models
+; (/DNoOcrModels) the packs download on first OCR use instead of shipping in the installer.
+Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: ocr
+#ifdef OcrBest
+Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: ocr
+#endif
+#endif
 ; Android Folder Share - the self-contained .NET companion app + its SFTP worker.
 ; The companion carries its own .NET runtime, which is the bulk of this component.
-Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share scheduled
-Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share scheduled
+; No skipifsourcedoesntexist (L0307): the packagers stop on a stage without the Share Manager, and a
+; setup that lists the item carries it.
+Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: share scheduled
+Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: share scheduled
 Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: share\filedo
 #ifndef NoExchange
 ; The Media Exchange Server tree: fms-exchange-server.exe, its .sha256, the firewall opt-in helper

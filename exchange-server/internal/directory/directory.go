@@ -638,6 +638,10 @@ func (d *Dir) Flush() error {
 	d.mu.Lock()
 	if !d.resDirty && !d.revDirty {
 		d.mu.Unlock()
+		// A write that took its snapshot before this call may still be on its way (its temporary file
+		// not yet renamed): a clean stop returns only after it has landed.
+		d.persistMu.Lock()
+		d.persistMu.Unlock() //nolint:staticcheck // an empty critical section: waiting is the point
 		return nil
 	}
 	return d.writeLocked(d.now())

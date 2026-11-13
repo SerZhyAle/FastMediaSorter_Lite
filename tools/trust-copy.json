@@ -82,7 +82,7 @@
         "p": "Ничего не сломано, и предупреждение - не ошибка. SmartScreen проверяет у файла две вещи: подписан ли он сертификатом, который Windows знает, и достаточно ли людей уже его запускали.",
         "items": [
           "Не подписан. Сертификат для подписи кода стоит несколько сотен долларов в год. Программа бесплатна и ничего не зарабатывает, поэтому такой сертификат не куплен - это решение, а не недосмотр.",
-          "Пока неизвестен. Репутация считается для каждого файла отдельно, поэтому каждая новая версия начинает с нуля. Она накапливается сама по мере того, как этот выпуск скачивают, - поэтому предупреждение стихает между версиями и ненадолго возвращается после каждой новой.",
+          "SmartScreen не знает этот файл. Репутация считается для каждого файла отдельно, поэтому каждая новая версия начинает с нуля. Она накапливается сама по мере того, как этот выпуск скачивают, - поэтому предупреждение стихает между версиями и ненадолго возвращается после каждой новой.",
           "Сборка из Microsoft Store - исключение: её подписывает сама Microsoft при сертификации, поэтому ничего из этого там не появляется. Программа та же самая."
         ]
       },
@@ -145,7 +145,7 @@
         "p": "Нічого не зламано, і попередження - не помилка. SmartScreen перевіряє у файла дві речі: чи підписаний він сертифікатом, який Windows знає, і чи достатньо людей уже його запускали.",
         "items": [
           "Не підписаний. Сертифікат для підпису коду коштує кілька сотень доларів на рік. Програма безкоштовна і нічого не заробляє, тож такий сертифікат не куплений - це рішення, а не недогляд.",
-          "Поки що невідомий. Репутація рахується для кожного файла окремо, тому кожна нова версія починає з нуля. Вона накопичується сама, коли цей випуск завантажують, - тому попередження стихає між версіями і ненадовго повертається після кожної нової.",
+          "SmartScreen не знає цього файла. Репутація рахується для кожного файла окремо, тому кожна нова версія починає з нуля. Вона накопичується сама, коли цей випуск завантажують, - тому попередження стихає між версіями і ненадовго повертається після кожної нової.",
           "Збірка з Microsoft Store - виняток: її підписує сама Microsoft під час сертифікації, тому нічого з цього там не з'являється. Програма та сама."
         ]
       },
@@ -208,7 +208,7 @@
         "p": "Es ist nichts kaputt, und die Warnung ist kein Fehler. SmartScreen prüft zwei Dinge an einer Datei: Ist sie mit einem Zertifikat signiert, das Windows kennt, und haben sie schon genug Menschen ausgeführt?",
         "items": [
           "Nicht signiert. Ein Code-Signing-Zertifikat kostet mehrere hundert Dollar pro Jahr. Das Programm ist kostenlos und verdient nichts, deshalb wurde keines gekauft - das ist eine Entscheidung, kein Versäumnis.",
-          "Noch nicht bekannt. Reputation wird pro Datei gezählt, also beginnt jede neue Version bei null. Sie wächst von selbst, während dieses Release heruntergeladen wird - deshalb verschwindet die Warnung zwischen den Versionen und kommt nach jeder neuen für eine Weile zurück.",
+          "SmartScreen kennt diese Datei nicht. Reputation wird pro Datei gezählt, also beginnt jede neue Version bei null. Sie wächst von selbst, während dieses Release heruntergeladen wird - deshalb verschwindet die Warnung zwischen den Versionen und kommt nach jeder neuen für eine Weile zurück.",
           "Der Build aus dem Microsoft Store ist die Ausnahme: Microsoft signiert ihn bei der Zertifizierung, deshalb tritt dort nichts davon auf. Es ist dasselbe Programm."
         ]
       },
@@ -271,7 +271,7 @@
         "p": "Non c'è nulla di rotto e l'avviso non è un errore. SmartScreen verifica due cose di un file: se è firmato con un certificato che Windows riconosce e se abbastanza persone lo hanno già eseguito.",
         "items": [
           "Non firmato. Un certificato per la firma del codice costa diverse centinaia di dollari all'anno. Il programma è gratuito e non guadagna nulla, quindi non ne è stato acquistato uno: è una scelta, non una dimenticanza.",
-          "Non ancora conosciuto. La reputazione si conta per singolo file, quindi ogni nuova versione riparte da zero. Cresce da sola man mano che quella release viene scaricata: per questo l'avviso si attenua tra una versione e l'altra e torna per un po' dopo ognuna nuova.",
+          "SmartScreen non conosce questo file. La reputazione si conta per singolo file, quindi ogni nuova versione riparte da zero. Cresce da sola man mano che quella release viene scaricata: per questo l'avviso si attenua tra una versione e l'altra e torna per un po' dopo ognuna nuova.",
           "La build del Microsoft Store è l'eccezione: Microsoft la firma durante la certificazione, quindi lì non compare nulla di tutto questo. È lo stesso programma."
         ]
       },
@@ -334,7 +334,7 @@
         "p": "No hay nada roto y el aviso no es un error. SmartScreen comprueba dos cosas de un archivo: si está firmado con un certificado que Windows reconoce y si ya lo ha ejecutado suficiente gente.",
         "items": [
           "Sin firmar. Un certificado de firma de código cuesta varios cientos de dólares al año. El programa es gratuito y no genera ingresos, así que no se ha comprado ninguno: es una decisión, no un descuido.",
-          "Todavía desconocido. La reputación se cuenta por archivo, así que cada versión nueva empieza de cero. Crece sola a medida que se descarga esa versión: por eso el aviso se atenúa entre versiones y vuelve un tiempo tras cada una nueva.",
+          "SmartScreen no conoce este archivo. La reputación se cuenta por archivo, así que cada versión nueva empieza de cero. Crece sola a medida que se descarga esa versión: por eso el aviso se atenúa entre versiones y vuelve un tiempo tras cada una nueva.",
           "La compilación de Microsoft Store es la excepción: Microsoft la firma durante la certificación, así que allí no aparece nada de esto. Es el mismo programa."
         ]
       },
@@ -397,7 +397,7 @@
         "p": "Rien n'est cassé et l'avertissement n'est pas une erreur. SmartScreen vérifie deux choses sur un fichier : est-il signé avec un certificat que Windows reconnaît, et assez de gens l'ont-ils déjà exécuté ?",
         "items": [
           "Non signé. Un certificat de signature de code coûte plusieurs centaines de dollars par an. Le programme est gratuit et ne rapporte rien, aucun certificat n'a donc été acheté : c'est un choix, pas un oubli.",
-          "Pas encore connu. La réputation se compte par fichier, chaque nouvelle version repart donc de zéro. Elle se construit d'elle-même à mesure que cette version est téléchargée : c'est pourquoi l'avertissement s'estompe entre les versions et revient un temps après chaque nouvelle.",
+          "SmartScreen ne connaît pas ce fichier. La réputation se compte par fichier, chaque nouvelle version repart donc de zéro. Elle se construit d'elle-même à mesure que cette version est téléchargée : c'est pourquoi l'avertissement s'estompe entre les versions et revient un temps après chaque nouvelle.",
           "La version du Microsoft Store fait exception : Microsoft la signe lors de la certification, rien de tout cela n'y apparaît donc. C'est le même programme."
         ]
       },
@@ -460,7 +460,7 @@
         "p": "Nada está avariado e o aviso não é um erro. O SmartScreen verifica duas coisas num ficheiro: está assinado com um certificado que o Windows reconhece, e já foi executado por gente suficiente?",
         "items": [
           "Não assinado. Um certificado de assinatura de código custa várias centenas de dólares por ano. O programa é gratuito e não gera receita, por isso não foi comprado nenhum: é uma decisão, não um esquecimento.",
-          "Ainda desconhecido. A reputação conta-se por ficheiro, por isso cada versão nova começa do zero. Cresce sozinha à medida que essa versão é transferida - é por isso que o aviso se atenua entre versões e regressa por algum tempo depois de cada nova.",
+          "O SmartScreen não conhece este arquivo. A reputação conta-se por ficheiro, por isso cada versão nova começa do zero. Cresce sozinha à medida que essa versão é transferida - é por isso que o aviso se atenua entre versões e regressa por algum tempo depois de cada nova.",
           "A versão da Microsoft Store é a exceção: a Microsoft assina-a durante a certificação, por isso nada disto aparece ali. É o mesmo programa."
         ]
       },
@@ -523,7 +523,7 @@
         "p": "لا شيء معطّل، والتحذير ليس خطأ. يسأل SmartScreen عن أمرين في الملف: هل وُقّع بشهادة يعرفها Windows، وهل شغّله عدد كافٍ من الناس بالفعل.",
         "items": [
           "غير موقّع. شهادة توقيع البرامج تكلّف عدة مئات من الدولارات سنويًا. البرنامج مجاني ولا يحقق دخلًا، لذلك لم تُشترَ شهادة - وهذا قرار وليس سهوًا.",
-          "غير معروف بعد. تُحسب السمعة لكل ملف على حدة، لذلك تبدأ كل نسخة جديدة من الصفر. وهي تتراكم وحدها كلما نزّل الناس ذلك الإصدار - لهذا يخفت التحذير بين الإصدارات ويعود لفترة بعد كل إصدار جديد.",
+          "لا يعرف SmartScreen هذا الملف. تُحسب السمعة لكل ملف على حدة، لذلك تبدأ كل نسخة جديدة من الصفر. وهي تتراكم وحدها كلما نزّل الناس ذلك الإصدار - لهذا يخفت التحذير بين الإصدارات ويعود لفترة بعد كل إصدار جديد.",
           "نسخة Microsoft Store هي الاستثناء: توقّعها Microsoft أثناء الاعتماد، لذلك لا يظهر فيها شيء من هذا. وهو البرنامج نفسه."
         ]
       },
@@ -586,7 +586,7 @@
         "p": "कुछ भी ख़राब नहीं है और चेतावनी कोई ग़लती नहीं है। SmartScreen फ़ाइल के बारे में दो बातें देखता है: क्या वह ऐसे प्रमाणपत्र से हस्ताक्षरित है जिसे Windows पहचानता है, और क्या पर्याप्त लोग उसे पहले ही चला चुके हैं।",
         "items": [
           "हस्ताक्षरित नहीं। कोड-साइनिंग प्रमाणपत्र की सालाना क़ीमत कई सौ डॉलर है। प्रोग्राम मुफ़्त है और कुछ कमाता नहीं, इसलिए प्रमाणपत्र नहीं ख़रीदा गया - यह एक निर्णय है, चूक नहीं।",
-          "अभी अनजाना। प्रतिष्ठा हर फ़ाइल के लिए अलग गिनी जाती है, इसलिए हर नया संस्करण शून्य से शुरू होता है। जैसे-जैसे वह रिलीज़ डाउनलोड होती है, यह अपने आप बनती जाती है - इसीलिए चेतावनी संस्करणों के बीच हल्की पड़ जाती है और हर नए संस्करण के बाद कुछ समय के लिए लौट आती है।",
+          "SmartScreen इस फ़ाइल को नहीं जानता। प्रतिष्ठा हर फ़ाइल के लिए अलग गिनी जाती है, इसलिए हर नया संस्करण शून्य से शुरू होता है। जैसे-जैसे वह रिलीज़ डाउनलोड होती है, यह अपने आप बनती जाती है - इसीलिए चेतावनी संस्करणों के बीच हल्की पड़ जाती है और हर नए संस्करण के बाद कुछ समय के लिए लौट आती है।",
           "Microsoft Store वाला बिल्ड अपवाद है: Microsoft प्रमाणन के दौरान उस पर हस्ताक्षर करता है, इसलिए वहाँ इनमें से कुछ नहीं दिखता। प्रोग्राम वही है।"
         ]
       },
@@ -649,7 +649,7 @@
         "p": "কিছুই ভাঙা নেই, আর সতর্কবার্তাটি ভুল নয়। SmartScreen একটি ফাইল সম্পর্কে দুটি প্রশ্ন করে: এটি কি Windows চেনে এমন সার্টিফিকেট দিয়ে সই করা, আর যথেষ্ট মানুষ কি এটি ইতিমধ্যে চালিয়েছে।",
         "items": [
           "সই করা নয়। কোড-সাইনিং সার্টিফিকেটের খরচ বছরে কয়েকশো ডলার। প্রোগ্রামটি বিনামূল্যের এবং কিছু আয় করে না, তাই সার্টিফিকেট কেনা হয়নি - এটি সিদ্ধান্ত, ভুলে যাওয়া নয়।",
-          "এখনও অজানা। সুনাম প্রতিটি ফাইলের জন্য আলাদা গোনা হয়, তাই প্রতিটি নতুন সংস্করণ শূন্য থেকে শুরু করে। সেই রিলিজ যত ডাউনলোড হয়, তত নিজে থেকেই তা বাড়ে - তাই সংস্করণের মাঝে সতর্কবার্তা মিলিয়ে যায় এবং প্রতিটি নতুন সংস্করণের পর কিছু সময়ের জন্য ফিরে আসে।",
+          "SmartScreen এই ফাইলটি চেনে না। সুনাম প্রতিটি ফাইলের জন্য আলাদা গোনা হয়, তাই প্রতিটি নতুন সংস্করণ শূন্য থেকে শুরু করে। সেই রিলিজ যত ডাউনলোড হয়, তত নিজে থেকেই তা বাড়ে - তাই সংস্করণের মাঝে সতর্কবার্তা মিলিয়ে যায় এবং প্রতিটি নতুন সংস্করণের পর কিছু সময়ের জন্য ফিরে আসে।",
           "Microsoft Store-এর বিল্ড ব্যতিক্রম: Microsoft প্রত্যয়নের সময় সেটিতে সই করে, তাই সেখানে এর কিছুই দেখা যায় না। প্রোগ্রাম একই।"
         ]
       },
@@ -712,7 +712,7 @@
         "p": "کچھ خراب نہیں ہے اور وارننگ کوئی غلطی نہیں۔ ‏SmartScreen فائل کے بارے میں دو باتیں دیکھتا ہے: کیا وہ ایسے سرٹیفکیٹ سے دستخط شدہ ہے جسے ونڈوز پہچانتا ہے، اور کیا کافی لوگ اسے پہلے ہی چلا چکے ہیں۔",
         "items": [
           "دستخط شدہ نہیں۔ کوڈ سائننگ سرٹیفکیٹ کی سالانہ قیمت کئی سو ڈالر ہے۔ پروگرام مفت ہے اور کچھ کماتا نہیں، اس لیے سرٹیفکیٹ نہیں خریدا گیا - یہ ایک فیصلہ ہے، بھول نہیں۔",
-          "ابھی نامعلوم۔ ساکھ ہر فائل کے لیے الگ گنی جاتی ہے، اس لیے ہر نیا ورژن صفر سے شروع ہوتا ہے۔ جیسے جیسے وہ ریلیز ڈاؤن لوڈ ہوتی ہے، یہ خود بنتی جاتی ہے - اسی لیے وارننگ ورژنوں کے درمیان مدھم پڑ جاتی ہے اور ہر نئے ورژن کے بعد کچھ عرصے کے لیے واپس آ جاتی ہے۔",
+          "SmartScreen اس فائل کو نہیں پہچانتا۔ ساکھ ہر فائل کے لیے الگ گنی جاتی ہے، اس لیے ہر نیا ورژن صفر سے شروع ہوتا ہے۔ جیسے جیسے وہ ریلیز ڈاؤن لوڈ ہوتی ہے، یہ خود بنتی جاتی ہے - اسی لیے وارننگ ورژنوں کے درمیان مدھم پڑ جاتی ہے اور ہر نئے ورژن کے بعد کچھ عرصے کے لیے واپس آ جاتی ہے۔",
           "‏Microsoft Store والا بلڈ استثنا ہے: ‏Microsoft تصدیق کے دوران اس پر دستخط کرتی ہے، اس لیے وہاں اس میں سے کچھ نہیں آتا۔ پروگرام وہی ہے۔"
         ]
       },
@@ -775,7 +775,7 @@
         "p": "没有任何东西出错，这条警告也不是错误。SmartScreen 对一个文件问两件事：它是否用 Windows 认识的证书签名，以及是否已有足够多的人运行过它。",
         "items": [
           "未签名。代码签名证书每年要几百美元。程序免费，也没有收入，所以没有购买证书 - 这是一个决定，不是疏忽。",
-          "尚不知名。信誉是按文件计算的，因此每个新版本都从零开始。随着这个版本被下载，它会自行积累 - 所以警告在版本之间会淡去，每出一个新版本又会回来一阵子。",
+          "SmartScreen 不认识此文件。信誉是按文件计算的，因此每个新版本都从零开始。随着这个版本被下载，它会自行积累 - 所以警告在版本之间会淡去，每出一个新版本又会回来一阵子。",
           "Microsoft Store 版本是例外：Microsoft 在认证时为它签名，因此那里不会出现这些。程序是同一个。"
         ]
       },

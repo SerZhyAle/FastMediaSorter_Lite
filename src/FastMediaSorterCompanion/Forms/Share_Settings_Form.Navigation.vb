@@ -606,7 +606,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' sit on the plain surface; items of pages other than the shown one read muted.
         For Each pair In _navItems
             For Each item In pair.Value
-                Dim selected = pair.Key = _selectedPage AndAlso SelectedItemId(pair.Key) = item.Group.Id
+                ' A folded page's chosen item is hidden and its page row stands in for it, so it does not read selected too.
+                Dim selected = pair.Key = _selectedPage AndAlso SelectedItemId(pair.Key) = item.Group.Id AndAlso NavExpanded(pair.Key)
                 item.SetSelected(selected)
                 StyleSettingsNavRow(item, selected, pair.Key <> _selectedPage, fill, palette)
                 Dim glyphId As String = SettingsItemGlyph(pair.Key, item.Group.Id)

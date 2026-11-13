@@ -1,7 +1,7 @@
 ICONOGRAPHY VENDORED ARTIFACT
 Do not hand-edit SVG files in this folder. Regenerate with tools/Sync-IconGlyphs.ps1.
-Catalog versions: ICON-SET 0.37; ICON-RENDER 0.24; ICON-EXTERNAL 0.12
-Vocabulary SHA-256: 2824f7dbbdabab458bba1d4a40b8ac45f30594ecca2022a6e4d1c95e1b8b599b
+Catalog versions: ICON-SET 0.39; ICON-RENDER 0.24; ICON-EXTERNAL 0.12
+Vocabulary SHA-256: 69b354f280cee22e9fa4262c82b6fecaf8ac75f9241477135910084251ecf18b
 
 action.confirm.svg  ca97ceac8371975e7f8d21d26ef404858bb137a0b18d80ed0a64d34a20903f69
 action.cancel.svg  0b2ee602dece67950e801b3df344297e311e8bc33c592c7ae8cc9f5d4195c873
@@ -65,7 +65,7 @@ action.translate.svg  df11c775889f6dbf6a1e2136695cc98502b3b75d2a8c7ac7f1fcf05a95
 action.replace.svg  0cbec1af2d9fd8ef4f9a64402f624cc1f50e4832cdf1478cbbe42186e1c6d5c7
 action.skip.svg  9df81b7fd15ca1c4ccd84ad773681ca1cfb6222d02b7afbafed3ab685d50c7a7
 action.create-shortcut.svg  fa71f7d2bb4b342901b8db53b1666667fb1d9f7f849183acade96e2808a3c025
-source.exchange-server.svg  b84056ecc4d1a7a3b4cce0e7aa5ee8ead6f4163d095e3d93a9ce5cceee9eefb0
+source.exchange-server.svg  a6ce1ab932870208daf6195d4161e55918a3d00a11c6430ed8205706b10c2f6a
 feature.server-relay.svg  8ae90736bc83e90a27b5769faedd062ac9b46f0aab01ff045dad63516ac85cb5
 action.connect-device.svg  bcf97d7c9210bc956c0c8e91e6e1274f8c7fad75e427316c65a99d9615e5b7a9
 action.send-clipboard.svg  69cb230b596bd478e5e1b33b3f9919ccea7a70c76b03d7f3f85579321adbe3a5

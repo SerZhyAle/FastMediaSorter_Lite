@@ -156,8 +156,15 @@ foreach ($locale in $locales) {
             $purposeText = [System.Net.WebUtility]::HtmlEncode($settingsContent.purpose)
             $orderHtml = ConvertTo-OrderHtml $settingsContent.order
             $elementDetails = ($settingsContent.sections | ForEach-Object {
-                $detail = '<details id="{0}"><summary>{1}</summary><p>{2}</p>' -f $_.id,
-                    [System.Net.WebUtility]::HtmlEncode($_.title), [System.Net.WebUtility]::HtmlEncode($_.text)
+                # Specification L0308 section 3.2: a section with a numbered guide shows it opened, the steps before the text, so the
+                # link that lands on its anchor lands on the steps.
+                $sectionSteps = @($_.steps | Where-Object { $_ })
+                $openAttr = if ($sectionSteps.Count -gt 0) { ' open' } else { '' }
+                $stepsHtml = if ($sectionSteps.Count -gt 0) {
+                    '<ol class="order">' + (($sectionSteps | ForEach-Object { '<li>' + [System.Net.WebUtility]::HtmlEncode($_) + '</li>' }) -join '') + '</ol>'
+                } else { '' }
+                $detail = '<details id="{0}"{3}><summary>{1}</summary>{4}<p>{2}</p>' -f $_.id,
+                    [System.Net.WebUtility]::HtmlEncode($_.title), [System.Net.WebUtility]::HtmlEncode($_.text), $openAttr, $stepsHtml
                 if ($pageKey -eq 'share-settings' -and $_.id -eq 'drive') {
                     $detail += '<figure><img class="shot light" src="share-settings-drive-light.png" alt="Google Drive"><img class="shot dark" src="share-settings-drive-dark.png" alt="Google Drive"></figure>'
                 }

@@ -49,6 +49,9 @@ Friend Enum ExchangeDriveFailure
     ''' <summary>Network down, DNS, TLS, a timeout.</summary>
     Offline
     Other
+    ''' <summary>Google refuses the OAuth client of this build (`invalid_client`, `unauthorized_client`): asking again does not
+    ''' help, an installation with the current client does (specification L0308 section 4). The stored sign-in is kept.</summary>
+    ClientRejected
 End Enum
 
 ''' <summary>A failed Drive call. Carries the kind and the HTTP status only (0 when none).</summary>

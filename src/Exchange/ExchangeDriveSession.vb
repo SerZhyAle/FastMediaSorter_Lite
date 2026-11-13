@@ -44,26 +44,89 @@ Friend NotInheritable Class ExchangeDriveClientConfig
         Me.ClientSecret = If(clientSecret, "").Trim()
     End Sub
 
+    Private Sub New(clientId As String, clientSecret As String, source As PairSource, partialOverrideIgnored As Boolean)
+        Me.New(clientId, clientSecret)
+        _source = source
+        _partialOverrideIgnored = partialOverrideIgnored
+    End Sub
+
     Public ReadOnly Property IsConfigured As Boolean
         Get
             Return ClientId.Length > 0 AndAlso ClientSecret.Length > 0
         End Get
     End Property
 
+    ''' <summary>Where the pair in use came from (specification L0308 section 2.5). Carries no value.</summary>
+    Public Enum PairSource
+        None
+        ''' <summary>Both shell variables: a developer's diagnostic override.</summary>
+        Environment
+        ''' <summary>Both metadata values the build injected: the shipping path.</summary>
+        Build
+    End Enum
+
+    Private ReadOnly _source As PairSource = PairSource.None
+    Private ReadOnly _partialOverrideIgnored As Boolean
+
+    ''' <summary>Where <see cref="ClientId"/> and <see cref="ClientSecret"/> came from; None when not configured.</summary>
+    Public ReadOnly Property Source As PairSource
+        Get
+            Return If(IsConfigured, _source, PairSource.None)
+        End Get
+    End Property
+
+    ''' <summary>True when exactly one of the two shell variables was set: it was ignored as a whole, never combined with the other
+    ''' half of the build's pair.</summary>
+    Public ReadOnly Property PartialOverrideIgnored As Boolean
+        Get
+            Return _partialOverrideIgnored
+        End Get
+    End Property
+
     ''' <summary>The environment first (so a developer's shell wins), then the build's metadata. Never throws.</summary>
     Public Shared Function Resolve() As ExchangeDriveClientConfig
-        Dim id As String = Environment.GetEnvironmentVariable(ClientIdVariable)
-        Dim secret As String = Environment.GetEnvironmentVariable(ClientSecretVariable)
-        If String.IsNullOrWhiteSpace(id) OrElse String.IsNullOrWhiteSpace(secret) Then
-            Try
-                For Each attribute As AssemblyMetadataAttribute In GetType(ExchangeDriveClientConfig).Assembly.GetCustomAttributes(Of AssemblyMetadataAttribute)()
-                    If String.Equals(attribute.Key, ClientIdMetadataKey, StringComparison.Ordinal) AndAlso String.IsNullOrWhiteSpace(id) Then id = attribute.Value
-                    If String.Equals(attribute.Key, ClientSecretMetadataKey, StringComparison.Ordinal) AndAlso String.IsNullOrWhiteSpace(secret) Then secret = attribute.Value
-                Next
-            Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is InvalidOperationException
-            End Try
+        Return Resolve(AddressOf Environment.GetEnvironmentVariable, AddressOf ReadBuildMetadata)
+    End Function
+
+    ''' <summary>The pair is taken as a UNIT from one source (specification L0308 section 2.5): both shell variables, else both
+    ''' values of the build's metadata, else nothing. One shell variable alone is ignored, so the id of one client is never sent
+    ''' with the secret of another - Google would refuse every sign-in and every refresh with nothing on the page to say why.
+    ''' A build that carries only one of its two values is not configured either.</summary>
+    Public Shared Function Resolve(readVariable As Func(Of String, String), readMetadata As Func(Of String, String)) As ExchangeDriveClientConfig
+        If readVariable Is Nothing Then Throw New ArgumentNullException(NameOf(readVariable))
+        If readMetadata Is Nothing Then Throw New ArgumentNullException(NameOf(readMetadata))
+        Dim envId As String = Clean(readVariable(ClientIdVariable))
+        Dim envSecret As String = Clean(readVariable(ClientSecretVariable))
+        If envId.Length > 0 AndAlso envSecret.Length > 0 Then
+            Return New ExchangeDriveClientConfig(envId, envSecret, PairSource.Environment, False)
         End If
-        Return New ExchangeDriveClientConfig(id, secret)
+        Dim partialOverride As Boolean = envId.Length > 0 OrElse envSecret.Length > 0
+
+        Dim buildId As String = ""
+        Dim buildSecret As String = ""
+        Try
+            buildId = Clean(readMetadata(ClientIdMetadataKey))
+            buildSecret = Clean(readMetadata(ClientSecretMetadataKey))
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is InvalidOperationException
+            buildId = ""
+            buildSecret = ""
+        End Try
+        If buildId.Length > 0 AndAlso buildSecret.Length > 0 Then
+            Return New ExchangeDriveClientConfig(buildId, buildSecret, PairSource.Build, partialOverride)
+        End If
+        Return New ExchangeDriveClientConfig("", "", PairSource.None, partialOverride)
+    End Function
+
+    Private Shared Function Clean(value As String) As String
+        Return If(value, "").Trim()
+    End Function
+
+    ''' <summary>One metadata value of this assembly; "" when absent. The FIRST attribute of a key wins, as a build emits one.</summary>
+    Private Shared Function ReadBuildMetadata(key As String) As String
+        For Each attribute As AssemblyMetadataAttribute In GetType(ExchangeDriveClientConfig).Assembly.GetCustomAttributes(Of AssemblyMetadataAttribute)()
+            If String.Equals(attribute.Key, key, StringComparison.Ordinal) Then Return If(attribute.Value, "")
+        Next
+        Return ""
     End Function
 
     Public Overrides Function ToString() As String
@@ -89,6 +152,9 @@ Friend Enum ExchangeDriveSignInOutcome
     ''' <summary>The token file could not be written.</summary>
     StorageFailed
     Offline
+    ''' <summary>Google refused the consent for a reason other than the person's own No: an organization's policy or an account
+    ''' restriction (see <see cref="ExchangeDriveSession.ConsentRefusal"/>).</summary>
+    AccountRestricted
 End Enum
 
 ''' <summary>The tokens of one exchange, as Google answers.</summary>
@@ -200,7 +266,7 @@ Friend NotInheritable Class ExchangeDriveSession
             Dim code As String = If(query2("code"), "")
             AnswerBrowser(received, landingHtml)
 
-            If consentError.Length > 0 Then Return ExchangeDriveSignInOutcome.ConsentDenied
+            If consentError.Length > 0 Then Return ConsentRefusal(consentError)
             ' A state that does not match means something else answered on the port: nothing is exchanged.
             If Not stateMatches OrElse code.Length = 0 Then Return ExchangeDriveSignInOutcome.TokenRefused
 
@@ -235,6 +301,14 @@ Friend NotInheritable Class ExchangeDriveSession
             Catch ex As ObjectDisposedException
             End Try
         End Try
+    End Function
+
+    ''' <summary>What an `error` on the redirect means. `access_denied` is the person's own No; any other code (Workspace
+    ''' `admin_policy_enforced`, `org_internal`, a policy Google names) is a restriction of the account that pressing
+    ''' "Sign in" again does not lift (specification L0308 section 3 step 6).</summary>
+    Public Shared Function ConsentRefusal(errorCode As String) As ExchangeDriveSignInOutcome
+        If String.Equals(If(errorCode, ""), "access_denied", StringComparison.Ordinal) Then Return ExchangeDriveSignInOutcome.ConsentDenied
+        Return ExchangeDriveSignInOutcome.AccountRestricted
     End Function
 
     ''' <summary>True when the space-separated list granted is exactly <see cref="ExchangeDriveAuth.Scope"/>.</summary>
@@ -297,23 +371,44 @@ Friend NotInheritable Class ExchangeDriveSession
                 reached = True
             Catch ex As HttpRequestException
                 reached = False
+            Catch ex As TaskCanceledException When Not cancellation.IsCancellationRequested
+                ' the HTTP client's own time-out, not the caller's cancellation: a slow network, not a lost sign-in (L0308 4)
+                reached = False
             End Try
             If Not reached Then Throw New ExchangeDriveException(ExchangeDriveFailure.Offline, 0)
 
             If response.AccessToken.Length = 0 Then
-                If String.Equals(response.Error, "invalid_grant", StringComparison.Ordinal) Then
-                    ' Revoked at myaccount.google.com, expired, or the password changed: this token will never work again.
-                    _store.Delete()
-                    _accessToken = ""
-                    Return ""
-                End If
-                Throw New ExchangeDriveException(ExchangeDriveFailure.Unavailable, 0)
+                Select Case RefreshRefusal(response.Error)
+                    Case ExchangeDriveFailure.SignedOut
+                        ' Revoked at myaccount.google.com, expired, or the password changed: this token will never work again.
+                        _store.Delete()
+                        _accessToken = ""
+                        Return ""
+                    Case ExchangeDriveFailure.ClientRejected
+                        ' Google no longer accepts THIS BUILD's client. The stored sign-in is kept: deleting it cannot help, and
+                        ' an installation carrying the current client uses it again (L0308 section 4).
+                        _accessToken = ""
+                        Throw New ExchangeDriveException(ExchangeDriveFailure.ClientRejected, 0)
+                    Case Else
+                        Throw New ExchangeDriveException(ExchangeDriveFailure.Unavailable, 0)
+                End Select
             End If
             Remember(response)
             Return _accessToken
         Finally
             _gate.Release()
         End Try
+    End Function
+
+    ''' <summary>What a refused refresh means, from the `error` of Google's token answer (RFC 6749 section 5.2). Only
+    ''' `invalid_grant` ends the sign-in; `invalid_client` / `unauthorized_client` blame the client of this build; anything
+    ''' else - an empty body, a 5xx page, `temporarily_unavailable` - may pass and is retried.</summary>
+    Public Shared Function RefreshRefusal(errorCode As String) As ExchangeDriveFailure
+        Select Case If(errorCode, "")
+            Case "invalid_grant" : Return ExchangeDriveFailure.SignedOut
+            Case "invalid_client", "unauthorized_client" : Return ExchangeDriveFailure.ClientRejected
+            Case Else : Return ExchangeDriveFailure.Unavailable
+        End Select
     End Function
 
     Public Sub Invalidate() Implements IExchangeDriveTokens.Invalidate

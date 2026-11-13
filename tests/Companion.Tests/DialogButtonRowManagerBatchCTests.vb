@@ -154,9 +154,9 @@ Public Class DialogButtonRowManagerBatchCTests
     Private Shared Function Specs(kit As Kit) As List(Of Spec)
         Return New List(Of Spec) From {
             New Spec("Scheduled_Operation_Form", Function() New Scheduled_Operation_Form(kit.Engine, Nothing),
-                     {"btnSchedPreview", "btnSchedCancel", "btnSchedSave"}, "btnSchedCancel", "btnSchedSave", 0),
+                     {"btnSchedPreview", "btnSchedCancel", "btnSchedSave"}, "btnSchedCancel", "btnSchedSave", 1),
             New Spec("Scheduled_Operation_Form (delete)", Function() DeletingEditor(kit),
-                     {"btnSchedPreview", "btnSchedCancel", "btnSchedSave"}, "btnSchedCancel", "", 0),
+                     {"btnSchedPreview", "btnSchedCancel", "btnSchedSave"}, "btnSchedCancel", "", 1),
             New Spec("Scheduled_Preview_Form", Function() PreviewForm(),
                      {"btnSchedPreviewClose"}, "btnSchedPreviewClose", "btnSchedPreviewClose", 0),
             New Spec("Scheduled_Resource_Picker_Form", Function() New Scheduled_Resource_Picker_Form(New ScheduledLocation()),
@@ -166,7 +166,7 @@ Public Class DialogButtonRowManagerBatchCTests
             New Spec("Share_Enable_Form", Function() New Share_Enable_Form(),
                      {"xse_Cancel", "xse_Enable"}, "xse_Cancel", "xse_Enable", 0),
             New Spec("Share_Root_Params_Form", Function() New Share_Root_Params_Form("Photos", New ShareRootParams()),
-                     {"xrp_Cancel", "xrp_Ok"}, "xrp_Cancel", "xrp_Ok", 0),
+                     {"xrp_Cancel", "xrp_Ok"}, "xrp_Cancel", "xrp_Ok", 1),
             New Spec("Share_Disks_Form", Function() New Share_Disks_Form(),
                      {"xsd_Close"}, "xsd_Close", "", 0, pump:=False),
             New Spec("DiskOptionsForm (register)", Function() New DiskOptionsForm(True, True),
@@ -449,7 +449,9 @@ Public Class DialogButtonRowManagerBatchCTests
                             Assert.Contains(DirectCast(found(0), Button), row.ReadingButtons)
                         Next
                         ' the fields keep their order and the answers come after all of them
-                        Assert.Equal(row.Parent.Controls.Count - 1, row.Parent.Controls.GetChildIndex(row))
+                        Dim afterRow = row.Parent.Controls.Cast(Of Control)().Skip(row.Parent.Controls.GetChildIndex(row) + 1).ToArray()
+                        Assert.All(afterRow, Sub(c) Assert.True(c.Name = "contextHelpBand" AndAlso c.Dock = DockStyle.Top,
+                                                               spec.Name & ": unexpected control after the answer row: " & c.Name))
                         Dim tabs As Integer() = row.ReadingButtons.Select(Function(b) b.TabIndex).ToArray()
                         Assert.Equal(Enumerable.Range(0, tabs.Length).ToArray(), tabs)
                         ' every answer carries a glyph (the row applies it) and no button of the row keeps the old inner padding

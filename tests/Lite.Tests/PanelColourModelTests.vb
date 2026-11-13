@@ -78,6 +78,19 @@ Public Class PanelColourModelTests
     End Function
 
     <Fact>
+    Public Sub Worst_case_includes_content_between_black_and_white()
+        Dim ink As Color = Rgb(118, 118, 118)
+        Assert.True(Cr(ink, Color.Black) >= 4.5R)
+        Assert.True(Cr(ink, Color.White) >= 4.5R)
+        Assert.Equal(1.0R, Cr(ink, ink))
+        Assert.Equal(1.0R, PanelColourModel.WorstCaseContrast(Color.Black, ink, 0.0R))
+        Assert.Equal(1.0R, PanelColourModel.WorstCaseContrast(Color.Black, ink, 0.5R))
+        Assert.Equal(1.0R, PanelColourModel.ScrimmedWorstCase(Color.Black, ink, 0.0R, 0.0R))
+        Assert.Equal(1.0R, PanelColourModel.ScrimmedWorstCase(Color.Black, ink, 0.2R, 0.2R))
+        Assert.True(PanelColourModel.OpacityNeeded(Color.Black, ink, 4.5R) > 0.0R)
+    End Sub
+
+    <Fact>
     Public Sub Ink_is_the_wcag_better_of_the_tone_inks_for_every_sample()
         For Each m As PanelColours In OpaqueModels()
             Assert.Equal(PanelColourModel.BetterInk(m.Fill).ToArgb(), m.Ink.ToArgb())
@@ -235,16 +248,23 @@ Public Class PanelColourModelTests
                     Assert.Equal(0.0R, s)
                 Else
                     Dim closed As Double = PanelColourModel.ScrimAlphaFrom(needed, m.SetOpacity)
-                    Assert.True(Math.Abs(s - closed) <= 1.0R / 255.0R + 0.000001R, $"{m.Fill} at {percent}: solved {s * 255:0} closed {closed * 255:0.0}")
-                    Dim effective As Double = 1.0R - (1.0R - m.SetOpacity) * (1.0R - s)
-                    Assert.True(Math.Abs(effective - needed) <= 1.0R / 255.0R + 0.000001R, $"{m.Fill} at {percent}: p_eff {effective:0.0000} p_needed {needed:0.0000}")
+                    ' Each layered composition rounds its colour channels. Start at the rounded-up
+                    ' closed form and use only the extra bytes actually needed to hold the floor.
+                    Dim firstByte As Integer = CInt(Math.Ceiling(closed * 255.0R))
+                    Dim selectedByte As Integer = CInt(Math.Round(s * 255.0R))
+                    Assert.True(selectedByte >= firstByte)
+                    Assert.True(PanelColourModel.ScrimmedWorstCase(m.Fill, m.Ink, m.SetOpacity, s) >= PanelColourMetrics.TextFloor)
+                    If selectedByte > firstByte Then
+                        Assert.True(PanelColourModel.ScrimmedWorstCase(m.Fill, m.Ink, m.SetOpacity, (selectedByte - 1) / 255.0R) < PanelColourMetrics.TextFloor)
+                    End If
                 End If
             Next
         Next
-        ' The tone-wide values agree with the per-item solve on the rest fill.
+        ' The tone-wide value covers the worst of rest, hover and pressed, not only rest.
         Dim dark As PanelColours = PanelColourModel.ForSample(Color.Black, PanelColourMetrics.BlackScheme, Nothing, 30, DefaultAccent, False)
         Assert.True(dark.TextScrimAlpha > 0.0R)
-        Assert.True(Math.Abs(dark.TextScrimAlpha - dark.ScrimAlphaFor(dark.Fill, dark.Ink, True)) <= 2.0R / 255.0R)
+        Assert.Equal((New Color() {dark.Fill, dark.Hover, dark.Pressed}).Max(Function(f) PanelColourModel.OpacityNeeded(f, dark.Ink, PanelColourMetrics.TextFloor)), dark.TextOpacityNeeded)
+        Assert.Equal(PanelColourModel.ScrimAlphaFrom(dark.TextOpacityNeeded, dark.SetOpacity), dark.TextScrimAlpha)
         Assert.Equal(0.0R, PanelColourModel.ForSample(Color.Black, PanelColourMetrics.BlackScheme, Nothing, 100, DefaultAccent, False).TextScrimAlpha)
     End Sub
 

@@ -171,7 +171,7 @@ Friend NotInheritable Class LocalHtmlDocumentSource
     End Function
 
     Public Async Function ReadResourceAsync(key As String, token As CancellationToken) As Task(Of HtmlResourceResult) Implements IHtmlDocumentSource.ReadResourceAsync
-        If IsDisposed Then Return HtmlResourceResult.Refused(HtmlOutcome.Cancelled)
+        If IsDisposed OrElse token.IsCancellationRequested Then Return HtmlResourceResult.Refused(HtmlOutcome.Cancelled)
         Dim resolution As HtmlKeyResolution = ResolveKey(key)
         If Not resolution.IsAllowed Then Return HtmlResourceResult.Refused(resolution.Status)
         Dim kind As HtmlResourceKind = HtmlDocumentPolicy.KindOfExtension(key)
@@ -189,6 +189,7 @@ Friend NotInheritable Class LocalHtmlDocumentSource
             Dim cached As HtmlResourceResult = TryGetCached(key)
             If cached IsNot Nothing Then Return cached
         End If
+        If DeadlineMs = 0 Then Return HtmlResourceResult.Refused(HtmlOutcome.TimedOut)
 
         Using linked As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, _cancel.Token)
             Dim linkedToken As CancellationToken = linked.Token

@@ -194,8 +194,16 @@ Public Class ExchangeSettingsStandardTests
     Public Sub The_frames_are_built_in_the_shape_of_the_generated_vectors()
         Dim payload As String = "{""version"":1,""groups"":{""appearance"":{""theme"":""dark"",""density"":""compact""},""general"":{""confirmDelete"":true}}}"
         Dim save As String = Encoding.UTF8.GetString(ExchangeEnvelopeCodec.Encode(ExchangeMessages.SettingsSaveStandard("fms_win", 1, payload, "2026-11-10T02:00:00Z")))
-        Assert.Equal("{""schemaVersion"":2,""type"":""settings_save_standard"",""appId"":""fms_win"",""formatVersion"":1,""settingsPayload"":" &
-                     JsonSerializer.Serialize(payload) & ",""timestamp"":""2026-11-10T02:00:00Z""}", save)
+        Using frame As JsonDocument = JsonDocument.Parse(save)
+            Dim obj As JsonElement = frame.RootElement
+            Assert.Equal(2, obj.GetProperty("schemaVersion").GetInt32())
+            Assert.Equal("settings_save_standard", obj.GetProperty("type").GetString())
+            Assert.Equal("fms_win", obj.GetProperty("appId").GetString())
+            Assert.Equal(1, obj.GetProperty("formatVersion").GetInt32())
+            Assert.Equal(payload, obj.GetProperty("settingsPayload").GetString())
+            Assert.Equal("2026-11-10T02:00:00Z", obj.GetProperty("timestamp").GetString())
+            Assert.Equal(6, obj.EnumerateObject().Count())
+        End Using
         Dim noStamp As String = Encoding.UTF8.GetString(ExchangeEnvelopeCodec.Encode(ExchangeMessages.SettingsSaveStandard("fms_win", 1, payload, "")))
         Assert.DoesNotContain("timestamp", noStamp)
         Assert.Equal("{""schemaVersion"":2,""type"":""settings_get_standard"",""appId"":""fms_win""}",

@@ -54,19 +54,27 @@ optional. Everything about it follows from "optional and de-emphasised, never hi
 
 - **Default payload unchanged.** The component has no `Types:` entry, so it starts unticked; a
   silent install (winget) never gets it. `/COMPONENTS="server,filedo,viewer"` adds it (name every
-  component you want: a `/COMPONENTS` list replaces the defaults, and `server` is the fixed one).
+  component you want: a `/COMPONENTS` list replaces the defaults, and `server` is the fixed one);
+  add `viewer\codecs`, `viewer\pdf` and `viewer\ocr` to the list for its offline support - the
+  existing names keep their meaning.
 - **Focus.** The wizard's welcome text and the components page lead with the server; the viewer row
   comes last. Its shortcut exists only when the component was ticked, only in the Start menu, and
   is named `Viewer - Fast Media Sorter & Sharing` - never the User edition's own shortcut name in
   the shared Start-menu group.
-- **Payload.** The files of the User installer's *Compact* type taken from the User stage of the
-  **same version**, laid next to the Share Manager: both viewer exes with their libraries, no VLC
-  codecs, no OCR models, no PDFium (those download on first use). Staged by
-  `tools\Stage-ServerViewerPayload.ps1` into `<server stage>\viewer\`; the Inno script defines
-  the component only when `viewer\FastMediaSorter_LITE.exe` is there (`#if FileExists`), so a
-  hand compile or a local build with no User stage gets a Server installer **without** the
-  component and a warning - never a component with nothing behind it. The shipping packagers
-  (`release.yml`, `Build-OfflineRelease.ps1`) pass `-Require`.
+- **Payload (L0307).** Everything the User installer offers for the viewer is on offer here too, taken
+  from the User stage of the **same version** through its payload manifest and laid next to the Share
+  Manager: both viewer exes with their libraries (`viewer\`, component `viewer`) and, as three child
+  items of the viewer, the offline VLC codecs (`viewer\codecs`), the PDF preview (`viewer\pdf`) and the
+  OCR models (`viewer\ocr`, fast set, plus the best set when the pair was built with it) from
+  `viewer-support\`. The children have no `Types:` either, so they start unticked; ticking the viewer
+  ticks them and each can be cleared on its own. Staged by `tools\Stage-ServerViewerPayload.ps1`;
+  the component-to-stage mapping of both installers is `tools\installer-components.json` (the
+  [build rules](../../.claude/rules/build-release.md) say how the pieces fit). The Inno script
+  **refuses to compile** without the viewer, libvlc and PDFium (`#error`) and without the models unless the pair was
+  built without them (`/DNoOcrModels`, an explicit choice of both installers: the wizard text then
+  says the models download on first use); there is no longer a Server installer that silently omits
+  a component. The packagers (`Build-ServerInstaller.ps1`, `release.yml`, `Build-OfflineRelease.ps1`)
+  stop on a missing or stale User stage; `-Require` is accepted and has no further effect.
 - **Next to a User edition.** The row stays on the page but is ticked off, disabled and says why:
   that edition already carries a viewer, and a second copy would race it for the single-instance
   mutex and the "default app" choice.

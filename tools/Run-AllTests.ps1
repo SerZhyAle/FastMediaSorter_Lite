@@ -119,7 +119,7 @@ if (-not $WorkerRepo) { $WorkerRepo = Join-Path (Split-Path $root -Parent) 'fms_
 $plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } else { 'worker-go' }),
           $(if ($SkipExchangeGo) { 'exchange-go (skipped)' } else { 'exchange-go' }),
           $(if ($SkipExchangeGo) { 'exchange-conformance (skipped)' } else { 'exchange-conformance' }),
-          'feature-gates-fixture',
+          'feature-gates-fixture', 'server-share-payload', 'installer-stage-filter',
           'placement', 'documentation', 'naming', 'site', 'site-addresses', 'site-origins', 'site-positioning')
 if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
@@ -331,6 +331,9 @@ if ($SkipExchangeGo) {
 
 # --- 4: the placement registry against its runners ----------------------------
 Invoke-ScriptSuite 'feature-gates-fixture' 'Feature gate fixtures (206)' (Join-Path $root 'tools\Test-FeatureGatesFixture.ps1')
+Invoke-ScriptSuite 'server-share-payload' 'Server sharing payload parity fixture (L0307)' (Join-Path $root 'tests\Integration\ServerSharePayload.ps1')
+Invoke-ScriptSuite 'installer-stage-filter' 'Installer stage filter fixture (L0307)' (Join-Path $root 'tests\Integration\InstallerStageFilter.ps1')
+Invoke-ScriptSuite 'installer-component-parity' 'Installer component parity: User and Server setups against the component map, staged payloads and ISCC (L0307)' (Join-Path $root 'tests\Integration\InstallerComponentParity.ps1')
 
 Invoke-ScriptSuite 'placement' 'Check placement' (Join-Path $root 'tools\Test-CheckPlacement.ps1')
 

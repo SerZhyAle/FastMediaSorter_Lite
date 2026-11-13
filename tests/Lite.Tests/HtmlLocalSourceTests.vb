@@ -723,6 +723,18 @@ Public Class HtmlLocalSourceTests
     End Function
 
     <Fact>
+    Public Async Function A_cancelled_caller_cannot_receive_a_cached_resource() As Task
+        Put("d/index.html", "e")
+        Put("d/a.css", "a")
+        Dim source As LocalHtmlDocumentSource = OpenOk("d/index.html", cacheBytes:=1024L)
+        Assert.True((Await source.ReadResourceAsync("a.css", CancellationToken.None)).IsOk)
+        Using cts As New CancellationTokenSource()
+            cts.Cancel()
+            Assert.Equal(HtmlOutcome.Cancelled, (Await source.ReadResourceAsync("a.css", cts.Token)).Status)
+        End Using
+    End Function
+
+    <Fact>
     Public Async Function Dispose_is_idempotent_and_ends_all_further_work() As Task
         Put("d/index.html", "e")
         Put("d/a.css", "a")

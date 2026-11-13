@@ -409,6 +409,118 @@ Public Class ExchangeDriveSessionTests
         End Using
     End Function
 
+    ' ------------------------------------------------------------------------------------------ specification L0308
+
+    ''' <summary>What HttpClient does when its own Timeout runs out: a TaskCanceledException the caller did not ask for.</summary>
+    Private NotInheritable Class TimingOutHandler
+        Inherits HttpMessageHandler
+
+        Protected Overrides Function SendAsync(request As HttpRequestMessage, cancellationToken As CancellationToken) As Task(Of HttpResponseMessage)
+            Throw New TaskCanceledException("timed out", New TimeoutException())
+        End Function
+    End Class
+
+    <Fact>
+    Public Sub L0308_a_pair_is_taken_whole_from_one_source_and_a_partial_override_never_mixes_two_clients()
+        Dim env As New Dictionary(Of String, String)
+        Dim meta As New Dictionary(Of String, String)
+        Dim readEnv As Func(Of String, String) = Function(k) If(env.ContainsKey(k), env(k), Nothing)
+        Dim readMeta As Func(Of String, String) = Function(k) If(meta.ContainsKey(k), meta(k), Nothing)
+
+        ' nothing anywhere: not configured, no partial override
+        Dim config As ExchangeDriveClientConfig = ExchangeDriveClientConfig.Resolve(readEnv, readMeta)
+        Assert.False(config.IsConfigured)
+        Assert.Equal(ExchangeDriveClientConfig.PairSource.None, config.Source)
+        Assert.False(config.PartialOverrideIgnored)
+
+        ' the build's pair alone
+        meta("FmsDriveClientId") = "build-id" : meta("FmsDriveClientSecret") = "build-secret"
+        config = ExchangeDriveClientConfig.Resolve(readEnv, readMeta)
+        Assert.Equal(ExchangeDriveClientConfig.PairSource.Build, config.Source)
+        Assert.Equal("build-id", config.ClientId)
+        Assert.Equal("build-secret", config.ClientSecret)
+
+        ' one environment value alone is ignored: the build's whole pair stays, flagged
+        For Each partialKey As String In {"FMS_DRIVE_CLIENT_ID", "FMS_DRIVE_CLIENT_SECRET"}
+            env.Clear()
+            env(partialKey) = "env-value"
+            config = ExchangeDriveClientConfig.Resolve(readEnv, readMeta)
+            Assert.Equal(ExchangeDriveClientConfig.PairSource.Build, config.Source)
+            Assert.Equal("build-id", config.ClientId)
+            Assert.Equal("build-secret", config.ClientSecret)
+            Assert.True(config.PartialOverrideIgnored)
+        Next
+
+        ' both environment values: the whole environment pair, never one half of each
+        env("FMS_DRIVE_CLIENT_ID") = "env-id" : env("FMS_DRIVE_CLIENT_SECRET") = "env-secret"
+        config = ExchangeDriveClientConfig.Resolve(readEnv, readMeta)
+        Assert.Equal(ExchangeDriveClientConfig.PairSource.Environment, config.Source)
+        Assert.Equal("env-id", config.ClientId)
+        Assert.Equal("env-secret", config.ClientSecret)
+
+        ' a build with one half only is not configured, and a partial override cannot complete it
+        meta.Remove("FmsDriveClientSecret")
+        env.Remove("FMS_DRIVE_CLIENT_ID")
+        config = ExchangeDriveClientConfig.Resolve(readEnv, readMeta)
+        Assert.False(config.IsConfigured)
+        Assert.Equal(ExchangeDriveClientConfig.PairSource.None, config.Source)
+        Assert.True(config.PartialOverrideIgnored)
+    End Sub
+
+    <Fact>
+    Public Sub L0308_a_refused_refresh_is_classified_by_what_the_person_can_do()
+        Assert.Equal(ExchangeDriveFailure.SignedOut, ExchangeDriveSession.RefreshRefusal("invalid_grant"))
+        Assert.Equal(ExchangeDriveFailure.ClientRejected, ExchangeDriveSession.RefreshRefusal("invalid_client"))
+        Assert.Equal(ExchangeDriveFailure.ClientRejected, ExchangeDriveSession.RefreshRefusal("unauthorized_client"))
+        Assert.Equal(ExchangeDriveFailure.Unavailable, ExchangeDriveSession.RefreshRefusal("temporarily_unavailable"))
+        Assert.Equal(ExchangeDriveFailure.Unavailable, ExchangeDriveSession.RefreshRefusal(""))
+    End Sub
+
+    <Fact>
+    Public Sub L0308_a_refused_consent_tells_a_denial_from_an_account_restriction()
+        Assert.Equal(ExchangeDriveSignInOutcome.ConsentDenied, ExchangeDriveSession.ConsentRefusal("access_denied"))
+        For Each code As String In {"admin_policy_enforced", "org_internal", "disallowed_useragent", "invalid_request", "something_new"}
+            Assert.Equal(ExchangeDriveSignInOutcome.AccountRestricted, ExchangeDriveSession.ConsentRefusal(code))
+        Next
+    End Sub
+
+    <Fact>
+    Public Async Function L0308_an_account_restriction_at_consent_stores_nothing() As Task
+        Dim rig As New DriveRig()
+        Dim store As ExchangeDriveTokenStore = NewStore(New ReversingCipher())
+        Dim session As ExchangeDriveSession = NewSession(rig, store)
+        Dim browser As New Browser() With {.Reply = Function(query) "error=admin_policy_enforced&state=" & Uri.EscapeDataString(query("state"))}
+        Assert.Equal(ExchangeDriveSignInOutcome.AccountRestricted, Await session.SignInAsync(AddressOf browser.Open, "x", 30, CancellationToken.None))
+        Await browser.Done
+        Assert.False(store.Exists())
+        Assert.Equal(0, rig.Drive.RequestCount)
+    End Function
+
+    <Fact>
+    Public Async Function L0308_a_refresh_that_times_out_is_offline_and_keeps_the_sign_in() As Task
+        Dim store As ExchangeDriveTokenStore = NewStore(New ReversingCipher())
+        Assert.True(store.Save(ClientId, "kept-token"))
+        Using http As New HttpClient(New TimingOutHandler())
+            Dim session As New ExchangeDriveSession(http, store, New ExchangeDriveClientConfig(ClientId, ClientSecret))
+            Dim failure As ExchangeDriveException = Await Assert.ThrowsAsync(Of ExchangeDriveException)(Function() session.GetAccessTokenAsync(CancellationToken.None))
+            Assert.Equal(ExchangeDriveFailure.Offline, failure.Failure)
+            Assert.True(store.Exists())
+            Assert.True(session.IsSignedIn())
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function L0308_a_cancellation_the_caller_asked_for_is_not_reported_as_offline() As Task
+        Dim store As ExchangeDriveTokenStore = NewStore(New ReversingCipher())
+        Assert.True(store.Save(ClientId, "kept-token"))
+        Using http As New HttpClient(New TimingOutHandler()), source As New CancellationTokenSource()
+            source.Cancel()
+            Dim session As New ExchangeDriveSession(http, store, New ExchangeDriveClientConfig(ClientId, ClientSecret))
+            Await Assert.ThrowsAnyAsync(Of OperationCanceledException)(Function() session.GetAccessTokenAsync(source.Token))
+            Assert.True(store.Exists())
+        End Using
+    End Function
+
     ' ------------------------------------------------------------------------------------------ sign out, criterion 4
 
     <Fact>

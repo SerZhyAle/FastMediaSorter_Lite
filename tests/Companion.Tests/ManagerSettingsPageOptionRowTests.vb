@@ -121,6 +121,10 @@ Public Class ManagerSettingsPageOptionRowTests
     End Function
 
     Private Shared Function Fld(window As Share_Settings_Form, name As String) As CheckBox
+        If name = "_schedFeature" Then
+            ' L0297 moved this option into the shared scheduling panel hosted by Manager settings.
+            Return TryCast(window.Controls.Find("managerSchedFeature", True).FirstOrDefault(), CheckBox)
+        End If
         Dim field As FieldInfo = GetType(Share_Settings_Form).GetField(name, Flags)
         Assert.True(field IsNot Nothing, "the window has no field " & name)
         Return TryCast(field.GetValue(window), CheckBox)

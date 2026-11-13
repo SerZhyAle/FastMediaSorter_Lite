@@ -65,15 +65,12 @@ Public Class SendLogsHostingTests
     ' ------------------------------------------------------------------ one flow, tray and About entries -----------
 
     <Fact>
-    Public Sub Every_entry_point_opens_the_same_flow()
+    Public Sub About_is_the_only_settings_entry_point_for_the_support_flow()
         Dim forms As String = Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "Forms")
-        Dim entries As String() = {
-            Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "TrayContext.vb"),
-            Path.Combine(forms, "Share_Settings_Form.About.vb")}
-        For Each entryFile As String In entries
-            Dim text As String = File.ReadAllText(entryFile)
-            Assert.True(text.Contains("SendLogsFlow.RunAsync("), Path.GetFileName(entryFile) & " does not open SendLogsFlow")
-        Next
+        Dim about As String = File.ReadAllText(Path.Combine(forms, "Share_Settings_Form.About.vb"))
+        Assert.Contains("SendLogsFlow.RunAsync(", about)
+        Dim tray As String = File.ReadAllText(Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "TrayContext.vb"))
+        Assert.DoesNotContain("SendLogsFlow.RunAsync(", tray)
         For Each group As String In {"Share_Settings_Form.vb", "Share_Settings_Form.Exchange.vb", "Share_Settings_Form.Hosting.vb"}
             Assert.DoesNotContain("SendLogsFlow.RunAsync(", File.ReadAllText(Path.Combine(forms, group)))
         Next

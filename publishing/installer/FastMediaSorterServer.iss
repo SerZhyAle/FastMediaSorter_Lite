@@ -12,9 +12,11 @@
 ;
 ; Why it is a SEPARATE script rather than a flag on FastMediaSorter.iss: it is a
 ; different product entry (its own AppId, ARP name, directory and winget package), it
-; is always elevated, its wizard asks different questions, and it deliberately carries
-; a much smaller payload - no VLC codecs, no OCR models, and the viewer only as an
-; optional component that stays unticked (ticket 132). The one thing the
+; is always elevated and its wizard asks different questions. The server leads and the
+; viewer is an optional component that stays unticked (ticket 132) - but the SET of
+; capabilities on offer is the User installer's: the viewer, its VLC codecs, PDFium and OCR
+; models, the Share Manager and FileDO, each through an optional item (L0307). What differs
+; is the default selection, never what is available. The one thing the
 ; two installers MUST agree on lives in neither of them: the frozen service name and
 ; the on-disk state format, both owned by the worker.
 
@@ -26,15 +28,35 @@
   #error SourceDir must be defined (path to the staged build output)
 #endif
 
+; The wording of the offline support payloads, shared with the User setup (L0307). The packagers
+; pass /DNoOcrModels when the PAIR was built without OCR models and /DOcrBest when the best models
+; are bundled too (tools\lib\InstallerPayloadSelection.ps1, from the User stage's payload manifest).
+#include "OfflineSupportText.isi"
+
 ; The OPTIONAL viewer component (ticket 132, Q132-1): the server leads and the viewer rides
 ; along, unchecked. Its payload is staged under <SourceDir>\viewer\ by
-; tools\Stage-ServerViewerPayload.ps1 - the same files the User installer's "compact" type
-; installs (both viewer exes and their libraries, no VLC codecs, no OCR models). A stage
-; without that folder (a hand compile, a local build with no User stage of the same
-; version) compiles a Server installer with no viewer component at all, so the component
-; can never be offered with nothing behind it; the packagers that SHIP require the folder.
+; tools\Stage-ServerViewerPayload.ps1 - the same files the User installer's `core` installs
+; (both viewer exes and their libraries) - and its offline support under
+; <SourceDir>\viewer-support\ (libvlc\, pdfium.dll, tessdata\, tessdata-best\): the same
+; trees the User installer's codecs, pdf and ocr items install. A stage without them fails
+; compilation instead of silently omitting a component.
 #if FileExists(AddBackslash(SourceDir) + "viewer\FastMediaSorter_LITE.exe")
   #define HaveViewer
+#else
+  #error The same-version User viewer stage is required; run the User installer packager first.
+#endif
+#if !FileExists(AddBackslash(SourceDir) + "viewer-support\libvlc\win-x64\libvlc.dll")
+  #error The viewer's VLC codecs are missing from the stage (viewer-support\libvlc); the Server stage must be derived from the same-version User stage by tools\Stage-ServerViewerPayload.ps1.
+#endif
+#if !FileExists(AddBackslash(SourceDir) + "viewer-support\pdfium.dll")
+  #error The viewer's PDFium is missing from the stage (viewer-support\pdfium.dll); the Server stage must be derived from the same-version User stage by tools\Stage-ServerViewerPayload.ps1.
+#endif
+; The rows of the viewer's support items in [Components] (codecs, pdf and, unless /DNoOcrModels, ocr):
+; InitializeWizard disables them together with the viewer row when a User edition is installed.
+#ifdef NoOcrModels
+  #define ViewerSupportRows 2
+#else
+  #define ViewerSupportRows 3
 #endif
 
 ; The wizard name of this edition (docs/guides/PRODUCT_NAMING.md section 1, "Server
@@ -164,9 +186,20 @@ ukrainian.CompServer=Сервер роздачі тек - Менеджер сп�
 english.CompFileDO=FileDO virtual disk host - optional extra (disk sharing stays off until you enable it)
 russian.CompFileDO=Хост виртуальных дисков FileDO - необязательное дополнение (общий доступ к дискам включается отдельно)
 ukrainian.CompFileDO=Хост віртуальних дисків FileDO - необов’язкове доповнення (спільний доступ до дисків вмикається окремо)
-english.CompViewer=Media and file manager - optional extra, not installed unless ticked (codecs and OCR models download on demand)
-russian.CompViewer=Медиа- и файловый менеджер - необязательное дополнение, не ставится, пока вы его не отметите (кодеки и модели OCR скачаются по мере надобности)
-ukrainian.CompViewer=Медіа- та файловий менеджер - необов’язкове доповнення, не ставиться, доки ви його не позначите (кодеки та моделі OCR завантажаться за потреби)
+english.CompViewer=Media and file manager - optional extra, not installed unless ticked (ticking it also ticks its offline items below: {#SupportListEn})
+russian.CompViewer=Медиа- и файловый менеджер - необязательное дополнение, не ставится, пока вы его не отметите (вместе с ним отмечаются его оффлайн-пункты ниже: {#SupportListRu})
+ukrainian.CompViewer=Медіа- та файловий менеджер - необов’язкове доповнення, не ставиться, доки ви його не позначите (разом із ним позначаються його офлайн-пункти нижче: {#SupportListUk})
+english.CompViewerCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
+russian.CompViewerCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
+ukrainian.CompViewerCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
+english.CompViewerPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the media and file manager
+russian.CompViewerPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в медиа- и файловом менеджере
+ukrainian.CompViewerPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у медіа- та файловому менеджері
+#ifndef NoOcrModels
+english.CompViewerOcr=OCR & translation models - offline on-image text recognition
+russian.CompViewerOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
+ukrainian.CompViewerOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
+#endif
 #ifndef NoExchange
 english.CompExchange={#ExchangeServerName} - optional extra: a server you run yourself, through which your devices reach each other (not installed unless ticked; the Windows service is a separate choice on the tasks page)
 russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер, который вы запускаете сами и через который ваши устройства связываются друг с другом (не ставится, пока вы его не отметите; служба Windows - отдельный выбор на странице задач)
@@ -191,12 +224,12 @@ ukrainian.OpenManagerTask=Відкрити Менеджер спільного �
 ; The wizard's first screen and the components page lead with the server role and name the
 ; two secondary roles once, as optional and off until chosen. [name/ver] is Inno's own token.
 [Messages]
-english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The next page offers two optional extras: FileDO virtual disk hosting (ticked - clear it if you do not need it) and the media and file manager (unticked - tick it to add it).%n%nIt is recommended that you close all other applications before continuing.
-russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. На следующей странице два необязательных дополнения: хостинг виртуальных дисков FileDO (отмечено - снимите галочку, если он не нужен) и медиа- и файловый менеджер (не отмечено - отметьте, чтобы добавить).%n%nРекомендуется закрыть все остальные приложения перед продолжением.
-ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. На наступній сторінці два необов’язкові доповнення: хостинг віртуальних дисків FileDO (позначено - зніміть позначку, якщо він не потрібен) і медіа- та файловий менеджер (не позначено - позначте, щоб додати).%n%nРекомендовано закрити всі інші програми перед продовженням.
-english.SelectComponentsLabel2=The Folder Share Server is always installed. FileDO virtual disk hosting (ticked) and the media and file manager (unticked) are optional extras; sharing stays off until you choose folders. Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Хостинг виртуальных дисков FileDO (отмечен) и медиа- и файловый менеджер (не отмечен) - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки. Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Хостинг віртуальних дисків FileDO (позначено) і медіа- та файловий менеджер (не позначено) - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки. Натисніть "Далі", коли будете готові продовжити.
+english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The next page offers two optional extras: FileDO virtual disk hosting (ticked - clear it if you do not need it) and the media and file manager (unticked - tick it to add it, with its offline {#SupportListEn}).{#SupportNoteEn}%n%nIt is recommended that you close all other applications before continuing.
+russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. На следующей странице два необязательных дополнения: хостинг виртуальных дисков FileDO (отмечено - снимите галочку, если он не нужен) и медиа- и файловый менеджер (не отмечено - отметьте, чтобы добавить вместе с его оффлайн-пунктами: {#SupportListRu}).{#SupportNoteRu}%n%nРекомендуется закрыть все остальные приложения перед продолжением.
+ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. На наступній сторінці два необов’язкові доповнення: хостинг віртуальних дисків FileDO (позначено - зніміть позначку, якщо він не потрібен) і медіа- та файловий менеджер (не позначено - позначте, щоб додати разом із його офлайн-пунктами: {#SupportListUk}).{#SupportNoteUk}%n%nРекомендовано закрити всі інші програми перед продовженням.
+english.SelectComponentsLabel2=The Folder Share Server is always installed. FileDO virtual disk hosting (ticked) and the media and file manager (unticked, with its offline {#SupportListEn} as items below it) are optional extras; sharing stays off until you choose folders.{#SupportNoteEn} Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Хостинг виртуальных дисков FileDO (отмечен) и медиа- и файловый менеджер (не отмечен, его оффлайн-пункты - {#SupportListRu} - стоят ниже) - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки.{#SupportNoteRu} Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Хостинг віртуальних дисків FileDO (позначено) і медіа- та файловий менеджер (не позначено, його офлайн-пункти - {#SupportListUk} - стоять нижче) - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки.{#SupportNoteUk} Натисніть "Далі", коли будете готові продовжити.
 
 [Types]
 Name: "custom"; Description: "{cm:TypeServerCustom}"; Flags: iscustom
@@ -214,28 +247,49 @@ Name: "server"; Description: "{cm:CompServer}"; Types: custom; Flags: fixed
 Name: "filedo"; Description: "{cm:CompFileDO}"; Types: custom
 #ifdef HaveViewer
 Name: "viewer"; Description: "{cm:CompViewer}"
+; The viewer's offline support (L0307): the SAME items the User installer offers (codecs, pdf, ocr),
+; as children of the viewer, so one tick on the viewer brings the support payloads this setup carries
+; and each can be cleared on its own. No Types, like the viewer: they start unticked, and the default
+; payload of this package stays exactly the server's. They sit right after the viewer on purpose -
+; InitializeWizard addresses the rows by index (viewer = 2, its support items follow).
+Name: "viewer\codecs"; Description: "{cm:CompViewerCodecs}"
+Name: "viewer\pdf"; Description: "{cm:CompViewerPdf}"
+#ifndef NoOcrModels
+Name: "viewer\ocr"; Description: "{cm:CompViewerOcr}"
+#endif
 #endif
 #ifndef NoExchange
 ; Same rule as the viewer: NO Types, so it starts unticked and the default payload of this package
-; stays exactly the server's. It is listed AFTER the viewer on purpose - InitializeWizard addresses
-; the viewer row by index. dontinheritcheck: not a child of anything.
+; stays exactly the server's. It is listed AFTER the viewer and its support items on purpose -
+; InitializeWizard addresses those rows by index. dontinheritcheck: not a child of anything.
 Name: "exchange"; Description: "{cm:CompExchange}"; Flags: dontinheritcheck
 #endif
 
 [Files]
-; The Share Manager (self-contained .NET 10) + the headless Go worker. Deliberately
-; no VLC codecs and no OCR models, and the viewer only as the optional component
-; below: this package's job is an always-on file share on a machine that may well
-; have no interactive user at all.
+; The Share Manager (self-contained .NET 10) + the headless Go worker. The viewer, with its
+; offline codecs, PDF preview and OCR models, is carried as optional components below
+; (unticked by default): this package's job is an always-on file share on a machine that may
+; well have no interactive user at all.
 Source: "{#SourceDir}\{#CompanionExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: filedo
 #ifdef HaveViewer
 ; The OPTIONAL viewer (unticked by default, ticket 132): the mainline exe and the libraries it
 ; loads, laid down NEXT TO the Share Manager exactly as the User edition lays them down - the
-; viewer's "Share this folder" finds FastMediaSorterCompanion.exe beside itself. No codecs and
-; no OCR models: those download on first use, as in the User edition's "compact" type.
+; viewer's "Share this folder" finds FastMediaSorterCompanion.exe beside itself.
 Source: "{#SourceDir}\viewer\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: viewer
+; The viewer's offline support, laid down exactly as the User edition's codecs, pdf and ocr items do
+; (L0307). Staged under viewer-support\ by tools\Stage-ServerViewerPayload.ps1 from the same-version User
+; stage. No skipifsourcedoesntexist: a setup that offers an item carries it, and a missing payload fails
+; the compile. The OCR models are an explicit choice of the pair (/DNoOcrModels), never a silent omission.
+Source: "{#SourceDir}\viewer-support\libvlc\*"; DestDir: "{app}\libvlc"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: viewer\codecs
+Source: "{#SourceDir}\viewer-support\pdfium.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: viewer\pdf
+#ifndef NoOcrModels
+Source: "{#SourceDir}\viewer-support\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: viewer\ocr
+#ifdef OcrBest
+Source: "{#SourceDir}\viewer-support\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: viewer\ocr
+#endif
+#endif
 #endif
 #ifndef NoExchange
 ; The Media Exchange Server tree (exe, .sha256, the two helpers, README.txt). Without
@@ -434,15 +488,22 @@ end;
   carries the viewer (its own directory, shortcut and file associations), and a second copy
   would race it for the single-instance mutex and the "default app" choice. The row stays on
   the page - nothing is hidden from the person who looks (ticket 132 section 3.3) - ticked
-  off, disabled, and saying why. Index 2 = server, filedo, viewer in [Components] order. }
+  off, disabled, and saying why. Index 2 = server, filedo, viewer in [Components] order, and the
+  viewer's support items (codecs, pdf, ocr: ViewerSupportRows of them, L0307) are the rows right after
+  it - the same User edition carries them too, so they are ticked off and disabled together. }
 procedure InitializeWizard;
+var
+  Row: Integer;
 begin
   if UserEditionInstalled then
   begin
     WizardForm.ComponentsList.ItemCaption[2] :=
       WizardForm.ComponentsList.ItemCaption[2] + ' ' + CustomMessage('ViewerBlockedSuffix');
-    WizardForm.ComponentsList.Checked[2] := False;
-    WizardForm.ComponentsList.ItemEnabled[2] := False;
+    for Row := 2 to 2 + {#ViewerSupportRows} do
+    begin
+      WizardForm.ComponentsList.Checked[Row] := False;
+      WizardForm.ComponentsList.ItemEnabled[Row] := False;
+    end;
   end;
 end;
 #endif

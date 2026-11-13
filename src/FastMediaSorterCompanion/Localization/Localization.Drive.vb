@@ -33,19 +33,20 @@ Partial Public NotInheritable Class Localization
         Add("Google Drive сейчас недоступен", "Google Drive is unavailable right now", "Google Drive зараз недоступний", "Google Drive ist derzeit nicht verfügbar", "Google Drive al momento non è disponibile", "Google Drive no está disponible en este momento", "Google Drive est indisponible pour le moment", "O Google Drive está indisponível neste momento", "Google Drive غير متاح حاليًا", "Google Drive अभी उपलब्ध नहीं है", "Google Drive এখন অনুপলব্ধ", "Google Drive اس وقت دستیاب نہیں ہے", "Google Drive 当前不可用")
         Add("Выход из Google Drive..", "Signing out of Google Drive..", "Вихід із Google Drive..", "Abmeldung von Google Drive..", "Uscita da Google Drive..", "Cerrando sesión en Google Drive..", "Déconnexion de Google Drive..", "Saindo do Google Drive..", "جارٍ تسجيل الخروج من Google Drive..", "Google Drive से साइन-आउट हो रहा है..", "Google Drive থেকে সাইন-আউট হচ্ছে..", "Google Drive سے سائن اوٹ ہو رہا ہے..", "正在退出 Google Drive..")
         Add("Вход в Google Drive не выполнен", "Not signed in to Google Drive", "Вхід у Google Drive не виконано", "Nicht bei Google Drive angemeldet", "Accesso a Google Drive non effettuato", "No se ha iniciado sesión en Google Drive", "Non connecté à Google Drive", "Não conectado ao Google Drive", "لم يتم تسجيل الدخول إلى Google Drive", "Google Drive में साइन इन नहीं है", "Google Drive-এ সাইন ইন করা নেই", "Google Drive میں سائن اِن نہیں ہے", "未登录 Google Drive")
-        Add("Эта сборка не содержит ключа доступа к Google Drive, поэтому вход недоступен. Остальные функции менеджера работают как обычно.",
-            "This build does not include an access key for Google Drive, so sign-in is unavailable. The rest of the Manager works as usual.",
-            "Ця збірка не містить ключа доступу до Google Drive, тому вхід недоступний. Решта функцій менеджера працює як зазвичай.",
-            "Dieser Build enthält keinen Zugriffsschlüssel für Google Drive, daher ist die Anmeldung nicht verfügbar. Alle anderen Funktionen des Managers arbeiten wie gewohnt.",
-            "Questa versione non include una chiave di accesso a Google Drive, quindi l'accesso non è disponibile. Le altre funzioni del Manager funzionano come al solito.",
-            "Esta versión no incluye una clave de acceso a Google Drive, por lo que el inicio de sesión no está disponible. El resto de las funciones del administrador funciona como de costumbre.",
-            "Cette version ne contient pas de clé d'accès à Google Drive ; la connexion est donc indisponible. Les autres fonctions du gestionnaire fonctionnent comme d'habitude.",
-            "Esta versão não inclui uma chave de acesso ao Google Drive, por isso o login não está disponível. As demais funções do gerenciador funcionam normalmente.",
-            "لا يتضمن هذا الإصدار مفتاح وصول إلى Google Drive، لذا فإن تسجيل الدخول غير متاح. تعمل باقي وظائف المدير كالمعتاد.",
-            "इस संस्करण में Google Drive की एक्सेस कुंजी शामिल नहीं है, इसलिए साइन-इन उपलब्ध नहीं है। मैनेजर के बाकी फ़ंक्शन सामान्य रूप से काम करते हैं।",
-            "এই সংস্করণে Google Drive-এর অ্যাক্সেস কী অন্তর্ভুক্ত নেই, তাই সাইন-ইন অনুপলব্ধ। ম্যানেজারের বাকি ফিচারগুলো যথারীতি কাজ করে।",
-            "اس ورژن میں Google Drive کی رسائی کی کلید شامل نہیں ہے، اس لیے سائن اِن دستیاب نہیں ہے۔ مینیجر کی باقی خصوصیات معمول کے مطابق کام کرتی ہیں۔",
-            "此版本不包含 Google Drive 的访问密钥，因此无法登录。管理器的其他功能照常工作。")
+        ' Specification L0308 section 2.4: the not-configured state names its remedy (a configured installation), never a setup.
+        Add("Эта сборка не содержит ключа доступа к Google Drive, поэтому вход недоступен. Чтобы войти, установите текущую версию приложения с официального сайта. Остальные функции менеджера работают как обычно.",
+            "This build does not include an access key for Google Drive, so sign-in is unavailable. To sign in, install the current version of the application from its official site. The rest of the Manager works as usual.",
+            "Ця збірка не містить ключа доступу до Google Drive, тому вхід недоступний. Щоб увійти, установіть поточну версію застосунку з офіційного сайту. Решта функцій менеджера працює як зазвичай.",
+            "Dieser Build enthält keinen Zugriffsschlüssel für Google Drive, daher ist die Anmeldung nicht verfügbar. Um sich anzumelden, installieren Sie die aktuelle Version der Anwendung von der offiziellen Website. Alle anderen Funktionen des Managers arbeiten wie gewohnt.",
+            "Questa versione non include una chiave di accesso a Google Drive, quindi l'accesso non è disponibile. Per accedere, installa la versione attuale dell'applicazione dal sito ufficiale. Le altre funzioni del Manager funzionano come al solito.",
+            "Esta versión no incluye una clave de acceso a Google Drive, por lo que el inicio de sesión no está disponible. Para iniciar sesión, instala la versión actual de la aplicación desde su sitio oficial. El resto de las funciones del administrador funciona como de costumbre.",
+            "Cette version ne contient pas de clé d'accès à Google Drive ; la connexion est donc indisponible. Pour vous connecter, installez la version actuelle de l'application depuis son site officiel. Les autres fonctions du gestionnaire fonctionnent comme d'habitude.",
+            "Esta versão não inclui uma chave de acesso ao Google Drive, por isso o login não está disponível. Para entrar, instale a versão atual do aplicativo pelo site oficial. As demais funções do gerenciador funcionam normalmente.",
+            "لا يتضمن هذا الإصدار مفتاح وصول إلى Google Drive، لذا فإن تسجيل الدخول غير متاح. لتسجيل الدخول، ثبّت الإصدار الحالي من التطبيق من موقعه الرسمي. تعمل باقي وظائف المدير كالمعتاد.",
+            "इस संस्करण में Google Drive की एक्सेस कुंजी शामिल नहीं है, इसलिए साइन-इन उपलब्ध नहीं है। साइन इन करने के लिए आधिकारिक साइट से ऐप्लिकेशन का मौजूदा संस्करण इंस्टॉल करें। मैनेजर के बाकी फ़ंक्शन सामान्य रूप से काम करते हैं।",
+            "এই সংস্করণে Google Drive-এর অ্যাক্সেস কী অন্তর্ভুক্ত নেই, তাই সাইন-ইন অনুপলব্ধ। সাইন ইন করতে অফিসিয়াল সাইট থেকে অ্যাপ্লিকেশনের বর্তমান সংস্করণ ইনস্টল করুন। ম্যানেজারের বাকি ফিচারগুলো যথারীতি কাজ করে।",
+            "اس ورژن میں Google Drive کی رسائی کی کلید شامل نہیں ہے، اس لیے سائن اِن دستیاب نہیں ہے۔ سائن اِن کرنے کے لیے سرکاری سائٹ سے ایپلیکیشن کا موجودہ ورژن انسٹال کریں۔ مینیجر کی باقی خصوصیات معمول کے مطابق کام کرتی ہیں۔",
+            "此版本不包含 Google Drive 的访问密钥，因此无法登录。如需登录，请从官方网站安装应用程序的当前版本。管理器的其他功能照常工作。")
         Add("Вход больше не действует: доступ отозван или истёк. Войдите снова.",
             "The sign-in is no longer valid: access was revoked or has expired. Sign in again.",
             "Вхід більше не дійсний: доступ відкликано або він закінчився. Увійдіть знову.",
@@ -227,6 +228,53 @@ Partial Public NotInheritable Class Localization
             "یہ پیکٹ اپنے Google Drive سے حذف کریں؟ اس کے بعد آلات اسے وصول نہیں کر سکیں گے۔",
             "从您的 Google Drive 删除此数据包？之后设备将无法再接收它。")
         Add("Нет связи с Google Drive, пакет не удалён. Повторите попытку.", "No connection to Google Drive, the packet was not deleted. Try again.", "Немає зв'язку з Google Drive, пакет не видалено. Спробуйте ще раз.", "Keine Verbindung zu Google Drive, das Paket wurde nicht gelöscht. Versuchen Sie es erneut.", "Nessuna connessione a Google Drive, il pacchetto non è stato eliminato. Riprova.", "Sin conexión con Google Drive, el paquete no se eliminó. Inténtalo de nuevo.", "Pas de connexion à Google Drive, le paquet n'a pas été supprimé. Réessayez.", "Sem conexão com o Google Drive, o pacote não foi excluído. Tente novamente.", "لا يوجد اتصال بـ Google Drive، لم تُحذف الحزمة. أعد المحاولة.", "Google Drive से कनेक्शन नहीं है, पैकेट नहीं हटाया गया। फिर से कोशिश करें।", "Google Drive-এর সঙ্গে সংযোগ নেই, প্যাকেট মোছা হয়নি। আবার চেষ্টা করুন।", "Google Drive سے رابطہ نہیں، پیکٹ حذف نہیں ہوا۔ دوبارہ کوشش کریں۔", "无法连接 Google Drive，数据包未删除。请重试。")
+        ' Specification L0308 section 3: the help entry beside "Sign in..", the short note under the buttons, and the outcomes
+        ' that name their own next action (an account restriction, a build client Google refuses, the first round not yet answered).
+        Add("Как подключить Google Drive..", "How to connect Google Drive..", "Як підключити Google Drive..", "So verbinden Sie Google Drive..",
+            "Come collegare Google Drive..", "Cómo conectar Google Drive..", "Comment connecter Google Drive..", "Como conectar o Google Drive..",
+            "كيفية ربط Google Drive..", "Google Drive कैसे कनेक्ट करें..", "Google Drive কীভাবে যুক্ত করবেন..", "Google Drive کیسے جوڑیں..", "如何连接 Google Drive..")
+        Add("Нужны аккаунт Google и интернет; приложение Google Drive не требуется. Пароль вводится только на странице Google в браузере.",
+            "You need a Google account and an internet connection; the Google Drive app is not required. Your password is entered only on Google's page in the browser.",
+            "Потрібні обліковий запис Google та інтернет; застосунок Google Drive не потрібен. Пароль вводиться лише на сторінці Google у браузері.",
+            "Sie benötigen ein Google-Konto und eine Internetverbindung; die Google Drive-App ist nicht erforderlich. Ihr Passwort geben Sie nur auf der Google-Seite im Browser ein.",
+            "Servono un account Google e una connessione a Internet; l'app Google Drive non è necessaria. La password si inserisce solo nella pagina di Google nel browser.",
+            "Necesitas una cuenta de Google y conexión a internet; no hace falta la aplicación Google Drive. La contraseña se escribe solo en la página de Google en el navegador.",
+            "Il faut un compte Google et une connexion Internet ; l'application Google Drive n'est pas nécessaire. Le mot de passe se saisit uniquement sur la page de Google dans le navigateur.",
+            "Você precisa de uma conta Google e de conexão com a internet; o app Google Drive não é necessário. A senha é digitada apenas na página do Google no navegador.",
+            "تحتاج إلى حساب Google واتصال بالإنترنت؛ ولا حاجة إلى تطبيق Google Drive. تُدخل كلمة المرور فقط في صفحة Google في المتصفح.",
+            "Google खाता और इंटरनेट कनेक्शन चाहिए; Google Drive ऐप ज़रूरी नहीं है। पासवर्ड केवल ब्राउज़र में Google के पेज पर डाला जाता है।",
+            "একটি Google অ্যাকাউন্ট ও ইন্টারনেট সংযোগ লাগবে; Google Drive অ্যাপ লাগবে না। পাসওয়ার্ড শুধু ব্রাউজারে Google-এর পেজে দেওয়া হয়।",
+            "Google اکاؤنٹ اور انٹرنیٹ کنکشن درکار ہے؛ Google Drive ایپ ضروری نہیں۔ پاس ورڈ صرف براؤزر میں Google کے صفحے پر درج کیا جاتا ہے۔",
+            "需要一个 Google 账号和互联网连接；不需要 Google Drive 应用。密码只在浏览器中的 Google 页面上输入。")
+        Add("Google больше не принимает ключ входа этой установки. Установите текущую версию приложения с официального сайта; вход на этом ПК сохранён.",
+            "Google no longer accepts the sign-in key of this installation. Install the current version of the application from its official site; the sign-in on this PC is kept.",
+            "Google більше не приймає ключ входу цієї інсталяції. Установіть поточну версію застосунку з офіційного сайту; вхід на цьому ПК збережено.",
+            "Google akzeptiert den Anmeldeschlüssel dieser Installation nicht mehr. Installieren Sie die aktuelle Version der Anwendung von der offiziellen Website; die Anmeldung auf diesem PC bleibt erhalten.",
+            "Google non accetta più la chiave di accesso di questa installazione. Installa la versione attuale dell'applicazione dal sito ufficiale; l'accesso su questo PC resta salvato.",
+            "Google ya no acepta la clave de inicio de sesión de esta instalación. Instala la versión actual de la aplicación desde su sitio oficial; el inicio de sesión en este PC se conserva.",
+            "Google n'accepte plus la clé de connexion de cette installation. Installez la version actuelle de l'application depuis son site officiel ; la connexion sur ce PC est conservée.",
+            "O Google não aceita mais a chave de login desta instalação. Instale a versão atual do aplicativo pelo site oficial; o login neste PC é mantido.",
+            "لم يعد Google يقبل مفتاح تسجيل الدخول لهذا التثبيت. ثبّت الإصدار الحالي من التطبيق من موقعه الرسمي؛ يبقى تسجيل الدخول على هذا الكمبيوتر محفوظًا.",
+            "Google अब इस इंस्टॉलेशन की साइन-इन कुंजी स्वीकार नहीं करता। आधिकारिक साइट से ऐप्लिकेशन का मौजूदा संस्करण इंस्टॉल करें; इस पीसी पर साइन-इन सहेजा रहता है।",
+            "Google আর এই ইনস্টলেশনের সাইন-ইন কী গ্রহণ করে না। অফিসিয়াল সাইট থেকে অ্যাপ্লিকেশনের বর্তমান সংস্করণ ইনস্টল করুন; এই পিসিতে সাইন-ইন সংরক্ষিত থাকে।",
+            "Google اب اس انسٹالیشن کی سائن اِن کلید قبول نہیں کرتا۔ سرکاری سائٹ سے ایپلیکیشن کا موجودہ ورژن انسٹال کریں؛ اس پی سی پر سائن اِن محفوظ رہتا ہے۔",
+            "Google 不再接受此安装的登录密钥。请从官方网站安装应用程序的当前版本；此电脑上的登录信息仍会保留。")
+        Add("Google не разрешил вход этим аккаунтом: его ограничивает организация или сам Google. Войдите другим аккаунтом Google или обратитесь к администратору аккаунта.",
+            "Google did not allow sign-in with this account: an organization or Google itself restricts it. Sign in with another Google account or contact the account's administrator.",
+            "Google не дозволив вхід цим обліковим записом: його обмежує організація або сам Google. Увійдіть іншим обліковим записом Google або зверніться до адміністратора облікового запису.",
+            "Google hat die Anmeldung mit diesem Konto nicht erlaubt: Eine Organisation oder Google selbst schränkt es ein. Melden Sie sich mit einem anderen Google-Konto an oder wenden Sie sich an den Administrator des Kontos.",
+            "Google non ha consentito l'accesso con questo account: lo limita un'organizzazione o Google stesso. Accedi con un altro account Google o rivolgiti all'amministratore dell'account.",
+            "Google no permitió iniciar sesión con esta cuenta: una organización o el propio Google la restringe. Inicia sesión con otra cuenta de Google o contacta con el administrador de la cuenta.",
+            "Google n'a pas autorisé la connexion avec ce compte : une organisation ou Google lui-même le restreint. Connectez-vous avec un autre compte Google ou contactez l'administrateur du compte.",
+            "O Google não permitiu o login com esta conta: uma organização ou o próprio Google a restringe. Entre com outra conta Google ou fale com o administrador da conta.",
+            "لم يسمح Google بتسجيل الدخول بهذا الحساب: تقيّده مؤسسة أو Google نفسه. سجّل الدخول بحساب Google آخر أو تواصل مع مسؤول الحساب.",
+            "Google ने इस खाते से साइन-इन की अनुमति नहीं दी: इसे कोई संगठन या स्वयं Google सीमित करता है। किसी दूसरे Google खाते से साइन इन करें या खाते के व्यवस्थापक से संपर्क करें।",
+            "Google এই অ্যাকাউন্টে সাইন-ইনের অনুমতি দেয়নি: কোনো প্রতিষ্ঠান বা Google নিজেই এটি সীমিত করে। অন্য একটি Google অ্যাকাউন্টে সাইন ইন করুন অথবা অ্যাকাউন্টের অ্যাডমিনিস্ট্রেটরের সঙ্গে যোগাযোগ করুন।",
+            "Google نے اس اکاؤنٹ سے سائن اِن کی اجازت نہیں دی: اسے کوئی ادارہ یا خود Google محدود کرتا ہے۔ کسی دوسرے Google اکاؤنٹ سے سائن اِن کریں یا اکاؤنٹ کے منتظم سے رابطہ کریں۔",
+            "Google 不允许使用此账号登录：某个组织或 Google 本身限制了该账号。请使用其他 Google 账号登录，或联系该账号的管理员。")
+        Add("Проверка связи с Google Drive..", "Checking the connection to Google Drive..", "Перевірка зв'язку з Google Drive..", "Verbindung zu Google Drive wird geprüft..",
+            "Verifica della connessione a Google Drive..", "Comprobando la conexión con Google Drive..", "Vérification de la connexion à Google Drive..", "Verificando a conexão com o Google Drive..",
+            "جارٍ التحقق من الاتصال بـ Google Drive..", "Google Drive से कनेक्शन की जाँच हो रही है..", "Google Drive-এর সঙ্গে সংযোগ যাচাই করা হচ্ছে..", "Google Drive سے رابطے کی جانچ ہو رہی ہے..", "正在检查与 Google Drive 的连接..")
         Add("Google Drive не удалил пакет. Повторите попытку.", "Google Drive did not delete the packet. Try again.", "Google Drive не видалив пакет. Спробуйте ще раз.", "Google Drive hat das Paket nicht gelöscht. Versuchen Sie es erneut.", "Google Drive non ha eliminato il pacchetto. Riprova.", "Google Drive no eliminó el paquete. Inténtalo de nuevo.", "Google Drive n'a pas supprimé le paquet. Réessayez.", "O Google Drive não excluiu o pacote. Tente novamente.", "لم يحذف Google Drive الحزمة. أعد المحاولة.", "Google Drive ने पैकेट नहीं हटाया। फिर से कोशिश करें।", "Google Drive প্যাকেট মোছেনি। আবার চেষ্টা করুন।", "Google Drive نے پیکٹ حذف نہیں کیا۔ دوبارہ کوشش کریں۔", "Google Drive 未删除该数据包。请重试。")
     End Sub
 End Class

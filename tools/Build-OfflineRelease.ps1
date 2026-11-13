@@ -12,6 +12,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
+. (Join-Path $PSScriptRoot 'lib\InstallerPayloadSelection.ps1')
 
 # An unexpected terminating error must still end in a verdict line: the release preflight reads a step
 # that prints none as COULD NOT VERIFY (CHECK-VERDICT), so a build that died would never say so.
@@ -155,6 +156,8 @@ if ($IncludeExchange) {
 }
 
 Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+# The record of an earlier run of this version must not outlive the stage it described.
+Remove-Item -LiteralPath (Get-InstallerPayloadManifestPath -Stage $stageDir) -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
@@ -255,8 +258,11 @@ if ($IncludeExchange) {
 } elseif (Test-Path (Join-Path $stageDir "exchange")) {
     throw "The stage carries an exchange\ folder but the shipping gate is shut (-IncludeExchange not given)."
 }
-$noExchangeDefine = @()
-if (-not $IncludeExchange) { $noExchangeDefine = @("/DNoExchange") }
+# Judge and record the stage (L0307): the release carries the best OCR models, the VLC codecs and
+# PDFium, and the exchange tree only while the gate is open. Both setups below take their ISCC
+# defines from this one record, and the Server stage is derived from it, so the pair cannot differ.
+$payloadManifest = New-InstallerPayloadManifest -Stage $stageDir -Version $Version -OcrModels best -Exchange ([bool]$IncludeExchange)
+$isccDefines = Get-InstallerIsccDefines -Manifest $payloadManifest
 
 $zipName = "FastMediaSorter-$Version-windows-x64.zip"
 $zipPath = Join-Path $distDir $zipName
@@ -272,7 +278,7 @@ Write-Host "SHA256: $zipHash"
 # ISCC was resolved (or the script stopped) at the top - see the note there.
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs = (Resolve-Path $distDir).Path
-& $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" @noExchangeDefine (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
+& $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" @isccDefines (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
 if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup failed with exit code $LASTEXITCODE."
 }
@@ -293,11 +299,11 @@ Write-Host "SHA256: $setupHash"
 # asset the release workflow builds but the pre-flight does not is an asset whose
 # first proof of compiling is a paid, red CI job.
 #
-# Mirror of release.yml's "Build Server edition installer" step, including its lean
-# stage - the Share Manager, the Go worker and the two elevated helper scripts, plus
-# the viewer as an optional, unticked component (ticket 132). No VLC codecs, no OCR
-# models: a headless server runs none of them, and reusing the stage above would
-# ship hundreds of megabytes it never opens.
+# Mirror of release.yml's "Build Server edition installer" step: the Share Manager, the Go
+# worker and the two elevated helper scripts, plus the viewer as an optional, unticked
+# component (ticket 132) and, under it, the offline support the User setup carries - the VLC
+# codecs, PDFium and the OCR models (L0307). All of it is taken from the stage above through its
+# payload manifest, so the two setups of one build offer the same set.
 $serverStage = Join-Path $solutionDir "stage\FastMediaSorter-$Version-windows-x64-server"
 if (Test-Path $serverStage) {
     Remove-Item -LiteralPath $serverStage -Recurse -Force
@@ -311,17 +317,11 @@ foreach ($extra in @("README.md", "LICENSE", "THIRD-PARTY-NOTICES.txt")) {
     }
 }
 
-# Both come from the staged User tree, already published above - the two editions
-# must ship the SAME Share Manager build and the SAME worker binary, or a phone
-# paired against one could meet a different protocol on the other.
-Copy-Item (Join-Path $stageDir "FastMediaSorterCompanion.exe") $serverStage -Force
-$serverCompanion = Join-Path $serverStage "companion"
-New-Item -ItemType Directory -Path $serverCompanion -Force | Out-Null
-Copy-Item (Join-Path $stageCompanion "*") $serverCompanion -Recurse -Force
-& (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $serverStage
+# The sharing files come from the staged User tree, including its FileDO release.
+& (Join-Path $PSScriptRoot "Stage-ServerSharePayload.ps1") -UserStage $stageDir -Destination $serverStage
 # The optional, unticked viewer component of the Server edition (ticket 132), taken from the
 # User stage above - this script is the free mirror of the release, so it requires it.
-& (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") -UserStage $stageDir -Destination $serverStage -Require
+& (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") -UserStage $stageDir -Destination $serverStage -Version $Version -Require
 # The same exchange binary as the User stage (gate open only): the two setups of one build never
 # differ in it.
 if ($IncludeExchange) {
@@ -329,7 +329,7 @@ if ($IncludeExchange) {
 }
 
 $serverStageAbs = (Resolve-Path $serverStage).Path
-& $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" @noExchangeDefine (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")
+& $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" @isccDefines (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")
 if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup (Server edition) failed with exit code $LASTEXITCODE."
 }

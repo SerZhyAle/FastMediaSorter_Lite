@@ -23,7 +23,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim sec As CollapsibleSection = CreateSettingsSection("scheduled", ScheduledPageCaption())
         _secScheduled = sec
 
-        _schedPanel = New Scheduled_Manager_Panel() With {.Name = "managerSchedPanel"}
+        _schedPanel = New Scheduled_Manager_Panel() With {.Name = "managerSchedPanel", .Dock = DockStyle.Top,
+            .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink}
         AddHandler _schedPanel.StateChanged, Sub() UpdateScheduledSummary()
         AddHandler _schedPanel.AutostartLinkRequested, Sub() SelectSettingsPage("startup", "startup")
         sec.AddBodyRow(_schedPanel)

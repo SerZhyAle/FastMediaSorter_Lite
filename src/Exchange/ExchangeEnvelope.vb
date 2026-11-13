@@ -312,7 +312,7 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("refused", T("reason", True))
         ' --- the control stream (7.3, 7.4) ---
         Row("keepalive")
-        Row("bye")
+        Row("bye", T("offlineReason", omit:=WhenEmpty))
         Row("list")
         Row("directory", N("revision"), RL("devices"), RL("resources"), RL("broadcasts"), RL("grants", ExchangeOmit.WhenEmpty))
         Row("subscribe")

@@ -65,7 +65,7 @@
 
 .PARAMETER AllowDirty
     Allow a working tree with uncommitted changes (refused by default). The preflight then judges a
-    tree the tag does not carry, and says so.
+    tree the tag does not carry, and says so. This is permitted for dry runs only.
 
 .OUTPUTS
     Exit codes: 0 - the preflight passed (and, with -Push, the tag was pushed); 1 - a preflight step
@@ -116,6 +116,7 @@ if ($Version -notmatch '^\d{2}\.\d{1,2}\.\d{1,2}\.\d{4}$') {
 }
 
 $branch = (git -C $repoRoot rev-parse --abbrev-ref HEAD).Trim()
+$head = (git -C $repoRoot rev-parse --verify HEAD).Trim()
 Write-Subject 'Release-Preflight' "$tag on branch $branch, $(Get-TreeLabel $repoRoot)"
 
 # --- Git state ------------------------------------------------------------------
@@ -128,6 +129,9 @@ if ($branch -ne "main") {
 
 $dirty = (git -C $repoRoot status --porcelain)
 if ($dirty) {
+    if ($Push) {
+        Exit-Verdict 'Release-Preflight' 1 "$tag; cannot push a release from a dirty working tree: the tag would not carry the files tested"
+    }
     if (-not $AllowDirty) {
         $dirty | Select-Object -First 20 | ForEach-Object { Write-Host "  $_" }
         Exit-Verdict 'Release-Preflight' 1 "$tag; the working tree is not clean - commit or stash, or pass -AllowDirty"
@@ -136,9 +140,36 @@ if ($dirty) {
 } else {
     Say "The working tree is clean."
 }
+if ($Push) {
+    # The net48 build regenerates this tracked file. It must already carry the candidate
+    # version in the commit, or the build would change the tree after it was judged.
+    $versionSource = Get-Content -LiteralPath (Join-Path $repoRoot 'src\My Project\VersionInfo.vb') -Raw
+    $escapedVersion = [regex]::Escape($Version)
+    if ($versionSource -notmatch "AssemblyVersion\(`"$escapedVersion`"\)" -or
+        $versionSource -notmatch "AssemblyFileVersion\(`"$escapedVersion`"\)") {
+        Exit-Verdict 'Release-Preflight' 1 "$tag; commit the generated VersionInfo.vb for this version before the release preflight"
+    }
+}
 
 if (git -C $repoRoot tag --list $tag) {
     Exit-Verdict 'Release-Preflight' 1 "$tag; the tag already exists - choose another -Version"
+}
+if (-not $SkipLocalCheck) {
+    # The packager recreates its version-specific stages and artifacts even with -NoClean.
+    # Refuse an occupied version so a release preflight cannot erase earlier local work.
+    $baseName = "FastMediaSorter-$Version-windows-x64"
+    $outputs = @(
+        (Join-Path $repoRoot "stage\$baseName"),
+        (Join-Path $repoRoot "stage\$baseName-server")
+    )
+    foreach ($name in @("$baseName.zip", "$baseName-setup.exe", "$baseName-server-setup.exe")) {
+        $outputs += Join-Path $repoRoot "dist\$name"
+        $outputs += Join-Path $repoRoot "dist\$name.sha256"
+    }
+    $occupied = @($outputs | Where-Object { Test-Path -LiteralPath $_ })
+    if ($occupied.Count -gt 0) {
+        Exit-Verdict 'Release-Preflight' 1 "$tag; package output already exists at $($occupied[0]) - choose another -Version to preserve it"
+    }
 }
 
 # --- The preflight ----------------------------------------------------------------
@@ -209,7 +240,8 @@ if ($SkipLocalCheck) {
     Add-Step 'Test-HtmlHostArtifacts' $null 'not run' 'not run - nothing was built'
 } else {
     Say "`nBuilds everything release.yml builds: the ZIP, the User installer and the Server installer." "Gray"
-    Invoke-Step "Local package build (as on CI) - so a failing GitHub job is not paid for" 'Build-OfflineRelease.ps1' @('-Version', $Version)
+    # Preserve existing stage, dist and temp files; the package builder still recreates this version's own stage.
+    Invoke-Step "Local package build (as on CI) - so a failing GitHub job is not paid for" 'Build-OfflineRelease.ps1' @('-Version', $Version, '-NoClean')
     if ($steps[$steps.Count - 1].Code -eq 0) {
         $stage = Join-Path $repoRoot "stage\FastMediaSorter-$Version-windows-x64"
         $dist  = Join-Path $repoRoot 'dist'
@@ -258,6 +290,15 @@ foreach ($state in 'skipped', 'not run', 'not applicable') {
 }
 $parts += "$(@($ran | Where-Object { $_.Code -eq 0 }).Count) of $($steps.Count) steps passed"
 if ($dirty) { $parts += 'judged uncommitted changes' }
+if ($Push -and $code -eq 0) {
+    $currentHead = (git -C $repoRoot rev-parse --verify HEAD).Trim()
+    $currentBranch = (git -C $repoRoot rev-parse --abbrev-ref HEAD).Trim()
+    $currentDirty = (git -C $repoRoot status --porcelain)
+    if ($currentHead -ne $head -or $currentBranch -ne $branch -or $currentDirty) {
+        $code = 1
+        $parts += 'the commit, branch or working tree changed during preflight; no tag was created'
+    }
+}
 
 Write-Host ""
 Write-VerdictLine 'Release-Preflight' $code ($parts -join '; ')
@@ -274,10 +315,6 @@ if (-not $Push) {
     Say "For the real release, repeat with -Push:" "Gray"
     Say "    .\tools\Release.ps1 -Version $Version -Push" "Gray"
     exit 0
-}
-
-if ($dirty) {
-    Write-Warning "The preflight passed on uncommitted changes that $tag will not carry."
 }
 
 Step "Creating and pushing the tag $tag (starts GitHub Actions)"
