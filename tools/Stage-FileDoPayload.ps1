@@ -59,8 +59,19 @@ if ($localExe) {
     $manifest = [ordered]@{ version = $release.tag_name; origin = 'github release'; asset = $asset[0].name; archiveSha256 = $expected.ToLowerInvariant(); binarySha256 = $binaryHash; source = $asset[0].browser_download_url }
 }
 
-[IO.File]::WriteAllText((Join-Path $payload 'filedo.sha256'), "$binaryHash  filedo.exe`n", [Text.UTF8Encoding]::new($false))
-[IO.File]::WriteAllText((Join-Path $payload 'release.json'), ($manifest | ConvertTo-Json) + "`n", [Text.UTF8Encoding]::new($false))
+# Both records are tracked files. Rewrite one only when what it says changed: a fresh Windows clone holds them
+# in CRLF, and rewriting the same record in LF left the release preflight's tree dirty (git reports the
+# line-ending change as a modification), which refused the tag. Written in LF, compared line-ending-blind.
+function Write-PayloadRecord([string]$path, [string]$text) {
+    $text = $text.Replace("`r`n", "`n")
+    if (Test-Path -LiteralPath $path) {
+        $current = [IO.File]::ReadAllText($path).Replace("`r`n", "`n")
+        if ($current -ceq $text) { return }
+    }
+    [IO.File]::WriteAllText($path, $text, [Text.UTF8Encoding]::new($false))
+}
+Write-PayloadRecord (Join-Path $payload 'filedo.sha256') "$binaryHash  filedo.exe`n"
+Write-PayloadRecord (Join-Path $payload 'release.json') (($manifest | ConvertTo-Json) + "`n")
 
 # The disk-sharing worker refuses a FileDO that has no `vd` command; say so at build time, not at the first share.
 $probe = Join-Path $env:TEMP ('filedo-vd-probe-' + [Guid]::NewGuid().ToString('N') + '.jsonl')
