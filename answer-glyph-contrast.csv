@@ -1,0 +1,10 @@
+light,Neutral,#E1E1E1,#000000,16.06,#000000,16.06
+light,Affirmative,#E1E1E1,#228B22,3.36,#000000,16.06
+light,Dismissing,#E1E1E1,#000000,16.06,#000000,16.06
+light,Caution,#E1E1E1,#D05E00,3.04,#000000,16.06
+light,Irreversible,#B22222,#FFFFFF,6.68,#FFFFFF,6.68
+dark,Neutral,#373737,#F0F0F0,10.45,#F0F0F0,10.45
+dark,Affirmative,#373737,#6CCB76,5.92,#F0F0F0,10.45
+dark,Dismissing,#373737,#F0F0F0,10.45,#F0F0F0,10.45
+dark,Caution,#373737,#F0B252,6.35,#F0F0F0,10.45
+dark,Irreversible,#FF8C82,#000000,9.33,#000000,9.33

@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 > **Cross-project contracts live outside this repository.** The shared contract store is `P:\Contracts`, and **this line is the only place in this repository that names its location** - everywhere else cites a contract by its **id** and a rule or section number (`OCR-OVERLAY rule 8`, `FMSCFG rule 5`, `WORKER-IPC section 6`), never by path and never by drive letter, because whoever clones this repository has no `P:`. Its `README.md` is the index; `_meta/RULES.md` is the law, `_meta/VERSIONING.md` the compatibility rules, `_meta/REGISTRY.md` the live map of who implements what at which version. Nothing here ever keeps a **copy** of a contract: [docs/contracts/](docs/contracts/README.md) holds one short pointer per contract this product touches, and a disagreement between this repository and a contract is an amendment to write in the catalog or a dated exception to record in its registry - never a local edit.
 
 ## Project Overview
@@ -14,8 +16,8 @@ This file is the **core every session pays for** (every request of every agent c
 | Rule file | Auto-loads on | Read before |
 | --- | --- | --- |
 | [naming-and-positioning](.claude/rules/naming-and-positioning.md) | site pages, `publishing/`, `docs/`, `ProductNames.vb` | writing a visible product name, a listing or a README line |
-| [canon-overlay](.claude/rules/canon-overlay.md) | `publishing/`, `tools/`, `.github/`, site, `build.ps1` | release channels, site layout, the server/elevation gate |
-| [build-release](.claude/rules/build-release.md) | `build.ps1`, `tools/`, `publishing/`, `*.vbproj` | prerequisites, version stamping, release CI, installer, winget, MSIX, dependencies |
+| [canon-overlay](.claude/rules/canon-overlay.md) | `publishing/`, `.github/`, site pages (`*.html`), `assets/` | release channels, site layout, the server/elevation gate |
+| [build-release](.claude/rules/build-release.md) | `build.ps1`, `publishing/`, `.github/`, `*.vbproj`, the sln, `tools/` build, release and test-runner scripts (`Build-*`, `Release`, `Prepare-*`, `Store-*`, `Stage-*`, `Invoke-Tests`, `Run-AllTests`, `Test-UiForms`, `check-placement.jsonl`) | the measured between-release check list, UI form checks, prerequisites, version stamping, release CI, installer, winget, MSIX, dependencies |
 | [viewer-mainform](.claude/rules/viewer-mainform.md) | `src/Main_Form*.vb`, `Application_Events.vb`, `FileManager.vb`, zoom, bootstrap | anything in the viewer window: partials, single instance, perspective bars, file I/O |
 | [viewer-chrome-dialogs](.claude/rules/viewer-chrome-dialogs.md) | `src/Chrome/`, `DialogLayer*`, `Ask*`, `Main_Form.Chrome.vb` | opening any window, status/toast news, the floating chrome |
 | [imaging-icons-archives](.claude/rules/imaging-icons-archives.md) | `src/Imaging/`, `src/Icons/`, `src/Archives/`, editor | decoding/encoding images, glyphs, archive browsing |
@@ -24,6 +26,12 @@ This file is the **core every session pays for** (every request of every agent c
 | [ocr-translate](.claude/rules/ocr-translate.md) | `src/Ocr/`, `src/Translate/`, `Main_Form.Ocr*` | OCR pipeline, overlay fit, translators, cache keys |
 | [share-companion](.claude/rules/share-companion.md) | `src/FastMediaSorterCompanion/`, `exchange-server/`, `tests/Companion.Tests/` | Share Manager, Go worker, exchange server, editions, scheduled operations |
 | [localization](.claude/rules/localization.md) | `src/Localization/`, `*.Localization.vb` | any new or changed UI string, RTL, script fonts |
+| [documents](.claude/rules/documents.md) | `src/Documents/` (`Doc*`, `Epub*`, `Html*`, `Pdf*`), `Main_Form.Document*` / `.EpubReader` / `.HtmlView` / `.Pdf*`, `DocHtmlTranslateLauncher.vb` | PDF and EPUB readers, the HTML host boundary, the doc-html-translate document route |
+| [text-reader](.claude/rules/text-reader.md) | `src/Documents/Text*.vb`, `Main_Form.Text*.vb`, `TextViewRules.vb` | text encodings, paging, the atomic save, drafts, Markdown |
+| [exchange-client](.claude/rules/exchange-client.md) | `src/Exchange/`, `src/Exchange_*.vb` | the exchange client: gates, wire table, connection string, trust, sealed boxes, device keys, the Drive channel |
+| [file-manager](.claude/rules/file-manager.md) | `src/FileManager/` (the folder), `Image_Panel_Form.FileManager*` / `.Manager*`, `Main_Form.Manager*` | the file manager mode of the Grid panel: places, open policy, the command pipeline, archives |
+| [live-streams](.claude/rules/live-streams.md) | `src/LiveBroadcast/`, `src/Streams/`, `Main_Form.LiveBroadcast.vb`, `Main_Form.Streams.vb` | the live receiver and producer, reconnect and drift, the stream catalogue |
+| [theming-help](.claude/rules/theming-help.md) | `src/Theming/`, `src/Help/`, `help-map.json`, `docs/help/`, the context-help tools | the application theme (palette, applier, `IThemeAware`), context help pages and their generator |
 
 ## Working rules measured from the agent transcripts (2026-10-15)
 
@@ -38,18 +46,18 @@ Source and numbers: [tools/agent-cost/README.md](tools/agent-cost/README.md) (31
 - `Remove-Item` with a path built from a pattern is stopped by a harness guard (20 times): delete exact paths from a list, never a computed glob.
 
 **Reading**
-- A file over 500 lines is windowed by a hook. **Grep the symbol first, then Read an `offset`/`limit` window**; the hot files (`Table_Form.ModernLayout.vb` 2.6k lines, `Main_Form.MediaLoading.vb`, `Main_Form.FileOperations.vb`, `Main_Form.Chrome.vb`, `Main_Form.Lifecycle.vb`) were re-read 40-70 times each, whole, with nothing changed between the reads.
-- **Do not Read a ledger whole**: `docs/specifications/README.md` is 90 KB and was read ~25 times. `pwsh -NoProfile -File tools\Get-Spec.ps1 -Next | -Id 231 | -Find text | -Open` answers the actual questions in a few lines.
+- A file over 500 lines is windowed by a hook. **Grep the symbol first, then Read an `offset`/`limit` window**; the hot files (`Table_Form.ModernLayout.vb` 3.1k lines, `Main_Form.MediaLoading.vb`, `Main_Form.FileOperations.vb`, `Main_Form.Chrome.vb`, `Main_Form.Lifecycle.vb`) were re-read 40-70 times each, whole, with nothing changed between the reads.
+- **Do not Read a ledger whole**: `docs/specifications/README.md` is ~150 KB (90 KB when it was read whole ~25 times). `pwsh -NoProfile -File tools\Get-Spec.ps1 -Next | -Id 231 | -Find text | -Open` answers the actual questions in a few lines.
 - A file already in context (CLAUDE.md, a rule file you were given) is **never** Read again.
 - Keep raw output out of the conversation: write a log to the scratchpad and Grep it. A 40 KB result is carried by every later turn of the session.
 
 **Delegating**
-- A sub-agent **already has this file**. Never write "read CLAUDE.md first" in a brief - it makes the agent Read a 150 KB file it cannot even load in one go (9 refusals). Name the rule file of the area instead.
+- A sub-agent **already has this file**. Never write "read CLAUDE.md first" in a brief - it makes the agent Read again a file it already carries (9 refusals when the file was 150 KB). Name the rule file of the area instead.
 - The built-in general-purpose agent inherits the session model (51 of 143 sub-agent runs were Opus). Use the project agents in `.claude/agents/` (`implementer`, `auditor`: Sonnet, turn-capped) or pass `model` explicitly.
 - **One slice per agent, about 80 turns.** The costliest runs were 150-350 turns that grew to 400-870k tokens of context; a turn's price is the whole context, so a long run pays quadratically. When a slice is not finished, start a **fresh** agent with a written handoff instead of continuing the full one.
 - Sessions: auto-compaction fires at 300k tokens (`CLAUDE_CODE_AUTO_COMPACT_WINDOW` in `.claude/settings.json`). Run `/compact` at a ticket boundary, `/clear` when switching tickets.
 
-**Checks** - see "Inner loop" under *Testing & Validation*.
+**Checks** - see "Between-release checks" under *Testing & Validation*.
 
 ## Naming, canon and localization - the short form
 
@@ -167,7 +175,13 @@ edits, with `tools/Test-UiForms.ps1 -Forms <type>` on an unlocked desktop. Rules
 ```powershell
 pwsh -NoProfile -File .\tools\Run-AllTests.ps1            # unit suites
 pwsh -NoProfile -File .\tools\Run-AllTests.ps1 -Integration -SkipGo
+# ONE project, bounded digest, full log kept in %TEMP%\fms-tests (grep the log, do not re-run to see more)
+pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Suite lite -Filter OcrOverlayFit   # name fragments, `a|b` for several; -Tfm net48|both
+pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Suite companion -Filter <fragment>
+pwsh -NoProfile -File .\tools\Invoke-Tests.ps1 -Build modern                      # compile check only: modern | companion
 ```
+
+`Invoke-Tests.ps1 -Suite/-Build` is the single-test and single-compile entry, but it restores and compiles, so it is slower than 5 seconds: an owner-requested or release run, like the two above.
 
 [tools/Run-AllTests.ps1](tools/Run-AllTests.ps1) drives [tests/Lite.Tests/](tests/Lite.Tests) (the viewer, **multi-targeted so the same linked sources are tested under BOTH shipped runtimes**, net48 and net10), [tests/Companion.Tests/](tests/Companion.Tests) (the Share Manager, net10), the Go worker suite in the sibling `fms_companion` repository (`-WorkerRepo` or `FMS_WORKER_REPO` to point elsewhere) and `tools/Test-CheckPlacement.ps1`, and ends in **one verdict line** (contract `CHECK-VERDICT`, via [tools/lib/Verdict.ps1](tools/lib/Verdict.ps1)): `Run-AllTests: PASS (4 passed)`. **Exit 0 = pass, 1 = a suite ran and failed, 2 = could not verify** (a missing project, `dotnet`, `go.exe`, worker repository or live worker - "could not check" is never folded into a pass, nor into a defect). `-SkipGo` reports that suite as **SKIPPED**, never as passed. The live suites are opt-in, each behind its own switch: `-Integration` runs [tests/Integration/WorkerRoundTrip.ps1](tests/Integration/WorkerRoundTrip.ps1) (needs a running worker - without one it is COULD NOT VERIFY); `-OcrScenes` runs [tests/Integration/OcrOverlayScenes.ps1](tests/Integration/OcrOverlayScenes.ps1) (drives the built `bin\Release` viewer on screen and borrows the OCR settings - owner decision: never part of a default or `-Integration` run); `-DynAudit` runs [tools/dynaudit/DynAudit.ps1](tools/dynaudit/DynAudit.ps1) (specification 209; isolated profile, backed up and restored in `finally`; hand-run, never a default run). Which runner owns which check is declared once in [tools/check-placement.jsonl](tools/check-placement.jsonl) (contract `CHECK-PLACEMENT`) and held in both directions by `Test-CheckPlacement.ps1`: a check wired into a runner without its record, or recorded without being run, fails the next test run. A new check that reports a verdict needs its record in the same commit.
 

@@ -18,6 +18,12 @@ Public NotInheritable Class DocHtmlJobArguments
     Public Const ModeConvert As String = "convert"
     ''' <summary>The producer translates with its configured local Ollama service: <c>-ollama</c>.</summary>
     Public Const ModeLocal As String = "local"
+    ''' <summary>The producer translates with its configured paid Google service: <c>-google</c> with a positive finite
+    ''' <c>-max-cost</c>, which is both the guard and the approval (OCR-INVOCATION 1.2 item G). Without a cap this mode is
+    ''' never built: the producer's own window carries its approval question instead.</summary>
+    Public Const ModePaid As String = "paid"
+    ''' <summary>The highest per-run cap, in US dollars, the viewer passes on.</summary>
+    Public Const MaxPaidCostLimit As Double = 1000
 
     Private Sub New()
     End Sub
@@ -25,7 +31,8 @@ Public NotInheritable Class DocHtmlJobArguments
     Public Shared Function IsKnownMode(mode As String) As Boolean
         Return String.Equals(mode, ModeBrowser, StringComparison.Ordinal) OrElse
                String.Equals(mode, ModeConvert, StringComparison.Ordinal) OrElse
-               String.Equals(mode, ModeLocal, StringComparison.Ordinal)
+               String.Equals(mode, ModeLocal, StringComparison.Ordinal) OrElse
+               String.Equals(mode, ModePaid, StringComparison.Ordinal)
     End Function
 
     ''' <summary>The arguments for one job, or Nothing when the request cannot be expressed safely: an unknown
@@ -39,6 +46,9 @@ Public NotInheritable Class DocHtmlJobArguments
         If Not IsAbsolutePath(inputPath) OrElse Not IsAbsolutePath(outputRoot) Then Return Nothing
         Dim o = If(options, New DocHtmlJobOptions())
         Dim local = String.Equals(mode, ModeLocal, StringComparison.Ordinal)
+        Dim paid = String.Equals(mode, ModePaid, StringComparison.Ordinal)
+        ' Section 5: zero is the producer's "no limit" and is never serialized; an unset cap launches no paid work.
+        If paid AndAlso Not IsAcceptableCostLimit(o.PaidCostLimit) Then Return Nothing
         Dim args As New List(Of String) From {"-folder", outputRoot}
         If String.Equals(mode, ModeConvert, StringComparison.Ordinal) Then
             args.Add("-notranslate")
@@ -46,6 +56,12 @@ Public NotInheritable Class DocHtmlJobArguments
             args.Add("-ollama")
             If Not AddValue(args, "-ollama-model", o.LocalModel, AddressOf IsModelName) Then Return Nothing
             ' The languages shape the page only when the converter translates; it drops them otherwise (2.3).
+            If Not AddValue(args, "-src", o.SourceLanguage, AddressOf IsLanguageList) Then Return Nothing
+            If Not AddValue(args, "-dst", o.TargetLanguage, AddressOf IsLanguageList) Then Return Nothing
+        ElseIf paid Then
+            args.Add("-google")
+            args.Add("-max-cost")
+            args.Add(o.PaidCostLimit.ToString("0.##", Globalization.CultureInfo.InvariantCulture))
             If Not AddValue(args, "-src", o.SourceLanguage, AddressOf IsLanguageList) Then Return Nothing
             If Not AddValue(args, "-dst", o.TargetLanguage, AddressOf IsLanguageList) Then Return Nothing
         End If
@@ -56,6 +72,12 @@ Public NotInheritable Class DocHtmlJobArguments
         If noOpen Then args.Add("-noopen")
         args.Add(inputPath)
         Return args
+    End Function
+
+    ''' <summary>Section 5 DocumentPaidCostLimit: a positive finite per-run cap of at least one cent and at most
+    ''' <see cref="MaxPaidCostLimit"/>. Zero, a negative, NaN or an infinity is refused - zero would mean "no limit".</summary>
+    Public Shared Function IsAcceptableCostLimit(value As Double) As Boolean
+        Return Not Double.IsNaN(value) AndAlso Not Double.IsInfinity(value) AndAlso value >= 0.01 AndAlso value <= MaxPaidCostLimit
     End Function
 
     ''' <summary>Adds <c>flag value</c> for a chosen value; False when the value is chosen but not acceptable.</summary>

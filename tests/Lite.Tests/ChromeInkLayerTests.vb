@@ -114,33 +114,81 @@ Public Class ChromeInkLayerTests
               End Sub)
     End Sub
 
-    <Fact>
-    Public Sub The_outline_surrounds_the_ink_in_the_opposite_tone_and_leaves_the_ink_on_top()
-        Using ink As New Bitmap(9, 9, PixelFormat.Format32bppPArgb)
-            Using target As New Bitmap(9, 9, PixelFormat.Format32bppPArgb)
-                ink.SetPixel(4, 4, Color.White)
-                ChromeInkOutline.Compose(ink, target, Color.Black, 1)
-                Dim centre As Color = target.GetPixel(4, 4)
-                Assert.Equal(255, centre.A)
-                Assert.Equal(255, centre.R)
-                For Each around As Point In {New Point(3, 4), New Point(5, 4), New Point(4, 3), New Point(4, 5), New Point(3, 3), New Point(5, 5)}
-                    Dim pixel As Color = target.GetPixel(around.X, around.Y)
-                    Assert.Equal(255, pixel.A)
-                    Assert.Equal(0, pixel.R)
-                Next
-                Assert.Equal(0, target.GetPixel(1, 1).A)
-                Assert.Equal(0, target.GetPixel(2, 4).A)
+    ''' <summary>A surface on the panel colour model's theme (L0303), the black scheme: deterministic tone and fill.</summary>
+    Private Shared Function NewModelSurface(setOpacityPercent As Integer) As ChromeSurface
+        Dim surface As New ChromeSurface()
+        surface.Size = New Size(180, 44)
+        Dim colours As PanelColours = PanelColourModel.ForSample(Color.Black, PanelColourMetrics.BlackScheme, Nothing,
+                                                                 setOpacityPercent, Color.FromArgb(0, 120, 215), False)
+        surface.Configure(ChromeTheme.FromColours(colours), 1.0F, False,
+                          New Font("Segoe UI", 20.0F, FontStyle.Regular, GraphicsUnit.Pixel),
+                          New Font("Segoe UI Symbol", 20.0F, FontStyle.Regular, GraphicsUnit.Pixel))
+        surface.SetItems({New ChromeItem("open", ChromeItemKind.Button) With {.Caption = "Open"}})
+        Return surface
+    End Function
+
+    ''' <summary>The alpha the ink layer carries at a point of the item clear of the caption (its top strip).</summary>
+    Private Shared Function ScrimAlphaPainted(surface As ChromeSurface) As Integer
+        Dim bounds As Rectangle = surface.Items(0).Bounds
+        Using ink As New Bitmap(surface.Width, surface.Height, PixelFormat.Format32bppPArgb)
+            Using g As Graphics = Graphics.FromImage(ink)
+                g.Clear(Color.Transparent)
+                surface.PaintInk(g)
             End Using
+            Return ink.GetPixel(bounds.X + bounds.Width \ 2, bounds.Y + 2).A
         End Using
+    End Function
+
+    <Fact>
+    Public Sub Below_the_needed_opacity_the_ink_layer_lays_the_items_fill_as_an_exact_scrim()
+        OnSta(Sub()
+                  Using surface As ChromeSurface = NewModelSurface(0)
+                      Dim theme As ChromeTheme = surface.Theme
+                      surface.ScrimOpacity = 0.0R
+                      Dim expected As Integer = CInt(Math.Round(PanelColourModel.ScrimAlpha(theme.PanelFill, theme.Foreground, PanelColourMetrics.TextFloor, 0.0R) * 255.0R))
+                      Assert.True(expected > 0, "A fully see-through panel needs a scrim under its caption.")
+                      Assert.InRange(ScrimAlphaPainted(surface), expected - 1, expected + 1)
+                  End Using
+              End Sub)
     End Sub
 
     <Fact>
-    Public Sub The_outline_tone_is_opposite_to_the_ink_and_its_reach_follows_the_scale()
-        Assert.Equal(Color.Black.ToArgb(), ChromeInkOutline.OutlineFor(Color.Gainsboro).ToArgb())
-        Assert.Equal(Color.White.ToArgb(), ChromeInkOutline.OutlineFor(Color.FromArgb(30, 30, 30)).ToArgb())
-        Assert.Equal(1, ChromeInkOutline.RadiusFor(1.0F))
-        Assert.Equal(2, ChromeInkOutline.RadiusFor(1.75F))
-        Assert.Equal(3, ChromeInkOutline.RadiusFor(9.0F))
+    Public Sub At_or_above_the_needed_opacity_there_is_no_scrim()
+        OnSta(Sub()
+                  Using surface As ChromeSurface = NewModelSurface(100)
+                      Dim theme As ChromeTheme = surface.Theme
+                      surface.ScrimOpacity = Math.Min(1.0R, PanelColourModel.OpacityNeeded(theme.PanelFill, theme.Foreground, PanelColourMetrics.TextFloor) + 0.01R)
+                      Assert.Equal(0, ScrimAlphaPainted(surface))
+                      surface.ScrimOpacity = 1.0R
+                      Assert.Equal(0, ScrimAlphaPainted(surface))
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub The_panels_ink_layer_carries_no_outline_ring()
+        Dim host As String = File.ReadAllText(Path.Combine(SourceDir(), "Chrome", "ChromeHost.vb"))
+        Assert.DoesNotMatch("ChromeInkOutline\.Compose|OutlineMask", host)
+        Assert.Matches("panelSurface\.ScrimOpacity\s*=", host)
+        Dim chrome As String = File.ReadAllText(Path.Combine(SourceDir(), "Main_Form.Chrome.vb"))
+        Assert.Matches("HasNativeEdit, Math\.Max\(chrome_Theme\.PanelOpacity, chrome_Theme\.EditFloorOpacity\)", chrome)
+    End Sub
+
+    <Fact>
+    Public Sub The_recipients_table_draws_its_captions_on_the_ink_layer_while_see_through()
+        ' L0303 S-5 (R-12): the table's own controls paint into the ink layer through IRecipientsInk; the window
+        ' walks them at their places, the rows lay their own fill as the scrim, no outline ring is drawn.
+        Dim overlay As String = File.ReadAllText(Path.Combine(SourceDir(), "Main_Form.RecipientsOverlay.vb"))
+        Assert.Matches("Protected Overrides Sub PaintInkLayer\(g As Graphics, scrimBase As Double\)", overlay)
+        Assert.Matches("Implements IRecipientsInk\.PaintInk", overlay)
+        Assert.Matches("PanelColourModel\.ScrimAlpha\(fill, ForeColor, InkFloor, scrimBase\)", overlay)
+        Assert.Matches("PanelColourModel\.ScrimAlpha\(fill, glyphInk, PanelColourMetrics\.GlyphFloor, scrimBase\)", overlay)
+        Assert.Matches("host\.RequestInk\(\)", overlay)
+        Assert.DoesNotMatch("ChromeInkOutline", overlay)
+        Dim chrome As String = File.ReadAllText(Path.Combine(SourceDir(), "Main_Form.Chrome.vb"))
+        Assert.Matches("recipients_Overlay\.SetInkLayer\(Not chrome_High_Contrast AndAlso configured < 0\.999R\)", chrome)
+        Assert.Matches("recipients_Overlay\.InkOpacity = Math\.Max\(0\.02R, Math\.Min\(1\.0R, recipients_Alpha\)\)", chrome)
+        Assert.Matches("recipients_Overlay\.RefreshInkIfScrimMoved\(\)", chrome)
     End Sub
 
     <Fact>

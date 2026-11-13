@@ -59,6 +59,24 @@ Reading positions, bookmarks and document appearance overrides are personal data
 the ordinary settings export. PDF rendering and search are local; opening a clicked web link is an
 explicit action in the system browser.
 
+## Process a document in doc-html-translate
+
+With Process documents in doc-html-translate on (Documents, doc-html-translate group), the
+doc-html-translate button of the PDF and EPUB readers checks the program and asks what to do: open the
+page in the browser and translate it there, convert only, translate with the local Ollama model, or
+translate with Google. A missing program is installed through winget from the same question or chosen
+by hand. Google translation runs only with a cost limit set in the group, and every such run is
+approved first; without a limit the button opens doc-html-translate's own window instead. Each run
+works in its own folder of the viewer's cache, never beside the document, and the viewer opens the
+page only after checking that the run finished and that every file stays inside that folder. The page
+opens in the browser or over the document in the HTML page viewer; the result menu on the document panel
+opens the original, opens the page in the browser, shows the result folder, saves a copy of the whole
+result to a folder you pick, or processes the document again. An unchanged document reuses its last
+finished result. Results live under a size budget and a retention period, Clear finished pages empties them,
+and a result shown or saved is kept until Clear. A partial or skipped translation, an unreadable file,
+a time limit or a stopped run is named in the status line. Picture translation is a separate command
+and does not change.
+
 EPUB files retain their cover, title and author preview. Their existing external-open action uses
 doc-html-translate. Sorting filters and Windows file associations are separate from reader preferences.
 

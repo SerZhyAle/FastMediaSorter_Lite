@@ -114,16 +114,6 @@ Friend NotInheritable Class ChromeMetrics
 
     ' --- ratios (percent, never scaled) -------------------------------------------------
     Public Const PanelOpacityPercent As Integer = 86
-    ''' <summary>The 220 tone flip: at a panel opacity strictly below this percent (the SET value,
-    ''' never the windows' display floors) a panel's ink pair inverts - black becomes white, white
-    ''' becomes black, the outline with it. High contrast never flips.</summary>
-    Public Const InkInvertBelowPercent As Integer = 50
-
-    ''' <summary>The 220 decision, pure: does a panel's ink invert at this set opacity percent? 49 and
-    ''' lower flip; 50 is the first non-inverted value.</summary>
-    Public Shared Function InvertsInk(setOpacityPercent As Integer) As Boolean
-        Return setOpacityPercent < InkInvertBelowPercent
-    End Function
 
     Public Const HairlinePercent As Integer = 12
     Public Const HoverPercent As Integer = 14
@@ -159,9 +149,9 @@ Friend NotInheritable Class ChromeMetrics
     Public Const FileOperationRevealMilliseconds As Integer = 3000
 
     ' --- the destructive family (the recipients overlay's delete row; one colour = "this destroys") ---
-    Public Shared ReadOnly DestructiveRest As Color = Color.FromArgb(96, 32, 32)
-    Public Shared ReadOnly DestructiveHover As Color = Color.FromArgb(140, 44, 44)
-    Public Shared ReadOnly DestructivePressed As Color = Color.FromArgb(170, 50, 50)
+    Public Shared ReadOnly DestructiveRest As Color = PanelColourMetrics.MenuDestructiveRest
+    Public Shared ReadOnly DestructiveHover As Color = PanelColourMetrics.MenuDestructiveHover
+    Public Shared ReadOnly DestructivePressed As Color = PanelColourMetrics.MenuDestructivePressed
 
 End Class
 #End If

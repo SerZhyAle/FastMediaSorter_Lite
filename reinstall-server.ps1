@@ -12,8 +12,13 @@
 
     Three steps:
 
-      1. BUILD  - tools\Build-ServerInstaller.ps1 publishes the Share Manager, stages it
-                  with the vendored worker and compiles dist\..-server-setup.exe.
+      1. BUILD  - two packagers, one version. The Server package is cut from the User
+                  stage of the SAME version through its payload record (L0307), so
+                  tools\Build-Installer.ps1 runs first (msbuild, the mainline publish, the
+                  Share Manager, the vendored worker, the exchange server; -SkipOcr, because
+                  nothing verified here installs the viewer's offline OCR models) and
+                  tools\Build-ServerInstaller.ps1 then compiles dist\..-server-setup.exe
+                  from that stage. Both give the exchange gate the same value.
                   Unelevated, and no v* tag: a local "сборка", never a "релиз".
       2. INSTALL- runs that setup.exe silently. This is the ONLY step that elevates, so
                   it is also the only UAC prompt. Inno's own AppId makes it an in-place
@@ -66,8 +71,9 @@
 
 .PARAMETER SkipExchange
     Leave the Media Exchange Server component out of the package. By default it is IN, like
-    in build.ps1 (a local build is not a release, so the shipping gate does not apply): the
-    exe is built from exchange-server\ (Go) and the package is compiled with -IncludeExchange.
+    in build.ps1 (a local build is not a release, so the shipping gate does not apply): both
+    packagers run with -IncludeExchange, and Build-Installer.ps1 builds the exe from
+    exchange-server\ (Go, 64-bit; without it the build stops - pass -SkipExchange then).
     Without the component the Share Manager shows neither the "Media Exchange Server" page
     nor the "Exchange account" page, so there is no way to join an exchange server from it
     (ExchangeFeatures.ComponentInstalled looks for exchange\fms-exchange-server.exe).
@@ -164,14 +170,25 @@ function Get-Sha256([string]$path) {
     (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
 }
 
-# Declining the UAC prompt surfaces as a Win32Exception out of ShellExecute, which
-# would otherwise end the run in a stack trace. Refusing elevation is a decision, not
-# a fault - say so and stop.
+# Write-Error cannot end a run with a chosen exit code here: under
+# $ErrorActionPreference = 'Stop' it THROWS, so an "exit" after it never ran and the caller
+# always saw a stack trace and exit 1. Print the reason and leave with the code instead.
+function Fail([string]$message, [int]$code = 1) {
+    Write-Host $message -ForegroundColor Red
+    exit $code
+}
+
+# Declining the UAC prompt must not end the run in a stack trace: it is a decision, not a
+# fault. Start-Process reports it (and every other failure to start) as a bare
+# InvalidOperationException - the Win32Exception behind it is not exposed, so catching
+# Win32Exception, as this once did, never matched. Whatever the cause, nothing was
+# installed; the message says which.
 function Start-Elevated([string]$path, [string[]]$arguments) {
     try {
         return Start-Process -FilePath $path -ArgumentList $arguments -Verb RunAs -Wait -PassThru
-    } catch [System.ComponentModel.Win32Exception] {
-        Write-Host "Elevation was declined - nothing was installed." -ForegroundColor Yellow
+    } catch [System.InvalidOperationException] {
+        Write-Host "Could not start $(Split-Path -Leaf $path) elevated (UAC declined?): $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "Nothing was installed." -ForegroundColor Yellow
         exit 1
     }
 }
@@ -214,7 +231,7 @@ if ($userEdition -and -not $hasMachineIdentity -and -not $Force) {
 if ($SkipBuild) {
     $setup = Get-ChildItem -LiteralPath (Join-Path $root 'dist') -Filter '*-server-setup.exe' -ErrorAction SilentlyContinue |
              Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if (-not $setup) { Write-Error "-SkipBuild was given but dist\ holds no *-server-setup.exe. Run without -SkipBuild first."; exit 1 }
+    if (-not $setup) { Fail "-SkipBuild was given but dist\ holds no *-server-setup.exe. Run without -SkipBuild first." }
     $setupPath = $setup.FullName
     # The version to verify against comes from the file name, since nothing was stamped
     # in this run.
@@ -224,37 +241,28 @@ if ($SkipBuild) {
 } else {
     if (-not $Version) { $Version = Get-Date -Format 'yy.M.d.HHmm' }
     $buildArgs = @{ Version = $Version }
+    # The exchange gate is one decision for both packagers: Build-ServerInstaller refuses a
+    # User stage whose record disagrees with its own -IncludeExchange.
+    if (-not $SkipExchange) { $buildArgs.IncludeExchange = $true }
 
-    if (-not $SkipExchange) {
-        # The exchange server is a Go program, built apart from the .NET side. Build-ServerInstaller
-        # takes it from bin\Release\exchange, so a fresh exe is put there - otherwise a previous
-        # build's binary would be packaged without a word.
-        $exchangeOut = Join-Path $root 'bin\ExchangePublish'
-        $exchangeBin = Join-Path $root 'bin\Release\exchange'
-        Write-Host "Building the exchange server (Go, windows/amd64).." -ForegroundColor Cyan
-        Remove-Item -LiteralPath $exchangeOut -Recurse -Force -ErrorAction SilentlyContinue
-        & (Join-Path $root 'exchange-server\build.ps1') -Version $Version -OutDir $exchangeOut
-        $exchangeExit = $LASTEXITCODE
-        if ($exchangeExit -eq 0) {
-            New-Item -ItemType Directory -Path $exchangeBin -Force | Out-Null
-            foreach ($f in 'fms-exchange-server.exe', 'fms-exchange-server.exe.sha256') {
-                Copy-Item -LiteralPath (Join-Path $exchangeOut $f) -Destination $exchangeBin -Force
-            }
-        } elseif ($exchangeExit -eq 2 -and (Test-Path -LiteralPath (Join-Path $exchangeBin 'fms-exchange-server.exe'))) {
-            Write-Warning "No 64-bit Go - packaging the exchange server already in bin\Release\exchange (not rebuilt)."
-        } else {
-            Write-Error "The exchange server could not be built (exit $exchangeExit). Install Go, or pass -SkipExchange to build the package without it."
-            exit 1
-        }
-        $buildArgs.IncludeExchange = $true
-        Write-Host ""
-    }
+    # The Server package is cut from the User stage of the SAME version, through the payload
+    # record that stage leaves beside itself (L0307). Without that stage Build-ServerInstaller
+    # stops in Stage-ServerViewerPayload.ps1, so the User stage is built first. It also builds
+    # the exchange server (Go) into bin\Release\exchange when -IncludeExchange is given.
+    # -SkipOcr: this script installs the server, the FileDO host and the exchange server -
+    # never the viewer's offline OCR models - so fetching them would only cost time.
+    Write-Host "Building the User stage, version $Version (the Server package is cut from it).." -ForegroundColor Cyan
+    $global:LASTEXITCODE = 0
+    & (Join-Path $root 'tools\Build-Installer.ps1') @buildArgs -SkipOcr
+    if ($LASTEXITCODE -ne 0) { Fail "tools\Build-Installer.ps1 failed (exit $LASTEXITCODE) - nothing installed." $LASTEXITCODE }
+    Write-Host ""
 
     Write-Host "Building the Server installer, version $Version.." -ForegroundColor Cyan
+    $global:LASTEXITCODE = 0
     & (Join-Path $root 'tools\Build-ServerInstaller.ps1') @buildArgs
-    if ($LASTEXITCODE -ne 0) { Write-Error "tools\Build-ServerInstaller.ps1 failed (exit $LASTEXITCODE) - nothing installed."; exit $LASTEXITCODE }
+    if ($LASTEXITCODE -ne 0) { Fail "tools\Build-ServerInstaller.ps1 failed (exit $LASTEXITCODE) - nothing installed." $LASTEXITCODE }
     $setupPath = Join-Path $root ("dist\FastMediaSorter-$Version-windows-x64-server-setup.exe")
-    if (-not (Test-Path -LiteralPath $setupPath)) { Write-Error "Expected package not found: $setupPath"; exit 1 }
+    if (-not (Test-Path -LiteralPath $setupPath)) { Fail "Expected package not found: $setupPath" }
 }
 
 Write-Host ""
@@ -271,8 +279,7 @@ if ($Clean -and $arpBefore -and $arpBefore.UninstallString) {
     $deadline = (Get-Date).AddSeconds(120)
     while ((Test-Path -LiteralPath $ServerArpKey) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
     if (Test-Path -LiteralPath $ServerArpKey) {
-        Write-Error "The uninstaller did not finish within 120 s - stopping rather than installing over a half-removed product."
-        exit 1
+        Fail "The uninstaller did not finish within 120 s - stopping rather than installing over a half-removed product."
     }
     Write-Host "Uninstalled (the state directory was deliberately kept)." -ForegroundColor DarkGray
     Write-Host ""
@@ -298,8 +305,7 @@ if (-not $SkipExchange) { $setupArgs += '/COMPONENTS=server,filedo,exchange' }
 Write-Host "Installing (this is the one UAC prompt).." -ForegroundColor Cyan
 $proc = Start-Elevated $setupPath $setupArgs
 if ($proc.ExitCode -ne 0) {
-    Write-Error "setup.exe exited with code $($proc.ExitCode). Log: $setupLog"
-    exit $proc.ExitCode
+    Fail "setup.exe exited with code $($proc.ExitCode). Log: $setupLog" $proc.ExitCode
 }
 
 # The service is registered from ssPostInstall and starts delayed-auto, so it can still

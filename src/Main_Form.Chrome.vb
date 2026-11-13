@@ -39,12 +39,18 @@ Partial Public Class Main_Form
     Private chrome_Last_Pointer As Point
     Private chrome_Applied_Scale As Single
     Private chrome_Theme As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.Gainsboro, False)
-    ''' <summary>The palette BEFORE the 220 tone flip. The panels' <see cref="chrome_Theme"/> is its
-    ''' flipped view below half opacity; a surface with a transparency knob of its own (the
-    ''' recipients overlay) reads its base ink here and decides its own flip.</summary>
+    ''' <summary>The panels' theme as the panel colour model gives it (L0303); since Q303-3 the panels
+    ''' never flip with the opacity setting, so it is the same object as <see cref="chrome_Theme"/>. The
+    ''' recipients overlay reads its base ink here and still decides its own flip until S-5.</summary>
     Private chrome_Base_Theme As ChromeTheme = chrome_Theme
     Private chrome_Scheme_Back As Color = Color.Black
-    Private chrome_Scheme_Fore As Color = Color.Gainsboro
+    ''' <summary>The Form_Color_Scheme the sample came from; -1 before the first picture.</summary>
+    Private chrome_Scheme_Number As Integer = -1
+    ''' <summary>The panels' last tone (R-2 hysteresis); Nothing until the first sample and after a scheme change.</summary>
+    Private chrome_Panel_Tone As PanelTone?
+    ''' <summary>The model result the current theme was built from (the cache hands back the same object
+    ''' for the same inputs, so an unchanged picture colour costs nothing).</summary>
+    Private chrome_Colours As PanelColours
     Private chrome_High_Contrast As Boolean
     Private chrome_Text_Font As Font
     Private chrome_Symbol_Font As Font
@@ -698,17 +704,7 @@ Partial Public Class Main_Form
         If chrome_Panels.Count = 0 Then Return
 
         chrome_High_Contrast = SystemInformation.HighContrast
-        chrome_Base_Theme = ChromeTheme.FromScheme(chrome_Scheme_Back, chrome_Scheme_Fore, chrome_High_Contrast)
-        If Not chrome_High_Contrast AndAlso modern_Preferences IsNot Nothing Then chrome_Base_Theme.PanelOpacity = modern_Preferences.ChromeOpacityPercent / 100.0R
-        chrome_Base_Theme.PanelCornerRadius = ChromeCorner()
-        chrome_Theme = chrome_Base_Theme
-        If Not chrome_High_Contrast AndAlso modern_Preferences IsNot Nothing AndAlso
-           ChromeMetrics.InvertsInk(modern_Preferences.ChromeOpacityPercent) Then
-            ' 220: below half opacity the panels' ink flips tone - black becomes white, white becomes
-            ' black, the outline with it - while the fills and the accent keep their hue. The base
-            ' theme stays un-flipped: the recipients overlay reads its ink there and flips on its own knob.
-            chrome_Theme = chrome_Base_Theme.WithInvertedInk()
-        End If
+        ChromeComputeTheme()
         Dim factor As Single = ChromeScale()
         chrome_Applied_Scale = factor
         Dim previousScale As Single = chrome_Panels(0).Host.Surface.ScaleFactor
@@ -739,7 +735,11 @@ Partial Public Class Main_Form
             chrome_Symbol_Font = New Font("Segoe UI Symbol", targetSymbolSize, FontStyle.Regular, GraphicsUnit.Pixel)
         End If
 
-        If chrome_Path IsNot Nothing Then chrome_Path.Configure(chrome_Theme, factor, Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
+        If chrome_Path IsNot Nothing Then
+            chrome_Path.Configure(chrome_Theme, factor, Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
+            ' L0303 R-13: its lists are menus, themed like every other chrome menu.
+            chrome_Path.MenuTheme = Function() ChromeTheme.ForMenu(ThemeService.Palette)
+        End If
 
         For Each p As ChromePanel In chrome_Panels
             p.Host.BackColor = chrome_Theme.PanelFill
@@ -782,17 +782,69 @@ Partial Public Class Main_Form
         End Select
     End Function
 
-    ''' <summary>The colour scheme changed (RecolorChrome calls this): the panels follow the picture the
-    ''' way the docked toolbar does.</summary>
-    Private Sub ChromeApplyScheme(back_Color As Color, opposite_Color As Color)
+    ''' <summary>The panels' theme from the panel colour model (L0303 sections 6.1-6.4): the sample, the
+    ''' scheme, the last tone, the opacity setting, the Windows accent and high contrast in; the tone is
+    ''' remembered for the next picture. The ink never depends on the opacity setting (Q303-3), so the
+    ''' panels' theme and the base theme are one object.</summary>
+    Private Sub ChromeComputeTheme()
+        Dim percent As Integer = If(modern_Preferences IsNot Nothing, modern_Preferences.ChromeOpacityPercent, ChromeMetrics.PanelOpacityPercent)
+        Dim accent As Color = AccentColors.ForChrome(SystemColors.Highlight)
+        Dim colours As PanelColours = PanelColourModel.ForSample(chrome_Scheme_Back, chrome_Scheme_Number, chrome_Panel_Tone,
+                                                                 percent, accent, chrome_High_Contrast)
+        If Not colours.IsHighContrast Then chrome_Panel_Tone = colours.Tone
+        If Object.ReferenceEquals(colours, chrome_Colours) AndAlso chrome_Theme IsNot Nothing AndAlso
+           chrome_Theme.PanelCornerRadius = ChromeCorner() Then Return
+        chrome_Colours = colours
+        Dim theme As ChromeTheme = ChromeTheme.FromColours(colours)
+        theme.PanelCornerRadius = ChromeCorner()
+        chrome_Base_Theme = theme
+        chrome_Theme = theme
+    End Sub
+
+    ''' <summary>True when the panels wear the dark tone (the title bar follows it).</summary>
+    Friend Function ChromePanelToneIsDark() As Boolean
+        If chrome_Colours Is Nothing Then Return True
+        Return chrome_Colours.Tone = PanelTone.Dark
+    End Function
+
+    ''' <summary>The colour scheme changed (RecolorChrome calls this with the sample unaltered): the panels
+    ''' follow the picture through the model. A change of colour alone repaints; it neither re-measures
+    ''' nor re-places a panel (R-14). Scale, fonts, language and high contrast still go through
+    ''' <see cref="ChromeConfigure"/>.</summary>
+    Private Sub ChromeApplyScheme(back_Color As Color, scheme As Integer)
+        If scheme <> chrome_Scheme_Number Then chrome_Panel_Tone = Nothing
         chrome_Scheme_Back = back_Color
-        chrome_Scheme_Fore = opposite_Color
+        chrome_Scheme_Number = scheme
         ' Called from RecolorChrome on every image: a failure here must not stop the picture appearing.
         Try
-            If chrome_Panels.Count > 0 Then ChromeConfigure()
+            If chrome_Panels.Count = 0 Then Return
+            If SystemInformation.HighContrast <> chrome_High_Contrast OrElse ChromeScale() <> chrome_Applied_Scale OrElse
+               chrome_Text_Font Is Nothing Then
+                ChromeConfigure()
+                Return
+            End If
+            Dim previous As ChromeTheme = chrome_Theme
+            ChromeComputeTheme()
+            If Object.ReferenceEquals(previous, chrome_Theme) Then Return
+            ChromeRecolour()
         Catch ex As Exception
             AppFileLogger.LogException("Chrome: applying the colour scheme", ex)
         End Try
+    End Sub
+
+    ''' <summary>Hands the current theme to every panel without a layout pass (L0303 R-14).</summary>
+    Private Sub ChromeRecolour()
+        If chrome_Path IsNot Nothing Then chrome_Path.ApplyTheme(chrome_Theme)
+        For Each p As ChromePanel In chrome_Panels
+            p.Host.BackColor = chrome_Theme.PanelFill
+            p.Host.UseInkLayer = Not chrome_High_Contrast AndAlso chrome_Theme.PanelOpacity < 0.999R
+            p.Host.Surface.ApplyTheme(chrome_Theme)
+            p.Host.Invalidate()
+        Next
+        ' The transport bar re-colours without a layout pass or a glyph re-render unless its ink moved (L0303 S-4);
+        ' the recipients overlay re-reads the theme (S-5 narrows its step).
+        RecolourTransport()
+        RecolourRecipientsOverlay()
     End Sub
 
     ''' <summary>A language was switched (LngCh): captions, tooltips, accessible names, the script font
@@ -820,37 +872,54 @@ Partial Public Class Main_Form
                 End If
             Next
             btn_Video_Speed.RowFont = chrome_Text_Font
-            ' The sliders and the A-B chip paint from the theme: the scheme, high contrast and the opacity setting reach
-            ' the bar through the same ChromeTheme as the panels (121 UX-403).
-            For Each slider As FlatSlider In New FlatSlider() {video_Seek, video_Volume}
-                slider.FillColor = chrome_Theme.Accent
-                slider.TrackColor = ChromeTheme.Blend(chrome_Theme.PanelFill, chrome_Theme.Foreground, 0.28F)
-                slider.ThumbColor = chrome_Theme.Foreground
-            Next
-            lbl_Video_Ab.ChipColor = chrome_Theme.Accent
-            If video_Ring_Control IsNot Nothing Then SetBarRing(video_Ring_Control, True)
-            video_Chrome_Host.BackColor = chrome_Theme.PanelFill
-            ' The transport is made of real controls, which have no ink layer to keep them legible: its
-            ' window never goes below the old 40 % floor, even though the other panels may reach 0.
-            video_Chrome_Host.Opacity = Math.Max(0.4R, chrome_Theme.PanelOpacity)
+            RecolourTransport()
             video_Chrome_Host.SetCornerRadius(UiScale.Px(ChromeCorner(), ChromeScale()))
-            For Each control As Control In video_Controls.Controls
-                control.BackColor = chrome_Theme.PanelFill
-                control.ForeColor = If(control Is lbl_Video_Ab, chrome_Theme.AccentForeground, chrome_Theme.Foreground)
-                Dim button As Button = TryCast(control, Button)
-                If button IsNot Nothing Then
-                    button.FlatAppearance.MouseOverBackColor = chrome_Theme.ItemHover
-                    button.FlatAppearance.MouseDownBackColor = chrome_Theme.ItemPressed
-                    Dim glyph As String = TryCast(button.Tag, String)
-                    If Not String.IsNullOrEmpty(glyph) Then
-                        button.Tag = Nothing
-                        SetVideoGlyph(button, glyph)
-                    End If
-                End If
-            Next
-            video_Controls.BackColor = chrome_Theme.PanelFill
             PositionVideoControls()
         End If
+        RecolourRecipientsOverlay()
+    End Sub
+
+    ''' <summary>The transport bar's colours from the panel colour model (L0303 S-4): the scheme, high contrast and the
+    ''' opacity setting reach the bar through the same ChromeTheme as the panels (121 UX-403). Colour only - no
+    ''' measuring, no placing; a glyph is rendered again only when its ink or size changed (R-14).</summary>
+    Private Sub RecolourTransport()
+        If video_Chrome_Host Is Nothing OrElse video_Controls Is Nothing Then Return
+        Dim track As Color = If(chrome_Theme.SliderTrack.IsEmpty, chrome_Theme.Hairline, chrome_Theme.SliderTrack)
+        For Each slider As FlatSlider In New FlatSlider() {video_Seek, video_Volume}
+            slider.FillColor = chrome_Theme.Accent
+            slider.TrackColor = track
+            slider.ThumbColor = chrome_Theme.Foreground
+        Next
+        lbl_Video_Ab.ChipColor = chrome_Theme.Accent
+        If video_Ring_Control IsNot Nothing Then SetBarRing(video_Ring_Control, True)
+        video_Chrome_Host.BackColor = chrome_Theme.PanelFill
+        ApplyTransportOpacity()
+        For Each control As Control In video_Controls.Controls
+            control.BackColor = chrome_Theme.PanelFill
+            control.ForeColor = If(control Is lbl_Video_Ab, chrome_Theme.AccentForeground, chrome_Theme.Foreground)
+            Dim button As Button = TryCast(control, Button)
+            If button IsNot Nothing Then
+                button.FlatAppearance.MouseOverBackColor = chrome_Theme.ItemHover
+                button.FlatAppearance.MouseDownBackColor = chrome_Theme.ItemPressed
+                Dim glyph As String = TryCast(button.Tag, String)
+                If Not String.IsNullOrEmpty(glyph) Then SetVideoGlyph(button, glyph)
+            End If
+        Next
+        video_Controls.BackColor = chrome_Theme.PanelFill
+    End Sub
+
+    ''' <summary>L0303 R-11 (Q303-5 a): the transport is made of real controls whose text fades with the window, so the
+    ''' window rests at the model's whole-window floor instead of the old fixed 40 %, and at the checked chip's floor
+    ''' while the A-B badge is shown. 1 under high contrast.</summary>
+    Private Sub ApplyTransportOpacity()
+        If video_Chrome_Host Is Nothing Then Return
+        Dim floor As Double = chrome_Theme.EditFloorOpacity
+        If lbl_Video_Ab IsNot Nothing AndAlso lbl_Video_Ab.Text.Length > 0 Then floor = Math.Max(floor, chrome_Theme.ChipFloorOpacity)
+        Dim opacity As Double = Math.Min(1.0R, Math.Max(floor, chrome_Theme.PanelOpacity))
+        If Math.Abs(video_Chrome_Host.Opacity - opacity) > 0.002R Then video_Chrome_Host.Opacity = opacity
+    End Sub
+
+    Private Sub RecolourRecipientsOverlay()
         If recipients_Overlay IsNot Nothing Then
             Dim recTheme As ChromeTheme = RecipientsOverlayTheme()
             recipients_Overlay.BackColor = recTheme.PanelFill
@@ -1732,11 +1801,14 @@ Partial Public Class Main_Form
             If p.Host.Bounds <> r Then p.Host.Bounds = r
         End If
 
-        Dim opacity As Double = Math.Max(0.02R, Math.Min(1.0R, p.Alpha * chrome_Theme.PanelOpacity))
+        ' L0303 R-11: while the user types in a native edit its text fades with the window, so the panel rests at the floor.
+        Dim resting As Double = If(p.Host.Surface.HasNativeEdit, Math.Max(chrome_Theme.PanelOpacity, chrome_Theme.EditFloorOpacity), chrome_Theme.PanelOpacity)
+        Dim opacity As Double = Math.Max(0.02R, Math.Min(1.0R, p.Alpha * resting))
         If Math.Abs(opacity - p.AppliedOpacity) > 0.004R Then
             p.Host.Opacity = opacity
             ' The ink layer follows only the panel's own fade (show / hide), never its translucency.
             p.Host.InkOpacity = Math.Max(0.02R, Math.Min(1.0R, p.Alpha))
+            p.Host.RefreshInkIfScrimMoved()
             p.AppliedOpacity = opacity
         End If
     End Sub
@@ -1868,19 +1940,24 @@ Partial Public Class Main_Form
             recipients_AppliedOpacity = -1.0R
             Return
         End If
+        Dim configured As Double = If(chrome_High_Contrast, 1.0R,
+                                      Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)))
+        ' L0303 R-12: while the table is see-through its captions and glyphs ride the ink layer, which fades with
+        ' the table but never shares its translucency; an opaque table (and high contrast) paints them itself.
+        recipients_Overlay.SetInkLayer(Not chrome_High_Contrast AndAlso configured < 0.999R)
+        recipients_Overlay.InkOpacity = Math.Max(0.02R, Math.Min(1.0R, recipients_Alpha))
         If Not recipients_Overlay.Visible Then
             PositionRecipientsOverlay()
             PinToViewerBand(recipients_Overlay)
             recipients_Overlay.Visible = True
             ChromeMenu.RaiseOpenChain()
         End If
-        Dim configured As Double = If(chrome_High_Contrast, 1.0R,
-                                      Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)))
         Dim opacity As Double = Math.Max(0.02R, Math.Min(1.0R, recipients_Alpha * configured))
         If Math.Abs(opacity - recipients_AppliedOpacity) > 0.004R Then
             recipients_Overlay.Opacity = opacity
             recipients_AppliedOpacity = opacity
         End If
+        recipients_Overlay.RefreshInkIfScrimMoved()
     End Sub
 
     ' --- the keyboard: F10 enters, Tab/arrows walk, Enter/Space press, Esc leaves --------------------------

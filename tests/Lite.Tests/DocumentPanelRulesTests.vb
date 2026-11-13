@@ -41,7 +41,7 @@ Public Class DocumentPanelRulesTests
                      "doc_ViewSource doc_OpenInBrowser doc_Print doc_Blocked doc_ConvertResult doc_ReturnToFiles doc_Context",
                      String.Join(" ", DocumentPanelRules.ItemIds(DocumentReaderKind.Html)))
         Assert.Equal("doc_TextEdit doc_TextSave doc_TextSaveAs doc_TextExcerpt doc_TextExternal doc_TextFind doc_TextReplace doc_TextEncoding " &
-                     "doc_TextLineEnding doc_TextMarkdown doc_ZoomOut doc_ZoomIn doc_ZoomReset doc_Context",
+                     "doc_TextLineEnding doc_TextMarkdown doc_TextTranslate doc_ZoomOut doc_ZoomIn doc_ZoomReset doc_Context",
                      String.Join(" ", DocumentPanelRules.ItemIds(DocumentReaderKind.Text)))
     End Sub
 

@@ -210,6 +210,9 @@ main:focus{outline:none}
             to the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>
             model on your own machine, or a <a href="https://libretranslate.com">LibreTranslate</a> server
             you specify - to receive the translated text. <strong>OCR (text recognition) runs fully offline.</strong>
+            A PDF or EPUB you process in doc-html-translate is handled by that program on your computer; when you
+            choose Google translation for it, doc-html-translate sends the document's text to Google with the key
+            set up in doc-html-translate, and only after you approve that run and its cost limit.
             Apart from that, the app makes no network requests except to fetch an optional component you ask
             for: additional OCR language packs from the public Tesseract data repository; the OCR and video
             playback runtimes from <a href="https://www.nuget.org">nuget.org</a>, when a build did not bring

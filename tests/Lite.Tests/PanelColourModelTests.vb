@@ -353,6 +353,35 @@ Public Class PanelColourModelTests
         Next
     End Sub
 
+    ''' <summary>L0303 S-4 (R-11 on the transport bar): the sliders' track holds the glyph floor against the bar's
+    ''' fill when both fade with the window at its floor, and the A-B chip's caption holds the text floor at the
+    ''' chip's own floor, for the corpus, both fixed schemes and every Windows accent swatch.</summary>
+    <Fact>
+    Public Sub Transport_track_and_chip_read_at_their_window_floors()
+        Dim samples As New List(Of KeyValuePair(Of Color, Integer)) From {
+            New KeyValuePair(Of Color, Integer)(Color.Black, PanelColourMetrics.BlackScheme),
+            New KeyValuePair(Of Color, Integer)(Color.White, PanelColourMetrics.WhiteScheme)}
+        For Each rgbRow As Integer() In Corpus
+            samples.Add(New KeyValuePair(Of Color, Integer)(Rgb(rgbRow(0), rgbRow(1), rgbRow(2)), 0))
+        Next
+        For Each sample As KeyValuePair(Of Color, Integer) In samples
+            For Each swatch As String In AccentHex
+                Dim m As PanelColours = PanelColourModel.ForSample(sample.Key, sample.Value, Nothing, 0, Hex(swatch), False)
+                Assert.True(Cr(m.SliderTrack, m.Fill) >= PanelColourMetrics.GlyphFloor, $"track {m.SliderTrack} on {m.Fill}")
+                Assert.True(PanelColourModel.WholeWindowWorst(m.Fill, m.SliderTrack, m.WholeWindowFloor) >= PanelColourMetrics.GlyphFloor,
+                            $"track {m.SliderTrack} on {m.Fill} at {m.WholeWindowFloor:0.000}")
+                ' The track is a mark between the fill and the thumb (the ink), never the ink itself on a dark panel.
+                Assert.True(Cr(m.SliderTrack, m.Fill) <= Cr(m.Ink, m.Fill) + 0.000001R)
+                Assert.InRange(m.ChipFloor, 0.0R, 1.0R)
+                Assert.True(PanelColourModel.WholeWindowWorst(m.Checked, m.CheckedInk, m.ChipFloor) >= PanelColourMetrics.TextFloor,
+                            $"chip {m.CheckedInk} on {m.Checked} at {m.ChipFloor:0.000}")
+            Next
+        Next
+        Dim hc As PanelColours = PanelColourModel.ForSample(Rgb(0, 205, 90), 0, Nothing, 30, DefaultAccent, True)
+        Assert.Equal(hc.Ink.ToArgb(), hc.SliderTrack.ToArgb())
+        Assert.Equal(0.0R, hc.ChipFloor)
+    End Sub
+
     <Fact>
     Public Sub High_contrast_is_untouched()
         Dim m As PanelColours = PanelColourModel.ForSample(Rgb(0, 205, 90), 0, Nothing, 30, DefaultAccent, True)
@@ -373,6 +402,79 @@ Public Class PanelColourModelTests
         Assert.Equal(PanelColourModel.ToOkLch(Rgb(240, 240, 240))(0), PanelColourMetrics.LightFillL, 3)
         Assert.Equal(ThemePalette.Dark.Warning.ToArgb(), PanelColourMetrics.WarningOnDark.ToArgb())
         Assert.Equal(ThemePalette.Dark.Danger.ToArgb(), PanelColourMetrics.ErrorOnDark.ToArgb())
+    End Sub
+
+    ''' <summary>R-14 caches the result and hands one instance to every caller, so no caller may change it.</summary>
+    <Fact>
+    Public Sub The_cached_result_is_immutable()
+        For Each p As Reflection.PropertyInfo In GetType(PanelColours).GetProperties(
+                Reflection.BindingFlags.Public Or Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance)
+            Assert.True(p.SetMethod Is Nothing, p.Name & " has a setter")
+        Next
+        Dim accent As Color = Color.FromArgb(DefaultAccentArgb)
+        Dim first As PanelColours = PanelColourModel.ForSample(Rgb(0, 205, 90), 0, Nothing, 86, accent, False)
+        Assert.Same(first, PanelColourModel.ForSample(Rgb(0, 205, 90), 0, Nothing, 86, accent, False))
+    End Sub
+
+    <Fact>
+    Public Sub Recipient_rows_read_at_every_overlay_setting()
+        ' L0303 R-12: the recipients table's rows on the model - identity fills blended toward the table's own fill
+        ' in the panels' tone, the copy zone on the state fills, the delete row on the destructive family, the strip
+        ' glyphs on the pin inks - read over any picture at every opacity the setting offers, through the scrim
+        ' the ink layer lays (R-10); an unusable row's solved ink keeps the disabled floor on its own fills (R-6).
+        Dim samples As New List(Of Tuple(Of Color, Integer)) From {
+            Tuple.Create(Color.Black, PanelColourMetrics.BlackScheme),
+            Tuple.Create(Color.White, PanelColourMetrics.WhiteScheme),
+            Tuple.Create(Rgb(32, 32, 32), 0),
+            Tuple.Create(Rgb(0, 205, 90), 0),
+            Tuple.Create(Rgb(148, 132, 119), 0),
+            Tuple.Create(Rgb(240, 236, 220), 0)}
+        Dim percents As New List(Of Integer)
+        For percent As Integer = 40 To 100 Step 6
+            percents.Add(percent)
+        Next
+        percents.Add(88)
+        percents.Add(100)
+        Const slack As Double = 0.01R
+        For Each s As Tuple(Of Color, Integer) In samples
+            For Each percent As Integer In percents
+                Dim m As PanelColours = PanelColourModel.ForSample(s.Item1, s.Item2, Nothing, percent, DefaultAccent, False)
+                Dim dark As Boolean = (m.Tone = PanelTone.Dark)
+                Dim p As Double = m.SetOpacity
+                Dim pairs As New List(Of Tuple(Of String, Color, Color, Double))
+                For slot As Integer = 0 To 10
+                    Dim rest As Color = RecipientPalette.ColorFor(slot, dark, m.Fill)
+                    Dim hover As Color = RecipientPalette.HoverColorFor(slot, dark, m.Fill)
+                    pairs.Add(Tuple.Create($"slot {slot} rest", rest, m.Ink, PanelColourMetrics.TextFloor))
+                    pairs.Add(Tuple.Create($"slot {slot} hover", hover, m.Ink, PanelColourMetrics.TextFloor))
+                    Dim disabled As Color = PanelColourModel.SolveDerivedInk({rest, hover}, m.Ink,
+                                                                             PanelColourMetrics.DisabledContrast + PanelColourMetrics.FloorMargin)
+                    pairs.Add(Tuple.Create($"slot {slot} disabled rest", rest, disabled, PanelColourMetrics.DisabledContrast))
+                    pairs.Add(Tuple.Create($"slot {slot} disabled hover", hover, disabled, PanelColourMetrics.DisabledContrast))
+                    Dim verb As Color = PanelColourModel.SolveDerivedInk({rest}, m.Ink, PanelColourMetrics.TextFloor + PanelColourMetrics.FloorMargin)
+                    pairs.Add(Tuple.Create($"slot {slot} verb", rest, verb, PanelColourMetrics.TextFloor))
+                Next
+                pairs.Add(Tuple.Create("copy rest", m.Hover, m.Ink, PanelColourMetrics.TextFloor))
+                pairs.Add(Tuple.Create("copy hover", m.Pressed, m.Ink, PanelColourMetrics.TextFloor))
+                pairs.Add(Tuple.Create("copy unusable", m.Fill, m.InkDisabled, PanelColourMetrics.DisabledContrast))
+                pairs.Add(Tuple.Create("delete rest", m.Destructive, m.DestructiveInk, PanelColourMetrics.TextFloor))
+                pairs.Add(Tuple.Create("delete hover", m.DestructiveHover, m.DestructiveInk, PanelColourMetrics.TextFloor))
+                pairs.Add(Tuple.Create("delete pressed", m.DestructivePressed, m.DestructiveInk, PanelColourMetrics.TextFloor))
+                pairs.Add(Tuple.Create("pin free", m.Fill, m.PinRestInk, PanelColourMetrics.GlyphFloor))
+                pairs.Add(Tuple.Create("pin pinned", m.Fill, m.PinPinnedInk, PanelColourMetrics.GlyphFloor))
+                pairs.Add(Tuple.Create("strip hover", m.Hover, m.Ink, PanelColourMetrics.GlyphFloor))
+                For Each pair As Tuple(Of String, Color, Color, Double) In pairs
+                    Dim fill As Color = pair.Item2
+                    Dim ink As Color = pair.Item3
+                    Dim floor As Double = pair.Item4
+                    Dim where As String = $"{pair.Item1} on {s.Item1} scheme {s.Item2} at {percent} %"
+                    Assert.True(Cr(ink, fill) >= floor - slack, $"{where}: opaque {Cr(ink, fill):F2}:1")
+                    Dim scrim As Double = PanelColourModel.ScrimAlpha(fill, ink, floor, p)
+                    Dim seen As Double = PanelColourModel.ScrimmedWorstCase(fill, ink, p, scrim)
+                    Assert.True(seen >= floor - slack, $"{where}: over a picture {seen:F2}:1 with scrim {scrim:F3}")
+                Next
+            Next
+        Next
     End Sub
 
 End Class

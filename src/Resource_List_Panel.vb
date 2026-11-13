@@ -1257,10 +1257,9 @@ Friend NotInheritable Class Resource_List_Panel
     Private Sub OnMore(sender As Object, e As EventArgs)
         Dim owner As Form = FindForm()
         If owner Is Nothing Then Return
+        ' L0303 R-13: a themed, opaque menu (APP-STYLE section 5 condition 2) in the host's tone.
         If menuTheme Is Nothing Then
-            menuTheme = ChromeTheme.FromScheme(If(palette IsNot Nothing, palette.Surface, SystemColors.Control),
-                                               If(palette IsNot Nothing, palette.Text, SystemColors.ControlText),
-                                               SystemInformation.HighContrast)
+            menuTheme = ChromeTheme.ForMenu(If(palette IsNot Nothing AndAlso palette.Dark, ThemePalette.Dark, ThemePalette.Light))
         End If
         ChromeMenu.ShowPopup(owner, moreButton.PointToScreen(New Point(0, moreButton.Height)), BuildOverflowItems(),
                              menuTheme, panelScale, RightToLeft = RightToLeft.Yes, Font, Font)

@@ -26,13 +26,20 @@ Friend NotInheritable Class RecipientPalette
     Private Sub New()
     End Sub
 
-    ' The blend factors of 129 §3.1, as ChromeTheme.Blend(a, b, t) weighs them: t is how far the
-    ' hue travels TOWARD the surface, so the resting row carries 0.40 of the hue on the dark theme
-    ' and 0.30 on the light one. Hover carries 0.45 of the hue (129 §3.3): the row deepens the
-    ' same blend instead of swapping its identity.
+    ' The blend factors, as ChromeTheme.Blend(a, b, t) weighs them: t is how far the hue travels
+    ' TOWARD the surface. Hover deepens the same blend instead of swapping its identity (129 §3.3).
+    ' The mainline rows carry 0.25 of the hue on both themes and 0.32 on hover (L0303 Q303-6 a), so the
+    ' theme's ink reads on them over any picture at the overlay's default opacity; the net48 fallback keeps
+    ' 129's 0.40 / 0.30 and 0.45 (maintenance policy).
+#If NETFRAMEWORK Then
     Private Const RestTowardSurface_Dark As Single = 0.6F
     Private Const RestTowardSurface_Light As Single = 0.7F
     Private Const HoverTowardSurface As Single = 0.55F
+#Else
+    Private Const RestTowardSurface_Dark As Single = 0.75F
+    Private Const RestTowardSurface_Light As Single = 0.75F
+    Private Const HoverTowardSurface As Single = 0.68F
+#End If
 
     ' The surfaces the hues are blended toward: the dark panels' charcoal (the overlay's own
     ' backdrop, the theme's dark window surface) and the white of the light windows. Own values,
@@ -84,8 +91,34 @@ Friend NotInheritable Class RecipientPalette
         Return FillFor(slot, dark, HoverTowardSurface)
     End Function
 
+    ''' <summary>The resting fill blended toward a surface of the caller's (the recipients table blends toward
+    ''' its panel's fill, L0303 R-12); <paramref name="dark"/> picks the hue row.</summary>
+    Public Shared Function ColorFor(slot As Integer, dark As Boolean, surface As Color) As Color
+        Return FillFor(slot, dark, If(dark, RestTowardSurface_Dark, RestTowardSurface_Light), surface)
+    End Function
+
+    ''' <summary>The hover fill toward a surface of the caller's.</summary>
+    Public Shared Function HoverColorFor(slot As Integer, dark As Boolean, surface As Color) As Color
+        Return FillFor(slot, dark, HoverTowardSurface, surface)
+    End Function
+
+    ''' <summary>How much of the slot's hue a resting row carries, 0..1.</summary>
+    Friend Shared Function RestHueShare(dark As Boolean) As Single
+        Return 1.0F - If(dark, RestTowardSurface_Dark, RestTowardSurface_Light)
+    End Function
+
+    ''' <summary>The slot's base hue (for the distinctness check); the surface for a slot outside 0-10.</summary>
+    Friend Shared Function BaseHueFor(slot As Integer, dark As Boolean) As Color
+        If slot < 0 OrElse slot > 10 Then Return If(dark, DarkSurface, LightSurface)
+        Return If(dark, DarkHues, LightHues)(slot)
+    End Function
+
     Private Shared Function FillFor(slot As Integer, dark As Boolean, towardSurface As Single) As Color
-        Dim surface As Color = If(dark, DarkSurface, LightSurface)
+        Return FillFor(slot, dark, towardSurface, If(dark, DarkSurface, LightSurface))
+    End Function
+
+    Private Shared Function FillFor(slot As Integer, dark As Boolean, towardSurface As Single, surface As Color) As Color
+        surface = Color.FromArgb(255, surface)
         If slot < 0 OrElse slot > 10 Then Return surface
         Dim hues() As Color = If(dark, DarkHues, LightHues)
         Return Blend(hues(slot), surface, towardSurface)

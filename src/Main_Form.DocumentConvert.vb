@@ -24,7 +24,53 @@ Partial Public Class Main_Form
     ''' <summary>Journey steps 1-4: readiness off the UI thread, then the install offer or the job panel. A result
     ''' that arrives after the user has moved to another file is dropped, so the panel never names a document that
     ''' is no longer on screen. <paramref name="again"/> is Process again of a shown result: it never reuses a finished page.</summary>
-    Private Async Sub BeginDocumentConversion(path As String, Optional again As Boolean = False)
+    ''' <summary>%LOCALAPPDATA%\SZA\FastMediaSorter\document-convert-input - one folder per job for an editor snapshot,
+    ''' apart from the result cache (its trim and Clear never see it), removed when the job ends (Step 5.1).</summary>
+    Private Shared Function DocumentSnapshotRoot() As String
+        Return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            App_name, Second_App_Name, "document-convert-input")
+    End Function
+
+    ''' <summary>An editor snapshot asked for by the text editor (ticket 277): the document it came from, what part of it,
+    ''' and the text captured at the moment of the request - the job's immutable input (section 6).</summary>
+    Private NotInheritable Class DocumentSnapshotRequest
+        Friend OriginPath As String = ""
+        Friend Scope As DocHtmlSnapshotScope
+        Friend Text As String = ""
+
+        Friend ReadOnly Property DisplayName As String
+            Get
+                Return DocHtmlSnapshot.FileNameFor(OriginPath, Scope)
+            End Get
+        End Property
+
+        ''' <summary>Section 3: a selection never pretends to be the whole document, and an unsaved buffer says so.</summary>
+        Friend ReadOnly Property ScopeNote As String
+            Get
+                Return If(Scope = DocHtmlSnapshotScope.Selection,
+                          Localization.T("Будет обработан только выделенный фрагмент, а не весь документ."),
+                          Localization.T("Будет обработан текущий текст редактора вместе с несохранёнными изменениями; файл при этом не сохраняется."))
+            End Get
+        End Property
+    End Class
+
+    ''' <summary>Step 5.1, the entry of the text editor (ticket 277): convert or translate the editor's whole text or its
+    ''' selection without saving the file. The text is copied now, so later edits never reach the job; a secure-container
+    ''' document never becomes a job (section 6). The page of a snapshot opens in the browser, so the editor and its
+    ''' unsaved changes stay where they are.</summary>
+    Friend Sub BeginTextSnapshotConversion(originPath As String, scope As DocHtmlSnapshotScope, text As String)
+        If DocHtmlSnapshot.IsSecureOrigin(originPath) OrElse IsSecureContentOnScreen() Then
+            Notify(Localization.T("Текст защищённого файла не передаётся в doc-html-translate."), NotifyLevel.Warning)
+            Return
+        End If
+        If String.IsNullOrWhiteSpace(text) Then
+            Notify(Localization.T("Нет текста для обработки."), NotifyLevel.Warning)
+            Return
+        End If
+        BeginDocumentConversion(originPath, False, New DocumentSnapshotRequest With {.OriginPath = If(originPath, ""), .Scope = scope, .Text = text})
+    End Sub
+
+    Private Async Sub BeginDocumentConversion(path As String, Optional again As Boolean = False, Optional snapshot As DocumentSnapshotRequest = Nothing)
         If document_Convert_Busy OrElse AskAboutRunningDocumentJob() Then Return
         document_Convert_Busy = True
         Dim generation As Integer = media_Generation
@@ -47,25 +93,66 @@ Partial Public Class Main_Form
                 Case AskSpecs.DocumentConverterInstall
                     InstallDocumentConverter()
                 Case AskSpecs.DocumentConverterChoose
-                    If ChooseDocumentConverter() Then BeginDocumentConversion(path, again)
+                    If ChooseDocumentConverter() Then BeginDocumentConversion(path, again, snapshot)
                 Case AskSpecs.DocumentConverterCheckAgain
-                    BeginDocumentConversion(path, again)
+                    BeginDocumentConversion(path, again, snapshot)
             End Select
             Return
         End If
 
         Dim preferences = GetModernPreferences()
         Dim mode As String
-        Select Case AskDialogs.Choose(Me, AskSpecs.DocumentConvertPanel(IO.Path.GetFileName(path), probe.VersionText, preferences.DocumentProcessingMode,
-                                                                        opensInViewer:=ResultOpensInViewer(preferences),
-                                                                        recognitionForced:=String.Equals(preferences.DocumentOcrMode, "force", StringComparison.Ordinal)))
+        Dim shownName = If(snapshot IsNot Nothing, snapshot.DisplayName, IO.Path.GetFileName(path))
+        Dim scopeNote = If(snapshot IsNot Nothing, snapshot.ScopeNote, "")
+        Select Case AskDialogs.Choose(Me, AskSpecs.DocumentConvertPanel(shownName, probe.VersionText, preferences.DocumentProcessingMode,
+                                                                        opensInViewer:=snapshot Is Nothing AndAlso ResultOpensInViewer(preferences),
+                                                                        recognitionForced:=String.Equals(preferences.DocumentOcrMode, "force", StringComparison.Ordinal),
+                                                                        scopeNote:=scopeNote))
             Case AskSpecs.DocumentConvertBrowser : mode = DocHtmlJobArguments.ModeBrowser
             Case AskSpecs.DocumentConvertOnly : mode = DocHtmlJobArguments.ModeConvert
             Case AskSpecs.DocumentConvertLocal : mode = DocHtmlJobArguments.ModeLocal
+            Case AskSpecs.DocumentConvertPaid : mode = DocHtmlJobArguments.ModePaid
             Case Else : Return
         End Select
         preferences.DocumentProcessingMode = mode
-        StartDocumentConversion(probe.ExePath, path, mode, again)
+        If mode = DocHtmlJobArguments.ModePaid AndAlso Not ApprovePaidDocumentRun(probe.ExePath, shownName, scopeNote, snapshot IsNot Nothing) Then Return
+        StartDocumentConversion(probe.ExePath, path, mode, again, snapshot)
+    End Sub
+
+    ''' <summary>Step 5.1, section 5: a paid run starts only with a positive finite cap and the user's answer for this very
+    ''' run. Without a cap nothing paid starts from the viewer: a document goes to the converter's own window, whose
+    ''' question about the cost the user answers there (OCR-INVOCATION 1.2 item G); an editor snapshot has no file that
+    ''' window could open, so it asks for the cap instead.</summary>
+    Private Function ApprovePaidDocumentRun(exe As String, shownName As String, scopeNote As String, isSnapshot As Boolean) As Boolean
+        Dim cap = GetModernPreferences().DocumentPaidCostLimit
+        If DocHtmlJobArguments.IsAcceptableCostLimit(cap) Then
+            Return AskDialogs.Choose(Me, AskSpecs.DocumentPaidApproval(shownName, cap, scopeNote)) = AskSpecs.DocumentPaidSend
+        End If
+        If isSnapshot Then
+            Notify(Localization.T("Для перевода текста редактора через Google задайте предел расходов в настройках: Документы > doc-html-translate."), NotifyLevel.Warning)
+            Return False
+        End If
+        If AskDialogs.Choose(Me, AskSpecs.DocumentPaidNoLimit(shownName)) = AskSpecs.DocumentPaidOpenWindow Then OpenDocumentConverterWindow(exe)
+        Return False
+    End Function
+
+    ''' <summary>The converter's window, <c>doc-html-ui.exe</c> beside the verified command-line program - a handoff, never
+    ''' embedded and never given the document on its command line (its documented interface has none).</summary>
+    Private Sub OpenDocumentConverterWindow(exe As String)
+        Dim folder = IO.Path.GetDirectoryName(exe)
+        Dim window = If(String.IsNullOrEmpty(folder), "", IO.Path.Combine(folder, "doc-html-ui.exe"))
+        If window.Length = 0 OrElse Not File.Exists(window) Then
+            Notify(Localization.TF("Окно doc-html-translate не найдено рядом с программой: {0}", If(folder, "")), NotifyLevel.Warning)
+            Return
+        End If
+        Try
+            Using started = Process.Start(New ProcessStartInfo(window) With {.UseShellExecute = False, .WorkingDirectory = folder})
+            End Using
+            AppFileLogger.LogMessage("doc-html-translate window opened for a paid translation")
+        Catch ex As Exception When TypeOf ex Is ComponentModel.Win32Exception OrElse TypeOf ex Is InvalidOperationException
+            AppFileLogger.LogMessage("doc-html-translate window: " & ex.GetType().Name)
+            Notify(Localization.TF("Не удалось запустить doc-html-translate: {0}", FailureText.Describe(ex)), NotifyLevel.Warning)
+        End Try
     End Sub
 
     ''' <summary>Step 4.1: the viewer destination needs the 275 host; without it the page goes to the browser.</summary>
@@ -107,7 +194,12 @@ Partial Public Class Main_Form
     ''' asked for it. The stop reason is written by the UI thread or the timer and read by the exit handler.</summary>
     Private NotInheritable Class DocumentConvertJob
         Friend Id As String = ""
+        ''' <summary>The file the converter reads: the document, or the snapshot written for this job.</summary>
         Friend SourcePath As String = ""
+        ''' <summary>The document the user works on; for a snapshot the editor's file, which the converter never reads.</summary>
+        Friend OriginPath As String = ""
+        ''' <summary>The snapshot's own folder (Step 5.1), removed when the job ends; "" for a document.</summary>
+        Friend SnapshotFolder As String = ""
         Friend FileName As String = ""
         Friend Mode As String = ""
         Friend JobRoot As String = ""
@@ -155,18 +247,24 @@ Partial Public Class Main_Form
     ''' shell), a fresh owned job folder, <c>-noopen</c> so the viewer opens only a verified result, the standard
     ''' streams redirected and drained (rule 4: a console run that fails waits for Enter otherwise), and a timeout
     ''' distinct from a cancel. Only the job id, mode and outcome reach the log.</summary>
-    Private Async Sub StartDocumentConversion(exe As String, path As String, mode As String, again As Boolean)
+    Private Async Sub StartDocumentConversion(exe As String, path As String, mode As String, again As Boolean,
+                                              Optional snapshot As DocumentSnapshotRequest = Nothing)
         If document_Job IsNot Nothing Then Return
         Dim preferences = GetModernPreferences()
         Dim root As String = DocumentConvertCacheRoot()
         Dim jobId As String = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) & "-" & Guid.NewGuid().ToString("N").Substring(0, 8)
-        Dim job As New DocumentConvertJob With {.Id = jobId, .SourcePath = path, .FileName = IO.Path.GetFileName(path), .Mode = mode,
+        Dim job As New DocumentConvertJob With {.Id = jobId, .SourcePath = path, .OriginPath = path, .FileName = IO.Path.GetFileName(path), .Mode = mode,
                                                 .JobRoot = IO.Path.Combine(root, jobId), .Generation = media_Generation,
                                                 .TimeoutMinutes = preferences.DocumentJobTimeoutMinutes}
+        If snapshot IsNot Nothing Then
+            job.SnapshotFolder = IO.Path.Combine(DocumentSnapshotRoot(), jobId)
+            job.FileName = snapshot.DisplayName
+        End If
         document_Job = job
         Dim options = DocumentJobOptions(preferences)
         Dim request = DocHtmlJobCache.TicketFor(path, mode, options)
-        Dim reuse = preferences.DocumentReuseResults AndAlso Not again
+        ' A snapshot is new text every time; reuse compares a file's path, size and write time, which a snapshot has not.
+        Dim reuse = preferences.DocumentReuseResults AndAlso Not again AndAlso snapshot Is Nothing
         Dim budgetMb = preferences.DocumentResultCacheMb
         Dim retentionDays = preferences.DocumentResultRetentionDays
         Dim reused As (JobRoot As String, Result As DocHtmlResult)? = Nothing
@@ -175,9 +273,11 @@ Partial Public Class Main_Form
             ' Section 6 and 7.3 rule 5, off the UI thread: the source state, a finished page of the same request, then
             ' retention and the quota - a page a browser may still show is never removed by this pass.
             Await Task.Run(Sub()
-                               Dim source As New FileInfo(path)
-                               request.SourceLength = source.Length
-                               request.SourceWriteUtcTicks = source.LastWriteTimeUtc.Ticks
+                               If snapshot Is Nothing Then
+                                   Dim source As New FileInfo(path)
+                                   request.SourceLength = source.Length
+                                   request.SourceWriteUtcTicks = source.LastWriteTimeUtc.Ticks
+                               End If
                                If reuse Then
                                    reused = DocHtmlJobCache.FindReusable(root, request)
                                    If reused.HasValue Then Return
@@ -225,28 +325,41 @@ Partial Public Class Main_Form
             End If
         End If
 
+        Dim written As DocHtmlSnapshotFile = Nothing
         Try
             Await Task.Run(Sub()
+                               If snapshot IsNot Nothing Then
+                                   ' Step 5.1: the immutable input, written apart from the result cache; a folder a viewer that
+                                   ' ended mid-job left behind goes first.
+                                   DocHtmlSnapshot.SweepStale(DocumentSnapshotRoot(), DateTime.UtcNow, "")
+                                   written = DocHtmlSnapshot.Write(job.SnapshotFolder, snapshot.OriginPath, snapshot.Scope, snapshot.Text)
+                                   If written Is Nothing Then Return
+                                   job.SourcePath = written.Path
+                                   request.SourcePath = written.Path
+                                   request.SourceLength = written.Length
+                               End If
                                Directory.CreateDirectory(job.JobRoot)
                                DocHtmlJobCache.WriteTicket(job.JobRoot, request)
                            End Sub).ConfigureAwait(True)
         Catch ex As Exception
-            document_Job = Nothing
-            job.Timer.Dispose()
+            AbandonDocumentJob(job)
             AppFileLogger.LogException("doc-html-translate document job folder", ex)
             Notify(Localization.TF("Не удалось подготовить папку результата: {0}", FailureText.Describe(ex)), NotifyLevel.Warning)
             Return
         End Try
+        If snapshot IsNot Nothing AndAlso written Is Nothing Then
+            AbandonDocumentJob(job)
+            Notify(Localization.T("Текст слишком большой или пустой - doc-html-translate его не получит."), NotifyLevel.Warning)
+            Return
+        End If
         If IsDisposed OrElse Disposing Then
-            document_Job = Nothing
-            job.Timer.Dispose()
+            AbandonDocumentJob(job)
             Return
         End If
 
-        Dim args = DocHtmlJobArguments.Build(path, job.JobRoot, mode, False, noOpen:=True, options:=options)
+        Dim args = DocHtmlJobArguments.Build(job.SourcePath, job.JobRoot, mode, False, noOpen:=True, options:=options)
         If args Is Nothing Then
-            document_Job = Nothing
-            job.Timer.Dispose()
+            AbandonDocumentJob(job)
             Notify(Localization.TF("Не удалось открыть файл: {0}", job.FileName), NotifyLevel.Warning)
             Return
         End If
@@ -269,7 +382,7 @@ Partial Public Class Main_Form
             proc.BeginErrorReadLine()
             AppFileLogger.LogMessage(String.Format(CultureInfo.InvariantCulture, "doc-html-translate document job {0} mode={1} started", jobId, mode))
             Notify(If(Not preferences.DocumentOpenResultAutomatically, Localization.TF("doc-html-translate обрабатывает «{0}».", job.FileName),
-                      If(ResultOpensInViewer(preferences),
+                      If(snapshot Is Nothing AndAlso ResultOpensInViewer(preferences),
                          Localization.TF("doc-html-translate обрабатывает «{0}». Страница откроется в просмотрщике.", job.FileName),
                          Localization.TF("doc-html-translate обрабатывает «{0}». Страница откроется в браузере.", job.FileName))), NotifyLevel.Info)
             Dim timeout = Task.Delay(TimeSpan.FromMinutes(job.TimeoutMinutes), job.Timer.Token).ContinueWith(
@@ -277,8 +390,7 @@ Partial Public Class Main_Form
                     If Not t.IsCanceled Then job.Stop(True)
                 End Sub, TaskScheduler.Default)
         Catch ex As Exception
-            document_Job = Nothing
-            job.Timer.Dispose()
+            AbandonDocumentJob(job)
             proc.Dispose()
             AppFileLogger.LogException("doc-html-translate document job launch", ex)
             Notify(Localization.TF("Не удалось запустить doc-html-translate: {0}", FailureText.Describe(ex)), NotifyLevel.Warning)
@@ -296,6 +408,10 @@ Partial Public Class Main_Form
         job.Timer.Cancel()
         Dim result = DocHtmlResultReader.Read(job.JobRoot, job.SourcePath)
         Dim outcome = DocHtmlResultReader.Outcome(result, code, job.Cancelled, job.TimedOut)
+        ' The snapshot was this job's input only: the page in the job folder no longer needs it (Step 5.1).
+        If job.SnapshotFolder.Length > 0 AndAlso Not DocHtmlSnapshot.TryDelete(job.SnapshotFolder) Then
+            AppFileLogger.LogMessage("doc-html-translate document job " & job.Id & " snapshot left for the next sweep")
+        End If
         AppFileLogger.LogMessage(String.Format(CultureInfo.InvariantCulture, "doc-html-translate document job {0} mode={1} exit={2} outcome={3} tool={4}",
                                                job.Id, job.Mode, code, outcome, result.ToolVersion))
         If IsDisposed OrElse Disposing OrElse Not IsHandleCreated Then
@@ -307,6 +423,16 @@ Partial Public Class Main_Form
         Catch ex As InvalidOperationException
             DisposeDocumentJob(job)
         End Try
+    End Sub
+
+    ''' <summary>A job that never started its process: the slot is free again and its snapshot, if any, goes.</summary>
+    Private Sub AbandonDocumentJob(job As DocumentConvertJob)
+        If ReferenceEquals(document_Job, job) Then document_Job = Nothing
+        job.Timer.Dispose()
+        If job.SnapshotFolder.Length > 0 Then
+            Dim folder = job.SnapshotFolder
+            Task.Run(Sub() DocHtmlSnapshot.TryDelete(folder))
+        End If
     End Sub
 
     Private Shared Sub DisposeDocumentJob(job As DocumentConvertJob)
@@ -357,8 +483,9 @@ Partial Public Class Main_Form
         Dim current = job.Generation = media_Generation AndAlso Not IsDisposed
         Dim opened As Boolean
         If current AndAlso preferences.DocumentOpenResultAutomatically Then
-            If ResultOpensInViewer(preferences) Then
-                ShowDocumentResultInViewer(New DocumentResultView With {.SourcePath = job.SourcePath, .FileName = job.FileName,
+            ' A snapshot's page goes to the browser: over the editor it would release the text the user is still editing.
+            If job.SnapshotFolder.Length = 0 AndAlso ResultOpensInViewer(preferences) Then
+                ShowDocumentResultInViewer(New DocumentResultView With {.SourcePath = job.OriginPath, .FileName = job.FileName,
                                                                         .JobRoot = jobRoot, .EntryPath = entryPath})
                 opened = True
             Else
@@ -367,7 +494,7 @@ Partial Public Class Main_Form
                 Catch ex As Exception When TypeOf ex Is ComponentModel.Win32Exception OrElse TypeOf ex Is InvalidOperationException
                     AppFileLogger.LogMessage("doc-html-translate document page browser: " & ex.GetType().Name)
                 End Try
-                If opened AndAlso String.Equals(preferences.DocumentResultDestination, "viewer", StringComparison.Ordinal) Then
+                If opened AndAlso job.SnapshotFolder.Length = 0 AndAlso String.Equals(preferences.DocumentResultDestination, "viewer", StringComparison.Ordinal) Then
                     Notify(Localization.T("Просмотр HTML выключен в настройках, поэтому страница открыта в браузере."), NotifyLevel.Info)
                 End If
             End If
@@ -514,7 +641,7 @@ Partial Public Class Main_Form
         Return New DocHtmlJobOptions With {
             .OcrForce = String.Equals(preferences.DocumentOcrMode, "force", StringComparison.Ordinal),
             .OcrLanguages = preferences.DocumentOcrLanguages, .SourceLanguage = preferences.DocumentSourceLanguage,
-            .TargetLanguage = target, .LocalModel = preferences.DocumentLocalModel}
+            .TargetLanguage = target, .LocalModel = preferences.DocumentLocalModel, .PaidCostLimit = preferences.DocumentPaidCostLimit}
     End Function
 
     ''' <summary>The settings window's Clear (section 6): every job folder except the one a running job writes.</summary>

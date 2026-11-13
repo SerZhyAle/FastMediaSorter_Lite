@@ -24,7 +24,7 @@ Friend NotInheritable Class ChromeSurface
     Private ReadOnly accessibleChildren As New Dictionary(Of ChromeItem, ItemAccessibleObject)()
     Private ReadOnly toolTip As New ToolTip() With {.ShowAlways = True, .OwnerDraw = True}
 
-    Private chromeTheme As ChromeTheme = ChromeTheme.FromScheme(Color.FromArgb(32, 32, 32), Color.Gainsboro, False)
+    Private chromeTheme As ChromeTheme = ChromeTheme.FromScheme(PanelColourMetrics.InitialPanelFill, PanelColourMetrics.InkOnDark, False)
     Private currentScale As Single = 1.0F
     Private isRightToLeft As Boolean
     Private textFont As Font
@@ -32,6 +32,7 @@ Friend NotInheritable Class ChromeSurface
     Private animated As Boolean = True
     Private inkExternalMode As Boolean
     Private inkPainting As Boolean
+    Private scrimOpacityValue As Double = 1.0R
 
     ''' <summary>Raised at the end of a paint while the ink is external: the host then redraws its ink layer
     ''' from the same state, so the two never disagree.</summary>
@@ -53,6 +54,31 @@ Friend NotInheritable Class ChromeSurface
             Next
             Invalidate(True)
         End Set
+    End Property
+
+    ''' <summary>The opacity the panel's fills rest at while the ink is external (L0303 R-10): below what an
+    ''' item's ink needs over any picture, <see cref="PaintInk"/> lays the item's own fill under the ink as a
+    ''' scrim. 1 (the default) means no scrim.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Friend Property ScrimOpacity As Double
+        Get
+            Return scrimOpacityValue
+        End Get
+        Set(value As Double)
+            scrimOpacityValue = Math.Max(0.0R, Math.Min(1.0R, value))
+        End Set
+    End Property
+
+    ''' <summary>True while a native edit inside the panel draws its own text (the path box or the document
+    ''' panel's editor being typed in): the panel then rests at least at the whole-window floor (R-11).</summary>
+    Friend ReadOnly Property HasNativeEdit As Boolean
+        Get
+            For Each child As Control In Controls
+                Dim source As IChromeInkSource = TryCast(child, IChromeInkSource)
+                If source IsNot Nothing AndAlso child.Visible AndAlso source.EditsNatively Then Return True
+            Next
+            Return False
+        End Get
     End Property
 
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
@@ -282,6 +308,15 @@ Friend NotInheritable Class ChromeSurface
         Invalidate()
     End Sub
 
+    ''' <summary>A colour-only change (L0303 R-14): the new theme is painted on the next frame; no item is
+    ''' measured or moved. Scale, direction and fonts stay as the last <see cref="Configure"/> left them.</summary>
+    Public Sub ApplyTheme(theme As ChromeTheme)
+        If theme Is Nothing OrElse Object.ReferenceEquals(theme, chromeTheme) Then Return
+        chromeTheme = theme
+        animated = animated AndAlso chromeTheme.AllowsAnimation
+        Invalidate()
+    End Sub
+
     ''' <summary>The user asked for no motion, or the theme forbids it: levels then jump to their targets.</summary>
     Public Sub SetAnimationEnabled(enabled As Boolean)
         animated = enabled AndAlso chromeTheme.AllowsAnimation
@@ -429,6 +464,7 @@ Friend NotInheritable Class ChromeSurface
 
     ''' <summary>Places every visible item. Called when the items, the scale, the fonts or the size change.</summary>
     Public Sub LayoutItems()
+        PanelColourTiming.NoteLayout()
         itemList.Remove(overflowItem)
         itemList.RemoveAll(Function(item) item.IsPin OrElse item.IsPanelHandle)
         overflowList.Clear()
@@ -601,12 +637,17 @@ Friend NotInheritable Class ChromeSurface
         inkPainting = True
         Try
             For Each item As ChromeItem In itemList
-                If item.Visible AndAlso Not item.Bounds.IsEmpty AndAlso Not IsCoveredByInkChild(item.Bounds) Then PaintItemInk(g, item)
+                If item.Visible AndAlso Not item.Bounds.IsEmpty AndAlso Not IsCoveredByInkChild(item.Bounds) Then
+                    If Not item.IsSeparator Then PaintScrim(g, item.Bounds, CurrentFill(item), ScrimInk(item), ScrimFloor(item))
+                    PaintItemInk(g, item)
+                End If
             Next
             PaintScrollCues(g)
             For Each child As Control In Controls
                 Dim source As IChromeInkSource = TryCast(child, IChromeInkSource)
                 If source Is Nothing OrElse Not child.Visible Then Continue For
+                ' A native edit being typed in shows its own text through the window; a scrim would veil it.
+                If Not source.EditsNatively Then PaintScrim(g, child.Bounds, chromeTheme.PanelFill, chromeTheme.Foreground, PanelColourMetrics.TextFloor)
                 Dim state As GraphicsState = g.Save()
                 Try
                     g.TranslateTransform(child.Left, child.Top)
@@ -620,6 +661,43 @@ Friend NotInheritable Class ChromeSurface
             inkPainting = False
         End Try
     End Sub
+
+    ''' <summary>L0303 R-10: the item's current fill once more under its ink, inside its rounded rectangle, at
+    ''' the smallest byte alpha that lifts the effective opacity to what the pair needs over any content.
+    ''' Nothing at or above that opacity, nothing under high contrast.</summary>
+    Private Sub PaintScrim(g As Graphics, area As Rectangle, fill As Color, ink As Color, floor As Double)
+        If chromeTheme.IsHighContrast OrElse scrimOpacityValue >= 1.0R OrElse area.Width <= 0 OrElse area.Height <= 0 Then Return
+        Dim solid As Color = Color.FromArgb(255, fill)
+        Dim alpha As Integer = CInt(Math.Round(PanelColourModel.ScrimAlpha(solid, Color.FromArgb(255, ink), floor, scrimOpacityValue) * 255.0R))
+        If alpha <= 0 Then Return
+        Using path As GraphicsPath = RoundedRect(New RectangleF(area.X, area.Y, area.Width, area.Height), Px(ChromeMetrics.ItemCorner))
+            Using brush As New SolidBrush(Color.FromArgb(Math.Min(255, alpha), solid))
+                g.FillPath(brush, path)
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>The floor an item's ink is held to over the content: text 4.5:1, a glyph 3:1, a disabled
+    ''' caption 3:1 (WINDOWS-UI section 6 item 4).</summary>
+    Private Function ScrimFloor(item As ChromeItem) As Double
+        If Not item.Enabled Then Return PanelColourMetrics.DisabledContrast
+        If item.IsPin OrElse item.IsPanelHandle Then Return PanelColourMetrics.GlyphFloor
+        Return If(ShowsText(item), PanelColourMetrics.TextFloor, PanelColourMetrics.GlyphFloor)
+    End Function
+
+    ''' <summary>True when <see cref="PaintItemInk"/> writes text for the item (a caption or a menu row's hint),
+    ''' not only a glyph.</summary>
+    Private Function ShowsText(item As ChromeItem) As Boolean
+        If VerticalLayout AndAlso item.Hint.Length > 0 Then Return True
+        If item.Caption.Length = 0 Then Return False
+        If VerticalLayout OrElse item.ShowCaptionWithGlyph Then Return True
+        Return item.CustomGlyph = ChromeCustomGlyph.None AndAlso item.Image Is Nothing AndAlso item.GlyphId.Length = 0
+    End Function
+
+    ''' <summary>The ink the item's glyph or caption is painted in.</summary>
+    Private Function ScrimInk(item As ChromeItem) As Color
+        Return If(item.IsPin, PinInk(item), ItemInk(item))
+    End Function
 
     Private Function IsCoveredByInkChild(bounds As Rectangle) As Boolean
         For Each child As Control In Controls
@@ -651,17 +729,8 @@ Friend NotInheritable Class ChromeSurface
             Return
         End If
 
-        Dim rest As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, False, False)
-        Dim hot As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, True, False)
-        Dim down As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, True, True)
-        Dim fill As Color = If(rest.IsEmpty, chromeTheme.PanelFill, rest)
-        Dim touched As Boolean = Not rest.IsEmpty
-        If item.HoverLevel > 0.0F AndAlso Not hot.IsEmpty Then
-            fill = ChromeTheme.Blend(fill, hot, item.HoverLevel) : touched = True
-        End If
-        If item.PressLevel > 0.0F AndAlso Not down.IsEmpty Then
-            fill = ChromeTheme.Blend(fill, down, item.PressLevel) : touched = True
-        End If
+        Dim touched As Boolean
+        Dim fill As Color = CurrentFill(item, touched)
         If touched Then
             Using path As GraphicsPath = RoundedRect(New RectangleF(r.X, r.Y, r.Width, r.Height), itemCorner)
                 Using brush As New SolidBrush(fill)
@@ -670,6 +739,62 @@ Friend NotInheritable Class ChromeSurface
             End Using
         End If
     End Sub
+
+    ''' <summary>The fill an item wears right now (rest, hover, pressed, checked, destructive, blended by its
+    ''' animation levels); the panel's own fill when the item has none. For the pin: its hover cue or the panel.</summary>
+    Private Function CurrentFill(item As ChromeItem) As Color
+        Dim touched As Boolean
+        Return CurrentFill(item, touched)
+    End Function
+
+    Private Function CurrentFill(item As ChromeItem, ByRef touched As Boolean) As Color
+        touched = False
+        If item.IsPin Then
+            If item.HoverLevel <= 0.0F AndAlso item.PressLevel <= 0.0F Then Return chromeTheme.PanelFill
+            Dim pinFill As Color = chromeTheme.ItemHover
+            If item.PressLevel > 0.0F Then pinFill = ChromeTheme.Blend(pinFill, chromeTheme.ItemPressed, item.PressLevel)
+            touched = True
+            Return ChromeTheme.Blend(chromeTheme.PanelFill, pinFill, Math.Max(item.HoverLevel, item.PressLevel))
+        End If
+        Dim rest As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, False, False)
+        Dim hot As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, True, False)
+        Dim down As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, True, True)
+        Dim fill As Color = If(rest.IsEmpty, chromeTheme.PanelFill, rest)
+        touched = Not rest.IsEmpty
+        If item.HoverLevel > 0.0F AndAlso Not hot.IsEmpty Then
+            fill = ChromeTheme.Blend(fill, hot, item.HoverLevel) : touched = True
+        End If
+        If item.PressLevel > 0.0F AndAlso Not down.IsEmpty Then
+            fill = ChromeTheme.Blend(fill, down, item.PressLevel) : touched = True
+        End If
+        Return fill
+    End Function
+
+    ''' <summary>The ink of an ordinary item: its state's ink, a status role, the move handle's quiet ink.</summary>
+    Private Function ItemInk(item As ChromeItem) As Color
+        Dim ink As Color = chromeTheme.InkFor(item.Enabled, item.Checked, item.Destructive, item.HoverLevel > 0.5F)
+        ' A status line that carries a warning or an error is written in the theme's role colour, contrast-checked
+        ' against the panel (124 UX-206, Q124-2); under high contrast the system pair is left alone.
+        If item.Tone <> NotifyLevel.Info AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
+            ' L0303 R-7: a theme from the panel colour model carries the role ink solved against the worst backdrop.
+            Dim solvedTone As Color = chromeTheme.ToneInk(item.Tone)
+            ink = If(solvedTone.IsEmpty, NotifyRules.InkOnSurface(item.Tone, chromeTheme.PanelFill, chromeTheme.Foreground), solvedTone)
+        End If
+        ' The move handle is an ambient control like the pin: it rests in the pin's quiet ink and warms to the foreground
+        ' under the pointer. Under high contrast the system pair the ordinary button already wears is left alone.
+        If item.IsPanelHandle AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
+            Dim restInk As Color = chromeTheme.PinRestInk(False)
+            ink = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
+        End If
+        Return ink
+    End Function
+
+    ''' <summary>The corner pin's ink: quiet at rest, the foreground under the pointer; the system pair under high contrast.</summary>
+    Private Function PinInk(item As ChromeItem) As Color
+        If chromeTheme.IsHighContrast Then Return If(item.Checked, SystemColors.HighlightText, SystemColors.WindowText)
+        Dim restInk As Color = chromeTheme.PinRestInk(item.Checked)
+        Return If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
+    End Function
 
     Private Sub PaintItemInk(g As Graphics, item As ChromeItem)
         Dim bounds As Rectangle = item.Bounds
@@ -682,28 +807,10 @@ Friend NotInheritable Class ChromeSurface
         Dim chevronRoom As Integer = If(ShowsMenuChevron(item), ChevronStrip(), 0)
         If chevronRoom > 0 AndAlso r.Width > chevronRoom Then r = New Rectangle(If(isRightToLeft, r.X + chevronRoom, r.X), r.Y, r.Width - chevronRoom, r.Height)
         Dim itemCorner As Integer = Px(ChromeMetrics.ItemCorner)
-        Dim ink As Color = chromeTheme.InkFor(item.Enabled, item.Checked, item.Destructive, item.HoverLevel > 0.5F)
-        ' A status line that carries a warning or an error is written in the theme's role colour, contrast-checked
-        ' against the panel (124 UX-206, Q124-2); under high contrast the system pair is left alone.
-        If item.Tone <> NotifyLevel.Info AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
-            ink = NotifyRules.InkOnSurface(item.Tone, chromeTheme.PanelFill, chromeTheme.Foreground)
-        End If
-        ' The move handle is an ambient control like the pin: it rests in the pin's quiet ink and warms to the foreground
-        ' under the pointer. Under high contrast the system pair the ordinary button already wears is left alone.
-        If item.IsPanelHandle AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
-            Dim restInk As Color = chromeTheme.PinRestInk(False)
-            ink = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
-        End If
+        Dim ink As Color = ItemInk(item)
         Dim drawn As Boolean = False
         If item.IsPin Then
-            Dim pinInk As Color
-            If chromeTheme.IsHighContrast Then
-                pinInk = If(item.Checked, SystemColors.HighlightText, SystemColors.WindowText)
-            Else
-                Dim restInk As Color = chromeTheme.PinRestInk(item.Checked)
-                pinInk = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
-            End If
-            PaintPin(g, item.Checked, r, pinInk, currentScale)
+            PaintPin(g, item.Checked, r, PinInk(item), currentScale)
             drawn = True
         ElseIf item.CustomGlyph = ChromeCustomGlyph.OnTop Then
             PaintOnTop(g, item.Checked, r, ink, currentScale)

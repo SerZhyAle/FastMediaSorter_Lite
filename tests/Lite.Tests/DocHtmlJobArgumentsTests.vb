@@ -67,7 +67,7 @@ Public Class DocHtmlJobArgumentsTests
 
     <Theory>
     <InlineData("")>
-    <InlineData("paid")>
+    <InlineData("google")>
     <InlineData("Browser")>
     Public Sub AnUnknownMode_IsRefused(mode As String)
         Assert.Null(DocHtmlJobArguments.Build(Input, Root, mode, False))
@@ -147,14 +147,51 @@ Public Class DocHtmlJobArgumentsTests
     End Sub
 
     <Fact>
-    Public Sub NoRouteSendsGoogleOrACostLimit()
-        Dim o As New DocHtmlJobOptions With {.OcrForce = True, .OcrLanguages = "eng", .SourceLanguage = "en", .TargetLanguage = "de", .LocalModel = "m"}
+    Public Sub NoFreeRouteSendsGoogleOrACostLimit()
+        Dim o As New DocHtmlJobOptions With {.OcrForce = True, .OcrLanguages = "eng", .SourceLanguage = "en", .TargetLanguage = "de", .LocalModel = "m", .PaidCostLimit = 5}
         For Each mode In {DocHtmlJobArguments.ModeBrowser, DocHtmlJobArguments.ModeConvert, DocHtmlJobArguments.ModeLocal}
             Dim args = DocHtmlJobArguments.Build(Input, Root, mode, True, noOpen:=True, options:=o)
             Assert.DoesNotContain("-google", args)
             Assert.DoesNotContain("-max-cost", args)
             Assert.Equal(Input, args.Last())
         Next
+    End Sub
+
+    ' ---- Step 5.1: the paid mode (section 5, OCR-INVOCATION 1.2 item G) ----
+
+    <Fact>
+    Public Sub PaidMode_SendsGoogleWithItsCapAndTheLanguages()
+        Dim o As New DocHtmlJobOptions With {.PaidCostLimit = 5, .SourceLanguage = "en", .TargetLanguage = "uk", .LocalModel = "m"}
+        Dim args = DocHtmlJobArguments.Build(Input, Root, DocHtmlJobArguments.ModePaid, False, noOpen:=True, options:=o)
+        Assert.Equal(New String() {"-folder", Root, "-google", "-max-cost", "5", "-src", "en", "-dst", "uk", "-noopen", Input}, args.ToArray())
+        Assert.DoesNotContain("-ollama", args)
+        Assert.DoesNotContain("-ollama-model", args)
+    End Sub
+
+    <Fact>
+    Public Sub PaidMode_WritesTheCapInvariantly()
+        Dim o As New DocHtmlJobOptions With {.PaidCostLimit = 2.5}
+        Dim args = DocHtmlJobArguments.Build(Input, Root, DocHtmlJobArguments.ModePaid, False, options:=o)
+        Assert.Equal("2.5", args(args.ToList().IndexOf("-max-cost") + 1))
+    End Sub
+
+    <Theory>
+    <InlineData(0.0)>
+    <InlineData(-1.0)>
+    <InlineData(0.001)>
+    <InlineData(1000.5)>
+    <InlineData(Double.NaN)>
+    <InlineData(Double.PositiveInfinity)>
+    <InlineData(Double.NegativeInfinity)>
+    Public Sub PaidMode_WithoutAnAcceptableCap_IsNeverBuilt(cap As Double)
+        ' Zero is the producer's "no limit": it must never reach the command line (section 5).
+        Assert.False(DocHtmlJobArguments.IsAcceptableCostLimit(cap))
+        Assert.Null(DocHtmlJobArguments.Build(Input, Root, DocHtmlJobArguments.ModePaid, False, options:=New DocHtmlJobOptions With {.PaidCostLimit = cap}))
+    End Sub
+
+    <Fact>
+    Public Sub PaidMode_WithDefaultOptions_IsNeverBuilt()
+        Assert.Null(DocHtmlJobArguments.Build(Input, Root, DocHtmlJobArguments.ModePaid, False))
     End Sub
 End Class
 #End If

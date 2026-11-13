@@ -81,6 +81,8 @@ Partial Public NotInheritable Class ModernViewerPreferences
     ' Step 4.1: where a verified page opens (the 275 host or the system browser) and whether every finished page is kept until Clear.
     Public Property DocumentResultDestination As String = "browser"
     Public Property DocumentKeepCompletedResults As Boolean
+    ' Step 5.1: the per-run cap of the paid mode in whole US dollars; 0 = not set, and then no paid job starts from the viewer.
+    Public Property DocumentPaidCostLimit As Integer
 
     ' An explicit allow-list keeps unrelated preference keys out of this plumbing.
     Private Shared ReadOnly documentPreferenceNames As String() = (
@@ -91,7 +93,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
         "EpubHyphenation EpubUseBookStyles EpubUseEmbeddedFonts EpubTocDepth EpubSearchScope DocumentMemoryCacheMb " &
         "DocumentDiskCacheMb DocumentBookmarks DocumentAppearanceHistory DocumentConverterEnabled DocumentConverterLocation " &
         "DocumentProcessingMode DocumentOpenResultAutomatically DocumentOcrMode DocumentOcrLanguages DocumentSourceLanguage " &
-        "DocumentTargetLanguage DocumentLocalModel DocumentJobTimeoutMinutes DocumentResultCacheMb DocumentResultRetentionDays DocumentReuseResults DocumentResultDestination DocumentKeepCompletedResults").Split(" "c)
+        "DocumentTargetLanguage DocumentLocalModel DocumentJobTimeoutMinutes DocumentResultCacheMb DocumentResultRetentionDays DocumentReuseResults DocumentResultDestination DocumentKeepCompletedResults DocumentPaidCostLimit").Split(" "c)
 
     Private Sub LoadDocumentPreferences()
         For Each name In documentPreferenceNames
@@ -176,7 +178,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
         EpubTocDepth = Clamp(EpubTocDepth, 1, 32)
         EpubSearchScope = ChoiceValue(EpubSearchScope, "whole", "whole", "chapter")
         DocumentProcessingMode = ChoiceValue(DocumentProcessingMode, DocHtmlJobArguments.ModeBrowser,
-            DocHtmlJobArguments.ModeBrowser, DocHtmlJobArguments.ModeConvert, DocHtmlJobArguments.ModeLocal)
+            DocHtmlJobArguments.ModeBrowser, DocHtmlJobArguments.ModeConvert, DocHtmlJobArguments.ModeLocal, DocHtmlJobArguments.ModePaid)
         DocumentConverterLocation = If(DocumentConverterLocation, "").Trim()
         If DocumentConverterLocation.Length > 1024 Then DocumentConverterLocation = ""
         DocumentOcrMode = ChoiceValue(DocumentOcrMode, "auto", "auto", "force")
@@ -188,6 +190,7 @@ Partial Public NotInheritable Class ModernViewerPreferences
         DocumentResultCacheMb = Clamp(DocumentResultCacheMb, 128, 8192)
         DocumentResultRetentionDays = Clamp(DocumentResultRetentionDays, 1, 90)
         DocumentResultDestination = ChoiceValue(DocumentResultDestination, "browser", "browser", "viewer")
+        DocumentPaidCostLimit = Clamp(DocumentPaidCostLimit, 0, CInt(DocHtmlJobArguments.MaxPaidCostLimit))
         DocumentBookmarks = JsonSerializer.Serialize(ReadDocumentBookmarks())
         DocumentAppearanceHistory = JsonSerializer.Serialize(ReadDocumentAppearances())
     End Sub

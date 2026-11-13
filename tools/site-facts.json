@@ -105,7 +105,7 @@
         "label": "Optional HTML page viewer in the 64-bit viewer: local .html/.htm pages through a restricted WebView2 host (no page script, no remote resources), off until switched on; online pages are a second opt-in (read-only, origins approved by the user)",
         "evidence": ["specification 275", "src/Documents/HtmlDocumentHost.vb"], "surfaces": ["A", "B", "C"] },
       { "id": "text-reader", "component": "viewer", "state": "built", "since": null,
-        "label": "Optional full text reader and editor in the 64-bit viewer: paged reading of large files, themes, line numbers, search, Markdown view, chosen encodings, atomic saves with backups and encrypted drafts, reading and editing each off until switched on; the shipped text preview is unchanged",
+        "label": "Optional full text reader and editor in the 64-bit viewer: paged reading of large files, themes, line numbers, search, Markdown view, chosen encodings, atomic saves with backups and encrypted drafts, a selection, the editor's text or the saved file sent to doc-html-translate as a copy, reading, editing and translation each off until switched on; the shipped text preview is unchanged",
         "evidence": ["specification 277", "src/Main_Form.TextReader.vb", "src/Main_Form.TextEditor.vb"], "surfaces": ["A", "B", "C"] },
       { "id": "scheduled-fill-free-space", "component": "scheduled", "state": "built", "since": null,
         "label": "A scheduled operation that overwrites the free space of a local drive or folder with FileDO's fill and deletes what it wrote: chunk sizes 500/1000/2000/5000 MB, FileDO's reserve kept on the system volume, a stop that lets FileDO clean up, and a run-owned work folder that is removed after every run",

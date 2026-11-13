@@ -313,7 +313,8 @@ Public Class ImportedSettingsLimitsTests
             New NumericSpec("TextBackupVersions", 1, 10),
             New NumericSpec("DocumentJobTimeoutMinutes", 1, 240),
             New NumericSpec("DocumentResultCacheMb", 128, 8192),
-            New NumericSpec("DocumentResultRetentionDays", 1, 90)
+            New NumericSpec("DocumentResultRetentionDays", 1, 90),
+            New NumericSpec("DocumentPaidCostLimit", 0, 1000)
         }
     End Function
 
@@ -628,7 +629,7 @@ Public Class ImportedSettingsLimitsTests
             .TextTranslationScope = "file",
             .DocumentConverterEnabled = True, .DocumentProcessingMode = "local", .DocumentConverterLocation = "C:\Tools\doc-html-translate.exe",
             .DocumentOpenResultAutomatically = False, .DocumentOcrMode = "force", .DocumentOcrLanguages = "rus+eng", .DocumentSourceLanguage = "en",
-            .DocumentTargetLanguage = "uk", .DocumentLocalModel = "llama3.1:8b", .DocumentJobTimeoutMinutes = 90, .DocumentResultCacheMb = 2048,
+            .DocumentTargetLanguage = "uk", .DocumentLocalModel = "llama3.1:8b", .DocumentPaidCostLimit = 25, .DocumentJobTimeoutMinutes = 90, .DocumentResultCacheMb = 2048,
             .DocumentResultRetentionDays = 30, .DocumentReuseResults = False, .DocumentResultDestination = "viewer", .DocumentKeepCompletedResults = True}
         p.DocumentBookmarks = System.Text.Json.JsonSerializer.Serialize(New DocumentBookmark() {
             New DocumentBookmark With {.Identity = New DocumentIdentity With {.Path = "book.pdf", .Length = 1}, .Position = New DocumentReadingPosition With {.PageNumber = 4}, .Label = "chapter"}})

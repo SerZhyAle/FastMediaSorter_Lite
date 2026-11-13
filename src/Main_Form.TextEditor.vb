@@ -1329,6 +1329,11 @@ Partial Public Class Main_Form
         commands(DocumentPanelRules.IdTextMarkdown) = New DocumentCommand With {
             .Action = AddressOf ToggleTextMarkdownView, .IsChecked = Function() TextMarkdownRenderedShown(),
             .IsVisible = Function() Not text_Editing AndAlso TextMarkdownAvailable()}
+        ' Translation through doc-html-translate only with its opt-in (section 1.1 item 2); a binary file has no text to send.
+        If TextTranslationOn() Then
+            commands(DocumentPanelRules.IdTextTranslate) = New DocumentCommand With {
+                .Menu = AddressOf TextTranslateMenu, .IsEnabled = Function() Not text_Binary_View AndAlso Not text_Edit_Replacing}
+        End If
         ' The zoom is the reader's: the surface has its own font, and the rendered page its own zoom on its toolbar.
         Dim readerZoom As Func(Of Boolean) = Function() Not text_Editing AndAlso Not TextMarkdownRenderedShown()
         commands(DocumentPanelRules.IdZoomOut) = New DocumentCommand With {.Action = Sub() ZoomText(-0.1F), .IsVisible = readerZoom}
@@ -1340,6 +1345,74 @@ Partial Public Class Main_Form
             .Reserved = Function() New String() {Localization.T("Просмотр: клавиши сортируют файлы"), Localization.T("Документ: клавиши работают с текстом")}}
         Return commands
     End Function
+
+    ''' <summary>Section 1.1 item 2: translation is an opt-in of its own and applies only while the full reader is on.</summary>
+    Private Function TextTranslationOn() As Boolean
+        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.FullTextReaderEnabled AndAlso modern_Preferences.TextTranslationEnabled
+    End Function
+
+    ''' <summary>D08 / P5.2: what goes to doc-html-translate. The selection and the editor's text are immutable snapshots handed
+    ''' to the 276 coordinator, so the editor, its text and its dirty state stay as they are (VM-19); the saved file goes the
+    ''' ordinary document way and is never saved first. <c>TextTranslationScope</c> decides which row comes first.</summary>
+    Private Function TextTranslateMenu() As IEnumerable(Of ChromeMenuItem)
+        Dim hasSelection As Boolean = If(text_Editing, text_Edit_Box IsNot Nothing AndAlso text_Edit_Box.SelectionLength > 0, HasTextSelection())
+        Dim selection As New ChromeMenuItem("text_Translate_Selection") With {
+            .Caption = Localization.T("Выделенный фрагмент"), .Enabled = hasSelection,
+            .DisabledReason = If(hasSelection, "", Localization.T("Выделите текст мышью или нажмите Ctrl+A")),
+            .Action = Sub() TranslateTextSnapshot(DocHtmlSnapshotScope.Selection)}
+        Dim buffer As ChromeMenuItem = Nothing
+        If text_Editing Then
+            buffer = New ChromeMenuItem("text_Translate_Buffer") With {
+                .Caption = Localization.T("Весь текст с несохранёнными изменениями"),
+                .Action = Sub() TranslateTextSnapshot(DocHtmlSnapshotScope.Buffer)}
+        End If
+        Dim saved As New ChromeMenuItem("text_Translate_File") With {
+            .Caption = Localization.T("Сохранённый файл"),
+            .Tooltip = If(text_Editing AndAlso text_Edit_Looks_Dirty, Localization.T("Несохранённые изменения в обработку не попадут"), ""),
+            .Action = AddressOf TranslateSavedTextFile}
+        Dim rows As New List(Of ChromeMenuItem)()
+        Dim snapshotRows As New List(Of ChromeMenuItem) From {selection}
+        If buffer IsNot Nothing Then snapshotRows.Add(buffer)
+        If String.Equals(modern_Preferences.TextTranslationScope, "file", StringComparison.Ordinal) Then
+            rows.Add(saved)
+            rows.AddRange(snapshotRows)
+        Else
+            rows.AddRange(snapshotRows)
+            rows.Add(saved)
+        End If
+        Return rows
+    End Function
+
+    ''' <summary>The text is taken now, at the click: later typing never reaches the job (section 7 of 276, VM-19).</summary>
+    Private Sub TranslateTextSnapshot(scope As DocHtmlSnapshotScope)
+        If Not IsTextDocumentShown() OrElse text_Binary_View Then Return
+        Dim text As String
+        If text_Editing AndAlso text_Edit_Box IsNot Nothing Then
+            text = If(scope = DocHtmlSnapshotScope.Selection,
+                      text_Edit_Box.SelectedText,
+                      text_Edit_Buffer.ComposeText(text_Edit_Box.Text, text_Edit_Normalize))
+        ElseIf scope = DocHtmlSnapshotScope.Selection AndAlso HasTextSelection() Then
+            text = TextViewRules.Extract(text_Current_Result.Lines, text_Selection)
+        Else
+            Return
+        End If
+        BeginTextSnapshotConversion(text_Current_File_Path, scope, text)
+    End Sub
+
+    ''' <summary>The file as it is on disk, through the coordinator's ordinary document path. A file of an archive or a server
+    ''' and a secure container's content are refused the way the document command refuses them.</summary>
+    Private Sub TranslateSavedTextFile()
+        If Not IsTextDocumentShown() Then Return
+        If IsSecureContentOnScreen() OrElse DocHtmlSnapshot.IsSecureOrigin(text_Current_File_Path) Then
+            Notify(Localization.T("Текст защищённого файла не передаётся в doc-html-translate."), NotifyLevel.Warning)
+            Return
+        End If
+        If IsArchiveMode() OrElse IsResourceMode() Then
+            Notify(Localization.T("Сначала извлеките файл из архива"), NotifyLevel.Warning)
+            Return
+        End If
+        BeginDocumentConversion(text_Current_File_Path)
+    End Sub
 
     ''' <summary>Find goes to what is on screen: the editor's bar, the rendered page's own find, the reader's prompt.</summary>
     Private Sub FindFromTextPanel()

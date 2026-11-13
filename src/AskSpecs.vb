@@ -378,17 +378,21 @@ Friend NotInheritable Class AskSpecs
     Friend Const DocumentConvertBrowser As Integer = 0
     Friend Const DocumentConvertOnly As Integer = 1
     Friend Const DocumentConvertLocal As Integer = 2
-    Friend Const DocumentConvertCancel As Integer = 3
+    Friend Const DocumentConvertPaid As Integer = 3
+    Friend Const DocumentConvertCancel As Integer = 4
 
     ''' <summary>276 T-2: the job panel of the document command. Names the source and the converter that will run,
-    ''' offers the three modes the producer supports without a cost decision; the remembered mode is the default
-    ''' and Escape cancels. The detail names where the verified page opens (Step 4.1) and the recognition the job asks for,
-    ''' never more than the request says (OCR-INVOCATION 1.2 item D).</summary>
+    ''' offers the modes the producer supports; the remembered mode is the default and Escape cancels. The paid mode asks
+    ''' its own per-run question before anything starts (Step 5.1). The detail names where the verified page opens
+    ''' (Step 4.1), the scope of an editor snapshot and the recognition the job asks for, never more than the request says
+    ''' (OCR-INVOCATION 1.2 item D).</summary>
     Friend Shared Function DocumentConvertPanel(fileName As String, converterVersion As String, rememberedMode As String,
-                                                Optional opensInViewer As Boolean = False, Optional recognitionForced As Boolean = False) As AskSpec
+                                                Optional opensInViewer As Boolean = False, Optional recognitionForced As Boolean = False,
+                                                Optional scopeNote As String = "") As AskSpec
         Dim defaultIndex As Integer = DocumentConvertBrowser
         If rememberedMode = DocHtmlJobArguments.ModeConvert Then defaultIndex = DocumentConvertOnly
         If rememberedMode = DocHtmlJobArguments.ModeLocal Then defaultIndex = DocumentConvertLocal
+        If rememberedMode = DocHtmlJobArguments.ModePaid Then defaultIndex = DocumentConvertPaid
         Return New AskSpec(
             Localization.T("Обработать в doc-html-translate"),
             Localization.TF("Сделать из «{0}» HTML-страницу в doc-html-translate?", fileName),
@@ -397,14 +401,52 @@ Friend NotInheritable Class AskSpecs
                 New AskButton(Localization.T("Открыть в браузере"), role:=ButtonGlyphRole.Affirmative, glyphId:="nav.open-external"),
                 New AskButton(Localization.T("Только преобразовать"), glyphId:="action.convert"),
                 New AskButton(Localization.T("Перевести через Ollama"), glyphId:="action.translate"),
+                New AskButton(Localization.T("Перевести через Google"), glyphId:="action.translate"),
                 New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=defaultIndex, cancelIndex:=DocumentConvertCancel,
             detail:=Localization.TF("Программа: {0}", converterVersion) & Environment.NewLine &
+                If(String.IsNullOrEmpty(scopeNote), "", scopeNote & Environment.NewLine) &
                 If(opensInViewer, Localization.T("Страница откроется в просмотрщике поверх документа."),
                    Localization.T("Страница откроется в браузере; перевести её можно командой браузера «Перевести».")) & " " &
-                Localization.T("«Только преобразовать» не переводит текст, «Перевести через Ollama» переводит его локальной моделью Ollama, настроенной в doc-html-translate.") & " " &
+                Localization.T("«Только преобразовать» не переводит текст. «Перевести через Ollama» переводит его локальной моделью Ollama, «Перевести через Google» - платной службой Google; обе настраиваются в doc-html-translate.") & " " &
                 If(recognitionForced, Localization.T("Распознавание текста запрашивается для всех страниц, исходный файл не изменяется."),
                    Localization.T("Распознавание текста запрашивается для сканов, исходный файл не изменяется.")))
+    End Function
+
+    Friend Const DocumentPaidSend As Integer = 0
+    Friend Const DocumentPaidCancel As Integer = 1
+
+    ''' <summary>276 Step 5.1, section 5: the per-run approval of a paid translation. It names the provider, what is sent
+    ''' and the cap; the cap is the converter's own guard (OCR-INVOCATION 1.2 item G). Cancel is the default and the
+    ''' answer of Escape, so nothing is spent on a reflex Enter.</summary>
+    Friend Shared Function DocumentPaidApproval(fileName As String, costLimit As Integer, Optional scopeNote As String = "") As AskSpec
+        Return New AskSpec(
+            Localization.T("Перевести через Google"),
+            Localization.TF("Отправить текст «{0}» на перевод в Google?", fileName),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Отправить и перевести"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.translate"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=DocumentPaidCancel, cancelIndex:=DocumentPaidCancel,
+            detail:=If(String.IsNullOrEmpty(scopeNote), "", scopeNote & Environment.NewLine) &
+                Localization.TF("Перевод платный, расход идёт по вашему ключу Google, сохранённому в doc-html-translate. Предел на этот запуск: {0} $; если оценка выше, doc-html-translate не начнёт перевод. Текст уходит в Google, исходный файл не изменяется.", costLimit))
+    End Function
+
+    Friend Const DocumentPaidOpenWindow As Integer = 0
+    Friend Const DocumentPaidNoLimitCancel As Integer = 1
+
+    ''' <summary>276 Step 5.1, section 5: no cap is set, so the viewer starts no paid work itself; the converter's own
+    ''' window asks about the cost (OCR-INVOCATION 1.2 item G). Cancel is the default and the answer of Escape.</summary>
+    Friend Shared Function DocumentPaidNoLimit(fileName As String) As AskSpec
+        Return New AskSpec(
+            Localization.T("Перевести через Google"),
+            Localization.T("Предел расходов на перевод через Google не задан, поэтому перевод делается в окне doc-html-translate."),
+            AskIcon.Info,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Открыть окно doc-html-translate"), role:=ButtonGlyphRole.Affirmative, glyphId:="nav.open-external"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
+            defaultIndex:=DocumentPaidNoLimitCancel, cancelIndex:=DocumentPaidNoLimitCancel,
+            detail:=Localization.TF("В окне выберите файл «{0}»: doc-html-translate сама спросит о расходах. Чтобы переводить отсюда, задайте предел в настройках: Документы > doc-html-translate.", fileName))
     End Function
 
     Friend Const DocumentConverterInstall As Integer = 0
@@ -489,6 +531,9 @@ Friend NotInheritable Class AskSpecs
             HtmlHistoryClear(),
             DocumentConvertPanel("book.epub", "doc-html-translate 1.0", DocHtmlJobArguments.ModeBrowser),
             DocumentConvertPanel("book.epub", "doc-html-translate 1.0", DocHtmlJobArguments.ModeLocal, opensInViewer:=True, recognitionForced:=True),
+            DocumentConvertPanel("notes.txt", "doc-html-translate 1.0", DocHtmlJobArguments.ModePaid, scopeNote:="selection"),
+            DocumentPaidApproval("notes.selection.txt", 5, "selection"),
+            DocumentPaidNoLimit("book.epub"),
             DocumentConverterMissing(False, ""),
             DocumentJobRunning("book.epub"),
             DocumentResultsFull(1100, 1024),

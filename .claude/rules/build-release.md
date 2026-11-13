@@ -15,6 +15,11 @@ paths:
   - "tools/Stage-*.ps1"
   - "tools/Test-ArtifactVersion.ps1"
   - "tools/Get-PinnedNuGet.ps1"
+  - "tools/Invoke-Tests.ps1"
+  - "tools/Run-AllTests.ps1"
+  - "tools/Test-UiForms.ps1"
+  - "tools/Test-CheckPlacement.ps1"
+  - "tools/check-placement.jsonl"
 ---
 
 # Build, release and packaging details

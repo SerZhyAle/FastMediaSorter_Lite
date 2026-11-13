@@ -92,6 +92,12 @@ Friend NotInheritable Class ChromeEditBox
     Private Sub PaintInk(g As Graphics) Implements IChromeInkSource.PaintInk
     End Sub
 
+    Private ReadOnly Property EditsNatively As Boolean Implements IChromeInkSource.EditsNatively
+        Get
+            Return editing
+        End Get
+    End Property
+
     Public Sub Configure(newTheme As ChromeTheme, factor As Single, rightToLeft As Boolean, font As Font, name As String)
         theme = newTheme
         scaleFactor = factor

@@ -18,6 +18,11 @@ Friend Interface IChromeInkSource
 
     ''' <summary>True while the panel's ink is drawn by the ink layer instead of the control itself.</summary>
     Sub InkModeChanged(external As Boolean)
+
+    ''' <summary>True while a native edit control inside draws its own text (the user is typing): that text
+    ''' fades with the window, so the panel is raised to the whole-window floor (L0303 R-11) and no scrim
+    ''' is laid over it.</summary>
+    ReadOnly Property EditsNatively As Boolean
 End Interface
 
 ''' <summary>
@@ -51,8 +56,8 @@ Friend Class ChromeHost
     Private cornerRadius As Integer
     Private inkWindow As ChromeInkWindow
     Private inkBitmap As Bitmap
-    Private inkPlain As Bitmap
     Private inkOpacityValue As Double = 1.0R
+    Private lastScrimBase As Double = -1.0R
     Private inkRefreshing As Boolean
 
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
@@ -116,21 +121,15 @@ Friend Class ChromeHost
                 If inkBitmap IsNot Nothing Then inkBitmap.Dispose()
                 inkBitmap = New Bitmap(ClientSize.Width, ClientSize.Height, PixelFormat.Format32bppPArgb)
             End If
-            If inkPlain Is Nothing OrElse inkPlain.Width <> inkBitmap.Width OrElse inkPlain.Height <> inkBitmap.Height Then
-                If inkPlain IsNot Nothing Then inkPlain.Dispose()
-                inkPlain = New Bitmap(inkBitmap.Width, inkBitmap.Height, PixelFormat.Format32bppPArgb)
-            End If
-            Using g As Graphics = Graphics.FromImage(inkPlain)
+            ' L0303 R-10: under each ink the surface lays the item's own fill once more (the scrim), solved
+            ' against the window's resting opacity, so the ink reads over any picture; no outline ring.
+            lastScrimBase = ScrimBase()
+            Using g As Graphics = Graphics.FromImage(inkBitmap)
                 g.Clear(Color.Transparent)
                 ' The surface may be taller than the window (a scrolled menu): the window clips it.
                 g.SetClip(New Rectangle(Point.Empty, ClientSize))
-                g.TranslateTransform(panelSurface.Left, panelSurface.Top)
-                panelSurface.PaintInk(g)
+                PaintInkLayer(g, lastScrimBase)
             End Using
-            ' The ink is drawn over whatever picture lies under a translucent panel, so every glyph and
-            ' caption carries an outline in the opposite tone and reads on a light or a dark picture alike.
-            ChromeInkOutline.Compose(inkPlain, inkBitmap, ChromeInkOutline.OutlineFor(panelSurface.Theme.Foreground),
-                                     ChromeInkOutline.RadiusFor(panelSurface.ScaleFactor))
             inkWindow.Present(Me, inkBitmap, PointToScreen(Point.Empty), CByte(Math.Round(inkOpacityValue * 255.0R)))
         Catch ex As Exception
             ' The ink is an enhancement over the panel; a failure here must not take the panel down.
@@ -138,6 +137,28 @@ Friend Class ChromeHost
         Finally
             inkRefreshing = False
         End Try
+    End Sub
+
+    ''' <summary>Paints the window's ink (origin at its client top-left, transparent elsewhere) with the scrims
+    ''' solved for <paramref name="scrimBase"/>. The painted surface by default; a window built of its own controls
+    ''' (the recipients table, L0303 R-12) paints theirs.</summary>
+    Protected Overridable Sub PaintInkLayer(g As Graphics, scrimBase As Double)
+        panelSurface.ScrimOpacity = scrimBase
+        g.TranslateTransform(panelSurface.Left, panelSurface.Top)
+        panelSurface.PaintInk(g)
+    End Sub
+
+    ''' <summary>The opacity the panel's fills rest at, its own fade taken out: the window's opacity over the
+    ''' ink layer's (both carry the same show / hide fade), clamped to 0..1.</summary>
+    Friend Function ScrimBase() As Double
+        If inkOpacityValue <= 0.0R Then Return Math.Max(0.0R, Math.Min(1.0R, Opacity))
+        Return Math.Max(0.0R, Math.Min(1.0R, Opacity / inkOpacityValue))
+    End Function
+
+    ''' <summary>Redraws the ink when the window's resting opacity moved without a change of the fade (an
+    ''' edit raising the panel to its floor, R-11), so the scrim follows the opacity it is solved for.</summary>
+    Friend Sub RefreshInkIfScrimMoved()
+        If panelSurface.InkExternal AndAlso Visible AndAlso Math.Abs(ScrimBase() - lastScrimBase) > 0.002R Then RefreshInk()
     End Sub
 
     Private Sub HideInk()
@@ -158,7 +179,6 @@ Friend Class ChromeHost
         If disposing Then
             If inkWindow IsNot Nothing Then inkWindow.Dispose() : inkWindow = Nothing
             If inkBitmap IsNot Nothing Then inkBitmap.Dispose() : inkBitmap = Nothing
-            If inkPlain IsNot Nothing Then inkPlain.Dispose() : inkPlain = Nothing
         End If
         MyBase.Dispose(disposing)
     End Sub
@@ -239,97 +259,6 @@ Friend Class ChromeHost
             Return
         End If
         MyBase.WndProc(m)
-    End Sub
-
-End Class
-
-''' <summary>
-''' The outline that keeps a floating panel's glyphs and captions readable on any picture: the ink's own
-''' silhouette, in the tone opposite to the ink, grown by a pixel or two on every side and put under it.
-''' Pure bitmap work (no window), so it is tested on bitmaps.
-''' </summary>
-Friend NotInheritable Class ChromeInkOutline
-
-    Private Sub New()
-    End Sub
-
-    ''' <summary>Black around light ink, white around dark ink.</summary>
-    Public Shared Function OutlineFor(ink As Color) As Color
-        Return If(ChromeTheme.IsDark(ink), Color.White, Color.Black)
-    End Function
-
-    ''' <summary>How far the outline reaches, in device pixels: one at 100 %, growing with the panel scale.</summary>
-    Public Shared Function RadiusFor(scale As Single) As Integer
-        Return Math.Max(1, Math.Min(3, CInt(Math.Round(scale))))
-    End Function
-
-    ''' <summary>Replaces <paramref name="target"/> with the outline of <paramref name="ink"/> under the ink
-    ''' itself. Both are premultiplied ARGB of one size; the target is cleared first.</summary>
-    Public Shared Sub Compose(ink As Bitmap, target As Bitmap, outline As Color, radius As Integer)
-        Using mask As Bitmap = OutlineMask(ink, outline)
-            Using g As Graphics = Graphics.FromImage(target)
-                g.Clear(Color.Transparent)
-                g.CompositingMode = CompositingMode.SourceOver
-                g.InterpolationMode = InterpolationMode.NearestNeighbor
-                g.PixelOffsetMode = PixelOffsetMode.Half
-                For dy As Integer = -radius To radius
-                    For dx As Integer = -radius To radius
-                        If (dx <> 0 OrElse dy <> 0) AndAlso dx * dx + dy * dy <= radius * radius + 1 Then
-                            g.DrawImageUnscaled(mask, dx, dy)
-                        End If
-                    Next
-                Next
-                g.DrawImageUnscaled(ink, 0, 0)
-            End Using
-        End Using
-    End Sub
-
-    ''' <summary>The ink's alpha channel filled with one colour (premultiplied, so the colour channels follow the alpha).</summary>
-    Friend Shared Function OutlineMask(ink As Bitmap, color As Color) As Bitmap
-        Dim result As New Bitmap(ink.Width, ink.Height, PixelFormat.Format32bppPArgb)
-        Dim area As New Rectangle(0, 0, ink.Width, ink.Height)
-        Dim source As BitmapData = ink.LockBits(area, ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb)
-        Dim destination As BitmapData = result.LockBits(area, ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb)
-        Try
-            Dim bytes(Math.Abs(source.Stride) * source.Height - 1) As Byte
-            Marshal.Copy(source.Scan0, bytes, 0, bytes.Length)
-            For index As Integer = 0 To bytes.Length - 4 Step 4
-                Dim a As Integer = bytes(index + 3)
-                bytes(index) = CByte(color.B * a \ 255)
-                bytes(index + 1) = CByte(color.G * a \ 255)
-                bytes(index + 2) = CByte(color.R * a \ 255)
-            Next
-            Marshal.Copy(bytes, 0, destination.Scan0, bytes.Length)
-        Finally
-            ink.UnlockBits(source)
-            result.UnlockBits(destination)
-        End Try
-        Return result
-    End Function
-
-    ''' <summary>Text with the same outline, for a caption that is drawn by a control of its own
-    ''' (the recipients table's buttons) instead of by the ink layer.</summary>
-    Public Shared Sub DrawText(g As Graphics, text As String, font As Font, bounds As RectangleF, ink As Color,
-                               format As StringFormat, radius As Integer)
-        Dim state As Drawing.Text.TextRenderingHint = g.TextRenderingHint
-        g.TextRenderingHint = Drawing.Text.TextRenderingHint.AntiAliasGridFit
-        Try
-            Dim outline As Color = OutlineFor(ink)
-            Using brush As New SolidBrush(outline)
-                For dy As Integer = -radius To radius
-                    For dx As Integer = -radius To radius
-                        If (dx <> 0 OrElse dy <> 0) AndAlso dx * dx + dy * dy <= radius * radius + 1 Then
-                            g.DrawString(text, font, brush, New RectangleF(bounds.X + dx, bounds.Y + dy, bounds.Width, bounds.Height), format)
-                        End If
-                    Next
-                Next
-            End Using
-            Using brush As New SolidBrush(ink)
-                g.DrawString(text, font, brush, bounds, format)
-            End Using
-        Finally
-            g.TextRenderingHint = state
-        End Try
     End Sub
 
 End Class

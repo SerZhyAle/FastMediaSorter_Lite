@@ -118,6 +118,8 @@ Friend NotInheritable Class DocumentPanelRules
     Friend Const IdTextEncoding As String = "doc_TextEncoding"
     Friend Const IdTextLineEnding As String = "doc_TextLineEnding"
     Friend Const IdTextMarkdown As String = "doc_TextMarkdown"
+    ''' <summary>Ticket 277 P5.2: the text's way to doc-html-translate (selection, the editor's text, the saved file).</summary>
+    Friend Const IdTextTranslate As String = "doc_TextTranslate"
 
     ''' <summary>The commands that rows 1 and 2 already carry while a document is on screen: they are never repeated on the
     ''' panel (280 section 4, T-0 record section 3).</summary>
@@ -155,6 +157,7 @@ Friend NotInheritable Class DocumentPanelRules
         New String() {IdTextEdit, IdTextSave, IdTextSaveAs, IdTextExcerpt, IdTextExternal},
         New String() {IdTextFind, IdTextReplace},
         New String() {IdTextEncoding, IdTextLineEnding, IdTextMarkdown},
+        New String() {IdTextTranslate},
         New String() {IdZoomOut, IdZoomIn, IdZoomReset},
         New String() {IdContext}}
 
@@ -223,7 +226,7 @@ Friend NotInheritable Class DocumentPanelRules
         Select Case id
             Case IdPaneOutline, IdPaneSearch, IdPaneText, IdPaneBookmarks, IdPaneThumbnails, IdReaderMode, IdTextEdit, IdTextMarkdown
                 Return DocumentItemKind.Toggle
-            Case IdLayout, IdColorMode, IdBlocked, IdConvertResult, IdTextEncoding, IdTextLineEnding
+            Case IdLayout, IdColorMode, IdBlocked, IdConvertResult, IdTextEncoding, IdTextLineEnding, IdTextTranslate
                 Return DocumentItemKind.MenuButton
             Case IdPagePosition, IdChapterPosition
                 Return DocumentItemKind.Position
@@ -265,7 +268,7 @@ Friend NotInheritable Class DocumentPanelRules
             Case IdColorMode : Return "Цвет страницы"
             Case IdResetAppearance : Return "Сбросить оформление"
             Case IdOpenWith : Return "Открыть с помощью"
-            Case IdTranslate, IdConvertResult : Return "doc-html-translate"
+            Case IdTranslate, IdConvertResult, IdTextTranslate : Return "doc-html-translate"
             Case IdFind : Return "Поиск на странице"
             Case IdFindPrev : Return "Предыдущее совпадение"
             Case IdFindNext : Return "Следующее совпадение"
@@ -334,7 +337,7 @@ Friend NotInheritable Class DocumentPanelRules
             Case IdPaneThumbnails : Return "view.grid"
             Case IdResetAppearance : Return "action.reset"
             Case IdOpenWith, IdOpenInBrowser : Return "nav.open-external"
-            Case IdTranslate, IdConvertResult : Return "action.translate"
+            Case IdTranslate, IdConvertResult, IdTextTranslate : Return "action.translate"
             Case IdCopy : Return "action.copy"
             Case IdStopSpeech : Return "media.stop"
             Case IdBlocked : Return "status.warning"

@@ -72,6 +72,13 @@ Friend NotInheritable Class PanelColourMetrics
     Public Const DarkDestructiveC As Double = 0.1R
     Public Const LightDestructiveL As Double = 0.92R
     Public Const LightDestructiveC As Double = 0.04R
+    ''' <summary>The themed menus' fixed destructive family (ChromeTheme.ForMenu / FromScheme; menus are
+    ''' outside the model, R-13) - declared here so the panel files carry no colour literal (section 6.9).</summary>
+    Public Shared ReadOnly MenuDestructiveRest As Color = Color.FromArgb(96, 32, 32)
+    Public Shared ReadOnly MenuDestructiveHover As Color = Color.FromArgb(140, 44, 44)
+    Public Shared ReadOnly MenuDestructivePressed As Color = Color.FromArgb(170, 50, 50)
+    ''' <summary>The surface a chrome panel shows before its first sample (ThemePalette.Dark SurfaceWindow).</summary>
+    Public Shared ReadOnly InitialPanelFill As Color = Color.FromArgb(32, 32, 32)
 
     ' R-7 status inks: the palettes' Warning and Danger roles of the tone (ThemePalette DarkValue /
     ' LightValue), solved against the worst-case backdrop.
@@ -97,42 +104,106 @@ End Class
 ''' </summary>
 Friend NotInheritable Class PanelColours
 
-    Friend Sub New()
+    Friend Sub New(
+                   toneValue As PanelTone,
+                   fillValue As Color,
+                   inkValue As Color,
+                   inkDisabledValue As Color,
+                   hairlineValue As Color,
+                   hoverValue As Color,
+                   pressedValue As Color,
+                   checkedValue As Color,
+                   checkedInkValue As Color,
+                   checkedHoverValue As Color,
+                   checkedPressedValue As Color,
+                   destructiveValue As Color,
+                   destructiveHoverValue As Color,
+                   destructivePressedValue As Color,
+                   destructiveInkValue As Color,
+                   warningInkValue As Color,
+                   errorInkValue As Color,
+                   pinRestInkValue As Color,
+                   pinPinnedInkValue As Color,
+                   focusRingValue As Color,
+                   setOpacityValue As Double,
+                   textOpacityNeededValue As Double,
+                   glyphOpacityNeededValue As Double,
+                   textScrimAlphaValue As Double,
+                   glyphScrimAlphaValue As Double,
+                   wholeWindowFloorValue As Double,
+                   isHighContrastValue As Boolean,
+                   sliderTrackValue As Color,
+                   chipFloorValue As Double)
+        _Tone = toneValue
+        _Fill = fillValue
+        _Ink = inkValue
+        _InkDisabled = inkDisabledValue
+        _Hairline = hairlineValue
+        _Hover = hoverValue
+        _Pressed = pressedValue
+        _Checked = checkedValue
+        _CheckedInk = checkedInkValue
+        _CheckedHover = checkedHoverValue
+        _CheckedPressed = checkedPressedValue
+        _Destructive = destructiveValue
+        _DestructiveHover = destructiveHoverValue
+        _DestructivePressed = destructivePressedValue
+        _DestructiveInk = destructiveInkValue
+        _WarningInk = warningInkValue
+        _ErrorInk = errorInkValue
+        _PinRestInk = pinRestInkValue
+        _PinPinnedInk = pinPinnedInkValue
+        _FocusRing = focusRingValue
+        _SetOpacity = setOpacityValue
+        _TextOpacityNeeded = textOpacityNeededValue
+        _GlyphOpacityNeeded = glyphOpacityNeededValue
+        _TextScrimAlpha = textScrimAlphaValue
+        _GlyphScrimAlpha = glyphScrimAlphaValue
+        _WholeWindowFloor = wholeWindowFloorValue
+        _IsHighContrast = isHighContrastValue
+        _SliderTrack = sliderTrackValue
+        _ChipFloor = chipFloorValue
     End Sub
 
-    Public Property Tone As PanelTone
-    Public Property Fill As Color
-    Public Property Ink As Color
-    Public Property InkDisabled As Color
-    Public Property Hairline As Color
-    Public Property Hover As Color
-    Public Property Pressed As Color
-    Public Property Checked As Color
-    Public Property CheckedInk As Color
-    Public Property CheckedHover As Color
-    Public Property CheckedPressed As Color
-    Public Property Destructive As Color
-    Public Property DestructiveHover As Color
-    Public Property DestructivePressed As Color
-    Public Property DestructiveInk As Color
-    Public Property WarningInk As Color
-    Public Property ErrorInk As Color
-    Public Property PinRestInk As Color
-    Public Property PinPinnedInk As Color
-    Public Property FocusRing As Color
+    Public ReadOnly Property Tone As PanelTone
+    Public ReadOnly Property Fill As Color
+    Public ReadOnly Property Ink As Color
+    Public ReadOnly Property InkDisabled As Color
+    Public ReadOnly Property Hairline As Color
+    Public ReadOnly Property Hover As Color
+    Public ReadOnly Property Pressed As Color
+    Public ReadOnly Property Checked As Color
+    Public ReadOnly Property CheckedInk As Color
+    Public ReadOnly Property CheckedHover As Color
+    Public ReadOnly Property CheckedPressed As Color
+    Public ReadOnly Property Destructive As Color
+    Public ReadOnly Property DestructiveHover As Color
+    Public ReadOnly Property DestructivePressed As Color
+    Public ReadOnly Property DestructiveInk As Color
+    Public ReadOnly Property WarningInk As Color
+    Public ReadOnly Property ErrorInk As Color
+    Public ReadOnly Property PinRestInk As Color
+    Public ReadOnly Property PinPinnedInk As Color
+    Public ReadOnly Property FocusRing As Color
     ''' <summary>The opacity the user set, 0..1.</summary>
-    Public Property SetOpacity As Double
+    Public ReadOnly Property SetOpacity As Double
     ''' <summary>The smallest opacity at which the ink reads at 4.5:1 over any content on rest, hover
     ''' and pressed (R-9).</summary>
-    Public Property TextOpacityNeeded As Double
+    Public ReadOnly Property TextOpacityNeeded As Double
     ''' <summary>The same for glyphs at 3:1.</summary>
-    Public Property GlyphOpacityNeeded As Double
+    Public ReadOnly Property GlyphOpacityNeeded As Double
     ''' <summary>The scrim under text on the rest fill at the set opacity (R-10), 0..1.</summary>
-    Public Property TextScrimAlpha As Double
-    Public Property GlyphScrimAlpha As Double
+    Public ReadOnly Property TextScrimAlpha As Double
+    Public ReadOnly Property GlyphScrimAlpha As Double
     ''' <summary>The smallest window opacity for a surface whose text fades with the window (R-11).</summary>
-    Public Property WholeWindowFloor As Double
-    Public Property IsHighContrast As Boolean
+    Public ReadOnly Property WholeWindowFloor As Double
+    Public ReadOnly Property IsHighContrast As Boolean
+    ''' <summary>The transport sliders' unplayed track (R-11): the mark nearest the fill that still reads at the
+    ''' glyph floor against it when both fade with the bar's window at <see cref="WholeWindowFloor"/>.</summary>
+    Public ReadOnly Property SliderTrack As Color
+    ''' <summary>The window opacity at which the checked chip's caption (the transport's A-B badge) keeps the text
+    ''' floor over any content (R-11); the bar rests at it only while the chip is shown.</summary>
+    Public ReadOnly Property ChipFloor As Double
 
     ''' <summary>The scrim an item with this fill and ink needs at the set opacity (R-10): 0 at or
     ''' above the opacity the pair needs, exact below. No scrim under high contrast.</summary>
@@ -178,6 +249,8 @@ Friend NotInheritable Class PanelColourModel
                                      setOpacityPercent As Integer, accent As Color,
                                      highContrast As Boolean) As PanelColours
         Dim percent As Integer = Math.Max(0, Math.Min(100, setOpacityPercent))
+        ' System colours change with the high-contrast theme; a cached result would keep the old ones.
+        If highContrast Then Return ForHighContrast(percent)
         Dim key As String = String.Concat(Opaque(sample).ToArgb().ToString(), "|", scheme.ToString(), "|",
                                           If(previousTone.HasValue, CInt(previousTone.Value).ToString(), "-"), "|",
                                           percent.ToString(), "|", Opaque(accent).ToArgb().ToString(), "|",
@@ -240,53 +313,53 @@ Friend NotInheritable Class PanelColourModel
             floorWindow = Math.Max(floorWindow, WholeWindowFloor(f, ink, PanelColourMetrics.TextFloor))
         Next
 
-        Return New PanelColours() With {
-            .Tone = tone,
-            .Fill = fill,
-            .Ink = ink,
-            .InkDisabled = SolveDerivedInk(stateFills, ink, PanelColourMetrics.DisabledContrast + PanelColourMetrics.FloorMargin),
-            .Hairline = SolveDerivedInk({fill}, ink, PanelColourMetrics.HairlineContrast),
-            .Hover = hover,
-            .Pressed = pressed,
-            .Checked = checkedFill,
-            .CheckedInk = checkedInk,
-            .CheckedHover = StateStep(checkedFill, tone, False),
-            .CheckedPressed = StateStep(checkedFill, tone, True),
-            .Destructive = destructiveFill,
-            .DestructiveHover = StateStep(destructiveFill, tone, False),
-            .DestructivePressed = StateStep(destructiveFill, tone, True),
-            .DestructiveInk = destructiveInk,
-            .WarningInk = warning,
-            .ErrorInk = errorInk,
-            .PinRestInk = SolveDerivedInk(stateFills, ink, PanelColourMetrics.PinRestContrast + PanelColourMetrics.FloorMargin),
-            .PinPinnedInk = SolveDerivedInk(stateFills, ink, PanelColourMetrics.PinPinnedContrast + PanelColourMetrics.FloorMargin),
-            .FocusRing = checkedFill,
-            .SetOpacity = setOpacity,
-            .TextOpacityNeeded = textNeeded,
-            .GlyphOpacityNeeded = glyphNeeded,
-            .TextScrimAlpha = ScrimAlphaFrom(textNeeded, setOpacity),
-            .GlyphScrimAlpha = ScrimAlphaFrom(glyphNeeded, setOpacity),
-            .WholeWindowFloor = floorWindow,
-            .IsHighContrast = False
-        }
+        Return New PanelColours(
+            toneValue:=tone,
+            fillValue:=fill,
+            inkValue:=ink,
+            inkDisabledValue:=SolveDerivedInk(stateFills, ink, PanelColourMetrics.DisabledContrast + PanelColourMetrics.FloorMargin),
+            hairlineValue:=SolveDerivedInk({fill}, ink, PanelColourMetrics.HairlineContrast),
+            hoverValue:=hover,
+            pressedValue:=pressed,
+            checkedValue:=checkedFill,
+            checkedInkValue:=checkedInk,
+            checkedHoverValue:=StateStep(checkedFill, tone, False),
+            checkedPressedValue:=StateStep(checkedFill, tone, True),
+            destructiveValue:=destructiveFill,
+            destructiveHoverValue:=StateStep(destructiveFill, tone, False),
+            destructivePressedValue:=StateStep(destructiveFill, tone, True),
+            destructiveInkValue:=destructiveInk,
+            warningInkValue:=warning,
+            errorInkValue:=errorInk,
+            pinRestInkValue:=SolveDerivedInk(stateFills, ink, PanelColourMetrics.PinRestContrast + PanelColourMetrics.FloorMargin),
+            pinPinnedInkValue:=SolveDerivedInk(stateFills, ink, PanelColourMetrics.PinPinnedContrast + PanelColourMetrics.FloorMargin),
+            focusRingValue:=checkedFill,
+            setOpacityValue:=setOpacity,
+            textOpacityNeededValue:=textNeeded,
+            glyphOpacityNeededValue:=glyphNeeded,
+            textScrimAlphaValue:=ScrimAlphaFrom(textNeeded, setOpacity),
+            glyphScrimAlphaValue:=ScrimAlphaFrom(glyphNeeded, setOpacity),
+            wholeWindowFloorValue:=floorWindow,
+            isHighContrastValue:=False,
+            sliderTrackValue:=SolveWholeWindowInk(fill, ink, PanelColourMetrics.GlyphFloor + PanelColourMetrics.FloorMargin, floorWindow),
+            chipFloorValue:=WholeWindowFloor(checkedFill, checkedInk, PanelColourMetrics.TextFloor))
     End Function
 
     ''' <summary>R-13: system colours, opaque, no scrim, no floor.</summary>
     Private Shared Function ForHighContrast(percent As Integer) As PanelColours
         Dim fill As Color = SystemColors.Window
         Dim ink As Color = SystemColors.WindowText
-        Return New PanelColours() With {
-            .Tone = If(RelativeLuminance(fill) < 0.5R, PanelTone.Dark, PanelTone.Light),
-            .Fill = fill, .Ink = ink, .InkDisabled = SystemColors.GrayText, .Hairline = ink,
-            .Hover = SystemColors.Highlight, .Pressed = SystemColors.Highlight,
-            .Checked = SystemColors.Highlight, .CheckedInk = SystemColors.HighlightText,
-            .CheckedHover = SystemColors.Highlight, .CheckedPressed = SystemColors.Highlight,
-            .Destructive = fill, .DestructiveHover = SystemColors.Highlight, .DestructivePressed = SystemColors.Highlight,
-            .DestructiveInk = ink, .WarningInk = ink, .ErrorInk = ink, .PinRestInk = ink, .PinPinnedInk = ink,
-            .FocusRing = SystemColors.Highlight, .SetOpacity = percent / 100.0R,
-            .TextOpacityNeeded = 0.0R, .GlyphOpacityNeeded = 0.0R, .TextScrimAlpha = 0.0R, .GlyphScrimAlpha = 0.0R,
-            .WholeWindowFloor = 0.0R, .IsHighContrast = True
-        }
+        Return New PanelColours(
+            toneValue:=If(RelativeLuminance(fill) < 0.5R, PanelTone.Dark, PanelTone.Light),
+            fillValue:=fill, inkValue:=ink, inkDisabledValue:=SystemColors.GrayText, hairlineValue:=ink,
+            hoverValue:=SystemColors.Highlight, pressedValue:=SystemColors.Highlight,
+            checkedValue:=SystemColors.Highlight, checkedInkValue:=SystemColors.HighlightText,
+            checkedHoverValue:=SystemColors.Highlight, checkedPressedValue:=SystemColors.Highlight,
+            destructiveValue:=fill, destructiveHoverValue:=SystemColors.Highlight, destructivePressedValue:=SystemColors.Highlight,
+            destructiveInkValue:=ink, warningInkValue:=ink, errorInkValue:=ink, pinRestInkValue:=ink, pinPinnedInkValue:=ink,
+            focusRingValue:=SystemColors.Highlight, setOpacityValue:=percent / 100.0R,
+            textOpacityNeededValue:=0.0R, glyphOpacityNeededValue:=0.0R, textScrimAlphaValue:=0.0R, glyphScrimAlphaValue:=0.0R,
+            wholeWindowFloorValue:=0.0R, isHighContrastValue:=True, sliderTrackValue:=ink, chipFloorValue:=0.0R)
     End Function
 
     ''' <summary>R-2: light when the sample's OKLab L reaches <see cref="PanelColourMetrics.LightToneFrom"/>;
@@ -371,10 +444,19 @@ Friend NotInheritable Class PanelColourModel
                   PanelColourMetrics.InkOnDark, PanelColourMetrics.InkOnLight)
     End Function
 
+    ''' <summary>The ink of text on a raw picture colour (a fill the model did not make, the thumbnail panel's): the
+    ''' better palette ink while it reads at the text floor, else the better of pure black and white, which reads at
+    ''' 4.58:1 or more on every opaque fill (L0303 M-2: the palette pair alone falls to 4.29:1 on mid tones).</summary>
+    Public Shared Function ContentInk(fill As Color) As Color
+        Dim ink As Color = BetterInk(fill)
+        If ContrastRatio(ink, fill) >= PanelColourMetrics.TextFloor Then Return ink
+        Return If(ContrastRatio(Color.White, fill) >= ContrastRatio(Color.Black, fill), Color.White, Color.Black)
+    End Function
+
     ''' <summary>R-6: the colour closest to the fill, on the way from the fill to the ink in OKLab
     ''' lightness (the fill's hue and chroma kept), that reads at <paramref name="target"/> against
     ''' every fill given. Never further than the ink itself.</summary>
-    Private Shared Function SolveDerivedInk(fills As Color(), ink As Color, target As Double) As Color
+    Public Shared Function SolveDerivedInk(fills As Color(), ink As Color, target As Double) As Color
         Dim from As Double() = OkLch(fills(0))
         Dim inkL As Double = OkLch(ink)(0)
         Dim direction As Double = If(inkL >= from(0), PanelColourMetrics.SolveStep, -PanelColourMetrics.SolveStep)
@@ -491,6 +573,23 @@ Friend NotInheritable Class PanelColourModel
             worst = Math.Min(worst, ContrastRatio(Composite(ink, opacity, content), Composite(fill, opacity, content)))
         Next
         Return worst
+    End Function
+
+    ''' <summary>R-6 for a surface that fades as a whole (R-11): the colour closest to the fill, on the way from
+    ''' the fill to the ink in OKLab lightness (hue and chroma of the fill kept), that reads at
+    ''' <paramref name="target"/> against the fill when both are shown at <paramref name="opacity"/> over the
+    ''' floor content. Never further than the ink itself.</summary>
+    Public Shared Function SolveWholeWindowInk(fill As Color, ink As Color, target As Double, opacity As Double) As Color
+        Dim from As Double() = OkLch(fill)
+        Dim inkL As Double = OkLch(ink)(0)
+        Dim direction As Double = If(inkL >= from(0), PanelColourMetrics.SolveStep, -PanelColourMetrics.SolveStep)
+        Dim l As Double = from(0)
+        Do
+            l += direction
+            If (direction > 0 AndAlso l >= inkL) OrElse (direction < 0 AndAlso l <= inkL) Then Return ink
+            Dim candidate As Color = FromOkLch(l, from(1), from(2))
+            If ContrastRatio(candidate, fill) >= target AndAlso WholeWindowWorst(fill, candidate, opacity) >= target Then Return candidate
+        Loop
     End Function
 
     ''' <summary>A colour at a constant opacity over another, the way a layered window composes: the

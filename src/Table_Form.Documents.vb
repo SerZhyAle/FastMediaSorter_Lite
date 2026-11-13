@@ -142,16 +142,17 @@ Partial Public Class Table_Form
 
     ' ---- Text files: specification 277 section 12.1 -----------------------------------------------------
     ' Building a row only creates editors over the stored preferences; the remembered-history stores are opened by the
-    ' button that clears them. The two translation values have no row: they have no consumer until step P5.2.
+    ' button that clears them. The translation rows (step P5.2) follow the reader switch like the editing row.
 
     Private textDocumentClearResult As String = ""
     Private textDocumentEditingFollow As Action
+    Private textDocumentTranslationFollow As Action
     ' A choice row rebuilds its list on every refresh of the window; the families are asked for once per window.
     Private textDocumentInstalledFonts As List(Of String)
 
     Private Sub RegisterTextDocumentSettings(flow As FlowLayoutPanel)
         AddSettingsGroup("documents", "text.basic", "Текстовые файлы", True,
-            "textdoc_reader", "textdoc_editing", "textdoc_remember_position", "textdoc_remember_encoding", "textdoc_clear_history")
+            "textdoc_reader", "textdoc_editing", "textdoc_translation", "textdoc_translation_scope", "textdoc_remember_position", "textdoc_remember_encoding", "textdoc_clear_history")
         AddSettingsGroup("documents", "text.appearance", "Оформление текстовых файлов", False,
             "textdoc_font_proportional", "textdoc_font_monospace", "textdoc_font_size", "textdoc_theme", "textdoc_wrap",
             "textdoc_line_numbers", "textdoc_tab_width", "textdoc_line_spacing", "textdoc_whitespace", "textdoc_status_bar",
@@ -165,6 +166,7 @@ Partial Public Class Table_Form
             Sub(p, v)
                 p.FullTextReaderEnabled = v
                 textDocumentEditingFollow?.Invoke()
+                textDocumentTranslationFollow?.Invoke()
             End Sub)
         RegisterSettingsRow("textdoc_editing",
             Sub()
@@ -176,6 +178,19 @@ Partial Public Class Table_Form
                 textDocumentEditingFollow.Invoke()
                 expandedRefreshActions.Add(textDocumentEditingFollow)
             End Sub)
+        RegisterSettingsRow("textdoc_translation",
+            Sub()
+                AddPreferenceCheck(flow, "textdoc_translation",
+                    Function() Main_Form.GetModernPreferences().TextTranslationEnabled,
+                    Sub(value) Main_Form.GetModernPreferences().TextTranslationEnabled = value)
+                Dim row As ModernSettingRow = modernSettingsRows.Last(Function(item) item.Key = "textdoc_translation")
+                textDocumentTranslationFollow = Sub() row.Editor.Enabled = Main_Form.GetModernPreferences().FullTextReaderEnabled
+                textDocumentTranslationFollow.Invoke()
+                expandedRefreshActions.Add(textDocumentTranslationFollow)
+            End Sub)
+        RegisterHtmlChoice(flow, "textdoc_translation_scope",
+            Function() {Choice("selection_or_buffer", "Выделенный фрагмент"), Choice("file", "Сохранённый файл")},
+            Function(p) p.TextTranslationScope, Sub(p, v) p.TextTranslationScope = v)
         RegisterHtmlCheck(flow, "textdoc_remember_position", Function(p) p.TextRememberPosition, Sub(p, v) p.TextRememberPosition = v)
         RegisterHtmlCheck(flow, "textdoc_remember_encoding", Function(p) p.TextRememberEncoding, Sub(p, v) p.TextRememberEncoding = v)
         RegisterHtmlButton(flow, "textdoc_clear_history", "Очистить", AddressOf ClearTextDocumentHistoryClicked)
@@ -317,6 +332,8 @@ Partial Public Class Table_Form
         Select Case key
             Case "textdoc_reader" : Return Localization.T("Полное чтение текстовых файлов")
             Case "textdoc_editing" : Return Localization.T("Правка текстовых файлов")
+            Case "textdoc_translation" : Return Localization.T("Перевод текстовых файлов")
+            Case "textdoc_translation_scope" : Return Localization.T("Что переводить в первую очередь")
             Case "textdoc_remember_position" : Return Localization.T("Запоминать позицию в текстовых файлах")
             Case "textdoc_remember_encoding" : Return Localization.T("Запоминать выбранную кодировку")
             Case "textdoc_clear_history" : Return Localization.T("Очистить историю текстовых файлов")
@@ -350,6 +367,8 @@ Partial Public Class Table_Form
         Select Case key
             Case "textdoc_reader" : Return Localization.T("Открывает текстовые файлы в читателе со шрифтами, темами, номерами строк и поиском. Пока параметр выключен, показывается быстрый просмотр для сортировки.")
             Case "textdoc_editing" : Return Localization.T("Разрешает править файлы этого компьютера и общих папок: кнопка «Править» или Ctrl+E. Действует при включённом полном чтении.")
+            Case "textdoc_translation" : Return Localization.T("Добавляет на панель документа кнопку doc-html-translate: выделенный фрагмент, весь текст редактора или сохранённый файл. Текст передаётся копией, файл не сохраняется и не меняется. Действует при включённом полном чтении.")
+            Case "textdoc_translation_scope" : Return Localization.T("Какой пункт стоит первым в меню кнопки doc-html-translate.")
             Case "textdoc_remember_position" : Return Localization.T("Открывает файл там, где вы остановились.")
             Case "textdoc_remember_encoding" : Return Localization.T("Помнит кодировку, выбранную вручную для файла, пока файл не изменится.")
             Case "textdoc_clear_history" : Return If(textDocumentClearResult.Length > 0, textDocumentClearResult,
@@ -390,14 +409,14 @@ Partial Public Class Table_Form
         AddSettingsGroup("documents", "converter", "doc-html-translate", False,
             "doc_converter_enabled", "doc_converter_mode", "doc_converter_location", "doc_converter_check",
             "doc_converter_destination", "doc_converter_auto_open", "doc_converter_ocr", "doc_converter_ocr_langs", "doc_converter_src", "doc_converter_dst",
-            "doc_converter_model", "doc_converter_timeout", "doc_converter_reuse", "doc_converter_cache", "doc_converter_retention", "doc_converter_keep",
+            "doc_converter_model", "doc_converter_cost", "doc_converter_timeout", "doc_converter_reuse", "doc_converter_cache", "doc_converter_retention", "doc_converter_keep",
             "doc_converter_clear")
         RegisterSettingsRow("doc_converter_enabled", Sub() AddPreferenceCheck(flow, "doc_converter_enabled",
             Function() Main_Form.GetModernPreferences().DocumentConverterEnabled,
             Sub(value) Main_Form.GetModernPreferences().DocumentConverterEnabled = value))
         RegisterSettingsRow("doc_converter_mode", Sub() AddPreferenceChoice(flow, "doc_converter_mode",
             Function() {Choice(DocHtmlJobArguments.ModeBrowser, "Открыть в браузере"), Choice(DocHtmlJobArguments.ModeConvert, "Только преобразовать"),
-                        Choice(DocHtmlJobArguments.ModeLocal, "Перевести через Ollama")},
+                        Choice(DocHtmlJobArguments.ModeLocal, "Перевести через Ollama"), Choice(DocHtmlJobArguments.ModePaid, "Перевести через Google")},
             Function() Main_Form.GetModernPreferences().DocumentProcessingMode,
             Sub(value) Main_Form.GetModernPreferences().DocumentProcessingMode = value))
         RegisterSettingsRow("doc_converter_location",
@@ -437,6 +456,9 @@ Partial Public Class Table_Form
             Function() Main_Form.GetModernPreferences().DocumentTargetLanguage, Sub(value) Main_Form.GetModernPreferences().DocumentTargetLanguage = value)
         RegisterConverterText(flow, "doc_converter_model", 128, AddressOf DocHtmlJobArguments.IsModelName,
             Function() Main_Form.GetModernPreferences().DocumentLocalModel, Sub(value) Main_Form.GetModernPreferences().DocumentLocalModel = value)
+        RegisterSettingsRow("doc_converter_cost", Sub() AddPreferenceNumber(flow, "doc_converter_cost", 0, CInt(DocHtmlJobArguments.MaxPaidCostLimit),
+            Function() Main_Form.GetModernPreferences().DocumentPaidCostLimit,
+            Sub(value) Main_Form.GetModernPreferences().DocumentPaidCostLimit = value))
         RegisterSettingsRow("doc_converter_timeout", Sub() AddPreferenceNumber(flow, "doc_converter_timeout", 1, 240,
             Function() Main_Form.GetModernPreferences().DocumentJobTimeoutMinutes,
             Sub(value) Main_Form.GetModernPreferences().DocumentJobTimeoutMinutes = value))
@@ -545,7 +567,7 @@ Partial Public Class Table_Form
     Private Function DocumentConverterSettingDescription(key As String) As String
         Select Case key
             Case "doc_converter_enabled" : Return Localization.T("Кнопка doc-html-translate в PDF и EPUB сначала проверяет программу и спрашивает, что сделать с документом. Пока параметр выключен, кнопка передаёт документ программе сразу. Перевод изображений не меняется.")
-            Case "doc_converter_mode" : Return Localization.T("Что предлагается первым: страница для перевода в браузере, только преобразование или перевод локальной моделью Ollama.")
+            Case "doc_converter_mode" : Return Localization.T("Что предлагается первым: страница для перевода в браузере, только преобразование, перевод локальной моделью Ollama или платный перевод через Google.")
             Case "doc_converter_location" : Return Localization.T("Полный путь к doc-html-translate.exe. Пустое поле - найти программу автоматически.")
             Case "doc_converter_check" : Return If(documentConverterStatusText.Length > 0, documentConverterStatusText,
                 Localization.T("Проверка выполняется только по кнопке: ничего не устанавливается и не скачивается."))
@@ -556,6 +578,7 @@ Partial Public Class Table_Form
             Case "doc_converter_src" : Return Localization.T("Язык документа для перевода через Ollama, например en. Пустое поле - определяется автоматически.")
             Case "doc_converter_dst" : Return Localization.T("На какой язык переводить через Ollama, например uk. Пустое поле - язык интерфейса программы.")
             Case "doc_converter_model" : Return Localization.T("Модель Ollama для перевода, например llama3.1:8b. Пустое поле - модель, настроенная в doc-html-translate.")
+            Case "doc_converter_cost" : Return Localization.T("Перевод через Google платный и идёт с ключом Google, сохранённым в doc-html-translate. Перед каждым запуском программа спрашивает разрешения; doc-html-translate не начнёт перевод, если оценка выше предела. 0 - предел не задан: перевод через Google тогда делается в окне doc-html-translate.")
             Case "doc_converter_timeout" : Return Localization.T("Обработка, которая идёт дольше, останавливается; незаконченная страница не открывается.")
             Case "doc_converter_reuse" : Return Localization.T("Если документ не менялся и параметры те же, открывается готовая страница без новой обработки.")
             Case "doc_converter_cache" : Return Localization.T("Сколько места занимают готовые страницы. Перед новой обработкой старые удаляются; страницы, открытые в браузере, остаются до очистки.")
@@ -580,6 +603,7 @@ Partial Public Class Table_Form
             Case "doc_converter_src" : Return Localization.T("Язык документа")
             Case "doc_converter_dst" : Return Localization.T("Язык перевода")
             Case "doc_converter_model" : Return Localization.T("Модель Ollama")
+            Case "doc_converter_cost" : Return Localization.T("Предел расходов на перевод через Google, $")
             Case "doc_converter_timeout" : Return Localization.T("Наибольшее время обработки, мин")
             Case "doc_converter_reuse" : Return Localization.T("Открывать готовую страницу повторно")
             Case "doc_converter_cache" : Return Localization.T("Место для готовых страниц, МБ")

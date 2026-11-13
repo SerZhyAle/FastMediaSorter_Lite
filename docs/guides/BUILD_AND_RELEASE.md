@@ -230,7 +230,8 @@ exe не совпадают). Серверный стейдж выводится
 .\tools\Release.ps1 -Push
 ```
 
-The preflight has ten local steps in the order implemented by `tools/Release.ps1`. Each child reports through
+The preflight has eleven numbered local steps in the order implemented by `tools/Release.ps1`; step 7, the Store
+channel, adds a verdict row only when the channel answers. Each child reports through
 `CHECK-VERDICT` (0 - прошло, 1 - дефект, 2 - не удалось проверить), а кто какую проверку запускает,
 записано в [tools/check-placement.jsonl](../../tools/check-placement.jsonl):
 
@@ -249,31 +250,37 @@ The preflight has ten local steps in the order implemented by `tools/Release.ps1
    в зафиксированном файле доказательств (`docs/specifications/exchange-gate-evidence.md`,
    `docs/specifications/live-broadcast-gate-evidence.md`) ранг и дату открытия (177 раздел 3 пункт 3);
    выключатель без ворота в таблице - дефект. Релиз никогда не открывает ворота сам.
-7. **Контрольная сборка** ([tools/Build-OfflineRelease.ps1](../../tools/Build-OfflineRelease.ps1)):
+7. **Microsoft Store channel, read-only** (`tools/lib/StoreChannel.ps1`, the canon's shared Store preflight,
+   `WINDOWS-STORE` 0.4 section D rules 21 and 23; L0305): stops the release when a Store submission is already
+   pending, when the package version is not above the live one or when the price is not Free. With the channel
+   unconfigured, expired or refused it prints one line that the Store step is manual and adds no row to the
+   verdict, so an absent channel never fails a release. The Store upload itself stays a manual step.
+8. **Контрольная сборка** ([tools/Build-OfflineRelease.ps1](../../tools/Build-OfflineRelease.ps1)):
    собирает ровно то же, что и CI, - ZIP, обычный `setup.exe` и **серверный** `server-setup.exe`.
    Ассет, который собирает workflow, но не собирает пре-флайт, впервые проверяется уже на
    платном красном job'е. Отключается `-SkipLocalCheck`. Без Inno Setup пре-флайт **падает** до
    сборки (раньше он собирал один ZIP, пропускал оба установщика и всё равно был зелёным).
-   Запускается, только если шаги 1-6 прошли: заведомо заблокированному релизу не нужна ещё и долгая
+   Запускается, только если шаги 1-7 прошли: заведомо заблокированному релизу не нужна ещё и долгая
    сборка, чтобы это сообщить.
-8. **Версия внутри артефактов** (`tools/Test-ArtifactVersion.ps1`): три exe из stage, Share Manager
+9. **Версия внутри артефактов** (`tools/Test-ArtifactVersion.ps1`): три exe из stage, Share Manager
    серверной редакции и оба `setup.exe` несут именно ту версию, которую ставит тег. Читается ресурс
    версии самого файла, а не исходники - устаревший exe согласен с любой проверкой по исходникам.
-9. **Image backend in the artifacts** (`tools/Test-ImageBackendArtifacts.ps1`, specification 270): no
+10. **Image backend in the artifacts** (`tools/Test-ImageBackendArtifacts.ps1`, specification 270): no
    ImageSharp in any staged program, single-file bundle or the x86 exe's embedded payload, no rollback
    `*.previous-*.exe` copy in a stage, `Magick.Native` beside the mainline and inside the Share Manager,
    `x86\libwebpdecoder.dll` beside the x86 exe, and notices that name what ships. Read from the
    built bytes, for the User stage, the Server stage and the Server setup's optional viewer.
-10. **WebView2 host in the artifacts** (`tools/Test-HtmlHostArtifacts.ps1`, specification 275): one x64
+11. **WebView2 host in the artifacts** (`tools/Test-HtmlHostArtifacts.ps1`, specification 275): one x64
    WebView2 loader from the pinned SDK in `webview2\win-x64` beside each staged viewer, none in the
-   Manager-only Server root. Read from the same three stages as step 9.
+   Manager-only Server root. Read from the same three stages as step 10.
 
-Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 10 of 10 steps passed)`. Тег создаётся
+Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 11 of 11 steps passed)` (`10 of 10`, пока шаг 7
+не дал строки: канал Store не настроен). Тег создаётся
 **только при чистом PASS**. Шаг, пропущенный через `-SkipTests` или `-SkipLocalCheck`, делает вердикт
 `COULD NOT VERIFY` (пропущенный шаг никто не проверил), поэтому эти ключи годятся для быстрого сухого
 прогона, но с `-Push` тег не создадут.
 
-The ten-step PASS proves the automated preflight for the named version. Candidate scope, security
+A bare PASS (11 verdict rows, 10 while the Store channel is manual) proves the automated preflight for the named version. Candidate scope, security
 disposition and real prior-install upgrade acceptance remain required under specifications 264-268.
 A dry run can inspect a dirty working tree with `-AllowDirty`, but `-Push` requires a clean tree and
 refuses a changed commit, branch or tree after preflight. The net48 build regenerates the tracked

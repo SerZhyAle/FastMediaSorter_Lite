@@ -313,12 +313,13 @@ Partial Public Class Main_Form
     End Sub
 
     ''' <summary>The settings changed while a reader is on screen: its items read their state again. The text panel is built
-    ''' again when the editing opt-in moved, because the editing group is on it only while the opt-in is on; never during an
+    ''' again when the editing or the translation opt-in moved, because those items are on it only while the opt-in is on; never during an
     ''' edit, which keeps its commands until it ends.</summary>
     Private Sub DocumentPanelFollowsPreferences()
         If Not DocumentPanelPresent() OrElse document_Commands Is Nothing Then Return
         If document_Panel_Kind = DocumentReaderKind.Text AndAlso Not text_Editing AndAlso
-           document_Commands.ContainsKey(DocumentPanelRules.IdTextEdit) <> TextEditingOn() Then
+           (document_Commands.ContainsKey(DocumentPanelRules.IdTextEdit) <> TextEditingOn() OrElse
+            document_Commands.ContainsKey(DocumentPanelRules.IdTextTranslate) <> TextTranslationOn()) Then
             ShowDocumentCommands(DocumentReaderKind.Text, TextReaderCommands())
         Else
             SyncDocumentPanel()

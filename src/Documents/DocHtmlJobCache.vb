@@ -18,6 +18,9 @@ Public NotInheritable Class DocHtmlJobOptions
     Public Property SourceLanguage As String = ""
     Public Property TargetLanguage As String = ""
     Public Property LocalModel As String = ""
+    ''' <summary>The paid mode's per-run cap in US dollars (<c>-max-cost</c>); 0 = not set, and then no paid job is built.
+    ''' An approval, not a result-shaping choice, so reuse does not compare it.</summary>
+    Public Property PaidCostLimit As Double
 End Class
 
 ''' <summary>The viewer's own record of one job, written into the job folder beside (never inside) the converter's
@@ -76,7 +79,9 @@ Public NotInheritable Class DocHtmlJobCache
 
     ''' <summary>The engine a mode makes the converter record (OCR-INVOCATION 1.2 item C, <c>options.engine</c>).</summary>
     Public Shared Function ExpectedEngine(mode As String) As String
-        Return If(String.Equals(mode, DocHtmlJobArguments.ModeLocal, StringComparison.Ordinal), "ollama", "none")
+        If String.Equals(mode, DocHtmlJobArguments.ModeLocal, StringComparison.Ordinal) Then Return "ollama"
+        If String.Equals(mode, DocHtmlJobArguments.ModePaid, StringComparison.Ordinal) Then Return "google"
+        Return "none"
     End Function
 
     ''' <summary>Section 7.3 rule 5: the same source state and the same result-shaping choices. The languages and the
@@ -93,6 +98,9 @@ Public NotInheritable Class DocHtmlJobCache
             If Not String.Equals(earlier.SourceLanguage, request.SourceLanguage, StringComparison.OrdinalIgnoreCase) Then Return False
             If Not String.Equals(earlier.TargetLanguage, request.TargetLanguage, StringComparison.OrdinalIgnoreCase) Then Return False
             If Not String.Equals(earlier.LocalModel, request.LocalModel, StringComparison.Ordinal) Then Return False
+        ElseIf String.Equals(request.Mode, DocHtmlJobArguments.ModePaid, StringComparison.Ordinal) Then
+            If Not String.Equals(earlier.SourceLanguage, request.SourceLanguage, StringComparison.OrdinalIgnoreCase) Then Return False
+            If Not String.Equals(earlier.TargetLanguage, request.TargetLanguage, StringComparison.OrdinalIgnoreCase) Then Return False
         End If
         Return True
     End Function

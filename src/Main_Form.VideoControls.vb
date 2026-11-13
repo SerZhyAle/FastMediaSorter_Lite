@@ -101,11 +101,11 @@ Partial Public Class Main_Form
         ' RightToLeft from Arabic and Urdu and a child inherits it; a transport bar must not:
         ' time runs left to right on every player, and a mirrored Play triangle reads as
         ' Rewind. Declared here, on the bar, so the "12:34 / 56:78" label keeps its order too.
-        ' The colours below are placeholders: ConfigureFloatingMediaChrome paints the bar from the
-        ' chrome theme (121 UX-403) the moment the bar is parented.
+        ' ConfigureFloatingMediaChrome paints the bar from the chrome theme (121 UX-403, L0303 S-4) the moment the
+        ' bar is parented; until then it takes the panels' fill, never a colour of its own.
         video_Controls = New Panel With {
             .Name = "video_Controls",
-            .BackColor = Color.FromArgb(28, 28, 28),
+            .BackColor = If(chrome_Theme IsNot Nothing, chrome_Theme.PanelFill, Color.Empty),
             .Height = bar_H,
             .Visible = False,
             .RightToLeft = RightToLeft.No
@@ -190,28 +190,40 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function NewBarButton(name As String, w As Integer, h As Integer) As NonFocusButton
+        ' Colours from the panel colour model (L0303 S-4); RecolourTransport paints them again once the bar is parented.
         Dim b As New NonFocusButton() With {
             .Name = name,
             .Text = "",
             .FlatStyle = FlatStyle.Flat,
-            .ForeColor = Color.Gainsboro,
-            .BackColor = Color.FromArgb(28, 28, 28),
             .UseVisualStyleBackColor = False,
             .Size = New Size(w, h),
             .TabStop = False
         }
+        If chrome_Theme IsNot Nothing Then
+            b.ForeColor = chrome_Theme.Foreground
+            b.BackColor = chrome_Theme.PanelFill
+            b.FlatAppearance.MouseOverBackColor = chrome_Theme.ItemHover
+            b.FlatAppearance.MouseDownBackColor = chrome_Theme.ItemPressed
+        End If
         b.FlatAppearance.BorderSize = 0
-        b.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 60, 60)
-        b.FlatAppearance.MouseDownBackColor = Color.FromArgb(88, 88, 88)
         Return b
     End Function
 
+    ''' <summary>What each bar button's glyph was last rendered as - id, ink and size (L0303 S-4, R-14): a picture
+    ''' change that leaves the ink alone renders nothing again.</summary>
+    Private ReadOnly video_Glyph_Rendered As New Dictionary(Of Button, String)()
+
     Private Sub SetVideoGlyph(button As Button, glyphId As String)
-        If String.Equals(TryCast(button.Tag, String), glyphId, StringComparison.Ordinal) Then Return
+        Dim size As Integer = UiScale.Px(ChromeMetrics.TransportGlyphSize, ChromeScale())
+        Dim key As String = String.Concat(glyphId, "|", button.ForeColor.ToArgb().ToString(System.Globalization.CultureInfo.InvariantCulture),
+                                          "|", size.ToString(System.Globalization.CultureInfo.InvariantCulture))
+        Dim rendered_Key As String = Nothing
+        If video_Glyph_Rendered.TryGetValue(button, rendered_Key) AndAlso String.Equals(rendered_Key, key, StringComparison.Ordinal) Then Return
+        video_Glyph_Rendered(button) = key
         Dim oldImage As Image = button.Image
         Dim rendered As Image = Nothing
         Try
-            rendered = GlyphRenderer.Render(glyphId, UiScale.Px(ChromeMetrics.TransportGlyphSize, ChromeScale()), button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+            rendered = GlyphRenderer.Render(glyphId, size, button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
         Catch ex As Exception
             ' One bad asset costs one icon, not the whole bar (121 §1.4): the button keeps its accessible
             ' name, the same policy ChromeSurface.PaintGlyph follows. Without this the exception reached
@@ -371,7 +383,7 @@ Partial Public Class Main_Form
 
     ''' <summary>What a screen reader says for the volume's value.</summary>
     Private Function VolumeValueText() As String
-        Return TransportRules.VolumePercent(If(is_Video_Muted OrElse frame_Playback_Mode, 0.0R, video_Volume_Level)).ToString(Globalization.CultureInfo.InvariantCulture) & " %"
+        Return TransportRules.VolumePercent(If(is_Video_Muted OrElse frame_Playback_Mode, 0.0R, video_Volume_Level)).ToString(System.Globalization.CultureInfo.InvariantCulture) & " %"
     End Function
 
     ''' <summary>Brings the bar up and restarts the countdown to hiding it.</summary>
@@ -646,6 +658,8 @@ Partial Public Class Main_Form
             lbl_Video_Ab.Text = badge
             lbl_Video_Ab.AccessibleName = If(badge.Length = 0, "", Localization.TF("{0}: {1}", Localization.T("Повтор A-B"), badge))
             LayoutVideoControlsRow(UiScale.Px(ChromeMetrics.ScreenMargin, ChromeScale()))
+            ' The badge's caption fades with the window: the bar rests at the chip's floor while it is shown (L0303 R-11).
+            ApplyTransportOpacity()
         End If
     End Sub
 
@@ -825,12 +839,12 @@ Partial Public Class Main_Form
         ' left end (121 UX-408) and the status says the number.
         SetVideoAudioState(video_Volume.Value, False)
         SetVideoGlyph(btn_Video_Mute, TransportRules.VolumeGlyphId(False, video_Volume.Value))
-        video_Volume.HoverText = TransportRules.VolumePercent(video_Volume.Value).ToString(Globalization.CultureInfo.InvariantCulture) & " %"
-        lbl_Status.Text = Localization.TF("Громкость: {0} %", TransportRules.VolumePercent(video_Volume.Value).ToString(Globalization.CultureInfo.InvariantCulture))
+        video_Volume.HoverText = TransportRules.VolumePercent(video_Volume.Value).ToString(System.Globalization.CultureInfo.InvariantCulture) & " %"
+        lbl_Status.Text = Localization.TF("Громкость: {0} %", TransportRules.VolumePercent(video_Volume.Value).ToString(System.Globalization.CultureInfo.InvariantCulture))
     End Sub
 
     Private Sub video_Volume_Hovered(x As Integer) Handles video_Volume.Hovered
-        video_Volume.HoverText = TransportRules.VolumePercent(TransportRules.FractionAt(x, video_Volume.Width)).ToString(Globalization.CultureInfo.InvariantCulture) & " %"
+        video_Volume.HoverText = TransportRules.VolumePercent(TransportRules.FractionAt(x, video_Volume.Width)).ToString(System.Globalization.CultureInfo.InvariantCulture) & " %"
     End Sub
 
     Private Sub video_Volume_HoverEnded() Handles video_Volume.HoverEnded
@@ -1068,9 +1082,10 @@ Partial Public Class Main_Form
         Private _hoverText As String = ""
         Private _hoverX As Integer
         Private _ring As Color = Color.Empty
-        Private _track As Color = Color.FromArgb(80, 80, 80)
-        Private _fill As Color = Color.FromArgb(0, 150, 215)
-        Private _thumb As Color = Color.White
+        ' Set by RecolourTransport from the panel colour model (L0303 S-4) before the slider is first shown.
+        Private _track As Color = Color.Empty
+        Private _fill As Color = Color.Empty
+        Private _thumb As Color = Color.Empty
 
         ''' <summary>The user moved the knob and is still holding it.</summary>
         Public Event Scrubbing As EventHandler
@@ -1235,7 +1250,9 @@ Partial Public Class Main_Form
                 Dim tick_H As Int32 = track_H * 3
                 If _markB > _markA Then
                     Dim bx As Int32 = CInt(w * _markB)
-                    Using b As New SolidBrush(Color.FromArgb(150, _thumb))
+                    ' The span in the thumb's ink, opaque: a translucent band over the track fell under the glyph
+                    ' floor once the bar's window fades (L0303 R-11).
+                    Using b As New SolidBrush(_thumb)
                         e.Graphics.FillRectangle(b, ax, y, Math.Max(1, bx - ax), track_H)
                     End Using
                     Using b As New SolidBrush(_thumb)

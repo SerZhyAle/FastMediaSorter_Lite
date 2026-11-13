@@ -813,6 +813,7 @@
     <Compile Include="Documents\DocHtmlConverterLocator.vb" />
     <Compile Include="Documents\DocHtmlResultReader.vb" />
     <Compile Include="Documents\DocHtmlJobCache.vb" />
+    <Compile Include="Documents\DocHtmlSnapshot.vb" />
     <Compile Include="Documents\PdfReadingCanvas.vb" />
     <Compile Include="Localization\Localization.Documents.vb" />
     <Compile Include="Documents\EpubPackage.vb" />
@@ -1069,6 +1070,8 @@
     <Compile Include="Chrome\ChromeLayout.vb" />
     <Compile Include="Chrome\FloatingPanelPlacement.vb" />
     <Compile Include="Chrome\ChromeTheme.vb" />
+    <Compile Include="Chrome\PanelColourModel.vb" />
+    <Compile Include="Chrome\PanelColourTiming.vb" />
     <Compile Include="Chrome\ChromeItem.vb" />
     <Compile Include="Chrome\ChromeSurface.vb" />
     <Compile Include="Chrome\ChromeHost.vb" />

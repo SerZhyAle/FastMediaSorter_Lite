@@ -48,17 +48,20 @@ Public Class RecipientPaletteTests
 
     <Fact>
     Public Sub Base_hues_are_pairwise_distinct_well_beyond_the_visibility_floor()
-        ' The bases are not exposed (the module offers fills only), so each is reconstructed from
-        ' its resting fill - fill = round(base*(1-t) + surface*t) inverts exactly, to the blend's
-        ' own rounding. The floor stays far under the tuned table's closest pair (light coral and
-        ' amber, about 29 RGB) while still being a distance a user tells apart.
+        ' The floor stays far under the tuned table's closest pair (light coral and amber, about
+        ' 29 RGB) while still being a distance a user tells apart. The bases are read directly: at the
+        ' mainline's 0.25 share a reconstruction from the fill would multiply the blend's rounding by 4.
         Const floor As Double = 22.0R
         For Each dark As Boolean In {True, False}
             Dim surface As Color = RecipientPalette.ColorFor(-1, dark)
-            Dim t As Double = If(dark, 0.6R, 0.7R)
             Dim bases(SlotCount - 1) As Color
             For slot As Integer = 0 To SlotCount - 1
-                bases(slot) = ReconstructBase(RecipientPalette.ColorFor(slot, dark), surface, t)
+                bases(slot) = RecipientPalette.BaseHueFor(slot, dark)
+                ' The resting fill is that base blended toward the surface by the declared share.
+                Dim t As Double = 1.0R - RecipientPalette.RestHueShare(dark)
+                Dim expected As Color = ExpectedBlend(bases(slot), surface, t)
+                Dim actual As Color = RecipientPalette.ColorFor(slot, dark)
+                Assert.True(RgbDistance(expected, actual) <= 1.8R, $"slot {slot} (dark={dark}) fill {actual} is not the declared blend {expected}")
             Next
             For i As Integer = 0 To SlotCount - 2
                 For j As Integer = i + 1 To SlotCount - 1
@@ -132,14 +135,31 @@ Public Class RecipientPaletteTests
     End Sub
 
     <Fact>
-    Public Sub Overlay_identity_uses_the_application_theme_even_when_media_chrome_changes()
+    Public Sub Overlay_identity_takes_the_panels_tone_and_blends_toward_the_tables_own_fill()
+        ' L0303 R-12: the mainline rows read the model's tone and fill, never the application theme; the net48
+        ' fallback keeps its always-dark rows.
         Dim overlay As String = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Main_Form.RecipientsOverlay.vb"))
-        Assert.Contains("RecipientPalette.ColorFor(slot, ThemeService.IsDark)", overlay)
-        Assert.Contains("RecipientPalette.HoverColorFor(slot, ThemeService.IsDark)", overlay)
-        Assert.Contains("Return ThemePalette.ForDark(ThemeService.IsDark).TextPrimary", overlay)
+        Assert.Contains("RecipientPalette.ColorFor(slot, RecipientsOverlayToneIsDark(), theme.PanelFill)", overlay)
+        Assert.Contains("RecipientPalette.HoverColorFor(slot, RecipientsOverlayToneIsDark(), theme.PanelFill)", overlay)
+        Assert.Contains("Return RecipientPalette.ColorFor(slot, True)", overlay)
+        Assert.Contains("Return RecipientsOverlayTheme().Foreground", overlay)
         Assert.Contains("row.ForeColor = If(is_Copy_Zone, theme.Foreground, RecipientRowInk())", overlay)
         Assert.DoesNotContain("ChromeTheme.IsDark(chrome_Theme.PanelFill)", overlay)
+        Assert.DoesNotContain("ThemeService.IsDark", overlay)
         Assert.Contains("MouseOverBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor", overlay)
+    End Sub
+
+    <Fact>
+    Public Sub The_rows_carry_the_declared_hue_share_per_runtime()
+#If NETFRAMEWORK Then
+        ' The fallback keeps 129's shares (maintenance policy).
+        Assert.Equal(0.4F, RecipientPalette.RestHueShare(True), 3)
+        Assert.Equal(0.3F, RecipientPalette.RestHueShare(False), 3)
+#Else
+        ' L0303 Q303-6 a: a quarter of the hue on both tones, the settings grid with the table.
+        Assert.Equal(0.25F, RecipientPalette.RestHueShare(True), 3)
+        Assert.Equal(0.25F, RecipientPalette.RestHueShare(False), 3)
+#End If
     End Sub
 
 #If Not NETFRAMEWORK Then
@@ -156,12 +176,11 @@ Public Class RecipientPaletteTests
     End Sub
 #End If
 
-    Private Shared Function ReconstructBase(fill As Color, surface As Color, t As Double) As Color
-        Dim w As Double = 1.0R - t
+    Private Shared Function ExpectedBlend(base As Color, surface As Color, t As Double) As Color
         Return Color.FromArgb(255,
-                              CInt(Math.Round((fill.R - surface.R * t) / w, MidpointRounding.AwayFromZero)),
-                              CInt(Math.Round((fill.G - surface.G * t) / w, MidpointRounding.AwayFromZero)),
-                              CInt(Math.Round((fill.B - surface.B * t) / w, MidpointRounding.AwayFromZero)))
+                              CInt(Math.Round(base.R + (CInt(surface.R) - CInt(base.R)) * t, MidpointRounding.AwayFromZero)),
+                              CInt(Math.Round(base.G + (CInt(surface.G) - CInt(base.G)) * t, MidpointRounding.AwayFromZero)),
+                              CInt(Math.Round(base.B + (CInt(surface.B) - CInt(base.B)) * t, MidpointRounding.AwayFromZero)))
     End Function
 
     Private Shared Function RgbDistance(a As Color, b As Color) As Double

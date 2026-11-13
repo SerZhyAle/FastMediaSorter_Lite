@@ -361,6 +361,37 @@ Public Class TransportRulesTests
         Assert.Contains("BuildSpeedLadderItems()", menu)
     End Sub
 
+    ' --- colours (L0303 S-4) --------------------------------------------------------------------------
+
+    <Fact>
+    Public Sub The_bar_paints_from_the_panel_colour_model_and_recolours_without_a_layout_pass()
+        Dim bar As String = File.ReadAllText(Path.Combine(RepoRoot(), "src", "Main_Form.VideoControls.vb"))
+        Dim chrome As String = File.ReadAllText(Path.Combine(RepoRoot(), "src", "Main_Form.Chrome.vb"))
+        ' No colour of the bar's own: the placeholders and the hover / pressed greys are the theme's.
+        Assert.DoesNotContain("Color.FromArgb(", bar)
+        Assert.DoesNotContain("Color.Gainsboro", bar)
+        Assert.DoesNotContain("Color.White", bar)
+        ' R-11 (Q303-5 a): the window floor is the model's, not the old fixed 40 %.
+        Assert.DoesNotContain("Math.Max(0.4R, chrome_Theme.PanelOpacity)", chrome)
+        Assert.Contains("chrome_Theme.EditFloorOpacity", chrome)
+        Assert.Contains("chrome_Theme.ChipFloorOpacity", chrome)
+        Assert.Contains("chrome_Theme.SliderTrack", chrome)
+        ' R-14: the colour-only path re-colours the bar without measuring, placing or forcing a glyph re-render.
+        Dim recolour As Integer = chrome.IndexOf("Private Sub ChromeRecolour()", StringComparison.Ordinal)
+        Assert.True(recolour >= 0)
+        Dim recolourBody As String = chrome.Substring(recolour, chrome.IndexOf("End Sub", recolour, StringComparison.Ordinal) - recolour)
+        Assert.Contains("RecolourTransport()", recolourBody)
+        Assert.DoesNotContain("ConfigureFloatingMediaChrome()", recolourBody)
+        Dim transport As Integer = chrome.IndexOf("Private Sub RecolourTransport()", StringComparison.Ordinal)
+        Assert.True(transport >= 0)
+        Dim transportBody As String = chrome.Substring(transport, chrome.IndexOf("End Sub", transport, StringComparison.Ordinal) - transport)
+        Assert.DoesNotContain("PositionVideoControls", transportBody)
+        Assert.DoesNotContain("LayoutVideoControlsRow", transportBody)
+        Assert.DoesNotContain("button.Tag = Nothing", transportBody)
+        ' A glyph renders again only when its id, ink or size changed.
+        Assert.Contains("video_Glyph_Rendered.TryGetValue(button, rendered_Key)", bar)
+    End Sub
+
     Private Shared Function RepoRoot() As String
         Dim dir As New DirectoryInfo(AppContext.BaseDirectory)
         While dir IsNot Nothing

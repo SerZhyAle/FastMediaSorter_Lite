@@ -278,6 +278,7 @@
          contrast) need none of it. Whole-file "#If Not NETFRAMEWORK", like ZoomMath. -->
     <Compile Include="..\..\src\Chrome\ChromePathCompletion.vb"><Link>Linked\Chrome\ChromePathCompletion.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\PanelColourModel.vb"><Link>Linked\Chrome\PanelColourModel.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\PanelColourTiming.vb"><Link>Linked\Chrome\PanelColourTiming.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeItem.vb"><Link>Linked\Chrome\ChromeItem.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeSurface.vb"><Link>Linked\Chrome\ChromeSurface.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeHost.vb"><Link>Linked\Chrome\ChromeHost.vb</Link></Compile>
@@ -1220,6 +1221,7 @@
     <Compile Include="..\..\src\Documents\DocHtmlConverterLocator.vb" />
     <Compile Include="..\..\src\Documents\DocHtmlResultReader.vb" />
     <Compile Include="..\..\src\Documents\DocHtmlJobCache.vb" />
+    <Compile Include="..\..\src\Documents\DocHtmlSnapshot.vb" />
     <!-- Specification 275: models/policy compile on both legs (DOCUMENT_PREVIEW_TESTS); the
          rest is modern-only and compiles to nothing on net48. No WebView2 host here. -->
     <Compile Include="..\..\src\Documents\HtmlDocumentModels.vb" />

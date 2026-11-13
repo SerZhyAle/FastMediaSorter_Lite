@@ -251,16 +251,10 @@ Partial Public Class Image_Panel_Form
             .Text = band_Text,
             .TextAlign = ContentAlignment.MiddleCenter,
             .BackColor = band_Ink,
-            .ForeColor = If(LuminanceOf(band_Ink) > 0.5, Color.Black, Color.White),
+            .ForeColor = PanelColourModel.ContentInk(band_Ink),
             .AccessibleName = band_Text}
         busy_Band.Controls.Add(lbl_Busy)
     End Sub
-
-    ''' <summary>Perceived brightness, for ink that reads on the warning colour whatever
-    ''' the theme is - the same weighting ApplyContentColors uses.</summary>
-    Private Shared Function LuminanceOf(c As Color) As Double
-        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255
-    End Function
 
     Private Sub ShowBusyBand()
         If busy_Band IsNot Nothing Then busy_Band.Visible = True
@@ -287,8 +281,8 @@ Partial Public Class Image_Panel_Form
                 back = Color.Black
         End Select
 
-        Dim luminance As Double = (0.299 * back.R + 0.587 * back.G + 0.114 * back.B) / 255
-        Dim ink As Color = If(luminance > 0.5, Color.Black, Color.White)
+        ' L0303 R-1: the WCAG better of the palette inks, pure black or white where the palette pair falls under 4.5:1 (M-2).
+        Dim ink As Color = PanelColourModel.ContentInk(back)
 
         Me.BackColor = back
         Me.ForeColor = ink

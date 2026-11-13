@@ -225,5 +225,33 @@ Public Class DocHtmlJobCacheTests
         Next
         Directory.SetLastWriteTimeUtc(folder, utc)
     End Sub
+
+    ' ---- Step 5.1: the paid mode ----
+
+    <Fact>
+    Public Sub PaidMode_ExpectsTheGoogleEngine()
+        Assert.Equal("google", DocHtmlJobCache.ExpectedEngine(DocHtmlJobArguments.ModePaid))
+        Assert.Equal("ollama", DocHtmlJobCache.ExpectedEngine(DocHtmlJobArguments.ModeLocal))
+        Assert.Equal("none", DocHtmlJobCache.ExpectedEngine(DocHtmlJobArguments.ModeConvert))
+    End Sub
+
+    <Fact>
+    Public Sub PaidMode_ReusesOnlyAFullGoogleTranslationOfTheSameLanguages()
+        Dim o As New DocHtmlJobOptions With {.SourceLanguage = "en", .TargetLanguage = "uk", .PaidCostLimit = 5}
+        Dim earlier = Request(DocHtmlJobArguments.ModePaid, o)
+        Dim same = Request(DocHtmlJobArguments.ModePaid, New DocHtmlJobOptions With {.SourceLanguage = "en", .TargetLanguage = "uk", .PaidCostLimit = 20})
+        Dim other = Request(DocHtmlJobArguments.ModePaid, New DocHtmlJobOptions With {.SourceLanguage = "en", .TargetLanguage = "de", .PaidCostLimit = 5})
+        ' The cap is an approval, not a result-shaping choice: a higher cap reopens the same page.
+        Assert.True(DocHtmlJobCache.IsReusable(earlier, Completed("google", "full"), same))
+        Assert.False(DocHtmlJobCache.IsReusable(earlier, Completed("google", "partial"), same))
+        Assert.False(DocHtmlJobCache.IsReusable(earlier, Completed("google", "none"), same))
+        Assert.False(DocHtmlJobCache.IsReusable(earlier, Completed("ollama", "full"), same))
+        Assert.False(DocHtmlJobCache.IsReusable(earlier, Completed("google", "full"), other))
+    End Sub
+
+    <Fact>
+    Public Sub PaidAndLocal_AreDifferentRequests()
+        Assert.False(DocHtmlJobCache.SameRequest(Request(DocHtmlJobArguments.ModePaid), Request(DocHtmlJobArguments.ModeLocal)))
+    End Sub
 End Class
 #End If

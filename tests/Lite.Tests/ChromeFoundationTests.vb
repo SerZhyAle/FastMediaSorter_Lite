@@ -332,39 +332,69 @@ Public Class ChromeFoundationTests
         Assert.Equal(Color.FromArgb(255, 110, 120, 130), ChromeTheme.Blend(a, b, 0.5F))
     End Sub
 
+    ''' <summary>The floating panels' theme as Main_Form builds it (L0303 S-2): the panel colour model's.</summary>
+    Private Shared Function PanelTheme(sample As Color, scheme As Integer, Optional opacityPercent As Integer = 86) As ChromeTheme
+        Return ChromeTheme.FromColours(PanelColourModel.ForSample(sample, scheme, Nothing, opacityPercent,
+                                                                  Color.FromArgb(0, 120, 215), False))
+    End Function
+
     <Fact>
     Public Sub The_theme_follows_the_scheme_and_the_states_are_ordered_by_strength()
-        Dim dark As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.White, False)
-        Assert.Equal(Color.FromArgb(255, 0, 0, 0).ToArgb(), dark.PanelFill.ToArgb())
+        Dim dark As ChromeTheme = PanelTheme(Color.Black, 1)
+        ' The black scheme's panel is the dark palette's surface (R-3), not the picture's pure black.
+        Assert.Equal(Color.FromArgb(255, 32, 32, 32).ToArgb(), dark.PanelFill.ToArgb())
         Assert.Equal(0.86R, dark.PanelOpacity, 3)
         Assert.True(dark.AllowsAnimation)
         Assert.False(dark.IsHighContrast)
-        ' hover (14 %) is fainter than pressed (26 %) over the same fill.
-        Assert.True(dark.ItemHover.R < dark.ItemPressed.R)
-        Assert.True(dark.DisabledForeground.R < dark.Foreground.R)
+        ' R-5: on dark, hover lifts the fill and pressed lifts it further; the ink reads on all three.
+        Assert.True(ChromeTheme.RelativeLuminance(dark.PanelFill) < ChromeTheme.RelativeLuminance(dark.ItemHover))
+        Assert.True(ChromeTheme.RelativeLuminance(dark.ItemHover) < ChromeTheme.RelativeLuminance(dark.ItemPressed))
+        Assert.True(ChromeTheme.ContrastRatio(dark.ItemHover, dark.PanelFill) >= 1.15R)
+        For Each f As Color In {dark.PanelFill, dark.ItemHover, dark.ItemPressed}
+            Assert.True(ChromeTheme.ContrastRatio(dark.Foreground, f) >= 4.5R)
+        Next
+        ' R-6: the disabled ink sits between the fill and the ink and still reads at 3:1.
+        Assert.True(ChromeTheme.RelativeLuminance(dark.DisabledForeground) < ChromeTheme.RelativeLuminance(dark.Foreground))
+        Assert.True(ChromeTheme.ContrastRatio(dark.DisabledForeground, dark.PanelFill) >= 3.0R)
 
-        Dim light As ChromeTheme = ChromeTheme.FromScheme(Color.White, Color.Black, False)
-        Assert.True(light.ItemHover.R > light.ItemPressed.R)
+        Dim light As ChromeTheme = PanelTheme(Color.White, 2)
+        Assert.True(ChromeTheme.RelativeLuminance(light.PanelFill) > ChromeTheme.RelativeLuminance(light.ItemHover))
+        Assert.True(ChromeTheme.RelativeLuminance(light.ItemHover) > ChromeTheme.RelativeLuminance(light.ItemPressed))
     End Sub
 
     <Fact>
     Public Sub Only_the_destructive_item_wears_the_red_family()
-        Dim t As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.White, False)
-        Assert.Equal(Color.FromArgb(96, 32, 32), t.FillFor(True, False, True, False, False))
-        Assert.Equal(Color.FromArgb(140, 44, 44), t.FillFor(True, False, True, True, False))
-        Assert.Equal(Color.FromArgb(170, 50, 50), t.FillFor(True, False, True, True, True))
+        Dim t As ChromeTheme = PanelTheme(Color.Black, 1)
+        Dim rest As Color = t.FillFor(True, False, True, False, False)
+        Assert.Equal(t.DestructiveRest, rest)
+        Assert.Equal(t.DestructiveHover, t.FillFor(True, False, True, True, False))
+        Assert.Equal(t.DestructivePressed, t.FillFor(True, False, True, True, True))
+        ' The danger role is red-dominant and its ink reads at 4.5:1 on each of its states.
+        Assert.True(rest.R > rest.G AndAlso rest.R > rest.B)
+        For Each f As Color In {t.DestructiveRest, t.DestructiveHover, t.DestructivePressed}
+            Assert.True(ChromeTheme.ContrastRatio(t.DestructiveForeground, f) >= 4.5R)
+        Next
         ' An ordinary item rests transparent; red never appears on it.
         Assert.True(t.FillFor(True, False, False, False, False).IsEmpty)
-        Assert.NotEqual(Color.FromArgb(140, 44, 44), t.FillFor(True, False, False, True, False))
+        Assert.NotEqual(t.DestructiveHover, t.FillFor(True, False, False, True, False))
     End Sub
 
     <Fact>
     Public Sub A_checked_toggle_gets_the_accent_and_a_disabled_item_no_response_at_all()
-        Dim t As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.White, False)
+        Dim t As ChromeTheme = PanelTheme(Color.Black, 1)
         Assert.Equal(t.Accent, t.FillFor(True, True, False, False, False))
+        Assert.Equal(t.AccentHover, t.FillFor(True, True, False, True, False))
+        Assert.Equal(t.AccentPressed, t.FillFor(True, True, False, True, True))
         Assert.Equal(t.AccentForeground, t.InkFor(True, True, False, False))
+        Assert.True(ChromeTheme.ContrastRatio(t.AccentForeground, t.Accent) >= 4.5R)
         Assert.True(t.FillFor(False, False, False, True, True).IsEmpty)
         Assert.Equal(t.DisabledForeground, t.InkFor(False, True, True, True))
+        ' The pins and the status roles are the model's solved inks.
+        Assert.True(ChromeTheme.ContrastRatio(t.PinRestInk(True), t.PanelFill) >= 4.5R)
+        Assert.True(ChromeTheme.ContrastRatio(t.PinRestInk(False), t.PanelFill) >= 3.0R)
+        Assert.False(t.ToneInk(NotifyLevel.Warning).IsEmpty)
+        Assert.False(t.ToneInk(NotifyLevel.Error).IsEmpty)
+        Assert.True(t.ToneInk(NotifyLevel.Info).IsEmpty)
     End Sub
 
     <Fact>
@@ -391,17 +421,23 @@ Public Class ChromeFoundationTests
     End Sub
 
     <Fact>
-    Public Sub Mid_tone_olive_and_khaki_colors_resolve_to_dark_with_white_ink()
+    Public Sub Mid_tone_olive_and_khaki_colors_take_the_wcag_better_ink()
         Dim olive As Color = Color.FromArgb(80, 91, 69)
         Dim khaki As Color = Color.FromArgb(148, 132, 119)
         Assert.True(ChromeTheme.IsDark(olive))
-        Assert.True(ChromeTheme.IsDark(khaki))
         Assert.Equal(Color.White, ChromeTheme.ContrastingText(olive))
-        Assert.Equal(Color.White, ChromeTheme.ContrastingText(khaki))
-        Dim themeOlive As ChromeTheme = ChromeTheme.FromScheme(olive, Color.Black, False)
-        Assert.Equal(Color.White, themeOlive.Foreground)
-        Dim themeKhaki As ChromeTheme = ChromeTheme.FromScheme(khaki, Color.Black, False)
-        Assert.Equal(Color.White, themeKhaki.Foreground)
+        ' L0303 R-1: khaki is no longer "dark" by a luma-140 rule - black reads at 5.8:1 where white
+        ' read at 3.60:1.
+        Assert.False(ChromeTheme.IsDark(khaki))
+        Assert.Equal(Color.Black, ChromeTheme.ContrastingText(khaki))
+        Assert.True(ChromeTheme.ContrastRatio(ChromeTheme.ContrastingText(khaki), khaki) >= 4.5R)
+        ' The panels (L0303 R-1, R-4): olive and khaki give a dark-tone panel whose ink is the dark palette's
+        ' text and reads at 4.5:1 - no longer white on khaki at 3.60:1.
+        For Each sample As Color In {olive, khaki}
+            Dim panel As ChromeTheme = PanelTheme(sample, 0)
+            Assert.Equal(Color.FromArgb(255, 240, 240, 240).ToArgb(), panel.Foreground.ToArgb())
+            Assert.True(ChromeTheme.ContrastRatio(panel.Foreground, panel.PanelFill) >= 4.5R)
+        Next
     End Sub
 
     <Fact>

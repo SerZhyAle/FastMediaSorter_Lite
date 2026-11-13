@@ -57,7 +57,7 @@
     script only shows the plan and runs the preflight.
 
 .PARAMETER SkipLocalCheck
-    Skip the local package build (step 7) and with it the checks of what it built (steps 8-10). The
+    Skip the local package build (step 8) and with it the checks of what it built (steps 9-11). The
     preflight is then COULD NOT VERIFY, so -Push refuses.
 
 .PARAMETER SkipTests

@@ -362,6 +362,9 @@ Partial Public Class Main_Form
         recipients_Overlay_Rows = rowsPanel
         rowsHost = rowsPanel
         rowsPanel.AutoScroll = scrollRows
+        ' The captions over a see-through table live in its ink layer, which must follow the rows as they scroll.
+        AddHandler rowsPanel.Scroll, Sub() overlay.RequestInk()
+        AddHandler rowsPanel.MouseWheel, Sub() overlay.RequestInk()
         headerH = pinSize
         SyncRecipientsOverlayPin()
 #End If
@@ -374,9 +377,10 @@ Partial Public Class Main_Form
             If isDelete Then y += RecipientsOverlayRows.DeleteRowGap(rows.Count - 1, rowH)
 #End If
 #If Not NETFRAMEWORK Then
-            Dim deleteFill As Color = If(ThemeService.IsDark, Color.FromArgb(96, 32, 32), Color.FromArgb(250, 224, 224))
-            Dim deleteHover As Color = If(ThemeService.IsDark, Color.FromArgb(140, 44, 44), Color.FromArgb(240, 196, 196))
-            Dim deletePress As Color = If(ThemeService.IsDark, Color.FromArgb(170, 50, 50), Color.FromArgb(230, 172, 172))
+            ' The destructive family from the model (L0303 R-12), in the panels' tone; no literal of its own.
+            Dim deleteFill As Color = theme.DestructiveRest
+            Dim deleteHover As Color = theme.DestructiveHover
+            Dim deletePress As Color = theme.DestructivePressed
 #Else
             Dim deleteFill As Color = Color.FromArgb(96, 32, 32)
             Dim deleteHover As Color = Color.FromArgb(140, 44, 44)
@@ -426,14 +430,12 @@ Partial Public Class Main_Form
 
 #If Not NETFRAMEWORK Then
             If showCopy Then
-                Dim copyFill As Color = If(theme.IsHighContrast, theme.PanelFill,
-                                           If(ThemeService.IsDark, Color.FromArgb(38, 62, 38), Color.FromArgb(224, 240, 224)))
-                Dim copyHover As Color = If(theme.IsHighContrast, theme.PanelFill,
-                                            If(ThemeService.IsDark, Color.FromArgb(52, 88, 52), Color.FromArgb(204, 230, 204)))
-                Dim copyPress As Color = If(theme.IsHighContrast, theme.PanelFill,
-                                            If(ThemeService.IsDark, Color.FromArgb(66, 112, 66), Color.FromArgb(184, 220, 184)))
-                Dim copyInk As Color = If(theme.IsHighContrast, theme.Foreground,
-                                          If(ThemeService.IsDark, Color.Gainsboro, RecipientRowInk()))
+                ' The copy zone takes the model's state fills (L0303 R-12): a second action of the row, set
+                ' apart from the identity fill beside it, with the panel's own ink.
+                Dim copyFill As Color = If(theme.IsHighContrast, theme.PanelFill, theme.ItemHover)
+                Dim copyHover As Color = If(theme.IsHighContrast, theme.PanelFill, theme.ItemPressed)
+                Dim copyPress As Color = If(theme.IsHighContrast, theme.PanelFill, theme.ItemPressed)
+                Dim copyInk As Color = theme.Foreground
                 Dim c As New NonFocusButton() With {
                     .Text = copy_Caption,
                     .Tag = r.Item1,
@@ -496,43 +498,65 @@ Partial Public Class Main_Form
 #End If
 
 #If Not NETFRAMEWORK Then
-    ''' <summary>True when the recipients overlay's own opacity setting is below the 220 threshold: the
-    ''' panel's ink flips tone - black becomes white, white becomes black, the outline with it - on
-    ''' ITS knob, independently of the chrome panels' setting. High contrast never flips.</summary>
-    Private Function RecipientsOverlayInkInverted() As Boolean
-        If chrome_High_Contrast Then Return False
-        If modern_Preferences Is Nothing Then Return False
-        Return ChromeMetrics.InvertsInk(modern_Preferences.RecipientsOverlayOpacity)
+    Private recipients_Colours As PanelColours
+    Private recipients_Theme As ChromeTheme
+
+    ''' <summary>The recipients table's colours from the panel colour model (L0303 R-12): the panels' sample, scheme
+    ''' and tone with the table's own opacity setting. The ink never follows that setting (Q303-3); over the picture
+    ''' the captions keep their contrast through the scrim of the table's ink layer.</summary>
+    Private Function RecipientsOverlayColours() As PanelColours
+        Dim percent As Integer = CInt(Math.Round(RecipientsOverlayAlpha() * 100.0R / 255.0R))
+        Dim accent As Color = AccentColors.ForChrome(SystemColors.Highlight)
+        Return PanelColourModel.ForSample(chrome_Scheme_Back, chrome_Scheme_Number, chrome_Panel_Tone, percent, accent,
+                                          chrome_High_Contrast)
     End Function
 
-    ''' <summary>The theme the recipients overlay paints from: the BASE palette (never the panels'
-    ''' flipped view), flipped here only when the overlay's own knob is below the threshold. The
-    ''' fills are identical in both views; only the ink differs.</summary>
+    ''' <summary>The theme the recipients table paints from: the model's colours for the panels' tone, kept while
+    ''' the model hands back the same result.</summary>
     Private Function RecipientsOverlayTheme() As ChromeTheme
-        Dim theme As ChromeTheme = chrome_Base_Theme
-        If (Not ThemeService.IsDark OrElse Not ChromeTheme.IsDark(theme.PanelFill)) AndAlso Not theme.IsHighContrast Then
-            theme = ChromeTheme.FromScheme(ThemePalette.ForDark(False).SurfaceWindow,
-                                          ThemePalette.ForDark(False).TextPrimary,
-                                          False)
+        Dim colours As PanelColours = RecipientsOverlayColours()
+        If recipients_Theme Is Nothing OrElse Not Object.ReferenceEquals(colours, recipients_Colours) Then
+            recipients_Colours = colours
+            recipients_Theme = ChromeTheme.FromColours(colours)
         End If
-        If RecipientsOverlayInkInverted() Then Return theme.WithInvertedInk()
-        Return theme
+        Return recipients_Theme
     End Function
+
+    ''' <summary>True when the table wears the dark tone: its rows then take the dark hue row.</summary>
+    Private Function RecipientsOverlayToneIsDark() As Boolean
+        RecipientsOverlayTheme()
+        Return recipients_Colours.Tone = PanelTone.Dark
+    End Function
+
+    ''' <summary>The ink of an unusable recipient row: the row's ink moved toward its fill until it reads at the
+    ''' disabled floor on the row's rest and hover fills (R-6), so the identity fill stays.</summary>
+    Private Function RecipientRowDisabledInk(slot As Integer) As Color
+        Dim theme As ChromeTheme = RecipientsOverlayTheme()
+        If theme.IsHighContrast Then Return theme.DisabledForeground
+        Return PanelColourModel.SolveDerivedInk({RecipientRowFill(slot), RecipientRowHoverFill(slot)}, RecipientRowInk(),
+                                                PanelColourMetrics.DisabledContrast + PanelColourMetrics.FloorMargin)
+    End Function
+
+    ''' <summary>The contrast a row's caption must keep over the picture through the ink layer's scrim: the text
+    ''' floor, or the disabled floor for a row that cannot be used (R-6, R-10).</summary>
+    Private Shared Sub SetRecipientRowInkFloor(row As Button, floor As Double)
+        Dim button As NonFocusButton = TryCast(row, NonFocusButton)
+        If button IsNot Nothing Then button.InkFloor = floor
+    End Sub
 #End If
 
-    ''' <summary>The identity fill of a recipient row: the slot's pastel from the one palette the
-    ''' settings grid reads too, so a slot is the same colour on both surfaces (129 §3.3). The
-    ''' themed build turns high contrast back to the panel fill - identity colour is an aid,
-    ''' never a substitute for the system scheme; the legacy overlay, which has no theme, is
-    ''' always dark and says so.</summary>
+    ''' <summary>The identity fill of a recipient row: the slot's hue from the one palette the
+    ''' settings grid reads too, so a slot is the same colour on both surfaces (129 §3.3). On the
+    ''' mainline it is blended toward the table's own panel fill in the panels' tone (L0303 R-12), and
+    ''' high contrast turns it back to the panel fill - identity colour is an aid, never a substitute
+    ''' for the system scheme; the legacy overlay, which has no theme, is always dark and says so.</summary>
     Private Function RecipientRowFill(slot As Integer) As Color
 #If NETFRAMEWORK Then
         Return RecipientPalette.ColorFor(slot, True)
 #Else
         Dim theme As ChromeTheme = RecipientsOverlayTheme()
         If theme.IsHighContrast Then Return theme.PanelFill
-        If Not ChromeTheme.IsDark(theme.PanelFill) Then Return RecipientPalette.ColorFor(slot, False)
-        Return RecipientPalette.ColorFor(slot, ThemeService.IsDark)
+        Return RecipientPalette.ColorFor(slot, RecipientsOverlayToneIsDark(), theme.PanelFill)
 #End If
     End Function
 
@@ -543,39 +567,26 @@ Partial Public Class Main_Form
 #Else
         Dim theme As ChromeTheme = RecipientsOverlayTheme()
         If theme.IsHighContrast Then Return theme.ItemHover
-        If Not ChromeTheme.IsDark(theme.PanelFill) Then Return RecipientPalette.HoverColorFor(slot, False)
-        Return RecipientPalette.HoverColorFor(slot, ThemeService.IsDark)
+        Return RecipientPalette.HoverColorFor(slot, RecipientsOverlayToneIsDark(), theme.PanelFill)
 #End If
     End Function
 
-    ''' <summary>The ink on an identity fill stays the theme's text ink (129 §3.1) - never a
-    ''' per-row black/white guess. Below the overlay's own 220 half the ink flips tone like every
-    ''' other label of the panel.</summary>
+    ''' <summary>The ink on an identity fill stays the panel's text ink (129 §3.1, L0303 R-4) - never a
+    ''' per-row black/white guess, never a flip by the opacity setting.</summary>
     Private Function RecipientRowInk() As Color
 #If NETFRAMEWORK Then
         Return Color.Gainsboro
 #Else
-        Dim theme As ChromeTheme = RecipientsOverlayTheme()
-        If theme.IsHighContrast Then Return theme.Foreground
-        If Not ChromeTheme.IsDark(theme.PanelFill) Then
-            Return If(RecipientsOverlayInkInverted(),
-                      ChromeTheme.InvertedTone(ThemePalette.ForDark(False).TextPrimary),
-                      ThemePalette.ForDark(False).TextPrimary)
-        End If
-        If RecipientsOverlayInkInverted() Then Return ChromeTheme.InvertedTone(ThemePalette.ForDark(ThemeService.IsDark).TextPrimary)
-        Return ThemePalette.ForDark(ThemeService.IsDark).TextPrimary
+        Return RecipientsOverlayTheme().Foreground
 #End If
     End Function
 
-    ''' <summary>The delete row's label ink: the theme's destructive foreground, which flips with the
-    ''' overlay's own 220 knob (white becomes black below half). net48 keeps its fixed white.</summary>
+    ''' <summary>The delete row's label ink: the model's destructive ink. net48 keeps its fixed white.</summary>
     Private Function RecipientDeleteRowInk() As Color
 #If NETFRAMEWORK Then
         Return Color.White
 #Else
-        Dim theme As ChromeTheme = RecipientsOverlayTheme()
-        If theme.IsHighContrast Then Return theme.DestructiveForeground
-        Return If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructiveForeground, Color.FromArgb(160, 20, 20))
+        Return RecipientsOverlayTheme().DestructiveForeground
 #End If
     End Function
 
@@ -605,16 +616,13 @@ Partial Public Class Main_Form
                 If row Is Nothing OrElse row.Tag Is Nothing Then Continue For
                 Dim slot As Integer = CInt(row.Tag)
                 If slot = -1 Then
-                    ' The delete row: its own colours, as BuildRecipientsOverlay paints them.
-                    Dim delFill As Color = If(delete_Allowed,
-                                              If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructiveRest, Color.FromArgb(250, 224, 224)),
-                                              theme.PanelFill)
-                    Dim delHover As Color = If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructiveHover, Color.FromArgb(240, 196, 196))
-                    Dim delPress As Color = If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructivePressed, Color.FromArgb(230, 172, 172))
+                    ' The delete row: the model's destructive family, as BuildRecipientsOverlay paints it.
+                    Dim delFill As Color = If(delete_Allowed, theme.DestructiveRest, theme.PanelFill)
                     row.ForeColor = If(delete_Allowed, RecipientDeleteRowInk(), theme.DisabledForeground)
                     row.BackColor = delFill
-                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, delHover, theme.PanelFill)
-                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, delPress, theme.PanelFill)
+                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, theme.DestructiveHover, theme.PanelFill)
+                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, theme.DestructivePressed, theme.PanelFill)
+                    SetRecipientRowInkFloor(row, If(delete_Allowed, PanelColourMetrics.TextFloor, PanelColourMetrics.DisabledContrast))
                     If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, "action.delete")
                     Continue For
                 End If
@@ -627,31 +635,25 @@ Partial Public Class Main_Form
                                           (Not is_Copy_Zone AndAlso Not move_Allowed)
 
                 ' The fill is the slot's identity (129 §3.3): health answers in the ink and the
-                ' tooltip, never by swapping the fill. The copy zone keeps its accent marker and
-                ' the DEL row its destructive red - states of the panel, not recipients.
+                ' tooltip, never by swapping the fill. The copy zone keeps the model's state fill and
+                ' the DEL row its destructive family - states of the panel, not recipients (L0303 R-12).
                 If is_Copy_Zone Then
-                    row.BackColor = If(unusable OrElse theme.IsHighContrast, theme.PanelFill,
-                                       If(ChromeTheme.IsDark(theme.PanelFill),
-                                          ChromeTheme.Blend(theme.PanelFill, theme.Accent, ChromeMetrics.HoverPercent / 100.0F),
-                                          Color.FromArgb(224, 240, 224)))
+                    row.BackColor = If(unusable OrElse theme.IsHighContrast, theme.PanelFill, theme.ItemHover)
                 Else
                     row.BackColor = RecipientRowFill(slot)
                 End If
                 row.ForeColor = If(is_Copy_Zone, theme.Foreground, RecipientRowInk())
-                ' Below the overlay's own 220 half the disabled ink follows the flipped pair (the
-                ' theme's disabled blend), never a palette gray of the old tone.
-                If unusable Then row.ForeColor = If(is_Copy_Zone OrElse theme.IsHighContrast OrElse RecipientsOverlayInkInverted(),
+                ' An unusable row's ink is the model's disabled ink: the panel's own on the copy zone, solved to the
+                ' disabled floor on the identity fill of a folder row (R-6).
+                If unusable Then row.ForeColor = If(is_Copy_Zone OrElse theme.IsHighContrast,
                                                    theme.DisabledForeground,
-                                                   ThemePalette.ForDark(ThemeService.IsDark).TextDisabled)
+                                                   RecipientRowDisabledInk(slot))
+                SetRecipientRowInkFloor(row, If(unusable, PanelColourMetrics.DisabledContrast, PanelColourMetrics.TextFloor))
 
                 row.FlatAppearance.MouseOverBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor,
-                                                            If(is_Copy_Zone,
-                                                               If(ChromeTheme.IsDark(theme.PanelFill), theme.ItemHover, Color.FromArgb(204, 230, 204)),
-                                                               RecipientRowHoverFill(slot)))
+                                                            If(is_Copy_Zone, theme.ItemPressed, RecipientRowHoverFill(slot)))
                 row.FlatAppearance.MouseDownBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor,
-                                                            If(is_Copy_Zone,
-                                                               If(ChromeTheme.IsDark(theme.PanelFill), theme.ItemPressed, Color.FromArgb(184, 220, 184)),
-                                                               RecipientRowHoverFill(slot)))
+                                                            If(is_Copy_Zone, theme.ItemPressed, RecipientRowHoverFill(slot)))
                 ' The folder rows carry no picture (see BuildRecipientsOverlay); the copy zone keeps its sheets.
                 If recipients_Row_Glyphs AndAlso is_Copy_Zone Then ApplyRecipientRowGlyph(row, "action.copy")
                 If recipients_ToolTip IsNot Nothing Then
@@ -1031,6 +1033,9 @@ Partial Public Class Main_Form
     ''' with focus here, Space/Enter would re-activate the button via KeyPreview).</summary>
     Private NotInheritable Class NonFocusButton
         Inherits Button
+#If Not NETFRAMEWORK Then
+        Implements IRecipientsInk
+#End If
 
         Public Sub New()
             SetStyle(ControlStyles.Selectable, False)
@@ -1105,12 +1110,34 @@ Partial Public Class Main_Form
             Invalidate()
         End Sub
 
-        ''' <summary>Fill, then the caption with the outline that keeps it readable over a see-through table.</summary>
+        ''' <summary>The contrast the caption keeps over the picture while the table is see-through (L0303 R-10): the
+        ''' ink layer lays the row's own fill under it once more, as much as this floor asks. A disabled row asks
+        ''' the disabled floor.</summary>
+        Public Property InkFloor As Double = PanelColourMetrics.TextFloor
+
+        Private verbFillKey As Color = Color.Empty
+        Private verbInkKey As Color = Color.Empty
+        Private verbInkValue As Color = Color.Empty
+
+        ''' <summary>The fill the row shows in its present state.</summary>
+        Private Function CurrentFill() As Color
+            Return If(Not Enabled, BackColor,
+                      If(pressing, FlatAppearance.MouseDownBackColor,
+                         If(hovering, FlatAppearance.MouseOverBackColor, BackColor)))
+        End Function
+
+        ''' <summary>The recipients table's window while it draws its captions into its ink layer, else Nothing (the
+        ''' transport bar's buttons, and the table when it is opaque, paint everything themselves).</summary>
+        Private Function InkHost() As RecipientsOverlayWindow
+            Dim host As RecipientsOverlayWindow = TryCast(FindForm(), RecipientsOverlayWindow)
+            If host Is Nothing OrElse Not host.UseInkLayer Then Return Nothing
+            Return host
+        End Function
+
+        ''' <summary>The fill, the ring, and - unless the table's ink layer carries them - the icon and the caption.</summary>
         Protected Overrides Sub OnPaint(pevent As PaintEventArgs)
             Dim g As Graphics = pevent.Graphics
-            Dim fill As Color = If(Not Enabled, BackColor,
-                                   If(pressing, FlatAppearance.MouseDownBackColor,
-                                      If(hovering, FlatAppearance.MouseOverBackColor, BackColor)))
+            Dim fill As Color = CurrentFill()
             Using brush As New SolidBrush(fill)
                 g.FillRectangle(brush, ClientRectangle)
             End Using
@@ -1120,6 +1147,48 @@ Partial Public Class Main_Form
                     g.DrawRectangle(pen, ringWidth \ 2, ringWidth \ 2, Width - ringWidth, Height - ringWidth)
                 End Using
             End If
+            Dim host As RecipientsOverlayWindow = InkHost()
+            If host IsNot Nothing Then
+                host.RequestInk()
+                Return
+            End If
+            PaintContent(g, fill)
+        End Sub
+
+        ''' <summary>Draws this row's ink into the table's ink layer (origin at the row's top-left): its own fill as
+        ''' the scrim, as strong as the caption's floor asks at the table's opacity, then the icon and the caption.</summary>
+        Private Sub PaintInk(g As Graphics, scrimBase As Double) Implements IRecipientsInk.PaintInk
+            If Not Visible OrElse Width <= 0 OrElse Height <= 0 Then Return
+            Dim fill As Color = CurrentFill()
+            Dim scrim As Double = 0.0R
+            If Image IsNot Nothing OrElse Not String.IsNullOrEmpty(Text) Then
+                scrim = PanelColourModel.ScrimAlpha(fill, ForeColor, InkFloor, scrimBase)
+                If Not String.IsNullOrEmpty(TrailingText) Then
+                    scrim = Math.Max(scrim, PanelColourModel.ScrimAlpha(fill, VerbInk(fill), PanelColourMetrics.TextFloor, scrimBase))
+                End If
+            End If
+            If scrim > 0.0R Then
+                Using brush As New SolidBrush(Color.FromArgb(CInt(Math.Round(scrim * 255.0R)), fill))
+                    g.FillRectangle(brush, ClientRectangle)
+                End Using
+            End If
+            PaintContent(g, fill)
+        End Sub
+
+        ''' <summary>The move verb's ink: the row's ink moved toward its fill only as far as it still reads at the text
+        ''' floor on that fill (it was a fixed 0.7 blend, which on a light identity fill fell below it).</summary>
+        Private Function VerbInk(fill As Color) As Color
+            If fill <> verbFillKey OrElse ForeColor <> verbInkKey OrElse verbInkValue = Color.Empty Then
+                verbFillKey = fill
+                verbInkKey = ForeColor
+                verbInkValue = PanelColourModel.SolveDerivedInk({fill}, ForeColor,
+                                                                PanelColourMetrics.TextFloor + PanelColourMetrics.FloorMargin)
+            End If
+            Return verbInkValue
+        End Function
+
+        ''' <summary>The icon, the caption and the dimmed verb, in plain ink - no outline ring (L0303 R-10).</summary>
+        Private Sub PaintContent(g As Graphics, fill As Color)
             ' The icon is drawn by the control, not by whoever sets it (121 Ф-1): this override used to paint
             ' the caption only, so the transport's Play and Mute - Text "" and the glyph in Image - came out as
             ' flat empty squares. A caption-only row never reaches this branch, so its pixels are unchanged.
@@ -1140,7 +1209,6 @@ Partial Public Class Main_Form
                 Dim left As Single = If(imageEnd > 0, imageEnd, Padding.Left)
                 Dim areaLeft As Single = left
                 Dim areaRight As Single = Width - Padding.Right
-                Dim radius As Integer = ChromeInkOutline.RadiusFor(DeviceDpi / 96.0F)
                 ' The verb at the row's far end, dimmed, while the folder keeps its room (125 UX-332). It is drawn
                 ' at the end the text finishes at: the left in a right-to-left language.
                 If Not String.IsNullOrEmpty(TrailingText) Then
@@ -1151,7 +1219,6 @@ Partial Public Class Main_Form
                         Dim verbWidth As Integer = CInt(Math.Ceiling(g.MeasureString(TrailingText, captionFont, Integer.MaxValue, verbFormat).Width)) + 1
                         Dim verbGap As Integer = Math.Max(4, DeviceDpi \ 16)
                         If RecipientsOverlayRows.ShowsMoveVerb(Width, CInt(left), Padding.Right, verbWidth + verbGap, MinimumCaptionWidth) Then
-                            Dim verbInk As Color = ChromeTheme.Blend(fill, ForeColor, 0.7F)
                             Dim verbLeft As Single
                             If RightToLeft = RightToLeft.Yes Then
                                 verbLeft = areaLeft
@@ -1160,12 +1227,16 @@ Partial Public Class Main_Form
                                 verbLeft = areaRight - verbWidth
                                 areaRight -= verbWidth + verbGap
                             End If
-                            ChromeInkOutline.DrawText(g, TrailingText, captionFont, New RectangleF(verbLeft, 0, verbWidth, Height), verbInk, verbFormat, radius)
+                            Using verbBrush As New SolidBrush(VerbInk(fill))
+                                g.DrawString(TrailingText, captionFont, verbBrush, New RectangleF(verbLeft, 0, verbWidth, Height), verbFormat)
+                            End Using
                         End If
                     End Using
                 End If
                 Dim area As New RectangleF(areaLeft, 0, Math.Max(0, areaRight - areaLeft), Height)
-                ChromeInkOutline.DrawText(g, Text, captionFont, area, ForeColor, format, radius)
+                Using brush As New SolidBrush(ForeColor)
+                    g.DrawString(Text, captionFont, brush, area, format)
+                End Using
             End Using
         End Sub
 
@@ -1191,12 +1262,20 @@ Partial Public Class Main_Form
     End Class
 
 #If Not NETFRAMEWORK Then
+    ''' <summary>A control of the recipients table whose captions or glyph go to the table's ink layer while the
+    ''' table is see-through (L0303 R-12): it draws them there with <paramref name="scrimBase"/> as the opacity its
+    ''' scrim is solved for, origin at its own top-left.</summary>
+    Private Interface IRecipientsInk
+        Sub PaintInk(g As Graphics, scrimBase As Double)
+    End Interface
+
     ''' <summary>The shared look of the header strip's two buttons (219 §2/§4): the same ambient
     ''' corner control the chrome panels carry - no fill at rest, a small hover/press cue, the glyph
     ''' in the theme's ink. Never selectable: a click leaves the keyboard focus with the viewer,
     ''' exactly like a recipient row.</summary>
     Private MustInherit Class RecipientsStripButton
         Inherits Control
+        Implements IRecipientsInk
 
         Protected ReadOnly owner As Main_Form
         Protected hovering As Boolean
@@ -1240,7 +1319,8 @@ Partial Public Class Main_Form
             ' Nothing: the strip is the window's own flat fill, painted under this control already.
         End Sub
 
-        ''' <summary>The hover/press cue, then the glyph - the panels' ambient corner button, verbatim.</summary>
+        ''' <summary>The hover/press cue, then the glyph - the panels' ambient corner button, verbatim. While the table
+        ''' is see-through the glyph goes to its ink layer, over a scrim of the cue's fill (L0303 R-10).</summary>
         Protected Overrides Sub OnPaint(e As PaintEventArgs)
             Dim g As Graphics = e.Graphics
             g.SmoothingMode = SmoothingMode.AntiAlias
@@ -1251,28 +1331,61 @@ Partial Public Class Main_Form
             Using bgBrush As New SolidBrush(theme.PanelFill)
                 g.FillRectangle(bgBrush, r)
             End Using
-            Dim size As Integer = Math.Min(r.Width, Math.Min(r.Height, UiScale.Px(ChromeMetrics.PinButtonSize, scale)))
+            Dim bounds As Rectangle = CueBounds(scale)
             If hovering OrElse pressing Then
-                Dim fill As Color = If(pressing, theme.ItemPressed, theme.ItemHover)
-                fill = ChromeTheme.Blend(theme.PanelFill, fill, 1.0F)
-                Using path As GraphicsPath = ChromeSurface.RoundedRect(
-                        New RectangleF(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size),
-                        UiScale.Px(ChromeMetrics.ItemCorner, scale))
-                    Using brush As New SolidBrush(fill)
+                Using path As GraphicsPath = ChromeSurface.RoundedRect(bounds, UiScale.Px(ChromeMetrics.ItemCorner, scale))
+                    Using brush As New SolidBrush(CueFill(theme))
                         g.FillPath(brush, path)
                     End Using
                 End Using
             End If
-            Dim bounds As New Rectangle(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size)
+            Dim host As RecipientsOverlayWindow = TryCast(FindForm(), RecipientsOverlayWindow)
+            If host IsNot Nothing AndAlso host.UseInkLayer Then
+                host.RequestInk()
+                Return
+            End If
             PaintGlyph(g, bounds, Ink(theme), scale)
         End Sub
 
-        ''' <summary>The glyph's ink: the theme's foreground blended into the panel fill, full on hover.
-        ''' High contrast hands the choice to the system.</summary>
+        ''' <summary>Draws the glyph into the table's ink layer (origin at the button's top-left) over a rounded scrim of
+        ''' the fill under it, as strong as the glyph floor asks at the table's opacity.</summary>
+        Private Sub PaintInk(g As Graphics, scrimBase As Double) Implements IRecipientsInk.PaintInk
+            If Not Visible OrElse Width <= 0 OrElse Height <= 0 Then Return
+            Dim theme As ChromeTheme = owner.RecipientsOverlayTheme()
+            Dim scale As Single = owner.ChromeScale()
+            Dim bounds As Rectangle = CueBounds(scale)
+            Dim fill As Color = If(hovering OrElse pressing, CueFill(theme), theme.PanelFill)
+            Dim glyphInk As Color = Ink(theme)
+            Dim scrim As Double = PanelColourModel.ScrimAlpha(fill, glyphInk, PanelColourMetrics.GlyphFloor, scrimBase)
+            g.SmoothingMode = SmoothingMode.AntiAlias
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality
+            If scrim > 0.0R Then
+                Using path As GraphicsPath = ChromeSurface.RoundedRect(bounds, UiScale.Px(ChromeMetrics.ItemCorner, scale))
+                    Using brush As New SolidBrush(Color.FromArgb(CInt(Math.Round(scrim * 255.0R)), fill))
+                        g.FillPath(brush, path)
+                    End Using
+                End Using
+            End If
+            PaintGlyph(g, bounds, glyphInk, scale)
+        End Sub
+
+        ''' <summary>The square the cue and the glyph stand in, centred in the button.</summary>
+        Private Function CueBounds(scale As Single) As Rectangle
+            Dim r As Rectangle = ClientRectangle
+            Dim size As Integer = Math.Min(r.Width, Math.Min(r.Height, UiScale.Px(ChromeMetrics.PinButtonSize, scale)))
+            Return New Rectangle(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size)
+        End Function
+
+        ''' <summary>The cue's fill: the model's hover or pressed state fill.</summary>
+        Private Function CueFill(theme As ChromeTheme) As Color
+            Return If(pressing, theme.ItemPressed, theme.ItemHover)
+        End Function
+
+        ''' <summary>The glyph's ink: the model's corner-button ink at rest, the panel's ink on hover (L0303 R-12; it was
+        ''' a 0.55 blend of its own). High contrast hands the choice to the system.</summary>
         Protected Overridable Function Ink(theme As ChromeTheme) As Color
             If theme.IsHighContrast Then Return SystemColors.WindowText
-            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, 0.55F)
-            Return If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
+            Return If(hovering, theme.Foreground, theme.PinRest)
         End Function
 
         ''' <summary>The button's own picture, inside the cue's rounded box.</summary>
@@ -1307,8 +1420,9 @@ Partial Public Class Main_Form
 
         Protected Overrides Function Ink(theme As ChromeTheme) As Color
             If theme.IsHighContrast Then Return If(checkedState, SystemColors.HighlightText, SystemColors.WindowText)
-            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, If(checkedState, 0.8F, 0.55F))
-            Return If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
+            ' The model's two pin inks, free and pinned (L0303 R-12); the panel's own ink on hover.
+            If hovering Then Return theme.Foreground
+            Return If(checkedState, theme.PinPinned, theme.PinRest)
         End Function
 
         Protected Overrides Sub PaintGlyph(g As Graphics, bounds As Rectangle, ink As Color, scale As Single)
@@ -1363,8 +1477,59 @@ Partial Public Class Main_Form
 
         Private movingFaultLogged As Boolean
 
+        Private inkRequested As Boolean
+
         Public Sub New()
             MyBase.New(False)
+        End Sub
+
+        ''' <summary>Turns the table's ink layer on or off (L0303 R-12) and repaints the rows, which then draw their
+        ''' captions and glyphs there, or themselves again.</summary>
+        Public Sub SetInkLayer(value As Boolean)
+            If UseInkLayer = value Then Return
+            UseInkLayer = value
+            Invalidate(True)
+        End Sub
+
+        ''' <summary>Asks for one ink redraw after the current paint pass: a row that repainted (hover, press, health,
+        ''' a scroll) calls it, and the requests of one pass collapse into one redraw.</summary>
+        Public Sub RequestInk()
+            If inkRequested OrElse Not UseInkLayer OrElse IsDisposed OrElse Not IsHandleCreated Then Return
+            inkRequested = True
+            BeginInvoke(New MethodInvoker(Sub()
+                                              inkRequested = False
+                                              If Not IsDisposed Then RefreshInk()
+                                          End Sub))
+        End Sub
+
+        ''' <summary>The table is built of its own controls, so the ink layer is painted from them: each row and strip
+        ''' button at its place in the window, clipped to what its container shows (the rows scroll under the strip).</summary>
+        Protected Overrides Sub PaintInkLayer(g As Graphics, scrimBase As Double)
+            g.TextRenderingHint = Drawing.Text.TextRenderingHint.AntiAliasGridFit
+            PaintChildInk(g, Me, New Rectangle(Point.Empty, ClientSize), scrimBase)
+        End Sub
+
+        Private Sub PaintChildInk(g As Graphics, parent As Control, clip As Rectangle, scrimBase As Double)
+            For Each child As Control In parent.Controls
+                If Not child.Visible Then Continue For
+                Dim bounds As Rectangle = RectangleToClient(parent.RectangleToScreen(child.Bounds))
+                Dim shown As Rectangle = Rectangle.Intersect(bounds, clip)
+                If shown.Width <= 0 OrElse shown.Height <= 0 Then Continue For
+                Dim ink As IRecipientsInk = TryCast(child, IRecipientsInk)
+                If ink IsNot Nothing Then
+                    Dim state As Drawing2D.GraphicsState = g.Save()
+                    Try
+                        g.SetClip(shown)
+                        g.TranslateTransform(bounds.X, bounds.Y)
+                        ink.PaintInk(g, scrimBase)
+                    Finally
+                        g.Restore(state)
+                    End Try
+                ElseIf child.HasChildren Then
+                    Dim inner As Rectangle = RectangleToClient(child.RectangleToScreen(child.ClientRectangle))
+                    PaintChildInk(g, child, Rectangle.Intersect(inner, clip), scrimBase)
+                End If
+            Next
         End Sub
 
         ''' <summary>The fit the native move loop's proposed rectangles pass through while a header drag runs (L0281 T-6):

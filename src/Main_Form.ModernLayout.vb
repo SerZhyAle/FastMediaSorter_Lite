@@ -337,11 +337,22 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub RecolorChrome(back_Color As Color, opposite_Color As Color)
         If Not modern_Layout_Built Then Return
+#If Not NETFRAMEWORK Then
+        ' L0303 M-4 (b): the opt-in cost of this colour step (0 and no line unless FMS_UI_TIMING=1).
+        Dim timingLayouts As Integer
+        Dim timingStart As Long = PanelColourTiming.Begin(timingLayouts)
+#End If
 
+#If NETFRAMEWORK Then
         Dim effectiveOpposite As Color = If(IsDarkColor(back_Color), Color.White, opposite_Color)
         If Not IsDarkColor(back_Color) AndAlso Not IsDarkColor(effectiveOpposite) Then
             effectiveOpposite = Color.Black
         End If
+#Else
+        ' L0303 R-2: the floating panels take the sample unaltered and the panel colour model decides the
+        ' ink; the hidden legacy carriers keep the scheme's own WCAG opposite (Utils.GetOppositeColor).
+        Dim effectiveOpposite As Color = opposite_Color
+#End If
 
         Dim hover_Color As Color = BlendColor(back_Color, effectiveOpposite, 0.18F)
 
@@ -356,7 +367,7 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
 
         ' The floating panels follow the picture the way this toolbar does.
-        ChromeApplyScheme(back_Color, effectiveOpposite)
+        ChromeApplyScheme(back_Color, Form_Color_Scheme)
 #End If
 
 #If NETFRAMEWORK Then
@@ -374,7 +385,12 @@ Partial Public Class Main_Form
         ' picture's colour made a white-background photo open a white menu in dark mode.
 #End If
 
+#If NETFRAMEWORK Then
         ApplyTitleBarTheme(IsDarkColor(back_Color))
+#Else
+        ApplyTitleBarTheme(ChromePanelToneIsDark())
+        PanelColourTiming.Complete(timingStart, timingLayouts)
+#End If
     End Sub
 
     Private Sub RecolorContainer(parent As Control, back_Color As Color, opposite_Color As Color, hover_Color As Color)
@@ -418,10 +434,12 @@ Partial Public Class Main_Form
         Return CInt(value)
     End Function
 
+#If NETFRAMEWORK Then
     Private Shared Function IsDarkColor(c As Color) As Boolean
-        ' Rec. 601 luma; < 128 is treated as a dark background.
+        ' Rec. 601 luma; < 140 is treated as a dark background (the x86 fallback's rule, L0303 section 4.4).
         Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 140.0
     End Function
+#End If
 
     ''' <summary>Switch the native title bar between dark and light.</summary>
     Friend Sub ApplyTitleBarTheme(useDark As Boolean)

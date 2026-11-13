@@ -303,6 +303,16 @@ $LocaleListScript = @'
 '@
 
 function RenderFamilyGridForLocale([string]$code) {
+    # Every translation block must name every card (SITE-FAMILY-MAP 1.12): a key spelled differently from
+    # the member name (ticket L0310) makes the lookup miss and the English Type is rendered silently.
+    foreach ($block in $copy._familyTranslations.PSObject.Properties) {
+        foreach ($m in $copy._family.members) {
+            if (-not $block.Value.types.PSObject.Properties[$m.name]) {
+                throw "site-copy.json: _familyTranslations.$($block.Name).types has no key for the family member '$($m.name)'"
+            }
+        }
+    }
+
     $familyTitle = $copy._family.title
     if ($copy._familyTranslations.PSObject.Properties[$code] -and $copy._familyTranslations.$code.title) {
         $familyTitle = $copy._familyTranslations.$code.title

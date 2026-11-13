@@ -58,6 +58,18 @@ opening the file offers to restore its draft; "Not now" keeps the reader and the
 until the draft is answered. When Windows shuts down, the changes go to a draft; where no draft can hold
 them, the shutdown is stopped and the viewer says which file to save.
 
+## Translation
+
+With "Translating text files" on (Documents > Text files, works with reading on), the document panel
+carries a doc-html-translate button. Its menu offers the selected text, the editor's whole text with
+unsaved changes (while editing), and the saved file; "What to translate first" decides which comes first.
+The selection and the editor's text are handed over as a copy taken at the click: the file is not saved,
+the editor keeps its text and its unsaved state, and the finished page opens in the browser. The saved
+file goes the way of any document processed in doc-html-translate (see
+[DOCUMENT_READING.md](DOCUMENT_READING.md)); unsaved changes are not part of it. A file in an archive,
+on a server or in a secure container is not sent as a file, and the text of a secure container is
+never sent at all. A translation never replaces the text of the file or of the editor.
+
 ## Data
 
 Remembered positions and encodings stay on this computer. "Clear the text file history" deletes them without

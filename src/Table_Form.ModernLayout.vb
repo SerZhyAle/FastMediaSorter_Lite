@@ -1386,7 +1386,7 @@ Partial Public Class Table_Form
             Case "new_image_scale" : Return Localization.T("Начальный масштаб при открытии следующего изображения.")
             Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы, анимацию ореола и движение фона у аудио без обложки.")
             Case "chrome_size" : Return Localization.T("Малые, средние или крупные; адаптивный следит и за шириной окна.")
-            Case "chrome_opacity" : Return Localization.T("Чем меньше значение, тем прозрачнее плавающие панели. Ниже 50 % надписи и значки инвертируются: чёрное становится белым.")
+            Case "chrome_opacity" : Return Localization.T("Чем меньше значение, тем прозрачнее плавающие панели.")
             Case "chrome_corners" : Return Localization.T("Скругление углов панелей")
             Case "chrome_reset_places" : Return Localization.T("Возвращает перемещённые панели на места по умолчанию, в том числе потерянную. Кнопки и закрепление не меняются.")
             Case "chrome_pinned" : Return Localization.T("Панели не исчезают сами и остаются над изображением постоянно.")

@@ -21,6 +21,10 @@ Friend NotInheritable Class ChromePathBox
     Private cancellation As CancellationTokenSource
     Private recent As String() = Array.Empty(Of String)()
     Private theme As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.White, False)
+    ''' <summary>L0303 R-13: the suggestion and recent-folder lists are menus - themed and opaque
+    ''' (APP-STYLE section 5 condition 2), never the content-tinted panel theme. The host supplies
+    ''' the application's menu theme; without one the dark menu palette is used.</summary>
+    Public Property MenuTheme As Func(Of ChromeTheme)
     Private scaleFactor As Single = 1.0F
     Private rtl As Boolean
     Private symbols As Font
@@ -114,6 +118,12 @@ Friend NotInheritable Class ChromePathBox
         Invalidate()
     End Sub
 
+    Private ReadOnly Property EditsNatively As Boolean Implements IChromeInkSource.EditsNatively
+        Get
+            Return editing
+        End Get
+    End Property
+
     Private Sub ApplyInputInk()
         input.ForeColor = If(inkExternal AndAlso Not editing, theme.PanelFill, theme.Foreground)
     End Sub
@@ -178,6 +188,16 @@ Friend NotInheritable Class ChromePathBox
         LayoutInput()
         Invalidate()
     End Sub
+    ''' <summary>A colour-only change (L0303 R-14): the inks and the edit's fill follow, nothing is laid out.</summary>
+    Public Sub ApplyTheme(newTheme As ChromeTheme)
+        If newTheme Is Nothing OrElse Object.ReferenceEquals(newTheme, theme) Then Return
+        theme = newTheme
+        ApplyInputInk()
+        input.BackColor = theme.PanelFill
+        Invalidate()
+        If inkExternal AndAlso Parent IsNot Nothing Then Parent.Invalidate()
+    End Sub
+
     Public Sub BeginEditing()
         If editing Then Return
         editing = True
@@ -257,7 +277,9 @@ Friend NotInheritable Class ChromePathBox
                           End Sub})
         Next
         Dim host As Form = FindForm()
-        ChromeMenu.ShowPopup(If(host.Owner, host), PointToScreen(New Point(0, Height)), entries, theme, scaleFactor, rtl, input.Font, symbols,
+        Dim menu As ChromeTheme = If(MenuTheme IsNot Nothing, MenuTheme.Invoke(), Nothing)
+        If menu Is Nothing Then menu = ChromeTheme.ForMenu(Nothing)
+        ChromeMenu.ShowPopup(If(host.Owner, host), PointToScreen(New Point(0, Height)), entries, menu, scaleFactor, rtl, input.Font, symbols,
                              focusFirstRow:=False, isSuggestionList:=isSuggestionList)
     End Sub
     Protected Overrides Sub OnMouseUp(args As MouseEventArgs)

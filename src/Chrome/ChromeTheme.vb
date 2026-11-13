@@ -39,10 +39,68 @@ Friend NotInheritable Class ChromeTheme
 
     ''' <summary>True when the panel draws system colours (high contrast).</summary>
     Public Property IsHighContrast As Boolean
-    ''' <summary>True when this theme's ink pair has been flipped by the 220 rule: a panel whose
-    ''' transparency setting is below half inverts the tone of every label, glyph and outline it
-    ''' draws. The themes FromScheme builds carry False; WithInvertedInk sets it.</summary>
-    Public Property InkInverted As Boolean
+
+    ' L0303: the roles a theme built by FromColours carries from the panel colour model. Empty on the
+    ' themes FromScheme and ForMenu build, which keep their own blends.
+    Public Property AccentHover As Color = Color.Empty
+    Public Property AccentPressed As Color = Color.Empty
+    Public Property PinRest As Color = Color.Empty
+    Public Property PinPinned As Color = Color.Empty
+    Public Property WarningForeground As Color = Color.Empty
+    Public Property ErrorForeground As Color = Color.Empty
+    ''' <summary>R-11: the smallest window opacity at which text that fades with the window (a native edit
+    ''' being typed in) keeps its floor over any content. 0 on the themes FromScheme and ForMenu build.</summary>
+    Public Property EditFloorOpacity As Double
+    ''' <summary>The transport sliders' unplayed track from the model (R-11); empty on the other themes.</summary>
+    Public Property SliderTrack As Color = Color.Empty
+    ''' <summary>R-11 for the transport's A-B chip: the window opacity its caption needs while it is shown.</summary>
+    Public Property ChipFloorOpacity As Double
+
+    ''' <summary>The floating panels' theme (L0303): every colour is the panel colour model's, the opacity
+    ''' is the set value and never changes an ink (Q303-3). High contrast stays the system branch (R-13).</summary>
+    Public Shared Function FromColours(colours As PanelColours) As ChromeTheme
+        If colours Is Nothing Then Return ForHighContrast()
+        If colours.IsHighContrast Then
+            Dim systemTheme As ChromeTheme = ForHighContrast()
+            systemTheme.SliderTrack = colours.SliderTrack
+            Return systemTheme
+        End If
+        Return New ChromeTheme() With {
+            .PanelFill = colours.Fill,
+            .Foreground = colours.Ink,
+            .Hairline = colours.Hairline,
+            .ItemHover = colours.Hover,
+            .ItemPressed = colours.Pressed,
+            .Accent = colours.Checked,
+            .AccentForeground = colours.CheckedInk,
+            .AccentHover = colours.CheckedHover,
+            .AccentPressed = colours.CheckedPressed,
+            .DisabledForeground = colours.InkDisabled,
+            .FocusRing = colours.FocusRing,
+            .DestructiveRest = colours.Destructive,
+            .DestructiveHover = colours.DestructiveHover,
+            .DestructivePressed = colours.DestructivePressed,
+            .DestructiveForeground = colours.DestructiveInk,
+            .PinRest = colours.PinRestInk,
+            .PinPinned = colours.PinPinnedInk,
+            .WarningForeground = colours.WarningInk,
+            .ErrorForeground = colours.ErrorInk,
+            .PanelOpacity = colours.SetOpacity,
+            .EditFloorOpacity = colours.WholeWindowFloor,
+            .SliderTrack = colours.SliderTrack,
+            .ChipFloorOpacity = colours.ChipFloor,
+            .AllowsAnimation = True,
+            .IsHighContrast = False
+        }
+    End Function
+
+    ''' <summary>The ink of a status line that carries a warning or an error: the model's role ink when this
+    ''' theme came from it, <see cref="Color.Empty"/> otherwise (the caller then keeps its own rule).</summary>
+    Public Function ToneInk(tone As NotifyLevel) As Color
+        If tone = NotifyLevel.Warning Then Return WarningForeground
+        If tone = NotifyLevel.Error Then Return ErrorForeground
+        Return Color.Empty
+    End Function
 
     ''' <param name="back">The scheme's background colour (what the window is painted).</param>
     ''' <param name="fore">The scheme's contrasting colour (what text on it is painted).</param>
@@ -141,41 +199,6 @@ Friend NotInheritable Class ChromeTheme
         }
     End Function
 
-    Public Shared Function InvertedTone(ink As Color) As Color
-        Return If(IsDark(ink), Color.White, Color.Black)
-    End Function
-
-    ''' <summary>This theme with its ink pair flipped (220): the ink, the white destructive label and
-    ''' the derived inks (the hairline, the disabled blend) invert tone and are recomputed from the
-    ''' flipped pair; the fills, the hover and pressed states, the accent family and the destructive
-    ''' reds are copied unchanged. High contrast never flips - the same theme comes back. The outline
-    ''' needs no rule of its own: it is always the tone opposite of the ink it surrounds, so it flips
-    ''' with the ink.</summary>
-    Public Function WithInvertedInk() As ChromeTheme
-        If IsHighContrast Then Return Me
-        Dim ink As Color = InvertedTone(Foreground)
-        Return New ChromeTheme() With {
-            .PanelCornerRadius = PanelCornerRadius,
-            .PanelFill = PanelFill,
-            .Foreground = ink,
-            .Hairline = Blend(PanelFill, ink, ChromeMetrics.HairlinePercent / 100.0F),
-            .ItemHover = ItemHover,
-            .ItemPressed = ItemPressed,
-            .Accent = Accent,
-            .AccentForeground = AccentForeground,
-            .DisabledForeground = Blend(PanelFill, ink, ChromeMetrics.DisabledPercent / 100.0F),
-            .FocusRing = FocusRing,
-            .DestructiveRest = DestructiveRest,
-            .DestructiveHover = DestructiveHover,
-            .DestructivePressed = DestructivePressed,
-            .DestructiveForeground = InvertedTone(DestructiveForeground),
-            .PanelOpacity = PanelOpacity,
-            .AllowsAnimation = AllowsAnimation,
-            .IsHighContrast = IsHighContrast,
-            .InkInverted = True
-        }
-    End Function
-
     ''' <summary>The colour an item's picture or caption is drawn in for a state.</summary>
     Public Function InkFor(enabled As Boolean, checked As Boolean, destructive As Boolean, hover As Boolean) As Color
         If Not enabled Then Return DisabledForeground
@@ -196,9 +219,15 @@ Friend NotInheritable Class ChromeTheme
             Return DestructiveRest
         End If
         If Not enabled Then Return Color.Empty
-        If pressed Then Return If(checked AndAlso Not IsHighContrast, Blend(Accent, Foreground, ChromeMetrics.HoverPercent / 100.0F), ItemPressed)
+        If pressed Then
+            If checked AndAlso Not IsHighContrast Then
+                Return If(AccentPressed.IsEmpty, Blend(Accent, Foreground, ChromeMetrics.HoverPercent / 100.0F), AccentPressed)
+            End If
+            Return ItemPressed
+        End If
         If checked AndAlso Not IsHighContrast Then
-            Return If(hover, Blend(Accent, Foreground, ChromeMetrics.HoverPercent / 200.0F), Accent)
+            If Not hover Then Return Accent
+            Return If(AccentHover.IsEmpty, Blend(Accent, Foreground, ChromeMetrics.HoverPercent / 200.0F), AccentHover)
         End If
         If hover Then Return ItemHover
         Return Color.Empty
@@ -209,6 +238,8 @@ Friend NotInheritable Class ChromeTheme
     ''' <summary>The corner pin's ink at rest. Strong enough to read on a light scheme and a dark one (about
     ''' 3:1 or better - 125 UX-313h); under high contrast the system pair is used by the caller.</summary>
     Public Function PinRestInk(pinned As Boolean) As Color
+        Dim solved As Color = If(pinned, PinPinned, PinRest)
+        If Not solved.IsEmpty Then Return solved
         Return Blend(PanelFill, Foreground, If(pinned, ChromeMetrics.PinPinnedPercent, ChromeMetrics.PinRestPercent) / 100.0F)
     End Function
 
@@ -234,9 +265,10 @@ Friend NotInheritable Class ChromeTheme
         Return (hi + 0.05) / (lo + 0.05)
     End Function
 
-    ''' <summary>Rec. 601 luma below 128 is a dark colour (the rule the window already uses).</summary>
+    ''' <summary>A dark colour is one on which white reads better than black by WCAG contrast
+    ''' (L0303 R-1: one luminance for every black-or-white decision of the chrome).</summary>
     Public Shared Function IsDark(c As Color) As Boolean
-        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 140.0
+        Return ContrastRatio(Color.White, c) > ContrastRatio(Color.Black, c)
     End Function
 
     ''' <summary>Black or white, whichever reads on <paramref name="background"/>.</summary>
