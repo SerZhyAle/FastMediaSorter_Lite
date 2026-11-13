@@ -14,6 +14,7 @@ Imports Xunit
 ''' The source half: every TF call passes exactly as many arguments as its key names,
 ''' so the degradation stays a safety net rather than something a user sees.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class LocalizationCallSiteTests
 
     <Fact>

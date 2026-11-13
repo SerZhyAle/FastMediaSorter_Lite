@@ -14,6 +14,7 @@ Imports Xunit
 ''' touching anything; settings rows never lose uncommitted typing and a measurement can only land
 ''' if it is the newest; the association caption and action share one chooser.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class SettingsImportTests
 
     Private Shared Function TempDir() As String

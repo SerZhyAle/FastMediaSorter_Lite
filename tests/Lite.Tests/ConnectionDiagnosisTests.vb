@@ -15,6 +15,7 @@ Imports Xunit
 ''' Tests for connection diagnosis engine, probes, 13-language parity,
 ''' first-failure stop, redacted support bundle strings, and outside visibility.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class ConnectionDiagnosisTests
 
     Private Shared ReadOnly Locales13 As String() = {

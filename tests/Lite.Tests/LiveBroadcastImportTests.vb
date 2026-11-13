@@ -12,6 +12,7 @@ Imports Xunit
 ' importer accepts and - as important - what it refuses, and by which name. The fixtures are built here from the
 ' contract's examples (LIVE-BROADCAST section 3.1); nothing is a stored blob that could go stale.
 
+<Collection("LocalizationState")>
 Public Class LiveBroadcastImportTests
 
     Private Const PhoneJson As String = "{""schemaVersion"":1,""url"":""http://192.168.1.50:8768/live-audio.aac"",""mode"":""AUDIO_ONLY"",""title"":""Pixel"",""sourceId"":""phone-1""}"
