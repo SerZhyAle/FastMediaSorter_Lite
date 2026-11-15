@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `WAVE-PARTICLES` |
-| **Version** | 0.15, draft (read 2026-10-07). Owner: FastMediaSorter Android. **Implemented: 0.15** - ticket 029 implemented the picture against 0.12 on 2026-10-01; 0.13/0.14, folded from this product's own host-signals proposal, describe what the code already does; 0.15 (section 5: a decorative surface behind text may fix `intensity` and `speed` itself) asks nothing of the audio backdrop and describes what the site hero does. The recorded version constant moved to 0.15 on 2026-10-07 |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.16, draft, the current catalog version; implemented 0.16, the recorded version constant and its test pin moved to 0.16 in the same pass (release item: `Invoke-Tests -Suite lite -Filter WaveParticlesSession`; the pass compiled and ran nothing). Owner: FastMediaSorter Android. **History** - ticket 029 implemented the picture against 0.12 on 2026-10-01; 0.13/0.14, folded from this product's own host-signals proposal, describe what the code already does; 0.15 (section 5: a decorative surface behind text may fix `intensity` and `speed` itself) asks nothing of the audio backdrop and describes what the site hero does. The recorded version constant moved to 0.15 on 2026-10-07 |
 | **Home** | `animated-backdrop/README.md` + `reference/wave-particles.js` in the shared contracts catalog |
 | **Role here** | consumer - the cover-less audio backdrop (surface class "audio player backdrop": `ambient`, `full`, no tuning; .NET 10 mainline only) and the root page's hero (class "web page hero band": `decorative`, `full`, host-fixed `intensity`) |
 
@@ -32,7 +32,9 @@
   switch says animations are off **or** the in-app *Reduce animation* switch says so
   (`ReduceMotionActive()` - an OR in which the product's switch can turn the animation off but never on),
   the same answer the perspective halo obeys. The backdrop then shows the settled still frame. The system
-  answer is read once per process.
+  answer is read once per process. 0.16 makes rule 9 a permission: the product's own switch may remove the surface,
+  and the audio backdrop already paints the ordinary background when `AudioVisualiser` is off
+  (`Main_Form.AudioView.vb`); 0.16 obliges nothing more here.
 - **Rule 11 on Windows (0.13).** `ambient`: freezes at the stricter level only - energy saver on **and**
   on battery (`GetSystemPowerStatus`, read at most once a second); it then holds its last frame.
 - **Rule 10 on Windows (0.13).** Minimised, hidden and cloaked (`DWMWA_CLOAKED`) windows draw nothing and

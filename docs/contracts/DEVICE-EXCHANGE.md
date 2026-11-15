@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `DEVICE-EXCHANGE` |
-| **Version** | 1.5, active (since 2026-10-07; 1.5 of 2026-10-19; read on 2026-10-20 with `WEB-BINDING`, `REMOTE-ADMIN` and the 1.5 amendment). Owner: FastMediaSorter Android |
+| **Version** | 1.15, active (since 2026-10-07; read at 1.15 on 2026-11-15, L0323 catch-up, from 1.5 as read on 2026-10-20 with `WEB-BINDING`, `REMOTE-ADMIN` and the 1.5 amendment). Registry row `partial 1.14`: the items 1.5 to 1.14 less the clauses open and dated 2026-11-15 in the registry - 1.15 FQ-FV (the remote schedule: the server lists no `schedule` feature and the Share Manager answers no verb), 1.10 DY (the `ended` refusal reason of a tunnel `connect`), 1.11 EM (a stable `resourceId` per shared folder), 1.12 FB (`e2e-missing-peer`) and the 1.14 CW and CX terms in 13 languages; the vendored corpora and the WebSocket refusal artifacts wait on the producer's own exchange-vectors run; ticket L0328. Owner: FastMediaSorter Android |
 | **Home** | `device-exchange/README.md` in the shared contracts catalog, with `WEB-BINDING.md`, `REMOTE-ADMIN.md` and the dated 1.5 amendment beside it |
 | **Role here** | **exchange-server implementer** (the Go program `exchange-server/`), **device client, resource producer, broadcaster and clipboard device** in the Share Manager (`src/FastMediaSorterCompanion/`), **device client and receiver** in the modern viewer (`src/Exchange/`, `src/Resources/`). Modern only: the net48 fallback has none of it |
 
@@ -19,6 +19,16 @@
   and `settings_get_standard` only on the person's act and only while `welcome` lists `settings`, writes no
   local-only key (item EQ) and applies nothing of a read before the whole payload is understood (item ER). The
   regenerated server transcript is not yet offered to the catalog (L0296 phase 1 step 7).
+- **Notes sync, server half (1.13, items FG to FM; local specification L0321).** The server lists `notes` only with
+  its store open and `sealed` listed, keeps the notes of every `member` account in `notes.json`, never opens a box,
+  refuses a stale edit `note-conflict`, holds the count of item FL as `limits.notesPerAccount` in the config file
+  (config only, no `policy` line), purges tombstones in its sweep and erases the notes with the account and on
+  guest. The viewer of this product has no notes sync. Three points go to the catalog as the proposal `L0322`: the
+  cursor of a paged `full` answer, the bound of a notes box against the delivered frame, and a notes-count member on
+  the administration wire. The server runs on the specification's assumptions 1 to 15; the ones that read the
+  contract's silence are 1 (cursor), 2 (frame bound), 3 (an edit of a purged note), 4 (a malformed member) and 9
+  (the count switch). `go run ./cmd/exchange-vectors -notes` prints the transcript the catalog's proposed vectors
+  are made from, produced at the release.
 - **No account, no Drive, no change (section 9 rule 7).** With neither configured, nothing in the product changes.
 - **Connection string (5.5, items BO, CK, CZ, DP; the 1.3 amendment).** A higher `FMSEXCH` prefix or descriptor schema is refused cleanly, never
   imported in part, with the catalog's canonical text, code `format-unsupported` (kind local, step `-`), and no
@@ -50,8 +60,8 @@
 
 Specification 234 records the 2026-10-23 local implementation and test evidence for section 27:
 sealed broadcast playback, pinned inner tunnel TLS, the guest-broadcast sender and the verbatim
-privacy statement. Section 27 was re-read in catalog edition 1.7; this scoped work does not claim
-the unrelated 1.6/1.7 amendments or a joint-device run. Folder guest access keeps specification
+privacy statement. Section 27 was re-read in catalog edition 1.7, and the whole of 1.5 to 1.15 against the
+working tree on 2026-11-15 (read, not run); no joint-device run is claimed. Folder guest access keeps specification
 239's `OutwardAccessFeatures` gate. The portal hand-off is
 [PORTAL_HONEST_TEXT_234.md](../guides/PORTAL_HONEST_TEXT_234.md).
 

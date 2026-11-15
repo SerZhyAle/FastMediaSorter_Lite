@@ -164,6 +164,10 @@ Friend Module ScheduledText
             Case "fill-network-drive" : Return Localization.TF("сетевой диск нельзя заполнять: {0}", argument)
             Case "backup-no-password" : Return Localization.T("пароль резервной копии не сохранён на этом компьютере: введите его в операции")
             Case "backup-filedo-unsupported" : Return Localization.T("установленный FileDO не умеет нумеровать резервные копии: обновите компонент FileDO")
+            Case "backup-source-refused" : Return Localization.TF("FileDO не принимает эту папку для резервной копии, измените операцию: {0}", argument)
+            Case "backup-destination-refused" : Return Localization.TF("FileDO не может сохранять копии в эту папку, измените операцию: {0}", argument)
+            Case "backup-failed" : Return Localization.TF("FileDO не смог сделать резервную копию: {0}", argument)
+            Case "backup-not-proven" : Return Localization.TF("FileDO не подтвердил резервную копию: {0}", argument)
             Case Else
                 If code.StartsWith("issue-", StringComparison.Ordinal) Then Return IssueSentence(code, argument)
                 Return Localization.TF("не удалось обработать: {0}", argument)

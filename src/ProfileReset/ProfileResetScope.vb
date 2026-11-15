@@ -85,6 +85,7 @@ Public NotInheritable Class ProfileResetScope
         "NameCollisionPolicy",
         "AfterFileOperation",
         "AdvanceAfterCopy",
+        "AllowAppCommands",
         "RevealStatusOnFileOperation",
         "AutoAcceptLiveCast",
         "DeleteToRecycleBin",

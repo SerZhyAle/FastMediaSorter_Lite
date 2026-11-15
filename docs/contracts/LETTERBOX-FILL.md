@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `LETTERBOX-BARS`, `LETTERBOX-HALO` |
-| **Version** | 0.1 each, draft, since 2026-09-25 (re-read 2026-10-07: the contract's log has no row after the first, so nothing is owed by the 2026-10-07 round). **Owner: this product** |
+| **Version** | 0.1 each, draft, since 2026-09-25 (re-read 2026-10-07 and again 2026-11-15, L0323 catch-up: the contract's log has no row after the first). Registry rows `partial 0.1` each; open, dated 2026-11-15: BARS section 5 rung 2 (a rendered bar frame is not compared to the reference math; the catalog has no pixel artifact to run) and HALO section 5 rung 3 (recorded frames) with the six-decimal stop rounding of the reference. The remedy is this product's own amendment in the catalog first, then the code side, ticket L0330. **Owner: this product** |
 | **Home** | `letterbox-fill/README.md` + `reference/letterbox-fill.ps1` + `vectors/letterbox-fill-vectors.json` in the shared contracts catalog |
 | **Role here** | owner and only implementation (`solo`) - the perspective bars (`src/Main_Form.PerspectiveBackground.vb` with the edge sampler `src/Imaging/EdgeSampler.vb`, both exes) and the dynamic-perspective halo with its growth (`src/Main_Form.PerspectiveHalo.vb`, .NET 10 mainline) |
 | **Where the math lives** | `src/LetterboxFillMath.vb` - one class of pure shared functions (no `Graphics`, no WinForms, no clock), each constant and rule cited by contract rule; compiled into both exes |

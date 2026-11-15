@@ -17,6 +17,7 @@ import (
 	"fms/exchange-server/internal/clipboard"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/notes"
 	"fms/exchange-server/internal/settings"
 	"fms/exchange-server/internal/wire"
 )
@@ -51,6 +52,10 @@ type Ops struct {
 	// Settings is the store of the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296); nil
 	// when the server keeps none. The standards are erased with the account (item AU).
 	Settings *settings.Store
+	// Notes is the store of the notes of every account (DEVICE-EXCHANGE notes sync, ticket L0321); nil when the
+	// server keeps none. The notes are erased with the account (item AU) and when its kind becomes guest (item
+	// AO), the same code path for the holder's own deletion, the operator's removal and the offline command line.
+	Notes *notes.Store
 	// Audit is the in-memory audit tracker for admin sessions and change history (spec 246 Group D).
 	Audit    *AuditTracker
 	AuditLog *logx.Audit
@@ -160,12 +165,43 @@ func (o *Ops) SetKind(login, kind string) (changed bool, err error) {
 		if o.Clipboard != nil {
 			o.Clipboard.Erase(l)
 		}
+		// nor does it keep notes: erased when the kind becomes a guest (item AO). The kind has changed already,
+		// so a store that cannot be written is reported to the operator with changed still true.
+		// The account goes on, so its revision counter is kept (EraseRecords): a revision never comes back (item FG).
+		if nerr := o.eraseNotes(l, true); nerr != nil {
+			err = nerr
+		}
 	}
 	for _, g := range received {
 		o.Dir.GrantRemoved(DirectoryGrant(g), true)
 	}
 	o.Log.State("account-kind-changed", logx.Login(l), logx.Text("kind", k))
-	return true, nil
+	return true, err
+}
+
+// eraseNotes removes the notes of an account with one write of the store (item AU, item AO). With keepCounter the
+// account goes on (its kind became guest) and the store keeps its revision counter (EraseRecords); without it the
+// account is gone and the whole entry is removed (Erase). A nil store is nothing to erase and an account the store
+// does not hold is a no-op. The log gets the number of records removed and never a note member.
+func (o *Ops) eraseNotes(l string, keepCounter bool) error {
+	if o.Notes == nil {
+		return nil
+	}
+	var n int
+	var err error
+	if keepCounter {
+		n, err = o.Notes.EraseRecords(l)
+	} else {
+		n, err = o.Notes.Erase(l)
+	}
+	if err != nil {
+		o.Log.Error("notes-erase-failed", logx.Login(l))
+		return err
+	}
+	if n > 0 {
+		o.Log.State("notes-erased", logx.Login(l), logx.Int("records", n))
+	}
+	return nil
 }
 
 // RemoveAccount deletes an account: every device is revoked in one go, its records and streams go, and
@@ -197,6 +233,10 @@ func (o *Ops) RemoveAccount(login string) error {
 		if _, serr := o.Settings.Erase(l); serr != nil && err == nil {
 			err = serr
 		}
+	}
+	// and the notes (item AU): holder's deletion and operator's removal both end here
+	if nerr := o.eraseNotes(l, false); nerr != nil && err == nil {
+		err = nerr
 	}
 	for _, g := range received {
 		o.Dir.GrantRemoved(DirectoryGrant(g), true)

@@ -234,6 +234,16 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			return true
 		}
 		return e.handleSettingsGet(cs, sess, m)
+	case *wire.NotesList:
+		if !e.notesListed() {
+			return true // `notes` is not in features: ignored like an unknown type (item FI, 7.1)
+		}
+		return e.handleNotesList(cs, sess, m)
+	case *wire.NotesPut:
+		if !e.notesListed() {
+			return true
+		}
+		return e.handleNotesPut(cs, sess, m)
 	}
 	return false // a known envelope that is invalid on a control stream closes it
 }

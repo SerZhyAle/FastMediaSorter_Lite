@@ -202,3 +202,6 @@
 {"path": "lang/uk/support.html", "topic": "support", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "lang/ru/whats-new.html", "topic": "whats-new", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "lang/uk/whats-new.html", "topic": "whats-new", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/contracts/APP-COMMANDS.md", "topic": "APP-COMMANDS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for APP-COMMANDS"], "role": "source"}
+{"path": "docs/CLI.md", "topic": "command line", "area": "engineering", "triggers": ["A verb, option, risk class or exit code of the viewer or Share Manager command line changes"], "role": "render", "generator": "tools/Build-CliDocs.ps1 -Check"}
+{"path": "docs/guides/COMMAND_LINE_RECIPES.md", "topic": "command line recipes for scripts", "area": "engineering", "triggers": ["A verb, option, risk class or example line of the viewer or Share Manager command line changes"], "role": "render", "generator": "tools/Build-CliDocs.ps1 -Check"}

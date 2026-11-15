@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `SHARE-SESSION` |
-| **Version** | 1.3, active (since 2026-07-15; 1.1 of 2026-10-02, 1.2 of 2026-10-12, 1.3 of 2026-10-17; read on 2026-10-20: the README, `share-session-reconnect.md` and both amendments). Owner: FMS Companion (the Go worker holds the server guarantees) |
+| **Version** | 1.4, active (since 2026-07-15; 1.1 of 2026-10-02, 1.2 of 2026-10-12, 1.3 of 2026-10-17, 1.4 of 2026-11-12; read at 1.4 on 2026-11-15, L0323 catch-up, from 1.3 as read on 2026-10-20). Registry row `partial 1.4`: the mid-session reconnect of 1.4 is built (`SftpProvider.ReconnectAllLocked`); the live acceptance scenarios 1, 3, 4 and 5 against a real worker and a provider-level reconnect test stay open; ticket L0328. Owner: FMS Companion (the Go worker holds the server guarantees) |
 | **Home** | `remote-folder-access/README.md` and `share-session-reconnect.md` in the shared contracts catalog |
 | **Role here** | **client** of the session for the modern viewer's SFTP resources (`src/Resources/SftpProvider.vb`, `ResourceConnect.vb`, `EndpointResolver.vb`, `ResourceProbe.vb`, `ResourceFailure.vb`) and for the Share Manager's credential-less banner probe (`src/FastMediaSorterCompanion/Core/SftpProbe.vb`); **custodian of guarantee 3's state** across installs, uninstalls and host-mode changes (`WorkerProcess.vb`, `publishing/installer/install-share-service.ps1`, `FastMediaSorter.iss`). No server half here: the Go worker is the server. Modern only |
 
@@ -11,10 +11,9 @@
 
 - **Reconnect transparently (rule 6, O1).** On a transport failure, before the person sees anything: race the stored
   access paths, re-verify the host key against the stored pin, re-authenticate, reopen the subsystem and retry the
-  pending operation. Only a failure of the whole sequence is shown. **Design variant (owner, 2026-10-30, ticket
-  252):** the open races every stored path; a mid-session loss redials the endpoint that won that race, not the
-  whole race again. It is a dated registry exception with a proposal to the contract's owner
-  (`remote-folder-access/PROPOSAL-2026-10-30-single-endpoint-redial-after-mid-session-loss.md`).
+  pending operation. Only a failure of the whole sequence is shown. **1.4 item A:** a mid-session
+  loss races all stored paths again (`ResourceConnect.vb`, `SftpProvider.ReconnectAllLocked`); the earlier
+  single-endpoint redial design variant ended with 1.4 and no exception stands for it.
 - **Four classes, four reactions (rule 7, O2).** Transport reconnects; an auth rejection stops and asks to re-pair; a
   host-key mismatch refuses and warns, never auto-accepts the new key; an SFTP status is an ordinary result and
   never a reconnect. `ResourceFailureKind` and `ResourceMessages` keep them apart.

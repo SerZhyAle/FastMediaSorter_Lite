@@ -28,13 +28,22 @@ Friend NotInheritable Class ClipboardOneShot
     Private ReadOnly _linger As Timer
     Private _exitCode As Integer = 1
     Private _ended As Boolean
+    Private _outcome As ShareManagerClipboardOutcome
 
     ''' <param name="alreadyRunning">Another shortcut run holds the action: say so and end, start nothing.</param>
     Friend Shared Function Run(isSend As Boolean, alreadyRunning As Boolean) As Integer
+        Dim outcome As ShareManagerClipboardOutcome = Nothing
+        Return Run(isSend, alreadyRunning, outcome)
+    End Function
+
+    ''' <summary>The same run, also handing back what the command line's verbs answer (ticket L0316): the closed outcome
+    ''' token, the byte count and the contract's exit code. The returned exit code is still the shortcut's 0 or 1.</summary>
+    Friend Shared Function Run(isSend As Boolean, alreadyRunning As Boolean, ByRef outcome As ShareManagerClipboardOutcome) As Integer
         Using context As New ClipboardOneShot(isSend, alreadyRunning)
             Application.Run(context)
             ' The one action may have made a Drive service (never started): nothing outlives the run.
             DriveChannelHosts.Release()
+            outcome = If(context._outcome, ShareManagerClipboardOutcome.Of(Nothing, 0L))
             Return context._exitCode
         End Using
     End Function
@@ -82,10 +91,12 @@ Friend NotInheritable Class ClipboardOneShot
         Try
             If _alreadyRunning Then
                 Dim under As New ClipboardLine(ClipboardLineCode.OperationUnderWay)
+                _outcome = ShareManagerClipboardOutcome.OfLine(under, 0L)
                 Notify(ClipboardMessages.TextOf(under), ToolTipIcon.Info)
                 Return
             End If
-            Await _coordinator.RunAsync(_isSend)
+            Dim result As ClipboardRunResult = Await _coordinator.RunAsync(_isSend)
+            _outcome = ShareManagerClipboardOutcome.Of(result, _coordinator.LastBytes)
         Catch ex As Exception
             ' A defect must end the process, not leave an icon in the tray that never goes away.
             ' Rule 10: the class is logged, never the text or the stack (an exception message can carry a path or a file name).

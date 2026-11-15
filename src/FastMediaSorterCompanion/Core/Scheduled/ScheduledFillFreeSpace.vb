@@ -156,6 +156,8 @@ Friend NotInheritable Class FillEvents
     ''' <summary>The `result` event's integer `numbers` (rule 16). An absent key is "not reported", never zero (L0298: a backup's
     ''' `generation` and `retiredGeneration`).</summary>
     Friend ReadOnly Property Numbers As New Dictionary(Of String, Long)(StringComparer.Ordinal)
+    ''' <summary>The `details.reason` tokens of the run's `error` findings (rule 17); a finding without one adds nothing.</summary>
+    Friend ReadOnly Property Reasons As New HashSet(Of String)(StringComparer.Ordinal)
 
     ''' <summary>A published number, or Nothing when the run did not report it.</summary>
     Friend Function Number(key As String) As Long?
@@ -199,6 +201,16 @@ Friend NotInheritable Class FillEvents
                             If hasData Then
                                 events.DoneBytes = Math.Max(events.DoneBytes, ReadLong(data, "doneBytes"))
                                 events.DoneItems = Math.Max(events.DoneItems, ReadLong(data, "doneItems"))
+                            End If
+                        Case "finding"
+                            Dim findingType As JsonElement
+                            Dim details As JsonElement
+                            Dim reason As JsonElement
+                            If hasData AndAlso data.TryGetProperty("type", findingType) AndAlso findingType.ValueKind = JsonValueKind.String AndAlso
+                               findingType.GetString() = "error" AndAlso data.TryGetProperty("details", details) AndAlso
+                               details.ValueKind = JsonValueKind.Object AndAlso details.TryGetProperty("reason", reason) AndAlso
+                               reason.ValueKind = JsonValueKind.String Then
+                                events.Reasons.Add(reason.GetString())
                             End If
                         Case "result"
                             events.HasResult = True

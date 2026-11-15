@@ -784,6 +784,32 @@
     <Compile Include="..\..\src\ProductNames.vb">
       <Link>Linked\ProductNames.vb</Link>
     </Compile>
+    <!-- L0315: the pure APP-COMMANDS profile library and the viewer's one command table. -->
+    <Compile Include="..\..\src\AppCommands\AppCommandsProfile.vb">
+      <Link>Linked\AppCommands\AppCommandsProfile.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\AppCommands\ViewerCommandTable.vb">
+      <Link>Linked\AppCommands\ViewerCommandTable.vb</Link>
+    </Compile>
+    <!-- L0317: how the verb open tells its targets apart and what text it hands the viewer's one entry (pure). -->
+    <Compile Include="..\..\src\AppCommands\OpenTargets.vb">
+      <Link>Linked\AppCommands\OpenTargets.vb</Link>
+    </Compile>
+    <!-- L0318: the listing arithmetic of the file verbs, the slideshow pause bound, the screenshot target and the PNG time chunk (pure). -->
+    <Compile Include="..\..\src\AppCommands\ViewerNavigation.vb">
+      <Link>Linked\AppCommands\ViewerNavigation.vb</Link>
+    </Compile>
+    <!-- L0316: the Share Manager's command table and the composer of docs/CLI.md (both pure). -->
+    <Compile Include="..\..\src\AppCommands\ShareManagerCommandTable.vb">
+      <Link>Linked\AppCommands\ShareManagerCommandTable.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\AppCommands\CliDocument.vb">
+      <Link>Linked\AppCommands\CliDocument.vb</Link>
+    </Compile>
+    <!-- L0320: the script recipes page, a render target of the same two tables (pure). -->
+    <Compile Include="..\..\src\AppCommands\CliRecipes.vb">
+      <Link>Linked\AppCommands\CliRecipes.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\MonotonicClock.vb">
       <Link>Linked\MonotonicClock.vb</Link>
     </Compile>

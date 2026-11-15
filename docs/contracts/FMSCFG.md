@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `FMSCFG` |
-| **Version** | 2.5, active (since 2026-10-07; 2.5 of 2026-10-17; read on 2026-10-20: the rules, `CONFIG_FORMAT.md` and the 2.5 amendment). Owner: FMS Companion (the Go worker repository) |
+| **Version** | 2.6, active (since 2026-10-07; read at 2.6 on 2026-11-15, L0323 catch-up, from 2.5 as read on 2026-10-20; 2.6 of 2026-10-29 keeps `schemaVersion` 2 and both canonical vectors byte-identical). Registry row `partial 2.6`; open, dated 2026-11-15: item C3, a `rendezvousTunnel` path is written only beside a direct path (`ShareConfigBuilder.AppendExchangePaths` has no such guard and its test), and the viewer's own `FMSCFG` registry row is not written yet; ticket L0328. Owner: FMS Companion (the Go worker repository) |
 | **Home** | `config-interchange/README.md` and `CONFIG_FORMAT.md` in the shared contracts catalog |
 | **Role here** | **producer and consumer**, modern only. Producers: the Share Manager (`src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb`, `ShareText.vb`, `ExchangeExport.vb`; the worker's own exporter is unused here) and, as a second producer, the viewer (`src/Resources/FmsConfigExport.vb`, published through `ExportWriter.vb`). Consumer: the viewer, through one reader (`src/Resources/FmsConfigReader.vb`, field table `FmsImportRules.vb`, entry `PhoneConnectionIntake.vb`). The Share Manager reads no `.fmscfg` |
 

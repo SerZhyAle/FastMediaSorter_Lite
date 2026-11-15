@@ -121,82 +121,39 @@ Friend Module Program
     <STAThread>
     Friend Sub Main(args As String())
         AppFileLogger.Initialize()
+        ' APP-COMMANDS (ticket L0316): a command line that IS a command (a verb word that names no file) is answered here, or
+        ' handed to the running manager, before the mutex is touched or anything is shown. Every other line - the empty one,
+        ' --tray, a folder, each spelling the program shipped - is sorted below exactly as it always was.
+        Dim commandExit As Integer = 0
+        Dim startPlan As LaunchPlan = Nothing
+        If ShareManagerCommandClient.TryRun(args, commandExit, startPlan) Then
+            Environment.ExitCode = commandExit
+            Return
+        End If
         ' What only this program knows (host mode, the worker's reachability), for the hosting report
         ' of "Send the log to the author" (ticket 182 L-4) - registered before anything can ask.
         HostingContext.Register()
-        ' Sort the arguments into: silent-tray flag, explicit show-window request, folder.
-        Dim silentTray As Boolean = False
-        Dim windowRequested As Boolean = False
-        Dim addResourceRequested As Boolean = False
-        Dim addResourceCameraRequested As Boolean = False
+        ' Sort the arguments into: silent-tray flag, explicit show-window request, folder - or take the plan of a command
+        ' whose cold start is "start" (a verb that found no manager makes this process the manager).
+        Dim plan As LaunchPlan = If(startPlan, LaunchArguments.Classify(args))
+        Dim silentTray As Boolean = plan.SilentTray
+        Dim windowRequested As Boolean = plan.WindowRequested
+        Dim addResourceRequested As Boolean = plan.AddResourceRequested
+        Dim addResourceCameraRequested As Boolean = plan.AddResourceCameraRequested
         ' Spec 230: the two clipboard shortcuts. Neither asks for the window: the action is the whole request.
-        Dim clipboardSendRequested As Boolean = False
-        Dim clipboardGetRequested As Boolean = False
+        Dim clipboardSendRequested As Boolean = plan.ClipboardSendRequested
+        Dim clipboardGetRequested As Boolean = plan.ClipboardGetRequested
         ' Ticket 222: the viewer's schedule launcher passes ONE token ("::fms-schedule::" + a folder) - never a bare
-        ' folder, which this program would take for a folder to share.
-        Dim schedulePayload As String = ""
-        Dim folder As String = Nothing
-        If args IsNot Nothing Then
-            For Each a As String In args
-                If String.Equals(a, TrayFlag, StringComparison.OrdinalIgnoreCase) OrElse
-                   String.Equals(a, "/tray", StringComparison.OrdinalIgnoreCase) Then
-                    silentTray = True
-                ElseIf ClipboardSwitchOf(a) = ClipboardSwitch.Send Then
-                    ' Checked before the folder branch: the marker form has no leading "-" and would be taken for a path.
-                    clipboardSendRequested = True
-                ElseIf ClipboardSwitchOf(a) = ClipboardSwitch.Receive Then
-                    clipboardGetRequested = True
-                ElseIf String.Equals(a, AddResourceCameraFlag, StringComparison.OrdinalIgnoreCase) OrElse
-                       String.Equals(a, "/add-resource-camera", StringComparison.OrdinalIgnoreCase) OrElse
-                       String.Equals(a, AddResourceCameraCommand, StringComparison.Ordinal) Then
-                    windowRequested = True
-                    addResourceCameraRequested = True
-                ElseIf String.Equals(a, AddResourceFlag, StringComparison.OrdinalIgnoreCase) OrElse
-                       String.Equals(a, "/add-resource", StringComparison.OrdinalIgnoreCase) OrElse
-                       String.Equals(a, AddResourceCommand, StringComparison.Ordinal) Then
-                    ' Same shape as the show-window marker below: an explicit request for the window, plus the
-                    ' intent of what to open in it. Checked before the folder branch for the same reason.
-                    windowRequested = True
-                    addResourceRequested = True
-                ElseIf a.StartsWith(CompanionCommand.ScheduleCommandPrefix, StringComparison.Ordinal) Then
-                    ' Validated by the same parser a running instance applies; an invalid one is just a show-window.
-                    windowRequested = True
-                    If CompanionCommand.Parse(a).Kind = CompanionCommandKind.Schedule Then schedulePayload = a
-                ElseIf String.Equals(a, ShowWindowFlag, StringComparison.OrdinalIgnoreCase) OrElse
-                       String.Equals(a, "/show", StringComparison.OrdinalIgnoreCase) OrElse
-                       String.Equals(a, ShowWindowCommand, StringComparison.Ordinal) Then
-                    ' Checked BEFORE the folder branch: the marker has no leading "-",
-                    ' so it would otherwise be taken for a path to share.
-                    windowRequested = True
-                ElseIf folder Is Nothing AndAlso Not String.IsNullOrWhiteSpace(a) AndAlso Not a.StartsWith("-", StringComparison.Ordinal) Then
-                    folder = a
-                End If
-            Next
-        End If
+        ' folder, which this program would take for a folder to share. The broadcast launcher's marker likewise (L0316).
+        Dim schedulePayload As String = plan.SchedulePayload
+        Dim broadcastPayload As String = plan.BroadcastPayload
+        Dim folder As String = plan.Folder
 
         ' What a second instance forwards to the first: the folder, an explicit show-window
         ' request, or the plain-start marker (which the running instance answers per the
         ' startup option). A silent logon launch that finds us already up forwards NOTHING -
         ' there is nothing to do and a boot must stay quiet.
-        Dim payload As String
-        Dim clipboardPayload As String = ClipboardPayloadOf(clipboardSendRequested, clipboardGetRequested)
-        If clipboardPayload.Length > 0 Then
-            payload = clipboardPayload
-        ElseIf Not String.IsNullOrEmpty(folder) Then
-            payload = folder
-        ElseIf addResourceCameraRequested Then
-            payload = AddResourceCameraCommand
-        ElseIf addResourceRequested Then
-            payload = AddResourceCommand
-        ElseIf schedulePayload.Length > 0 Then
-            payload = schedulePayload
-        ElseIf windowRequested Then
-            payload = ShowWindowCommand
-        ElseIf silentTray Then
-            payload = ""
-        Else
-            payload = PlainStartCommand
-        End If
+        Dim payload As String = plan.ForwardPayload()
 
         Dim createdNew As Boolean = False
         Dim mtx As Mutex = Nothing
@@ -287,7 +244,7 @@ Friend Module Program
             ' folder to share, or --show from the viewer's Share Manager button), and every
             ' other launch - logon autostart, a double-click on the exe, a script -
             ' obeys the "Open the manager window at startup" option, off by default.
-            Using ctx As New TrayContext(folder, windowRequested, silentTray, addResourceRequested, schedulePayload, addResourceCameraRequested)
+            Using ctx As New TrayContext(folder, windowRequested, silentTray, addResourceRequested, schedulePayload, addResourceCameraRequested, broadcastPayload)
                 Application.Run(ctx)
             End Using
         Finally
@@ -335,6 +292,13 @@ Friend Module Program
     ''' notification, and the process ends. Returns the exit code (0 = done, 1 = not done).
     ''' </summary>
     Private Function RunClipboardOneShot(isSend As Boolean) As Integer
+        Dim outcome As ShareManagerClipboardOutcome = Nothing
+        Return RunClipboardOneShot(isSend, outcome)
+    End Function
+
+    ''' <summary>The same one action, also handing back what the command line's clipboard verbs answer (L0316): the closed
+    ''' outcome token, the byte count, the contract's exit code and the sentence. The returned code is still 0 or 1.</summary>
+    Friend Function RunClipboardOneShot(isSend As Boolean, ByRef outcome As ShareManagerClipboardOutcome) As Integer
         CompanionGlobals.LoadLanguage()
         Dim oneShot As Mutex = Nothing
         Dim owned As Boolean = False
@@ -350,7 +314,7 @@ Friend Module Program
                 AppFileLogger.LogException("Clipboard one-shot mutex", ex)
             End Try
             PrepareUi()
-            Return ClipboardOneShot.Run(isSend, alreadyRunning)
+            Return ClipboardOneShot.Run(isSend, alreadyRunning, outcome)
         Finally
             If oneShot IsNot Nothing Then
                 If owned Then
@@ -392,7 +356,7 @@ Friend Module Program
     ''' send that timed out has an UNCERTAIN outcome: the folder request is therefore never replayed
     ''' as a mutation by a fallback - the receiver de-duplicates what it did get.
     ''' </summary>
-    Private Function ForwardToRunningInstance(payload As String) As ForwardOutcome
+    Friend Function ForwardToRunningInstance(payload As String) As ForwardOutcome
         Dim bytes As Byte() = Nothing
         Dim refusal As PayloadRefusal
         If CompanionCommand.Parse(payload).Kind = CompanionCommandKind.Invalid OrElse

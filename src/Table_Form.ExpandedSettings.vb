@@ -1219,6 +1219,37 @@ Partial Public Class Table_Form
     End Sub
 
     ''' <summary>
+    ''' The one setting of APP-COMMANDS rule 13 (L0315): off by default, its own registry value
+    ''' (<see cref="AppCommands.AppCommandsSetting"/>), never exported and never changed by a command.
+    ''' </summary>
+    Private Sub AddAppCommandsRow(files As FlowLayoutPanel)
+        Dim check As New CheckBox With {.AutoSize = True}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    check.Checked = AppCommands.AppCommandsSetting.IsAllowed()
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
+        AddHandler check.CheckedChanged,
+            Sub()
+                If isUpdating Then Return
+                Try
+                    AppCommands.AppCommandsSetting.SetAllowed(check.Checked)
+                Catch ex As Exception
+                    AppFileLogger.LogException("App commands setting", ex)
+                End Try
+            End Sub
+        expandedRefreshActions.Add(refresh)
+        AddSettingRow(files, "app_commands", check, 34, True)
+    End Sub
+
+    ''' <summary>
     ''' The interface language (APP-SETTINGS rule 5): on the first page, every shipped language
     ''' by its endonym and never by a flag (ICON-EXTERNAL rule 6), applied at once to every open
     ''' window without a restart. The toolbar menu writes the same setting through

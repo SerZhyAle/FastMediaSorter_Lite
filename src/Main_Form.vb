@@ -419,6 +419,9 @@ Public Class Main_Form
                 Return
             End If
         End If
+
+        ' APP-COMMANDS (L0315): a command request carries its own tag; the file forward below is untouched.
+        If m.Msg = WM_COPYDATA AndAlso HandleAppCommandCopyData(m) Then Return
 #End If
 
         If m.Msg = WM_COPYDATA Then

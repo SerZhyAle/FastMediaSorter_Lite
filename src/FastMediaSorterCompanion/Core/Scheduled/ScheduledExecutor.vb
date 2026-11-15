@@ -91,9 +91,10 @@ Friend NotInheritable Class ScheduledServices
     ''' <summary>Backup (ticket L0298): the stored password of a sealed backup, "" when there is none on this PC.</summary>
     Friend Property BackupPassword As Func(Of String, String) =
         Function(id As String) New ScheduledBackupCredentialStore(ScheduledStore.DefaultFolder()).Read(id)
-    ''' <summary>Whether the FileDO found can run a numbered generation set. False until the generation and stem options are
-    ''' published by FileDO (L0298 blocker B-1b); the argument builder of step P4.1 is written against that spelling.</summary>
-    Friend Property FileDoHasBackupGenerations As Func(Of String, Boolean) = Function(exe As String) False
+    ''' <summary>Whether the FileDO found can run a numbered generation set (its help names `gen` and `stem`, FileDO SP-0208).</summary>
+    Friend Property FileDoHasBackupGenerations As Func(Of String, Boolean) = AddressOf FileDoBackupProbe.HasGenerations
+    ''' <summary>Where a backup run keeps its event file and its stop file: beside the operation store, never in either folder.</summary>
+    Friend Property BackupRunFolder As Func(Of String) = Function() Path.Combine(ScheduledStore.DefaultFolder(), "backup-runs")
 
     Friend Shared Function ForProduct(journal As ScheduledJournal) As ScheduledServices
         Dim services As New ScheduledServices With {.Protection = ProtectedFolders.ForThisMachine()}
@@ -221,7 +222,7 @@ Friend NotInheritable Class ScheduledExecutor
             If refusal IsNot Nothing Then
                 Adopt(result, refusal.StopResult)
             Else
-                ExecuteBackup(op, result)
+                ExecuteBackup(op, result, ct)
             End If
             Return
         End If
@@ -920,19 +921,94 @@ Friend NotInheritable Class ScheduledExecutor
     ' --- backup (ticket L0298) -----------------------------------------------------------------------
 
     ''' <summary>
-    ''' FileDO's `backup` of the source folder into the operation's own generation set. What is checked here holds for every
-    ''' run: both folders reachable, FileDO present and able to number generations. The launch and the reading of its
-    ''' `result` (generation, retiredGeneration; CLI-EVENT-STREAM 0.17 items D-F) are step P4.1, written against the option
-    ''' spelling FileDO publishes; until then a FileDO without the generation set is a wall the operation waits at.
+    ''' FileDO's `backup` of the source folder into the operation's own generation set (CLI-EVENT-STREAM 0.17 items D-H). FileDO
+    ''' builds the new generation under a partial name, reads it back, and only then replaces the slot it takes; this run reads
+    ''' the `result` and the exit class, journals the generation it wrote and the one it retired, and never touches a file itself.
+    ''' A refused definition parks the operation until it is edited; a passing obstacle is a wall the operation comes back from.
     ''' </summary>
-    Private Sub ExecuteBackup(op As ScheduledOperation, result As ScheduledRunResult)
+    Private Sub ExecuteBackup(op As ScheduledOperation, result As ScheduledRunResult, ct As CancellationToken)
         Dim problem As SideProblem = BackupPreflight(op)
         If problem.IsProblem Then
             HitWall(result, BackupWallCode(op, problem))
             Return
         End If
-        HitWall(result, "backup-filedo-unsupported")
+        Dim exe As String = services.LocateFileDo.Invoke()
+        Dim source As String = CompanionCommand.CanonicalFolder(op.Source.Path)
+        Dim destination As String = CompanionCommand.CanonicalFolder(op.Destination.Path)
+        Dim password As String = If(op.BackupSealed, services.BackupPassword.Invoke(op.Id), "")
+        ct.ThrowIfCancellationRequested()
+
+        Dim runFolder As String = services.BackupRunFolder.Invoke()
+        Dim tag As String = FillWorkFolders.OperationTag(op.Id)
+        Dim eventsFile As String = Path.Combine(runFolder, tag & BackupCommandLine.EventsSuffix)
+        Dim stopFile As String = Path.Combine(runFolder, tag & BackupCommandLine.StopSuffix)
+        Try
+            Directory.CreateDirectory(runFolder)
+            ' A stop file left by an earlier run would end this one at once; an old event file would be read as this run's.
+            File.Delete(stopFile)
+            File.Delete(eventsFile)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            AppFileLogger.LogException("Scheduled operations: backup run folder " & runFolder, ex)
+            HitWall(result, "filedo-start|" & runFolder)
+            Return
+        End Try
+
+        Dim stem As String = op.BackupStem
+        Dim launch As New FillLaunch With {.Exe = exe, .StopFile = stopFile}
+        launch.Arguments = BackupCommandLine.Arguments(source, destination, op.BackupKeepCount, stem, op.BackupSealed, eventsFile, stopFile)
+        If op.BackupSealed Then launch.ChildEnvironment(BackupCommandLine.PasswordVariable) = password
+        Dim outcome As FillLaunchOutcome = services.LaunchFill.Invoke(launch, ct)
+        Dim events As FillEvents = FillEvents.Parse(ReadEvents(eventsFile))
+        Try
+            File.Delete(stopFile)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            AppFileLogger.LogException("Scheduled operations: backup stop file", ex)
+        End Try
+
+        If Not outcome.Started Then
+            HitWall(result, "filedo-start|" & exe)
+            Return
+        End If
+        Dim ending As BackupEnding = BackupCommandLine.Classify(events, outcome.ExitCode, outcome.StopRequested)
+        result.Verdict = BackupCommandLine.Verdict(events, outcome.ExitCode)
+        result.Files = CInt(Math.Min(Integer.MaxValue, Math.Max(0L, If(events.Number("files"), 0L))))
+        result.Bytes = Math.Max(0L, If(events.Number("bytes"), 0L))
+
+        Select Case ending
+            Case BackupEnding.Done
+                Dim generation As Long? = events.Number("generation")
+                Dim artifact As String = If(generation.HasValue AndAlso generation.Value > 0,
+                    Path.Combine(destination, BackupCommandLine.GenerationName(stem, generation.Value, op.BackupSealed)), destination)
+                result.ArchivePath = If(generation.HasValue AndAlso generation.Value > 0, artifact, "")
+                Dim retired As Long? = events.Number("retiredGeneration")
+                If retired.HasValue AndAlso retired.Value > 0 Then
+                    ' The slot was taken by replacement after the new generation was verified (item D3).
+                    Journal(op, "backup-retire", Path.Combine(destination, BackupCommandLine.GenerationName(stem, retired.Value, op.BackupSealed)),
+                            artifact, "replaced")
+                End If
+                Journal(op, "backup", source, artifact, "done")
+                result.Outcome = ScheduledRunOutcome.Ok
+            Case BackupEnding.Stopped
+                Journal(op, "backup", source, destination, "stopped")
+                result.Outcome = ScheduledRunOutcome.Cancelled
+            Case BackupEnding.DefinitionRefused, BackupEnding.Obstacle
+                Journal(op, "backup", source, destination, If(ending = BackupEnding.DefinitionRefused, "refused", "wall"))
+                HitWall(result, BackupCommandLine.WallDetail(ending, events, outcome.ExitCode, source, destination, Directory.Exists(source)))
+            Case Else
+                Journal(op, "backup", source, destination, If(ending = BackupEnding.Failed, "failed", "not-proven"))
+                result.Outcome = ScheduledRunOutcome.Failed
+                result.Failed = 1
+                result.FirstError = ScheduledFailure.Coded(If(ending = BackupEnding.Failed, "backup-failed", "backup-not-proven"), source)
+        End Select
     End Sub
+
+    ''' <summary>A definition FileDO refused stays parked until the operation is edited (CLI-EVENT-STREAM 0.17 item F).</summary>
+    Private Shared Function IsRefusedDefinition(op As ScheduledOperation) As Boolean
+        If op.Halt <> ScheduledHalt.Wall Then Return False
+        Dim detail As String = If(op.HaltDetail, "")
+        Return detail.StartsWith("backup-source-refused", StringComparison.Ordinal) OrElse
+               detail.StartsWith("backup-destination-refused", StringComparison.Ordinal)
+    End Function
 
     ''' <summary>The wall a backup's preflight problem stands for, in the order the preflight checks them.</summary>
     Private Function BackupWallCode(op As ScheduledOperation, problem As SideProblem) As String
@@ -1033,7 +1109,11 @@ Friend NotInheritable Class ScheduledExecutor
         Dim op As ScheduledOperation = operation.Clone()
         ScheduledValidation.Normalize(op)
         If op.Action = ScheduledAction.FillFreeSpace Then Return FillPreflight(op)
-        If op.Action = ScheduledAction.Backup Then Return BackupPreflight(op)
+        If op.Action = ScheduledAction.Backup Then
+            ' A refused definition does not come back by itself at its slots; a manual run or an edit tries it again.
+            If IsRefusedDefinition(op) Then Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+            Return BackupPreflight(op)
+        End If
         Dim sourceOpen As ScheduledSideOpen = services.OpenSide.Invoke(op.Source)
         If sourceOpen.Problem.IsProblem Then Return sourceOpen.Problem
         Using sourceSide As IScheduledSide = sourceOpen.Side

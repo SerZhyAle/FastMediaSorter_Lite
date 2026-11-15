@@ -242,6 +242,16 @@ Namespace My
                 e.Cancel = True
                 Return
             End If
+
+            ' APP-COMMANDS (L0315): a command line is decided here, before the mutex, the logger's
+            ' first write or any window (rule 6). An ordinary launch - a path, an empty line,
+            ' ::fms-show-window::, -NoBack - is not a command and goes on exactly as before.
+            Dim command_Exit As Integer
+            If AppCommands.ViewerCommandClient.TryRun(rawCmdArgs, command_Exit) Then
+                Environment.ExitCode = command_Exit
+                e.Cancel = True
+                Return
+            End If
 #End If
 
             ' VB's IsSingleInstance only works for same exe-path launches. The named
@@ -289,6 +299,14 @@ Namespace My
                 If String.IsNullOrEmpty(file_Path) Then
                     file_Path = Main_Form.Show_Window_Command
                 End If
+#If Not NETFRAMEWORK Then
+                ' A cold-start "show" that lost the race to another launch is still a show, never a path; a cold "open"
+                ' carries its target, which is the text a bare launch of it would have forwarded (L0317).
+                If AppCommands.ViewerCommandClient.LaunchArgumentsConsumed Then
+                    file_Path = AppCommands.ViewerCommandClient.LaunchArgumentText(String.Empty)
+                    If String.IsNullOrEmpty(file_Path) Then file_Path = Main_Form.Show_Window_Command
+                End If
+#End If
 
                 Dim current_Id As Integer = Process.GetCurrentProcess().Id
                 Dim delivered As Boolean = False
@@ -345,7 +363,7 @@ Namespace My
         ''' bounded by <paramref name="send_Timeout_Ms"/>, and the process objects are released
         ''' by GetRunningViewerTargets whatever happens to a target meanwhile.
         ''' </summary>
-        Private Shared Function TryForwardOnce(payload_Bytes As Byte(), current_Id As Integer, send_Timeout_Ms As Integer) As ForwardAttempt
+        Friend Shared Function TryForwardOnce(payload_Bytes As Byte(), current_Id As Integer, send_Timeout_Ms As Integer) As ForwardAttempt
             Dim viewer_Found As Boolean = False
             For Each target As ViewerProcessTarget In GetRunningViewerTargets(current_Id)
                 viewer_Found = True

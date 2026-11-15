@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `USER-PLAYLIST` |
-| **Version** | 0.12, draft (read 2026-10-02 as "no role"; re-read 2026-10-07 with sections 6 to 9 and the four vectors, and the role corrected). Owner: StreamsPlayer |
+| **Version** | 0.12, draft (read 2026-10-02 as "no role"; re-read 2026-10-07 with sections 6 to 9 and the four vectors, and the role corrected; read again 2026-11-15, L0323 catch-up, the catalog is still at 0.12). Registry row `partial 0.12`; open, dated 2026-11-15: section 6 A (a `.sza-playlist.json` named explicitly is read as M3U text and gives per-line refusals, not one refusal naming the carrier) and rule 4's stable key (the in-file fold uses the `STREAM-BANK` identity, which merges `http` and `https` twins - a reading question filed with the catalog); ticket L0327. Owner: StreamsPlayer |
 | **Home** | `user-playlist/README.md` + `vectors/` in the shared contracts catalog |
 | **Role here** | consumer, **partial**, Extended M3U8 only: `src/Streams/M3uPlaylistReader.vb` reads `.m3u` / `.m3u8` files (one file or a folder, recursively) as the input of the `STREAM-BANK` producer (specification 022, [STREAM-BANK.md](STREAM-BANK.md)). Nothing is written back to a playlist and the JSON carrier is not read - section 6 A makes both legal |
 

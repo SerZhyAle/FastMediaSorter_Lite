@@ -14,6 +14,7 @@ import (
 	"fms/exchange-server/internal/deploy"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/notes"
 	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/settings"
 )
@@ -70,7 +71,14 @@ func withRunner(paths config.Paths, stderr io.Writer, f func(opRunner) int) int 
 			printf(stderr, "cannot open the settings standards: %v\n", err)
 			return exitConfig
 		}
-		ops := &admin.Ops{Accounts: store, Dir: dir, SaveLimits: saveLimitsTo(paths.Config), Settings: standards}
+		// the notes are erased with an account the operator removes offline too, and when its kind becomes a
+		// guest (DEVICE-EXCHANGE notes sync items AU and AO, ticket L0321); opening the store writes nothing
+		noteStore, err := notes.Open(paths.Dir, nil)
+		if err != nil {
+			printf(stderr, "cannot open the notes: %v\n", err)
+			return exitConfig
+		}
+		ops := &admin.Ops{Accounts: store, Dir: dir, SaveLimits: saveLimitsTo(paths.Config), Settings: standards, Notes: noteStore}
 		code := f(func(req admin.Request) (admin.Response, error) {
 			if stateMutation(req.Op) && logger == nil {
 				if err := os.MkdirAll(paths.LogsDir, 0o700); err != nil {

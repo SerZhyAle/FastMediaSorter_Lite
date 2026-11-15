@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `APP-ACTIVATION` |
-| **Version** | 0.13, draft (read 2026-10-20, specification 244; the text below was written against 0.11, read 2026-10-02 and 2026-10-07). Owner: CyrFlip. The transport this product ships is **declared and permitted**, not excepted: 0.11 section 7 item A admits `WM_COPYDATA` sent with a bounded wait. 0.12 (section 9) lets a product declare commands beyond scenario launch; 0.13 (the 2026-10-17 consolidation) adds the focus-only second start as an additional profile and asks for a test of a hung receiver and of another user or session |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.15, draft, the current catalog version; partial, dated 2026-11-15 in the registry. Open: the evidence leg of the 0.13 amendment - a test of a hung receiver, of another user or session and of a target that is not lost, for both receivers - and, for the Share Manager's clipboard commands, 0.12 section 9 B and C (ticket L0327). 0.14 section 10 item A closed the rule 5 mechanism question (a supported variant, not an exception); 0.15 asks nothing more here. Earlier reading: 0.13 (read 2026-10-20, specification 244; the text below was written against 0.11, read 2026-10-02 and 2026-10-07). Owner: CyrFlip. The transport this product ships is **declared and permitted**, not excepted: 0.11 section 7 item A admits `WM_COPYDATA` sent with a bounded wait. 0.12 (section 9) lets a product declare commands beyond scenario launch; 0.13 (the 2026-10-17 consolidation) adds the focus-only second start as an additional profile and asks for a test of a hung receiver and of another user or session |
 | **Home** | `app-activation/README.md` in the shared contracts catalog |
 | **Role here** | consumer - single-instance forwarding in the viewer (`src/Application_Events.vb`, both exes) and the Share Manager (`src/FastMediaSorterCompanion/Program.vb`), and the viewer's wake of the Share Manager (`src/Main_Form.ShareLauncher.vb`) |
 
@@ -33,14 +33,15 @@
   take the foreground (`AllowSetForegroundWindow`, `Application_Events.vb` and `Main_Form.ShareLauncher.vb`);
   the contract's `AttachThreadInput` bracket and the `WM_NULL` responsiveness probe before it are not used
   anywhere in the source - the hang the probe guards against cannot arise without the attach, and every
-  send already carries `SMTO_ABORTIFHUNG`. The owner reads that as this product's rule 5; a rejection of the
-  proposal reopens it as debt.
+  send already carries `SMTO_ABORTIFHUNG`. The owner reads that as this product's rule 5; the proposal was accepted
+  on 2026-11-12 and 0.14 section 10 item A makes this way a supported variant, so no exception is open for it.
 
 - **0.13 profile declaration.** Both receivers here are **forwarding profiles**: a second start hands its path
   or sentinel to the running window, so the payload rules above bind them. Neither is a payload-less focus-only
   profile, and neither creates a second window for a file target. A plain second start restores the window.
   Not run: a test against a hung receiver and against another user or session (the 0.13 acceptance evidence), so
-  neither is claimed.
+  neither is claimed; a dated exception since 2026-11-15 (ticket L0327). The bound and the "not lost" fallback
+  exist in code and are held by reading and fake-clock tests only.
 - **0.12 section 9 - the clipboard commands.** The Share Manager reads `/clipboard-send` and `/clipboard-get` on its
   command line, compared without regard to case, next to its own `--clipboard-send` / `--clipboard-get` and the
   wake sentinels below (`Program.ClipboardSwitchOf`). Not read: that a command arriving while its module is off

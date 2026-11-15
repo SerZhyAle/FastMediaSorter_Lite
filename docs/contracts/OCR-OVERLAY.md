@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-OVERLAY` |
-| **Version** | 1.3, active (re-read 2026-10-07; the catalog has not moved since 1.3 of 2026-10-02, and 1.1-1.3 are additive to what this product holds) |
+| **Version** | 1.4, active (read at 1.4 on 2026-11-15, L0323 catch-up, from 1.3 as re-read 2026-10-07; 1.4 owes this consumer nothing - no script check and no silent verdict - and 1.1-1.4 are additive to what this product holds; the three standing exceptions below keep their own dates) |
 | **Home** | `ocr-overlay/README.md` in the shared contracts catalog |
 | **Role here** | consumer - the in-app OCR + translation overlay (`src/Ocr/`, `src/Main_Form.Ocr*.vb`) |
 

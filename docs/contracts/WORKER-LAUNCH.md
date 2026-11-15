@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `WORKER-LAUNCH` |
-| **Version** | 1.0, active (since 2026-10-17; split out of `WORKER-IPC` 0.17). Owner: FMS Companion (the Go worker repository) |
+| **Version** | 1.0, active (since 2026-10-17; split out of `WORKER-IPC` 0.17; read again 2026-11-15, L0323 catch-up, the catalog is still at 1.0). Registry row `partial 1.0`; open, dated 2026-11-15: the user directory has no platform user-config fallback when `LOCALAPPDATA` is absent (unreachable through a host start, which always passes `--datadir`), and the identity migration script has no corrupt-identity or malformed-flag case, ticket L0328. Owner: FMS Companion (the Go worker repository) |
 | **Home** | `worker-launch/README.md` in the shared contracts catalog |
 | **Role here** | launcher - the Share Manager starts the worker (`src/FastMediaSorterCompanion/Core/WorkerProcess.vb`, `Core/ServiceControl.vb`) and the installer scripts register it (`publishing/installer/install-share-service.ps1`); the viewer only reads the worker's state directory for display (`src/Resources/WorkerShares.vb`). The worker is the producer of the flags and of the inspection JSON |
 

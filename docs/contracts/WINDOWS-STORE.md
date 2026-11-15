@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `WINDOWS-STORE` |
-| **Version** | 0.2 (draft; read at 0.1 on 2026-10-03 and 2026-10-07, read at 0.2 on 2026-10-20, specification 244). 0.2 (2026-10-17, additive) caps the search-term words, describes the whole-file refusal of an import and says how a BOM export is read; the table below is still the 0.1 reading of 2026-10-07 |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.5, draft, the current catalog version; partial, dated 2026-11-15 in the registry (ticket L0331). Open: Store rungs 5 and 6 of 0.4 section 4 and rules 20, 23 and 24 of section D are not read or run (this product uses the submission channel only as the read-only preflight `tools/lib/StoreChannel.ps1`, the upload stays manual by owner decision); standing: the listing builder 0.2 checks, rules 6 to 13 (two columns, the committed `listingData.csv` as the start) and rule 15 search terms. Earlier reading: 0.2 (draft; read at 0.1 on 2026-10-03 and 2026-10-07, read at 0.2 on 2026-10-20, specification 244). 0.2 (2026-10-17, additive) caps the search-term words, describes the whole-file refusal of an import and says how a BOM export is read; the table below is still the 0.1 reading of 2026-10-07 |
 | **Home** | `windows-store/README.md` in the shared contracts catalog |
 | **Owner** | StreamsPlayer |
 | **This product's role** | **producer** of the MSIX package for Store upload and of the listing copy |

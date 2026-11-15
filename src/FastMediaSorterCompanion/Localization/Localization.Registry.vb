@@ -51,6 +51,8 @@ Partial Public NotInheritable Class Localization
         AddDriveStrings()              ' spec 203 section 5.10 (T-UI-1): the Google Drive sign-in page of Manager settings
         AddRemoteAdminStrings()        ' ticket L0278 T-5: the remote administration window - banner words, the words of an outcome, the confirmation opt-out
         AddRemoteAdminCardStrings()    ' ticket L0278 T-6: the six cards of the remote administration window - captions, rows, columns, buttons
+        AddAppCommandStrings()         ' ticket L0316: the command-line answers (table linked from the viewer, L0315)
+        AddShareManagerCommandStrings() ' ticket L0316: what became of a folder offered by "share add"
     End Sub
 
     ''' <summary>

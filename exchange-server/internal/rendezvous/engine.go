@@ -12,6 +12,7 @@ import (
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/notes"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/settings"
 	"fms/exchange-server/internal/tunnel"
@@ -59,6 +60,10 @@ type EngineConfig struct {
 	// Settings is the store of the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296).
 	// Nil: the server does not list `settings` and ignores the frames, as 7.1 says of an unknown type.
 	Settings *settings.Store
+	// Notes is the store of the notes of every account (DEVICE-EXCHANGE 1.13, ticket L0321). Nil: the server
+	// does not list `notes` and ignores the frames, as 7.1 says of an unknown type. The feature is listed only
+	// when Features.Sealed is listed too (a note is a box): a store without it is as good as no store.
+	Notes *notes.Store
 }
 
 // Engine is the real Backend: accounts and enrollment (162), the directory and presence (163),
@@ -90,6 +95,10 @@ type ctlEntry struct {
 	cs       *ControlStream
 	interval time.Duration
 	deadline time.Time
+	// notesCursor is the paging state of a `full` notes listing in progress on this stream (ticket L0321
+	// Assumed 1): the revision of the last record sent, 0 when none is in progress. It lives in the entry of
+	// the stream, so it is forgotten with the stream - a drop, a revoke, a window that passed.
+	notesCursor int64
 }
 
 // NewEngine wires the directory's hooks and port granter to the engine and returns it.
@@ -101,7 +110,7 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
 		clip: clipboard.NewTable(cfg.Now, cfg.Rand),
 		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
-	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Settings: cfg.Settings, Sealed: cfg.Features.Sealed,
+	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Settings: cfg.Settings, Notes: cfg.Notes, Sealed: cfg.Features.Sealed,
 		Audit: admin.NewAuditTracker(), AuditLog: cfg.Audit}
 	if cfg.Rand != nil {
 		e.tunnels.SetRand(cfg.Rand)
@@ -209,6 +218,9 @@ func (e *Engine) features() []string {
 	}
 	if e.cfg.Settings != nil {
 		out = append(out, wire.FeatureSettings)
+	}
+	if e.notesListed() {
+		out = append(out, wire.FeatureNotes) // after settings (ticket L0321 Assumed 8)
 	}
 	return out
 }
@@ -337,6 +349,7 @@ func (e *Engine) Sweep(now time.Time) {
 	if err := e.cfg.Dir.Persist(now); err != nil {
 		e.cfg.Log.Error("store-write-failed", logx.Text("store", "directory"), logx.Text("error", err.Error()))
 	}
+	e.sweepNotes(now)
 }
 
 // Close ends every tunnel and releases every port, and writes what is only in memory.

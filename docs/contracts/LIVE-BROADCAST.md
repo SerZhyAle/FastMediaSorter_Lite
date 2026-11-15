@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `LIVE-BROADCAST` |
-| **Version** | 1.2, active (since 2026-10-07; 1.1 of 2026-10-17, 1.2 of 2026-10-19; read on 2026-10-20). Owner: FastMediaSorter Android |
+| **Version** | 1.8, active (since 2026-10-07; read at 1.8 on 2026-11-15, L0323 catch-up, from 1.2 as read on 2026-10-20; Implements stays `partial 1.0` in the registry). Exceptions open, dated 2026-11-15: items T and U (the consumer's reading of a deliberate end), items V and W (endpoint defaults: `targetLatencyMs` and a missing `mode`) and one reading question (item R, a descriptor without `auth`); ticket L0329. Owner: FastMediaSorter Android |
 | **Home** | `live-broadcast/README.md` in the shared contracts catalog, with `11_live_broadcast_contract.md` and the amendment files `13` to `16` that bind beside it |
 | **Role here** | **consumer** in the modern viewer (`src/LiveBroadcast/`, `src/LiveBroadcast_Form.vb`, `src/Main_Form.LiveBroadcast.vb`; one stream at a time), **producer** in the Share Manager (`src/LiveBroadcast/Producer/`, `src/FastMediaSorterCompanion/Core/`), and the relay, directory and cast carriage in `exchange-server/` under `DEVICE-EXCHANGE`. Modern only: the net48 fallback has no live surface |
 

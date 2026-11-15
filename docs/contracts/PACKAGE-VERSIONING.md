@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `PACKAGE-VERSIONING` |
-| **Version** | 0.5, draft (read 2026-10-07; first read 2026-10-02 against 0.2). Owner: FastMediaSorter Android |
+| **Version** | 0.8, draft (read at 0.8 on 2026-11-15, L0323 catch-up, from 0.5 as read 2026-10-07; first read 2026-10-02 against 0.2). The registry row records every entry as conforming or not applicable. Owner: FastMediaSorter Android |
 | **Home** | `package-versioning/README.md` in the shared contracts catalog |
 | **Role here** | consumer, **Windows desktop profile** (W1-W5): every shippable package of this product - both viewer exes, the Share Manager, the installer, the Server installer, the portable ZIP, the winget manifests and the Store MSIX - carries one mechanical stamp. Registered rendering: `dotted-loose` (0.4), the historical scheme of this product |
 

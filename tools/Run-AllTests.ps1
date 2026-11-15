@@ -30,13 +30,15 @@
                                        surface, the availability matrix against the packaging files, the component in development, the
                                        editions, the language count and the platform floor; offline)
 
-    These are UNIT/logic suites - fast, no network, no phone. Four live suites are opt-in:
+    These are UNIT/logic suites - fast, no network, no phone. Five live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it
     never starts a worker or touches its data), -OcrScenes drives the built mainline viewer
     over the OCR overlay scenes - minutes, a window on screen, the OCR settings borrowed and put
     back - -HtmlScenes opens a local .html in the built mainline viewer with the optional HTML
     viewer off and on (a window on screen, a real WebView2 browser process, the viewer settings
-    key exported, borrowed and restored byte for byte), and -DynAudit runs the dynamic-audit
+    key exported, borrowed and restored byte for byte), -AppCommandScenes drives the built viewer
+    and Share Manager through their command line only (APP-COMMANDS conformance cases, a window on
+    screen, the one setting AllowAppCommands borrowed and put back), and -DynAudit runs the dynamic-audit
     campaign of specification 209 (self-test, control run, measured scenes against an isolated
     profile; hours, injected input), so none of them is ever part of a default run.
 
@@ -61,6 +63,13 @@
     built bin\Release viewer with the HTML payload, an unlocked desktop, an installed WebView2 Runtime
     and no viewer running; scenes S1-S9, about three minutes). Without any of them the suite is
     COULD NOT VERIFY.
+
+.PARAMETER AppCommandScenes
+    Also run tests/Integration/AppCommandScenes.ps1 (ticket L0320, APP-COMMANDS 0.1 section 4: the live
+    half of the conformance cases C1-C13 - needs built bin\Release programs, an interactive desktop and
+    no viewer or Share Manager running; the net48 scene needs the x86 exe beside them). Without any of
+    them the suite is COULD NOT VERIFY. The decision half of every case is a unit fact in the viewer
+    and Share Manager suites and runs by default.
 
 .PARAMETER DynAudit
     Also run tools/dynaudit/DynAudit.ps1 (specification 209: the dynamic-audit campaign -
@@ -106,6 +115,7 @@ param(
     [switch]$Integration,
     [switch]$OcrScenes,
     [switch]$HtmlScenes,
+    [switch]$AppCommandScenes,
     [switch]$DynAudit,
     [switch]$UiAll,
     [switch]$SkipGo,
@@ -135,6 +145,7 @@ $plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } el
 if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
 if ($HtmlScenes)  { $plan += 'html-scenes' }
+if ($AppCommandScenes) { $plan += 'app-command-scenes' }
 if ($DynAudit)     { $plan += 'dynaudit' }
 $uiNote = if ($UiAll) { 'UI form checks included' } else { 'UI form checks left out (they run per change)' }
 Write-Subject 'Run-AllTests' "$($plan -join ', '); $uiNote; $(Get-TreeLabel $root)"
@@ -371,6 +382,9 @@ if ($OcrScenes) {
 }
 if ($HtmlScenes) {
     Invoke-ScriptSuite 'html-scenes' 'HTML viewer scenes' (Join-Path $root 'tests\Integration\HtmlViewerScenes.ps1')
+}
+if ($AppCommandScenes) {
+    Invoke-ScriptSuite 'app-command-scenes' 'APP-COMMANDS conformance scenes (live)' (Join-Path $root 'tests\Integration\AppCommandScenes.ps1')
 }
 if ($DynAudit) {
     Invoke-ScriptSuite 'dynaudit' 'Dynamic audit campaign' (Join-Path $root 'tools\dynaudit\DynAudit.ps1')

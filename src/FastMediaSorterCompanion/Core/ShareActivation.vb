@@ -216,6 +216,17 @@ Friend NotInheritable Class FolderProposalQueue
         End Get
     End Property
 
+    ''' <summary>The requests the person has not answered yet: the queued ones and the one on the screen now (ticket L0319,
+    ''' what "exchange status" reports as pendingRequests). <see cref="PendingCount"/> alone would drop the question that is
+    ''' open, which is exactly the one a script asks about.</summary>
+    Friend ReadOnly Property OutstandingCount As Integer
+        Get
+            SyncLock gate
+                Return outstanding.Count
+            End SyncLock
+        End Get
+    End Property
+
     Friend Function Offer(canonicalFolder As String, isAlreadyShared As Func(Of String, Boolean)) As ProposalVerdict
         SyncLock gate
             Dim now As Long = clock()

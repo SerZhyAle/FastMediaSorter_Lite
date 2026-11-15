@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` |
-| **Version** | catalog 0.36 / 0.24 / 0.12, all draft (read 2026-10-20, specification 244). The vendored vocabulary and the 106 glyph files this product renders (105 catalog records and the `action.pin--off` state; none product-drawn) are imported at these versions: `assets/glyphs/PROVENANCE.txt` names them and `tools/Sync-IconGlyphs.ps1 -Check` exits 0 (2026-10-20). Since 0.33 the catalog made the `app.help` names normative and gave `action.paste` its 1 px inset (0.34), added `app.tour` (0.35), turned `action.paste` active (0.36), and moved the button, group-marker, navigation-policy and size-floor rules out of `ICON-RENDER` into the UI contracts (`ICON-RENDER` 0.20 to 0.24); `ICON-EXTERNAL` did not move. **Re-imported 2026-10-29 at `ICON-SET` 0.37 (specification 279 T-3):** `tools/Sync-IconGlyphs.ps1 -Check` exits 0 with 113 glyph files, the two added being `nav.dropdown` and `nav.go-to`, which the chrome's menu button, path list and submenu rows draw (`BUTTONS` 2.0 section 2 rule 3). **Added 2026-10-29 (specification L0281 T-3a):** `action.reorder` ("Drag to reorder", two bars), the move handle of a movable floating panel, vendored byte-identical from the catalog with its provenance line and declared in the script (114 glyph files). 0.37 adds one `proposed` record (`nav.menu`), names in ten further languages and the `source.exchange-server` drawing in the vocabulary only (the catalog's `glyphs/` folder still shows the 0.36 drawing until its exporter runs); no `active` record changed its picture or canonical name. The 0.37 amendment was not read for conformance and the counts above are the 2026-10-20 reading. The registry row and its dated exceptions say what is proven |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at `ICON-RENDER` 0.25, `ICON-SET` 0.41 and `ICON-EXTERNAL` 0.12, the current catalog versions. Implements: `ICON-SET` 0.39 - the vendored vocabulary is stamped 0.39 in `assets/glyphs/PROVENANCE.txt` until `tools\Sync-IconGlyphs.ps1` runs again; its `-Check` exits 1 on four stamp lines and no glyph file differs, so the re-import to 0.41 is a release item (ticket L0325); `ICON-RENDER` 0.24, with 0.25 section 25 (one sibling set per surface) open: inventory the menus, pickers and rails of the viewer, the Share Manager and the site and write the migration plan (ticket L0325). Earlier reading, 2026-10-20 (specification 244): catalog 0.36 / 0.24 / 0.12, all draft. The vendored vocabulary and the 106 glyph files this product renders (105 catalog records and the `action.pin--off` state; none product-drawn) are imported at these versions: `assets/glyphs/PROVENANCE.txt` names them and `tools/Sync-IconGlyphs.ps1 -Check` exits 0 (2026-10-20). Since 0.33 the catalog made the `app.help` names normative and gave `action.paste` its 1 px inset (0.34), added `app.tour` (0.35), turned `action.paste` active (0.36), and moved the button, group-marker, navigation-policy and size-floor rules out of `ICON-RENDER` into the UI contracts (`ICON-RENDER` 0.20 to 0.24); `ICON-EXTERNAL` did not move. **Re-imported 2026-10-29 at `ICON-SET` 0.37 (specification 279 T-3):** `tools/Sync-IconGlyphs.ps1 -Check` exits 0 with 113 glyph files, the two added being `nav.dropdown` and `nav.go-to`, which the chrome's menu button, path list and submenu rows draw (`BUTTONS` 2.0 section 2 rule 3). **Added 2026-10-29 (specification L0281 T-3a):** `action.reorder` ("Drag to reorder", two bars), the move handle of a movable floating panel, vendored byte-identical from the catalog with its provenance line and declared in the script (114 glyph files). 0.37 adds one `proposed` record (`nav.menu`), names in ten further languages and the `source.exchange-server` drawing in the vocabulary only (the catalog's `glyphs/` folder still shows the 0.36 drawing until its exporter runs); no `active` record changed its picture or canonical name. The counts above are the 2026-10-20 reading; 0.37 to 0.41 were read on 2026-11-15 and the rule 6 first-shipper report for the 23 `proposed` records is a release obligation. The registry row and its dated exceptions say what is proven |
 | **Home** | `iconography/README.md` in the shared contracts catalog |
 | **Role here** | consumer - viewer, Share Manager and product site; `specification 027` (local specification) |
 
@@ -81,23 +81,25 @@ field, so the section 5 defaults for an unknown value do not arise. **`vocabular
 the `-Check` and the import mode, accepts a higher MINOR and never guesses a malformed or missing carrier
 (`tests/Integration/IconCatalogCarrier.ps1`, run by hand; the earlier dated exception is closed in the registry).
 
-## Adoption still open (read 2026-10-20)
+## Adoption still open (read 2026-11-15)
 
-One catalog record exists where the product still draws the nearest meaning: "Create desktop shortcuts" draws
-`action.add` (`action.create-shortcut`, 0.31); "Skip" drawing `media.next` is the 0.34 reading, not a gap. The
-`feature.server-relay` record is vendored and drawn by no control. Not checked: the inline `data-glyph` copies on
-the site pages against 0.36, and the names of the 0.31-0.36 records in the ten further languages. The open items
-are in the registry's dated exception on `ICON-SET` and in 239 CR-20.
+`action.skip` and `action.create-shortcut` are drawn (`AskSpecs.vb`, `Welcome_Form.vb`,
+`Share_Settings_Form.Clipboard.vb`; 0.37 item L settles the wizard skip), so the 2026-10-20 gap is closed. The
+`feature.server-relay` record is vendored and drawn by no control. Open: the Share Manager reuses ruled in 0.39
+(`content.person`, `app.schedule`), the child glyphs of the settings rail (6 rows draw one, the rest none) and the
+inventory of menus and pickers (`ICON-RENDER` 0.25 section 25; ticket L0325). Not checked: the inline `data-glyph`
+copies on the site pages against 0.41. The open items are in the registry's dated exceptions on `ICON-SET` and
+`ICON-RENDER` (2026-11-15) and in 239 CR-20.
 
 ## Deviations still open
 
 Each is a dated exception in the catalog registry. Meanings with no usable catalog picture yet - the random
 slideshow and the two filled shapes wait for variants the catalog still owes, the Share Manager's password eye
 for adopting `action.reveal` - keep their pre-contract pictures and are listed, with their control names, in
-`IconMap`; a test pins that list. The settings navigation's per-page identity inks are no longer a deviation
+`IconMap`; a test pins that list (four controls, `IconographyContractTests.vb:78`, dated 2026-11-15). The settings navigation's per-page identity inks are no longer a deviation
 (`ICON-RENDER` 0.18 section 11, the ink table `src/SettingsNavIconPalette.vb` with its 3 : 1 gates). The site
 theme switch still draws the kit's `◐` where `app.theme` is the decided glyph. The x86 fallback keeps its Unicode
 toolbar and its flags.
 
-The two exchange-server controls use the unmodified `EXCHANGE-MARK` 0.3 mono artwork while
-`PROPOSAL-2026-10-19-exchange-server-mark.md` awaits acceptance; their vocabulary ids stay empty.
+The two exchange-server controls use the unmodified `EXCHANGE-MARK` mono artwork; 0.37 accepted the vocabulary record
+`source.exchange-server` and the controls take it with the re-import to 0.41 (a release item, ticket L0325).

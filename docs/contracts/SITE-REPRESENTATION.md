@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-REPRESENTATION` |
-| **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096; unchanged on 2026-10-07, re-read that day) |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.2, draft, the current catalog version; partial, no new divergence. The earlier permanent exception for rule 4 is closed: the catalog adopted it as rule 4a (0.2 item B). Open: rules 5 to 10 and 12 on the ten function pages (not re-read; ticket 157 follow-ups), dated in the registry. Earlier reading: 0.1 (written 2026-10-06 by FastMediaSorter Android, ticket S4096; unchanged on 2026-10-07, re-read that day) |
 | **Home** | `product-site/SITE-REPRESENTATION.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); guide tier: rules 1-4 held by the positioning gate (ticket 155); rules 5-10 and 12 were run on the ten function pages on 2026-10-06 (specification 156) and fail on all ten (ticket 157) |
 
@@ -28,20 +28,14 @@
    Share Server`), declared in `tools/site-facts.json`; a colon-form edition name the file does not declare fails
    the gate. The Media Exchange Server is the fourth component (the third until specification L0297 of
    2026-11-10): **built, its shipping gate shut, so in no package**.
-   **Dated local exception to rule 4 as the catalog words it (owner decision 2026-10-26, specification 273 Q273-4;
-   it replaces the decision of 2026-10-20, specification 249, which named the server only within reach of a
-   development marker, and before it the Q155-2 ruling of 2026-10-06, which allowed one future-tense mention in
-   door 3):** the server is named wherever the components are listed, in the present tense, as what it does,
+   **Rule 4a (0.2 item B; no longer an exception).** The catalog adopted the product's reading of rule 4 as rule 4a,
+   so the exception recorded here since 2026-10-21 (specification 251 T-6, owner decision 2026-10-26,
+   specification 273 Q273-4) is closed and the proposal that carried it is folded in. How the product follows it:
+   the server is named wherever the components are listed, in the present tense, as what it does,
    with no promise marker at all (canon invariant 17: no surface carries one in any language - the list is
    `retiredPhrases` in `tools/site-facts.json`), never inside a link to a download, an installer, a release, a store or a winget
    command, never with a date, and its door carries no call to action; the availability matrix says "Not in this
-   package" for it, never a promise, and the Microsoft Store listing does not name it at all. The catalog amendment
-   (rule 4 and its registry row) is not written from this repository: `SITE-REPRESENTATION` is sealed and owned by
-   FastMediaSorter Android, so on 2026-10-21 (specification 251 T-6) it was filed as the proposal
-   `PROPOSAL-2026-10-21-component-in-development-may-be-named` beside the contract (status: proposed). That
-   proposal's wording belongs to the retired marker regime; specification 273 T-8 carries its correction. This
-   exception stands until the owner folds a corrected proposal in and the catalog says the same; then it is
-   removed from this pointer in the same edit.
+   package" for it, never a promise, and the Microsoft Store listing does not name it at all.
 4. **Keep the trust pages saying one thing** (rule 12): the install-trust page is held by
    `TrustPageContractTests`. The data claims of the ten function pages were read against `docs/privacy.html` on
    2026-10-06: the UPnP / reachability-check wording, the firewall step and several local files do not agree or
@@ -85,5 +79,5 @@ Rules 1 to 4 still hold: `tools/Test-SitePositioning.ps1` PASS (3 pillars, 41 re
 names, 33 reservation mentions, 118 typed claims in 60 files). The ten function pages (rules 5-10 and 12) were not
 re-read and the gaps of ticket 157 stand. One name question sits beside rule 4 and is the family map's, not this
 contract's: the visible full name is *Fast Media Sorter & Sharing for Windows* (`docs/guides/PRODUCT_NAMING.md`),
-while the `Tool` cell of `SITE-FAMILY-MAP` still carries the name this product had before that rename - see
-`docs/contracts/PAGE.md`.
+while the `Tool` cell of `SITE-FAMILY-MAP` then carried the name this product had before that rename (closed since
+`SITE-FAMILY-MAP` 1.9 made the cell the full name) - see `docs/contracts/PAGE.md`.

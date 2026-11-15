@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Id** | `UI-SIZING`, `BUTTONS`, `BOOLEAN-OPTION`, `COLLAPSIBLE-GROUP`, `SETTINGS-NAVIGATION` |
-| **Version** | 1.1 / 2.0 / 2.0 / 1.1 / 2.0, read 2026-10-20. Owner: shared |
+| **Version** | read at 1.2 / 2.2 / 2.2 / 1.3 / 2.3 on 2026-11-15 (L0323 catch-up; the current catalog versions). All five rows partial; exceptions open, dated 2026-11-15 in the registry: `UI-SIZING` s2 r3/r4 (Share Manager rail rows 26 px, Settings glyph tiers) and s4 (no 100/150/200 percent capture); `BUTTONS` s3 r4 (ellipsized chrome captions) and s5; `BOOLEAN-OPTION` s2/s3 (Welcome wizards) and s5; `COLLAPSIBLE-GROUP` s3 r6, s4 r2, s5 (not measured); `SETTINGS-NAVIGATION` 2.2 item E (rail child glyphs), s5 r4 (Settings cold open) and 2.1 item A, s6; ticket L0325 (cold open also L0279 T-1). Owner: shared |
 | **Home** | `ui-sizing/README.md`, `buttons/README.md`, `boolean-option/README.md`, `collapsible-group/README.md`, `settings-navigation/README.md` in the shared contracts catalog |
-| **Role here** | consumer, **migration open, no conformance claimed** (local specification 243, opened 2026-10-17). Surfaces: the modern viewer (chrome, dialogs, secondary windows, Settings window), the Share Manager and the official website with the offline help corpus. The net48 fallback is under the maintenance policy and is touched only where shared source reaches it |
+| **Role here** | consumer, **migration open, no full conformance claimed** (local specification 243, opened 2026-10-17; closed items and open items are in the registry block of 2026-11-15). Surfaces: the modern viewer (chrome, dialogs, secondary windows, Settings window), the Share Manager and the official website with the offline help corpus. The net48 fallback is under the maintenance policy and is touched only where shared source reaches it |
 
 ## What this repository holds
 

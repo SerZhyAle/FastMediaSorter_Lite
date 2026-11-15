@@ -129,6 +129,17 @@ func samples() []struct {
 		{"settings_saved", &SettingsSaved{AppID: "fms_win", Version: 1, UpdatedAt: "2026-11-10T02:00:00Z"}},
 		{"settings_get_standard", &SettingsGetStandard{AppID: "fms_win"}},
 		{"settings_standard_payload", &SettingsStandardPayload{AppID: "fms_win", FormatVersion: 1, SettingsPayload: sampleSettings, UpdatedAt: "2026-11-10T02:00:00Z"}},
+		{"notes_list", &NotesList{Since: int64p(7)}},
+		{"notes_changes", &NotesChanges{NotesRevision: 9, NotesHorizon: 3, More: true, Full: true, Records: []NoteRecord{
+			{NoteID: sampleNoteID, Revision: 8, StoredAt: "2026-11-14T10:00:00Z", SourceDeviceID: idA, Sealed: json.RawMessage(sampleBox)},
+			{NoteID: sampleNoteID2, Revision: 9, StoredAt: "2026-11-14T10:05:00Z", SourceDeviceID: idB, Deleted: true}}}},
+		{"notes_changes-empty", &NotesChanges{NotesRevision: 9}},
+		{"notes_put", &NotesPut{NoteID: sampleNoteID, BaseRevision: int64p(0), Sealed: json.RawMessage(sampleBox)}},
+		{"notes_put-delete", &NotesPut{NoteID: sampleNoteID, BaseRevision: int64p(8), Deleted: true}},
+		{"notes_stored", &NotesStored{NoteID: sampleNoteID, Revision: 10, StoredAt: "2026-11-14T10:10:00Z"}},
+		{"notes_changed", &NotesChanged{NotesRevision: 10}},
+		{"refused-note-conflict", noteConflict(NoteRecord{NoteID: sampleNoteID, Revision: 9, StoredAt: "2026-11-14T10:05:00Z",
+			SourceDeviceID: idB, Sealed: json.RawMessage(sampleBox)})},
 	}
 }
 
@@ -430,12 +441,13 @@ func TestVersionRefusalCarriesTheServersOwnSchemaVersion(t *testing.T) {
 	}
 }
 
-func TestReasonsAreTheTwentyOneOfTheContract(t *testing.T) {
+func TestReasonsAreTheTwentyTwoOfTheContract(t *testing.T) {
 	want := []string{"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision",
 		"capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
 		"invitation-invalid", "login-taken", "password-policy", "limit-reached", "not-permitted", "signed-out",
-		"admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible"}
-	if len(AllReasons) != 21 {
+		"admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible",
+		"note-conflict"}
+	if len(AllReasons) != 22 {
 		t.Fatalf("%d reasons", len(AllReasons))
 	}
 	for i, r := range AllReasons {
@@ -448,7 +460,7 @@ func TestReasonsAreTheTwentyOneOfTheContract(t *testing.T) {
 	}
 	defer func() {
 		if recover() == nil {
-			t.Error("Refuse accepted a reason outside the twenty-one")
+			t.Error("Refuse accepted a reason outside the twenty-two")
 		}
 	}()
 	Refuse(Reason("nope"))

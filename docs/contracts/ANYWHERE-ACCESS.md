@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `ANYWHERE-ACCESS` |
-| **Version** | 1.0, active (since 2026-10-07; read 2026-10-16: sections 1 to 4, 5.5, 8, the amendments A to L and `vectors/descriptor-v2.json`; the catalog is still at 1.0). Sections 5.1 to 5.4, 6 and 7 are the superseded 0.10 record and bind nothing: the exchange server is `DEVICE-EXCHANGE`. Owner: FastMediaSorter Android |
+| **Version** | 1.0, active (since 2026-10-07; read 2026-10-16: sections 1 to 4, 5.5, 8, the amendments A to L and `vectors/descriptor-v2.json`; read again 2026-11-15, L0323 catch-up, the catalog is still at 1.0). Sections 5.1 to 5.4, 6 and 7 are the superseded 0.10 record and bind nothing: the exchange server is `DEVICE-EXCHANGE`. Registry row `partial 1.0`; open, dated 2026-11-15: section 9 rungs 2, 3 and 4 as live-run evidence (no joint run recorded), amendment H's opt-in (the Drive record writer exists in `src/FastMediaSorterCompanion/Core/DriveShareRecords.vb` and writes no `access`, so the default is met) and amendments K and L (the outward link and the login per grant are shown as not available; the worker's per-grant login and the host's verbs are the open work, `WORKER-IPC` 0.19); ticket L0328. Owner: FastMediaSorter Android |
 | **Home** | `anywhere-access/README.md` in the shared contracts catalog |
 | **Role here** | **producer and consumer of the share descriptor** `FMSSFTP1`/`FMSSFTP2` (`src/Exchange/FmsSftpCode.vb`, `src/Resources/PhoneConnectionIntake.vb`; modern only), of the third-party port (section 5.5) and of the outward link and per-grant login (amendments K and L). The exchange-server half is carried by `DEVICE-EXCHANGE` |
 

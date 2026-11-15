@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `MEDIA-VIEWER` |
-| **Version** | 1.0, active (since 2026-10-17). Owner: shared (FastMediaSorter Android, Windows and Web) |
+| **Version** | 1.0, active (since 2026-10-17); read again on 2026-11-15 (L0323 catch-up) at 1.0, the current catalog version; partial. Open, dated 2026-11-15 in the registry (ticket L0327): rule 2, the manual random action can pick the current file; rule 5, only the stored choice `shuffleCycle` is a no-repeat order and plain random repeats; rules 1 (sort, filter), 2 (jump input), 3 (`Ctrl`+wheel) and 4 (collision naming, same-folder refusal, next item after a move) not yet read clause by clause. Owner: shared (FastMediaSorter Android, Windows and Web) |
 | **Home** | `media-viewer/README.md` in the shared contracts catalog |
 | **Role here** | implementer - the Windows viewer (`src/Main_Form*.vb`, `src/FileManager.vb`, the zoom and slideshow partials) for the functions it offers; a function the platform does not offer is declared, never silently different |
 

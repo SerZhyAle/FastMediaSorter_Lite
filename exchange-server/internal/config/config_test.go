@@ -84,6 +84,7 @@ func TestEveryRefusal(t *testing.T) {
 		"admin lifetime negative": func(c *Config) { c.Admin.SessionLifetimeMinutes = -1 },
 		"admin floor negative":    func(c *Config) { c.Admin.PasswordFloor = -1 },
 		"admin bad allowed addr":  func(c *Config) { c.Admin.AllowedAddresses = []string{"not-an-ip"} },
+		"notes count negative":    func(c *Config) { c.Limits.NotesPerAccount = -1 },
 	}
 	for name, f := range mutate {
 		c := good
@@ -300,10 +301,114 @@ func TestTheNewLimitNamesReplaceTheOldOnes(t *testing.T) {
 		}
 	}
 	for _, want := range []string{"maxAccounts", "tunnelsPerResource", "failedAuthRate", "failedEnrollRate", "failedHelloRate", "pairingRequestRate",
-		"broadcastStartRate", "devicesPerAccount", "resourcesPerAccount", "publicEndpoint", "manageSids"} {
+		"broadcastStartRate", "devicesPerAccount", "resourcesPerAccount", "publicEndpoint", "manageSids", "notesPerAccount"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("the member %q is missing from the defaults", want)
 		}
+	}
+}
+
+// notesCountRefusal is the text Validate gives for a negative limits.notesPerAccount.
+const notesCountRefusal = "limits.notesPerAccount: must be 0 (the default, 5000) or a number of at least 1"
+
+// TestNotesPerAccountDefaultRoundTripAndRefusal is ticket L0321 (DEVICE-EXCHANGE item FL, criterion 8):
+// limits.notesPerAccount is the count of note records one account may hold, a deployment default read at start.
+// The default is 5000, an absent member keeps it, 0 is accepted as written (the policy turns it into the
+// default, see policyOf in the command), the member survives a save and a later rewrite of the file, and a
+// negative is refused with a stated reason.
+func TestNotesPerAccountDefaultRoundTripAndRefusal(t *testing.T) {
+	if DefaultNotesPerAccount != 5000 {
+		t.Fatalf("the default count of item FL is 5000, the constant is %d", DefaultNotesPerAccount)
+	}
+	c := Default()
+	if c.Limits.NotesPerAccount != DefaultNotesPerAccount {
+		t.Fatalf("Default() carries %d, want the default %d", c.Limits.NotesPerAccount, DefaultNotesPerAccount)
+	}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("the defaults do not validate: %v", err)
+	}
+
+	dir := t.TempDir()
+	p := filepath.Join(dir, FileName)
+
+	// the first-run file names the member, with the default
+	if _, err := LoadOrInit(p); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"notesPerAccount": 5000`) {
+		t.Error("the first-run file does not carry limits.notesPerAccount 5000")
+	}
+
+	// a file is laid over the defaults: an absent member keeps 5000, a number is read as written, 0 stays 0
+	for name, tc := range map[string]struct {
+		file string
+		want int
+	}{
+		"no limits at all":       {`{"listen":":9999"}`, DefaultNotesPerAccount},
+		"limits without it":      {`{"limits":{"maxAccounts":3}}`, DefaultNotesPerAccount},
+		"zero":                   {`{"limits":{"notesPerAccount":0}}`, 0},
+		"a number":               {`{"limits":{"notesPerAccount":7}}`, 7},
+		"the least positive one": {`{"limits":{"notesPerAccount":1}}`, 1},
+		"a large number":         {`{"limits":{"notesPerAccount":1000000}}`, 1000000},
+	} {
+		if err := os.WriteFile(p, []byte(tc.file), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		got, err := Load(p)
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if got.Limits.NotesPerAccount != tc.want {
+			t.Errorf("%s: notesPerAccount %d, want %d", name, got.Limits.NotesPerAccount, tc.want)
+		}
+		if err := got.Validate(); err != nil {
+			t.Errorf("%s: refused: %v", name, err)
+		}
+	}
+
+	// save and load give the number back, and a later rewrite for another setting keeps it
+	c.Limits.NotesPerAccount = 7
+	if err := Save(p, c); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ = os.ReadFile(p)
+	if !strings.Contains(string(raw), `"notesPerAccount": 7`) {
+		t.Error("Save did not write limits.notesPerAccount 7")
+	}
+	back, err := Load(p)
+	if err != nil || back.Limits.NotesPerAccount != 7 {
+		t.Fatalf("round trip: %v, notesPerAccount %d", err, back.Limits.NotesPerAccount)
+	}
+	back.Limits.DevicesPerAccount = 11
+	if err := Save(p, back); err != nil {
+		t.Fatal(err)
+	}
+	again, err := Load(p)
+	if err != nil || again.Limits.NotesPerAccount != 7 || again.Limits.DevicesPerAccount != 11 {
+		t.Fatalf("a rewrite for another limit: %v, notesPerAccount %d, devicesPerAccount %d", err, again.Limits.NotesPerAccount, again.Limits.DevicesPerAccount)
+	}
+
+	// a negative is refused with the code's text, whether it was set in memory or read from a file
+	for _, n := range []int{-1, -5000} {
+		c.Limits.NotesPerAccount = n
+		if err := c.Validate(); err == nil || err.Error() != notesCountRefusal {
+			t.Errorf("notesPerAccount %d: %v, want %q", n, err, notesCountRefusal)
+		}
+	}
+	if err := os.WriteFile(p, []byte(`{"limits":{"notesPerAccount":-3}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	neg, err := Load(p) // Load does not validate
+	if err != nil || neg.Limits.NotesPerAccount != -3 {
+		t.Fatalf("Load of a negative: %v, notesPerAccount %d", err, neg.Limits.NotesPerAccount)
+	}
+	if err := neg.Validate(); err == nil || err.Error() != notesCountRefusal {
+		t.Errorf("a negative read from the file: %v, want %q", err, notesCountRefusal)
 	}
 }
 

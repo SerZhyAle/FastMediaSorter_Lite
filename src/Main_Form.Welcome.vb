@@ -45,7 +45,8 @@ Partial Public Class Main_Form
     Private Sub CaptureWelcomeStartState()
         Try
             welcome_Fresh_Profile = Not WelcomeRules.HasViewerValues(StoredSettingNames())
-            Dim launchArgument As String = String.Join(" ", My.Application.CommandLineArgs)
+            ' A cold-start "show" command carried no file (APP-COMMANDS, L0315); a cold "open" carries its target (L0317).
+            Dim launchArgument As String = AppCommands.ViewerCommandClient.LaunchArgumentText(String.Join(" ", My.Application.CommandLineArgs))
             StripNoBackFlag(launchArgument)
             welcome_File_Argument = Not String.IsNullOrWhiteSpace(launchArgument)
             If WelcomeRules.DeferToNextLaunch(WelcomeDoneStored(), welcome_Fresh_Profile, welcome_File_Argument) Then

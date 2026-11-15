@@ -152,6 +152,10 @@ Short, practical walkthroughs on the site - one per task (English, Russian and U
 | [Resources](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html) | Open an SFTP server or a network share that needs a login like a folder |
 | [Android and SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Publish selected PC folders to your Android device: the first run, the router and the internet path, step by step |
 
+### Command line
+
+The viewer and the Share Manager answer one strict command line for scripts. `FastMediaSorter_LITE.exe commands --json` and `FastMediaSorterCompanion.exe commands --json` print what each program accepts, without opening a window. A command that works with your files, the screen, the clipboard or the network is held by one setting, which is off until you turn it on. The full reference is [docs/CLI.md](docs/CLI.md); the scripting recipes (schedule a copy of a folder, save a screenshot to a file) are in [Command line recipes](docs/guides/COMMAND_LINE_RECIPES.md).
+
 ## Two programs, one app
 
 The package ships **two viewers side by side in the same folder**, and the installer

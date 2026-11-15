@@ -2,6 +2,7 @@
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows.Forms
+Imports AppCommandsLib = FastMediaSorterCompanion.AppCommands
 
 ''' <summary>
 ''' Tray-resident application host. Companion is ALWAYS tray-resident (its normal
@@ -11,7 +12,7 @@ Imports System.Windows.Forms
 ''' MainWindow and, on launch, silently resumes sharing if the user ever shared
 ''' before (ResumeShareIfEnabled analogue).
 ''' </summary>
-Friend NotInheritable Class TrayContext
+Partial Friend NotInheritable Class TrayContext
     Inherits ApplicationContext
 
     Private ReadOnly _notifyIcon As NotifyIcon
@@ -25,6 +26,8 @@ Friend NotInheritable Class TrayContext
     Private _pendingStartupAddResourceCamera As Boolean
     Private _pendingStartupSchedule As Boolean
     Private _pendingStartupScheduleFolder As String = ""
+    Private _pendingStartupBroadcast As Boolean
+    Private _pendingStartupBroadcastPath As String = ""
     ''' <summary>Spec 230: the clipboard functions' one coordinator, shared with the main window - one operation at a time holds
     ''' across the window's buttons, these tray items and a desktop shortcut's wake.</summary>
     Private ReadOnly _clipboard As ClipboardCoordinator = ClipboardCoordinator.Current
@@ -44,9 +47,11 @@ Friend NotInheritable Class TrayContext
     ''' <param name="schedulePayload">Ticket 222: the viewer's schedule launcher cold-started this exe with
     ''' "::fms-schedule::" + a folder; the page opens once the message loop runs, the folder pre-filling an editor.</param>
     ''' <param name="addResourceCameraRequested">Spec 227: the launch asked to scan a QR code with the PC's camera.</param>
+    ''' <param name="broadcastPayload">Ticket L0316: "::fms-broadcast::" + a path (the viewer's broadcast launcher, or
+    ''' <c>broadcast open --path</c>, cold-started this exe); the broadcasts window opens once the message loop runs.</param>
     Friend Sub New(initialFolder As String, Optional windowRequested As Boolean = False, Optional silentLaunch As Boolean = False,
                    Optional addResourceRequested As Boolean = False, Optional schedulePayload As String = "",
-                   Optional addResourceCameraRequested As Boolean = False)
+                   Optional addResourceCameraRequested As Boolean = False, Optional broadcastPayload As String = "")
         ' Capture before resume or a window can write any manager settings. Silent/folder launches only leave the pending marker.
         Dim fresh As Boolean = ManagerWelcomeStore.CaptureFreshProfile()
         Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), fresh,
@@ -67,6 +72,7 @@ Friend NotInheritable Class TrayContext
         _messageWindow = New MessageWindow()
         _messageWindow.StageFolder = AddressOf StageFolder
         AddHandler _messageWindow.CommandAccepted, AddressOf OnPayloadReceived
+        AddHandler _messageWindow.AppCommandReceived, AddressOf RunAppCommand
         AddHandler Application.Idle, AddressOf OnFirstIdle
 
         _statsTimer = New Timer With {.Interval = 30000}
@@ -123,6 +129,10 @@ Friend NotInheritable Class TrayContext
             If Not String.IsNullOrEmpty(schedulePayload) AndAlso Not welcomeDue Then
                 _pendingStartupSchedule = True
                 _pendingStartupScheduleFolder = CompanionCommand.Parse(schedulePayload).TargetPath
+            End If
+            If Not String.IsNullOrEmpty(broadcastPayload) AndAlso Not welcomeDue Then
+                _pendingStartupBroadcast = True
+                _pendingStartupBroadcastPath = CompanionCommand.Parse(broadcastPayload).TargetPath
             End If
         ElseIf Not silentLaunch Then
             ShowTrayHint()
@@ -630,6 +640,7 @@ Friend NotInheritable Class TrayContext
     ''' running flag directly (never re-fetches on the UI thread - a blocking
     ''' await there can deadlock).</summary>
     Private Sub RefreshTrayState(running As Boolean)
+        _sharingNow = running   ' what the "status" command reports (L0316); the tooltip below is the same fact in words
         Try
             If _notifyIcon Is Nothing Then Return
             _notifyIcon.Text = If(running,
@@ -878,6 +889,10 @@ Friend NotInheritable Class TrayContext
         If _pendingStartupSchedule Then
             _pendingStartupSchedule = False
             ShowScheduledOperations(_pendingStartupScheduleFolder)
+        End If
+        If _pendingStartupBroadcast Then
+            _pendingStartupBroadcast = False
+            ShowBroadcastsWindow(_pendingStartupBroadcastPath)
         End If
     End Sub
     ''' <summary>The receiver's decision for a validated folder request, taken synchronously so
@@ -1193,16 +1208,67 @@ Friend NotInheritable Class TrayContext
         ''' <summary>A request that passed every check and was acknowledged.</summary>
         Public Event CommandAccepted(command As CompanionCommand)
 
+        ''' <summary>Ticket L0316: a command request of the profile (tag "FMSC") that was decoded, parsed and whose reply path
+        ''' lies in this program's reply folder. Raised from a posted message, never from inside the sender's
+        ''' SendMessage: the answer 1 has already been returned, so the work may show windows and wait.</summary>
+        Public Event AppCommandReceived(request As AppCommandsLib.CommandRequest)
+
         ''' <summary>Stages a validated folder request (the receiver's synchronous half of the
         ''' decision); False means the queue is full and the sender gets ack 0.</summary>
         Public Property StageFolder As Func(Of CompanionCommand, Boolean)
+
+        Private Const WM_APP_COMMAND As Integer = &H8000 + 41   ' WM_APP + 41: a taken command waits in the queue
+        Private ReadOnly _taken As New System.Collections.Concurrent.ConcurrentQueue(Of AppCommandsLib.CommandRequest)()
+
+        <DllImport("user32.dll", EntryPoint:="PostMessageW", ExactSpelling:=True, SetLastError:=True)>
+        Private Shared Function PostMessageW(hWnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr) As Boolean
+        End Function
 
         Public Sub New()
             Dim cp As New CreateParams() With {.Caption = Program.MessageWindowTitle}
             CreateHandle(cp)
         End Sub
 
+        ''' <summary>The transport half of a command request: decode, parse, check the reply path. 1 = taken (the sender
+        ''' then waits for the reply file), 0 = refused here (the sender reads it as a copy that does not understand).</summary>
+        Private Function TakeAppCommand(cds As Program.COPYDATASTRUCT) As Integer
+            Dim text As String = Nothing
+            Dim refusal As PayloadRefusal
+            If Not CopyDataTransport.TryDecode(cds.cbData, cds.lpData, text, refusal) Then
+                AppFileLogger.WriteLine("App command: a request with invalid or excessive data - ignored")
+                Return 0
+            End If
+            Dim request As AppCommandsLib.CommandRequest = Nothing
+            If Not AppCommandsLib.CommandRequest.TryParse(text, request) Then
+                AppFileLogger.WriteLine("App command: a request that is not a request line - ignored")
+                Return 0
+            End If
+            If Not AppCommandsLib.CommandFiles.IsValidReplyPath(AppCommandsLib.ShareManagerCommandTable.ReplyFolder, request) Then
+                ' Never write a file where a request says: only the one folder of this profile.
+                AppFileLogger.WriteLine("App command: a request with a reply path outside the reply folder - ignored")
+                Return 0
+            End If
+            _taken.Enqueue(request)
+            If Not PostMessageW(Handle, WM_APP_COMMAND, IntPtr.Zero, IntPtr.Zero) Then
+                Dim dropped As AppCommandsLib.CommandRequest = Nothing
+                _taken.TryDequeue(dropped)
+                Return 0
+            End If
+            Return 1
+        End Function
+
         Protected Overrides Sub WndProc(ByRef m As Message)
+            If m.Msg = WM_APP_COMMAND Then
+                Dim request As AppCommandsLib.CommandRequest = Nothing
+                While _taken.TryDequeue(request)
+                    Try
+                        RaiseEvent AppCommandReceived(request)
+                    Catch ex As Exception
+                        AppFileLogger.LogException("App command", ex)
+                    End Try
+                End While
+                Return
+            End If
             If m.Msg = Program.WM_COPYDATA Then
                 If m.LParam = IntPtr.Zero Then
                     m.Result = IntPtr.Zero
@@ -1210,6 +1276,10 @@ Friend NotInheritable Class TrayContext
                 End If
                 Try
                     Dim cds = CType(Marshal.PtrToStructure(m.LParam, GetType(Program.COPYDATASTRUCT)), Program.COPYDATASTRUCT)
+                    If cds.dwData = ShareManagerCommandClient.TagPointer Then
+                        m.Result = New IntPtr(TakeAppCommand(cds))
+                        Return
+                    End If
                     Dim command As CompanionCommand = Nothing
                     ' Transport and command are validated BEFORE anything is acknowledged. The
                     ' acknowledgement means "accepted for handling" - it says nothing about the

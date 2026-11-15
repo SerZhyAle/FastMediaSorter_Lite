@@ -529,6 +529,9 @@ Partial Public Class Main_Form
 
         Public Sub Apply(request As OpenRequest, probe As ArgumentProbe) Implements IOpenHost.Apply
             If request.Kind = OpenKind.Explicit Then
+#If Not NETFRAMEWORK Then
+                form.app_Last_Probe = probe
+#End If
                 form.ApplyArgument(request.Path, request.NoBack, probe, request.Ticket)
             Else
 #If Not NETFRAMEWORK Then
@@ -554,7 +557,12 @@ Partial Public Class Main_Form
         ' The request's identity is taken when it is ACCEPTED (inside BeginExplicit) - not read
         ' off media_Generation, which moves when media is displayed (ticket 106). Everything
         ' after the probe (ownership, lifetime, close admission) is rechecked on the UI thread.
-        ObserveOpen(open_Coordinator.BeginExplicit(argument_For_Path, is_No_Back_Flag_In_This_Call), "Probing a forwarded argument")
+        Dim accepted As Task(Of OpenOutcome) = open_Coordinator.BeginExplicit(argument_For_Path, is_No_Back_Flag_In_This_Call)
+        ObserveOpen(accepted, "Probing a forwarded argument")
+#If Not NETFRAMEWORK Then
+        ' The verb "open" (L0317) waits for this very open to land and answers with what it found.
+        NoteAppOpenTask(accepted)
+#End If
     End Sub
     ''' <summary>Acts on what the probe found. UI thread, both builds.</summary>
     Private Sub ApplyArgument(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean, probe As ArgumentProbe, ticket As Integer)
@@ -990,9 +998,19 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0025: Command line args count: " & My.Application.CommandLineArgs.Count.ToString)
 
 
-        If My.Application.CommandLineArgs.Count > 0 Then
+        Dim launch_Has_Argument As Boolean = My.Application.CommandLineArgs.Count > 0
+#If Not NETFRAMEWORK Then
+        ' A cold-start "show" (APP-COMMANDS, L0315) made this the first instance: its word is a command, not a file.
+        ' A cold-start "open" (L0317) carries its target as the text the bare launch would have taken.
+        Dim launch_Command_Line As String = AppCommands.ViewerCommandClient.LaunchArgumentText(String.Join(" ", My.Application.CommandLineArgs.ToArray()))
+        If AppCommands.ViewerCommandClient.LaunchArgumentsConsumed Then launch_Has_Argument = launch_Command_Line.Length > 0
+#End If
+        If launch_Has_Argument Then
             ' Branch 1 (§3.1): an explicit file always beats any memory.
             Dim fullCommandLine As String = String.Join(" ", My.Application.CommandLineArgs.ToArray())
+#If Not NETFRAMEWORK Then
+            fullCommandLine = launch_Command_Line
+#End If
             ProcessArgument(fullCommandLine)
         ElseIf TryResumeLastPlayedFile() Then
             ' Branch 2: the resume option took charge - independently of StartupOpenMode,
@@ -1152,6 +1170,9 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         ' The floating chrome: its window needs the final geometry, like the overlay above.
         ApplyModernChrome()
+
+        ' A cold "phone-code receive" (L0317) made this process the viewer: take its file now the window is up.
+        RunColdAppCommand()
 
         ' Ask the ten slots whether they are alive, in the background (§3.3, Ф4). Here
         ' rather than in Form1_Load on purpose: by the Shown event the first image is

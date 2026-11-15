@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `DIAGNOSTIC-REPORT` |
-| **Version** | 0.14, draft (since 2026-09-24; 0.12 of 2026-10-02, 0.13 of 2026-10-07, 0.14 of 2026-10-17; read on 2026-10-20: sections 2, 8 and 10 and the consolidation amendment). Owner: StreamsPlayer. Both proposals this product filed, value-aware redaction and tail-only logs with optional carriers, were folded into 0.12 |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.15, draft, the current catalog version; partial. Open, dated 2026-11-15 in the registry (ticket L0331): 0.15 item 3 - `environment.txt` writes `volume_metrics=none` (the 0.12 spelling) where the contract names `unavailable` or an absent key; no reader exists, so there is no effect. Earlier reading: 0.14 (since 2026-09-24; 0.12 of 2026-10-02, 0.13 of 2026-10-07, 0.14 of 2026-10-17; read on 2026-10-20: sections 2, 8 and 10 and the consolidation amendment). Owner: StreamsPlayer. Both proposals this product filed, value-aware redaction and tail-only logs with optional carriers, were folded into 0.12 |
 | **Home** | `diagnostic-report/README.md` in the shared contracts catalog |
 | **Role here** | **producer**, modern only: "send logs to the author" - `src/Support/LogPackage.vb`, `src/Table_Form.SendLogs.vb`, `src/Support/MailSender.vb`; the Share Manager packs the same archive through the linked module (`src/FastMediaSorterCompanion/Forms/SendLogsFlow.vb`). A second bundle producer exists, `publishing/installer/collect-host-state.ps1` (a host-state zip for the exchange server, behind the exchange gate) |
 
@@ -25,7 +25,7 @@
   block (the whole stream is redacted first, with the key state kept across lines and across sink calls). The offline
   collector `publishing/installer/collect-host-state.ps1` follows the same order and markers.
 - **The shape (0.12 items A, B, D).** `fms-logs-<version>-yyyyMMdd-HHmmss.zip`; `environment.txt` as `KEY=value`, UTC,
-  `schema_version=1` first, facts only, with the metric set stated (`volume_metrics=none`); the rolled-over log is
+  `schema_version=1` first, facts only, with the metric set stated (`volume_metrics=none` today; see the 0.15 item in the version row); the rolled-over log is
   bundled beside its current log. Retention does not apply: logs roll in place at 8 MB (item D).
 - **Evidence.** Each adopter tests the marker and the redaction on synthetic data: `LogPackageTests`,
   `LogPackageSourcesTests`, `LogTailSnapshotTests` and `DiagnosticRedactorTests` (the catalog's structured-value vector,

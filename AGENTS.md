@@ -61,6 +61,8 @@ Write VB.NET with `Option Explicit On`, `Option Strict On`, `Option Infer On`, a
 
 ## Testing Guidelines
 
+Drive or test the running programs through their command line, documented in `docs/CLI.md` and listed by `FastMediaSorter_LITE.exe commands --json` and `FastMediaSorterCompanion.exe commands --json` (contract `APP-COMMANDS` 0.1); do not simulate keys or clicks where a command exists. A new verb is a row in that program's table in `src/AppCommands/`, and `tools/Build-CliDocs.ps1` re-renders the documents.
+
 Use xUnit and name test files `*Tests.vb`; use focused, behavior-based test method names. Add unit coverage for pure logic and contract changes, especially serializer, localization, and platform-seam behavior. `Lite.Tests` compiles linked production files for both `net48` and `net10.0-windows`; record both targets as release evidence for shared changes. There is no stated coverage threshold.
 
 ## Commits and Pull Requests

@@ -276,7 +276,8 @@ func boolInt(b bool) int {
 	return 0
 }
 
-// knownRoles keeps only the roles of 6.1: the four of the first edition and `clipboard` (item BV).
+// knownRoles keeps only the roles of 6.1, as wire.KnownRoles lists them: the four of the first edition,
+// `clipboard` (item BV) and `notes` (1.13 item FI).
 func knownRoles(in []string) []string {
 	var out []string
 	for _, r := range in {

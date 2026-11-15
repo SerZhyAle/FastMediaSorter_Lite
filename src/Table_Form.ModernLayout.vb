@@ -1254,6 +1254,7 @@ Partial Public Class Table_Form
             Case "no_confirmation" : Return Localization.T("Не запрашивать подтверждение")
             Case "image_associations" : Return Localization.T("Форматы изображений")
             Case "video_associations" : Return Localization.T("Форматы видео")
+            Case "app_commands" : Return AppCommands.AppCommandsText.SettingLabel()
             Case "interface_language" : Return Localization.T("Язык интерфейса")
             Case "section_file_behavior" : Return Localization.T("Поведение файлов")
             Case "name_collision" : Return Localization.T("Совпадение имён")
@@ -1424,6 +1425,7 @@ Partial Public Class Table_Form
             Case "no_confirmation" : Return Localization.T("Отключает вопросы при перекодировании JPEG и операциях панели миниатюр. Удаление настраивается отдельно.")
             Case "image_associations" : Return Localization.T("Регистрирует программу для открытия изображений у текущего пользователя, без прав администратора.")
             Case "video_associations" : Return Localization.T("Регистрирует программу для открытия видео и аудио у текущего пользователя, без прав администратора.")
+            Case "app_commands" : Return Localization.T("Безопасные команды (commands, version, status, show, quit) работают всегда. Остальные команды из командной строки и других программ выполняются только при включённой настройке; ни одна команда её не меняет.")
             Case "interface_language" : Return Localization.T("Выберите, на каком языке показывать интерфейс.")
             Case "name_collision" : Return Localization.T("Что делать, если в папке-получателе уже есть файл с тем же именем.")
             Case "delete_to_recycle_bin" : Return Localization.T("На сетевом диске и съёмном носителе Корзины нет - там файл удаляется безвозвратно, и программа скажет об этом. Shift+DEL всегда удаляет мимо Корзины.")
@@ -1667,6 +1669,7 @@ Partial Public Class Table_Form
             Sub()
                 AddSettingRow(files, "video_associations", btn_Set_As_Default_Video, 230, True)
             End Sub)
+        RegisterSettingsRow("app_commands", Sub() AddAppCommandsRow(files))
         ' The language button (a flag menu) is replaced by the first page's selector.
         btn_Language.Visible = False
 

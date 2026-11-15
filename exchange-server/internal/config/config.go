@@ -75,6 +75,10 @@ type Limits struct {
 	// "Messages": a host setting, default DefaultWebSocketMessage = the largest relay chunk of item U with its
 	// length word); the server closes 1009 above it. 0 means the default. A page cuts at 256 KiB or less.
 	WebSocketMessageBytes int `json:"webSocketMessageBytes"`
+	// NotesPerAccount is the count of note records (tombstones included) one account may hold (DEVICE-EXCHANGE
+	// item FL, ticket L0321): a deployment default read at start. 0 means the default, DefaultNotesPerAccount;
+	// below 0 is invalid. It is not a per-account override and has no member on the administration wire.
+	NotesPerAccount int `json:"notesPerAccount"`
 }
 
 // Keepalive is the presence lifetime (DEVICE-EXCHANGE 7.3).
@@ -144,6 +148,11 @@ type Config struct {
 	dataDir string
 }
 
+// DefaultNotesPerAccount is the default of Limits.NotesPerAccount (item FL). It is the same number as
+// accounts.DefaultNotesPerAccount, which the policy takes for a 0; this package imports nothing of the server,
+// so the number is spelt here once more (as ClipboardBytes does for the clipboard's 5 GiB).
+const DefaultNotesPerAccount = 5000
+
 // DefaultWebSocketMessage is the default cap of one WebSocket message: the largest relay chunk of item U
 // (MaxChunkLen, 1 MiB) with its 4-byte length word (WEB-BINDING websocket-binding "Messages").
 const DefaultWebSocketMessage = 1048580
@@ -198,6 +207,8 @@ func Default() Config {
 			CastPendingPerAccount:  16,
 
 			WebSocketMessageBytes: DefaultWebSocketMessage,
+
+			NotesPerAccount: DefaultNotesPerAccount,
 		},
 		Keepalive: Keepalive{
 			Comment:          "A device proposes an interval; the server clamps it to min..max and takes it offline after windowMultiplier missed intervals.",
@@ -295,6 +306,9 @@ func (c Config) Validate() error {
 	}
 	if l.ClipboardBytes < 0 {
 		return errors.New("limits.clipboardBytes: must be 0 (clipboard off) or a number of bytes")
+	}
+	if l.NotesPerAccount < 0 {
+		return fmt.Errorf("limits.notesPerAccount: must be 0 (the default, %d) or a number of at least 1", DefaultNotesPerAccount)
 	}
 	if n := l.WebSocketMessageBytes; n != 0 && (n < MinWebSocketMessage || n > MaxWebSocketMessage) {
 		return fmt.Errorf("limits.webSocketMessageBytes: must be 0 (the default, %d) or %d..%d bytes", DefaultWebSocketMessage, MinWebSocketMessage, MaxWebSocketMessage)

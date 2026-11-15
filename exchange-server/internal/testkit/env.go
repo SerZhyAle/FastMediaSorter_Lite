@@ -17,6 +17,7 @@ import (
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/notes"
 	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/rendezvous"
@@ -62,6 +63,11 @@ type Options struct {
 	// Settings keeps the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296) in the data
 	// directory, and the server lists `settings` in features. Off by default: the transcripts of ticket 205 stand.
 	Settings bool
+	// Notes keeps the notes of the accounts (DEVICE-EXCHANGE 1.13, ticket L0321) in <DataDir>/notes.json, with the
+	// injected clock (Now), and hands the store to the engine. The server lists `notes` only when Sealed is on as
+	// well (a note is a box): Notes alone lists nothing, which a test of that rule relies on, so the option does not
+	// turn Sealed on. Off by default: the transcripts of the older tickets stand.
+	Notes bool
 	// LogFile also writes every log line to <DataDir>/logs/exchange.log (the real layout of ticket 182
 	// L-1), so a test can scan the directory the way the manifest test of ticket 167 does.
 	LogFile bool
@@ -103,6 +109,8 @@ type Env struct {
 	Params       rendezvous.Params
 	// Settings is the standards store when Options.Settings was set.
 	Settings *settings.Store
+	// Notes is the notes store when Options.Notes was set.
+	Notes *notes.Store
 	// Relay is the real relay when Options.WithRelay was set.
 	Relay *rendezvous.Relay
 
@@ -259,11 +267,17 @@ func StartServer(t TB, opt Options) *Env {
 			t.Fatalf("settings: %v", err)
 		}
 	}
+	if opt.Notes {
+		env.Notes, err = notes.Open(dir, now)
+		if err != nil {
+			t.Fatalf("notes: %v", err)
+		}
+	}
 	env.Engine = rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: env.Params, Accounts: env.Accounts, Dir: env.Dir, Pool: env.Pool, Verifier: env.Verifier,
 		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now, Audit: opt.Audit,
 		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast, Sealed: opt.Sealed}, Relay: relayHandler,
-		Rand: opt.EngineRand, Settings: env.Settings,
+		Rand: opt.EngineRand, Settings: env.Settings, Notes: env.Notes,
 	})
 	env.Ops = env.Engine.Ops()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")

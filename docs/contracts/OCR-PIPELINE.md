@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-PIPELINE` |
-| **Version** | 1.9, active (re-read 2026-10-07: 1.5-1.9 are additive and no constant this product inherits moved - every inherited `src/Ocr/` value still matches the section 5 table and the cited amendment rows). Owner: doc-html-translate (the reference implementation) |
+| **Version** | 1.10, active (read at 1.10 on 2026-11-15, L0323 catch-up; Implements stays `partial 1.9` in the registry. 1.5-1.9 are additive and no constant this product inherits moved - every inherited `src/Ocr/` value still matched the section 5 table on 2026-10-07). 1.10 A narrows the tall-word cut to a token with no letter and no digit; `OcrLineSplitter` still cuts before every tall word and the vendored shared fixture is the pre-1.10 file: a dated exception of 2026-11-15, ticket L0330. Owner: doc-html-translate (the reference implementation) |
 | **Home** | `ocr-overlay/ocr-pipeline.md` in the shared contracts catalog |
 | **Role here** | consumer of part of the mechanism and the **source of inherited constants**; the rules that bind are `OCR-OVERLAY`'s |
 
@@ -39,7 +39,7 @@ with a scored multi-attempt Tesseract pass instead of the reference's rescue lad
 nothing to attach to here. Of the stage 1.7 A hands the token to - the orphan rule of 1.1 D - this product has
 none (nor the stroke test of 1.1 C); a tall token therefore leads its run and meets the same confidence and
 translatability filters as every other line, which is what the reference's shared split cases expect of the
-text. No dated registry exception remains open for 1.7 A or 1.8.
+text. 1.8 is ported with no exception open; 1.7 A is reopened narrowly by 1.10 A (the version line, ticket L0330).
 
 - The ring-band sentence this repository found contradicting the owner's code (ticket 033 finding F9) was
   corrected by the owner in 1.2 item E; nothing is open against it.

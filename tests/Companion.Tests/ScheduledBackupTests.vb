@@ -230,8 +230,139 @@ Public Class ScheduledBackupTests
         Assert.Equal(ShareSettingsTransfer.BackupNoPasswordCode, result.Detail)
     End Sub
 
+    ' --- the FileDO run (P4.1, FileDO SP-0208 spelling) --------------------------------------------------------
+
+    <Fact>
+    Public Sub Arguments_name_the_set_and_never_the_password()
+        Dim args As List(Of String) = BackupCommandLine.Arguments("D:\Photos", "E:\Bak", 7, "Photos-01234567", True, "ev.jsonl", "stop")
+        Assert.Equal(New String() {"backup", "D:\Photos", "to", "E:\Bak", "gen", "7", "stem", "Photos-01234567", "sec",
+                                   "pe:" & BackupCommandLine.PasswordVariable, "y", "--no-ui", "--events", "ev.jsonl", "--stop-file", "stop"},
+                     args.ToArray())
+        Dim plain As List(Of String) = BackupCommandLine.Arguments("D:\Photos", "E:\Bak", 3, "s", False, "e", "s")
+        Assert.DoesNotContain("sec", plain)
+        Assert.DoesNotContain(plain, Function(a) a.StartsWith("pe:", StringComparison.Ordinal))
+        Assert.Equal("Photos-01234567_003.fd-sec", BackupCommandLine.GenerationName("Photos-01234567", 3, True))
+        Assert.Equal("s_120.zip", BackupCommandLine.GenerationName("s", 120, False))
+    End Sub
+
+    <Fact>
+    Public Sub Help_probe_needs_both_gen_and_stem()
+        Assert.True(FileDoBackupProbe.HelpNamesGenerations("filedo.exe backup D:\Photos to E:\Bak gen 7 stem Docs sec"))
+        Assert.False(FileDoBackupProbe.HelpNamesGenerations("filedo.exe backup D:\Photos to E:\Bak level 9 sec"))
+        Assert.False(FileDoBackupProbe.HelpNamesGenerations(""))
+        Assert.False(FileDoBackupProbe.HasGenerations("C:\no-such-folder\filedo.exe"))
+    End Sub
+
+    Private Shared Function Ended(verdict As String, Optional reason As String = "") As FillEvents
+        Dim text As String = ""
+        If reason.Length > 0 Then
+            text &= "{""schemaVersion"":1,""kind"":""finding"",""data"":{""type"":""error"",""message"":""m"",""details"":{""reason"":""" & reason & """}}}" & vbLf
+        End If
+        text &= "{""schemaVersion"":1,""kind"":""result"",""data"":{""verdict"":""" & verdict & """}}" & vbLf
+        Return FillEvents.Parse(text)
+    End Function
+
+    <Fact>
+    Public Sub Endings_follow_the_exit_classes_of_item_F()
+        Assert.Equal(BackupEnding.Done, BackupCommandLine.Classify(Ended("Done"), 0, False))
+        Assert.Equal(BackupEnding.NotProven, BackupCommandLine.Classify(Ended("Done"), 2, False))
+        Assert.Equal(BackupEnding.Failed, BackupCommandLine.Classify(Ended("Failed"), 1, True))
+        Assert.Equal(BackupEnding.DefinitionRefused, BackupCommandLine.Classify(Ended("Not proven", "backup-source-refused"), 10, False))
+        Assert.Equal(BackupEnding.Obstacle, BackupCommandLine.Classify(Ended("Not proven"), 11, False))
+        Assert.Equal(BackupEnding.Obstacle, BackupCommandLine.Classify(Ended("Not proven", "volume-full"), 13, False))
+        Assert.Equal(BackupEnding.Obstacle, BackupCommandLine.Classify(Ended("Not proven"), 15, False))
+        Assert.Equal(BackupEnding.Obstacle, BackupCommandLine.Classify(Ended("Not proven", "file-in-use"), 2, False))
+        Assert.Equal(BackupEnding.NotProven, BackupCommandLine.Classify(Ended("Not proven"), 2, False))
+        Assert.Equal(BackupEnding.NotProven, BackupCommandLine.Classify(Ended("Not proven"), 12, False))
+        Assert.Equal(BackupEnding.Stopped, BackupCommandLine.Classify(Ended("Stopped"), 16, True))
+        Assert.Equal(BackupEnding.NotProven, BackupCommandLine.Classify(Ended("Stopped"), 16, False))
+        Assert.Equal(BackupEnding.NotProven, BackupCommandLine.Classify(FillEvents.Parse(""), 0, False))
+        Dim refused As FillEvents = Ended("Not proven", "backup-destination-refused")
+        Assert.Equal("backup-destination-refused|E:\Bak", BackupCommandLine.WallDetail(BackupEnding.DefinitionRefused, refused, 10, "D:\P", "E:\Bak", True))
+        Assert.Equal("disk-full|E:\Bak", BackupCommandLine.WallDetail(BackupEnding.Obstacle, Ended("Not proven"), 13, "D:\P", "E:\Bak", True))
+        Assert.Equal("source-unreachable|D:\P", BackupCommandLine.WallDetail(BackupEnding.Obstacle, Ended("Not proven"), 11, "D:\P", "E:\Bak", False))
+    End Sub
+
+    Private Shared Function Launching(runFolder As String, password As String, events As String, exitCode As Integer,
+                                      seen As List(Of FillLaunch)) As ScheduledServices
+        Return New ScheduledServices With {
+            .Clock = Function() New DateTime(2026, 11, 13, 3, 0, 0),
+            .LocateFileDo = Function() "C:\stub\filedo.exe",
+            .FileDoHasBackupGenerations = Function(exe As String) True,
+            .BackupPassword = Function(id As String) password,
+            .BackupRunFolder = Function() runFolder,
+            .LaunchFill = Function(launch As FillLaunch, ct As CancellationToken) As FillLaunchOutcome
+                              seen.Add(launch)
+                              File.WriteAllText(launch.Arguments(launch.Arguments.IndexOf("--events") + 1), events)
+                              Return New FillLaunchOutcome With {.Started = True, .ExitCode = exitCode}
+                          End Function}
+    End Function
+
+    <Fact>
+    Public Sub A_done_run_journals_the_generation_and_the_retired_slot_and_passes_the_password_by_environment()
+        Dim source As String = TempFolder()
+        Dim destination As String = TempFolder()
+        Dim runs As String = TempFolder()
+        Try
+            Dim op As ScheduledOperation = BackupOp()
+            op.Source.Path = source
+            op.Destination.Path = destination
+            op.BackupSealed = True
+            op.BackupKeepCount = 3
+            Dim seen As New List(Of FillLaunch)()
+            Dim items As New List(Of ItemJournalEntry)()
+            Dim events As String =
+                "{""schemaVersion"":1,""kind"":""result"",""data"":{""verdict"":""Done"",""numbers"":{""files"":4,""bytes"":100,""generation"":2,""retiredGeneration"":2,""keepCount"":3}}}" & vbLf
+            Dim services As ScheduledServices = Launching(runs, "correct horse battery", events, 0, seen)
+            services.ItemJournal = Sub(e As ItemJournalEntry) items.Add(e)
+            Dim result As ScheduledRunResult = New ScheduledExecutor(services).Run(op, CancellationToken.None)
+            Assert.Equal(ScheduledRunOutcome.Ok, result.Outcome)
+            Assert.Equal(4, result.Files)
+            Assert.Equal(100L, result.Bytes)
+            Assert.EndsWith(op.BackupStem & "_002.fd-sec", result.ArchivePath)
+            Assert.Single(seen)
+            Assert.DoesNotContain(seen(0).Arguments, Function(a) a.Contains("correct horse"))
+            Assert.Equal("correct horse battery", seen(0).ChildEnvironment(BackupCommandLine.PasswordVariable))
+            Assert.Contains(items, Function(i) i.Verb = "backup-retire" AndAlso i.Verdict = "replaced")
+            Assert.Contains(items, Function(i) i.Verb = "backup" AndAlso i.Verdict = "done")
+            Assert.DoesNotContain("correct horse", result.Verdict)
+        Finally
+            Directory.Delete(source, recursive:=True)
+            Directory.Delete(destination, recursive:=True)
+            Directory.Delete(runs, recursive:=True)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_refused_definition_is_parked_and_does_not_come_back_at_its_slots()
+        Dim source As String = TempFolder()
+        Dim destination As String = TempFolder()
+        Dim runs As String = TempFolder()
+        Try
+            Dim op As ScheduledOperation = BackupOp()
+            op.Source.Path = source
+            op.Destination.Path = destination
+            Dim events As String =
+                "{""schemaVersion"":1,""kind"":""finding"",""data"":{""type"":""error"",""message"":""m"",""details"":{""reason"":""backup-source-refused""}}}" & vbLf &
+                "{""schemaVersion"":1,""kind"":""result"",""data"":{""verdict"":""Not proven""}}" & vbLf
+            Dim executor As New ScheduledExecutor(Launching(runs, "", events, 10, New List(Of FillLaunch)()))
+            Dim result As ScheduledRunResult = executor.Run(op, CancellationToken.None)
+            Assert.Equal(ScheduledRunOutcome.Wall, result.Outcome)
+            Assert.StartsWith("backup-source-refused|", result.Detail)
+            op.Halt = result.Halt
+            op.HaltDetail = result.Detail
+            Assert.True(executor.Preflight(op).IsProblem)
+        Finally
+            Directory.Delete(source, recursive:=True)
+            Directory.Delete(destination, recursive:=True)
+            Directory.Delete(runs, recursive:=True)
+        End Try
+    End Sub
+
     <Fact>
     Public Sub Backup_outcomes_are_worded_from_their_codes()
+        Assert.NotEqual(ScheduledText.DescribeDetail("backup-x|y"), ScheduledText.DescribeDetail("backup-source-refused|y"))
+        Assert.NotEqual(ScheduledText.DescribeDetail("backup-x|y"), ScheduledText.DescribeDetail("backup-not-proven|y"))
         Assert.NotEqual(ScheduledText.DescribeDetail("backup-x|y"), ScheduledText.DescribeDetail("backup-filedo-unsupported"))
         Assert.NotEqual(ScheduledText.DescribeDetail("backup-x|y"), ScheduledText.DescribeDetail(ShareSettingsTransfer.BackupNoPasswordCode))
         Assert.NotEqual(ScheduledText.ActionName(ScheduledAction.Copy), ScheduledText.ActionName(ScheduledAction.Backup))

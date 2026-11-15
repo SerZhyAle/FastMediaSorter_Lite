@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +15,7 @@ import (
 	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/notes"
 	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/wire"
 )
@@ -594,5 +598,333 @@ func TestAdminGrants(t *testing.T) {
 	_ = json.Unmarshal(r.Data, &grants)
 	if len(grants) != 0 {
 		t.Fatalf("grants not empty after remove: %+v", grants)
+	}
+}
+
+// The notes of an account and its life (DEVICE-EXCHANGE notes sync, ticket L0321, items AU and AO): the erasure runs
+// in Ops.RemoveAccount and in Ops.SetKind on the way to a guest, so the holder's own deletion, the operator's
+// removal and the offline command line all end in it. A box is the marker below; the log must never carry it.
+
+const (
+	noteX   = "00000000-0000-4000-8000-000000000001"
+	noteY   = "00000000-0000-4000-8000-000000000002"
+	noteZ   = "00000000-0000-4000-8000-000000000003"
+	noteBox = `{"v":1,"k":"BOXSECRET"}` // already in the compact form the store keeps
+)
+
+// notesOps is newOps with a notes store on a data directory of its own and two member accounts, alice and bobby.
+func notesOps(t *testing.T) (*Ops, *logx.Capture, *notes.Store, string) {
+	t.Helper()
+	o, log := newOps(t)
+	dir := t.TempDir()
+	ns, err := notes.Open(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o.Notes = ns
+	for _, l := range []string{"alice", "bobby"} {
+		if _, err := o.AddAccount(l, pw1); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return o, log, ns, dir
+}
+
+// putNote stores one live note of an account straight in the store: the engine would refuse a guest, the store
+// knows no kinds and keeps what it is given.
+func putNote(t *testing.T, ns *notes.Store, account, noteID string) {
+	t.Helper()
+	if _, err := ns.Put(account, "device-1", noteID, 0, false, json.RawMessage(noteBox), 0); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// putTombstone stores the tombstone of a note the store never held (a delete with base revision 0 creates one).
+func putTombstone(t *testing.T, ns *notes.Store, account, noteID string) {
+	t.Helper()
+	if _, err := ns.Put(account, "device-1", noteID, 0, true, nil, 0); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// notesOf is what the store holds for an account: its records, tombstones counted, and its revision counter.
+func notesOf(ns *notes.Store, account string) (count int, revision int64) {
+	revision, _, count = ns.State(account)
+	return count, revision
+}
+
+// linesWith is the captured log lines whose event column is event.
+func linesWith(log *logx.Capture, event string) []string {
+	var out []string
+	for _, l := range log.Lines() {
+		if strings.Contains(l, "\t"+event+"\t") {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+func TestRemoveAccountErasesItsNotesAndLeavesTheOthers(t *testing.T) {
+	o, log, ns, dir := notesOps(t)
+	putNote(t, ns, "alice", noteX)
+	putNote(t, ns, "alice", noteY)
+	putTombstone(t, ns, "alice", noteZ)
+	putNote(t, ns, "bobby", noteX)
+
+	if err := o.RemoveAccount("alice"); err != nil {
+		t.Fatalf("RemoveAccount: %v", err)
+	}
+	if o.Accounts.Exists("alice") {
+		t.Fatal("the account is still there")
+	}
+	if n, rev := notesOf(ns, "alice"); n != 0 || rev != 0 {
+		t.Fatalf("alice keeps %d records and counter %d after the removal", n, rev)
+	}
+	if n, rev := notesOf(ns, "bobby"); n != 1 || rev != 1 {
+		t.Fatalf("another account lost its notes: %d records, counter %d", n, rev)
+	}
+	if got := ns.All("bobby"); len(got) != 1 || got[0].NoteID != noteX || string(got[0].Sealed) != noteBox {
+		t.Fatalf("bobby's record changed: %+v", got)
+	}
+
+	// the erasure is in the file too: a store opened again sees the same
+	again, err := notes.Open(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := notesOf(again, "alice"); n != 0 {
+		t.Fatalf("alice has %d records on disk after the removal", n)
+	}
+	if n, _ := notesOf(again, "bobby"); n != 1 {
+		t.Fatalf("bobby has %d records on disk, want 1", n)
+	}
+
+	// the log carries the count of records (tombstones included) and never a note id, a box or a login
+	erased := linesWith(log, "notes-erased")
+	if len(erased) != 1 || !strings.Contains(erased[0], "records=3") {
+		t.Fatalf("want one notes-erased line with records=3, got %q", erased)
+	}
+	log.AssertNone(t, "BOXSECRET", noteX, noteY, noteZ, "alice")
+}
+
+func TestSetKindErasesTheNotesOnlyOnTheWayToAGuest(t *testing.T) {
+	o, log, ns, dir := notesOps(t)
+	putNote(t, ns, "alice", noteX)
+	putNote(t, ns, "alice", noteY)
+	putNote(t, ns, "bobby", noteX)
+	if _, _, err := o.AddAccountKind("gina", pw1, accounts.KindGuest); err != nil {
+		t.Fatal(err)
+	}
+	putNote(t, ns, "gina", noteX) // a guest holds none through the engine; the store keeps what it is given
+
+	// no change of kind: nothing is erased
+	if changed, err := o.SetKind("alice", accounts.KindMember); changed || err != nil {
+		t.Fatalf("a member made a member: changed %v, %v", changed, err)
+	}
+	if n, _ := notesOf(ns, "alice"); n != 2 {
+		t.Fatalf("a kind that did not change erased the notes: %d records left, want 2", n)
+	}
+
+	// a guest that becomes a member: only the way to a guest erases
+	if changed, err := o.SetKind("gina", accounts.KindMember); !changed || err != nil {
+		t.Fatalf("a guest made a member: changed %v, %v", changed, err)
+	}
+	if n, _ := notesOf(ns, "gina"); n != 1 {
+		t.Fatalf("becoming a member erased the notes: %d records left, want 1", n)
+	}
+	if got := linesWith(log, "notes-erased"); len(got) != 0 {
+		t.Fatalf("a notes-erased line before any erasure: %q", got)
+	}
+
+	// a member that becomes a guest: its notes go with one write, the other accounts keep theirs
+	if changed, err := o.SetKind("alice", accounts.KindGuest); !changed || err != nil {
+		t.Fatalf("a member made a guest: changed %v, %v", changed, err)
+	}
+	if o.Accounts.KindOf("alice") != accounts.KindGuest {
+		t.Fatal("alice is not a guest")
+	}
+	// the account goes on: no records, but the counter it had (2) is kept and the horizon is raised to it, so a
+	// revision never comes back (item FG) and a device that synchronised up to 2 is answered `full`
+	if n, rev := notesOf(ns, "alice"); n != 0 || rev != 2 {
+		t.Fatalf("a new guest keeps %d records and counter %d, want no records and the counter 2 it had", n, rev)
+	}
+	if _, hor, _ := ns.State("alice"); hor != 2 {
+		t.Fatalf("a new guest has horizon %d, want 2 (the counter)", hor)
+	}
+	if n, _ := notesOf(ns, "bobby"); n != 1 {
+		t.Fatalf("another account lost its notes: %d records, want 1", n)
+	}
+	if n, _ := notesOf(ns, "gina"); n != 1 {
+		t.Fatalf("the former guest lost its notes: %d records, want 1", n)
+	}
+	again, err := notes.Open(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, rev := notesOf(again, "alice"); a != 0 || rev != 2 {
+		t.Fatalf("alice has %d records and counter %d on disk after becoming a guest, want none and 2", a, rev)
+	}
+	if _, hor, _ := again.State("alice"); hor != 2 {
+		t.Fatalf("alice has horizon %d on disk after becoming a guest, want 2", hor)
+	}
+	if b, _ := notesOf(again, "bobby"); b != 1 {
+		t.Fatalf("bobby has %d records on disk, want 1", b)
+	}
+	erased := linesWith(log, "notes-erased")
+	if len(erased) != 1 || !strings.Contains(erased[0], "records=2") {
+		t.Fatalf("want one notes-erased line with records=2, got %q", erased)
+	}
+	log.AssertNone(t, "BOXSECRET", noteX, noteY, "alice")
+
+	// a guest made a guest again is no change: what the store holds for it is not touched
+	putNote(t, ns, "alice", noteZ)
+	if changed, err := o.SetKind("alice", accounts.KindGuest); changed || err != nil {
+		t.Fatalf("a guest made a guest: changed %v, %v", changed, err)
+	}
+	if n, rev := notesOf(ns, "alice"); n != 1 || rev != 3 {
+		t.Fatalf("a kind that did not change erased the notes (or the new note reused a revision): %d records, counter %d, want 1 and 3", n, rev)
+	}
+	if got := linesWith(log, "notes-erased"); len(got) != 1 {
+		t.Fatalf("a second notes-erased line for no change: %q", got)
+	}
+}
+
+func TestNotesErasureIsANoOpWithoutNotesOrWithoutAStore(t *testing.T) {
+	// no notes anywhere: the removal and the way to a guest write nothing and say nothing, and the store keeps no file
+	o, log, ns, dir := notesOps(t)
+	if _, err := o.AddAccount("carol", pw1); err != nil {
+		t.Fatal(err)
+	}
+	if err := o.RemoveAccount("alice"); err != nil {
+		t.Fatalf("RemoveAccount of an account with no notes: %v", err)
+	}
+	if changed, err := o.SetKind("carol", accounts.KindGuest); !changed || err != nil {
+		t.Fatalf("SetKind of an account with no notes: changed %v, %v", changed, err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, notes.File)); !os.IsNotExist(err) {
+		t.Fatalf("an erasure with nothing to erase created %s: %v", notes.File, err)
+	}
+	if got := linesWith(log, "notes-erased"); len(got) != 0 {
+		t.Fatalf("a notes-erased line with nothing erased: %q", got)
+	}
+
+	// another account holds notes: erasing an account that holds none leaves the file as it was
+	putNote(t, ns, "bobby", noteX)
+	before, err := os.ReadFile(filepath.Join(dir, notes.File))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := o.RemoveAccount("carol"); err != nil {
+		t.Fatalf("RemoveAccount of an account with no notes: %v", err)
+	}
+	after, err := os.ReadFile(filepath.Join(dir, notes.File))
+	if err != nil || string(after) != string(before) {
+		t.Fatalf("an erasure with nothing to erase rewrote the store file: %v", err)
+	}
+	if got := linesWith(log, "notes-erased"); len(got) != 0 {
+		t.Fatalf("a notes-erased line with nothing erased: %q", got)
+	}
+
+	// no store at all (a server that keeps none): both paths work and the log says nothing about notes
+	bare, bareLog := newOps(t)
+	for _, l := range []string{"alice", "bobby"} {
+		if _, err := bare.AddAccount(l, pw1); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if changed, err := bare.SetKind("alice", accounts.KindGuest); !changed || err != nil {
+		t.Fatalf("SetKind with no notes store: changed %v, %v", changed, err)
+	}
+	if err := bare.RemoveAccount("bobby"); err != nil {
+		t.Fatalf("RemoveAccount with no notes store: %v", err)
+	}
+	for _, l := range bareLog.Lines() {
+		if strings.Contains(l, "notes") {
+			t.Fatalf("a log line about notes with no notes store: %q", l)
+		}
+	}
+}
+
+func TestAFailingNotesStoreIsReportedAndKeepsTheNotes(t *testing.T) {
+	o, log, ns, dir := notesOps(t)
+	putNote(t, ns, "alice", noteX)
+	putNote(t, ns, "bobby", noteX)
+	// the store writes through notes.json.tmp: a directory of that name makes every write fail
+	if err := os.Mkdir(filepath.Join(dir, notes.File+".tmp"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	// SetKind: the kind has changed already, so the answer says so and reports the failure
+	changed, err := o.SetKind("alice", accounts.KindGuest)
+	if !changed || err == nil {
+		t.Fatalf("SetKind with a store that cannot be written: changed %v, error %v", changed, err)
+	}
+	if o.Accounts.KindOf("alice") != accounts.KindGuest {
+		t.Fatal("the kind did not change")
+	}
+	if n, _ := notesOf(ns, "alice"); n != 1 {
+		t.Fatalf("a failed write left %d records in memory, want the 1 it held", n)
+	}
+
+	// RemoveAccount: the account is gone, the failure is returned, the notes stay for the operator to see
+	if err := o.RemoveAccount("bobby"); err == nil {
+		t.Fatal("RemoveAccount with a store that cannot be written reported no error")
+	}
+	if o.Accounts.Exists("bobby") {
+		t.Fatal("the account is still there")
+	}
+	if n, _ := notesOf(ns, "bobby"); n != 1 {
+		t.Fatalf("a failed write left %d records in memory, want the 1 it held", n)
+	}
+
+	if got := linesWith(log, "notes-erase-failed"); len(got) != 2 {
+		t.Fatalf("want two notes-erase-failed lines, got %q", got)
+	}
+	if got := linesWith(log, "notes-erased"); len(got) != 0 {
+		t.Fatalf("a notes-erased line for an erasure that failed: %q", got)
+	}
+	log.AssertNone(t, "BOXSECRET", noteX, "alice", "bobby")
+}
+
+func TestSetPolicyKeepsTheNotesDefaultAndTheWireHasNoMemberForIt(t *testing.T) {
+	o, _ := newOps(t)
+	if got := o.Accounts.Policy().Defaults.Notes; got != accounts.DefaultNotesPerAccount {
+		t.Fatalf("the policy of a fresh store carries notes %d, want %d", got, accounts.DefaultNotesPerAccount)
+	}
+	p := o.Accounts.Policy()
+	p.Defaults.Notes = 7 // what the operator's config says
+	o.Accounts.SetPolicy(p)
+
+	// the policy that SaveLimits writes to the config and the one kept in force both still carry it
+	var saved accounts.Policy
+	o.SaveLimits = func(next accounts.Policy) error { saved = next; return nil }
+	three, accountsCap := 3, 4
+	v, err := o.SetPolicy(&accountsCap, &accounts.AccountLimits{DevicesPerAccount: &three})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.Defaults.Notes != 7 || saved.Defaults.Devices != 3 || saved.MaxAccounts != 4 {
+		t.Fatalf("the policy handed to SaveLimits: %+v", saved)
+	}
+	if got := o.Accounts.Policy(); got.Defaults.Notes != 7 || got.Defaults.Devices != 3 || got.MaxAccounts != 4 {
+		t.Fatalf("the policy in force after SetPolicy: %+v", got)
+	}
+	if got := o.Accounts.LimitsFor("nobody").Notes; got != 7 {
+		t.Fatalf("an account resolves to notes %d, want the default 7", got)
+	}
+
+	// the answer shows no notes count: the administration wire is not extended (Assumed 9; ticket L0322 carries it
+	// to the catalog, and this guard moves with that decision)
+	b, _ := json.Marshal(v)
+	if strings.Contains(strings.ToLower(string(b)), "note") {
+		t.Fatalf("the policy answer names notes: %s", b)
+	}
+	for _, typ := range []reflect.Type{reflect.TypeOf(LimitsView{}), reflect.TypeOf(PolicyView{}), reflect.TypeOf(AccountView{}), reflect.TypeOf(Request{})} {
+		for i := 0; i < typ.NumField(); i++ {
+			f := typ.Field(i)
+			if strings.Contains(strings.ToLower(f.Name+" "+f.Tag.Get("json")), "note") {
+				t.Fatalf("%s.%s is a notes member on the administration wire", typ.Name(), f.Name)
+			}
+		}
 	}
 }

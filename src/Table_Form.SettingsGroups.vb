@@ -93,7 +93,7 @@ Partial Public Class Table_Form
         AddSettingsGroup("files", "history", "Недавние файлы и папки", False, "recent_files_limit", "recent_folders_limit", "recent_history")
         AddSettingsGroup("files", "archives", "Архивы", False, "archive_entry_limit", "archive_entries_limit")
         AddSettingsGroup("files", "secure", "Защищённые файлы", False, "secure_in_navigation", "secure_remember_minutes", "secure_show_true_name", "secure_open_with")
-        AddSettingsGroup("files", "advanced", "Клавиши и ассоциации", True, "custom_hotkeys", "image_associations", "video_associations", "live_open_with")
+        AddSettingsGroup("files", "advanced", "Клавиши и ассоциации", True, "custom_hotkeys", "image_associations", "video_associations", "live_open_with", "app_commands")
         AddSettingsGroup("file-manager", "display", "Основные настройки", True,
                          "file_manager_view_mode", "file_manager_content_mode", "file_manager_show_hidden_files", "file_manager_non_media_open_action")
         AddSettingsGroup("file-manager", "places", "Места", True,

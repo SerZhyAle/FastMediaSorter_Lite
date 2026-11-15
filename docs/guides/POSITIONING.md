@@ -102,15 +102,20 @@ sibling products' pages.
 | Media and file manager | view and sort with one key (with slideshow, playback, archives as folders, editor, OCR and translation); SFTP servers and SMB shares opened like folders; the file manager mode of the Grid panel; secure `.fd-sec` containers; document previews | - | reading documents, e-books and texts |
 | Local sharing | folder sharing over SFTP with QR pairing and FileDO hosting; the Server edition; live broadcast; the exchange account | guest invitations and password links of an exchange account; the Google Drive channel | - |
 | Scheduled file operations | copy, move, delete and archive on a timetable, with preview and run history, in their own scheduling window and on the settings page; the viewer's folder action and command | - | - |
-| Media Exchange Server | - | the server itself: accounts, devices, invitations and registration, limits, service management, administration in the browser | - |
+| Media Exchange Server | - | the server itself: accounts, devices, invitations and registration, limits, service management, administration in the browser, the notes of an account kept sealed and synced between its devices | - |
 
 `built`, in no published release yet: the optional HTML page viewer of the media and file manager (specification
 275, row `html-pages`), its optional full PDF and EPUB reader (specification 274, row `document-reader`) and its
 optional full text reader and editor (specification 277, row `text-reader`), and the scheduled operation that fills a
-local drive's free space with FileDO and deletes it again (specification L0299, row `scheduled-fill-free-space`) - each
+local drive's free space with FileDO and deletes it again (specification L0299, row `scheduled-fill-free-space`) and the
+scheduled folder backup into a numbered set of copies, optionally sealed with a password (specification L0298, row
+`scheduled-backup`) - each
 named in classes A to C only until the release that carries it is published. The settings standard of an exchange
 account (specification L0296, row `exchange-settings-standard`) is `built` too and is also named in the Settings help
-(class D), which ships with the build that carries it.
+(class D), which ships with the build that carries it. The notes of an exchange account on the Media Exchange Server
+(specification L0321, row `exchange-notes`) are a capability of the gated server and `gated` with it: the server
+keeps one sealed record per note and syncs them between the account's devices, and the row is named in classes A to D
+only, never with a link or a date (section 2.1).
 
 The coverage sets: the three READMEs and the landing page (in English, Russian and Ukrainian) name every `released`
 capability whose row lists them. A released capability a coverage set does not name fails the gate, naming the file

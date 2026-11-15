@@ -3,13 +3,12 @@
 | | |
 | --- | --- |
 | **Id** | `STREAM-BANK` |
-| **Version** | 2.4, active (2.2 of 2026-10-02 added rule 13 - a blank or absent `is_live` means "not stated" - which a producer that always leaves the column blank already holds; 2.3 of 2026-10-07 added rule 14, the closed `language` and `country` value sets; 2.4 of 2026-10-17 is the consolidation). The body below was last read against 2.2 on 2026-10-07; the 2.3 and 2.4 clauses are not yet audited against `src/Streams/`. Owner: FastMediaSorter Android |
+| **Version** | 2.10, active (read at 2.10 on 2026-11-15, L0323 catch-up, from 2.2 as read on 2026-10-07; 2.2 added rule 13 - a blank or absent `is_live` means "not stated" - which a producer that always leaves the column blank already holds; 2.3 added rule 14, the closed `language` and `country` value sets; 2.4 to 2.10 are consumer or catalog wording and oblige this producer nothing). Registry row `partial 2.10`; one exception open, renewed 2026-11-15: rule 14 and items O and P (the closed sets), ticket L0329. The producer's own `StreamCatalogSchema.ContractTag` still reads `STREAM-BANK 2.2`. Owner: FastMediaSorter Android |
 | **Home** | `stream-catalog/README.md` in the shared contracts catalog |
-| **Role here** | **producer** - implemented under specification 022 (`src/Streams/`), on `main` since 2026-10-03 and in **no release yet** (the latest release predates it); the contract's own header still lists this product as "planned" |
+| **Role here** | **producer** - implemented under specification 022 (`src/Streams/`: the playlist reader, the validator and the writer of `stream-catalog.zip`) |
 
 Specification 022 implements Fast Media Sorter & Sharing for Windows (FMS_Win) as a conforming producer of `stream-catalog.zip`
-from `.m3u` and `.m3u8` playlists on the PC. The registry row for this product used to read "planned
-consumer", then "planned producer, not started"; it is a producer, and the row says so since 2026-10-07.
+from `.m3u` and `.m3u8` playlists on the PC. The registry row for this product names a producer since 2026-10-07.
 The producer's own version tag (`StreamCatalogSchema.ContractTag`, printed in its report and held by a test)
 reads `STREAM-BANK 2.2`.
 

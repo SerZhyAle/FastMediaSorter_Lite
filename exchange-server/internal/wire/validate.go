@@ -35,11 +35,12 @@ const (
 	maxVerifierUser = 64
 )
 
-// KnownRoles are the device roles of DEVICE-EXCHANGE 6.1 - the four of the first edition and `clipboard`
+// KnownRoles are the device roles of DEVICE-EXCHANGE 6.1 - the four of the first edition, `clipboard`
 // (item BV: a device that sends or receives clipboard values declares it, and the directory tells the
-// other devices of the account which of them take part); an enroll keeps only these. The server never
-// refuses a clipboard envelope for a missing role: the role is information, not a gate.
-var KnownRoles = []string{"resource-producer", "resource-consumer", "broadcaster", "receiver", "clipboard"}
+// other devices of the account which of them take part) and `notes` (1.13 item FI: a device that takes part
+// in the notes sync declares it); an enroll keeps only these. The server never refuses a clipboard or notes
+// envelope for a missing role: the role is information, not a gate.
+var KnownRoles = []string{"resource-producer", "resource-consumer", "broadcaster", "receiver", "clipboard", "notes"}
 
 // validate on Head is the default: an envelope with no required member.
 func (h *Head) validate() error { return nil }
@@ -141,7 +142,15 @@ func (e *Hello) validate() error {
 
 func (e *Enrolled) validate() error { return required("deviceToken", e.DeviceToken, maxToken) }
 
-func (e *Refused) validate() error { return required("reason", e.Reason, 64) }
+func (e *Refused) validate() error {
+	if err := required("reason", e.Reason, 64); err != nil {
+		return err
+	}
+	if e.Current != nil {
+		return e.Current.Validate()
+	}
+	return nil
+}
 
 func (e *Publish) validate() error {
 	if len(e.Resource) == 0 || e.Resource[0] != '{' {

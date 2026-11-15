@@ -24,14 +24,17 @@ Partial Public Class Main_Form
     ''' documented "press again to halve the interval" never happened from the keyboard -
     ''' only from the toolbar button. (That is exactly what KeybUse's unused
     ''' was_Slide_Show_Mode parameter was added for.)</summary>
-    Private Sub SetSlideShow(Optional was_Running As Boolean = False)
+    ''' <param name="interval_Override_Ms">L0318: a pause for THIS run only (the command line's <c>--interval-ms</c>); 0 is the
+    ''' button's own rule. The saved <c>Slideshow_Base_Interval_Ms</c> is never written here.</param>
+    Private Sub SetSlideShow(Optional was_Running As Boolean = False, Optional interval_Override_Ms As Integer = 0)
 
 #If Not NETFRAMEWORK Then
         is_Slide_Show_Random_Mode = modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder <> "natural"
 #Else
         is_Slide_Show_Random_Mode = False
 #End If
-        Dim slide_show_new_interval = SlideshowIntervalAfterPress(Slideshow_Base_Interval_Ms, SlideShowTimer.Interval, Is_slide_show_mode OrElse was_Running, slide_show_limit)
+        Dim slide_show_new_interval = If(interval_Override_Ms > 0, interval_Override_Ms,
+            SlideshowIntervalAfterPress(Slideshow_Base_Interval_Ms, SlideShowTimer.Interval, Is_slide_show_mode OrElse was_Running, slide_show_limit))
         SlideShowStart()
         SlideShowTimer.Interval = slide_show_new_interval
 #If Not NETFRAMEWORK Then
@@ -125,10 +128,11 @@ Partial Public Class Main_Form
         SlideShowStop()
     End Sub
 
-    Private Sub SetRandomSlideShow(Optional was_Running As Boolean = False)
+    Private Sub SetRandomSlideShow(Optional was_Running As Boolean = False, Optional interval_Override_Ms As Integer = 0)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2000: btn_Random_Slideshow")
         is_Slide_Show_Random_Mode = True
-        Dim slide_show_new_interval = SlideshowIntervalAfterPress(Slideshow_Base_Interval_Ms, SlideShowTimer.Interval, Is_slide_show_mode OrElse was_Running, slide_show_limit)
+        Dim slide_show_new_interval = If(interval_Override_Ms > 0, interval_Override_Ms,
+            SlideshowIntervalAfterPress(Slideshow_Base_Interval_Ms, SlideShowTimer.Interval, Is_slide_show_mode OrElse was_Running, slide_show_limit))
         SlideShowStart()
         SlideShowTimer.Interval = slide_show_new_interval
 #If Not NETFRAMEWORK Then

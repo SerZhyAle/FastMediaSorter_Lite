@@ -97,7 +97,7 @@
     <!-- The shared tree (one directory up). Divergent files compile to nothing
          here via whole-file #If NETFRAMEWORK blocks, so no per-file excludes
          beyond the sibling projects and the attribute files the SDK replaces. -->
-    <Compile Include="..\**\*.vb" Exclude="..\Modern\**;..\FastMediaSorterCompanion\**;..\obj\**;..\bin\**;..\My Project\AssemblyInfo.vb;..\My Project\VersionInfo.vb" />
+    <Compile Include="..\**\*.vb" Exclude="..\Modern\**;..\FastMediaSorterCompanion\**;..\AppCommands\ShareManagerCommandTable.vb;..\AppCommands\CliDocument.vb;..\AppCommands\CliRecipes.vb;..\obj\**;..\bin\**;..\My Project\AssemblyInfo.vb;..\My Project\VersionInfo.vb" />
     <Compile Include="ModernAssemblyInfo.vb" />
   </ItemGroup>
 

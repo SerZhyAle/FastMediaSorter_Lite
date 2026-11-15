@@ -43,6 +43,8 @@ plain text so maintained documentation works in a fresh clone.
   Folder Share Server: what differs from the User edition, how to build and publish it, and the
   VM matrix it has to pass (it registers a service, so it cannot be verified on the dev box).
 - [guides/FILE_MANAGER.md](guides/FILE_MANAGER.md) - the integrated file manager mode in the modern viewer's Grid panel (F3): independent browsing, places list, content filters, safe opening, shared queue operations, verified ZIP creation and settings.
+- [CLI.md](CLI.md) - the command line of the viewer and the Share Manager (contract `APP-COMMANDS` 0.1): every verb, option, risk class and exit code, generated from the command tables in code by `tools/Build-CliDocs.ps1`; the machine forms are `cli-commands.json` and `cli-commands.share-manager.json`, and each program prints its own with `commands --json`.
+- [guides/COMMAND_LINE_RECIPES.md](guides/COMMAND_LINE_RECIPES.md) - the page for scripts: how to run a command and read its exit code, the one setting that holds the commands that work with files, screen, clipboard or network, and the schedule-a-copy and screenshot-to-file recipes; generated from the example lines of the same tables.
 - [guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md](guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md) - the ways to connect devices (home
   network, exchange server, live broadcast): state on the Windows side, the owning contracts, what must not be claimed. The
   reader-facing explanation is the shared portal [Media exchange between your devices](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/), not this repository.

@@ -9,11 +9,20 @@ type Limits struct {
 	Broadcasts          int   // live broadcasts in the account
 	BroadcastsPerDevice int   // live broadcasts one device may hold
 	ClipboardBytes      int64 // the largest clipboard value of the account (22 item BZ)
+	// Notes is the count of note records (tombstones included) one account may hold (DEVICE-EXCHANGE item FL,
+	// ticket L0321). It is a deployment default only: the config file sets it, there is no per-account
+	// override and no member on the administration wire. 0 or less is "no cap" for the store, but the
+	// server always carries at least 1 here (DefaultNotesPerAccount unless the config says otherwise).
+	Notes int
 }
 
 // DefaultClipboardBytes is the clipboard limit a deployment starts with: 5 GiB, the one limit that is
 // set by default (item AS).
 const DefaultClipboardBytes int64 = 5 << 30
+
+// DefaultNotesPerAccount is the number of note records one account may hold unless the operator sets
+// another in the config file (limits.notesPerAccount, item FL).
+const DefaultNotesPerAccount = 5000
 
 // DefaultMaxAccounts is the cap on the accounts of a deployment, 10 unless the operator sets another
 // (item AS).
@@ -76,6 +85,7 @@ type Policy struct {
 func DefaultPolicy() Policy {
 	return Policy{MaxAccounts: DefaultMaxAccounts, Defaults: Limits{
 		Devices: 64, Resources: 256, Broadcasts: 16, BroadcastsPerDevice: 4, ClipboardBytes: DefaultClipboardBytes,
+		Notes: DefaultNotesPerAccount,
 	}}
 }
 

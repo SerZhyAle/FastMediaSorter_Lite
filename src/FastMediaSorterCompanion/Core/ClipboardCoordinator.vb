@@ -22,6 +22,7 @@ Friend NotInheritable Class ClipboardCoordinator
     Private _isSend As Boolean
     Private _progress As String = ""
     Private _lastPercent As Integer = -1
+    Private _lastBytes As Long
 
     ''' <summary>The state changed: an operation began, its progress moved, or it ended.</summary>
     Public Event StateChanged As EventHandler
@@ -111,6 +112,14 @@ Friend NotInheritable Class ClipboardCoordinator
         End Get
     End Property
 
+    ''' <summary>The size of the value of the last (or running) operation, in bytes, as its progress reported it - the total, or
+    ''' what was moved when the total was never known. 0 before any progress. The command line's answer carries it (L0316).</summary>
+    Public ReadOnly Property LastBytes As Long
+        Get
+            Return Volatile.Read(_lastBytes)
+        End Get
+    End Property
+
     ''' <summary>Asks the running operation to stop. Nothing is placed or stored by what is cancelled midway.</summary>
     Public Sub Cancel()
         Dim cts As CancellationTokenSource = _cts
@@ -143,12 +152,14 @@ Friend NotInheritable Class ClipboardCoordinator
         _cts = cts
         _isSend = isSend
         _lastPercent = -1
+        Volatile.Write(_lastBytes, 0L)
         Volatile.Write(_progress, ClipboardMessages.ProgressText(isSend, 0L, 0L))
         Raise(context, Sub() RaiseEvent StateChanged(Me, EventArgs.Empty))
         Dim result As ClipboardRunResult
         Try
             Dim report As Action(Of Long, Long) =
                 Sub(done As Long, total As Long)
+                    Volatile.Write(_lastBytes, If(total > 0, total, done))
                     Dim percent As Integer = 0
                     If total > 0 Then percent = CInt(Math.Min(100L, Math.Max(0L, done * 100L \ total)))
                     ' Only a visible change is posted: a large value moves by the megabyte, the words by the percent.

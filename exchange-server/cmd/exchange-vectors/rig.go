@@ -152,6 +152,9 @@ type rigOpts struct {
 	sealed bool
 	// settings keeps the application settings standards (DEVICE-EXCHANGE 1.12, ticket L0296); off for the older scenarios.
 	settings bool
+	// notes keeps the notes of an account (DEVICE-EXCHANGE 1.13, ticket L0321); with sealed it lists `notes` in features.
+	// Only the notes scenario opens the store, so every older transcript keeps its bytes (Assumed 8).
+	notes      bool
 	admin      *config.Admin
 	webDir     string
 	verifyConc int
@@ -223,7 +226,7 @@ func newRig(seed string, o rigOpts) *rig {
 	opt := testkit.Options{
 		Now: r.clock.Now, Params: &params, Logins: o.logins, PublicEndpoint: publicEndpoint,
 		WithRelay: o.relay, Cast: o.cast, ServerVersion: "vectors",
-		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed, Settings: o.settings,
+		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed, Settings: o.settings, Notes: o.notes,
 		WebDir: o.webDir, VerifyConc: o.verifyConc, VerifyWait: o.verifyWait,
 		TLSIdentity: getVectorTLSIdentity(),
 	}

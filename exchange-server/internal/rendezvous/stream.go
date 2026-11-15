@@ -472,6 +472,29 @@ func (cs *ControlStream) SendFrame(frame []byte) error {
 	}
 }
 
+// TrySendFrame queues a frame that is only a hint (`notes_changed`, ticket L0321 Assumed 12): it never blocks and,
+// unlike SendFrame, a full queue does not end the stream - the frame is simply not delivered and the error says
+// so. A client never relies on such a frame to sync at all.
+func (cs *ControlStream) TrySendFrame(frame []byte) error {
+	select {
+	case <-cs.done:
+		return ErrClosed
+	default:
+	}
+	// A hint is refused once the queue is half full: the other half stays free for the frames that must arrive,
+	// because SendFrame aborts the stream when it finds the queue full, and a burst of hints must never push a
+	// slow reader into that abort.
+	if len(cs.out) >= cap(cs.out)/2 {
+		return ErrQueueFull
+	}
+	select {
+	case cs.out <- frame:
+		return nil
+	default:
+		return ErrQueueFull
+	}
+}
+
 // abort ends the stream without waiting for anything: the raw connection is closed at once (a TLS
 // close would try to write an alert to a peer that is not reading, which is exactly why this stream is
 // being ended), and the rest of the cleanup follows on its own goroutine. It is what SendFrame uses,

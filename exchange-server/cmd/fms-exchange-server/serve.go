@@ -18,6 +18,7 @@ import (
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/notes"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/rendezvous"
 	"fms/exchange-server/internal/settings"
@@ -151,6 +152,13 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		printf(stderr, "cannot open the settings standards: %v\n", err)
 		return exitConfig
 	}
+	// the notes of every account (DEVICE-EXCHANGE notes sync, ticket L0321): notes.json beside the settings,
+	// created at the first accepted put, so opening it in a fresh data directory writes nothing
+	noteStore, err := notes.Open(paths.Dir, nil)
+	if err != nil {
+		printf(stderr, "cannot open the notes: %v\n", err)
+		return exitConfig
+	}
 
 	if console {
 		// Created here so a stop that arrives while the identity is still being loaded is honoured:
@@ -192,6 +200,8 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	logger.SetBanner(version)
 	audit.SetProduct("fms-exchange-server/" + version)
 	logger.State("start", logx.Text("version", version))
+	// counts only: how many notes the store holds and for how many accounts, never a note member
+	logger.Info("notes-open", logx.Int("records", noteStore.Count()), logx.Int("accounts", noteStore.Accounts()))
 	if cfg.ObsoletePasswordHash {
 		logger.Warn("obsolete", logx.Text("member", "the server-wide credential of the superseded design is ignored; it is removed when the config is next saved"))
 	}
@@ -236,6 +246,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	params.BroadcastsPerAccount, params.BroadcastsPerDevice, params.CodesPerAccount = l.BroadcastsPerAccount, l.BroadcastsPerDevice, l.CodesPerAccount
 	params.CastPerAccount = l.CastPendingPerAccount
 	params.MaxAccounts, params.ClipboardBytes = l.MaxAccounts, l.ClipboardBytes
+	params.NotesPerAccount = l.NotesPerAccount // 0 stays the default in Params.Policy (item FL)
 
 	// the relay of ticket 165: it shares the engine's per-address limiter and the directory
 	relayHandler := rendezvous.NewRelay(rendezvous.RelayConfig{Dir: dir, Log: logger, Limiter: limiter,
@@ -246,7 +257,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		Verifier: limits.NewVerifier(nil, l.VerifierConcurrency, 2*time.Second),
 		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger, Audit: audit,
 		PublicEndpoint: cfg.PublicEndpoint, ServerVersion: version,
-		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler, Settings: standards,
+		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler, Settings: standards, Notes: noteStore,
 	})
 	srv := rendezvous.New(rendezvous.Config{
 		Params:          params,

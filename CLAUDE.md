@@ -201,6 +201,7 @@ At release or on explicit request, the suite does not cover the UI, so these sti
 
 - **A new file operation** goes in [FileManager.vb](src/FileManager.vb) and is called from the `Main_Form` handler; test with real files in a temp folder.
 - **Tuning the perspective background**: the constants (`DeviationPercent`, `SampleStep`) are in `src/LetterboxFillMath.vb` and change only after the catalog amendment (the contract is the owner's own: version bump, log row, regenerated vectors); then re-take the vectors into `tests/Lite.Tests/TestData/letterbox-vectors/`.
+- **Driving or testing the running programs**: use their command line, documented in [docs/CLI.md](docs/CLI.md) and listed by `FastMediaSorter_LITE.exe commands --json` and `FastMediaSorterCompanion.exe commands --json` (contract `APP-COMMANDS` 0.1); do not simulate keys or clicks where a command exists. A new verb is a row in that program's table in `src/AppCommands/`, and `tools/Build-CliDocs.ps1` re-renders the documents.
 - **A new media format**: add the extension to `Image_File_Extensions` or `video_File_Extensions` in Main_Form.vb and test playback in **both** exes. A new *image* format belongs behind the `IImageDecoder` seam ([src/Imaging/](src/Imaging)), not in a new `FileManager` branch. Dispose `Image`/`Bitmap` and `MemoryStream`.
 
 ## Environment Notes

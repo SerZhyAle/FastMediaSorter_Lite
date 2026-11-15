@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `EXCHANGE-MARK` |
-| **Version** | 0.3, draft, read 2026-10-20 |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.4, draft, the current catalog version; partial. Open, dated 2026-11-15 in the registry (ticket L0328): rule 6 guidance - `ExchangeMark.Render` resamples the held PNG through `DrawImage` even at 1:1 and no test compares pixels; rule 14 - the title of `exchange-server/README.md` does not hold the full name. Earlier reading: 0.3, read 2026-10-20 |
 | **Home** | `exchange-mark/README.md` in the shared contracts catalog |
 | **Role here** | consumer - modern viewer, Share Manager, exchange server, help and site |
 

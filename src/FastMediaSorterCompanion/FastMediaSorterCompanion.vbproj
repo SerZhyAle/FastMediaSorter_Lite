@@ -158,6 +158,17 @@
     <!-- The product's visible names, spelled once (docs/guides/PRODUCT_NAMING.md). -->
     <Compile Include="..\ProductNames.vb" Link="Core\ProductNames.vb" />
     <!--
+      The shared command profile (portfolio contract APP-COMMANDS, ticket L0316): the strict parser, the request and
+      response lines, the gate by risk class and the reply-file helpers are the viewer's library, linked - not copied -
+      so the two programs can never read a command line differently. The Share Manager adds only its own verb table
+      (ShareManagerCommandTable), the one setting (the viewer's registry value, shared by both exes) and the words.
+    -->
+    <Compile Include="..\AppCommands\AppCommandsProfile.vb" Link="AppCommands\AppCommandsProfile.vb" />
+    <Compile Include="..\AppCommands\AppCommandsSetting.vb" Link="AppCommands\AppCommandsSetting.vb" />
+    <Compile Include="..\AppCommands\AppCommandsText.vb" Link="AppCommands\AppCommandsText.vb" />
+    <Compile Include="..\AppCommands\ShareManagerCommandTable.vb" Link="AppCommands\ShareManagerCommandTable.vb" />
+    <Compile Include="..\Localization\Localization.AppCommands.vb" Link="Localization\Localization.AppCommands.vb" />
+    <!--
       The viewer's log package, for the Share Manager's own "send the log" (ticket 028
       Ф-3, APP-BEHAVIOUR rule 6): one report format, one settings allow-list, one
       redaction, both logs in one archive - linked so none of that exists twice.

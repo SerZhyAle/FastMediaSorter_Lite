@@ -3,13 +3,15 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-STRUCTURE` |
-| **Version** | 0.3, draft (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096, and read at 0.1 on 2026-10-07). 0.2 (2026-10-14, additive) added section 8, the lifecycle of a page and its addresses; 0.3 (2026-10-18, a record) carries the Support row of the page-type table that the 2026-10-17 amendment added, and gains the Support and release-history boxes of `SITE-CHECKLIST.md` |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.4, draft, the current catalog version; partial. Open, dated 2026-11-15 in the registry: section 8 C, D and E - the program resolver `src/Support/SitePages.vb`, the record of released addresses and anchors `tools/site-addresses.jsonl` and the links from setup, start and repair screens were not verified on the tree in this read (ticket L0331). Earlier reading: 0.3 (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096, and read at 0.1 on 2026-10-07). 0.2 (2026-10-14, additive) added section 8, the lifecycle of a page and its addresses; 0.3 (2026-10-18, a record) carries the Support row of the page-type table that the 2026-10-17 amendment added, and gains the Support and release-history boxes of `SITE-CHECKLIST.md` |
 | **Home** | `product-site/SITE-STRUCTURE.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); tier **guide** (D2); locale sets as published today (D3) |
 
 The product site is a landing, an install-trust page, an edition page (`server.html`), nine task guides, a
 subject index (`topics.html`), a glossary and a privacy page, in 13 landing and trust locales and English,
-Russian and Ukrainian in-page for the guides, the reference pages, the edition page and the privacy page. This pointer says only what the repository must do to stay conformant.
+Russian and Ukrainian for the guides, the reference pages, the edition page and the privacy page (Russian and
+Ukrainian as sibling pages `lang/ru/<page>.html` and `lang/uk/<page>.html`, which replaced the earlier in-page
+switch). This pointer says only what the repository must do to stay conformant.
 
 ## What this repository must do
 

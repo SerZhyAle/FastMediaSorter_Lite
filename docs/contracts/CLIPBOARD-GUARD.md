@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `CLIPBOARD-GUARD` |
-| **Version** | 0.11, draft (since 2026-09-24; 0.10 of 2026-09-26, 0.11 of 2026-10-14 with two corrections of 2026-10-16; read on 2026-10-20: the header, section 8 and item I). Owner: CyrFlip |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.12, draft, the current catalog version; partial in both rows (earlier readings: 0.11 of 2026-10-14 with two corrections of 2026-10-16, read on 2026-10-20: the header, section 8 and item I). Open, dated 2026-11-15 in the registry: **0.12 item S, Share Manager** (a picture present but not readable falls through to the text instead of failing the send; the one sentence telling the user that a copied range travels as the picture is not shown; no fake-clipboard test of the three cases; ticket L0327); item S is not applicable to the viewer. Standing: rule 2 writer retry (until 2026-12-31) and rule 6 manual Win+V check (until 2026-11-30), and the `ClipboardPaste` release run. Owner: CyrFlip |
 | **Home** | `clipboard-guard/README.md` in the shared contracts catalog |
 | **Role here** | **writer** (the Share Manager copies the SFTP password, login, the `.fmscfg` QR and the broadcast link; the viewer copies names, paths and one resource document with a password) and **participant and reader of the exchange clipboard** (item L): the Share Manager reads the clipboard on an explicit press, sends it to the user's exchange server and places a received value (`ClipboardWin32`, `ClipboardExchange`, `ClipboardCoordinator` in `src/FastMediaSorterCompanion/Core/`); the viewer and the Share Manager's two paste windows read the clipboard once, on an explicit paste, to take in a phone code or a connection string (`ClipboardPaste` in `src/Resources/`, reached through `QrCodeDecoder.DecodeClipboardAsync`). It keeps no history and transforms nothing in place, so items D to K and rules 4 and 5 bind nothing here |
 
@@ -30,7 +30,9 @@
 - **No value in a log (item R).** A sent or received value, and a file name, never enter a log, a support bundle,
   a diagnostic dump or a temporary file outside the received-files folder; logs carry kind, size and a reason code.
 - **Order of kinds and line ends.** Item O here (file, text, image; line ends as they are) and `DEVICE-EXCHANGE`
-  item CB (file, image, text; CRLF to LF on the wire) differ; the Share Manager follows `DEVICE-EXCHANGE`.
+  item CB (file, image, text; CRLF to LF on the wire) differed; the Share Manager follows `DEVICE-EXCHANGE`, and the
+  difference is closed by the contract text since 0.12 item S (decision of 2026-11-12; the line-end half closed
+  2026-10-30). What item S still asks - the decided kind is final - is the open item named in the version row.
 
 ## Where it stands
 

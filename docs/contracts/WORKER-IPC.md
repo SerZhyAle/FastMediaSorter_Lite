@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `WORKER-IPC` |
-| **Version** | 0.17, draft (the README carries 0.17 and the amendment of 2026-10-17, which binds; the header of `worker-ipc.md` still reads 0.16; read on 2026-10-20 with `EXCHANGE-CONTROL.md`). Owner: FMS Companion (the Go worker repository) |
+| **Version** | 0.19, draft (read at 0.19 on 2026-11-15, L0323 catch-up, from 0.17 as read on 2026-10-20 with `EXCHANGE-CONTROL.md`; 0.18 items 5 and 6 and 0.19 item 7, the per-grant login, were added in between). Registry row `partial 0.19`: this host does not exercise item 7; the response vectors of item A and the unproven per-grant login surface stay open, ticket L0328. Owner: FMS Companion (the Go worker repository) |
 | **Home** | `sidecar-control/README.md`, `worker-ipc.md` and `EXCHANGE-CONTROL.md` in the shared contracts catalog |
 | **Role here** | **consumer** - the Share Manager is the host half of the pipe (`src/FastMediaSorterCompanion/Core/WorkerIpc.vb`, `Core/WorkerProcess.vb`; the six `disk-*` requests through `DiskSharing` and `DiskOperations`). The worker is the server half |
 

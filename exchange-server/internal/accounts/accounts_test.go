@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -1169,6 +1170,59 @@ func TestPolicyAndPerAccountLimits(t *testing.T) {
 
 	if k, err := NormalizeKind("family"); err != nil || k != KindMember {
 		t.Fatalf("an earlier build's word reads as member: %q %v", k, err)
+	}
+}
+
+// TestPolicyCarriesTheNotesCountAndNoAccountOverridesIt is ticket L0321 (DEVICE-EXCHANGE item FL, Assumed 9): the
+// count of note records is a deployment default only. The policy carries it (5000 unless the config says
+// otherwise), every account resolves to it, SetPolicy keeps what it is given, and the per-account override has
+// no member for it.
+func TestPolicyCarriesTheNotesCountAndNoAccountOverridesIt(t *testing.T) {
+	if DefaultNotesPerAccount != 5000 {
+		t.Fatalf("the default count of item FL is 5000, the constant is %d", DefaultNotesPerAccount)
+	}
+	if got := DefaultPolicy().Defaults.Notes; got != 5000 {
+		t.Fatalf("DefaultPolicy carries notes %d, want 5000", got)
+	}
+
+	// a store opened with no policy of its own starts with the default, for an account and for a login that is none
+	s, _, _ := withAccounts(t)
+	if got := s.Policy().Defaults.Notes; got != DefaultNotesPerAccount {
+		t.Fatalf("the policy of a fresh store carries notes %d, want %d", got, DefaultNotesPerAccount)
+	}
+	if s.LimitsFor(alice).Notes != DefaultNotesPerAccount || s.LimitsFor("nobody").Notes != DefaultNotesPerAccount {
+		t.Fatal("an account without overrides gets the default notes count")
+	}
+
+	// an account's own overrides lay over the defaults and leave the notes count alone
+	zero, three := int64(0), 3
+	if err := s.SetAccountLimits(alice, &AccountLimits{ClipboardMaxBytes: &zero, DevicesPerAccount: &three}); err != nil {
+		t.Fatal(err)
+	}
+	if l := s.LimitsFor(alice); l.Devices != 3 || l.ClipboardBytes != 0 || l.Notes != DefaultNotesPerAccount {
+		t.Fatalf("overrides of other limits touch the notes count: %+v", l)
+	}
+
+	// the operator's number reaches every account, whether SetPolicy or Open brings it
+	pol := DefaultPolicy()
+	pol.Defaults.Notes = 7
+	s.SetPolicy(pol)
+	if s.Policy().Defaults.Notes != 7 || s.LimitsFor(alice).Notes != 7 || s.LimitsFor(bob).Notes != 7 {
+		t.Fatalf("SetPolicy lost the notes count: policy %d, alice %d, bob %d",
+			s.Policy().Defaults.Notes, s.LimitsFor(alice).Notes, s.LimitsFor(bob).Notes)
+	}
+	opened := open(t, t.TempDir(), newClock(), func(o *Options) { o.Policy = &pol })
+	if opened.Policy().Defaults.Notes != 7 || opened.LimitsFor("nobody").Notes != 7 {
+		t.Fatalf("a store opened with the policy does not carry its notes count: %+v", opened.Policy())
+	}
+
+	// there is no per-account override: AccountLimits has no member that names notes
+	typ := reflect.TypeOf(AccountLimits{})
+	for i := 0; i < typ.NumField(); i++ {
+		f := typ.Field(i)
+		if strings.Contains(strings.ToLower(f.Name+" "+f.Tag.Get("json")), "note") {
+			t.Fatalf("AccountLimits.%s is a per-account notes member, Assumed 9 of L0321 allows none", f.Name)
+		}
 	}
 }
 

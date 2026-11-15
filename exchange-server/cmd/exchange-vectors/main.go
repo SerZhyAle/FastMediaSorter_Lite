@@ -5,6 +5,10 @@
 //	go run ./cmd/exchange-vectors -out testdata/vectors          write the files
 //	go run ./cmd/exchange-vectors -check -out testdata/vectors   regenerate and compare with what is there
 //	go run ./cmd/exchange-vectors -settings                       print the separate 1.12 settings transcript
+//	go run ./cmd/exchange-vectors -notes                          print the separate 1.13 notes-sync transcript
+//
+// -settings and -notes each print one separate file to standard output and write nothing else: they never touch
+// the adopted 1.1 corpus in -out, ignore -check, -out and -commit, and are not combined with each other.
 //
 // The generator is the only author of these files: a hand edit is detected by the hash in PROVENANCE.txt,
 // and regenerating is the only way to change them. They are developer artifacts and do not ship.
@@ -31,18 +35,27 @@ func run(args []string, stdout, stderr io.Writer) int {
 	commit := fs.String("commit", "", "the commit the generator ran at, recorded in PROVENANCE.txt (git rev-parse HEAD)")
 	check := fs.Bool("check", false, "regenerate and compare with the files in -out instead of writing")
 	settings := fs.Bool("settings", false, "print the settings-standard transcript without changing the adopted 1.1 corpus")
+	notes := fs.Bool("notes", false, "print the notes-sync transcript (DEVICE-EXCHANGE 1.13) without changing the adopted 1.1 corpus")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	if *settings {
-		data, err := generateSettingsTranscript()
+	if *settings && *notes {
+		fmt.Fprintln(stderr, "-settings and -notes each print one transcript: ask for one of them")
+		return 2
+	}
+	if *settings || *notes {
+		name, generateOne := "settings", generateSettingsTranscript
+		if *notes {
+			name, generateOne = "notes", generateNotesTranscript
+		}
+		data, err := generateOne()
 		if err != nil {
-			fmt.Fprintf(stderr, "settings transcript: %v\n", err)
+			fmt.Fprintf(stderr, "%s transcript: %v\n", name, err)
 			return 2
 		}
 		_, err = stdout.Write(data)
 		if err != nil {
-			fmt.Fprintf(stderr, "settings transcript: %v\n", err)
+			fmt.Fprintf(stderr, "%s transcript: %v\n", name, err)
 			return 2
 		}
 		return 0

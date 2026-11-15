@@ -1,8 +1,8 @@
 package wire
 
-// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Twenty-one
-// exist (the ten of 0.20, the six of 19 - accounts, invitations, passwords -, admin-disabled and the four of 1.12 item EP); a client shows an
-// unknown value as a generic refusal.
+// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Twenty-two
+// exist (the ten of 0.20, the six of 19 - accounts, invitations, passwords -, admin-disabled, the four of 1.12 item EP
+// and `note-conflict` of 1.13 item FL); a client shows an unknown value as a generic refusal.
 type Reason string
 
 // The reasons. Refuse is the only way a `refused` envelope is built, and a source scan
@@ -48,6 +48,13 @@ const (
 	ReasonAppIDMismatch Reason = "app-id-mismatch"
 	// ReasonVersionIncompatible is a `formatVersion` the server does not implement.
 	ReasonVersionIncompatible Reason = "version-incompatible"
+
+	// DEVICE-EXCHANGE 1.13 item FL (ticket L0321): the notes of an account.
+
+	// ReasonNoteConflict is a `notes_put` whose `baseRevision` is not the stored record's revision (item FJ). The
+	// refusal carries the stored record as `current` and nothing was stored; a client resolves it and never
+	// shows it as a failure.
+	ReasonNoteConflict Reason = "note-conflict"
 )
 
 // AllReasons is the closed list of 7.10, in the order of the contract.
@@ -57,9 +64,10 @@ var AllReasons = []Reason{
 	ReasonInvitationInvalid, ReasonLoginTaken, ReasonPasswordPolicy, ReasonLimitReached, ReasonNotPermitted, ReasonSignedOut,
 	ReasonAdminDisabled,
 	ReasonNotFound, ReasonInvalidPayload, ReasonAppIDMismatch, ReasonVersionIncompatible,
+	ReasonNoteConflict,
 }
 
-// Valid reports whether r is one of the twenty-one.
+// Valid reports whether r is one of the twenty-two.
 func (r Reason) Valid() bool {
 	for _, k := range AllReasons {
 		if r == k {
@@ -82,7 +90,7 @@ const (
 // which is also what answers a peer that spoke the legacy one.
 func Refuse(r Reason) *Refused {
 	if !r.Valid() {
-		panic("wire: Refuse with a reason outside the twenty-one of DEVICE-EXCHANGE 7.10: " + string(r))
+		panic("wire: Refuse with a reason outside the twenty-two of DEVICE-EXCHANGE 7.10: " + string(r))
 	}
 	return &Refused{Head: Head{SchemaVersion, TypeRefused}, Reason: string(r)}
 }

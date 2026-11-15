@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
-| **Version** | catalog 0.12 / 0.13 / 0.7 / 0.10, draft (current on 2026-10-20). The text below was read at 0.12 / 0.12 / 0.3 / 0.4 (`APP-SETTINGS` 0.3 section 9 on 2026-10-07; `WINDOWS-UI` 0.4 section 11 on 2026-10-11; `WINDOWS-UI` 0.2 sections 5 and 9 and `APP-STYLE` section 5 (the audio overlay) worked against the viewer on 2026-10-13); the later `APP-STYLE` 0.13 (the `status.*` fill roles), `APP-SETTINGS` 0.7 and `WINDOWS-UI` 0.10 are not described here. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at `APP-BEHAVIOUR` 0.14, `APP-STYLE` 0.15, `APP-SETTINGS` 0.8 and `WINDOWS-UI` 0.12, draft, the current catalog versions; the sections below keep the earlier dated readings they were written at (`APP-SETTINGS` 0.3 section 9 on 2026-10-07; `WINDOWS-UI` 0.2 sections 5 and 9 and `APP-STYLE` section 5 (the audio overlay) worked against the viewer on 2026-10-13). Rows: `APP-STYLE` no exception open; `APP-BEHAVIOUR` partial (viewer rule 2 Designer dialogs; Share Manager rules 1, 3 and 10); `APP-SETTINGS` partial (Share Manager rules 1 and 11); `WINDOWS-UI` partial (viewer Settings cold open and `Video_Replace_Confirm_Form` first focus; Share Manager lazy build and timing of settings pages); all dated 2026-11-15 in the registry, tickets L0326 and L0279 T-1. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 
@@ -108,8 +108,8 @@ record is in the registry rows and in the addendum of the [Windows UI audit](../
   bytes says "Nothing to clear" and does not ask, and rung 3 is built - `SettingsIrreversibleHandlerTests` reads
   every value-event handler of the settings window's sources (64 on that date) and what each reaches, two calls
   deep, and fails on a file, folder, registry or disk-cache deletion; a handler it cannot place is a failure of
-  the sweep, never a pass. Spec 169 (reset all settings, About page) is the planned operation this section makes
-  permissible; it is not built, and it cites section 9.
+  the sweep, never a pass. Restore defaults (a button with its own confirmation) and the About page, the
+  operations specification 169 asked for and `APP-SETTINGS` section 9 makes permissible, exist (read 2026-11-15).
 
 Full runtime, physical DPI, high-contrast and spoken-accessibility conformance remains separately verified, and
 the net48 maintenance policy is unchanged.

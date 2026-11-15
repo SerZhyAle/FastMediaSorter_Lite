@@ -160,10 +160,13 @@ type Welcome struct {
 // TypeName is "welcome".
 func (*Welcome) TypeName() string { return TypeWelcome }
 
-// Refused is built only by Refuse.
+// Refused is built only by Refuse. Current is the stored record of a `note-conflict` (DEVICE-EXCHANGE 1.13
+// item FJ), box included; every other refusal, and a conflict with no record left to show, omits it, so the
+// bytes of every refusal that predates 1.13 are unchanged.
 type Refused struct {
 	Head
-	Reason string `json:"reason"`
+	Reason  string      `json:"reason"`
+	Current *NoteRecord `json:"current,omitempty"`
 }
 
 // TypeName is "refused".

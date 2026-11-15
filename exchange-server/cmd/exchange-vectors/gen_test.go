@@ -62,6 +62,104 @@ func TestSettingsStandardScenario(t *testing.T) {
 	}
 }
 
+// The notes scenario belongs to DEVICE-EXCHANGE 1.13 (ticket L0321), like the settings one to 1.12: it is a
+// separate file that generate never writes, so the frames-v2 corpus keeps its bytes. It must cover the five
+// frames and the reason, hold both kinds of clear payload of item FH, carry boxes that open under the context
+// note:<noteId>, and read back through the codec to the bytes the server wrote.
+func TestNotesSyncScenario(t *testing.T) {
+	data, err := generateNotesTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		framesDoc
+		Sealed sealedFile `json:"sealed"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Transcripts) != 1 || doc.Transcripts[0].Name != "notes-sync" || len(doc.Transcripts[0].Steps) == 0 {
+		t.Fatal("the notes-sync scenario produced no transcript")
+	}
+	types, reasons := map[string]bool{}, map[string]bool{}
+	for i, st := range doc.Transcripts[0].Steps {
+		if st.JSON == "" {
+			continue
+		}
+		raw, err := hex.DecodeString(st.Hex)
+		if err != nil || string(raw[4:]) != st.JSON {
+			t.Fatalf("step %d: the hex is not the frame of the json", i)
+		}
+		e, err := wire.NewFrameReader(bytes.NewReader(raw), wire.MaxFrameAuth).Read()
+		if err != nil {
+			t.Fatalf("step %d (%s): %v", i, st.JSON, err)
+		}
+		if again, err := wire.Frame(e); err != nil || !bytes.Equal(again, raw) {
+			t.Errorf("step %d: re-encoding the decoded frame changes the bytes\n got  %s\n want %s", i, again, raw)
+		}
+		types[e.TypeName()] = true
+		if f, ok := e.(*wire.Refused); ok {
+			reasons[f.Reason] = true
+		}
+	}
+	for _, typ := range []string{wire.TypeNotesList, wire.TypeNotesChanges, wire.TypeNotesPut, wire.TypeNotesStored, wire.TypeNotesChanged} {
+		if !types[typ] {
+			t.Errorf("no frame of type %q in the notes transcript", typ)
+		}
+	}
+	for _, r := range []wire.Reason{wire.ReasonNoteConflict, wire.ReasonNotPermitted} {
+		if !reasons[string(r)] {
+			t.Errorf("the reason %q is not produced by the notes transcript", r)
+		}
+	}
+	kinds := map[string]bool{}
+	for _, c := range doc.Sealed.Cases {
+		var p struct {
+			FormatVersion int    `json:"formatVersion"`
+			Kind          string `json:"kind"`
+		}
+		if err := json.Unmarshal(c.Payload, &p); err != nil || p.FormatVersion != 1 || len(c.Payload) > wire.MaxNotePayload {
+			t.Errorf("%s: not a note payload of item FH: %v %s", c.Name, err, c.Payload)
+		}
+		kinds[p.Kind] = true
+		if !strings.HasPrefix(c.Context, "note:") || !wire.ValidNoteID(strings.TrimPrefix(c.Context, "note:")) {
+			t.Errorf("%s: the context %q is not note:<noteId>", c.Name, c.Context)
+		}
+		if len(c.To) != 2 {
+			t.Errorf("%s: %d recipients, want both devices", c.Name, len(c.To))
+		}
+		for _, to := range c.To {
+			payload, _, err := openBox(c.Box, to.DeviceID, e2eDevices[to.Device].private(), e2eDevices[c.From.Device].KEM, c.Context)
+			if err != nil || string(payload) != string(c.Payload) {
+				t.Errorf("%s as %s: %v", c.Name, to.Device, err)
+			}
+		}
+	}
+	if !kinds["text"] || !kinds["checklist"] {
+		t.Errorf("the clear samples must hold both kinds of item FH, got %v", kinds)
+	}
+}
+
+// The notes transcript is handed to other implementations as vectors, so its bytes must be a function of the code
+// alone, like the frames-v2 corpus: two runs of the generator give the same bytes (no map order, clock or random
+// number reaches the file).
+func TestNotesTranscriptIsDeterministic(t *testing.T) {
+	first, err := generateNotesTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := generateNotesTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) == 0 {
+		t.Fatal("the notes transcript is empty")
+	}
+	if !bytes.Equal(first, second) {
+		t.Error("the notes transcript differs between two runs: a generated vector must be a function of the code alone")
+	}
+}
+
 func TestBothAdministrationOpeningsCoverTheContract(t *testing.T) {
 	var corpus framesFile
 	if err := json.Unmarshal(generated(t)[framesFileName], &corpus); err != nil {
@@ -230,6 +328,17 @@ func TestTheFramesCoverEveryEnvelopeEveryReasonAndEveryOpening(t *testing.T) {
 		t.Fatal(err)
 	}
 	doc.Transcripts = append(doc.Transcripts, extra.Transcripts...)
+	// the notes types and the reason note-conflict (1.13) are produced only by the separate notes transcript,
+	// which is accepted here exactly as the settings one is; the adopted frames-v2 corpus is not changed
+	notesJSON, err := generateNotesTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var notesExtra framesDoc
+	if err := json.Unmarshal(notesJSON, &notesExtra); err != nil {
+		t.Fatal(err)
+	}
+	doc.Transcripts = append(doc.Transcripts, notesExtra.Transcripts...)
 	types, reasons := map[string]bool{}, map[string]bool{}
 	var plain, tlsStreams int
 	statuses := map[int]bool{}

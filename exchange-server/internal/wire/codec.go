@@ -85,6 +85,12 @@ var registry = map[string]func() Envelope{
 	TypeSettingsSaved:           func() Envelope { return new(SettingsSaved) },
 	TypeSettingsGetStandard:     func() Envelope { return new(SettingsGetStandard) },
 	TypeSettingsStandardPayload: func() Envelope { return new(SettingsStandardPayload) },
+
+	TypeNotesList:    func() Envelope { return new(NotesList) },
+	TypeNotesChanges: func() Envelope { return new(NotesChanges) },
+	TypeNotesPut:     func() Envelope { return new(NotesPut) },
+	TypeNotesStored:  func() Envelope { return new(NotesStored) },
+	TypeNotesChanged: func() Envelope { return new(NotesChanged) },
 }
 
 // Types lists every type this wire defines, sorted as the table of ticket 161 section 4.
@@ -99,7 +105,8 @@ func Types() []string {
 		TypeClipboardGet, TypeClipboardValue, TypeClipboardEmpty,
 		TypeRegister, TypePasswordChange, TypePasswordChanged, TypeAccountDelete, TypeAccountDeleted,
 		TypeAdminAuth, TypeAdminAuthOK, TypeAdminRequest, TypeAdminReply,
-		TypeSettingsSaveStandard, TypeSettingsSaved, TypeSettingsGetStandard, TypeSettingsStandardPayload}
+		TypeSettingsSaveStandard, TypeSettingsSaved, TypeSettingsGetStandard, TypeSettingsStandardPayload,
+		TypeNotesList, TypeNotesChanges, TypeNotesPut, TypeNotesStored, TypeNotesChanged}
 }
 
 // New returns a zero typed envelope of the given type, or nil for a type this wire does not define.
@@ -174,6 +181,10 @@ func Encode(e Envelope) ([]byte, error) {
 		v.Features = nonNilS(v.Features)
 	case *Enrolled:
 		v.Features = nonNilS(v.Features)
+	case *NotesChanges:
+		if v.Records == nil {
+			v.Records = []NoteRecord{}
+		}
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

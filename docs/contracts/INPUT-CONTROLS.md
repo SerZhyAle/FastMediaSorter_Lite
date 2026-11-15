@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `INPUT-CHORD` (how a combination is stored, shown, refused) and `INPUT-PARITY` (the shared action vocabulary with a binding per device) |
-| **Version** | 0.5 / 0.5, draft (read 2026-10-30, specification 294: the 2026-10-29 consolidation, items A-H; 0.4 read 2026-10-20, specification 244; the 2026-10-17 consolidation added the shared media-viewer keyboard and more trigger names, the 0.3 text was read 2026-10-02 and 2026-10-07). Owner: CyrFlip - the chord notation and the keyboard and mouse columns; the device columns are `shared` with a steward per column |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at `INPUT-CHORD` 0.5 and `INPUT-PARITY` 0.7, draft, the current catalog versions; both partial, dated 2026-11-15 in the registry (ticket L0327). `INPUT-CHORD` open: rules 1, 3 and 8 (a key without a canonical token is written by its .NET name, `Load` drops an action id the build does not know, `OwnerOfCombo` does not ask the extra factory keys) and the rule 6 refusal list (a question to the catalog, a proposal is filed). `INPUT-PARITY` open: the keyboard-only walk of the viewer windows (rung 3, not run) and the `search` cell (`Ctrl+F`, a question to the catalog); 0.6 and 0.7 oblige nothing here (no crown, no touch-locked screen). Earlier reading: 0.5 / 0.5 (read 2026-10-30, specification 294: the 2026-10-29 consolidation, items A-H; 0.4 read 2026-10-20, specification 244; the 2026-10-17 consolidation added the shared media-viewer keyboard and more trigger names, the 0.3 text was read 2026-10-02 and 2026-10-07). Owner: CyrFlip - the chord notation and the keyboard and mouse columns; the device columns are `shared` with a steward per column |
 | **Home** | `input-controls/README.md` in the shared contracts catalog |
 | **Role here** | consumer, **partial** (corrected 2026-10-07; the 2026-10-02 pointer said "declared, not implementing", which was wrong): the .NET 10 viewer stores, shows and captures key combinations - the "Keyboard shortcuts" dialog (`src/Hotkeys_Form.vb`) and the model behind it (`src/CustomHotkeys.vb`, `src/Main_Form.CustomHotkeys.vb`), kept in the profile as the `CustomHotkeys` JSON object `{ actionId: "Ctrl+Shift+F5" }`. It is an in-window table: no global hook, no mouse chords, so rules 4, 7 and 10 to 15 bind nothing here. The x86 fallback has none |
 
@@ -20,7 +20,8 @@
   inert (`CustomHotkeys.IsInert`: shown as no shortcut, binds nothing, its factory key retired) and is kept
   as it was stored, so the next save writes it back (specification 294, 2026-10-30: before, it was rewritten
   as `-`); a duplicate becomes the explicit no-shortcut marker; a blank value means no shortcut.
-  Unknown action ids are ignored and redundant defaults are omitted. The 18 mouse rows bind nothing here.
+  Unknown action ids are dropped on load (an open item of 2026-11-15 against `VERSIONING` section 4 rule 5: a shared
+  profile should carry them) and redundant defaults are omitted. The 18 mouse rows bind nothing here.
   **The 0.4 trigger vocabulary** (the physical arrows, `Numpad0..9` and `NumpadAdd` with its siblings,
   `BracketLeft` / `BracketRight`, `Period`, `Comma`, `Equal`, `Minus`, `Backslash`, the media and volume keys)
   is canonical: a writer emits only canonical spellings, a token a reader does not know is inert and never
@@ -45,8 +46,8 @@
 - **`INPUT-PARITY` 0.4 sets the viewer's default keys.** The shared media-viewer keyboard (`VIEWER-KEYBOARD`,
   incorporated by the 2026-10-17 consolidation) is the normative default of every hardware-keyboard viewer, in
   place of the 0.3 keyboard cells this product was first read against. A default is migrated explicitly and never
-  over a remap the user stored; a temporary difference is a dated registry exception. The catalog is at 0.5 / 0.5
-  since 2026-10-29. Specification 294 (2026-10-30) found the defaults already moved by specification 252 T-3:
+  over a remap the user stored; a temporary difference is a dated registry exception. The catalog was at 0.5 / 0.5
+  from 2026-10-29 and is at 0.5 / 0.7 now. Specification 294 (2026-10-30) found the defaults already moved by specification 252 T-3:
   `Space` plays or pauses and plain `Left` / `Right` seek the medium step (10 s) while LibVLC plays, `F` is
   full screen (`F7` kept), `F4` the picker, `G` the panel (`F3` kept), `,` a frame back; the map stores
   overrides only, so every stored remap keeps its key (held by

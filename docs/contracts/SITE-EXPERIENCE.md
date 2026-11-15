@@ -3,17 +3,17 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-EXPERIENCE` |
-| **Version** | 0.4, draft (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096; 0.2 added rule 20 and 0.3 made the portal language picker conforming, both read 2026-10-07). 0.4 carries the 2026-10-17 amendment of the domain's README, whose additions are the Support page type and the rendering of a release history; no rule text of this contract changed between 0.3 and 0.4 |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.6, draft, the current catalog version; partial, no new divergence: the standing rows stay (rules 4, 7, 10, 15 to 17 and the measurements not run, `-Live` not run; the 15 `lang/ru` and `lang/uk` pages were not re-searched for rules 4 and 7), dated in the registry. Item E and F of 0.6 (release facts at build time) are met. Earlier reading: 0.4 (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096; 0.2 added rule 20 and 0.3 made the portal language picker conforming, both read 2026-10-07). 0.4 carries the 2026-10-17 amendment of the domain's README, whose additions are the Support page type and the rendering of a release history; no rule text of this contract changed between 0.3 and 0.4 |
 | **Home** | `product-site/SITE-EXPERIENCE.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); guide tier. Rules 1, 4, 7, 8, 10, 13-19 are read; the portal-component rules (2, 3, 5, 6, 9, 11, 12) are not bound at this tier |
 
 ## What this repository must do
 
 1. **Serve the kit as the catalog's file, first** (rule 1): `assets/sza-kit.css` is vendored and linked before
-   `assets/fms-site.css` on every page. The vendored copy is the revision of 15661 bytes, SHA-256 `27501a10..`, that
-   carries `PAGE-STYLE` 1.4 and 1.5 (vendored 2026-10-13; marked `-text`, so the working-tree bytes are LF); the
-   catalog's current kit is a later revision (see the [PAGE pointer](PAGE.md)), so this copy is not the catalog's
-   file until it is vendored again. `Build-SitePages.ps1 -Check` pins the old SHA-256.
+   `assets/fms-site.css` on every page. The vendored copy is the `PAGE-STYLE` 3.3 file (30629 bytes; marked `-text`, so
+   the working-tree bytes are LF); the catalog's current kit is the 3.8 file (30698 bytes), so this copy is not the
+   catalog's file until it is vendored again (see the [PAGE pointer](PAGE.md); ticket L0331).
+   `Build-SitePages.ps1 -Check` pins the vendored SHA-256.
 2. **Keep layout out of `style` attributes** (rule 4) and the pre-paint theme resolver before the first
    stylesheet (rule 7). Both are open exceptions.
 3. **Share language and theme through `sza-lang` (`ru`, `en`, `ua`) and `sza-theme` (`dark`, `light`)**
@@ -23,8 +23,8 @@
 4. **Take a version or a channel from one source** (rule 13): no page types a version. The release facts (version,
    versioned links, `.sha256` links, date) are rendered at build time from `tools/release-manifest.json`, which
    `tools/Set-ReleaseManifest.ps1` writes from the published release; no page calls `api.github.com`. The rule's
-   "resolved at run time" (after `PAGE-STYLE` 4.10) is a dated exception since 2026-11-08 (ticket L0207, F3), with a
-   proposal to both owners to take the canon's build-time wording.
+   "resolved at run time" (after `PAGE-STYLE` 4.10) was a dated exception from 2026-11-08; 0.6 items E and F and
+   `PAGE-STYLE` 3.10 took the build-time wording, so it is closed as compliance (read 2026-11-15).
 5. **Declare and disclose every third-party origin** (rule 14): `fonts.googleapis.com` and `fonts.gstatic.com`,
    declared in `tools/site-origins.json` and named with purpose and data on the privacy page (en, ru, ua) and in every
    trust locale; `tools/Test-SiteOrigins.ps1` compares the pages with the declaration in both directions. Held since

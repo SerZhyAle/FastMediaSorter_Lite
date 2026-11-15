@@ -3,21 +3,24 @@
 | | |
 | --- | --- |
 | **Ids** | `PAGE-CONTENT`, `PAGE-STYLE`, `SITE-FAMILY-MAP` |
-| **Version** | catalog 1.5 / 3.1 / 1.5, active (read 2026-10-20, specification 244; the vendored kit is the `PAGE-STYLE` 3.1 file since 2026-10-20; the rest of the text below was written against 1.4 / 1.6 / 1.3, read 2026-10-07). `PAGE-STYLE` moved through 2.0 and 3.0 (breaking) and 2.1 and 3.1 (additive) on 2026-10-17, see "What `PAGE-STYLE` 2.0 to 3.1 ask of this site"; the `PAGE-CONTENT` and `SITE-FAMILY-MAP` 1.5 are the consolidation's records and corrections. Owner: the sza.od.ua hub |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at `PAGE-CONTENT` 1.5, `PAGE-STYLE` 3.10 and `SITE-FAMILY-MAP` 1.12, active, the current catalog versions; the text below was written against 1.4 / 1.6 / 1.3 (2026-10-07) and read at 1.5 / 3.1 / 1.5 on 2026-10-20 (specification 244). `PAGE-CONTENT` partial: the header brand repeats the full name by the owner's choice of 2026-10-30, the hero action labels were not re-read. `PAGE-STYLE` partial: the vendored `assets/sza-kit.css` is the 3.3 file (30629 bytes) and the catalog reference is the 3.8 file (30698 bytes), `assets/fms-buttons.css` is kept beside it, the header brand is not aligned by logical properties (ar, ur) and `.pill` text is 4.07:1 on the light page (ticket L0331). `SITE-FAMILY-MAP` conforms; the help index address named by `CONTEXT-HELP` 0.4 item F is open (ticket L0327). Dated 2026-11-15 in the registry. `PAGE-STYLE` moved through 2.0 and 3.0 (breaking) and 2.1 and 3.1 (additive) on 2026-10-17, see "What `PAGE-STYLE` 2.0 to 3.1 ask of this site". Owner: the sza.od.ua hub |
 | **Home** | `product-web-pages/` in the shared contracts catalog, with `reference/sza-kit.css` |
 | **Role here** | consumer - the product site served from a Pages artifact of the files declared in `tools/site-served.json`; audit in `specification 030` and `specification 181` (local specifications) |
 
 ## What this repository must do to stay conformant
 
-- `assets/sza-kit.css` is the catalog's reference stylesheet byte for byte, and `.gitattributes` marks it `-text`.
-  The vendored copy is the `PAGE-STYLE` 3.1 revision of 15926 bytes, SHA-256 `e438fef2..` (the catalog file of
-  2026-10-17: the code-surface and light-accent contrast tokens and the copy-button states), vendored 2026-10-20 by
-  ticket 243 T-10a; it replaced the 15661-byte `27501a10..` revision of 2026-10-07 (`PAGE-STYLE` 1.4 and 1.5, vendored
-  2026-10-13). `tools/Build-SitePages.ps1 -Check` pins its SHA-256 (`Kit identity`) and moved with the file: when the
-  catalog moves it again, vendor it and move the pin together. A local override goes in `assets/fms-site.css` or in the
+- `assets/sza-kit.css` is a vendored copy of the catalog's reference stylesheet, and `.gitattributes` marks it `-text`.
+  Read 2026-11-15: the vendored copy is the 3.3 file (30629 bytes, `4ABA1DEE..`), pinned at
+  `tools/Build-SitePages.ps1:2019`, while the catalog reference is now 30698 bytes (`D490ABF3..`, 3.8): re-vendor it
+  and move the pin together (ticket L0331). The 2026-10-20 copy named here earlier (15926 bytes, `e438fef2..`, 3.1) is
+  history. `tools/Build-SitePages.ps1 -Check` pins the SHA-256 (`Kit identity`): when the
+  catalog moves the file, vendor it and move the pin together. A local override goes in `assets/fms-site.css` or in the
   button adapter below, never in the kit.
-- The kit still draws the 44 px pills, the primary glow and the hover lift of `.btn`, `.seg button`, `.theme-btn` and
-  `.to-top` (the catalog did not revise it for `BUTTONS`; `PAGE-STYLE` section 5 asks for an identified adapter instead).
+- **Superseded in part (read 2026-11-15):** from `PAGE-STYLE` 3.3 item 1 the kit itself is the `BUTTONS` adapter and is
+  served byte-identically; what remains is the theme control (`.theme-btn` with a word, 3.3 item 5) and whether
+  `assets/fms-buttons.css` is retired (ticket L0331). The paragraph below describes the 2026-10-20 state.
+- The kit then drew the 44 px pills, the primary glow and the hover lift of `.btn`, `.seg button`, `.theme-btn` and
+  `.to-top` (the catalog had not revised it for `BUTTONS`; `PAGE-STYLE` section 5 asked for an identified adapter instead).
   That adapter is `assets/fms-buttons.css`, linked after `assets/fms-site.css` on every page that loads the page layer -
   the generator's four templates and the hand-authored root and `docs/` pages - and held by check 15 ("Button adapter")
   of `Build-SitePages.ps1 -Check`. It also owns the row layout the root page used to carry inline (`.button-group`,
@@ -78,7 +81,8 @@ the documentation link (`.nav-doc`, to `topics.html`, a text link and not a `.bt
 under 480 px), and the get-it block lists the Server edition beside the Store. The author's name in the landing footer
 is a link since 2026-10-07.
 
-The dated exceptions that remain: the full name against the map's `Tool` cell and the header brand that repeats the
-full name where the contract has a short name as text, the form of the language picker (4.2 and 1.6), and the theme
+The dated exceptions that remain (the map's `Tool` cell is closed since `SITE-FAMILY-MAP` 1.9, which makes it the full
+name): the header brand that repeats the full name where the contract has a short name as text (a design record, the
+owner's choice of 2026-10-30), the form of the language picker (4.2 and 1.6), and the theme
 control, which still carries the bare glyph (the kit now styles the labelled form of 4.3 and `nav.expand` is drawn by
 the kit, but the markup of every page has not adopted the visible word yet).
