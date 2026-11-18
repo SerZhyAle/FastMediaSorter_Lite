@@ -127,6 +127,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler lnkServers.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("windows-servers"))
         sec.AddBodyRow(lnkServers)
 
+        Dim lnkEditions As New LinkLabel With {.Name = "managerEditionsPortalLink", .AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .Margin = New Padding(0, 0, 0, 10), .Text = Localization.T("Редакции продукта (портал)")}
+        AddHandler lnkEditions.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("editions"))
+        sec.AddBodyRow(lnkEditions)
+
         _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = ThemeService.Palette.TextMuted, .Text = ""}

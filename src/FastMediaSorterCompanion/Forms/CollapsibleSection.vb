@@ -31,6 +31,9 @@ Imports System.Windows.Forms
 Public NotInheritable Class CollapsibleSection
     Inherits Panel
 
+    ''' <summary>Logical px between two sibling groups (COLLAPSIBLE-GROUP section 3 rule 6); each group carries half above and below.</summary>
+    Friend Const SiblingGapLogical As Integer = 8
+
     Private ReadOnly _key As String
     Private ReadOnly _header As SectionHeader
     Private ReadOnly _body As TableLayoutPanel
@@ -46,7 +49,8 @@ Public NotInheritable Class CollapsibleSection
         _key = If(key, "")
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        Me.Margin = New Padding(0, 2, 0, 2)
+        ' 4 + 4: the 8 logical px between sibling groups of COLLAPSIBLE-GROUP section 3 rule 6.
+        Me.Margin = New Padding(0, SiblingGapLogical \ 2, 0, SiblingGapLogical \ 2)
 
         _body = New TableLayoutPanel With {.Dock = DockStyle.Top, .ColumnCount = 1,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -374,8 +378,14 @@ Public NotInheritable Class CollapsibleSection
             ' One line of text plus breathing room; follows the script font, which is taller
             ' for hi/bn than for Latin.
             ' ...and never shorter than the state marker's cell with a little air (tier 16 scaled with the window).
-            Me.Height = Math.Max(Math.Max(24, Me.Font.Height + 10), GroupMarker.CellPx(MarkerFactor()) + 4)
+            ' ...and never below the baseline pointer hit height (COLLAPSIBLE-GROUP section 3 rule 6: 32 logical px).
+            FitBaseHeight()
             FitHeaderTitle()
+        End Sub
+
+        Private Sub FitBaseHeight()
+            Me.Height = Math.Max(Math.Max(UiSizing.DevicePx(UiSizing.PointerTarget, MarkerFactor()), Me.Font.Height + 10),
+                                 GroupMarker.CellPx(MarkerFactor()) + 4)
         End Sub
 
         Protected Overrides Sub OnSizeChanged(e As EventArgs)
@@ -387,7 +397,7 @@ Public NotInheritable Class CollapsibleSection
             If Not WrapSettingsTitle OrElse Width < LogicalToDeviceUnits(200) Then Return
             Using bold As New Font(Font, FontStyle.Bold)
                 Dim measured = TextRenderer.MeasureText(_title, bold, New Size(Math.Max(1, Width - LogicalToDeviceUnits(48)), Integer.MaxValue), TextFormatFlags.WordBreak)
-                Dim desired = Math.Max(LogicalToDeviceUnits(44), measured.Height + LogicalToDeviceUnits(16))
+                Dim desired = Math.Max(UiSizing.DevicePx(44, MarkerFactor()), measured.Height + LogicalToDeviceUnits(16))
                 If Height <> desired Then Height = desired
             End Using
         End Sub
@@ -510,6 +520,8 @@ Public NotInheritable Class CollapsibleSection
         ''' control's own DPI. A test cannot move a window to a 175 percent monitor, so it names the factor.</summary>
         Friend Sub SetMarkerScale(factor As Single)
             _markerScale = factor
+            FitBaseHeight()
+            FitHeaderTitle()
             Invalidate()
         End Sub
 

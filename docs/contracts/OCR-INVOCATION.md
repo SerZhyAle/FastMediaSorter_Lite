@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-INVOCATION` |
-| **Version** | 1.2, active (implements 1.1, read at 1.2 on 2026-11-15, L0323 catch-up; 1.1 of 2026-09-25 changed no flag, default or exit code - a caller built against 1.0 keeps working, and the launcher already omits `-ocr-lang` on `auto` and treats the 1.1 no-plates stop as success; the document route already cites the 1.2 conversion profile items B, C, D, G and H in code). The one open clause is 1.2 item C rule 3 - a converter record that cannot be parsed or is foreign is read as an unfinished run, and the newer-schema notice does not name the contract and version: a dated exception of 2026-11-15, ticket L0330; the registry row stays at 1.1 on purpose until it is fixed. Owner: doc-html-translate |
+| **Version** | 1.2, active (implements 1.1, read at 1.2 on 2026-11-15, L0323 catch-up; 1.1 of 2026-09-25 changed no flag, default or exit code - a caller built against 1.0 keeps working, and the launcher already omits `-ocr-lang` on `auto` and treats the 1.1 no-plates stop as success; the document route already cites the 1.2 conversion profile items B, C, D, G and H in code). 1.2 item C rule 3 is implemented since 2026-11-15 (ticket L0330, compiled, not tested until the release): a record that cannot be parsed, is not the converter's or names another source is its own outcome and is not an unfinished run, and the newer-schema log line names `OCR-INVOCATION 1.2` and the schema it read. The registry row moves from 1.1 to 1.2 with the release run of the document tests. Owner: doc-html-translate |
 | **Home** | `ocr-overlay/integration-image-translate.md` in the shared contracts catalog |
 | **Role here** | consumer - the "translate in the browser" button, `src/DocHtmlTranslateLauncher.vb` |
 
@@ -20,6 +20,10 @@
   were a choice switched that off (ticket 033 Ф-7, 2026-09-25). The command line is built by
   `DocHtmlTranslate.BuildArguments` and held by `DocHtmlTranslateArgumentsTests`.
 - Refuse the launch for a secure container: the only path to hand over is the sealed file.
+- **Document route, item C rule 3.** `DocHtmlResultReader` says which not-completed case a record was: a record that
+  cannot be parsed, is not the converter's or names another source (`DocHtmlRecordFault`) is reported apart from the
+  run that never wrote `complete`, and a newer `schemaVersion` is logged with `OCR-INVOCATION 1.2` and the schema read.
+  The log line carries constants and numbers only - never a path or the record's text.
 
 Two documented departures, neither a deviation: the output always goes to a cache under `%LOCALAPPDATA%`,
 and the direct-download ZIP fallback of section 4 is not implemented - winget plus the Store page is the

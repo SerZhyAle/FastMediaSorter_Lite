@@ -269,12 +269,60 @@ Public Class ExchangeSealedFolderTests
     ' ---------------------------------------------------------------- DG, DP, DR: the four states and no clear fallback
 
     <Fact>
-    Public Sub A_clear_access_from_a_device_with_no_e2e_key_is_never_used_and_says_e2e_missing()
+    Public Sub A_clear_access_from_a_device_with_no_e2e_key_is_never_used_and_says_e2e_missing_peer_to_a_reader_that_holds_a_key()
         Using w As New World(producerHasNoKey:=True)         ' the producer's record shows no `e2eKey` and no capability, from the first sight
             Assert.Equal(ExchangeSealState.E2eMissing, w.C.View.StateOf(w.P.Id).Value)
+            Assert.Equal(ExchangeSealState.Ready, w.C.View.StateOf(w.C.Id).Value)    ' the reader's own listed record carries its key (item FB)
             Dim record As ExchangeResourceRecord = RecordOf(Rid, w.P.Id, AccessJson(), "", Fp)
             Assert.True(record.HasAccess)
-            AssertRefused(ExchangeSealedAccess.Resolve(record, w.C.View, w.C.Trust, w.C.Key), ConnectionDiagnosisMessages.E2eMissing)
+            AssertRefused(ExchangeSealedAccess.Resolve(record, w.C.View, w.C.Trust, w.C.Key), ConnectionDiagnosisMessages.E2eMissingPeer)
+        End Using
+    End Sub
+
+    ''' <summary>Item FB: `e2e-missing-peer` is claimed only by a reader that KNOWS the other side lacks the key. Whenever the lacking side
+    ''' may be this device, or cannot be told, the row stays `e2e-missing` - which is what clients without the row do.</summary>
+    <Fact>
+    Public Sub E2e_missing_peer_is_shown_only_when_this_device_and_its_own_record_hold_a_key()
+        Using w As New World(producerHasNoKey:=True)
+            Dim clear As ExchangeResourceRecord = RecordOf(Rid, w.P.Id, AccessJson(), "", Fp)
+
+            ' the server lists a record of ours with no `e2eKey` (a device enrolled before it had one): this device is the one that lacks it
+            w.C.Advertised = ""
+            w.Show()
+            Assert.Equal(ExchangeSealState.E2eMissing, w.C.View.StateOf(w.C.Id).Value)
+            AssertRefused(ExchangeSealedAccess.Resolve(clear, w.C.View, w.C.Trust, w.C.Key), ConnectionDiagnosisMessages.E2eMissing)
+            Assert.Same(ConnectionDiagnosisMessages.E2eMissing, ExchangeSealedAccess.MissingKeyState(w.C.View))
+
+            ' our own record is not listed at all: nothing says our key reached the server
+            w.C.Advertised = w.C.Key.Kem
+            w.C.Show(9, w.P.Rec(), w.T.Rec())
+            Assert.False(w.C.View.StateOf(w.C.Id).HasValue)
+            AssertRefused(ExchangeSealedAccess.Resolve(clear, w.C.View, w.C.Trust, w.C.Key), ConnectionDiagnosisMessages.E2eMissing)
+
+            ' this device holds no key: the lacking side is this device whatever the producer is
+            Using keyless As New Peer("K"c, withKey:=False)
+                keyless.Show(1, keyless.Rec(), w.P.Rec())
+                Assert.Same(ConnectionDiagnosisMessages.E2eMissing, ExchangeSealedAccess.MissingKeyState(keyless.View))
+            End Using
+            Assert.Same(ConnectionDiagnosisMessages.E2eMissing, ExchangeSealedAccess.MissingKeyState(Nothing))
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_clear_access_from_a_producer_the_directory_does_not_list_leaves_the_missing_side_unknown()
+        Using w As New World()
+            Dim stranger As ExchangeResourceRecord = RecordOf(Rid, ExchangeWireTestKit.IdOf("Z"c), AccessJson(), "", Fp)
+            Assert.False(w.C.View.StateOf(stranger.DeviceId).HasValue)
+            AssertRefused(ExchangeSealedAccess.Resolve(stranger, w.C.View, w.C.Trust, w.C.Key), ConnectionDiagnosisMessages.E2eMissing)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_boxed_record_of_a_device_that_shows_no_key_says_e2e_missing_peer_to_a_reader_that_holds_a_key()
+        Using w As New World(producerHasNoKey:=True)
+            Dim box As String = SealFor(w.C, Rid, AccessJson(), w.C)
+            Dim record As ExchangeResourceRecord = RecordOf(Rid, w.P.Id, "", box, Fp)
+            AssertRefused(ExchangeSealedAccess.Resolve(record, w.C.View, w.C.Trust, w.C.Key), ConnectionDiagnosisMessages.E2eMissingPeer)
         End Using
     End Sub
 
@@ -461,10 +509,14 @@ Public Class ExchangeSealedFolderTests
     End Sub
 
     <Fact>
-    Public Sub A_granted_record_with_a_clear_access_and_no_box_is_e2e_missing()
+    Public Sub A_granted_record_with_a_clear_access_and_no_box_is_e2e_missing_peer_to_a_guest_that_holds_a_key()
         Using owner As New Peer("O"c)
             Using guest As Peer = NewGuest()
                 Dim record As ExchangeResourceRecord = GrantedRecord(Gid, owner.Id, "", AccessJson(), Fp)
+                AssertRefused(ExchangeSealedAccess.Resolve(record, guest.View, guest.Trust, guest.Key), ConnectionDiagnosisMessages.E2eMissingPeer)
+                ' a guest whose own record shows no key cannot tell which side lacks it
+                guest.Advertised = ""
+                guest.Show(2, guest.Rec())
                 AssertRefused(ExchangeSealedAccess.Resolve(record, guest.View, guest.Trust, guest.Key), ConnectionDiagnosisMessages.E2eMissing)
             End Using
         End Using
@@ -595,12 +647,14 @@ Public Class ExchangeSealedFolderTests
     ' ---------------------------------------------------------------- the pipe and the viewer
 
     <Fact>
-    Public Sub The_four_states_travel_the_pipe_as_their_own_codes_and_nothing_else_is_a_sealed_state()
+    Public Sub The_five_states_travel_the_pipe_as_their_own_codes_and_nothing_else_is_a_sealed_state()
         Assert.Same(ConnectionDiagnosisMessages.E2eMissing, ExchangeAgentPipe.SealedMessageOf(ExchangeAgentPipe.ErrorE2eMissing))
+        Assert.Same(ConnectionDiagnosisMessages.E2eMissingPeer, ExchangeAgentPipe.SealedMessageOf(ExchangeAgentPipe.ErrorE2eMissingPeer))
         Assert.Same(ConnectionDiagnosisMessages.KeyChanged, ExchangeAgentPipe.SealedMessageOf(ExchangeAgentPipe.ErrorKeyChanged))
         Assert.Same(ConnectionDiagnosisMessages.ServerNoE2e, ExchangeAgentPipe.SealedMessageOf(ExchangeAgentPipe.ErrorServerNoE2e))
         Assert.Same(ConnectionDiagnosisMessages.SealedFailed, ExchangeAgentPipe.SealedMessageOf(ExchangeAgentPipe.ErrorSealedFailed))
-        For Each message As ConnectionDiagnosisMessage In {ConnectionDiagnosisMessages.E2eMissing, ConnectionDiagnosisMessages.KeyChanged,
+        For Each message As ConnectionDiagnosisMessage In {ConnectionDiagnosisMessages.E2eMissing, ConnectionDiagnosisMessages.E2eMissingPeer,
+                                                           ConnectionDiagnosisMessages.KeyChanged,
                                                            ConnectionDiagnosisMessages.ServerNoE2e, ConnectionDiagnosisMessages.SealedFailed}
             Assert.Same(message, ExchangeAgentPipe.SealedMessageOf(message.Code))          ' the token IS the code
         Next
@@ -625,6 +679,7 @@ Public Class ExchangeSealedFolderTests
 
     <Theory>
     <InlineData("e2e-missing", "E2eMissing")>
+    <InlineData("e2e-missing-peer", "E2eMissingPeer")>
     <InlineData("key-changed", "KeyChanged")>
     <InlineData("server-no-e2e", "ServerNoE2e")>
     <InlineData("sealed-failed", "SealedFailed")>
@@ -645,15 +700,17 @@ Public Class ExchangeSealedFolderTests
     Public Sub Each_sealed_outcome_has_its_own_sentence_from_the_common_message_table_and_none_is_the_generic_failure()
         Dim sentences As New Dictionary(Of ExchangeAttachOutcome, String) From {
             {ExchangeAttachOutcome.E2eMissing, ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.E2eMissing)},
+            {ExchangeAttachOutcome.E2eMissingPeer, ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.E2eMissingPeer)},
             {ExchangeAttachOutcome.KeyChanged, ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.KeyChanged)},
             {ExchangeAttachOutcome.ServerNoE2e, ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.ServerNoE2e)},
             {ExchangeAttachOutcome.SealedFailed, ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.SealedFailed)}}
         Dim generic As String = ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.NotStored)
         Assert.Equal(ExchangeResourceText.SealedText(ConnectionDiagnosisMessages.E2eMissing), sentences(ExchangeAttachOutcome.E2eMissing))
+        Assert.Equal(ExchangeResourceText.SealedText(ConnectionDiagnosisMessages.E2eMissingPeer), sentences(ExchangeAttachOutcome.E2eMissingPeer))
         Assert.Equal(ExchangeResourceText.SealedText(ConnectionDiagnosisMessages.KeyChanged), sentences(ExchangeAttachOutcome.KeyChanged))
         Assert.Equal(ExchangeResourceText.SealedText(ConnectionDiagnosisMessages.ServerNoE2e), sentences(ExchangeAttachOutcome.ServerNoE2e))
         Assert.Equal(ExchangeResourceText.SealedText(ConnectionDiagnosisMessages.SealedFailed), sentences(ExchangeAttachOutcome.SealedFailed))
-        Assert.Equal(4, sentences.Values.Distinct(StringComparer.Ordinal).Count())
+        Assert.Equal(5, sentences.Values.Distinct(StringComparer.Ordinal).Count())
         For Each pair As KeyValuePair(Of ExchangeAttachOutcome, String) In sentences
             Assert.False(String.IsNullOrWhiteSpace(pair.Value))
             Assert.NotEqual(generic, pair.Value)

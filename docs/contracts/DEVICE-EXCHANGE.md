@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `DEVICE-EXCHANGE` |
-| **Version** | 1.15, active (since 2026-10-07; read at 1.15 on 2026-11-15, L0323 catch-up, from 1.5 as read on 2026-10-20 with `WEB-BINDING`, `REMOTE-ADMIN` and the 1.5 amendment). Registry row `partial 1.14`: the items 1.5 to 1.14 less the clauses open and dated 2026-11-15 in the registry - 1.15 FQ-FV (the remote schedule: the server lists no `schedule` feature and the Share Manager answers no verb), 1.10 DY (the `ended` refusal reason of a tunnel `connect`), 1.11 EM (a stable `resourceId` per shared folder), 1.12 FB (`e2e-missing-peer`) and the 1.14 CW and CX terms in 13 languages; the vendored corpora and the WebSocket refusal artifacts wait on the producer's own exchange-vectors run; ticket L0328. Owner: FastMediaSorter Android |
+| **Version** | 1.15, active (since 2026-10-07; read at 1.15 on 2026-11-15, L0323 catch-up, from 1.5 as read on 2026-10-20 with `WEB-BINDING`, `REMOTE-ADMIN` and the 1.5 amendment). Registry row `partial 1.14`: the items 1.5 to 1.14 less the clauses open and dated 2026-11-15 in the registry - 1.15 FQ-FV (the remote schedule forwarder in `exchange-server/` behind shipping gate and Share Manager answering engine in `src/FastMediaSorterCompanion/`, ticket L0338), 1.10 DY (the `ended` refusal reason of a tunnel `connect`), 1.11 EM (a stable `resourceId` per shared folder), 1.12 FB (`e2e-missing-peer`) and the 1.14 CW and CX terms in 13 languages; the vendored corpora and the WebSocket refusal artifacts wait on the producer's own exchange-vectors run; ticket L0328. Owner: FastMediaSorter Android |
 | **Home** | `device-exchange/README.md` in the shared contracts catalog, with `WEB-BINDING.md`, `REMOTE-ADMIN.md` and the dated 1.5 amendment beside it |
 | **Role here** | **exchange-server implementer** (the Go program `exchange-server/`), **device client, resource producer, broadcaster and clipboard device** in the Share Manager (`src/FastMediaSorterCompanion/`), **device client and receiver** in the modern viewer (`src/Exchange/`, `src/Resources/`). Modern only: the net48 fallback has none of it |
 
@@ -19,16 +19,29 @@
   and `settings_get_standard` only on the person's act and only while `welcome` lists `settings`, writes no
   local-only key (item EQ) and applies nothing of a read before the whole payload is understood (item ER). The
   regenerated server transcript is not yet offered to the catalog (L0296 phase 1 step 7).
-- **Notes sync, server half (1.13, items FG to FM; local specification L0321).** The server lists `notes` only with
+- **Notes sync, server half (1.13 items FG to FM, 1.17 items FW to GB; local specifications L0321 and L0322).** The server lists `notes` only with
   its store open and `sealed` listed, keeps the notes of every `member` account in `notes.json`, never opens a box,
-  refuses a stale edit `note-conflict`, holds the count of item FL as `limits.notesPerAccount` in the config file
-  (config only, no `policy` line), purges tombstones in its sweep and erases the notes with the account and on
-  guest. The viewer of this product has no notes sync. Three points go to the catalog as the proposal `L0322`: the
-  cursor of a paged `full` answer, the bound of a notes box against the delivered frame, and a notes-count member on
-  the administration wire. The server runs on the specification's assumptions 1 to 15; the ones that read the
-  contract's silence are 1 (cursor), 2 (frame bound), 3 (an edit of a purged note), 4 (a malformed member) and 9
-  (the count switch). `go run ./cmd/exchange-vectors -notes` prints the transcript the catalog's proposed vectors
-  are made from, produced at the release.
+  refuses a stale edit `note-conflict` (with no `current` when no record holds the id), purges tombstones in its
+  sweep and erases the notes with the account and on guest. The notes limits of items FL, FY and FZ are the count
+  (`limits.notesPerAccount`, default 5000) and the bytes (`limits.notesMaxBytes`, default 256 MiB) in the config file
+  and on the administration wire - the own limits object `notesPerAccount` / `notesMaxBytes`, the effective limits
+  object `notes` / `notesBytes` on `policy status` / `policy set` / `account limits`, `bad-limit` to a value that is
+  not a whole number or is negative - and a put crosses them in the order of item FX: guest, frame members,
+  conflict, count, bytes, delivery bound, the last answered `refused capacity` and storing nothing. The viewer of
+  this product has no notes sync. A `full` continuation carries `full: true` and the last
+  revision, without server-side cursor state (1.17 item FW). `go run ./cmd/exchange-vectors -notes` prints the
+  transcript the catalog's proposed vectors are made from - the notes-sync transcript and the four item-GB vectors
+  (`notes-paging-full-after-purge`, `notes-box-bound`, `notes-conflict-without-current`,
+  `notes-count-bytes-and-policy`) - produced at the release.
+- **Remote schedule (1.15, items FQ to FV; local specification L0338).** The server lists `schedule` in `welcome.features`
+  only when both `features.schedule` and `sealed` are enabled (default server command keeps `Schedule: false` behind
+  its shipping gate). The server validates the wire format, rejects guests (`not-permitted`), adds `fromDeviceId`,
+  and forwards `schedule-request` to the target device when supported (`schedule-v1`) and online, returning `device-unavailable`
+  or `device-unsupported` otherwise. Results (`schedule-result`) are forwarded back with `toDeviceId` replaced by
+  `fromDeviceId`, or dropped if the requester is gone. The Share Manager declares `schedule-v1`, maintains a 256-request
+  LRU ring per requester device for idempotent replay, enforces local consent (`Share_RemoteScheduleConsent` registry:
+  `Never`, `Ask`, `Always`), and handles the 6 verbs (`places`, `list`, `save`, `delete`, `run`, `history`) with strict
+  Item FS member rejection and the canonical refusal reasons of item FV.
 - **No account, no Drive, no change (section 9 rule 7).** With neither configured, nothing in the product changes.
 - **Connection string (5.5, items BO, CK, CZ, DP; the 1.3 amendment).** A higher `FMSEXCH` prefix or descriptor schema is refused cleanly, never
   imported in part, with the catalog's canonical text, code `format-unsupported` (kind local, step `-`), and no

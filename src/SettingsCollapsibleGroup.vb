@@ -28,6 +28,11 @@ Friend NotInheritable Class SettingsCollapsibleGroup
     Friend Const MarkerTierLogical As Integer = UiSizing.MarkerTier
     Friend Const MarkerGapLogical As Integer = UiSizing.GlyphGap
 
+    ''' <summary>The gap between sibling groups and the baseline header hit height, logical pixels
+    ''' (COLLAPSIBLE-GROUP section 3 rule 6: 8 units between sibling groups, header hit height 32 for pointer).</summary>
+    Friend Const SiblingGapLogical As Integer = 8
+    Friend Const HeaderHitLogical As Integer = UiSizing.PointerTarget
+
     Friend ReadOnly GroupId As String
     Friend ReadOnly Header As Button
     Friend ReadOnly Body As FlowLayoutPanel
@@ -47,11 +52,11 @@ Friend NotInheritable Class SettingsCollapsibleGroup
     Friend Sub New(id As String, logicalScale As Single, headerFont As Font)
         GroupId = id
         Name = "settingsGroup_" & id
-        headerHeight = Math.Max(32, CInt(Math.Ceiling(32 * logicalScale)))
+        headerHeight = Math.Max(HeaderHitLogical, CInt(Math.Ceiling(HeaderHitLogical * logicalScale)))
         headerTextInset = CInt(Math.Ceiling(6 * logicalScale))
         markerSize = Math.Max(MarkerTierLogical, CInt(Math.Round(MarkerTierLogical * logicalScale)))
         markerGap = Math.Max(MarkerGapLogical, CInt(Math.Ceiling(MarkerGapLogical * logicalScale)))
-        Margin = New Padding(0, 0, 0, CInt(Math.Ceiling(6 * logicalScale)))
+        Margin = SiblingMargin(logicalScale)
         Header = New GroupHeader(Me) With {
             .Name = Name & "_header", .FlatStyle = FlatStyle.Flat,
             .UseMnemonic = False, .Font = headerFont, .TabStop = True,
@@ -181,11 +186,17 @@ Friend NotInheritable Class SettingsCollapsibleGroup
         ArrangeContents()
     End Sub
 
+    ''' <summary>The flow margin that puts <see cref="SiblingGapLogical"/> (scaled) between this group and the next.</summary>
+    Friend Shared Function SiblingMargin(scale As Single) As Padding
+        Return New Padding(0, 0, 0, Math.Max(SiblingGapLogical, CInt(Math.Ceiling(SiblingGapLogical * scale))))
+    End Function
+
     Friend Sub SetLayoutScale(scale As Single)
-        headerHeight = Math.Max(32, CInt(Math.Ceiling(32 * scale)))
+        headerHeight = Math.Max(HeaderHitLogical, CInt(Math.Ceiling(HeaderHitLogical * scale)))
         headerTextInset = CInt(Math.Ceiling(6 * scale))
         markerSize = Math.Max(MarkerTierLogical, CInt(Math.Round(MarkerTierLogical * scale)))
         markerGap = Math.Max(MarkerGapLogical, CInt(Math.Ceiling(MarkerGapLogical * scale)))
+        Margin = SiblingMargin(scale)
         Caption = captionValue
         RefreshDisclosure()
         ArrangeContents()

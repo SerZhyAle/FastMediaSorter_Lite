@@ -41,6 +41,8 @@ type command struct {
 	limBroadcast       *int
 	limBroadcastDevice *int
 	limClipboard       *int64
+	limNotes           *int
+	limNotesBytes      *int64
 	maxAccounts        *int // policy set --max-accounts
 	allowedAddresses   string
 	sessionLifetime    int
@@ -56,7 +58,8 @@ type originEdits struct{ add, remove []string }
 // limits is the set of per-account limits the command line names, nil when it names none.
 func (c command) limits() *accounts.AccountLimits {
 	l := &accounts.AccountLimits{DevicesPerAccount: c.limDevices, ResourcesPerAccount: c.limResources,
-		BroadcastsPerAccount: c.limBroadcast, BroadcastsPerDevice: c.limBroadcastDevice, ClipboardMaxBytes: c.limClipboard}
+		BroadcastsPerAccount: c.limBroadcast, BroadcastsPerDevice: c.limBroadcastDevice, ClipboardMaxBytes: c.limClipboard,
+		NotesPerAccount: c.limNotes, NotesMaxBytes: c.limNotesBytes}
 	if l.IsEmpty() {
 		return nil
 	}
@@ -65,12 +68,12 @@ func (c command) limits() *accounts.AccountLimits {
 
 const (
 	usageAccount = "account add <login> [--generate] [--kind member|guest] | passwd <login> [--generate] | kind <login> member|guest | remove <login> | list [--json] | " +
-		"limits <login> [--devices N] [--resources N] [--broadcasts N] [--broadcasts-per-device N] [--clipboard-bytes N] [--reset]"
+		"limits <login> [--devices N] [--resources N] [--broadcasts N] [--broadcasts-per-device N] [--clipboard-bytes N] [--notes N] [--notes-bytes N] [--reset]"
 	usageDevice           = "device list <login> [--json] | revoke <login> <deviceId>"
 	usageInvitation       = "invitation create [--kind member|guest] [--expect-login <login>] [--name <label>] [--json] | list [--json] | withdraw <hashPrefix>"
 	usageSharedInvitation = "shared-invitation set [--kind member|guest] [--generate] | off | status [--json]"
 	usageGrant            = "grant add <member> <guest> <targetId> [--kind resource|broadcast] | remove <member> <guest> <targetId> | list <login> [--json]"
-	usagePolicy           = "policy show [--json] | set [--max-accounts N] [--devices N] [--resources N] [--broadcasts N] [--broadcasts-per-device N] [--clipboard-bytes N]"
+	usagePolicy           = "policy show [--json] | set [--max-accounts N] [--devices N] [--resources N] [--broadcasts N] [--broadcasts-per-device N] [--clipboard-bytes N] [--notes N] [--notes-bytes N]"
 	usageTLS              = "tls renew | replace | import --cert <file> --key <file>"
 	usageAdmin            = "admin on [--generate] [--allowed <list>] [--lifetime N] | off | passwd [--generate] | " +
 		"set [--allowed <list>] [--lifetime N] [--web-dir <dir|->] [--origins <list|->] [--origin <origin>].. [--remove-origin <origin>].. [--ws-max-message <bytes>] | status [--json]"
@@ -191,7 +194,7 @@ func parseArgs(args []string) (command, error) {
 				return c, fmt.Errorf("invalid --kind %q: an account is a member or a guest", val)
 			}
 			c.kind = k
-		case "--devices", "--resources", "--broadcasts", "--broadcasts-per-device", "--clipboard-bytes", "--max-accounts":
+		case "--devices", "--resources", "--broadcasts", "--broadcasts-per-device", "--clipboard-bytes", "--notes", "--notes-bytes", "--max-accounts":
 			if (c.name != "account" && c.name != "policy") || (name == "--max-accounts" && c.name != "policy") {
 				return c, fmt.Errorf("unknown option %q for %s", name, c.name)
 			}
@@ -211,6 +214,10 @@ func parseArgs(args []string) (command, error) {
 				c.limBroadcastDevice = &intVal
 			case "--clipboard-bytes":
 				c.limClipboard = &n
+			case "--notes":
+				c.limNotes = &intVal
+			case "--notes-bytes":
+				c.limNotesBytes = &n
 			case "--max-accounts":
 				if n < 1 {
 					return c, errors.New("--max-accounts must be at least 1")

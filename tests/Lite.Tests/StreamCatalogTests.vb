@@ -392,7 +392,7 @@ Namespace Lite.Tests
             Assert.True(File.Exists(reportFile))
 
             Dim reportText = File.ReadAllText(reportFile)
-            Assert.Contains("STREAM-BANK 2.2", reportText)
+            Assert.Contains("STREAM-BANK 2.10", reportText)
             Assert.Contains("FINAL VERDICT: PASS", reportText)
 
             ' Test Check
@@ -411,7 +411,7 @@ Namespace Lite.Tests
             Assert.Equal("stream-catalog.zip", StreamCatalogSchema.ArchiveFileName)
             Assert.Equal("streams.csv", StreamCatalogSchema.CatalogCsvEntryName)
             Assert.Equal("favicon-atlas.png", StreamCatalogSchema.FaviconAtlasEntryName)
-            Assert.Equal("STREAM-BANK 2.2", StreamCatalogSchema.ContractTag)
+            Assert.Equal("STREAM-BANK 2.10", StreamCatalogSchema.ContractTag)
 
             ' 19 columns exact order
             Dim expectedCols = New String() {

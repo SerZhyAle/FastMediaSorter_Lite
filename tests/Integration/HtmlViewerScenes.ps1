@@ -16,7 +16,7 @@
       S2  feature ON, online pages OFF: the fixture opens in the HTML view - an owned
           documents\webview\local\<guid> folder appears (and none under online\), an
           msedgewebview2.exe descendant of the viewer runs on exactly that folder, and the HTML
-          view's toolbar is in the window.
+          view's document panel (an owned window named 'Просмотр HTML-страницы') is on screen.
       S3  after the viewer closes: every folder the run created is gone. The code promises two
           routes (HtmlRuntimeService): deleted when the browser process exits with no controller
           left, else swept by the NEXT launch (BeginLaunchSweep from Main_Form_Shown, whether or not
@@ -34,18 +34,21 @@
       S6  the defect S3 found: a profile folder a killed viewer left behind is swept by the next launch
           even though the HTML viewer is switched OFF.
       S7  paging and file release (H09 form half, H12): with IncludeDocumentInNavigation lent on, a posted
-          Space and the toolbar's Previous/Next button page between .html files; the shown page and the
+          Space and the rows' Previous/Next file items (the document panel does not carry them, 280
+          section 4) page between .html files; the shown page and the
           css/image it links can be opened exclusively and renamed (nothing holds them); a posted Delete
           (ConfirmDelete never, no Recycle Bin: lent) removes the shown page and the next one comes up in
-          the HTML view. Keys are WM_KEYDOWN/WM_KEYUP posted to the viewer's own window; buttons go through
+          the HTML view. Keys are WM_KEYDOWN/WM_KEYUP posted to the viewer's own window; items go through
           UI Automation. Nothing is typed or clicked, so nothing can land in another application.
-      S8  toolbar zoom on the real Runtime (H10): Zoom in, the zoom label (reset), Zoom out, read from the
-          page heading's rectangle in the accessibility tree.
-      S9  toolbar find on the real Runtime (H10): three matches far apart, Next x4 wraps, Previous goes back;
-          read from the scroll position of the heading. The match counter's own text is NOT in the
-          accessibility tree (its accessible name is fixed), so it is reported, not judged.
+      S8  document panel zoom on the real Runtime (H10): Zoom in, the zoom value item (reset), Zoom out,
+          read from the page heading's rectangle in the accessibility tree.
+      S9  panel find on the real Runtime (H10): pressing the find item opens the panel's in-place
+          editor (a real text box laid over the item), the term is typed through the Value pattern and
+          confirmed by an Enter posted to that box - three matches far apart, Enter steps x4 and wraps,
+          Shift+Enter goes back; read from the scroll position of the heading. The match-count readout
+          carries its text in the accessible name ('Совпадения: 1 из 3'), so it is reported, not judged.
       S10 keys typed while the PAGE has the focus (H09 page half, AC-5): focus enters the page through UI
-          Automation (the page's document element), the toolbar's context label must switch to the
+          Automation (the page's document element), the document panel's context readout must switch to the
           document; keys are posted to the page's Chrome_WidgetWin_1 window (Chromium's keyboard window;
           the Chrome_RenderWidgetHostHWND child can hold the focus but drops posted keys). End must scroll
           the page (the positive control that a posted key reaches it); N, B, Space, 1 and Delete must
@@ -59,9 +62,17 @@
       S12 print, browser hand-off, source (H14): Print opens the browser's own print dialog (a Chromium
           Cancel button that was not there before) and Cancel closes it with the page still shown; Open in
           browser starts the resolved https browser on the page (a top-level window of another process
-          takes the page's unique title - that browser tab stays open); Show source leaves the HTML view.
-    Toolbar commands go through Invoke-HtmlCommand: in full screen the toolbar hides after 3 s (a posted
-    bare Shift shows it again) and at high DPI the later commands sit in its overflow drop-down.
+          takes the page's unique title - that browser tab stays open); Show source leaves the HTML view
+          and the document panel goes with it.
+    The document panel and the rows are addressed through Invoke-ViewerItem: items are found by their
+    localized accessible names in the viewer's own windows (the main window, the panel, the rows, the
+    menu popups) and pressed through the Invoke pattern, or by a click posted to the item's own window
+    at the centre of its accessible rectangle - nothing is typed or clicked anywhere else. The panels
+    never fade during the run: the 'keep visible for all' setting (ChromePinned) is lent on, because an
+    unpinned panel would fade on its own countdown between two commands hours apart. An item collapsed
+    into the panel's '»' overflow is reached by opening the overflow first; the panel itself is found
+    by its window title (the reader's accessible name), not by a toolbar control type - there is no
+    toolbar any more (specification 280).
 
     NOT covered, and said so: the mouse, IME and dead keys, Ctrl chords typed in the page, the .html
     association pointing back to the app, light/dark/high contrast, DPI as a judged row, RTL/CJK, a second
@@ -313,6 +324,11 @@ $udfRoot    = Join-Path $localApp 'SZA\FastMediaSorter\documents\webview'
 $exeDir     = Split-Path -Parent $ExePath
 $viewerLog  = Join-Path $exeDir 'current.log'
 
+# The document panel's window title (the reader's accessible name) and its '»' overflow item. The
+# scene drives the Russian UI the owner's language key selects; another language cannot be driven by name.
+$panelName         = 'Просмотр HTML-страницы'
+$panelOverflowName = 'Ещё - кнопки, не поместившиеся в строку.'   # as ChromeSurface.vb names the '»' item (the old text said "в строке")
+
 # --- could-not-verify gates: nothing is touched before all of them hold ---------------------
 
 Write-Subject $check "$ExePath, fixtures and evidence in $WorkDir"
@@ -439,19 +455,118 @@ function Get-WindowHandle($Process) {
     return $Process.MainWindowHandle
 }
 
-# The HTML view's toolbar (BuildHtmlViewUi) is a ToolStrip whose accessible name carries "HTML"; the
-# source preview has no such toolbar. $null when the window shows none, or UI Automation cannot read it.
-function Find-HtmlToolbar([IntPtr]$Window) {
-    if ($Window -eq [IntPtr]::Zero) { return $null }
-    try {
-        $root = [System.Windows.Automation.AutomationElement]::FromHandle($Window)
-        $condition = New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ToolBar)
-        foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)) {
-            if ($e.Current.Name -match 'HTML') { return $e.Current.Name }
-        }
-    } catch { }
+# The HTML view's document panel (specification 280): an owned top-level window of the viewer whose
+# title is the panel's accessible name ('Просмотр HTML-страницы'); the old ToolStrip caption strip is
+# gone. $null when no visible window of $Process carries that title (the panel not built, released,
+# or hidden). Owned windows never show in the parent's own UI Automation tree, so they are found by
+# their top-level window instead.
+function Get-DocumentPanelHandle($Process) {
+    foreach ($t in [FmsHtmlScenesNative]::TopLevelWindows()) {
+        $p = $t -split '\|', 4
+        if ([int]$p[2] -ne $Process.Id) { continue }
+        if ($p[3] -eq $script:panelName) { return [IntPtr][long]$p[0] }
+    }
+    return [IntPtr]::Zero
+}
+
+function Find-DocumentPanel($Process) {
+    if ((Get-DocumentPanelHandle $Process) -ne [IntPtr]::Zero) { return $script:panelName }
     return $null
+}
+
+# The viewer's own windows: the main window and every visible top-level window of its process (the
+# document panel, the rows, the window commands, the menu popups), as handle + UI Automation root
+# pairs. Every item search runs over all of them: UI Automation does not walk owned forms from the
+# parent window.
+function Get-ViewerRoots($Process) {
+    $roots = @()
+    $w = Get-WindowHandle $Process
+    if ($w -ne [IntPtr]::Zero) {
+        try { $roots += [pscustomobject]@{ Handle = $w; Element = [System.Windows.Automation.AutomationElement]::FromHandle($w) } } catch { }
+    }
+    foreach ($t in [FmsHtmlScenesNative]::TopLevelWindows()) {
+        $p = $t -split '\|', 4
+        if ([int]$p[2] -ne $Process.Id) { continue }
+        $h = [IntPtr][long]$p[0]
+        if ($h -eq $w) { continue }
+        try { $roots += [pscustomobject]@{ Handle = $h; Element = [System.Windows.Automation.AutomationElement]::FromHandle($h) } } catch { }
+    }
+    return $roots
+}
+
+# Informational: whether a fact is rendered anywhere in the viewer's own windows - the page in the
+# main window, a readout item on the panel or a row. Same shape as Test-RenderedText, but it walks
+# the owned windows as well (the panel's context readout and match count live on the panel).
+function Test-ViewerText($Process, [string]$Text) {
+    foreach ($root in @(Get-ViewerRoots $Process)) {
+        try {
+            $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Text)
+            if ($null -ne $root.Element.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)) { return $true }
+        } catch { }
+    }
+    return $false
+}
+
+# A panel or row item pressed the way a screen reader would: through UI Automation, by localized
+# accessible name. The Invoke pattern when UI Automation offers one (the items expose their
+# default action through accessibility), else a left click posted to the item's own window (the
+# surface control the accessibility tree names; the main window only when the element carries no
+# window) at the centre of its accessible rectangle. Nothing is typed or clicked anywhere else
+# and no cursor moves; the click can never leave that one window.
+function Invoke-Element([System.Windows.Automation.AutomationElement]$Element, [IntPtr]$Window) {
+    $pattern = $null
+    if ($Element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) {
+        $pattern.Invoke()
+        return $true
+    }
+    $r = $Element.Current.BoundingRectangle
+    $target = [IntPtr]$Element.Current.NativeWindowHandle
+    if ($target -eq [IntPtr]::Zero) { $target = $Window }
+    if (-not $r.IsEmpty -and $target -ne [IntPtr]::Zero) {
+        [FmsHtmlScenesNative]::PostClick($target, [int]($r.Left + $r.Width / 2), [int]($r.Top + $r.Height / 2))
+        return $true
+    }
+    return $false
+}
+
+# Presses the item $Name (a document-panel item, a row item such as Previous / Next file, or an
+# entry of an open menu) in any window of the viewer. A narrow panel keeps its late items in its
+# '»' overflow menu: when the item is not visible, the overflow is opened first and the popup
+# windows are searched. $false when the item could not be invoked anywhere.
+function Invoke-ViewerItem($Process, [string]$Name) {
+    $roots = @(Get-ViewerRoots $Process)
+    foreach ($root in $roots) {
+        $e = Find-ByName $root.Handle $Name
+        if ($null -ne $e) { if (Invoke-Element $e $root.Handle) { return $true } }
+    }
+    foreach ($root in $roots) {
+        $more = Find-ByName $root.Handle $script:panelOverflowName
+        if ($null -eq $more) { continue }
+        if (-not (Invoke-Element $more $root.Handle)) { break }
+        Start-Sleep -Milliseconds 800
+        foreach ($opened in @(Get-ViewerRoots $Process)) {
+            $e = Find-ByName $opened.Handle $Name
+            if ($null -ne $e) { if (Invoke-Element $e $opened.Handle) { return $true } }
+        }
+        # It is not in the overflow either: close the menu again, with an Escape posted to the viewer's
+        # own window (the menu's key handling lives there, and an open menu consumes the key).
+        [FmsHtmlScenesNative]::PostKey((Get-WindowHandle $Process), 0x1B); Start-Sleep -Milliseconds 400
+        break
+    }
+    # A failed press says what the items are actually named, so a hand-run can see what moved.
+    try {
+        foreach ($root in $roots) {
+            if ("$($root.Element.Current.Name)" -ne $script:panelName) { continue }
+            $kids = @($root.Element.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+                ForEach-Object { "'$($_.Current.Name)'$(if ($_.Current.IsOffscreen) { ' (offscreen)' })" })
+            Write-Host "  panel items: $($kids -join ', ')"
+            # What kind of elements those are, so an empty name can be told from a missing provider.
+            $shape = @($root.Element.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+                ForEach-Object { $c = $_.Current; "$($c.ControlType.ProgrammaticName) class='$($c.ClassName)' fw='$($c.FrameworkId)' hwnd=$($c.NativeWindowHandle) rect=$($c.BoundingRectangle)" })
+            Write-Host "  panel element shape: $($shape -join ' | ')"
+        }
+    } catch { Write-Host "  panel item dump failed: $($_.Exception.Message)" }
+    return $false
 }
 
 # Informational: whether the page's own heading is in the accessibility tree (a rendered page, not markup).
@@ -553,7 +668,7 @@ function Read-Facts($Process) {
         WebViews = $webview
         Udfs     = @($webview | ForEach-Object { Get-UserDataDir $_ } | Where-Object { $_ } | Sort-Object -Unique)
         Loader   = if ($null -eq $modules) { $null } else { [bool]($modules -contains 'WebView2Loader.dll') }
-        Toolbar  = Find-HtmlToolbar $window
+        Panel    = Find-DocumentPanel $Process
     }
 }
 
@@ -570,101 +685,43 @@ function Find-ByName([IntPtr]$Window, [string]$Name) {
     } catch { return $null }
 }
 
-# A toolbar button pressed through UI Automation's InvokePattern: no focus, no mouse, no keystroke.
-function Invoke-ToolbarButton([IntPtr]$Window, [string]$Name) {
-    $e = Find-ByName $Window $Name
-    if ($null -eq $e) { return $false }
-    $pattern = $null
-    if (-not $e.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { return $false }
-    $pattern.Invoke()
-    return $true
-}
-
-# A toolbar command of a viewer that may sit in full screen, where the HTML toolbar hides after 3 s and its
-# buttons leave the accessibility tree: a bare Shift posted to the window shows it again (any key does,
-# HtmlViewOwnsInput), then the button is pressed through UI Automation.
-function Invoke-HtmlCommand($Process, [string]$Name) {
-    for ($i = 0; $i -lt 3; $i++) {
-        $w = Get-WindowHandle $Process
-        [FmsHtmlScenesNative]::PostKey($w, 0x10)
-        Start-Sleep -Milliseconds 600
-        if (Invoke-ToolbarButton $w $Name) { return $true }
-        # A narrow toolbar (high DPI) moves the later buttons into its overflow drop-down, which is a window
-        # of its own: open it through its accessible "ToolBar Options" item, then press the button there.
-        $more = Find-ByName $w 'ToolBar Options'
-        if ($null -ne $more) {
-            $p = $null
-            if ($more.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$p)) { $p.Expand() }
-            elseif ($more.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$p)) { $p.Invoke() }
-            Start-Sleep -Milliseconds 800
-            foreach ($t in [FmsHtmlScenesNative]::TopLevelWindows()) {
-                $parts = $t -split '\|', 4
-                if ([int]$parts[2] -ne $Process.Id) { continue }
-                if (Invoke-ToolbarButton ([IntPtr][long]$parts[0]) $Name) { return $true }
-            }
-            [FmsHtmlScenesNative]::PostKey($w, 0x1B)   # close the drop-down again
-            Start-Sleep -Milliseconds 400
-        }
-    }
-    try {
-        $root = [System.Windows.Automation.AutomationElement]::FromHandle((Get-WindowHandle $Process))
-        $tc = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ToolBar)
-        foreach ($tb in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $tc)) {
-            $kids = @($tb.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition) |
-                ForEach-Object { "$($_.Current.ControlType.ProgrammaticName -replace 'ControlType\.', ''):'$($_.Current.Name)'$(if ($_.Current.IsOffscreen) { '(offscreen)' })" })
-            Write-Host "  toolbar '$($tb.Current.Name)': $($kids -join ', ')"
-        }
-    } catch { Write-Host "  toolbar dump failed: $($_.Exception.Message)" }
-    return $false
-}
-# The find box of the HTML toolbar (a ToolStripTextBox), wherever it sits - the toolbar or its overflow
-# drop-down - as a ValuePattern; $null when UI Automation cannot reach it.
-function Get-FindBox($Process) {
-    for ($i = 0; $i -lt 2; $i++) {
-        $w = Get-WindowHandle $Process
-        [FmsHtmlScenesNative]::PostKey($w, 0x10)
-        Start-Sleep -Milliseconds 600
-        $roots = @($w)
-        if ($i -eq 1) {
-            $more = Find-ByName $w 'ToolBar Options'
-            $p = $null
-            if ($null -ne $more) {
-                if ($more.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$p)) { $p.Expand() }
-                elseif ($more.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$p)) { $p.Invoke() }
-                Start-Sleep -Milliseconds 800
-            }
-            foreach ($t in [FmsHtmlScenesNative]::TopLevelWindows()) {
-                $parts = $t -split '\|', 4
-                if ([int]$parts[2] -eq $Process.Id -and [IntPtr][long]$parts[0] -ne $w) { $roots += [IntPtr][long]$parts[0] }
-            }
-        }
-        foreach ($r in $roots) {
+# The find editor: pressing the panel's find item ('Поиск на странице') opens the real in-place
+# editor - a text control laid over the item whose accessible name is the item's caption. Returns
+# the editor's UI Automation element (it carries the Value pattern, and its NativeWindowHandle is
+# where the Enter of the search is posted), $null when the editor does not come up.
+function Open-FindBox($Process) {
+    if (-not (Invoke-ViewerItem $Process 'Поиск на странице')) { return $null }
+    $deadline = [DateTime]::UtcNow.AddSeconds(3)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        foreach ($root in @(Get-ViewerRoots $Process)) {
             try {
-                $root = [System.Windows.Automation.AutomationElement]::FromHandle($r)
                 $c = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'Поиск на странице')
-                foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $c)) {
+                foreach ($e in $root.Element.FindAll([System.Windows.Automation.TreeScope]::Descendants, $c)) {
                     $vp = $null
-                    if ($e.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$vp)) { return $vp }
+                    if ($e.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$vp)) { return $e }
                 }
             } catch { }
         }
-        if ($i -eq 1) {
-            foreach ($r in $roots | Select-Object -Skip 1) {
-                try {
-                    $names = @([System.Windows.Automation.AutomationElement]::FromHandle($r).FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
-                        Select-Object -First 40 | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName -replace 'ControlType\.', ''):'$($_.Current.Name)'" })
-                    Write-Host "  drop-down ${r}: $($names -join ', ')"
-                } catch { }
-            }
-            [FmsHtmlScenesNative]::PostKey($w, 0x1B)   # close the drop-down again
-            Start-Sleep -Milliseconds 400
-        }
+        Start-Sleep -Milliseconds 200
     }
     return $null
 }
 
+# Informational: the panel's match-count readout, whose accessible name is 'Совпадения: <count text>'
+# (item caption followed by the formatted count). '' when no such item is on screen.
+function Get-MatchCount($Process) {
+    foreach ($root in @(Get-ViewerRoots $Process)) {
+        try {
+            foreach ($e in $root.Element.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+                if ($e.Current.Name -like 'Совпадения*') { return $e.Current.Name }
+            }
+        } catch { }
+    }
+    return ''
+}
+
 # The viewer on one fixture, HTML view on and online pages off (the caller lends the settings); returns once
-# the HTML toolbar is up and the page's heading $Marker is in the accessibility tree.
+# the document panel is up and the page's heading $Marker is in the accessibility tree.
 function Open-HtmlScene([string]$File, [string]$Marker) {
     $baseline = @(Get-OwnedUdfs 'local') + @(Get-OwnedUdfs 'online')
     $v = Start-Viewer $File
@@ -672,7 +729,7 @@ function Open-HtmlScene([string]$File, [string]$Marker) {
         if (-not (Update-Viewer $v)) { return $true }
         $w = Get-WindowHandle $v
         if ($w -eq [IntPtr]::Zero) { return $false }
-        ($null -ne (Find-HtmlToolbar $w)) -and (Test-RenderedText $w $Marker)
+        ($null -ne (Find-DocumentPanel $v)) -and (Test-RenderedText $w $Marker)
     } $StartTimeoutSeconds 1000
     foreach ($u in (@(Get-OwnedUdfs 'local') + @(Get-OwnedUdfs 'online'))) {
         if ($baseline -notcontains $u -and -not $extra.Contains($u)) { $extra.Add($u) }
@@ -731,8 +788,8 @@ try {
     $shot = if ($f.Alive) { Save-WindowShot $f.Window 's1-feature-off.png' } else { '(viewer gone)' }
     $now = @(Get-OwnedUdfs 'local') + @(Get-OwnedUdfs 'online')
     $newUdfs = @($now | Where-Object { $baseline -notcontains $_ })
-    Write-Host ("  S1 facts: msedgewebview2 descendants {0}, loader loaded {1}, html toolbar '{2}', new owned folders {3}, shot {4}" -f
-        $f.WebViews.Count, $f.Loader, $f.Toolbar, $newUdfs.Count, $shot)
+    Write-Host ("  S1 facts: msedgewebview2 descendants {0}, loader loaded {1}, document panel '{2}', new owned folders {3}, shot {4}" -f
+        $f.WebViews.Count, $f.Loader, $f.Panel, $newUdfs.Count, $shot)
     $s1Close = Stop-Viewer $viewer
     $viewer = $null
     Write-Host "  S1 viewer: $s1Close"
@@ -748,10 +805,10 @@ try {
         if ((Test-Path -LiteralPath $udfRoot) -and -not $rootExistedBefore) { $why += 'documents\webview was created' }
         if ($f.WebViews.Count -gt 0) { $why += "$($f.WebViews.Count) msedgewebview2.exe descendant(s) of the viewer" }
         if ($f.Loader -eq $true) { $why += 'WebView2Loader.dll is loaded in the viewer' }
-        if ($null -ne $f.Toolbar) { $why += "the HTML view toolbar '$($f.Toolbar)' is on screen" }
+        if ($null -ne $f.Panel) { $why += "the document panel '$($f.Panel)' is on screen" }
         if ($why.Count -eq 0) {
             $loaderText = if ($null -eq $f.Loader) { 'module list unreadable' } else { 'WebView2Loader.dll not loaded' }
-            Add-Scene 'S1' 'PASS' "feature off: the fixture was the file shown (LastPlayedFile), no user-data folder, no msedgewebview2 child, $loaderText, no HTML toolbar"
+            Add-Scene 'S1' 'PASS' "feature off: the fixture was the file shown (LastPlayedFile), no user-data folder, no msedgewebview2 child, $loaderText, no HTML document panel"
         } else { Add-Scene 'S1' 'FAIL' ($why -join '; ') }
     }
     Start-Sleep -Seconds 2
@@ -759,6 +816,10 @@ try {
     # ----- S2: feature on, online off --------------------------------------------------------
     Lend-Setting 'HtmlViewerEnabled' '1'
     Lend-Setting 'HtmlOnlinePagesEnabled' '0'
+    # The panels stay up for the whole run ('keep visible for all'): the scene addresses the panel's
+    # items and the rows' from outside, hours may pass between two commands, and an unpinned panel
+    # fades on its own countdown - the reveal cycle is ModernChromeScenes' scene and the owner's.
+    Lend-Setting 'ChromePinned' '1'
     $baseline = @(Get-OwnedUdfs 'local') + @(Get-OwnedUdfs 'online')
     $logFrom = Get-LogSize
     $viewer = Start-Viewer $fixtureA
@@ -769,7 +830,7 @@ try {
         $fresh = @(Get-OwnedUdfs 'local' | Where-Object { $baseline -notcontains $_ })
         if ($fresh.Count -eq 0) { return $false }
         $kids = @(Get-WebViewDescendants $viewer.Id | ForEach-Object { Get-UserDataDir $_ })
-        return ($kids -contains $fresh[0].TrimEnd('\')) -and ($null -ne (Find-HtmlToolbar $w)) -and (Test-RenderedText $w $markerA)
+        return ($kids -contains $fresh[0].TrimEnd('\')) -and ($null -ne (Find-DocumentPanel $viewer)) -and (Test-RenderedText $w $markerA)
     } $StartTimeoutSeconds 1000
     if ($ready -and (Update-Viewer $viewer)) { Start-Sleep -Seconds $SettleSeconds }
     $f = Read-Facts $viewer
@@ -778,8 +839,8 @@ try {
     $freshOnline = @(Get-OwnedUdfs 'online' | Where-Object { $baseline -notcontains $_ })
     foreach ($u in $freshLocal + $freshOnline) { if (-not $created.Contains($u)) { $created.Add($u) } }
     $rendered = if ($f.Alive) { Test-RenderedText $f.Window $markerA } else { $false }
-    Write-Host ("  S2 facts: title '{0}', new local folders {1}, new online folders {2}, msedgewebview2 descendants {3} on [{4}], html toolbar '{5}', loader loaded {6}, heading in UIA tree {7}, shot {8}" -f
-        $f.Title, ($freshLocal -join ','), $freshOnline.Count, $f.WebViews.Count, ($f.Udfs -join ','), $f.Toolbar, $f.Loader, $rendered, $shot)
+    Write-Host ("  S2 facts: title '{0}', new local folders {1}, new online folders {2}, msedgewebview2 descendants {3} on [{4}], document panel '{5}', loader loaded {6}, heading in UIA tree {7}, shot {8}" -f
+        $f.Title, ($freshLocal -join ','), $freshOnline.Count, $f.WebViews.Count, ($f.Udfs -join ','), $f.Panel, $f.Loader, $rendered, $shot)
     foreach ($l in (Get-LogEvidence $logFrom)) { Write-Host "  log: $l" }
     $s2Ok = $false
     if (-not $f.Alive) {
@@ -791,11 +852,11 @@ try {
         if ($freshOnline.Count -gt 0) { $why += 'a folder appeared under online\ with online pages off' }
         if ($f.WebViews.Count -eq 0) { $why += 'no msedgewebview2.exe descendant of the viewer' }
         elseif ($freshLocal.Count -ge 1 -and ($f.Udfs -notcontains $freshLocal[0].TrimEnd('\'))) { $why += "no msedgewebview2.exe runs on the owned folder (they run on: $($f.Udfs -join ', '))" }
-        if ($null -eq $f.Toolbar) { $why += 'the HTML view toolbar is not in the window (the source preview, or a failed open)' }
+        if ($null -eq $f.Panel) { $why += 'the document panel is not on screen (the source preview, or a failed open)' }
         if (-not $rendered) { $why += "the page's own heading is not in the window's accessibility tree (not rendered, or an error page)" }
         if ($why.Count -eq 0) {
             $s2Ok = $true
-            Add-Scene 'S2' 'PASS' ("feature on: owned folder local\{0}, {1} msedgewebview2.exe descendant(s) on it, toolbar '{2}', the page's heading rendered in the window" -f (Split-Path -Leaf $freshLocal[0]), $f.WebViews.Count, $f.Toolbar)
+            Add-Scene 'S2' 'PASS' ("feature on: owned folder local\{0}, {1} msedgewebview2.exe descendant(s) on it, document panel '{2}', the page's heading rendered in the window" -f (Split-Path -Leaf $freshLocal[0]), $f.WebViews.Count, $f.Panel)
         } else { Add-Scene 'S2' 'FAIL' ($why -join '; ') }
     }
 
@@ -813,14 +874,14 @@ try {
             if ($baseline -notcontains $u -and -not $created.Contains($u)) { $created.Add($u) }
         }
         $onlineNow = @(Get-OwnedUdfs 'online' | Where-Object { $baseline -notcontains $_ })
-        Write-Host ("  S4 facts: title '{0}', msedgewebview2 descendants {1}, html toolbar '{2}', online folders {3}, shot {4}" -f
-            $f.Title, $f.WebViews.Count, $f.Toolbar, $onlineNow.Count, $shot)
+        Write-Host ("  S4 facts: title '{0}', msedgewebview2 descendants {1}, document panel '{2}', online folders {3}, shot {4}" -f
+            $f.Title, $f.WebViews.Count, $f.Panel, $onlineNow.Count, $shot)
         foreach ($l in (Get-LogEvidence $logFrom)) { Write-Host "  log: $l" }
         $why = @()
         if (-not $f.Alive) { $why += 'the viewer exited' }
         else {
             if (-not $titleOk) { $why += "the forwarded fixture's heading never appeared in the window (not shown in 30 s)" }
-            if ($null -eq $f.Toolbar) { $why += 'the HTML view toolbar is not in the window' }
+            if ($null -eq $f.Panel) { $why += 'the document panel is not on screen' }
             if ($f.WebViews.Count -eq 0) { $why += 'no msedgewebview2.exe descendant of the viewer' }
             if ($onlineNow.Count -gt 0) { $why += 'an online profile folder appeared' }
         }
@@ -875,8 +936,11 @@ try {
         Lend-Setting 'HtmlZoom' '100'
         Lend-Setting 'HtmlFindCase' '0'
         Lend-Setting 'HtmlFindWholeWord' '0'
+        # The document panel and the rows stay up the whole run: the scene drives their items from
+        # outside, and an unpinned panel fades on its own countdown between two commands (S2's note).
+        Lend-Setting 'ChromePinned' '1'
     }
-    $toolbarName = 'Просмотр HTML-страницы'   # the Russian UI the owner's key selects; another language cannot be driven by name
+    # (the scenes below name the reader's panel through $panelName; no old strip variable remains)
 
     # ----- S5: offline egress (H07, AC-4) -----------------------------------------------------------
     # A page whose every resource points at a loopback listener this script owns, or at a host name made
@@ -1110,23 +1174,24 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
             } else {
                 $w = Get-WindowHandle $s7Viewer
                 $why = @(); $facts = @()
-                $tb = Find-HtmlToolbar $w
-                if ($tb -ne $toolbarName) { $why = @("the toolbar is named '$tb', not '$toolbarName': the scene drives the Russian UI"); }
+                $panel = Find-DocumentPanel $s7Viewer
+                if ($panel -ne $panelName) { $why = @("the document panel is named '$panel', not '$panelName': the scene drives the Russian UI"); }
                 else {
                     # 1. Space on the canvas (the page has no focus): next file
                     [FmsHtmlScenesNative]::PostKey($w, 0x20)
                     $toE2 = Wait-Marker $s7Viewer 'FMS-HTML-PAGE-E2 marker' 20
                     $facts += "Space -> E2: $toE2"
                     if (-not $toE2) { $why += 'a posted Space did not page to the next page' }
-                    # 2. the toolbar's previous/next buttons (UI Automation, no focus needed)
-                    $prevOk = Invoke-ToolbarButton $w 'Предыдущий файл'
+                    # 2. the rows' previous/next file items (the panel does not carry them, 280 section 4;
+                    #    UI Automation, no focus needed)
+                    $prevOk = Invoke-ViewerItem $s7Viewer 'Предыдущий файл'
                     $backE1 = $prevOk -and (Wait-Marker $s7Viewer 'FMS-HTML-PAGE-E1 marker' 20)
-                    $facts += "toolbar Previous -> E1: $backE1"
-                    if (-not $backE1) { $why += 'the toolbar Previous button did not return to the first page' }
-                    $nextOk = Invoke-ToolbarButton $w 'Следующий файл'
+                    $facts += "row Previous -> E1: $backE1"
+                    if (-not $backE1) { $why += "the rows' Previous item did not return to the first page" }
+                    $nextOk = Invoke-ViewerItem $s7Viewer 'Следующий файл'
                     $againE2 = $nextOk -and (Wait-Marker $s7Viewer 'FMS-HTML-PAGE-E2 marker' 20)
-                    $facts += "toolbar Next -> E2: $againE2"
-                    if (-not $againE2) { $why += 'the toolbar Next button did not page to the second page' }
+                    $facts += "row Next -> E2: $againE2"
+                    if (-not $againE2) { $why += "the rows' Next item did not page to the second page" }
                     Start-Sleep -Seconds 2
                     # 3. the shown page and the resources it links are not held open
                     if ($againE2) {
@@ -1149,7 +1214,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                         $gone = Wait-Until { -not (Test-Path -LiteralPath $e2) } 15 300
                         $logFrom = Get-LogSize
                         $other = $gone -and ((Wait-Marker $s7Viewer 'FMS-HTML-PAGE-E3 marker' 40) -or (Wait-Marker $s7Viewer 'FMS-HTML-PAGE-E1 marker' 5))
-                        $stillHtml = (Update-Viewer $s7Viewer) -and ($null -ne (Find-HtmlToolbar (Get-WindowHandle $s7Viewer)))
+                        $stillHtml = (Update-Viewer $s7Viewer) -and ($null -ne (Find-DocumentPanel $s7Viewer))
                         if (-not $other -or -not $stillHtml) {
                             Write-Host ("  S7 after the delete: title '{0}', viewer alive {1}, owned folders now {2}" -f $s7Viewer.MainWindowTitle, (Update-Viewer $s7Viewer), (@(Get-OwnedUdfs 'local').Count))
                             foreach ($l in (Get-LogEvidence $logFrom)) { Write-Host "  log: $l" }
@@ -1163,7 +1228,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                 }
                 $shot = if (Update-Viewer $s7Viewer) { Save-WindowShot (Get-WindowHandle $s7Viewer) 's7-after-delete.png' } else { '(viewer gone)' }
                 Write-Host ("  S7 facts: " + ($facts -join '; ') + "; shot $shot")
-                if ($why.Count -eq 0) { Add-Scene 'S7' 'PASS' ('canvas keys and toolbar page between html files, the shown page and its css/image are not held open, Delete removed the shown page and the next one came up: ' + ($facts -join '; ')) }
+                if ($why.Count -eq 0) { Add-Scene 'S7' 'PASS' ('canvas keys and the rows page between html files, the shown page and its css/image are not held open, Delete removed the shown page and the next one came up: ' + ($facts -join '; ')) }
                 else { Add-Scene 'S7' 'FAIL' ($why -join '; ') }
             }
         } finally {
@@ -1192,69 +1257,72 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
         $s8Viewer = $o.Process
         try {
             $w = if ($o.Ready) { Get-WindowHandle $s8Viewer } else { [IntPtr]::Zero }
-            $tb = if ($o.Ready) { Find-HtmlToolbar $w } else { $null }
+            $panel = if ($o.Ready) { Find-DocumentPanel $s8Viewer } else { $null }
             if (-not $o.Ready) {
                 foreach ($id in 'S8', 'S9') { if (Want $id) { Add-Scene $id 'COULD NOT VERIFY' 'the find fixture did not come up in the HTML view' } }
-            } elseif ($tb -ne $toolbarName) {
-                foreach ($id in 'S8', 'S9') { if (Want $id) { Add-Scene $id 'COULD NOT VERIFY' "the toolbar is named '$tb', not '$toolbarName': the scene drives the Russian UI" } }
+            } elseif ($panel -ne $panelName) {
+                foreach ($id in 'S8', 'S9') { if (Want $id) { Add-Scene $id 'COULD NOT VERIFY' "the document panel is named '$panel', not '$panelName': the scene drives the Russian UI" } }
             } else {
                 $h0 = Get-HeadingRect $w $fMarker
                 if (Want 'S8') {
                     $facts = @(); $why = @(); $pressed = @()
-                    $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Увеличить'); Start-Sleep -Milliseconds 1500
+                    $pressed += [bool](Invoke-ViewerItem $s8Viewer 'Увеличить'); Start-Sleep -Milliseconds 1500
                     $hIn = Get-HeadingRect $w $fMarker
-                    $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Сбросить масштаб'); Start-Sleep -Milliseconds 1500
+                    $pressed += [bool](Invoke-ViewerItem $s8Viewer 'Сбросить масштаб'); Start-Sleep -Milliseconds 1500
                     $hReset = Get-HeadingRect $w $fMarker
-                    $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Уменьшить'); Start-Sleep -Milliseconds 1500
+                    $pressed += [bool](Invoke-ViewerItem $s8Viewer 'Уменьшить'); Start-Sleep -Milliseconds 1500
                     $hOut = Get-HeadingRect $w $fMarker
-                    $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Сбросить масштаб'); Start-Sleep -Milliseconds 1000
-                    if ($pressed -contains $false) { $why += "a zoom button could not be pressed through UI Automation (pressed: $($pressed -join ', '))" }
+                    $pressed += [bool](Invoke-ViewerItem $s8Viewer 'Сбросить масштаб'); Start-Sleep -Milliseconds 1000
+                    if ($pressed -contains $false) { $why += "a zoom item could not be pressed through UI Automation (pressed: $($pressed -join ', '))" }
                     elseif ($null -eq $h0 -or $null -eq $hIn -or $null -eq $hReset -or $null -eq $hOut) { $why += 'the heading rectangle could not be read through UI Automation' }
                     else {
                         $facts += ("heading height 100 %: {0:N0}, Zoom in: {1:N0}, Reset: {2:N0}, Zoom out: {3:N0}" -f $h0.Height, $hIn.Height, $hReset.Height, $hOut.Height)
                         if ($hIn.Height -le $h0.Height + 2) { $why += 'Zoom in did not enlarge the page' }
-                        if ([Math]::Abs($hReset.Height - $h0.Height) -gt 2) { $why += 'the zoom label (Reset) did not return the page to 100 %' }
+                        if ([Math]::Abs($hReset.Height - $h0.Height) -gt 2) { $why += 'the zoom value item (Reset) did not return the page to 100 %' }
                         if ($hOut.Height -ge $h0.Height - 2) { $why += 'Zoom out did not shrink the page' }
                     }
                     Write-Host ("  S8 facts: " + ($facts -join '; '))
-                    if ($why.Count -eq 0 -and $facts.Count -gt 0) { Add-Scene 'S8' 'PASS' ('toolbar zoom on the real Runtime: ' + ($facts -join '; ')) }
+                    if ($why.Count -eq 0 -and $facts.Count -gt 0) { Add-Scene 'S8' 'PASS' ('document panel zoom on the real Runtime: ' + ($facts -join '; ')) }
                     elseif ($why.Count -gt 0 -and $facts.Count -eq 0) { Add-Scene 'S8' 'COULD NOT VERIFY' ($why -join '; ') }
                     else { Add-Scene 'S8' 'FAIL' ($why -join '; ') }
                 }
                 if (Want 'S9') {
                     $facts = @(); $why = @()
-                    # the query box: the first element of that name that takes a value (toolbar or overflow drop-down)
-                    $query = Get-FindBox $s8Viewer
+                    # the find: the panel item opens the real in-place editor (a text box laid over the item);
+                    # the term is set through the Value pattern and confirmed by an Enter posted to that box
+                    $query = Open-FindBox $s8Viewer
+                    $queryValue = $null
+                    if ($null -ne $query) {
+                        $queryHwnd = [IntPtr]$query.Current.NativeWindowHandle
+                        if ($queryHwnd -eq [IntPtr]::Zero -or -not $query.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$queryValue)) { $query = $null }
+                    }
                     $pressed = @()
-                    $counter = Find-ByName $w 'Совпадения'
-                    if ($null -ne $counter) {
-                        $vp = $null
-                        $valueText = if ($counter.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$vp)) { "'$($vp.Current.Value)'" } else { 'no value pattern' }
-                        Write-Host "  S9 counter element: name '$($counter.Current.Name)', control type $($counter.Current.ControlType.ProgrammaticName), help text '$($counter.Current.HelpText)', value $valueText"
-                    } else { Write-Host '  S9 counter element: not found by its accessible name' }
-                    if ($null -eq $query) { $why += 'the find query box is not reachable through UI Automation' }
+                    $counterName = Get-MatchCount $s8Viewer
+                    if ($counterName.Length -gt 0) { Write-Host "  S9 counter item: '$counterName'" }
+                    else { Write-Host '  S9 counter item: not found on the panel' }
+                    if ($null -eq $query) { $why += 'the find editor box is not reachable through UI Automation' }
                     elseif ($null -eq $h0) { $why += 'the heading rectangle could not be read' }
                     else {
-                        $query.SetValue('needle')
-                        $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Следующее совпадение'); Start-Sleep -Milliseconds 1500    # starts the find: match 1
+                        $queryValue.SetValue('needle')
+                        Start-Sleep -Milliseconds 300
+                        [FmsHtmlScenesNative]::PostKey($queryHwnd, 0x0D); Start-Sleep -Milliseconds 1500    # Enter on a new term starts the find: match 1
                         $t1 = (Get-HeadingRect $w $fMarker).Top
-                        $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Следующее совпадение'); Start-Sleep -Milliseconds 1500    # match 2, far below
+                        [FmsHtmlScenesNative]::PostKey($queryHwnd, 0x0D); Start-Sleep -Milliseconds 1500    # the same term: match 2, far below
                         $t2 = (Get-HeadingRect $w $fMarker).Top
-                        $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Следующее совпадение'); Start-Sleep -Milliseconds 1500    # match 3, further down
+                        [FmsHtmlScenesNative]::PostKey($queryHwnd, 0x0D); Start-Sleep -Milliseconds 1500    # match 3, further down
                         $t3 = (Get-HeadingRect $w $fMarker).Top
-                        $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Следующее совпадение'); Start-Sleep -Milliseconds 1500    # wraps to match 1
+                        [FmsHtmlScenesNative]::PostKey($queryHwnd, 0x0D); Start-Sleep -Milliseconds 1500    # wraps to match 1
                         $t4 = (Get-HeadingRect $w $fMarker).Top
-                        $pressed += [bool](Invoke-HtmlCommand $s8Viewer 'Предыдущее совпадение'); Start-Sleep -Milliseconds 1500   # back to match 3
+                        $pressed += [bool]([FmsHtmlScenesNative]::PostShiftedKey($queryHwnd, 0x0D, 1500))     # Shift+Enter: back to match 3
                         $t5 = (Get-HeadingRect $w $fMarker).Top
                         $facts += ("heading top: start {0:N0}, match 1 {1:N0}, match 2 {2:N0}, match 3 {3:N0}, wrap {4:N0}, previous {5:N0}" -f $h0.Top, $t1, $t2, $t3, $t4, $t5)
-                        if ($pressed -contains $false) { $why += "a find button could not be pressed through UI Automation (pressed: $($pressed -join ', '))" }
                         if ($t2 -ge $t1 - 300) { $why += 'Next did not scroll to the second match' }
                         if ($t3 -ge $t2 - 300) { $why += 'Next did not scroll to the third match' }
                         if ([Math]::Abs($t4 - $t1) -gt 100) { $why += 'Next after the last match did not wrap to the first' }
                         if ([Math]::Abs($t5 - $t3) -gt 100) { $why += 'Previous after the wrap did not go to the last match' }
                     }
                     Write-Host ("  S9 facts: " + ($facts -join '; '))
-                    if ($why.Count -eq 0) { Add-Scene 'S9' 'PASS' ('find through the toolbar on the real Runtime (3 matches, case-insensitive, wraps both ways): ' + ($facts -join '; ') + '; the counter text is not judged (see the counter line)') }
+                    if ($why.Count -eq 0) { Add-Scene 'S9' 'PASS' ('find through the panel editor on the real Runtime (3 matches, case-insensitive, wraps both ways): ' + ($facts -join '; ') + '; the counter item is reported, not judged (see the counter line)') }
                     elseif ($null -eq $query -or $pressed -contains $false) { Add-Scene 'S9' 'COULD NOT VERIFY' ($why -join '; ') }
                     else { Add-Scene 'S9' 'FAIL' ($why -join '; ') }
                 }
@@ -1265,7 +1333,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
     }
 
     # ----- helpers of S10-S12 --------------------------------------------------------------------------
-    $docContext  = 'Документ: клавиши работают с текстом'   # the toolbar's context label (UpdateHtmlViewContext)
+    $docContext  = 'Документ: клавиши работают с текстом'   # the panel's context readout (UpdateHtmlViewContext)
     $fileContext = 'Просмотр: клавиши сортируют файлы'
 
     # The page's own windows inside the viewer: child windows that belong to a msedgewebview2 descendant.
@@ -1294,14 +1362,14 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
             $doc = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $c)
             if ($null -ne $doc) { $doc.SetFocus(); $result.Route = 'UI Automation focus on the page document' }
         } catch { $result.Note += "; UIA SetFocus: $($_.Exception.Message)" }
-        $result.Entered = Wait-Until { Test-RenderedText (Get-WindowHandle $Process) $docContext } 5 300
+        $result.Entered = Wait-Until { Test-ViewerText $Process $docContext } 5 300
         if (-not $result.Entered) {
             $rect = Get-HeadingRect $w $Marker
             $widget = @($pages | Where-Object { $_.Class -eq 'Chrome_RenderWidgetHostHWND' }) + @($pages)
             if ($null -ne $rect -and $widget.Count -gt 0) {
                 [FmsHtmlScenesNative]::PostClick($widget[0].Handle, [int]($rect.Left + 20), [int]($rect.Top + $rect.Height / 2))
                 $result.Route = 'a click posted to the page window'
-                $result.Entered = Wait-Until { Test-RenderedText (Get-WindowHandle $Process) $docContext } 5 300
+                $result.Entered = Wait-Until { Test-ViewerText $Process $docContext } 5 300
             }
         }
         $focus = [FmsHtmlScenesNative]::FocusOf($pages[0].Handle)
@@ -1347,7 +1415,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
             else {
                 $w = Get-WindowHandle $s10Viewer
                 $facts = @(); $why = @(); $escapeUnproven = $false
-                $startsOnCanvas = Test-RenderedText $w $fileContext
+                $startsOnCanvas = Test-ViewerText $s10Viewer $fileContext
                 $facts += "opens with canvas keys: $startsOnCanvas"
                 $enter = Enter-Page $s10Viewer 'FMS-HTML-PAGE-G1 marker'
                 Write-Host "  S10 enter: route '$($enter.Route)', entered $($enter.Entered); $($enter.Note)"
@@ -1374,20 +1442,15 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                             if (-not $still) { $why += "$($k.Name) typed in the page changed the shown file" }
                             if (-not $kept) { $why += "$($k.Name) typed in the page moved or deleted the file" }
                         }
-                        $stillDoc = Test-RenderedText (Get-WindowHandle $s10Viewer) $docContext
+                        $stillDoc = Test-ViewerText $s10Viewer $docContext
                         $focusBeforeEscape = [FmsHtmlScenesNative]::Describe([FmsHtmlScenesNative]::FocusOf($enter.Target))
                         [FmsHtmlScenesNative]::PostKey($enter.Target, 0x1B)                                  # Escape
-                        $left = Wait-Until { Test-RenderedText (Get-WindowHandle $s10Viewer) $fileContext } 5 300
-                        $leftRoute = 'label read at once'
+                        $left = Wait-Until { Test-ViewerText $s10Viewer $fileContext } 5 300
+                        $leftRoute = 'readout read at once'
                         if (-not $left) {
-                            # In full screen the strip hides 3 s after the last input and a hidden label is not in
-                            # the UI Automation tree; a bare Shift on the viewer reveals it without acting on a file.
-                            [FmsHtmlScenesNative]::PostKey((Get-WindowHandle $s10Viewer), 0x10); Start-Sleep -Milliseconds 600
-                            $left = Test-RenderedText (Get-WindowHandle $s10Viewer) $fileContext
-                            $leftRoute = 'label read after a Shift revealed the strip'
-                            if (-not $left) {
-                                $leftRoute += "; focus before Escape $focusBeforeEscape, after it $([FmsHtmlScenesNative]::Describe([FmsHtmlScenesNative]::FocusOf($enter.Target))); document label still shown $(Test-RenderedText (Get-WindowHandle $s10Viewer) $docContext)"
-                            }
+                            # The context readout lives on the pinned document panel, so it cannot hide with a strip;
+                            # a miss is a real miss and the panel's state goes into the note.
+                            $leftRoute = "re-read failed; focus before Escape $focusBeforeEscape, after it $([FmsHtmlScenesNative]::Describe([FmsHtmlScenesNative]::FocusOf($enter.Target))); document readout still shown $(Test-ViewerText $s10Viewer $docContext)"
                         }
                         $facts += "document context held through the keys $stillDoc; Escape returned to the file keys $left ($leftRoute)"
                         if (-not $left) {
@@ -1395,8 +1458,8 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                             # always reached the page, so a miss is not judged a defect from posted input: the visible
                             # return action is used instead and Escape is left to a real keyboard (hand check).
                             $escapeUnproven = $true
-                            $returned = [bool](Invoke-HtmlCommand $s10Viewer 'Вернуться к файлам')
-                            $left = $returned -and (Wait-Until { Test-RenderedText (Get-WindowHandle $s10Viewer) $fileContext } 5 300)
+                            $returned = [bool](Invoke-ViewerItem $s10Viewer 'Вернуться к файлам')
+                            $left = $returned -and (Wait-Until { Test-ViewerText $s10Viewer $fileContext } 5 300)
                             $facts += "the visible return action ('Вернуться к файлам', pressed $returned) returned to the file keys $left"
                             if (-not $left) { $why += 'neither Escape nor the visible return action returned to the file keys' }
                         }
@@ -1463,7 +1526,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                         [FmsHtmlScenesNative]::PostKey((Get-WindowHandle $s11Viewer), 0x31)
                         $moved = Wait-Until { (Test-Path -LiteralPath (Join-Path $hMove 'h2.html')) -and -not (Test-Path -LiteralPath $h2) } 20 300
                         $next = $moved -and ((Wait-Marker $s11Viewer 'FMS-HTML-PAGE-H3 marker' 20) -or (Wait-Marker $s11Viewer 'FMS-HTML-PAGE-H1 marker' 5))
-                        $stillHtml = (Update-Viewer $s11Viewer) -and ($null -ne (Find-HtmlToolbar (Get-WindowHandle $s11Viewer)))
+                        $stillHtml = (Update-Viewer $s11Viewer) -and ($null -ne (Find-DocumentPanel $s11Viewer))
                         $facts += "1: h2.html moved into slot 1 $moved, another page shown $next, HTML view up $stillHtml"
                         if (-not $moved) { $why += 'the digit 1 did not move the shown page into slot 1' }
                         elseif (-not $next) { $why += 'after the move no other page was shown' }
@@ -1526,12 +1589,12 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                     return $null
                 }
                 $cancelBefore = $null -ne (& $findCancel)
-                $printOk = Invoke-HtmlCommand $s12Viewer 'Печать'
+                $printOk = Invoke-ViewerItem $s12Viewer 'Печать'
                 $cancel = $null
                 [void](Wait-Until { $script:cancelHit = & $findCancel; $null -ne $script:cancelHit } 15 700)
                 $cancel = $script:cancelHit
                 $newWindows = @([FmsHtmlScenesNative]::TopLevelWindows() | Where-Object { $before -notcontains $_ })
-                Write-Host ("  S12 print: toolbar button pressed $printOk; Cancel button found $($null -ne $cancel); new top-level windows: " + ($(if ($newWindows.Count) { $newWindows -join ' || ' } else { 'none' })))
+                Write-Host ("  S12 print: panel item pressed $printOk; Cancel button found $($null -ne $cancel); new top-level windows: " + ($(if ($newWindows.Count) { $newWindows -join ' || ' } else { 'none' })))
                 $printShot = Save-WindowShot (Get-WindowHandle $s12Viewer) 's12-print-dialog.png'
                 if ($cancelBefore) { $unknown += 'a browser Cancel button was already on screen before Print, so its appearance proves nothing' }
                 elseif ($null -eq $cancel) { $unknown += 'no print dialog with a Cancel button could be found after Print (UI Automation)' }
@@ -1544,7 +1607,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                         $closed = Wait-Until { $null -eq (& $findCancel) } 10 500
                     }
                     if (Update-Viewer $s12Viewer) { [FmsHtmlScenesNative]::PostKey((Get-WindowHandle $s12Viewer), 0x10); Start-Sleep -Milliseconds 600 }
-                    $stillHtml = (Update-Viewer $s12Viewer) -and ($null -ne (Find-HtmlToolbar (Get-WindowHandle $s12Viewer))) -and (Test-RenderedText (Get-WindowHandle $s12Viewer) 'FMS-HTML-PAGE-I1 marker')
+                    $stillHtml = (Update-Viewer $s12Viewer) -and ($null -ne (Find-DocumentPanel $s12Viewer)) -and (Test-RenderedText (Get-WindowHandle $s12Viewer) 'FMS-HTML-PAGE-I1 marker')
                     $facts += "Print opened the print dialog (the browser's own Cancel button '$cancelName' appeared, none before), Cancel closed it $closed, page still shown $stillHtml (shot $printShot)"
                     if (-not $closed) { $why += 'Cancel did not close the print dialog' }
                     if (-not $stillHtml) { $why += 'the page was gone after the print dialog' }
@@ -1555,7 +1618,7 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                     $choice = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice' -ErrorAction Stop).ProgId
                     $browserExe = $choice
                 } catch { }
-                $invoked = Invoke-HtmlCommand $s12Viewer 'Открыть в браузере'
+                $invoked = Invoke-ViewerItem $s12Viewer 'Открыть в браузере'
                 $hit = $null
                 [void](Wait-Until {
                     $script:browserHit = @([FmsHtmlScenesNative]::TopLevelWindows() | Where-Object { ($_ -split '\|', 4)[3] -like "*$iTitle*" -and [int](($_ -split '\|', 4)[2]) -ne $s12Viewer.Id }) | Select-Object -First 1
@@ -1568,20 +1631,18 @@ li{list-style-image:url("http://127.0.0.1:@PORT@/list-image")}
                     $proc = Get-Process -Id ([int]$hp[2]) -ErrorAction SilentlyContinue
                     $facts += "Open in browser: '$($hp[3])' in $(if ($proc) { $proc.ProcessName } else { 'pid ' + $hp[2] }) (https handler $browserExe; the tab stays open)"
                 }
-                # 3. source: the HTML toolbar goes, the same file stays on screen as text
-                $sourceOk = Invoke-HtmlCommand $s12Viewer 'Исходный текст'
-                # a hidden toolbar (full screen) is not a gone one: a posted Shift would show it again
+                # 3. source: the document panel goes (the window's pin is on for the run - a hidden panel is
+                #    not a gone one), the same file stays on screen as text
+                $sourceOk = Invoke-ViewerItem $s12Viewer 'Исходный текст'
                 $gone = $sourceOk -and (Wait-Until {
                     if (-not (Update-Viewer $s12Viewer)) { return $false }
-                    $sw = Get-WindowHandle $s12Viewer
-                    [FmsHtmlScenesNative]::PostKey($sw, 0x10); Start-Sleep -Milliseconds 600
-                    ($null -eq (Find-HtmlToolbar $sw)) -and -not (Test-RenderedText $sw 'FMS-HTML-PAGE-I1 marker') } 15 500)
+                    ($null -eq (Find-DocumentPanel $s12Viewer)) -and -not (Test-RenderedText (Get-WindowHandle $s12Viewer) 'FMS-HTML-PAGE-I1 marker') } 15 500)
                 Start-Sleep -Seconds 1
                 $alive = Update-Viewer $s12Viewer
                 $srcShot = if ($alive) { Save-WindowShot (Get-WindowHandle $s12Viewer) 's12-source.png' } else { '(viewer gone)' }
                 $title = if ($alive) { $s12Viewer.MainWindowTitle } else { '' }
-                $facts += "Show source (button pressed $sourceOk): HTML toolbar and rendered page gone $gone, viewer alive $alive, window title '$title' (shot $srcShot)"
-                if (-not $sourceOk) { $unknown += 'the Show source button could not be pressed through UI Automation' }
+                $facts += "Show source (panel item pressed $sourceOk): document panel and rendered page gone $gone, viewer alive $alive, window title '$title' (shot $srcShot)"
+                if (-not $sourceOk) { $unknown += 'the Show source item could not be pressed through UI Automation' }
                 elseif (-not $gone -or -not $alive) { $why += 'Show source did not leave the HTML view for the text preview' }
                 Write-Host ("  S12 facts: " + ($facts -join '; '))
                 if ($why.Count -gt 0) { Add-Scene 'S12' 'FAIL' ($why -join '; ') }

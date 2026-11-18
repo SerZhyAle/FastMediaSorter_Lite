@@ -37,7 +37,9 @@ function New-Catalog([string]$name, $carrier) {
 }
 
 $failures = [Collections.Generic.List[string]]::new()
+$cases = 0
 function Expect([string]$name, [int]$code, [string]$message, [string]$notMessage, [string[]]$arguments) {
+    $script:cases++
     $out = @(& $pwsh -NoProfile -File $Tool @arguments 2>&1 | ForEach-Object { "$_" })
     $got = $LASTEXITCODE
     $text = $out -join "`n"
@@ -68,4 +70,4 @@ try {
 if ($failures.Count -gt 0) {
     Exit-Verdict 'IconCatalogCarrier' 1 "$($failures.Count) case(s) wrong: $($failures -join '; ')"
 }
-Exit-Verdict 'IconCatalogCarrier' 0 'a higher MAJOR is refused, a higher MINOR accepted, a malformed or missing carrier never guessed'
+Exit-Verdict 'IconCatalogCarrier' 0 "a higher MAJOR is refused, a higher MINOR accepted, a malformed or missing carrier never guessed; run=$cases skipped=0"

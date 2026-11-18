@@ -546,6 +546,38 @@ Public Class GroupMarkerHeaderTests
              End Sub)
     End Sub
 
+    ' --- spacing and hit height (COLLAPSIBLE-GROUP section 3 rule 6) -------------------------------
+
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
+    Public Sub Every_header_kind_is_at_least_the_32_px_pointer_hit_height_at_100_150_and_200_percent()
+        OnUi(Sub()
+                 For Each kind In Kinds
+                     For Each factor In {1.0F, 1.5F, 2.0F}
+                         Using rig As Rig = Build(kind, "Folder access", False, False, False, factor, 520)
+                             Dim hit As Integer = UiSizing.DevicePx(UiSizing.PointerTarget, factor)
+                             Assert.True(rig.Header.Height >= hit, kind & " x" & factor & ": header " & rig.Header.Height & " px, wanted at least " & hit & ".")
+                         End Using
+                     Next
+                 Next
+             End Sub)
+    End Sub
+
+    <Fact, Trait("Kind", "UiForm"), Trait("Form", "SettingsGroupCard"), Trait("Form", "CollapsibleSection")>
+    Public Sub Two_sibling_groups_stand_8_logical_px_apart()
+        OnUi(Sub()
+                 Dim section As New CollapsibleSection("gap", "Gap")
+                 Dim card As New SettingsGroupCard("Gap", False)
+                 Try
+                     ' The hosts stack groups in table rows, which add the lower margin of one and the upper of the next.
+                     Assert.Equal(8, section.Margin.Bottom + section.Margin.Top)
+                     Assert.Equal(8, card.Margin.Bottom + card.Margin.Top)
+                 Finally
+                     card.Dispose()
+                     section.Dispose()
+                 End Try
+             End Sub)
+    End Sub
+
     ' --- the source ---------------------------------------------------------------------------------
 
     <Fact>

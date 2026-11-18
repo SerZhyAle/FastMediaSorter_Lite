@@ -49,6 +49,29 @@ Public Class MediaKindTests
         Assert.DoesNotContain(".mp4", extensions)
     End Sub
 
+    ' MEDIA-VIEWER 1.0 rule 1 (L0334): the junk test reads the NAME of a listed file. Reading its full path dropped every
+    ' file that merely lives below a dot-prefixed folder (D:\Photos\.thumbnails\a.jpg, C:\Users\x\.config\pics).
+    <Fact>
+    Public Sub A_file_below_a_dot_prefixed_folder_is_listed_but_a_dot_named_file_is_not()
+        Dim root As String = Path.Combine(Path.GetTempPath(), "fms-pk-" & Guid.NewGuid().ToString("N"))
+        Dim folder As String = Path.Combine(root, ".kept-photos")
+        Directory.CreateDirectory(folder)
+        Try
+            For Each name In {"photo.jpg", ".dot.jpg", "Thumbs.db"}
+                File.WriteAllText(Path.Combine(folder, name), "test")
+            Next
+            Dim extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".jpg"}
+            Dim listing = New LocalProvider(Function() False).ListEntries(folder, Threading.CancellationToken.None)
+            Dim eligible = listing.Where(Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.Name, extensions))
+            Dim visible As String() = eligible.Select(Function(entry) entry.Name).ToArray()
+            Assert.Equal({"photo.jpg"}, visible)
+            ' The parent is the very thing the old full-path test tripped on.
+            Assert.True(MediaBrowsing.IsJunk(Path.Combine(folder, "photo.jpg")))
+        Finally
+            Directory.Delete(root, True)
+        End Try
+    End Sub
+
     <Fact>
     Public Sub Mixed_folder_listing_and_background_count_use_the_same_eligibility()
         Dim folder As String = Path.Combine(Path.GetTempPath(), "fms-pk-" & Guid.NewGuid().ToString("N"))
@@ -62,8 +85,8 @@ Public Class MediaKindTests
                 Dim p As New ModernViewerPreferences With {.IncludeDocumentInNavigation = includeDocs, .SortOtherFiles = True, .OtherExtensions = ".zip"}
                 Dim extensions = SortableContentKinds.BuildExtensions(Images, Playback, {".svg"}, p)
                 Dim listing = provider.ListEntries(folder, Threading.CancellationToken.None)
-                Dim visible = listing.Where(Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.FullPath, extensions)).ToList()
-                Dim count = Enumerable.Count(provider.ListEntries(folder, Threading.CancellationToken.None), Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.FullPath, extensions))
+                Dim visible = listing.Where(Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.Name, extensions)).ToList()
+                Dim count = Enumerable.Count(provider.ListEntries(folder, Threading.CancellationToken.None), Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.Name, extensions))
                 Assert.Equal(If(includeDocs, 6, 4), visible.Count)
                 Assert.Equal(visible.Count, count)
             Next
@@ -102,9 +125,9 @@ Public Class MediaKindTests
                 Dim extensions = SortableContentKinds.BuildExtensions(Images, playbackWithStream, {".svg"}, p)
                 Dim listing = provider.ListEntries(folder, Threading.CancellationToken.None)
                 Dim visible = listing.Where(Function(entry) Not entry.IsDirectory AndAlso
-                                                       MediaBrowsing.IsEligible(entry.FullPath, extensions)).ToList()
+                                                       MediaBrowsing.IsEligible(entry.Name, extensions)).ToList()
                 Dim count = Enumerable.Count(listing, Function(entry) Not entry.IsDirectory AndAlso
-                                                     MediaBrowsing.IsEligible(entry.FullPath, extensions))
+                                                     MediaBrowsing.IsEligible(entry.Name, extensions))
                 Assert.Equal([case].Expected, visible.Count)
                 Assert.Equal(visible.Count, count)
 

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-STRUCTURE` |
-| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.4, draft, the current catalog version; partial. Open, dated 2026-11-15 in the registry: section 8 C, D and E - the program resolver `src/Support/SitePages.vb`, the record of released addresses and anchors `tools/site-addresses.jsonl` and the links from setup, start and repair screens were not verified on the tree in this read (ticket L0331). Earlier reading: 0.3 (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096, and read at 0.1 on 2026-10-07). 0.2 (2026-10-14, additive) added section 8, the lifecycle of a page and its addresses; 0.3 (2026-10-18, a record) carries the Support row of the page-type table that the 2026-10-17 amendment added, and gains the Support and release-history boxes of `SITE-CHECKLIST.md` |
+| **Version** | read on 2026-11-15 (L0323 catch-up) at 0.4, draft, the current catalog version; partial. Read again the same day (ticket L0331): section 8 C holds on the resolver `src/Support/SitePages.vb` (every resolver returns the English page for a language the page lacks); section 8 D has its record since 2026-11-15 - the `released` records of `tools/site-addresses.jsonl` (15 pages, 21 anchors, from the release tags) held offline by check 6 of `tools/Test-SiteAddresses.ps1`, its `-Live` form not run; section 8 E (a link to the function page from every setup, start and repair screen) is not audited screen by screen, the registry rows stay partial until that audit and the `-Live` run. Earlier reading: 0.3 (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096, and read at 0.1 on 2026-10-07). 0.2 (2026-10-14, additive) added section 8, the lifecycle of a page and its addresses; 0.3 (2026-10-18, a record) carries the Support row of the page-type table that the 2026-10-17 amendment added, and gains the Support and release-history boxes of `SITE-CHECKLIST.md` |
 | **Home** | `product-site/SITE-STRUCTURE.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); tier **guide** (D2); locale sets as published today (D3) |
 
@@ -35,8 +35,9 @@ switch). This pointer says only what the repository must do to stay conformant.
 6. **Hold section 8 (0.2).** The variants of a page are linked siblings (A, rules 9 and 10); the visitor's language is
    kept by every internal link (B, rule 6); a program's fallback is the English page (C, rule 11); from the release
    that first carries a page its address and anchors do not change (D, rule 8); every setup, start or repair screen of
-   a function that has a page links it (E); and nothing is marked "not available yet" (F). Not read here: A and C
-   against the program's resolver, and D against a record of released addresses.
+   a function that has a page links it (E); and nothing is marked "not available yet" (F). C is read on the program's
+   resolver and D is held against the record of released addresses (2026-11-15); not read here: A against the
+   resolver, and E screen by screen.
 7. **Carry the Support page and the release history (the 2026-10-17 amendment, 0.3).** `support.html` is the Support
    page; the release history is rendered from the versioned records of shipped releases (`CHANGELOG.md`, never
    `[Unreleased]`) by `tools/Build-SitePages.ps1`. A footer link to the Support page from every page, and a declared

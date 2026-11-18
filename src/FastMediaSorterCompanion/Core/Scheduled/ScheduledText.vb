@@ -166,6 +166,18 @@ Friend Module ScheduledText
             Case "backup-filedo-unsupported" : Return Localization.T("установленный FileDO не умеет нумеровать резервные копии: обновите компонент FileDO")
             Case "backup-source-refused" : Return Localization.TF("FileDO не принимает эту папку для резервной копии, измените операцию: {0}", argument)
             Case "backup-destination-refused" : Return Localization.TF("FileDO не может сохранять копии в эту папку, измените операцию: {0}", argument)
+            Case "backup-remote-listing" : Return Localization.TF("Не удалось прочитать полный список папки на сервере: {0}", argument)
+            Case "backup-remote-locked" : Return Localization.TF("Другая резервная копия работает с этим набором на сервере, повторите попытку позже: {0}", argument)
+            Case "backup-remote-changed" : Return Localization.TF("Набор копий на сервере изменился во время запуска, повторите попытку позже: {0}", argument)
+            Case "backup-remote-verify" : Return Localization.TF("Копия не совпала с созданной после загрузки на сервер: {0}", argument)
+            Case "backup-remote-time" : Return Localization.TF("Время новой копии на сервере не позже прежней, повторите попытку позже: {0}", argument)
+            Case "backup-remote-place" : Return Localization.TF("В папке на сервере уже есть файл с этим именем, не входящий в набор копий: {0}", argument)
+            Case "backup-remote-move" : Return Localization.TF("Новая копия создана, но не заняла своё место на сервере и сохранена как {0}.", argument)
+            Case "backup-remote-transport" : Return Localization.TF("Не удалось переписать файлы через ресурс: {0}", argument)
+            Case "backup-remote-link" : Return Localization.TF("В источнике есть ссылка, которую резервная копия не обрабатывает: {0}", argument)
+            Case "backup-remote-name" : Return Localization.TF("В источнике есть имя файла, которое Windows не принимает: {0}", argument)
+            Case "backup-source-changed" : Return Localization.TF("Источник изменился во время записи промежуточной копии: {0}", argument)
+            Case "backup-stage" : Return Localization.TF("Не удалось подготовить промежуточную папку на этом компьютере: {0}", argument)
             Case "backup-failed" : Return Localization.TF("FileDO не смог сделать резервную копию: {0}", argument)
             Case "backup-not-proven" : Return Localization.TF("FileDO не подтвердил резервную копию: {0}", argument)
             Case Else
@@ -202,8 +214,6 @@ Friend Module ScheduledText
                 Return Localization.T("Возраст «младше» должен быть больше возраста «старше».")
             Case ScheduledIssueCode.SizeBoundsContradict
                 Return Localization.T("Размер «меньше» должен быть больше размера «больше».")
-            Case ScheduledIssueCode.ArchiveNeedsPaths
-                Return Localization.T("Архив принимает только обычные папки, не ресурсы.")
             Case ScheduledIssueCode.NegativeBound : Return Localization.T("Значения условий не могут быть отрицательными.")
             Case ScheduledIssueCode.ResourceReadOnly
                 Return Localization.T("Ресурс только для чтения: перенос и удаление в нём недоступны.")
@@ -227,7 +237,7 @@ Friend Module ScheduledText
             Case ScheduledIssueCode.LocalStorageRequired
                 Return Localization.T("Заполнение свободного места работает только с локальным диском или папкой на нём.")
             Case ScheduledIssueCode.BackupNeedsPaths
-                Return Localization.T("Резервная копия принимает только обычные папки, не ресурсы и не Google Drive.")
+                Return Localization.T("Резервная копия принимает обычные папки, ресурсы SFTP и SMB; Google Drive не поддерживается.")
             Case ScheduledIssueCode.BackupPasswordMissing
                 Return Localization.T("Введите пароль для защищённой резервной копии.")
             Case Else : Return Localization.T("Определение не прошло проверку.")
@@ -260,6 +270,26 @@ Friend Module ScheduledText
         Dim freeAtStart, written As Long
         If FillCommandLine.TryReadVerdict(verdict, freeAtStart, written) Then
             Return Localization.TF("свободно перед запуском: {0}, перезаписано: {1}", SizeText(freeAtStart), SizeText(written))
+        End If
+        If verdict.StartsWith("backup:", StringComparison.Ordinal) Then
+            Dim isDated As Boolean = False
+            Dim generation, retiredGen, retiredCount, keptCount, keepDays, monthlyKept, skippedLinks As Long?
+            BackupCommandLine.TryParseVerdict(verdict, isDated, generation, retiredGen, retiredCount, keptCount, keepDays, monthlyKept, skippedLinks)
+            If isDated AndAlso keepDays.HasValue AndAlso keptCount.HasValue AndAlso retiredCount.HasValue Then
+                If monthlyKept.HasValue Then
+                    Return Localization.TF("за {0} дн. + 1-я в месяце: сохранено {1}, удалено {2}, месячных {3}",
+                                           keepDays.Value, keptCount.Value, retiredCount.Value, monthlyKept.Value)
+                End If
+                Return Localization.TF("за {0} дн.: сохранено {1}, удалено {2}",
+                                       keepDays.Value, keptCount.Value, retiredCount.Value)
+            End If
+            If generation.HasValue Then
+                If retiredGen.HasValue AndAlso retiredGen.Value > 0 Then
+                    Return Localization.TF("копия {0}, заменена {1}", generation.Value, retiredGen.Value)
+                End If
+                Return Localization.TF("копия {0}", generation.Value)
+            End If
+            Return ""
         End If
         If verdict = "recycle" Then Return Localization.T("в Корзину")
         If verdict = "mixed" Then Return Localization.T("частично в Корзину, частично безвозвратно")

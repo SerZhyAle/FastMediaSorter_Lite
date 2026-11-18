@@ -31,9 +31,17 @@ Friend NotInheritable Class ScheduledOperationDto
     ''' <summary>Fill free space only (L0299); absent on every other action, and ignored by a build that predates it.</summary>
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
     Public Property ChunkSizeMb As Integer?
-    ''' <summary>Backup only (L0298); absent on every other action. The password of a sealed backup is never here.</summary>
+    ''' <summary>Backup only (L0298, L0346); absent on every other action. The password of a sealed backup is never here.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property BackupRetention As String
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
     Public Property BackupKeepCount As Integer?
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property BackupKeepDays As Integer?
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property BackupKeepMonthly As Boolean?
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property BackupSkipLinks As Boolean?
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
     Public Property BackupSealed As Boolean?
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
@@ -116,7 +124,7 @@ Friend Module ScheduledJson
             Case "delete" : action = ScheduledAction.Delete : Return True
             Case "archive" : action = ScheduledAction.Archive : Return True
             Case "fill_free_space", "fill" : action = ScheduledAction.FillFreeSpace : Return True
-            Case "backup" : action = ScheduledAction.Backup : Return True
+            Case "backup", "backup_dated" : action = ScheduledAction.Backup : Return True
         End Select
         action = ScheduledAction.Copy
         Return False
@@ -274,8 +282,12 @@ Friend Module ScheduledJson
     ' --- model <-> DTO ---------------------------------------------------------------------------
 
     Friend Function ToDto(op As ScheduledOperation) As ScheduledOperationDto
+        Dim isBackup As Boolean = (op.Action = ScheduledAction.Backup)
+        Dim isDated As Boolean = isBackup AndAlso op.BackupRetention = BackupRetentionMode.Dated
+        ' Dated backup uses action "backup_dated" so an older build hits TryParseAction -> InvalidDefinition instead of running gen (L0346).
+        Dim actionWire As String = If(isDated, "backup_dated", ActionName(op.Action))
         Return New ScheduledOperationDto With {
-            .Id = op.Id, .Name = op.Name, .Enabled = op.Enabled, .Action = ActionName(op.Action),
+            .Id = op.Id, .Name = op.Name, .Enabled = op.Enabled, .Action = actionWire,
             .Source = LocationToDto(op.Source), .Destination = LocationToDto(op.Destination),
             .Conditions = New ScheduledConditionsDto With {
                 .Types = TypesName(op.Conditions.TypeMask), .Time = TimeFilterName(op.Conditions.TimeFilter),
@@ -287,8 +299,12 @@ Friend Module ScheduledJson
             .AnchorMinutes = op.AnchorMinutes, .IntervalMinutes = op.IntervalMinutes,
             .Conflict = ConflictName(op.Conflict), .DeleteOriginalsAfterVerify = op.DeleteOriginalsAfterVerify,
             .ChunkSizeMb = If(op.Action = ScheduledAction.FillFreeSpace, CType(op.ChunkSizeMb, Integer?), Nothing),
-            .BackupKeepCount = If(op.Action = ScheduledAction.Backup, CType(op.BackupKeepCount, Integer?), Nothing),
-            .BackupSealed = If(op.Action = ScheduledAction.Backup, CType(op.BackupSealed, Boolean?), Nothing),
+            .BackupRetention = If(isDated, "dated", Nothing),
+            .BackupKeepCount = If(isBackup AndAlso Not isDated, CType(op.BackupKeepCount, Integer?), Nothing),
+            .BackupKeepDays = If(isDated, CType(op.BackupKeepDays, Integer?), Nothing),
+            .BackupKeepMonthly = If(isDated, CType(op.BackupKeepMonthly, Boolean?), Nothing),
+            .BackupSkipLinks = If(isBackup AndAlso op.BackupSkipLinks, CType(True, Boolean?), Nothing),
+            .BackupSealed = If(isBackup, CType(op.BackupSealed, Boolean?), Nothing),
             .RetryMissedRunsAtStart = If(op.HasExplicitRetryMissedRuns, CType(op.RetryMissedRunsAtStart, Boolean?), Nothing),
             .ShowBalloonOnError = op.ShowBalloonOnError,
             .Halt = HaltText(op.Halt), .HaltDetail = op.HaltDetail,
@@ -343,8 +359,19 @@ Friend Module ScheduledJson
         op.Conflict = ParseConflict(dto.Conflict)
         op.DeleteOriginalsAfterVerify = dto.DeleteOriginalsAfterVerify AndAlso action = ScheduledAction.Archive
         op.ChunkSizeMb = ScheduledValidation.NormalizeChunkSize(dto.ChunkSizeMb.GetValueOrDefault(ScheduledOperation.DefaultChunkSizeMb))
+        op.BackupKeepCount = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepCount.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepCount))
+        op.BackupKeepDays = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepDays.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepDays))
         If action = ScheduledAction.Backup Then
-            op.BackupKeepCount = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepCount.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepCount))
+            Dim retentionRaw As String = If(dto.BackupRetention, "").Trim().ToLowerInvariant()
+            If retentionRaw.Length > 0 AndAlso retentionRaw <> "generations" AndAlso retentionRaw <> "dated" Then
+                op.Halt = ScheduledHalt.InvalidDefinition
+                op.HaltDetail = "unknown backup retention: " & dto.BackupRetention
+            End If
+            Dim isDated As Boolean = String.Equals(dto.Action, "backup_dated", StringComparison.OrdinalIgnoreCase) OrElse
+                                     retentionRaw = "dated"
+            op.BackupRetention = If(isDated, BackupRetentionMode.Dated, BackupRetentionMode.Generations)
+            op.BackupKeepMonthly = isDated AndAlso dto.BackupKeepMonthly.GetValueOrDefault(False)
+            op.BackupSkipLinks = dto.BackupSkipLinks.GetValueOrDefault(False)
             op.BackupSealed = dto.BackupSealed.GetValueOrDefault(False)
         End If
         If dto.RetryMissedRunsAtStart.HasValue Then

@@ -3,7 +3,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Drawing
 
-' LETTERBOX-BARS 0.1 and LETTERBOX-HALO 0.1 - the pure math, once.
+' LETTERBOX-BARS 0.2 and LETTERBOX-HALO 0.2 - the pure math, once.
 '
 ' This product OWNS both contracts (catalog folder letterbox-fill/), so the numbers below are
 ' the contract's own and a change to any of them is an AMENDMENT IN THE CATALOG FIRST (a version
@@ -36,7 +36,7 @@ Friend NotInheritable Class LetterboxFillMath
     ''' <summary>The catalog version of BOTH contracts this file was written against (they move
     ''' together in letterbox-fill/README.md). The vendored vectors name the same version, and the
     ''' conformance test asserts it, so a regenerated catalog file cannot be re-vendored unnoticed.</summary>
-    Friend Const ContractVersion As String = "0.1"
+    Friend Const ContractVersion As String = "0.2"
 
     ' =========================================================================================
     ' LETTERBOX-BARS - constants

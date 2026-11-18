@@ -244,9 +244,48 @@ Public NotInheritable Class CustomHotkeys
 
         Dim code As Keys = KeyFromName(rest)
         If Not IsAssignableKey(code) Then Return Keys.None
+        ' INPUT-CHORD rule 1 / rule 3: a stored chord whose trigger has no canonical token (OemQuotes, Pause ..) is a
+        ' token a conforming reader does not know - inert here too, and kept as stored by Load. The historical
+        ' factory extras (BrowserBack ..) never come through here: they are matched by key, not by a stored token.
+        If Not HasCanonicalTrigger(code) Then Return Keys.None
         Dim result As Keys = modifiers Or code
         If IsReserved(result) Then Return Keys.None
         Return result
+    End Function
+
+    ''' <summary>
+    ''' INPUT-CHORD rule 1: the trigger has a spelling in the canonical vocabulary (letters, digit row, F1..F24,
+    ''' the named keys, and the 0.4 additions: arrows, numpad, brackets and punctuation, media and volume keys).
+    ''' A writer emits only those spellings, so a key outside the set can be answered by the viewer but never
+    ''' written into a shared profile.
+    ''' </summary>
+    Public Shared Function HasCanonicalTrigger(code As Keys) As Boolean
+        Select Case code
+            Case Keys.A To Keys.Z, Keys.D0 To Keys.D9, Keys.F1 To Keys.F24, Keys.NumPad0 To Keys.NumPad9
+                Return True
+            Case Keys.Space, Keys.Return, Keys.Tab, Keys.Escape, Keys.Back, Keys.Delete, Keys.Insert, Keys.Home, Keys.End,
+                 Keys.Prior, Keys.Next, Keys.PrintScreen
+                Return True
+            Case Keys.Left, Keys.Right, Keys.Up, Keys.Down
+                Return True
+            Case Keys.Add, Keys.Subtract, Keys.Multiply, Keys.Divide, Keys.Decimal
+                Return True
+            Case Keys.OemOpenBrackets, Keys.OemCloseBrackets, Keys.OemPipe, Keys.OemPeriod, Keys.Oemcomma, Keys.Oemplus, Keys.OemMinus
+                Return True
+            Case Keys.MediaPlayPause, Keys.MediaNextTrack, Keys.MediaPreviousTrack, Keys.VolumeUp, Keys.VolumeDown, Keys.VolumeMute
+                Return True
+        End Select
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' What the shortcuts dialog may store for a key press: <see cref="Format"/>, but empty for a trigger with no
+    ''' canonical token (INPUT-CHORD rule 1). Dispatch keeps using <see cref="Format"/>, which still names every key
+    ''' the viewer answers.
+    ''' </summary>
+    Public Shared Function FormatForBinding(keyData As Keys) As String
+        If Not HasCanonicalTrigger(keyData And Keys.KeyCode) Then Return String.Empty
+        Return Format(keyData)
     End Function
 
     ''' <summary>Takes "ctrl" (and the "+" after it) off the front, or leaves the text
@@ -476,6 +515,14 @@ Public NotInheritable Class CustomHotkeys
             End If
             map(action.Id) = combo
         Next
+
+        ' INPUT-CHORD rule 3 with VERSIONING section 4 rule 5 (L0327): an action id this build does not know belongs
+        ' to a newer producer. Its value is carried untouched - never read, never claimed, never bound - so the next
+        ' save writes it back instead of erasing a chord the user set in another program.
+        For Each pair As KeyValuePair(Of String, String) In raw
+            If Find(pair.Key) IsNot Nothing OrElse String.IsNullOrEmpty(pair.Key) OrElse String.IsNullOrWhiteSpace(pair.Value) Then Continue For
+            map(pair.Key) = pair.Value
+        Next
         Return map
     End Function
 
@@ -485,6 +532,10 @@ Public NotInheritable Class CustomHotkeys
             For Each action As HotkeyAction In Catalog
                 Dim combo As String = Nothing
                 If map.TryGetValue(action.Id, combo) AndAlso Not String.IsNullOrEmpty(combo) Then ordered(action.Id) = combo
+            Next
+            ' Ids this build does not know are carried through (see Load).
+            For Each pair As KeyValuePair(Of String, String) In map
+                If Find(pair.Key) Is Nothing AndAlso Not String.IsNullOrWhiteSpace(pair.Value) Then ordered(pair.Key) = pair.Value
             Next
         End If
         ' Normalize hand-built maps as well as loaded profiles on every write.
@@ -523,6 +574,7 @@ Public NotInheritable Class CustomHotkeys
         If map Is Nothing OrElse String.IsNullOrEmpty(combo) Then Return String.Empty
         combo = InCurrentVocabulary(combo)
         For Each pair As KeyValuePair(Of String, String) In map
+            If Find(pair.Key) Is Nothing Then Continue For ' a carried id of a newer producer owns no key here
             If IsInert(pair.Value) Then Continue For
             If String.Equals(pair.Value, combo, StringComparison.OrdinalIgnoreCase) Then Return pair.Key
         Next
@@ -535,9 +587,18 @@ Public NotInheritable Class CustomHotkeys
         If String.IsNullOrEmpty(combo) Then Return String.Empty
         combo = InCurrentVocabulary(combo)
         For Each action As HotkeyAction In Catalog
-            Dim effective As String = EffectiveCombo(map, action)
-            If effective.Length = 0 Then Continue For
-            If String.Equals(effective, combo, StringComparison.OrdinalIgnoreCase) Then Return action.Id
+            Dim stored As String = Nothing
+            If map IsNot Nothing AndAlso map.TryGetValue(action.Id, stored) AndAlso Not String.IsNullOrEmpty(stored) Then
+                ' Moved or cleared: the override is the only owner, its factory keys are retired.
+                Dim effective As String = If(IsInert(stored), String.Empty, stored)
+                If effective.Length > 0 AndAlso String.Equals(effective, combo, StringComparison.OrdinalIgnoreCase) Then Return action.Id
+            Else
+                ' INPUT-CHORD rule 8: an untouched action still owns every key it answers to out of the box, the
+                ' historical extras (Space, PageDown ..) included, not only the one the dialog shows.
+                For Each factory As String In FactoryCombos(action)
+                    If String.Equals(factory, combo, StringComparison.OrdinalIgnoreCase) Then Return action.Id
+                Next
+            End If
         Next
         Return String.Empty
     End Function

@@ -113,7 +113,11 @@
       "type": "fmsl.Image_Panel_Form",
       "name": "Thumbnail Panel",
       "form": "page",
-      "help": "thumbnail-panel"
+      "help": "thumbnail-panel",
+      "elements": [
+        { "control": "txt_Manager_Address", "anchor": "navigation" },
+        { "control": "lst_Manager_Places", "anchor": "navigation" }
+      ]
     },
     {
       "id": "manager-destination",
@@ -165,7 +169,16 @@
       "type": "fmsl.Hotkeys_Form",
       "name": "Keyboard Shortcuts",
       "form": "page",
-      "help": "hotkeys"
+      "help": "hotkeys",
+      "elements": [
+        { "control": "hotkeys_List", "anchor": "shortcut-list" },
+        { "control": "hotkeys_Capture", "anchor": "record-shortcut" },
+        { "control": "hotkeys_Reset", "anchor": "reset-remove" },
+        { "control": "hotkeys_Clear", "anchor": "reset-remove" },
+        { "control": "hotkeys_ResetAll", "anchor": "reset-remove" },
+        { "control": "hotkeys_Ok", "anchor": "save-cancel" },
+        { "control": "hotkeys_Cancel", "anchor": "save-cancel" }
+      ]
     },
     {
       "id": "resource-manager",

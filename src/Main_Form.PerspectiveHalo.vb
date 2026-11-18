@@ -40,7 +40,7 @@ Partial Public Class Main_Form
     ' Fast), the 15 ms frame, the fade's shape - alpha(background) = distance ^ 1.4, distance 0 at
     ' the photo edge and 1 at the screen edge, so the edge colour holds near the photo and drops
     ' off further out - and its 12 gradient stops, the ease-out, the reach and the underlay's
-    ' opacity all live once in LetterboxFillMath (LETTERBOX-HALO 0.1 rules 2-7), held to the
+    ' opacity all live once in LetterboxFillMath (LETTERBOX-HALO 0.2 rules 2-7), held to the
     ' catalog's vectors by LetterboxFillConformanceTests. This file keeps the GDI+ painting and the
     ' timer.
 

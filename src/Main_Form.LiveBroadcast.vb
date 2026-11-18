@@ -25,7 +25,6 @@ Partial Public Class Main_Form
     Private live_Cast_Busy As Boolean
 
     Private Sub StartCastReceiver(sender As Object, e As EventArgs) Handles MyBase.Shown
-        If modern_Preferences IsNot Nothing Then live_Options.AutoAcceptCast = modern_Preferences.AutoAcceptLiveCast
         If ExchangeFeatures.IsEnabled() Then live_Cast_Timer.Start()
     End Sub
 
@@ -58,7 +57,8 @@ Partial Public Class Main_Form
                 ShowLiveBroadcastError(parsed.Status)
             End If
             Dim accepted As Boolean = parsed.Status = LiveReadStatus.Ok
-            If accepted AndAlso Not live_Options.AutoAcceptCast Then
+            ' The preference is edited in the settings window while this loop runs, so it is read per offer, never cached.
+            If accepted AndAlso Not GetModernPreferences().AutoAcceptLiveCast Then
                 Dim question As New AskSpec(Localization.T("Открыть live-трансляцию"), Localization.T("Принять входящую трансляцию?"), AskIcon.None,
                     New AskButton() {New AskButton(Localization.T("Подключиться")), New AskButton(Localization.T("Отмена"))}, 1, 1)
                 accepted = AskDialogs.Choose(Me, question) = 0
@@ -120,7 +120,8 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub ShowLiveBroadcastDialog()
         SlideShowStop()
-        Using dlg As New LiveBroadcast_Form(live_Options.AutoAcceptCast)
+        Dim openSettings As Boolean = False
+        Using dlg As New LiveBroadcast_Form()
             If DialogLayer.ShowViewerDialog(dlg, Me) = DialogResult.OK Then
                 If dlg.ResultDescriptor IsNot Nothing Then
                     PlayLiveBroadcast(dlg.ResultDescriptor)
@@ -129,12 +130,10 @@ Partial Public Class Main_Form
                     OpenMediaUrl(dlg.ResultOnDemandUrl)
                 End If
             End If
-            live_Options.AutoAcceptCast = dlg.AutoAcceptCast
-            If modern_Preferences IsNot Nothing AndAlso modern_Preferences.AutoAcceptLiveCast <> dlg.AutoAcceptCast Then
-                modern_Preferences.AutoAcceptLiveCast = dlg.AutoAcceptCast
-                modern_Preferences.Save()
-            End If
+            openSettings = dlg.SettingsRequested
         End Using
+        ' The window's link to the automatic-accept setting (L0332): the settings window opens once this window is gone.
+        If openSettings Then ShowSettingsWindowAtLiveCast()
     End Sub
 
     ''' <summary>
@@ -322,6 +321,10 @@ Partial Public Class Main_Form
             End If
             Dim sealError As String = If(runner.LastOpen?.SealedState, "")
             Notify(If(sealError.Length > 0, ConnectionDiagnosisLocalization.GetMessageText(ExchangeAgentPipe.ErrorMessage(sealError).Code), policy.GetTerminalStatusText()), NotifyLevel.Warning)
+        ElseIf ended = LiveRunEnd.BroadcastEnded Then
+            ' LIVE-BROADCAST item T: the producer ended it on purpose. The ended state is not a fault - plain information, in its
+            ' own words (not the lost-connection ones) - and the explicit "connect again" stays offered because the loop is over.
+            Notify(policy.GetTerminalStatusText(), NotifyLevel.Info)
         Else
             lbl_Status.Text = Localization.T("Трансляция остановлена")
         End If

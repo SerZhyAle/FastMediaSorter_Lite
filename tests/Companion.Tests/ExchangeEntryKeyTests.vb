@@ -197,6 +197,32 @@ Public Class ExchangeEntryKeyTests
         End Using
     End Function
 
+    ''' <summary>Item FB: the same producer, but the directory also lists THIS device with the key it enrolled with (a real server does), so
+    ''' the reader knows its own side is whole and the sentence names the other device. The test above, where the directory does not list
+    ''' this device, keeps `e2e-missing`: it cannot tell which side lacks the key.</summary>
+    <Fact>
+    Public Async Function A_producer_that_does_not_seal_is_e2e_missing_peer_when_this_device_is_listed_with_its_key() As Task
+        Using acc As New ExchangeStubAccount()
+            acc.Features = SealedFeatures()
+            acc.ListEnrolledDevices = True
+            Dim ports As ExchangeConsumerPorts = MakePorts(MakeStore())
+            Dim joined As ExchangeConsumerEnrollResult = Await ExchangeConsumer.EnrollAsync(Request(acc), ports, CancellationToken.None)
+            Dim hostId As String = ExchangeWireTestKit.IdOf("H"c)
+            Dim folderId As String = ExchangeWireTestKit.IdOf("1"c)
+            acc.Devices.Add("{""deviceId"":""" & hostId & """,""deviceName"":""Host"",""product"":""fms-windows"",""presence"":""online""}")
+            acc.Resources.Add("{""resourceId"":""" & folderId & """,""deviceId"":""" & hostId & """,""kind"":""sftp-share"",""name"":""Photos"",""presence"":""online"",""access"":{""descriptor"":""FMSSFTP2.secret""}}")
+            Using hub As New ExchangeEntryHub(ports)
+                Dim session As ExchangeEntrySession = hub.SessionFor(joined.Entry)
+                session.AccessWaitMs = 400
+                Dim result As ExchangeAgentAccessResult = Await session.GetAccessAsync(folderId, CancellationToken.None)
+
+                Assert.False(result.Reply.IsOk)
+                Assert.Equal(ExchangeAgentPipe.ErrorE2eMissingPeer, result.Reply.Error)
+                Assert.Equal("", result.AccessJson)
+            End Using
+        End Using
+    End Function
+
     <Fact>
     Public Async Function A_damaged_box_is_answered_at_once() As Task
         Using acc As New ExchangeStubAccount()

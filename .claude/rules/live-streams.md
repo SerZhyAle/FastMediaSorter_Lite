@@ -10,6 +10,9 @@ paths:
   - "src/Localization/Localization.Streams.vb"
   - "tests/Lite.Tests/Live*.vb"
   - "tests/Lite.Tests/StreamCatalog*.vb"
+  - "tests/Lite.Tests/StreamFacet*.vb"
+  - "tests/Lite.Tests/TestData/stream-facets/**"
+  - "tools/Export-StreamFacetTables.ps1"
   - "tests/Lite.Tests/AdtsFrameCounterTests.vb"
 ---
 
@@ -36,7 +39,7 @@ Four separate things share these folders; do not merge them. Local specification
 **Behaviour of the receiver**
 - **One HTTP request and one TCP connection per listener**: no redirects, no proxy, no cookies. The connection is closed **before** the player is stopped, and the player is stopped before the next connection (`LiveBroadcastRunner.CloseAsync`).
 - **Status meaning** (only in `ClassifyStatus`): 404 and 410 are the fatal "not found or gone"; 503 is the producer's listener cap; 401/403 is access denied; 408, 429 and 5xx are retryable; anything else is refused. The relay answers 410 for an ended id (specification 271).
-- **There is no in-band end signal.** After a body has played, any body end is a lost connection and goes to the reconnect policy; do not invent an "ended" marker.
+- **A deliberate end is read, in one place: `LiveBroadcastRunner.IsDeliberateEnd`** (`LIVE-BROADCAST` 1.5 items T and U, ticket L0329). It is the ended state (`LiveRunEnd.BroadcastEnded`, `LiveTerminationKind.BroadcastEnded`, the existing words «Трансляция завершена», information not a warning, no further automatic attempt, "Connect again" stays) for: a tunnel `connect` refused `ended` (`LiveOpenOutcome.Ended`, the wire spelling comes from `ExchangeOpenResult.RefusalReason`, because `ended` is not in the append-only refusal table) and any `410`; a `404`, or every endpoint refusing the TCP connection (`LiveOpenOutcome.Refused`), **only as the one reconnect right after a clean end of the body** (`LiveStreamEnd.Eof`, read before the session is closed; the flag is spent by that one attempt, whatever it answers). A reset, a stall, a timeout, `unavailable` on a tunnel and a `404` before anything played are NOT ends: they keep the bounded policy below. There is still no marker inside the stream; the end is told by what follows it. The directory's removal is read at the stop only by a consumer that follows a directory - the viewer follows none, so it has nothing to read there.
 - **Reconnect** (`LiveReconnectPolicy`): backoff 0/500/1000/2000/4000 ms, `MaxRetries` 5, a 12 s wall-clock budget, 10 s of stable playing refills the retries. A drift rejoin spends no retry; a sealed `NeedReconnect` is retried once.
 - **Drift guard** (`LiveDriftGuard`): threshold = target + `MarginMs` 500 kept inside 1300..1500 ms, 5 s warm-up, 2 s sustain, growth of at least 300 ms, 15 s cooldown. Fed by `AdtsFrameCounter` and the `ProgressReadStream` figures.
 - **LibVLC options** come only from `LivePlaybackOptions.ToMediaOptions`: `:demux=ts` or `:demux=aac`, `:network-caching`, `:live-caching` (target latency default 1000 ms, clamped 250..2000). Never add seek, resume or repeat options. `clock-jitter` / `clock-synchro` are absent on purpose (measured, see the comments there).
@@ -52,6 +55,7 @@ Four separate things share these folders; do not merge them. Local specification
 
 **Stream catalogue**
 - `StreamCatalogSchema.ProducerColumns` is the 19 columns in fixed producer order; `ContractTag` is the contract version the code was written against - bump it only together with the contract.
+- **`language` and `country` are closed sets** (`STREAM-BANK` rule 14, items O and P; ticket L0329, `ContractTag` `STREAM-BANK 2.10`). The ONE fold is `StreamFacetFold` (`FoldLanguage` / `FoldCountry`); `M3uPlaylistReader` and V11 (`StreamCatalogValidator`, `DescribeLanguageCellProblem`) use it and nothing else - never a second table in the reader. The data is `StreamFacetTables.vb`, **generated** by `tools/Export-StreamFacetTables.ps1 [-Check]` from the six catalog files vendored in `tests/Lite.Tests/TestData/stream-facets/` (digests in its `PROVENANCE.txt`, `-text` in `.gitattributes`): never edit the generated file or a vendored file by hand - a change is the owner re-exporting them, then re-take, re-run the script, update the digests. `StreamFacetFoldTests` replays `facet-golden.tsv` and holds the generated file to its source. Rules in short: a piece is looked up whole first (name, alias, bare ISO 639-1/-2 code), then by words (names and aliases only - `english uk` is English), a non-blank cell that names nothing is `english`, blank stays blank; a country cell is ONE assigned code or blank. Keys are folded with the same fold as the input (the published keys are not all one Unicode form).
 - Identity (`GetIdentityKey`): one row per identity; do not add a second URL comparison elsewhere.
 - The M3U reader refuses whole files over `MaxPlaylistBytes` (32 MiB) and rows that are not launchable (`USER-PLAYLIST` section 8). The churn guard refuses a replacement that loses more than `ChurnThresholdPercent` (20) of the previous identities once the previous catalogue has `ChurnThresholdMinRows` (50) rows, unless `--force` or the caller's callback agrees.
 

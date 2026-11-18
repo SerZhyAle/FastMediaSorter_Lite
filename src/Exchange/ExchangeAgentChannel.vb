@@ -289,6 +289,8 @@ Friend NotInheritable Class ExchangeAgentPipe
     ' Spec 234 T-2 (items DI, DJ, DP, DR): the four states of the sealed scheme, spelled as the codes of ConnectionDiagnosisMessages so
     ' the token IS the code. An old peer sees an unknown token and treats it as any other refusal.
     Public Const ErrorE2eMissing As String = "e2e-missing"
+    ''' <summary>Item FB: this device and its own record hold a key, the device that has the content does not (a local state, not a wire reason).</summary>
+    Public Const ErrorE2eMissingPeer As String = "e2e-missing-peer"
     Public Const ErrorKeyChanged As String = "key-changed"
     Public Const ErrorServerNoE2e As String = "server-no-e2e"
     Public Const ErrorSealedFailed As String = "sealed-failed"
@@ -310,6 +312,8 @@ Friend NotInheritable Class ExchangeAgentPipe
         Select Case errorToken
             Case ErrorE2eMissing
                 Return ConnectionDiagnosisMessages.E2eMissing
+            Case ErrorE2eMissingPeer
+                Return ConnectionDiagnosisMessages.E2eMissingPeer
             Case ErrorKeyChanged
                 Return ConnectionDiagnosisMessages.KeyChanged
             Case ErrorServerNoE2e
@@ -464,7 +468,7 @@ Friend NotInheritable Class ExchangeAgentAccessResult
         Me.AccessJson = If(accessJson, "")
     End Sub
 
-    ''' <summary>The sealed state of a refused request (`e2e-missing`, `key-changed`, `server-no-e2e`, `sealed-failed`), or Nothing
+    ''' <summary>The sealed state of a refused request (`e2e-missing`, `e2e-missing-peer`, `key-changed`, `server-no-e2e`, `sealed-failed`), or Nothing
     ''' when the reply is ok or refused for another reason. Its text is the one of ConnectionDiagnosis, whole.</summary>
     Public ReadOnly Property SealedState As ConnectionDiagnosisMessage
         Get

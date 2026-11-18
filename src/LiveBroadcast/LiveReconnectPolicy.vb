@@ -32,6 +32,10 @@ Friend Enum LiveTerminationKind
     UnknownError = 10
     ''' <summary>Any other non-2xx answer that is not worth retrying (a 3xx is never followed, a 4xx will not change).</summary>
     HttpStatus = 11
+    ''' <summary>The producer ended the broadcast on purpose (LIVE-BROADCAST 1.5 items T and U): a relay 410, a tunnel `connect`
+    ''' refused `ended`, or a clean end of the body followed by one reconnect that was refused or answered 404 / 410. Not an
+    ''' error: the viewer shows the ended state with an explicit reconnect action and makes no further automatic attempt.</summary>
+    BroadcastEnded = 12
 End Enum
 
 Friend NotInheritable Class LiveReconnectPolicy
@@ -171,9 +175,19 @@ Friend NotInheritable Class LiveReconnectPolicy
         playingSinceMs = -1L
     End Sub
 
+    ''' <summary>Marks the session ended by the producer on purpose (the ended state of LIVE-BROADCAST item T, not a failure).</summary>
+    Public Sub NoteBroadcastEnded()
+        CurrentState = LiveSessionState.Ended
+        TerminationReason = LiveTerminationKind.BroadcastEnded
+        budgetStartMs = -1L
+        playingSinceMs = -1L
+    End Sub
+
     ''' <summary>Formats the user-facing status message upon termination.</summary>
     Public Function GetTerminalStatusText() As String
         Select Case TerminationReason
+            Case LiveTerminationKind.BroadcastEnded
+                Return Localization.T("Трансляция завершена")
             Case LiveTerminationKind.MaxListeners503
                 Return Localization.T("На часах уже максимальное число слушателей")
             Case LiveTerminationKind.AccessDenied

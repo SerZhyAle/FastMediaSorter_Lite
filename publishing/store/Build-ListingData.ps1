@@ -28,7 +28,15 @@
 
     CAPS (rule 9) are counted in the unit Partner Center counts - characters after the line breaks the
     file will actually carry, so a CRLF is two - and one cell over its cap stops the build before
-    anything is written, naming the language, the field, the length and the deck file.
+    anything is written, naming the language, the field, the length and the deck file. The sum of words
+    over a language's seven search-term cells is capped at 21 (WINDOWS-STORE 0.2 (a); a word is a
+    non-whitespace run), and an overflow names the language and the count the same way.
+
+    A BOM EXPORT is read (the BOM is stripped) and written back in the rule 8 default dialect, without the
+    BOM, whether or not the run changes copy: this builder keeps one dialect, the default. Whether a
+    no-change round trip should carry the export's BOM instead is an open catalog question
+    (PROPOSAL-2026-11-15-fastmediasorter-lite-bom-dialect, option (a) recommended = what happens here);
+    tests\Integration\ListingBuilderFixtures.ps1 pins the current behaviour.
 
     WHY IT PARSES BY HAND: Import-Csv/Export-Csv would re-quote every field and drop the file's
     minimal-quoting style, and TextFieldParser silently drops an empty line inside a quoted cell. The
@@ -46,16 +54,21 @@
 [CmdletBinding()]
 param(
     # Verify the committed CSV is byte for byte what this script would write; write nothing. Exit 1 on a difference.
-    [switch] $Check
+    [switch] $Check,
+    # Alternative inputs, for the fixtures of tests\Integration\ListingBuilderFixtures.ps1 (overflow and BOM round trip);
+    # each defaults to the committed file, and a normal run names none of them.
+    [string] $DocPath,
+    [string] $FactsPath,
+    [string] $CsvPath
 )
 $ErrorActionPreference = 'Stop'
 
 $StoreDir = $PSScriptRoot
 # publishing/store -> repo root is two levels up (see REPOSITORY_LAYOUT.md).
 $RepoRoot = Split-Path (Split-Path $StoreDir -Parent) -Parent
-$Doc      = Join-Path $RepoRoot 'docs\guides\STORE_PUBLISHING.md'
-$Facts    = Join-Path $RepoRoot 'tools\site-facts.json'
-$Csv      = Join-Path $StoreDir 'listingData.csv'
+$Doc      = if ($DocPath)   { $DocPath }   else { Join-Path $RepoRoot 'docs\guides\STORE_PUBLISHING.md' }
+$Facts    = if ($FactsPath) { $FactsPath } else { Join-Path $RepoRoot 'tools\site-facts.json' }
+$Csv      = if ($CsvPath)   { $CsvPath }   else { Join-Path $StoreDir 'listingData.csv' }
 $DeckName = 'docs/guides/STORE_PUBLISHING.md'
 
 foreach ($f in @($Doc, $Facts, $Csv)) {
@@ -130,7 +143,7 @@ $descriptionRu = Join-Paragraphs (Get-FencedBlock '### Description (RU')
 $featuresEn    = @(Get-FencedBlock '### Product features (one per line') | Where-Object { $_.Trim() }
 $featuresRu    = @(Get-FencedBlock '### Product features (RU')            | Where-Object { $_.Trim() }
 
-# The What's new heading holds two fenced blocks, EN then RU, each behind a bold label.
+# The What's new heading holds fenced blocks: EN, RU, and optionally UK, each behind a bold label.
 $whatsNewStart = ($docLines | Select-String -SimpleMatch "### What's new in this version" | Select-Object -First 1).LineNumber
 if (-not $whatsNewStart) { throw "What's new heading not found" }
 $fences = @()
@@ -141,6 +154,26 @@ for ($i = $whatsNewStart; $i -lt $docLines.Count; $i++) {
 if ($fences.Count -lt 4) { throw "Expected an EN and an RU block under What's new" }
 $releaseNotesEn = Join-Lines $docLines[($fences[0] + 1)..($fences[1] - 1)]
 $releaseNotesRu = Join-Lines $docLines[($fences[2] + 1)..($fences[3] - 1)]
+$releaseNotesUk = if ($fences.Count -ge 6) { Join-Lines $docLines[($fences[4] + 1)..($fences[5] - 1)] } else { $releaseNotesEn }
+
+# All 13 languages supported by the product (portfolio standard, see tools/site-facts.json).
+# WINDOWS-STORE rule 16: What's new is authored only in the languages the product proofreads
+# (EN, RU, UK); the other ten machine-translated columns carry the English text.
+$deckLangs = @(
+    @{ Code = 'en-us';   Desc = $descriptionEn; Feats = $featuresEn; Notes = $releaseNotesEn }
+    @{ Code = 'ru';      Desc = $descriptionRu; Feats = $featuresRu; Notes = $releaseNotesRu }
+    @{ Code = 'uk';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (UK)')); Feats = @(Get-FencedBlock '### Product features (UK') | Where-Object { $_.Trim() }; Notes = $releaseNotesUk }
+    @{ Code = 'de';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (DE)')); Feats = @(Get-FencedBlock '### Product features (DE') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'it';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (IT)')); Feats = @(Get-FencedBlock '### Product features (IT') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'es';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (ES)')); Feats = @(Get-FencedBlock '### Product features (ES') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'fr';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (FR)')); Feats = @(Get-FencedBlock '### Product features (FR') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'pt-br';   Desc = (Join-Paragraphs (Get-FencedBlock '### Description (PT-BR)')); Feats = @(Get-FencedBlock '### Product features (PT-BR') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'ar';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (AR)')); Feats = @(Get-FencedBlock '### Product features (AR') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'hi';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (HI)')); Feats = @(Get-FencedBlock '### Product features (HI') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'bn';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (BN)')); Feats = @(Get-FencedBlock '### Product features (BN') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'ur';      Desc = (Join-Paragraphs (Get-FencedBlock '### Description (UR)')); Feats = @(Get-FencedBlock '### Product features (UR') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+    @{ Code = 'zh-hans'; Desc = (Join-Paragraphs (Get-FencedBlock '### Description (ZH-HANS)')); Feats = @(Get-FencedBlock '### Product features (ZH-HANS') | Where-Object { $_.Trim() }; Notes = $releaseNotesEn }
+)
 
 # --- 2. The search terms: the worksheet, one list per language ---------------------------------
 $factsJson = [IO.File]::ReadAllText($Facts, $Utf8NoBom) | ConvertFrom-Json
@@ -209,6 +242,7 @@ foreach ($r in $rows) {
 # These are Partner Center's (WINDOWS-STORE rule 9), and every one of them has bitten a listing at least
 # once. A cap is counted after CRLF normalisation: a line break is two characters in the file.
 $problems = @()
+$SearchTermWordCap = 21
 function Test-Cap {
     param([string] $Language, [string] $Field, [string] $Value, [int] $Cap)
     $len = (ConvertTo-Crlf $Value).Length
@@ -216,29 +250,32 @@ function Test-Cap {
         $script:problems += "$Language $Field is $len characters after CRLF normalisation, cap is $Cap (deck: $DeckName)"
     }
 }
-foreach ($pair in @(@('en-us', $releaseNotesEn, $descriptionEn, $featuresEn, $termsEn), @('ru', $releaseNotesRu, $descriptionRu, $featuresRu, $termsRu))) {
-    $lang = $pair[0]
-    Test-Cap $lang 'ReleaseNotes' $pair[1] 1500
-    Test-Cap $lang 'Description'  $pair[2] 10000
-    if (@($pair[3]).Count -gt 20) { $problems += "$lang feature list has $(@($pair[3]).Count) lines, cap is 20 (deck: $DeckName)" }
-    foreach ($f in @($pair[3])) { Test-Cap $lang 'Feature' $f 200 }
-    $terms = @($pair[4])
+foreach ($dl in $deckLangs) {
+    $lang = $dl.Code
+    $terms = if ($disc.storeSearchTerms.PSObject.Properties[$lang]) { @($disc.storeSearchTerms.$lang | ForEach-Object { [string]$_ }) } else { @() }
+    Test-Cap $lang 'ReleaseNotes' $dl.Notes 1500
+    Test-Cap $lang 'Description'  $dl.Desc 10000
+    $feats = @($dl.Feats | ForEach-Object { $_ } | Where-Object { $_.Trim() })
+    if ($feats.Count -ne 20) { $problems += "$lang feature list has $($feats.Count) lines, cap is 20 (deck: $DeckName)" }
+    foreach ($f in $feats) { Test-Cap $lang 'Feature' $f 200 }
     if ($terms.Count -gt 7) { $problems += "$lang has $($terms.Count) search terms, cap is 7 (tools/site-facts.json)" }
     if (@($terms | Select-Object -Unique).Count -ne $terms.Count) { $problems += "$lang repeats a search term (tools/site-facts.json)" }
+    # WINDOWS-STORE 0.2 (a): the sum of words over a language's seven search-term cells is capped at 21; a word is a
+    # non-whitespace run. A twenty-second word can make Partner Center refuse the whole import with an empty error report.
+    $words = 0
+    foreach ($t in $terms) { $words += [regex]::Matches($t, '\S+').Count }
+    if ($words -gt $SearchTermWordCap) { $problems += "$lang search terms hold $words words, the cap over the seven cells is $SearchTermWordCap (tools/site-facts.json)" }
     foreach ($t in $terms) {
         foreach ($w in $forbidden) {
             if ($t -match ('(?i)(?<![\p{L}\p{N}])' + [regex]::Escape($w) + '(?![\p{L}\p{N}])')) { $problems += "$lang search term '$t' uses '$w', a word on the forbidden list (tools/site-facts.json)" }
         }
     }
 }
-if (@($featuresEn).Count -ne @($featuresRu).Count) {
-    $problems += "EN has $(@($featuresEn).Count) features, RU has $(@($featuresRu).Count) - the lists are meant to line up"
-}
 # ShortDescription is not ours to write, but a cell over its cap loses the language all the same.
 for ($r = 1; $r -lt $rows.Count; $r++) {
     if ($rows[$r][0] -eq 'ShortDescription') {
-        Test-Cap 'en-us' 'ShortDescription' $rows[$r][$colEn] 1000
-        Test-Cap 'ru'    'ShortDescription' $rows[$r][$colRu] 1000
+        if ($colEn -ge 0) { Test-Cap 'en-us' 'ShortDescription' $rows[$r][$colEn] 1000 }
+        if ($colRu -ge 0) { Test-Cap 'ru'    'ShortDescription' $rows[$r][$colRu] 1000 }
     }
 }
 if ($problems.Count -gt 0) {
@@ -247,32 +284,36 @@ if ($problems.Count -gt 0) {
 }
 
 # --- 5. Set the cells this script owns --------------------------------------------------------
-$wanted = @{ 'Description' = @($descriptionEn, $descriptionRu)
-             'ReleaseNotes' = @($releaseNotesEn, $releaseNotesRu) }
-for ($i = 0; $i -lt 20; $i++) {
-    $wanted["Feature$($i + 1)"] = @(
-        $(if ($i -lt @($featuresEn).Count) { @($featuresEn)[$i].Trim() } else { '' }),
-        $(if ($i -lt @($featuresRu).Count) { @($featuresRu)[$i].Trim() } else { '' })
-    )
-}
-for ($i = 0; $i -lt 7; $i++) {
-    $wanted["SearchTerm$($i + 1)"] = @(
-        $(if ($i -lt $termsEn.Count) { $termsEn[$i].Trim() } else { '' }),
-        $(if ($i -lt $termsRu.Count) { $termsRu[$i].Trim() } else { '' })
-    )
+$deckMap = @{}
+foreach ($dl in $deckLangs) {
+    $feats = @($dl.Feats | ForEach-Object { $_ } | Where-Object { $_.Trim() })
+    $terms = if ($disc.storeSearchTerms.PSObject.Properties[$dl.Code]) { @($disc.storeSearchTerms.$($dl.Code) | ForEach-Object { [string]$_ }) } else { @() }
+    $colWanted = @{
+        'Description'  = $dl.Desc
+        'ReleaseNotes' = $dl.Notes
+    }
+    for ($i = 0; $i -lt 20; $i++) {
+        $colWanted["Feature$($i + 1)"] = if ($i -lt $feats.Count) { $feats[$i].Trim() } else { '' }
+    }
+    for ($i = 0; $i -lt 7; $i++) {
+        $colWanted["SearchTerm$($i + 1)"] = if ($i -lt $terms.Count) { $terms[$i].Trim() } else { '' }
+    }
+    $deckMap[$dl.Code] = $colWanted
 }
 
 $changed = @()
-for ($r = 1; $r -lt $rows.Count; $r++) {
-    $name = $rows[$r][0]
-    if (-not $wanted.ContainsKey($name)) { continue }
-    $pair = $wanted[$name]
-    foreach ($slot in @(@($colEn, 0), @($colRu, 1))) {
-        # Compared in CRLF form: a cell that only differs by its line breaks is a format fix, not a copy change.
-        if ((ConvertTo-Crlf $rows[$r][$slot[0]]) -ne (ConvertTo-Crlf $pair[$slot[1]])) {
-            $changed += "$name/$($header[$slot[0]])"
+for ($c = 0; $c -lt $header.Length; $c++) {
+    $colName = $header[$c]
+    if (-not $deckMap.ContainsKey($colName)) { continue }
+    $colWanted = $deckMap[$colName]
+    for ($r = 1; $r -lt $rows.Count; $r++) {
+        $name = $rows[$r][0]
+        if (-not $colWanted.ContainsKey($name)) { continue }
+        $wantedVal = $colWanted[$name]
+        if ((ConvertTo-Crlf $rows[$r][$c]) -ne (ConvertTo-Crlf $wantedVal)) {
+            $changed += "$name/$colName"
         }
-        $rows[$r][$slot[0]] = $pair[$slot[1]]
+        $rows[$r][$c] = $wantedVal
     }
 }
 

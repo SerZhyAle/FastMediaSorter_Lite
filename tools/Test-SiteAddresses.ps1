@@ -18,6 +18,13 @@
                                     is compared with this list by the unit tests as well);
                           external  the holder is outside the tree (the Store listing): the
                                     address is resolved, the holder is not read.
+      {"released": ..}  one record per page a release has carried (SITE-STRUCTURE 0.4 section 8 D,
+                        "from the release that first carries a page, its address and its anchors do not
+                        change"): "with" is the first release tag that carried the page and "anchors"
+                        maps each section anchor - an id the page's own links or an outside surface name
+                        (section 8 F) - to the first release tag that carried it. A page's address and
+                        anchors may be added freely until a release carries them; the record is appended
+                        in the release that first carries a page or an anchor, and never edited after.
 
     Judged, over the current files on disk and with no network:
 
@@ -34,12 +41,17 @@
          (built);
       5  completeness: every address of the site found in the holder files (src, publishing,
          .github, the READMEs, assets/help) is listed for that holder - a new address cannot
-         arrive without a line here.
+         arrive without a line here;
+      6  released addresses: every "released" record names an address on the site that still
+         resolves to a page file, is listed once, carries a release tag of the form vYY.M.D.HHmm, and
+         each of its anchors is still an id or name on that page and no earlier than the page.
 
     -Live is the separate, hand-run mode: it then requests each distinct address from the published
-    site (GET, redirects followed) and fails on any answer that is not 200. No answer at all (offline,
-    DNS) is COULD NOT VERIFY, never a pass. It is never part of a test run or the release preflight:
-    the pages go live from main, so a request before the push would judge the previous publication.
+    site (GET, redirects followed) and fails on any answer that is not 200; for a released page it
+    also reads the answer and fails on a recorded anchor the published page no longer has. No answer
+    at all (offline, DNS) is COULD NOT VERIFY, never a pass. It is never part of a test run or the
+    release preflight: the pages go live from main, so a request before the push would judge the
+    previous publication.
 
     Ends in the shared one-line verdict (CHECK-VERDICT): exit 0 PASS / 1 FAIL / 2 COULD NOT VERIFY.
 
@@ -79,6 +91,7 @@ function Problem([string]$message) { $problems.Add($message) }
 # --- the list -------------------------------------------------------------------------------------
 $groups = @{}
 $entries = [Collections.Generic.List[object]]::new()
+$releasedRecords = [Collections.Generic.List[object]]::new()
 $seenPair = @{}
 $lineNo = 0
 foreach ($raw in Get-Content -LiteralPath $List -Encoding UTF8) {
@@ -91,6 +104,14 @@ foreach ($raw in Get-Content -LiteralPath $List -Encoding UTF8) {
         if (-not $r.PSObject.Properties['locale'] -or -not $r.PSObject.Properties['sitemap']) { Problem "line ${lineNo}: group '$($r.group)' lacks 'locale' or 'sitemap'"; continue }
         if ($r.locale -and "$($r.locale)" -notmatch '<code>') { Problem "line ${lineNo}: group '$($r.group)' locale form has no <code>" }
         $groups[[string]$r.group] = $r
+        continue
+    }
+    if ($r.PSObject.Properties['released']) {
+        $rel = [pscustomobject]@{ Line = $lineNo; Address = [string]$r.released; With = [string]$r.with; Anchors = [ordered]@{} }
+        if ($r.PSObject.Properties['anchors'] -and $r.anchors) {
+            foreach ($p in $r.anchors.PSObject.Properties) { $rel.Anchors[[string]$p.Name] = [string]$p.Value }
+        }
+        $releasedRecords.Add($rel)
         continue
     }
     $bad = $false
@@ -228,16 +249,53 @@ foreach ($rel in $holderFiles) {
     }
 }
 
+# --- 6: what a release carried stays (SITE-STRUCTURE section 8 D) ---------------------------------
+# A release tag is vYY.M.D.HHmm; the key orders two tags without a git call (the check stays offline).
+function Get-TagKey([string]$tag) {
+    $m = [regex]::Match($tag, '^v(\d{2})\.(\d{1,2})\.(\d{1,2})\.(\d{4})$')
+    if (-not $m.Success) { return $null }
+    return ((([int64]$m.Groups[1].Value * 13 + [int64]$m.Groups[2].Value) * 32 + [int64]$m.Groups[3].Value) * 10000 + [int64]$m.Groups[4].Value)
+}
+$releasedByUrl = @{}
+$anchorCount = 0
+foreach ($rr in $releasedRecords) {
+    if (-not $rr.Address.StartsWith($BaseUrl, [StringComparison]::Ordinal)) { Problem "line $($rr.Line): released $($rr.Address) is not on the site ($BaseUrl)"; continue }
+    if ($rr.Address.IndexOfAny([char[]]'?#') -ge 0) { Problem "line $($rr.Line): released $($rr.Address) is a page address - its anchors belong in 'anchors'"; continue }
+    if ($releasedByUrl.ContainsKey($rr.Address)) { Problem "line $($rr.Line): released $($rr.Address) is recorded twice"; continue }
+    $releasedByUrl[$rr.Address] = $rr
+    $pageKey = Get-TagKey $rr.With
+    if ($null -eq $pageKey) { Problem "line $($rr.Line): released $($rr.Address): '$($rr.With)' is not a release tag (vYY.M.D.HHmm)"; continue }
+    $relRest = $rr.Address.Substring($BaseUrl.Length)
+    if ($relRest -match '(^|/)\.\.(/|$)|\\') { Problem "line $($rr.Line): released $($rr.Address) is not a plain site path"; continue }
+    $relFile = Get-PageFile $relRest
+    if (-not (Test-Path -LiteralPath $relFile -PathType Leaf)) { Problem "line $($rr.Line): released $($rr.Address) no longer answers with a page (no file $($relFile.Substring($Root.Length + 1).Replace('\', '/')))"; continue }
+    foreach ($a in $rr.Anchors.Keys) {
+        $anchorCount++
+        $anchorKey = Get-TagKey $rr.Anchors[$a]
+        if ($null -eq $anchorKey) { Problem "line $($rr.Line): released $($rr.Address)#${a}: '$($rr.Anchors[$a])' is not a release tag (vYY.M.D.HHmm)"; continue }
+        if ($anchorKey -lt $pageKey) { Problem "line $($rr.Line): released $($rr.Address)#${a} is dated before its page ($($rr.Anchors[$a]) < $($rr.With))" }
+        if (-not (Get-Anchors $relFile).Contains($a)) { Problem "line $($rr.Line): released $($rr.Address) lost the anchor #$a that release $($rr.Anchors[$a]) carried" }
+    }
+}
+
 # --- the live mode --------------------------------------------------------------------------------
 $liveNote = ''
 $liveUnreachable = 0
 if ($Live) {
-    $distinct = @($entries | ForEach-Object { ($_.Address -replace '[?#].*$', '') } | Sort-Object -Unique)
+    $distinct = @(@($entries | ForEach-Object { ($_.Address -replace '[?#].*$', '') }) + @($releasedByUrl.Keys) | Sort-Object -Unique)
     $ok = 0
     foreach ($url in $distinct) {
         try {
             $resp = Invoke-WebRequest -Uri $url -Method Get -UseBasicParsing -TimeoutSec 30 -MaximumRedirection 5
-            if ([int]$resp.StatusCode -eq 200) { $ok++ } else { Problem "live: $url answered $([int]$resp.StatusCode)" }
+            if ([int]$resp.StatusCode -eq 200) {
+                $ok++
+                if ($releasedByUrl.ContainsKey($url)) {
+                    $body = [string]$resp.Content
+                    foreach ($a in $releasedByUrl[$url].Anchors.Keys) {
+                        if ($body -notmatch ('(?:\bid|\bname)\s*=\s*["'']' + [regex]::Escape($a) + '["'']')) { Problem "live: $url no longer has the anchor #$a that release $($releasedByUrl[$url].Anchors[$a]) carried" }
+                    }
+                }
+            } else { Problem "live: $url answered $([int]$resp.StatusCode)" }
         } catch {
             $status = $null
             if ($_.Exception.PSObject.Properties['Response'] -and $_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
@@ -254,4 +312,4 @@ if ($problems.Count) {
     Exit-Verdict 'Test-SiteAddresses' 1 "$($problems.Count) problem(s) over $($entries.Count) entries"
 }
 if ($Live -and $liveUnreachable) { Exit-Verdict 'Test-SiteAddresses' 2 "offline part clean, but $liveUnreachable address(es) got no answer from the site" }
-Exit-Verdict 'Test-SiteAddresses' 0 "$($entries.Count) entries, $resolved resolved, $foundCount held in $($holderFiles.Count) files, $externalCount outside the tree, $($groups.Count) groups, $($codes.Count + 1) languages$liveNote"
+Exit-Verdict 'Test-SiteAddresses' 0 "$($entries.Count) entries, $resolved resolved, $foundCount held in $($holderFiles.Count) files, $externalCount outside the tree, $($groups.Count) groups, $($codes.Count + 1) languages, $($releasedByUrl.Count) released pages with $anchorCount anchors$liveNote"

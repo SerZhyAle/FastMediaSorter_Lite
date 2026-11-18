@@ -337,14 +337,14 @@ Public Class ScheduledResourceTests
     End Sub
 
     <Fact>
-    Public Sub Source_and_destination_in_one_resource_folder_is_refused_and_archive_takes_paths_only()
+    Public Sub Source_and_destination_in_one_resource_folder_is_refused_and_archive_takes_a_resource_source()
         Dim kit As New Kit()
         Dim same As List(Of ScheduledIssue) = ScheduledValidation.Validate(
             Operation(ScheduledAction.Copy, Resource("/data/a"), Resource("/data/a/")), Nothing, kit.Services.ResourceFacts)
         Assert.Contains(same, Function(i) i.Code = ScheduledIssueCode.SameResourceFolder)
         Dim archive As List(Of ScheduledIssue) = ScheduledValidation.Validate(
             Operation(ScheduledAction.Archive, Resource("/data"), PathLocation("D:\out")), Nothing, kit.Services.ResourceFacts)
-        Assert.Contains(archive, Function(i) i.Code = ScheduledIssueCode.ArchiveNeedsPaths)
+        Assert.Empty(archive)
     End Sub
 
     <Fact>

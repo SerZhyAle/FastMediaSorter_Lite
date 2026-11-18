@@ -43,6 +43,11 @@ Friend Enum LiveOpenOutcome
     Cancelled = 9
     SealedFailed = 10
     SealedReconnect = 11
+    ''' <summary>A tunnel `connect` refused `ended` (LIVE-BROADCAST 1.5 item U, DEVICE-EXCHANGE item DY): a deliberate end. Never retried.</summary>
+    Ended = 12
+    ''' <summary>The TCP connection was actively refused (nothing listens on the port). Retried inside the budget, but a runner that
+    ''' has just seen a clean end of the body reads it as the end (LIVE-BROADCAST item T: "a reconnect that is refused").</summary>
+    Refused = 13
 End Enum
 
 Friend NotInheritable Class LiveOpenResult
@@ -68,7 +73,8 @@ Friend NotInheritable Class LiveOpenResult
         Get
             Select Case Outcome
                 Case LiveOpenOutcome.MaxListeners503, LiveOpenOutcome.AccessDenied, LiveOpenOutcome.NotFoundOrGone,
-                     LiveOpenOutcome.NotAudioStream, LiveOpenOutcome.HttpRefused, LiveOpenOutcome.SealedFailed
+                     LiveOpenOutcome.NotAudioStream, LiveOpenOutcome.HttpRefused, LiveOpenOutcome.SealedFailed,
+                     LiveOpenOutcome.Ended
                     Return True
                 Case Else
                     Return False
@@ -80,7 +86,7 @@ Friend NotInheritable Class LiveOpenResult
     Public ReadOnly Property IsRetryable As Boolean
         Get
             Return Outcome = LiveOpenOutcome.HttpRetryable OrElse Outcome = LiveOpenOutcome.NetworkError OrElse
-                   Outcome = LiveOpenOutcome.TimedOut
+                   Outcome = LiveOpenOutcome.TimedOut OrElse Outcome = LiveOpenOutcome.Refused
         End Get
     End Property
 
@@ -92,6 +98,7 @@ Friend NotInheritable Class LiveOpenResult
                 Case LiveOpenOutcome.AccessDenied : Return LiveTerminationKind.AccessDenied
                 Case LiveOpenOutcome.SealedFailed : Return LiveTerminationKind.AccessDenied
                 Case LiveOpenOutcome.NotFoundOrGone : Return LiveTerminationKind.NotFoundOrGone
+                Case LiveOpenOutcome.Ended : Return LiveTerminationKind.BroadcastEnded
                 Case LiveOpenOutcome.NotAudioStream : Return LiveTerminationKind.NotAudioStream
                 Case LiveOpenOutcome.HttpRefused : Return LiveTerminationKind.HttpStatus
                 Case LiveOpenOutcome.Cancelled : Return LiveTerminationKind.UserStopped
@@ -128,6 +135,8 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     Private sealedReceiver As ExchangeSealedBroadcastReceiver
     Private sealedStream As ExchangeSealedMediaStream
     Private sealedError As String = ""
+    ''' <summary>The tunnel `connect` of this attempt was refused `ended` (item DY); read when the handler reports the failed connect.</summary>
+    Private tunnelEnded As Boolean
 
     Public ReadOnly Property SealedStatus As ExchangeSealedReceiveStatus
         Get
@@ -319,7 +328,10 @@ Friend NotInheritable Class LiveHttpPlaybackSession
                 Catch ex As HttpRequestException
                     If sealedError.Length > 0 Then Return SealFailure(sealedError)
                     If certificateRejected Then Return New LiveOpenResult(LiveOpenOutcome.AccessDenied)
-                    Return New LiveOpenResult(If(IsDisposed, LiveOpenOutcome.Cancelled, LiveOpenOutcome.NetworkError))
+                    If IsDisposed Then Return New LiveOpenResult(LiveOpenOutcome.Cancelled)
+                    ' LIVE-BROADCAST 1.5 item U: a tunnel connect refused `ended` is a deliberate end; `unavailable` is not.
+                    If tunnelEnded Then Return New LiveOpenResult(LiveOpenOutcome.Ended)
+                    Return New LiveOpenResult(If(IsConnectionRefused(ex), LiveOpenOutcome.Refused, LiveOpenOutcome.NetworkError))
                 Catch ex As Exception
                     AppFileLogger.LogMessage("Live HTTP connection failed")
                     Return New LiveOpenResult(If(IsDisposed, LiveOpenOutcome.Cancelled, LiveOpenOutcome.NetworkError))
@@ -406,6 +418,8 @@ Friend NotInheritable Class LiveHttpPlaybackSession
                 endpoint.CertFingerprint, segments(1), "http", token).ConfigureAwait(False)
             If Not opened.IsConnected Then
                 certificateRejected = opened.Outcome = ExchangeOpenOutcome.PinMismatch OrElse opened.Outcome = ExchangeOpenOutcome.Untrusted
+                tunnelEnded = opened.Outcome = ExchangeOpenOutcome.Refused AndAlso
+                              String.Equals(opened.RefusalReason, EndedRefusalReason, StringComparison.Ordinal)
                 opened.Dispose()
                 Throw New IOException("Broadcast tunnel refused: " & opened.Outcome.ToString())
             End If
@@ -434,6 +448,22 @@ Friend NotInheritable Class LiveHttpPlaybackSession
             socket.Dispose()
             Throw
         End Try
+    End Function
+
+    ''' <summary>The wire spelling of the tunnel answer that names a deliberate end (DEVICE-EXCHANGE item DY).</summary>
+    Friend Const EndedRefusalReason As String = "ended"
+
+    ''' <summary>True when the failure is a TCP connection actively refused: nothing listens on the port any more (item T).</summary>
+    Friend Shared Function IsConnectionRefused(ex As Exception) As Boolean
+        Dim current As Exception = ex
+        Dim depth As Integer = 0
+        While current IsNot Nothing AndAlso depth < 8
+            Dim socketError As Sockets.SocketException = TryCast(current, Sockets.SocketException)
+            If socketError IsNot Nothing AndAlso socketError.SocketErrorCode = Sockets.SocketError.ConnectionRefused Then Return True
+            current = current.InnerException
+            depth += 1
+        End While
+        Return False
     End Function
 
     Private Function SealFailure(Optional code As String = "sealed-failed") As LiveOpenResult

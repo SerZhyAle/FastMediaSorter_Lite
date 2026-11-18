@@ -24,10 +24,6 @@ Partial Public NotInheritable Class Localization
             "the archive failed verification, the original files were left in place", "архів не пройшов перевірку, вихідні файли залишено на місці", "das Archiv hat die Prüfung nicht bestanden, die Originaldateien wurden an ihrem Platz belassen", "l'archivio non ha superato la verifica, i file originali sono stati lasciati al loro posto",
             "el archivo comprimido no superó la verificación, los archivos originales se dejaron en su sitio", "l'archive n'a pas passé la vérification, les fichiers d'origine ont été laissés en place", "o arquivo compactado não passou na verificação, os arquivos originais foram mantidos no lugar", "لم يجتز الأرشيف التحقق، وتُركت الملفات الأصلية في مكانها",
             "आर्काइव सत्यापन में विफल रहा; मूल फ़ाइलें अपनी जगह पर छोड़ दी गईं", "আর্কাইভ যাচাইয়ে ব্যর্থ হয়েছে; মূল ফাইলগুলো যথাস্থানে রাখা হয়েছে", "آرکائیو کی تصدیق ناکام رہی؛ اصل فائلیں اپنی جگہ پر چھوڑ دی گئیں", "归档文件未通过校验，原文件已保留在原处")
-        Add("Архив принимает только обычные папки, не ресурсы.",
-            "An archive accepts only ordinary folders, not resources.", "Архівування приймає лише звичайні папки, а не ресурси.", "Ein Archiv akzeptiert nur normale Ordner, keine Ressourcen.", "Un archivio accetta solo cartelle normali, non risorse.",
-            "Un archivo comprimido solo acepta carpetas normales, no recursos.", "L'archivage n'accepte que des dossiers ordinaires, pas des ressources.", "O arquivamento aceita apenas pastas comuns, não recursos.", "تقبل الأرشفة المجلدات العادية فقط، وليس الموارد.",
-            "आर्काइव केवल सामान्य फ़ोल्डर स्वीकार करता है, संसाधन नहीं.", "আর্কাইভ শুধু সাধারণ ফোল্ডার নেয়, রিসোর্স নয়।", "آرکائیو صرف عام فولڈر قبول کرتا ہے، وسائل نہیں۔", "归档只支持普通文件夹，不支持资源。")
         Add("Архивация",
             "Archive", "Архівування", "Archivieren", "Archivia",
             "Archivar", "Archiver", "Arquivar", "أرشفة",
@@ -684,11 +680,19 @@ Partial Public NotInheritable Class Localization
             "Scheduled file operations", "Файлові операції за розкладом", "Geplante Dateivorgänge", "Operazioni sui file pianificate",
             "Operaciones de archivos programadas", "Opérations sur fichiers planifiées", "Operações de arquivo agendadas", "عمليات الملفات المجدولة",
             "शेड्यूल किए गए फ़ाइल ऑपरेशन", "সময়সূচিবদ্ধ ফাইল অপারেশন", "شیڈول شدہ فائل آپریشنز", "计划文件操作")
-        Add("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним, выполняются им и настраиваются в его настройках. Расписание работает только пока менеджер запущен.",
-            "Scheduled file operations are part of the Share Manager: they are installed with it, run by it and managed from its settings. The schedule works only while the manager is running.", "Файлові операції за розкладом - частина менеджера спільного доступу: вони встановлюються разом із ним, виконуються ним і налаштовуються в його налаштуваннях. Розклад працює лише поки менеджер запущено.", "Geplante Dateivorgänge sind Teil von Share Manager: Sie werden zusammen mit ihm installiert, von ihm ausgeführt und in seinen Einstellungen verwaltet. Der Zeitplan funktioniert nur, solange der Manager läuft.", "Le operazioni sui file pianificate fanno parte di Share Manager: vengono installate insieme ad esso, eseguite da esso e gestite dalle sue impostazioni. La pianificazione funziona solo finché il manager è in esecuzione.",
-            "Las operaciones de archivos programadas forman parte de Share Manager: se instalan junto con él, él las ejecuta y se gestionan desde su configuración. La programación solo funciona mientras el manager está en ejecución.", "Les opérations sur fichiers planifiées font partie du gestionnaire de partage : elles sont installées avec lui, exécutées par lui et configurées dans ses paramètres. La planification ne fonctionne que tant que le gestionnaire est en cours d'exécution.", "As operações de arquivo agendadas fazem parte do Share Manager: são instaladas junto com ele, executadas por ele e gerenciadas a partir de suas configurações. O agendamento funciona apenas enquanto o gerenciador estiver em execução.", "عمليات الملفات المجدولة جزء من مدير المشاركة: تُثبَّت معه وتُنفَّذ بواسطته وتُضبَط من إعداداته. يعمل الجدول الزمني فقط ما دام المدير قيد التشغيل.",
-            "शेड्यूल किए गए फ़ाइल ऑपरेशन शेयर प्रबंधक का हिस्सा हैं - वे उसके साथ इंस्टॉल होते हैं, उसी के द्वारा चलाए जाते हैं और उसकी सेटिंग्स में प्रबंधित किए जाते हैं. शेड्यूल केवल तभी काम करता है जब प्रबंधक चल रहा हो.", "সময়সূচিবদ্ধ ফাইল অপারেশন শেয়ার ম্যানেজারের অংশ - এগুলো এর সঙ্গেই ইনস্টল হয়, এর মাধ্যমেই চলে এবং এর সেটিংয়ে পরিচালনা করা হয়। সময়সূচি শুধু ম্যানেজার চালু থাকলেই কাজ করে।", "شیڈول شدہ فائل آپریشنز شیئر مینیجر کا حصہ ہیں - یہ اس کے ساتھ انسٹال ہوتے ہیں، اسی کے ذریعے چلتے ہیں اور اسی کی ترتیبات میں منظم کیے جاتے ہیں۔ شیڈول صرف اسی وقت کام کرتا ہے جب مینیجر چل رہا ہو۔", "计划文件操作是共享管理器的一部分 - 随它一同安装，由它运行，并在它的设置中管理。只有在管理器运行时，计划才会生效。")
-        Add("Файловые операции по расписанию..",
+        Add("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним и выполняются им. Расписание работает только пока менеджер запущен.",
+            "Scheduled file operations are part of the Share Manager: they are installed with it and run by it. The schedule works only while the manager is running.",
+            "Файлові операції за розкладом - частина менеджера спільного доступу: вони встановлюються разом із ним і виконуються ним. Розклад працює лише поки менеджер запущено.",
+            "Geplante Dateivorgänge sind Teil von Share Manager: Sie werden zusammen mit ihm installiert und von ihm ausgeführt. Der Zeitplan funktioniert nur, solange der Manager läuft.",
+            "Le operazioni sui file pianificate fanno parte di Share Manager: vengono installate insieme ad esso ed eseguite da esso. La pianificazione funziona solo finché il manager è in esecuzione.",
+            "Las operaciones de archivos programadas forman parte de Share Manager: se instalan junto con él y él las ejecuta. La programación solo funciona mientras el manager está en ejecución.",
+            "Les opérations sur fichiers planifiées font partie du gestionnaire de partage : elles sont installées avec lui et exécutées par lui. La planification ne fonctionne que lorsque le gestionnaire est en cours d'exécution.",
+            "As operações de arquivo agendadas fazem parte do Share Manager: são instaladas junto com ele e executadas por ele. O agendamento funciona apenas enquanto o gerenciador estiver em execução.",
+            "عمليات الملفات المجدولة جزء من مدير المشاركة: تُثبَّت معه وتُنفَّذ بواسطته. يعمل الجدول الزمني فقط ما دام المدير قيد التشغيل.",
+            "शेड्यूल किए गए फ़ाइल ऑपरेशन शेयर प्रबंधक का हिस्सा हैं - वे उसके साथ इंस्टॉल होते हैं और उसी के द्वारा चलाए जाते हैं. शेड्यूल केवल तभी काम करता है जब प्रबंधक चल रहा हो.",
+            "সময়সূচিবদ্ধ ফাইল অপারেশন শেয়ার ম্যানেজারের অংশ - এগুলো এর সঙ্গেই ইনস্টল হয় এবং এর মাধ্যমেই চলে। সময়সূচি শুধু ম্যানেজার চালু থাকলেই কাজ করে।",
+            "شیڈول شدہ فائل آپریشنز شیئر مینیجر کا حصہ ہیں - یہ اس کے ساتھ انسٹال ہوتے ہیں اور اسی کے ذریعے چلتے ہیں۔ شیڈول صرف اس وقت کام کرتا ہے جب مینیجر چل رہا ہو۔",
+            "计划文件操作是共享管理器的一部分：随它一同安装并由它运行。只有在管理器运行时，计划才会生效。")        Add("Файловые операции по расписанию..",
             "Scheduled file operations..", "Файлові операції за розкладом..", "Geplante Dateivorgänge..", "Operazioni sui file pianificate..",
             "Operaciones de archivos programadas..", "Opérations sur fichiers planifiées..", "Operações de arquivo agendadas..", "عمليات الملفات المجدولة..",
             "शेड्यूल किए गए फ़ाइल ऑपरेशन..", "সময়সূচিবদ্ধ ফাইল অপারেশন..", "شیڈول شدہ فائل آپریشنز..", "计划文件操作..")
@@ -952,10 +956,58 @@ Partial Public NotInheritable Class Localization
             "FileDO did not confirm the backup: {0}", "FileDO не підтвердив резервну копію: {0}", "FileDO hat die Sicherung nicht bestätigt: {0}", "FileDO non ha confermato il backup: {0}",
             "FileDO no confirmó la copia de seguridad: {0}", "FileDO n'a pas confirmé la sauvegarde : {0}", "O FileDO não confirmou o backup: {0}", "لم يؤكد FileDO النسخة الاحتياطية: {0}",
             "FileDO ने बैकअप की पुष्टि नहीं की: {0}", "FileDO ব্যাকআপ নিশ্চিত করেনি: {0}", "FileDO نے بیک اپ کی تصدیق نہیں کی: {0}", "FileDO 未确认备份：{0}")
-        Add("Резервная копия принимает только обычные папки, не ресурсы и не Google Drive.",
-            "A backup takes ordinary folders only, not resources and not Google Drive.", "Резервна копія приймає лише звичайні папки, не ресурси й не Google Drive.", "Eine Sicherung akzeptiert nur normale Ordner, keine Ressourcen und kein Google Drive.", "Un backup accetta solo cartelle normali, non risorse né Google Drive.",
-            "Una copia de seguridad solo admite carpetas normales, no recursos ni Google Drive.", "Une sauvegarde n'accepte que des dossiers ordinaires, ni ressources ni Google Drive.", "Um backup aceita apenas pastas comuns, não recursos nem o Google Drive.", "تقبل النسخة الاحتياطية المجلدات العادية فقط، لا الموارد ولا Google Drive.",
-            "बैकअप केवल सामान्य फ़ोल्डर लेता है, संसाधन या Google Drive नहीं।", "ব্যাকআপ শুধু সাধারণ ফোল্ডার নেয়, রিসোর্স বা Google Drive নয়।", "بیک اپ صرف عام فولڈر لیتا ہے، وسائل یا Google Drive نہیں۔", "备份只接受普通文件夹，不接受资源或 Google Drive。")
+        Add("Резервная копия принимает обычные папки, ресурсы SFTP и SMB; Google Drive не поддерживается.",
+            "A backup takes ordinary folders, SFTP and SMB resources; Google Drive is not supported.", "Резервна копія приймає звичайні папки, ресурси SFTP та SMB; Google Drive не підтримується.", "Eine Sicherung akzeptiert normale Ordner und SFTP- und SMB-Ressourcen; Google Drive wird nicht unterstützt.", "Un backup accetta cartelle normali e risorse SFTP e SMB; Google Drive non è supportato.",
+            "Una copia de seguridad admite carpetas normales y recursos SFTP y SMB; Google Drive no es compatible.", "Une sauvegarde accepte les dossiers ordinaires et les ressources SFTP et SMB ; Google Drive n'est pas pris en charge.", "Um backup aceita pastas comuns e recursos SFTP e SMB; o Google Drive não é compatível.", "تقبل النسخة الاحتياطية المجلدات العادية وموارد SFTP وSMB؛ لا يدعم Google Drive.",
+            "बैकअप सामान्य फ़ोल्डर और SFTP तथा SMB संसाधन लेता है; Google Drive समर्थित नहीं है।", "ব্যাকআপ সাধারণ ফোল্ডার এবং SFTP ও SMB রিসোর্স নেয়; Google Drive সমর্থিত নয়।", "بیک اپ عام فولڈر اور SFTP اور SMB وسائل لیتا ہے؛ Google Drive سپورٹڈ نہیں۔", "备份接受普通文件夹以及 SFTP 和 SMB 资源；不支持 Google Drive。")
+        Add("Не удалось прочитать полный список папки на сервере: {0}",
+            "The complete list of the folder on the server could not be read: {0}", "Не вдалося прочитати повний список папки на сервері: {0}", "Die vollständige Liste des Ordners auf dem Server ließ sich nicht lesen: {0}", "Non è stato possibile leggere l'elenco completo della cartella sul server: {0}",
+            "No se pudo leer la lista completa de la carpeta en el servidor: {0}", "La liste complète du dossier sur le serveur n'a pas pu être lue : {0}", "Não foi possível ler a lista completa da pasta no servidor: {0}", "تعذّرت قراءة القائمة الكاملة للمجلد على الخادم: {0}",
+            "सर्वर पर फ़ोल्डर की पूरी सूची नहीं पढ़ी जा सकी: {0}", "সার্ভারে ফোল্ডারের সম্পূর্ণ তালিকা পড়া যায়নি: {0}", "سرور پر فولڈر کی مکمل فہرست نہیں پڑھی جا سکی: {0}", "无法读取服务器上文件夹的完整列表：{0}")
+        Add("Другая резервная копия работает с этим набором на сервере, повторите попытку позже: {0}",
+            "Another backup is working with this set on the server, try again later: {0}", "Інша резервна копія працює з цим набором на сервері, спробуйте пізніше: {0}", "Eine andere Sicherung arbeitet gerade mit diesem Satz auf dem Server, versuchen Sie es später erneut: {0}", "Un altro backup sta lavorando con questo set sul server, riprovate più tardi: {0}",
+            "Otra copia de seguridad está trabajando con este conjunto en el servidor, inténtelo más tarde: {0}", "Une autre sauvegarde travaille avec cet ensemble sur le serveur, réessayez plus tard : {0}", "Outro backup está trabalhando com este conjunto no servidor, tente novamente mais tarde: {0}", "نسخة احتياطية أخرى تعمل مع هذه المجموعة على الخادم، حاول لاحقًا: {0}",
+            "सर्वर पर इस सेट के साथ कोई और बैकअप काम कर रहा है, बाद में फिर कोशिश करें: {0}", "সার্ভারে এই সেটের সাথে আরেকটি ব্যাকআপ কাজ করছে, পরে আবার চেষ্টা করুন: {0}", "سرور پر اس سیٹ کے ساتھ ایک اور بیک اپ کام کر رہا ہے، بعد میں دوبارہ کوشش کریں: {0}", "另一个备份正在使用服务器上的这个副本集，请稍后重试：{0}")
+        Add("Набор копий на сервере изменился во время запуска, повторите попытку позже: {0}",
+            "The set of copies on the server changed during the run, try again later: {0}", "Набір копій на сервері змінився під час запуску, спробуйте пізніше: {0}", "Der Satz von Kopien auf dem Server hat sich während des Laufs geändert, versuchen Sie es später erneut: {0}", "L'insieme di copie sul server è cambiato durante l'esecuzione, riprovate più tardi: {0}",
+            "El conjunto de copias del servidor cambió durante la ejecución, inténtelo más tarde: {0}", "L'ensemble des copies sur le serveur a changé pendant l'exécution, réessayez plus tard : {0}", "O conjunto de cópias no servidor mudou durante a execução, tente novamente mais tarde: {0}", "تغيّرت مجموعة النسخ على الخادم أثناء التشغيل، حاول لاحقًا: {0}",
+            "चलते समय सर्वर पर प्रतियों का सेट बदल गया, बाद में फिर कोशिश करें: {0}", "চলার সময় সার্ভারে কপিগুলোর সেট বদলে গেছে, পরে আবার চেষ্টা করুন: {0}", "چلنے کے دوران سرور پر کاپیز کا سیٹ بدل گیا، بعد میں دوبارہ کوشش کریں: {0}", "运行期间服务器上的副本集发生了变化，请稍后重试：{0}")
+        Add("Копия не совпала с созданной после загрузки на сервер: {0}",
+            "The copy uploaded to the server did not match the one that was built: {0}", "Копія, завантажена на сервер, не збіглася зі створеною: {0}", "Die auf den Server geladene Kopie stimmte nicht mit der erstellten überein: {0}", "La copia caricata sul server non corrisponde a quella creata: {0}",
+            "La copia subida al servidor no coincide con la creada: {0}", "La copie chargée sur le serveur ne correspond pas à celle créée : {0}", "A cópia enviada ao servidor não corresponde à que foi criada: {0}", "لم تتطابق النسخة المرفوعة إلى الخادم مع النسخة المُنشأة: {0}",
+            "सर्वर पर अपलोड की गई प्रति बनाई गई प्रति से मेल नहीं खाई: {0}", "সার্ভারে আপলোড করা কপিটি তৈরি কপির সাথে মেলেনি: {0}", "سرور پر اپ لوڈ کی گئی کاپی بنائی گئی کاپی سے مطابق نہیں: {0}", "上传到服务器的副本与生成的副本不一致：{0}")
+        Add("Время новой копии на сервере не позже прежней, повторите попытку позже: {0}",
+            "The new copy's time on the server is not later than the previous one's, try again later: {0}", "Час нової копії на сервері не пізніше за попередню, спробуйте пізніше: {0}", "Die Zeit der neuen Kopie auf dem Server liegt nicht nach der der vorherigen, versuchen Sie es später erneut: {0}", "L'ora della nuova copia sul server non è successiva a quella precedente, riprovate più tardi: {0}",
+            "La hora de la nueva copia en el servidor no es posterior a la anterior, inténtelo más tarde: {0}", "L'heure de la nouvelle copie sur le serveur n'est pas postérieure à celle de la précédente, réessayez plus tard : {0}", "A hora da nova cópia no servidor não é posterior à anterior, tente novamente mais tarde: {0}", "وقت النسخة الجديدة على الخادم ليس بعد وقت النسخة السابقة، حاول لاحقًا: {0}",
+            "सर्वर पर नई प्रति का समय पिछली प्रति से बाद का नहीं है, बाद में फिर कोशिश करें: {0}", "সার্ভারে নতুন কপির সময় আগেরটির চেয়ে পরে নয়, পরে আবার চেষ্টা করুন: {0}", "سرور پر نئی کاپی کا وقت پچھلی کاپی سے بعد کا نہیں، بعد میں دوبارہ کوشش کریں: {0}", "新副本在服务器上的时间不晚于前一个，请稍后重试：{0}")
+        Add("В папке на сервере уже есть файл с этим именем, не входящий в набор копий: {0}",
+            "The folder on the server already holds a file with this name that is not part of the set of copies: {0}", "У папці на сервері вже є файл із цим ім'ям, який не входить до набору копій: {0}", "Im Ordner auf dem Server liegt bereits eine Datei mit diesem Namen, die nicht zum Satz der Kopien gehört: {0}", "Nella cartella sul server esiste già un file con questo nome che non fa parte dell'insieme di copie: {0}",
+            "La carpeta del servidor ya contiene un archivo con este nombre que no forma parte del conjunto de copias: {0}", "Le dossier sur le serveur contient déjà un fichier portant ce nom et qui ne fait pas partie de l'ensemble des copies : {0}", "A pasta no servidor já contém um arquivo com esse nome que não faz parte do conjunto de cópias: {0}", "تحتوي المجلد على الخادم بالفعل على ملف بهذا الاسم لا ينتمي إلى مجموعة النسخ: {0}",
+            "सर्वर के फ़ोल्डर में इस नाम की एक फ़ाइल पहले से है जो प्रतियों के सेट का हिस्सा नहीं है: {0}", "সার্ভারের ফোল্ডারে ইতিমধ্যে এই নামের একটি ফাইল আছে যা কপিগুলোর সেটের অংশ নয়: {0}", "سرور کے فولڈر میں پہلے سے ہی اس نام کی ایک فائل موجود ہے جو کاپیز کے سیٹ کا حصہ نہیں: {0}", "服务器上的文件夹中已存在同名文件，且它不属于副本集：{0}")
+        Add("Новая копия создана, но не заняла своё место на сервере и сохранена как {0}.",
+            "The new copy was built but could not take its place on the server, and is kept as {0}.", "Нова копія створена, але не зайняла свого місця на сервері та збережена як {0}.", "Die neue Kopie wurde erstellt, konnte aber ihren Platz auf dem Server nicht einnehmen, und wird als {0} aufbewahrt.", "La nuova copia è stata creata ma non ha potuto prendere il suo posto sul server, e viene conservata come {0}.",
+            "La nueva copia se creó pero no pudo ocupar su lugar en el servidor, y se conserva como {0}.", "La nouvelle copie a été créée mais n'a pas pu prendre sa place sur le serveur ; elle est conservée sous {0}.", "A nova cópia foi criada, mas não pôde assumir seu lugar no servidor, e é mantida como {0}.", "أُنشئت النسخة الجديدة لكنها لم تستطع أن تأخذ مكانها على الخادم، وحُفظت باسم {0}.",
+            "नई प्रति बन गई, लेकिन वह सर्वर पर अपना स्थान नहीं ले सकी और उसे {0} के रूप में रखा गया है।", "নতুন কপিটি তৈরি হয়েছে, কিন্তু সার্ভারে তার জায়গা নিতে পারেনি এবং তাকে {0} হিসেবে রাখা হয়েছে।", "نئی کاپی بن گئی، لیکن وہ سرور پر اپنی جگہ نہیں لے سکی اور اسے {0} کے طور پر محفوظ رکھا گیا ہے۔", "新副本已生成，但未能归位到服务器上，已保留为 {0}。")
+        Add("Не удалось переписать файлы через ресурс: {0}",
+            "The files could not be moved through the resource: {0}", "Не вдалося переписати файли через ресурс: {0}", "Die Dateien ließen sich nicht über die Ressource übertragen: {0}", "Non è stato possibile trasferire i file attraverso la risorsa: {0}",
+            "No se pudieron transferir los archivos a través del recurso: {0}", "Les fichiers n'ont pas pu être transférés via la ressource : {0}", "Não foi possível transferir os arquivos pelo recurso: {0}", "تعذّر نقل الملفات عبر المورد: {0}",
+            "संसाधन के माध्यम से फ़ाइलें नहीं भेजी जा सकीं: {0}", "রিসোর্সের মাধ্যমে ফাইলগুলো স্থানান্তর করা যায়নি: {0}", "وسیلے کے ذریعے فائلیں منتقل نہیں ہو سکیں: {0}", "无法通过该资源传输文件：{0}")
+        Add("В источнике есть ссылка, которую резервная копия не обрабатывает: {0}",
+            "The source holds a link, which a backup does not follow: {0}", "У джерелі є посилання, яке резервна копія не обробляє: {0}", "Die Quelle enthält einen Link, dem eine Sicherung nicht folgt: {0}", "Nell'origine è presente un collegamento, che un backup non segue: {0}",
+            "El origen contiene un enlace, que una copia de seguridad no sigue: {0}", "La source contient un lien, qu'une sauvegarde ne suit pas : {0}", "A origem contém um link, que um backup não segue: {0}", "يحتوي المصدر على رابط لا يتبعه النسخ الاحتياطي: {0}",
+            "स्रोत में एक लिंक है, जिसका पालन बैकअप नहीं करता: {0}", "সোর্সে একটি লিংক আছে, যা ব্যাকআপ অনুসরণ করে না: {0}", "سورس میں ایک لنک ہے جس کی پیروی بیک اپ نہیں کرتا: {0}", "来源中包含备份不跟随的链接：{0}")
+        Add("В источнике есть имя файла, которое Windows не принимает: {0}",
+            "The source holds a file name Windows cannot accept: {0}", "У джерелі є ім'я файлу, яке Windows не приймає: {0}", "Die Quelle enthält einen Dateinamen, den Windows nicht akzeptiert: {0}", "Nell'origine è presente un nome file che Windows non accetta: {0}",
+            "El origen contiene un nombre de archivo que Windows no admite: {0}", "La source contient un nom de fichier que Windows n'accepte pas : {0}", "A origem contém um nome de arquivo que o Windows não aceita: {0}", "يحتوي المصدر على اسم ملف لا يقبله Windows: {0}",
+            "स्रोत में एक ऐसा फ़ाइल नाम है जिसे Windows स्वीकार नहीं करता: {0}", "সোর্সে এমন একটি ফাইলের নাম আছে যা Windows গ্রহণ করে না: {0}", "سورس میں ایسی فائل کا نام ہے جسے Windows قبول نہیں کرتا: {0}", "来源中包含 Windows 无法接受的文件名：{0}")
+        Add("Источник изменился во время записи промежуточной копии: {0}",
+            "The source changed while the temporary copy was being written: {0}", "Джерело змінилося під час запису проміжної копії: {0}", "Die Quelle hat sich während des Schreibens der Zwischenkopie geändert: {0}", "L'origine è cambiata mentre la copia temporanea veniva scritta: {0}",
+            "El origen cambió mientras se escribía la copia temporal: {0}", "La source a changé pendant l'écriture de la copie temporaire : {0}", "A origem mudou enquanto a cópia temporária era gravada: {0}", "تغيّر المصدر أثناء كتابة النسخة المؤقتة: {0}",
+            "अस्थायी प्रति लिखे जाते समय स्रोत बदल गया: {0}", "অস্থায়ী কপি লেখার সময় সোর্স বদলে গেছে: {0}", "عارضی کاپی لکھے جانے کے دوران سورس بدل گیا: {0}", "写入临时副本时来源发生了变化：{0}")
+        Add("Не удалось подготовить промежуточную папку на этом компьютере: {0}",
+            "The temporary folder could not be prepared on this computer: {0}", "Не вдалося підготувати проміжну папку на цьому комп'ютері: {0}", "Der Zwischenordner ließ sich auf diesem Computer nicht anlegen: {0}", "Non è stato possibile preparare la cartella temporanea su questo computer: {0}",
+            "No se pudo preparar la carpeta temporal en este equipo: {0}", "Le dossier temporaire n'a pas pu être préparé sur cet ordinateur : {0}", "Não foi possível preparar a pasta temporária neste computador: {0}", "تعذّرت تهيئة المجلد المؤقت على هذا الكمبيوتر: {0}",
+            "इस कंप्यूटर पर अस्थायी फ़ोल्डर तैयार नहीं किया जा सका: {0}", "এই কম্পিউটারে অস্থায়ী ফোল্ডার প্রস্তুত করা যায়নি: {0}", "اس کمپیوٹر پر عارضی فولڈر تیار نہیں ہو سکا: {0}", "无法在这台电脑上准备临时文件夹：{0}")
         Add("Введите пароль для защищённой резервной копии.",
             "Enter a password for the protected backup.", "Введіть пароль для захищеної резервної копії.", "Geben Sie ein Kennwort für die geschützte Sicherung ein.", "Inserite una password per il backup protetto.",
             "Introduzca una contraseña para la copia de seguridad protegida.", "Saisissez un mot de passe pour la sauvegarde protégée.", "Digite uma senha para o backup protegido.", "أدخل كلمة مرور للنسخة الاحتياطية المحمية.",
@@ -992,5 +1044,136 @@ Partial Public NotInheritable Class Localization
             "The password could not be stored on this PC. The operation is saved, but it runs only once the password is stored.", "Не вдалося зберегти пароль на цьому комп'ютері. Операцію збережено, але вона запуститься лише після того, як пароль буде збережено.", "Das Kennwort konnte auf diesem PC nicht gespeichert werden. Die Operation ist gespeichert, läuft aber erst, wenn das Kennwort gespeichert ist.", "Impossibile salvare la password su questo PC. L'operazione è salvata, ma verrà eseguita solo dopo il salvataggio della password.",
             "No se pudo guardar la contraseña en este equipo. La operación está guardada, pero solo se ejecutará cuando la contraseña se haya guardado.", "Le mot de passe n'a pas pu être enregistré sur ce PC. L'opération est enregistrée, mais ne s'exécutera qu'une fois le mot de passe enregistré.", "Não foi possível salvar a senha neste computador. A operação está salva, mas só será executada depois que a senha for salva.", "تعذّر حفظ كلمة المرور على هذا الكمبيوتر. حُفظت العملية، لكنها لن تعمل إلا بعد حفظ كلمة المرور.",
             "इस कंप्यूटर पर पासवर्ड सहेजा नहीं जा सका। ऑपरेशन सहेज लिया गया है, लेकिन पासवर्ड सहेजे जाने के बाद ही चलेगा।", "এই কম্পিউটারে পাসওয়ার্ড সংরক্ষণ করা যায়নি। অপারেশনটি সংরক্ষিত হয়েছে, তবে পাসওয়ার্ড সংরক্ষিত হওয়ার পরেই চলবে।", "اس کمپیوٹر پر پاس ورڈ محفوظ نہیں کیا جا سکا۔ آپریشن محفوظ ہو گیا ہے، لیکن پاس ورڈ محفوظ ہونے کے بعد ہی چلے گا۔", "无法在此电脑上保存密码。操作已保存，但只有在密码保存后才会运行。")
+        ' Ticket L0325 D-7: the standalone window shows the feature state and links to its rail page.
+        Add("Расписание на этом компьютере включено.",
+            "Scheduling on this PC is on.", "Розклад на цьому комп'ютері ввімкнено.", "Die Zeitplanung auf diesem PC ist eingeschaltet.", "La pianificazione su questo PC è attiva.",
+            "La programación en este equipo está activada.", "La planification sur ce PC est activée.", "O agendamento neste computador está ativado.", "الجدولة على هذا الكمبيوتر مفعّلة.",
+            "इस कंप्यूटर पर शेड्यूल चालू है।", "এই কম্পিউটারে সময়সূচি চালু আছে।", "اس کمپیوٹر پر شیڈول آن ہے۔", "此电脑上的计划已开启。")
+        Add("Расписание на этом компьютере выключено.",
+            "Scheduling on this PC is off.", "Розклад на цьому комп'ютері вимкнено.", "Die Zeitplanung auf diesem PC ist ausgeschaltet.", "La pianificazione su questo PC è disattivata.",
+            "La programación en este equipo está desactivada.", "La planification sur ce PC est désactivée.", "O agendamento neste computador está desativado.", "الجدولة على هذا الكمبيوتر متوقفة.",
+            "इस कंप्यूटर पर शेड्यूल बंद है।", "এই কম্পিউটারে সময়সূচি বন্ধ আছে।", "اس کمپیوٹر پر شیڈول بند ہے۔", "此电脑上的计划已关闭。")
+        Add("Изменить в настройках менеджера",
+            "Change in the manager settings", "Змінити в налаштуваннях менеджера", "In den Manager-Einstellungen ändern", "Modifica nelle impostazioni del manager",
+            "Cambiar en la configuración del Manager", "Modifier dans les paramètres du Manager", "Alterar nas configurações do Manager", "التغيير في إعدادات المدير",
+            "मैनेजर सेटिंग्स में बदलें", "ম্যানেজার সেটিংসে বদলান", "مینیجر کی ترتیبات میں تبدیل کریں", "在管理器设置中更改")
+        ' Ticket L0346: dated backup retention, monthly-first preservation and skip-links.
+        Add("Хранение копий",
+            "Retention", "Зберігання копій", "Aufbewahrung", "Conservazione",
+            "Retención", "Conservation", "Retenção", "الاحتفاظ بالنسخ",
+            "अवधारण", "সংরক্ষণ", "برقراری", "保留策略")
+        Add("Хранить последних копий (по номеру)",
+            "Keep last N numbered copies", "Зберігати останніх копій (за номером)", "Letzte N nummerierte Kopien behalten", "Mantieni le ultime N copie numerate",
+            "Conservar las últimas N copias numeradas", "Conserver les N dernières copies numérotées", "Manter as últimas N cópias numeradas", "الاحتفاظ بآخر N نسخ مرقّمة",
+            "अंतिम N क्रमांकित प्रतियाँ रखें", "শেষ N টি নম্বরযুক্ত কপি রাখুন", "آخری N نمبر والی کاپیاں رکھیں", "保留最近 N 个编号副本")
+        Add("Хранить за последние дни (по дате)",
+            "Keep copies for N days (dated)", "Зберігати за останні дні (за датою)", "Kopien für N Tage behalten (datiert)", "Mantieni le copie per N giorni (con data)",
+            "Conservar copias durante N días (con fecha)", "Conserver les copies pendant N jours (datées)", "Manter cópias dos últimos N dias (por data)", "الاحتفاظ بالنسخ لمدة N أيام (بالتاريخ)",
+            "N दिनों की प्रतियाँ रखें (दिनांकित)", "N দিনের কপি রাখুন (তারিখসহ)", "N دنوں کی کاپیاں رکھیں (تاریخ کے ساتھ)", "按日期保留最近 N 天副本")
+        Add("Хранить за дней",
+            "Keep for days", "Зберігати за днів", "Tage aufbewahren", "Mantieni per giorni",
+            "Conservar días", "Conserver pendant (jours)", "Manter por dias", "الاحتفاظ بالأيام",
+            "दिनों तक रखें", "যত দিন রাখা হবে", "دنوں تک رکھیں", "保留天数")
+        Add("Всегда сохранять первую копию каждого месяца",
+            "Always keep the first copy of each month", "Завжди зберігати першу копію кожного місяця", "Erste Kopie jedes Monats immer behalten", "Mantieni sempre la prima copia di ogni mese",
+            "Conservar siempre la primera copia de cada mes", "Toujours conserver la première copie de chaque mois", "Sempre manter a primeira cópia de cada mês", "الاحتفاظ دائمًا بأول نسخة من كل شهر",
+            "हर महीने की पहली प्रति हमेशा रखें", "প্রতি মাসের প্রথম কপি সবসময় রাখুন", "ہر ماہ کی پہلی کاپی ہمیشہ رکھیں", "始终保留每月的第一个副本")
+        Add("Пропускать символические ссылки и точки соединения",
+            "Skip symbolic links and junctions", "Пропускати символічні посилання й точки з'єднання", "Symbolische Links und Abzweigungen überspringen", "Salta collegamenti simbolici e giunzioni",
+            "Omitir enlaces simbólicos y puntos de unión", "Ignorer les liens symboliques et jonctions", "Ignorar links simbólicos e junções", "تخطي الروابط الرمزية ونقاط الوصل",
+            "प्रतीकात्मक लिंक और जंक्शन छोड़ें", "সিম্বলিক লিংক ও জাংশন এড়িয়ে যান", "سمبولک لنکس اور جنکشنز چھوڑ دیں", "跳过符号链接和连接点")
+        Add("Каждый запуск сохраняет папку целиком с датой в имени файла. Копии старше {0} дн. удаляются после проверки новой копии.",
+            "Each run saves the whole folder with the date in the file name. Copies older than {0} days are removed after the new copy is verified.",
+            "Кожен запуск зберігає папку цілком із датою в імені файлу. Копії, старіші за {0} дн., видаляються після перевірки нової копії.",
+            "Jeder Lauf speichert den ganzen Ordner mit Datum im Dateinamen. Kopien älter als {0} Tage werden nach Prüfung der neuen Kopie entfernt.",
+            "Ogni esecuzione salva l'intera cartella con la data nel nome del file. Le copie più vecchie di {0} giorni vengono rimosse dopo la verifica della nuova copia.",
+            "Cada ejecución guarda la carpeta entera con la fecha en el nombre. Las copias anteriores a {0} días se eliminan tras verificar la nueva copia.",
+            "Chaque exécution enregistre le dossier entier avec la date dans le nom du fichier. Les copies de plus de {0} jours sont supprimées après vérification de la nouvelle copie.",
+            "Cada execução salva a pasta inteira com a data no nome do arquivo. Cópias com mais de {0} dias são removidas após verificar a nova cópia.",
+            "يحفظ كل تشغيل المجلد كاملًا مع التاريخ في اسم الملف. تُزال النسخ الأقدم من {0} يومًا بعد التحقق من النسخة الجديدة.",
+            "हर रन पूरे फ़ोल्डर को फ़ाइल नाम में दिनांक के साथ सहेजता है। नई प्रति की जाँच के बाद {0} दिन से पुरानी प्रतियाँ हटा दी जाती हैं।",
+            "প্রতিটি রান ফাইলের নামে তারিখসহ পুরো ফোল্ডার সংরক্ষণ করে। নতুন কপি যাচাইয়ের পর {0} দিনের পুরোনো কপি সরানো হয়।",
+            "ہر رن پورے فولڈر کو فائل کے نام میں تاریخ کے ساتھ محفوظ کرتا ہے۔ نئی کاپی کی تصدیق کے بعد {0} دن سے پرانی کاپیاں ہٹا دی جاتی ہیں۔",
+            "每次运行将整个文件夹以带日期的文件名保存。新副本验证后，将删除超过 {0} 天的旧副本。")
+        Add("Самая ранняя копия каждого календарного месяца сохраняется бессрочно.",
+            "The earliest copy of each calendar month is kept indefinitely.",
+            "Найперша копія кожного календарного місяця зберігається безстроково.",
+            "Die früheste Kopie jedes Kalendermonats wird unbegrenzt aufbewahrt.",
+            "La prima copia di ogni mese solare viene conservata senza scadenza.",
+            "La copia más antigua de cada mes natural se conserva indefinidamente.",
+            "La copie la plus ancienne de chaque mois civil est conservée sans limite de durée.",
+            "A cópia mais antiga de cada mês do calendário é mantida por tempo indeterminado.",
+            "يُحتفظ بأقدم نسخة من كل شهر ميلادي دون انتهاء صلاحية.",
+            "प्रत्येक कैलेंडर माह की सबसे पहली प्रति अनिश्चित काल तक रखी जाती है।",
+            "প্রতিটি ক্যালেন্ডার মাসের প্রথম কপি অনির্দিষ্টকালের জন্য রাখা হয়।",
+            "ہر کیلنڈر ماہ کی سب سے پہلی کاپی غیر معینہ مدت تک رکھی جاتی ہے۔",
+            "每个日历月最早的副本将无限期保留。")
+        Add("Исходная папка не изменяется. Имена копий: {0}.",
+            "The source folder is not changed. Copy names: {0}.",
+            "Вихідна папка не змінюється. Імена копій: {0}.",
+            "Der Quellordner wird nicht verändert. Namen der Kopien: {0}.",
+            "La cartella di origine non viene modificata. Nomi delle copie: {0}.",
+            "La carpeta de origen no cambia. Nombres de las copias: {0}.",
+            "Le dossier source n'est pas modifié. Noms des copies : {0}.",
+            "A pasta de origem não é alterada. Nomes das cópias: {0}.",
+            "لا يتغير المجلد المصدر. أسماء النسخ: {0}.",
+            "स्रोत फ़ोल्डर नहीं बदलता। प्रतियों के नाम: {0}।",
+            "উৎস ফোল্ডার বদলায় না। কপির নাম: {0}।",
+            "ماخذ فولڈر تبدیل نہیں ہوتا۔ کاپیوں کے نام: {0}۔",
+            "源文件夹不会更改。副本名称：{0}。")
+        Add("Символические ссылки и точки соединения пропускаются и записываются в журнал.",
+            "Symbolic links and junctions are skipped and recorded in the journal.",
+            "Символічні посилання й точки з'єднання пропускаються і записуються в журнал.",
+            "Symbolische Links und Abzweigungen werden übersprungen und im Protokoll vermerkt.",
+            "I collegamenti simbolici e le giunzioni vengono saltati e registrati nel giornale.",
+            "Los enlaces simbólicos y puntos de unión se omiten y se registran en el diario.",
+            "Les liens symboliques et jonctions sont ignorés et consignés dans le journal.",
+            "Links simbólicos e junções são ignorados e registrados no diário.",
+            "يتم تخطي الروابط الرمزية ونقاط الوصل وتسجيلها في السجل.",
+            "प्रतीकात्मक लिंक और जंक्शन छोड़े जाते हैं और जर्नल में दर्ज होते हैं।",
+            "সিম্বলিক লিংক ও জাংশন এড়িয়ে যাওয়া হয় এবং জার্নালে লেখা হয়।",
+            "سمبولک لنکس اور جنکشنز کو چھوڑ دیا جاتا ہے اور جرنل میں درج کیا جاتا ہے۔",
+            "符号链接和连接点将被跳过并记录到日志中。")
+        Add("за {0} дн. + 1-я в месяце: сохранено {1}, удалено {2}, месячных {3}",
+            "for {0} days + 1st of month: kept {1}, retired {2}, monthly {3}",
+            "за {0} дн. + 1-ша за місяць: збережено {1}, видалено {2}, місячних {3}",
+            "für {0} Tage + 1. des Monats: behalten {1}, entfernt {2}, monatlich {3}",
+            "per {0} giorni + 1ª del mese: conservate {1}, rimosse {2}, mensili {3}",
+            "durante {0} días + 1.ª del mes: conservadas {1}, retiradas {2}, mensuales {3}",
+            "sur {0} jours + 1re du mois : conservées {1}, retirées {2}, mensuelles {3}",
+            "por {0} dias + 1ª do mês: mantidas {1}, removidas {2}, mensais {3}",
+            "لمدة {0} يومًا + الأولى في الشهر: محفوظة {1}، مزالة {2}، شهرية {3}",
+            "{0} दिनों के लिए + माह की पहली: रखी {1}, हटाई {2}, मासिक {3}",
+            "{0} দিনের জন্য + মাসের প্রথম: রাখা {1}, সরানো {2}, মাসিক {3}",
+            "{0} دنوں کے لیے + ماہ کی پہلی: رکھی گئیں {1}، ہٹائی گئیں {2}، ماہانہ {3}",
+            "{0} 天 + 每月首个：保留 {1}，清理 {2}，月度 {3}")
+        Add("за {0} дн.: сохранено {1}, удалено {2}",
+            "for {0} days: kept {1}, retired {2}",
+            "за {0} дн.: збережено {1}, видалено {2}",
+            "für {0} Tage: behalten {1}, entfernt {2}",
+            "per {0} giorni: conservate {1}, rimosse {2}",
+            "durante {0} días: conservadas {1}, retiradas {2}",
+            "sur {0} jours : conservées {1}, retirées {2}",
+            "por {0} dias: mantidas {1}, removidas {2}",
+            "لمدة {0} يومًا: محفوظة {1}، مزالة {2}",
+            "{0} दिनों के लिए: रखी {1}, हटाई {2}",
+            "{0} দিনের জন্য: রাখা {1}, সরানো {2}",
+            "{0} دنوں کے لیے: رکھی گئیں {1}، ہٹائی گئیں {2}",
+            "{0} 天：保留 {1}，清理 {2}")
+        Add("копия {0}, заменена {1}",
+            "copy {0}, replaced {1}", "копія {0}, замінена {1}", "Kopie {0}, ersetzt {1}", "copia {0}, sostituita {1}",
+            "copia {0}, reemplazada {1}", "copie {0}, remplacée {1}", "cópia {0}, substituída {1}", "نسخة {0}، استُبدلت {1}",
+            "प्रति {0}, बदली गई {1}", "কপি {0}, প্রতিস্থাপিত {1}", "کاپی {0}، تبدیل شدہ {1}", "副本 {0}，已替换 {1}")
+        Add("копия {0}",
+            "copy {0}", "копія {0}", "Kopie {0}", "copia {0}",
+            "copia {0}", "copie {0}", "cópia {0}", "نسخة {0}",
+            "प्रति {0}", "কপি {0}", "کاپی {0}", "副本 {0}")
+        ' L0351: the canonical name of the app.schedule record the rail's operations row draws (ICON-SET rule 1).
+        ' The viewer's settings table registers the key too; the Share Manager does not link that table, so the
+        ' row's meaning is named here for the Companion's names test. The wording is the catalog's record.
+        Add("Операции по расписанию",
+            "Scheduled operations", "Операції за розкладом", "Geplante Vorgänge", "Operazioni pianificate",
+            "Operaciones programadas", "Opérations planifiées", "Operações agendadas", "العمليات المجدولة",
+            "शेड्यूल किए गए ऑपरेशन", "নির্ধারিত অপারেশন", "شیڈولڈ آپریشنز", "计划操作")
     End Sub
 End Class

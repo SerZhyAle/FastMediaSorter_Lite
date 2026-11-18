@@ -93,6 +93,10 @@ Friend NotInheritable Class ScheduledServices
         Function(id As String) New ScheduledBackupCredentialStore(ScheduledStore.DefaultFolder()).Read(id)
     ''' <summary>Whether the FileDO found can run a numbered generation set (its help names `gen` and `stem`, FileDO SP-0208).</summary>
     Friend Property FileDoHasBackupGenerations As Func(Of String, Boolean) = AddressOf FileDoBackupProbe.HasGenerations
+    ''' <summary>Whether the FileDO found supports dated retention (`keep-days`, `keep-monthly`, `stem`, FileDO SP-0230).</summary>
+    Friend Property FileDoHasBackupDatedRetention As Func(Of String, Boolean) = AddressOf FileDoBackupProbe.HasDatedRetention
+    ''' <summary>Whether the FileDO found supports `skip-links`.</summary>
+    Friend Property FileDoHasBackupSkipLinks As Func(Of String, Boolean) = AddressOf FileDoBackupProbe.HasSkipLinks
     ''' <summary>Where a backup run keeps its event file and its stop file: beside the operation store, never in either folder.</summary>
     Friend Property BackupRunFolder As Func(Of String) = Function() Path.Combine(ScheduledStore.DefaultFolder(), "backup-runs")
 
@@ -871,10 +875,14 @@ Friend NotInheritable Class ScheduledExecutor
         Dim judged As FillJudgement = events.Judge(outcome.ExitCode, outcome.StopRequested)
         Dim cleared As Boolean = FillWorkFolders.Clear(workFolder, op.Id)
 
-        result.Files = CInt(Math.Min(Integer.MaxValue, events.DoneItems))
-        result.Bytes = events.DoneBytes
-        result.Verdict = FillCommandLine.Verdict(If(volume.Known, volume.FreeBytes, 0L), events.DoneBytes, outcome.ExitCode)
-        Journal(op, "fill-free-space", workFolder, "", If(outcome.Started, judged.ToString(), "not-started"))
+        ' CLI-EVENT-STREAM 0.17 item B: the run's own numbers (`filesCreated`, `bytesWritten`) are what it did; the last `progress`
+        ' event is only the fallback for a FileDO that numbers nothing, and the journal says so. A key the run left out is
+        ' "not reported", never zero.
+        Dim bytesWritten As Long = events.BytesProduced()
+        result.Files = CInt(Math.Min(Integer.MaxValue, events.ItemsProduced()))
+        result.Bytes = bytesWritten
+        result.Verdict = FillCommandLine.Verdict(If(volume.Known, volume.FreeBytes, 0L), bytesWritten, outcome.ExitCode)
+        Journal(op, "fill-free-space", workFolder, "", If(outcome.Started, events.JournalVerdict(judged), "not-started"))
 
         If Not cleared Then
             ' The space is still held, and the next run must not stack a second fill on top of it.
@@ -927,14 +935,160 @@ Friend NotInheritable Class ScheduledExecutor
     ''' A refused definition parks the operation until it is edited; a passing obstacle is a wall the operation comes back from.
     ''' </summary>
     Private Sub ExecuteBackup(op As ScheduledOperation, result As ScheduledRunResult, ct As CancellationToken)
-        Dim problem As SideProblem = BackupPreflight(op)
-        If problem.IsProblem Then
-            HitWall(result, BackupWallCode(op, problem))
+        Dim toolWall As String = BackupToolWall(op)
+        If toolWall.Length > 0 Then
+            HitWall(result, toolWall)
             Return
         End If
+        If BackupNeedsStaging(op) Then
+            ExecuteBackupStaged(op, result, ct)
+            Return
+        End If
+        ' An SMB resource side reaches FileDO as its UNC path; the share's connection is held until FileDO has ended (L0342).
+        Dim held As New List(Of IScheduledSide)()
+        Try
+            Dim source As String = ""
+            Dim destination As String = ""
+            Dim stopped As Resolution = OpenBackupFolder(op.Source, "source", held, source)
+            If stopped Is Nothing Then stopped = OpenBackupFolder(op.Destination, "destination", held, destination)
+            If stopped IsNot Nothing Then
+                Adopt(result, stopped.StopResult)
+                Return
+            End If
+            RunBackup(op, source, destination, result, ct)
+        Finally
+            For Each side As IScheduledSide In held
+                side.Dispose()
+            Next
+        End Try
+    End Sub
+
+    ''' <summary>Which folders a backup side names (L0343): a folder of this PC, an SMB share FileDO opens by its UNC
+    ''' path, or an SFTP resource the run stages in and out of. A registered resource that is neither a share nor
+    ''' unsupported is an SFTP resource; every other kind is refused by the definition before a run gets here.</summary>
+    Private Enum BackupSideKind
+        LocalFolder = 0
+        SmbShare = 1
+        SftpResource = 2
+    End Enum
+
+    Private Function BackupSideKindOf(location As ScheduledLocation) As BackupSideKind
+        If location.Kind = ScheduledLocationKind.Path Then Return BackupSideKind.LocalFolder
+        If location.Kind <> ScheduledLocationKind.Resource Then Return BackupSideKind.LocalFolder
+        Dim facts As ScheduledResourceFacts = services.ResourceFacts.Invoke(location.ResourceId)
+        If facts IsNot Nothing AndAlso facts.Exists AndAlso facts.IsSmb Then Return BackupSideKind.SmbShare
+        Return BackupSideKind.SftpResource
+    End Function
+
+    ''' <summary>A backup with an SFTP side works through the run-owned staging: no folder of such a side is ever
+    ''' handed to FileDO as a path (L0343).</summary>
+    Private Function BackupNeedsStaging(op As ScheduledOperation) As Boolean
+        Return BackupSideKindOf(op.Source) = BackupSideKind.SftpResource OrElse
+               BackupSideKindOf(op.Destination) = BackupSideKind.SftpResource
+    End Function
+
+    ''' <summary>
+    ''' A backup run with an SFTP side (L0343): an SFTP source is downloaded whole into a run-owned staging folder
+    ''' (complete listing, no links, empty folders kept) and FileDO backs up the staged tree; an SFTP destination
+    ''' receives the local generation as a checked publication into the remote numbered set. The staging folder is
+    ''' this run's own and is always removed; the verdicts and journals speak the sides' own spelling; a side that
+    ''' cannot be reached is the same stop it makes for every other action, and nothing is retired anywhere unless
+    ''' the whole run proved itself.
+    ''' </summary>
+    Private Sub ExecuteBackupStaged(op As ScheduledOperation, result As ScheduledRunResult, ct As CancellationToken)
+        Dim staging As String = ""
+        Try
+            Dim leftovers As New List(Of String)()
+            staging = BackupStagingFolders.Create(op.Id, result.StartedAt, leftovers)
+            For Each left As String In leftovers
+                Journal(op, "backup-stage-clear", left, "", "leftover")
+            Next
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            AppFileLogger.LogException("Scheduled operations: creating the backup staging folder", ex)
+            HitWall(result, "backup-stage|" & Path.GetTempPath())
+            Return
+        End Try
+
+        Dim held As New List(Of IScheduledSide)()
+        Try
+            Dim sourceSide As ProviderSide = Nothing
+            Dim destinationSide As ProviderSide = Nothing
+            Dim sourceFolder As String = ""
+            Dim filedoDestination As String = ""
+            Dim stagedSkippedLinks As IReadOnlyList(Of String) = Nothing
+
+            If BackupSideKindOf(op.Source) = BackupSideKind.SftpResource Then
+                Dim stopped As Resolution = OpenBackupFolder(op.Source, "source", held, sourceFolder, sourceSide)
+                If stopped IsNot Nothing Then
+                    Adopt(result, stopped.StopResult)
+                    Return
+                End If
+                Dim stagedTree As BackupStageResult = New BackupRemoteStage().Stage(
+                    sourceSide, Path.Combine(staging, BackupStagingFolders.SourceFolderName), ct, op.BackupSkipLinks)
+                If stagedTree.Refused Then
+                    HitWall(result, stagedTree.Detail)
+                    Return
+                End If
+                stagedSkippedLinks = stagedTree.SkippedLinks
+                sourceFolder = Path.Combine(staging, BackupStagingFolders.SourceFolderName)
+            Else
+                Dim stopped As Resolution = OpenBackupFolder(op.Source, "source", held, sourceFolder)
+                If stopped IsNot Nothing Then
+                    Adopt(result, stopped.StopResult)
+                    Return
+                End If
+            End If
+
+            If BackupSideKindOf(op.Destination) = BackupSideKind.SftpResource Then
+                Dim stopped As Resolution = OpenBackupFolder(op.Destination, "destination", held, filedoDestination, destinationSide)
+                If stopped IsNot Nothing Then
+                    Adopt(result, stopped.StopResult)
+                    Return
+                End If
+                filedoDestination = Path.Combine(staging, BackupStagingFolders.SetFolderName)
+                Directory.CreateDirectory(filedoDestination)
+            Else
+                Dim stopped As Resolution = OpenBackupFolder(op.Destination, "destination", held, filedoDestination)
+                If stopped IsNot Nothing Then
+                    Adopt(result, stopped.StopResult)
+                    Return
+                End If
+            End If
+
+            RunBackupStaged(op, sourceFolder, filedoDestination, sourceSide, destinationSide, result, ct, stagedSkippedLinks)
+        Finally
+            For Each side As IScheduledSide In held
+                side.Dispose()
+            Next
+            For Each left As String In BackupStagingFolders.Clear(staging)
+                Journal(op, "backup-stage-clear", left, "", "leftover")
+            Next
+        End Try
+    End Sub
+
+    ''' <summary>FileDO over the run's own local folders, then the same verdict and journals as a plain backup (L0298):
+    ''' for an SFTP destination the verified local generation or dated archive is published into the remote set by <see
+    ''' cref="BackupRemotePublish"/>, and no success is claimed until that publication proved itself (L0343, L0346).</summary>
+    Private Sub RunBackupStaged(op As ScheduledOperation, source As String, destination As String,
+                                sourceSide As ProviderSide, destinationSide As ProviderSide,
+                                result As ScheduledRunResult, ct As CancellationToken,
+                                Optional stagedSkippedLinks As IReadOnlyList(Of String) = Nothing)
+        Dim sourceText As String = If(sourceSide IsNot Nothing, sourceSide.Describe(), source)
+        Dim destinationText As String = If(destinationSide IsNot Nothing, destinationSide.Describe(), destination)
+        ExecuteBackupCore(op, source, destination, sourceText, destinationText, destinationSide, result, ct, stagedSkippedLinks)
+    End Sub
+
+    ''' <summary>FileDO over two reachable folders: a folder of this PC or the UNC path of a connected SMB resource.</summary>
+    Private Sub RunBackup(op As ScheduledOperation, source As String, destination As String, result As ScheduledRunResult,
+                          ct As CancellationToken)
+        ExecuteBackupCore(op, source, destination, source, destination, Nothing, result, ct, Nothing)
+    End Sub
+
+    Private Sub ExecuteBackupCore(op As ScheduledOperation, source As String, destination As String,
+                                  sourceText As String, destinationText As String, destinationSide As ProviderSide,
+                                  result As ScheduledRunResult, ct As CancellationToken,
+                                  stagedSkippedLinks As IReadOnlyList(Of String))
         Dim exe As String = services.LocateFileDo.Invoke()
-        Dim source As String = CompanionCommand.CanonicalFolder(op.Source.Path)
-        Dim destination As String = CompanionCommand.CanonicalFolder(op.Destination.Path)
         Dim password As String = If(op.BackupSealed, services.BackupPassword.Invoke(op.Id), "")
         ct.ThrowIfCancellationRequested()
 
@@ -954,8 +1108,14 @@ Friend NotInheritable Class ScheduledExecutor
         End Try
 
         Dim stem As String = op.BackupStem
+        Dim isDated As Boolean = (op.BackupRetention = BackupRetentionMode.Dated)
+        Dim beforeSet As Dictionary(Of String, String) =
+            If(isDated AndAlso destinationSide Is Nothing, BackupCommandLine.ScanDatedSet(destination, stem, op.BackupSealed), Nothing)
+
         Dim launch As New FillLaunch With {.Exe = exe, .StopFile = stopFile}
-        launch.Arguments = BackupCommandLine.Arguments(source, destination, op.BackupKeepCount, stem, op.BackupSealed, eventsFile, stopFile)
+        launch.Arguments = BackupCommandLine.Arguments(
+            source, destination, op.BackupRetention, op.BackupKeepCount, op.BackupKeepDays,
+            op.BackupKeepMonthly, op.BackupSkipLinks, stem, op.BackupSealed, eventsFile, stopFile)
         If op.BackupSealed Then launch.ChildEnvironment(BackupCommandLine.PasswordVariable) = password
         Dim outcome As FillLaunchOutcome = services.LaunchFill.Invoke(launch, ct)
         Dim events As FillEvents = FillEvents.Parse(ReadEvents(eventsFile))
@@ -970,37 +1130,178 @@ Friend NotInheritable Class ScheduledExecutor
             Return
         End If
         Dim ending As BackupEnding = BackupCommandLine.Classify(events, outcome.ExitCode, outcome.StopRequested)
-        result.Verdict = BackupCommandLine.Verdict(events, outcome.ExitCode)
+        Dim skippedCount As Integer = JournalSkippedLinks(op, events, destinationText, stagedSkippedLinks)
+        result.Skipped = skippedCount
+        result.Verdict = BackupCommandLine.Verdict(events, outcome.ExitCode, op.BackupRetention, skippedCount)
         result.Files = CInt(Math.Min(Integer.MaxValue, Math.Max(0L, If(events.Number("files"), 0L))))
         result.Bytes = Math.Max(0L, If(events.Number("bytes"), 0L))
 
         Select Case ending
             Case BackupEnding.Done
-                Dim generation As Long? = events.Number("generation")
-                Dim artifact As String = If(generation.HasValue AndAlso generation.Value > 0,
-                    Path.Combine(destination, BackupCommandLine.GenerationName(stem, generation.Value, op.BackupSealed)), destination)
-                result.ArchivePath = If(generation.HasValue AndAlso generation.Value > 0, artifact, "")
-                Dim retired As Long? = events.Number("retiredGeneration")
-                If retired.HasValue AndAlso retired.Value > 0 Then
-                    ' The slot was taken by replacement after the new generation was verified (item D3).
-                    Journal(op, "backup-retire", Path.Combine(destination, BackupCommandLine.GenerationName(stem, retired.Value, op.BackupSealed)),
-                            artifact, "replaced")
+                If isDated Then
+                    FinishDatedBackup(op, sourceText, destination, destinationText, destinationSide,
+                                      stem, beforeSet, events, outcome.ExitCode, skippedCount, result, ct)
+                Else
+                    FinishGenerationsBackup(op, sourceText, destination, destinationText, destinationSide,
+                                            stem, events, outcome.ExitCode, skippedCount, result, ct)
                 End If
-                Journal(op, "backup", source, artifact, "done")
-                result.Outcome = ScheduledRunOutcome.Ok
             Case BackupEnding.Stopped
-                Journal(op, "backup", source, destination, "stopped")
+                Journal(op, "backup", sourceText, destinationText, "stopped")
                 result.Outcome = ScheduledRunOutcome.Cancelled
             Case BackupEnding.DefinitionRefused, BackupEnding.Obstacle
-                Journal(op, "backup", source, destination, If(ending = BackupEnding.DefinitionRefused, "refused", "wall"))
-                HitWall(result, BackupCommandLine.WallDetail(ending, events, outcome.ExitCode, source, destination, Directory.Exists(source)))
+                Journal(op, "backup", sourceText, destinationText, If(ending = BackupEnding.DefinitionRefused, "refused", "wall"))
+                HitWall(result, BackupCommandLine.WallDetail(ending, events, outcome.ExitCode, sourceText, destinationText, Directory.Exists(source)))
             Case Else
-                Journal(op, "backup", source, destination, If(ending = BackupEnding.Failed, "failed", "not-proven"))
+                Journal(op, "backup", sourceText, destinationText, If(ending = BackupEnding.Failed, "failed", "not-proven"))
                 result.Outcome = ScheduledRunOutcome.Failed
                 result.Failed = 1
-                result.FirstError = ScheduledFailure.Coded(If(ending = BackupEnding.Failed, "backup-failed", "backup-not-proven"), source)
+                result.FirstError = ScheduledFailure.Coded(If(ending = BackupEnding.Failed, "backup-failed", "backup-not-proven"), sourceText)
         End Select
     End Sub
+
+    Private Function JournalSkippedLinks(op As ScheduledOperation, events As FillEvents, destinationText As String,
+                                         stagedSkippedLinks As IReadOnlyList(Of String)) As Integer
+        Dim count As Integer = 0
+        If stagedSkippedLinks IsNot Nothing Then
+            For Each link As String In stagedSkippedLinks
+                Journal(op, "backup-skip-link", link, destinationText, "skipped")
+                count += 1
+            Next
+        End If
+        If events IsNot Nothing Then
+            For Each link As String In events.SkippedLinks
+                Journal(op, "backup-skip-link", link, destinationText, "skipped")
+                count += 1
+            Next
+        End If
+        Return count
+    End Function
+
+    Private Sub FinishGenerationsBackup(op As ScheduledOperation, sourceText As String, destination As String,
+                                        destinationText As String, destinationSide As ProviderSide, stem As String,
+                                        events As FillEvents, exitCode As Integer?, skippedCount As Integer,
+                                        result As ScheduledRunResult, ct As CancellationToken)
+        Dim generation As Long? = events.Number("generation")
+        If destinationSide IsNot Nothing AndAlso (Not generation.HasValue OrElse generation.Value <= 0) Then
+            Journal(op, "backup", sourceText, destinationText, "not-proven")
+            result.Outcome = ScheduledRunOutcome.Failed
+            result.Failed = 1
+            result.FirstError = ScheduledFailure.Coded("backup-not-proven", sourceText)
+            Return
+        End If
+        Dim artifact As String = If(generation.HasValue AndAlso generation.Value > 0,
+            Path.Combine(destination, BackupCommandLine.GenerationName(stem, generation.Value, op.BackupSealed)), destination)
+        If destinationSide Is Nothing Then
+            result.ArchivePath = If(generation.HasValue AndAlso generation.Value > 0, artifact, "")
+            Dim retired As Long? = events.Number("retiredGeneration")
+            If retired.HasValue AndAlso retired.Value > 0 Then
+                ' The slot was taken by replacement after the new generation was verified (item D3).
+                Journal(op, "backup-retire",
+                        Path.Combine(destination, BackupCommandLine.GenerationName(stem, retired.Value, op.BackupSealed)),
+                        artifact, "replaced")
+            End If
+            Journal(op, "backup", sourceText, artifact, "done")
+            result.Outcome = ScheduledRunOutcome.Ok
+            Return
+        End If
+
+        Dim published As BackupPublishResult = BackupRemotePublish.Run(destinationSide, stem, op.BackupSealed,
+            op.BackupKeepCount, artifact, ct)
+        If Not published.IsPublished Then
+            Journal(op, "backup", sourceText, destinationText, "wall")
+            HitWall(result, published.RefusalDetail)
+            Return
+        End If
+        result.ArchivePath = published.RemoteArtifact
+        If published.RetiredNumber > 0 Then
+            Journal(op, "backup-retire",
+                    destinationSide.Combine(BackupRemoteSet.GenerationName(stem, published.RetiredNumber,
+                        If(op.BackupSealed, BackupRemoteSet.SealedExtension, BackupRemoteSet.ZipExtension))),
+                    published.RemoteArtifact, "replaced")
+        End If
+        Journal(op, "backup", sourceText, published.RemoteArtifact, "done")
+        result.Outcome = ScheduledRunOutcome.Ok
+        result.Verdict = String.Format(Globalization.CultureInfo.InvariantCulture,
+            "backup:gen={0};retired={1};keep={2};files={3};bytes={4};exit={5}",
+            published.Number.ToString(Globalization.CultureInfo.InvariantCulture),
+            published.RetiredNumber.ToString(Globalization.CultureInfo.InvariantCulture),
+            NumberOrNone(events.Number("keepCount")),
+            NumberOrNone(events.Number("files")),
+            NumberOrNone(events.Number("bytes")),
+            If(exitCode.HasValue, exitCode.Value.ToString(Globalization.CultureInfo.InvariantCulture), "none"))
+        If skippedCount > 0 Then
+            result.Verdict &= ";skippedLinks=" & skippedCount.ToString(Globalization.CultureInfo.InvariantCulture)
+        End If
+    End Sub
+
+    Private Sub FinishDatedBackup(op As ScheduledOperation, sourceText As String, destination As String,
+                                  destinationText As String, destinationSide As ProviderSide, stem As String,
+                                  beforeSet As Dictionary(Of String, String), events As FillEvents, exitCode As Integer?,
+                                  skippedCount As Integer, result As ScheduledRunResult, ct As CancellationToken)
+        Dim afterSet As Dictionary(Of String, String) = BackupCommandLine.ScanDatedSet(destination, stem, op.BackupSealed)
+        If destinationSide Is Nothing Then
+            Dim publishedNames As New List(Of String)()
+            For Each pair As KeyValuePair(Of String, String) In afterSet
+                If beforeSet Is Nothing OrElse Not beforeSet.ContainsKey(pair.Key) Then
+                    publishedNames.Add(pair.Value)
+                End If
+            Next
+            Dim artifact As String = If(publishedNames.Count = 1, Path.Combine(destination, publishedNames(0)), destination)
+            result.ArchivePath = If(publishedNames.Count = 1, artifact, "")
+            If beforeSet IsNot Nothing Then
+                Dim retiredNames As New List(Of String)()
+                For Each pair As KeyValuePair(Of String, String) In beforeSet
+                    If Not afterSet.ContainsKey(pair.Key) Then retiredNames.Add(pair.Value)
+                Next
+                retiredNames.Sort(StringComparer.OrdinalIgnoreCase)
+                For Each retiredName As String In retiredNames
+                    Journal(op, "backup-retire", Path.Combine(destination, retiredName), artifact, "retired")
+                Next
+            End If
+            Journal(op, "backup", sourceText, artifact, "done")
+            result.Outcome = ScheduledRunOutcome.Ok
+            Return
+        End If
+
+        If afterSet.Count <> 1 Then
+            Journal(op, "backup", sourceText, destinationText, "not-proven")
+            result.Outcome = ScheduledRunOutcome.Failed
+            result.Failed = 1
+            result.FirstError = ScheduledFailure.Coded("backup-not-proven", sourceText)
+            Return
+        End If
+        Dim localFile As String = Path.Combine(destination, afterSet.Values.First())
+        Dim published As BackupPublishResult = BackupRemotePublish.RunDated(
+            destinationSide, stem, op.BackupSealed, op.BackupKeepDays, op.BackupKeepMonthly,
+            localFile, services.Clock.Invoke(), ct)
+        If Not published.IsPublished Then
+            Journal(op, "backup", sourceText, destinationText, "wall")
+            HitWall(result, published.RefusalDetail)
+            Return
+        End If
+        result.ArchivePath = published.RemoteArtifact
+        For Each retiredName As String In published.RetiredNames
+            Journal(op, "backup-retire", destinationSide.Combine(retiredName), published.RemoteArtifact, "retired")
+        Next
+        Journal(op, "backup", sourceText, published.RemoteArtifact, "done")
+        result.Outcome = ScheduledRunOutcome.Ok
+        result.Verdict = String.Format(Globalization.CultureInfo.InvariantCulture,
+            "backup:mode=dated;retiredCount={0};keptCount={1};keepDays={2};monthlyKept={3};files={4};bytes={5};exit={6}",
+            published.RetiredNames.Count.ToString(Globalization.CultureInfo.InvariantCulture),
+            published.KeptCount.ToString(Globalization.CultureInfo.InvariantCulture),
+            op.BackupKeepDays.ToString(Globalization.CultureInfo.InvariantCulture),
+            If(op.BackupKeepMonthly, published.MonthlyKept.ToString(Globalization.CultureInfo.InvariantCulture), "none"),
+            NumberOrNone(events.Number("files")),
+            NumberOrNone(events.Number("bytes")),
+            If(exitCode.HasValue, exitCode.Value.ToString(Globalization.CultureInfo.InvariantCulture), "none"))
+        If skippedCount > 0 Then
+            result.Verdict &= ";skippedLinks=" & skippedCount.ToString(Globalization.CultureInfo.InvariantCulture)
+        End If
+    End Sub
+
+    Private Shared Function NumberOrNone(value As Long?) As String
+        Return If(value.HasValue, value.Value.ToString(Globalization.CultureInfo.InvariantCulture), "none")
+    End Function
 
     ''' <summary>A definition FileDO refused stays parked until the operation is edited (CLI-EVENT-STREAM 0.17 item F).</summary>
     Private Shared Function IsRefusedDefinition(op As ScheduledOperation) As Boolean
@@ -1010,32 +1311,84 @@ Friend NotInheritable Class ScheduledExecutor
                detail.StartsWith("backup-destination-refused", StringComparison.Ordinal)
     End Function
 
-    ''' <summary>The wall a backup's preflight problem stands for, in the order the preflight checks them.</summary>
-    Private Function BackupWallCode(op As ScheduledOperation, problem As SideProblem) As String
+    ''' <summary>The wall of a backup that cannot start whatever its folders are: no FileDO, a FileDO without the needed
+    ''' retention or skip-links option, or a sealed backup with no stored password. "" when none applies.</summary>
+    Private Function BackupToolWall(op As ScheduledOperation) As String
         Dim exe As String = services.LocateFileDo.Invoke()
         If exe.Length = 0 Then Return "filedo-missing"
-        If Not services.FileDoHasBackupGenerations.Invoke(exe) Then Return "backup-filedo-unsupported"
+        If op.BackupRetention = BackupRetentionMode.Dated Then
+            If Not services.FileDoHasBackupDatedRetention.Invoke(exe) Then Return "backup-filedo-unsupported"
+        Else
+            If Not services.FileDoHasBackupGenerations.Invoke(exe) Then Return "backup-filedo-unsupported"
+        End If
+        If op.BackupSkipLinks AndAlso Not services.FileDoHasBackupSkipLinks.Invoke(exe) Then Return "backup-filedo-unsupported"
         If op.BackupSealed AndAlso services.BackupPassword.Invoke(op.Id).Length = 0 Then Return ShareSettingsTransfer.BackupNoPasswordCode
-        Dim source As String = CompanionCommand.CanonicalFolder(op.Source.Path)
-        If source.Length = 0 OrElse Not Directory.Exists(source) Then Return "source-unreachable|" & op.Source.Describe()
-        Return "destination-unreachable|" & op.Destination.Describe()
+        Return ""
     End Function
 
-    ''' <summary>A walled backup comes back when FileDO can number generations, the password is stored and both folders are
-    ''' there. Read-only and silent.</summary>
+    ''' <summary>
+    ''' One side of a backup as FileDO can work it (L0342, L0343): a folder of this PC as it is; an SMB resource
+    ''' connected unattended (the stored credential, nothing asked) and answered as its UNC path - the side goes into
+    ''' <paramref name="held"/> and its connection lasts until the caller disposes it; or an SFTP resource, connected
+    ''' and answered as a side with no folder of its own (the run stages a source, publishes into a destination), the
+    ''' side likewise held and answered in <paramref name="sftpSide"/>. A side that cannot be reached is the stop the
+    ''' same problem makes for every other action (a removed resource halts, an offline one skips, the rest wall).
+    ''' </summary>
+    Private Function OpenBackupFolder(location As ScheduledLocation, which As String, held As List(Of IScheduledSide),
+                                      ByRef folder As String, Optional ByRef sftpSide As ProviderSide = Nothing) As Resolution
+        folder = ""
+        sftpSide = Nothing
+        If location.Kind <> ScheduledLocationKind.Resource Then
+            folder = CompanionCommand.CanonicalFolder(location.Path)
+            If folder.Length = 0 OrElse Not Directory.Exists(folder) Then
+                Return FromProblem(New SideProblem(SideProblemKind.Unreachable, location.Describe()), which)
+            End If
+            Return Nothing
+        End If
+        Dim opened As ScheduledSideOpen = services.OpenSide.Invoke(location)
+        If opened.Problem.IsProblem Then Return FromProblem(opened.Problem, which)
+        held.Add(opened.Side)
+        Dim connected As ProviderSide = TryCast(opened.Side, ProviderSide)
+        If connected Is Nothing Then
+            Return FromProblem(New SideProblem(SideProblemKind.Unreachable, opened.Side.Describe()), which)
+        End If
+        Dim facts As ScheduledResourceFacts = services.ResourceFacts.Invoke(location.ResourceId)
+        If facts IsNot Nothing AndAlso facts.Exists AndAlso facts.IsSmb Then
+            ' A share has a path another program can open: FileDO reads and writes it as an ordinary network folder.
+            folder = CompanionCommand.CanonicalFolder(connected.Root)
+            If folder.Length = 0 OrElse Not Directory.Exists(folder) Then
+                Return FromProblem(New SideProblem(SideProblemKind.Unreachable, connected.Describe()), which)
+            End If
+            Return Nothing
+        End If
+        ' Every other resource is SFTP (validation refuses the rest before a run gets here): no folder by path, but
+        ' the side must answer for what the run does with it.
+        sftpSide = connected
+        Dim readable As SideProblem = connected.CheckReadable()
+        If readable.IsProblem Then Return FromProblem(readable, which)
+        Return Nothing
+    End Function
+
+    ''' <summary>A walled backup comes back when FileDO can number generations, the password is stored and both sides
+    ''' answer - an SMB resource connected for the look and released at once, an SFTP resource connected and read.
+    ''' Read-only and silent.</summary>
     Private Function BackupPreflight(op As ScheduledOperation) As SideProblem
-        Dim exe As String = services.LocateFileDo.Invoke()
-        If exe.Length = 0 OrElse Not services.FileDoHasBackupGenerations.Invoke(exe) Then
-            Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
-        End If
-        If op.BackupSealed AndAlso services.BackupPassword.Invoke(op.Id).Length = 0 Then
-            Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
-        End If
-        Dim source As String = CompanionCommand.CanonicalFolder(op.Source.Path)
-        If source.Length = 0 OrElse Not Directory.Exists(source) Then Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
-        Dim destination As String = CompanionCommand.CanonicalFolder(op.Destination.Path)
-        If destination.Length = 0 OrElse Not Directory.Exists(destination) Then Return New SideProblem(SideProblemKind.Unreachable, op.Destination.Describe())
-        Return SideProblem.Ok
+        If BackupToolWall(op).Length > 0 Then Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+        Dim held As New List(Of IScheduledSide)()
+        Try
+            Dim folder As String = ""
+            If OpenBackupFolder(op.Source, "source", held, folder) IsNot Nothing Then
+                Return New SideProblem(SideProblemKind.Unreachable, op.Source.Describe())
+            End If
+            If OpenBackupFolder(op.Destination, "destination", held, folder) IsNot Nothing Then
+                Return New SideProblem(SideProblemKind.Unreachable, op.Destination.Describe())
+            End If
+            Return SideProblem.Ok
+        Finally
+            For Each side As IScheduledSide In held
+                side.Dispose()
+            Next
+        End Try
     End Function
 
     Private Sub Journal(op As ScheduledOperation, verb As String, source As String, destination As String, verdict As String)

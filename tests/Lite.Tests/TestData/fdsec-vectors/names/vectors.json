@@ -1,13 +1,13 @@
 {
-  "format": "FDSEC sealed-name boundary vectors - see FDSEC-FORMAT.md sections 20 to 22 (document version 1.5) and FDSEC-BEHAVIOUR.md section 18",
-  "generated": "2026-10-21",
-  "contract": "FDSEC-FORMAT 1.5 sections 20 to 22",
+  "format": "FDSEC sealed-name boundary vectors - see FDSEC-FORMAT.md sections 20 to 23 (document version 1.6) and FDSEC-BEHAVIOUR.md section 18",
+  "generated": "2026-11-08",
+  "contract": "FDSEC-FORMAT 1.6 sections 20 to 23",
   "how_to_replay": [
     "Every container authenticates under the credential in its case. For each case open it with that credential and read it to the end.",
     "expect \"opens\": the reader must accept the sealed name (suites 1, 2) or the root name and every component (suite 3), return it byte for byte, and return the payload.",
     "expect \"damaged\": the reader must answer damaged - not wrong-credential-or-tamper, not unsupported - and write nothing. The container is authenticated, so the credential is right; its sealed name breaks a rule of FDSEC-FORMAT section 7.",
     "The four characters U+0022 U+003C U+003E U+007C are valid in every case that carries them. Whether a destination can create such a name is a restore matter (FDSEC-BEHAVIOUR section 18) and not part of any case here.",
-    "Every \"refused\" case is a rule of section 7 that section 20 leaves unchanged (or, for invalid-utf8, section 22 states). The four-and-* cases show that a valid character beside a refused element does not make the name valid.",
+    "Every \"refused\" case is a rule of section 7 that section 20 leaves unchanged (or, for invalid-utf8, section 22 states, and for not-nfc, section 23). The four-and-* cases show that a valid character beside a refused element does not make the name valid.",
     "sealed_name_hex (and path_hex) are the authoritative bytes. Where the sealed name is not valid UTF-8 (the invalid-utf8 cases) sealed_name and path show each invalid byte as U+FFFD, because JSON text cannot carry it: compare the hexadecimal field, never the text."
   ],
   "kdf_profile": {
@@ -24,7 +24,6 @@
     }
   ],
   "not_covered": [
-    "a sealed name that is not in NFC: FDSEC-FORMAT section 22 item 3 leaves it undecided - suites 2 and 3 of the reference reader refuse it, suite 1 reads it as written - so no case pins it",
     "the destination's own limits (the four characters, 255 UTF-16 units): FDSEC-BEHAVIOUR section 18, a restore matter"
   ],
   "cases": [
@@ -248,6 +247,23 @@
       "file": "s1-valid-units-256.fd-sec",
       "total_len": 5632,
       "blake2b256_of_file": "d7e8bd67c225a709d2e60c35ed85a016bd2db8740a6994800c1b8858da4c5589"
+    },
+    {
+      "id": "s1-valid-nfc",
+      "suite": 1,
+      "expect": "opens",
+      "description": "a name in NFC with the precomposed letter U+00E9: the twin of the not-nfc case, valid (FDSEC-FORMAT 1.6 section 23)",
+      "sealed_name": "é.txt",
+      "sealed_name_hex": "c3a92e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-nfc.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "eea5a8920a70e333d0200a26ab9c835962e49a8d555a8138192815a5c19936ef"
     },
     {
       "id": "s1-valid-longest",
@@ -591,6 +607,24 @@
       "blake2b256_of_file": "b6c24ad633c7601b2fd69cb05fb4a8b201d555372eeb89d922c7ab05262cb0b3"
     },
     {
+      "id": "s1-refused-not-nfc",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a name that is not in NFC (e followed by U+0301 COMBINING ACUTE ACCENT, whose NFC form is U+00E9): damaged in every suite, never normalised (FDSEC-FORMAT 1.6 section 23)",
+      "sealed_name": "é.txt",
+      "sealed_name_hex": "65cc812e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-not-nfc.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "f81505c401a89f58e7ddcd8012f2dec971c277098eae11249774b1b98156fab4"
+    },
+    {
       "id": "s2-valid-quote",
       "suite": 2,
       "expect": "opens",
@@ -758,6 +792,19 @@
       "file": "s2-valid-units-256.bin",
       "total_len": 14859,
       "blake2b256_of_file": "6ea293bd541d5b21e1220bc2edba4312fbac9531bc2e72007daa019ae13a5b05"
+    },
+    {
+      "id": "s2-valid-nfc",
+      "suite": 2,
+      "expect": "opens",
+      "description": "a name in NFC with the precomposed letter U+00E9: the twin of the not-nfc case, valid (FDSEC-FORMAT 1.6 section 23)",
+      "sealed_name": "é.txt",
+      "sealed_name_hex": "c3a92e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-nfc.bin",
+      "total_len": 29392,
+      "blake2b256_of_file": "c69c1b06d7f81a9d15acd66066adec18b80d0e034eed4048eb8ffa5fa38019a1"
     },
     {
       "id": "s2-valid-longest",
@@ -1023,6 +1070,20 @@
       "file": "s2-refused-invalid-utf8.bin",
       "total_len": 9343,
       "blake2b256_of_file": "c5ea3b840211741f5229d3f9aa7da5e6f1131e44a1fd2d72054de3f2cc1414ba"
+    },
+    {
+      "id": "s2-refused-not-nfc",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a name that is not in NFC (e followed by U+0301 COMBINING ACUTE ACCENT, whose NFC form is U+00E9): damaged in every suite, never normalised (FDSEC-FORMAT 1.6 section 23)",
+      "sealed_name": "é.txt",
+      "sealed_name_hex": "65cc812e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-not-nfc.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "ae2f9ea9ed98b147c48283fb89a4a7ed45416850d920e8739a71db74bb8ce2d7"
     },
     {
       "id": "s3-valid-root-22",
@@ -1348,6 +1409,35 @@
       "file": "s3-valid-longest-root.fd-sec",
       "total_len": 6144,
       "blake2b256_of_file": "ed54fda6b54283222542298d5d63bf133414b0ed878191a50729db37647540cd"
+    },
+    {
+      "id": "s3-valid-nfc",
+      "suite": 3,
+      "expect": "opens",
+      "description": "the precomposed U+00E9 in the root, a folder and a file below it: the NFC twin of the not-nfc cases, valid",
+      "sealed_name": "é",
+      "sealed_name_hex": "c3a9",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "é",
+          "path_hex": "c3a9"
+        },
+        {
+          "kind": "file",
+          "path": "é/é.txt",
+          "path_hex": "c3a92fc3a92e747874",
+          "content": "66697665"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-nfc.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "a6f91746606c563a81986bbc28002a188a95ada5230b53c9069009810141b204"
     },
     {
       "id": "s3-refused-root-empty",
@@ -1800,6 +1890,31 @@
       "blake2b256_of_file": "6bbe5a9102720e21801984a82b8070fc6fec6936ba36f1be9bc1570effc2be95"
     },
     {
+      "id": "s3-refused-root-not-nfc",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a name that is not in NFC (e followed by U+0301 COMBINING ACUTE ACCENT, whose NFC form is U+00E9): damaged in every suite, never normalised (FDSEC-FORMAT 1.6 section 23)",
+      "sealed_name": "é.txt",
+      "sealed_name_hex": "65cc812e747874",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-not-nfc.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "779e1926d0cc7df4119de1720aa1883d74b8736c1896afd0ae54cf6e5229f401"
+    },
+    {
       "id": "s3-refused-component-dot",
       "suite": 3,
       "expect": "damaged",
@@ -2173,6 +2288,31 @@
       "file": "s3-refused-component-invalid-utf8.fd-sec",
       "total_len": 6144,
       "blake2b256_of_file": "d7ce3ef2409de4ac65d3bc8ba919002df7db4d22ad4ff5e74a26ce2f8917eabd"
+    },
+    {
+      "id": "s3-refused-component-not-nfc",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a name that is not in NFC (e followed by U+0301 COMBINING ACUTE ACCENT, whose NFC form is U+00E9): damaged in every suite, never normalised (FDSEC-FORMAT 1.6 section 23)",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "é.txt",
+          "path_hex": "65cc812e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-not-nfc.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "b4073a56d679edf545352d5231da3a1556d165f6afd194a22ae7dd2f7f692d92"
     },
     {
       "id": "s3-refused-component-empty",

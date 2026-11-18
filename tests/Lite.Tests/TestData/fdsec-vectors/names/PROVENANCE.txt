@@ -1,9 +1,9 @@
-# Sealed-name boundary vectors of FDSEC-FORMAT 1.5 sections 20 to 22, written by the reference writer in the FileDO repository (fdsec/vectors_names_test.go).
+# Sealed-name boundary vectors of FDSEC-FORMAT 1.6 sections 20 to 23, written by the reference writer in the FileDO repository (fdsec/vectors_names_test.go).
 # Generated, never hand-edited: FDSEC_WRITE_VECTORS=1 go test ./fdsec -run TestVectors_Names. The vectors of suites 1, 2 and 3 beside this folder are untouched.
 # Asserted by TestVectors_Names. The shared contracts catalog holds a byte-identical copy (secure-container/vectors/names/); the second reader (FastMediaSorter Lite) has not replayed them.
 contract: FDSEC-FORMAT
-version: 1.5
-generated: 2026-10-21
+version: 1.6
+generated: 2026-11-08
 sha256 s1-refused-backslash.fd-sec 7c3cf9ec09b3c097262ad4c2672131c0aad24dfd97f70a7a0c6f61f7e88a9b36
 sha256 s1-refused-colon.fd-sec 31fdf12ca38197c70f0224d8297e777bffed6edc6c3fe61380095af250336be4
 sha256 s1-refused-control.fd-sec 8e5fb2a8b1bda489fa38a450d6575ae57f45a48366975487396c0b7a9b86d1f5
@@ -14,6 +14,7 @@ sha256 s1-refused-empty.fd-sec 7446a5e31a01f8d7b71e56990b50f298d0c1186e362866bd0
 sha256 s1-refused-four-and-colon.fd-sec 605f9b2f1a5a88f05ffb51f658d26fb5370f98c03221962fdc6c5c9bb573ae44
 sha256 s1-refused-four-and-slash.fd-sec 52a8cb5178673cbe9d0b474b193cdc1717fd9ed7fd4911622ece52e8bb0747ed
 sha256 s1-refused-invalid-utf8.fd-sec c3f896e30ad42db9f01dbc9f20866b9e2c99a721936396893308b1d8107af842
+sha256 s1-refused-not-nfc.fd-sec ce91b730aa634f97dcb31b385929278eeeb95e3b47bad6bee6ce44e399a4b971
 sha256 s1-refused-question.fd-sec a9230fcf053e6ed8e7a9ce0e7d78fc3e744880523c3808be877577445172b079
 sha256 s1-refused-reserved-com9.fd-sec 4b0584d79c4e585aff667927261e62b898255b66843ee3351d5b367990dd76fd
 sha256 s1-refused-reserved-con.fd-sec 8e02aa33a3fd7b6ee7e91cff1215dd47d73b3a582ebe741f3b9bc651fa64607c
@@ -32,6 +33,7 @@ sha256 s1-valid-longest.fd-sec 5a2c061921c0e9e15fb34dfde3a06ca84af1546b592ed8252
 sha256 s1-valid-lookalike-com10.fd-sec 9d9da52d45a7b655d3abb534e7f117c1714ec43aeb3c5625e39a03f6c3fbf5ca
 sha256 s1-valid-lookalike-con.fd-sec 8d16143974d65f11d9e06ee276640e0629c5011b78f658ac243e9ec9afc3ad78
 sha256 s1-valid-neighbours.fd-sec 53e015709eb8f21cb7b4ce47c7121b2c4b2acd0c2d4e55d24c2fcb8b11bdb2f6
+sha256 s1-valid-nfc.fd-sec 3f92e8276dc2aa4c1c34067852c899d11e98583b14b6f0a8eb3e9b766ed6c559
 sha256 s1-valid-quote.fd-sec 79a6ae27579da650bae064e3537c45c7449a055904ec117600cd3a49a68078f3
 sha256 s1-valid-units-255.fd-sec 59c09fb2495d783b591796eea434ea5951e5fe80781d2fced6ca8d04d40a312d
 sha256 s1-valid-units-256.fd-sec b4f426e47117275533748122a3e74c2f6ee140be5e8edfa65d10a34a9c396a24
@@ -46,6 +48,7 @@ sha256 s2-refused-empty.bin 51a6c4d8b95447d2834e4bdcbf2bd5555ccea3f9e4f01e89efac
 sha256 s2-refused-four-and-colon.bin 3c261e873c0a366756bfe0efb1510980049f34a511b7f87871a633353c544cd4
 sha256 s2-refused-four-and-slash.bin 58231b4125617ea1894724e42e51dbdded89426d8e6d4755f9b54aef7572d925
 sha256 s2-refused-invalid-utf8.bin 0dfeb793ad5f8336479c33a2701fdf54c0015f678f4b643f4c2287c7c75f32a4
+sha256 s2-refused-not-nfc.bin b757aaa19a7e3c805cc65379445c2d6860a8409c19b4dfa31d39992cbf77cec4
 sha256 s2-refused-question.bin e95533b036272990e413b16c895479a29d7f99b8d2b07a0edd885106a3a44da8
 sha256 s2-refused-reserved-com9.bin 26c5f119ad3e4c8f7bd802f4b73489b7f01a957d744da4420d289107acd2dcdb
 sha256 s2-refused-reserved-con.bin deec7bf3bab99283632a48e9ba2774f90c5b01c149ae4eb43bd7661761013bf7
@@ -64,6 +67,7 @@ sha256 s2-valid-longest.bin e3cb4a57deb208c8d06c3294419287bfdbdc6dc6a37e2126405b
 sha256 s2-valid-lookalike-com10.bin fe49a6cc6ae614cfb5a3294aab85110f9ae81b915e36eaeff212fa1162a7b22f
 sha256 s2-valid-lookalike-con.bin 0eb28d92f479fc4da6e642c8d03eea673ec900e1c0b97f2a3b6f7a399ac42ccd
 sha256 s2-valid-neighbours.bin 9d45c204deb20a49ac76aef32a2510922fa21af3de63652ed2ef092120159789
+sha256 s2-valid-nfc.bin 11569b0ca5ad94fc606a15e77a16dd586d593ef276956ae177308cae2de4ef87
 sha256 s2-valid-quote.bin e40a2e19b98d62c133d76b7ad2fe2973935f258c74494e3b7eeb22668935353f
 sha256 s2-valid-units-255.bin 99e816e92dfb1caa8c59cb006eeb77781dac9d26833ee805a7f066ce5986084d
 sha256 s2-valid-units-256.bin 238a43e1cd95c4f46cb04e60ffe7a97d3d08a63d394b0a6525cf77e49c46e394
@@ -77,6 +81,7 @@ sha256 s3-refused-component-dot.fd-sec 6451bdd20fd7ef2013c0c095631e7598f08af49d9
 sha256 s3-refused-component-empty.fd-sec 1f3f0a300dc6317f493c4b15a5d3045fc6326a06593ad86283c315dc360e8a9a
 sha256 s3-refused-component-four-and-colon.fd-sec e90b2edecd174a60516c12cb210c5d5ec840eed69372cd55c832e52aa3b3624d
 sha256 s3-refused-component-invalid-utf8.fd-sec 4e0a9895b415de8b7b0df97a9cde0fb9f3b578a8c81d0f10a3dca4605aef220f
+sha256 s3-refused-component-not-nfc.fd-sec 190f3737abc090e5cfa675173dfb83caea9cce0ae08f1da1193147576c604092
 sha256 s3-refused-component-question.fd-sec d8379126075cf9563edcff3a0a4945ebe95f5cde2012414b161df51579cefbdb
 sha256 s3-refused-component-reserved-com9.fd-sec 1a567308276c0da9a21c4211f2dfe5a3816068757bfd3d4f633f1e7b7975c381
 sha256 s3-refused-component-reserved-con.fd-sec c707ba3e791da312e6e04e079e974d0bfb3b4172921a594305ebed68953c6cc8
@@ -95,6 +100,7 @@ sha256 s3-refused-root-empty.fd-sec 778d09a315be2a93b4df0c2fdb0cce266a1440876e41
 sha256 s3-refused-root-four-and-colon.fd-sec 231d07d704bd5d89acc97eec8edb0395b173a51283a34ac5993e96c7860b71a7
 sha256 s3-refused-root-four-and-slash.fd-sec 7b67bd48a031888b807104611833a0b7fbf83f049f5fad679dd37a4def6b731c
 sha256 s3-refused-root-invalid-utf8.fd-sec 7ae7a98f67699d0393a0f8faf9524a8e54233f1c1dedef31ba92e47e6a4e373b
+sha256 s3-refused-root-not-nfc.fd-sec e3025af0e7873f5169874034dd3f61747454c9ac3264eb2f9531f43975a9624f
 sha256 s3-refused-root-question.fd-sec bece45e0dcd21c2761b5e01e3d9aa9f67db97d34b5a07b6fb206ee7e1e5ea625
 sha256 s3-refused-root-reserved-com9.fd-sec b8a50ed0c8a8c1d8d28de5cb4425167c40255fb907856b3ec749b4355d648dcf
 sha256 s3-refused-root-reserved-con.fd-sec 9ad792ae14d418ed5a71a5d5bea8f278f674aef782ddc13c44cbb3a1a80f6a5b
@@ -110,8 +116,9 @@ sha256 s3-valid-component-3e.fd-sec 0eca7862a5b27cd3e113c5eb339a21e95054d301b620
 sha256 s3-valid-component-7c.fd-sec 6002f79cf12af1c575ab3a7563225c0e05dbff5238e06171b5d27cb83d84850b
 sha256 s3-valid-components.fd-sec a76a548a159321a19e6f50366b83794e00bacc1fe31df0c628ce15e840ebe956
 sha256 s3-valid-longest-root.fd-sec 4be3df3232fe8a1124781c1559cc9fe460c9e5b39abfb5b291449044b8ff8b46
+sha256 s3-valid-nfc.fd-sec 6f346b7fe91f3e58e57a12a543a21506df55f709e73ba7abce65c659e7f3d97e
 sha256 s3-valid-root-22.fd-sec 81bcc1bc03f760b780821647cf17f67ad58619e0b4a3087ef9f328eb696b9d58
 sha256 s3-valid-root-3c.fd-sec 1f3642e7673a22a5575c9c6cdc1e1fb907ca20305e56ad88a1fbd217e9646001
 sha256 s3-valid-root-3e.fd-sec cf622361502c32308d402efefd0c98d5287de1a75ed1bb8c05aa2855c3da471e
 sha256 s3-valid-root-7c.fd-sec 0f43a87566d15a94f9e86dd2d33d94b1e91b51b61fc9a4ece87854b756acbc9e
-sha256 vectors.json 2bacfa0ba2cd45a21d9a5029f05eb9002fd8452bf7464c91b20526934acd28a5
+sha256 vectors.json e0b57449e2bdde1e6d093004c2e6111a0ca9c3555aa2513dd41edb62b3da161b

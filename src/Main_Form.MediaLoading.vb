@@ -843,13 +843,15 @@ Partial Public Class Main_Form
                 If total_File_Count <> 0 Then
                     If is_Random_File_Mode Then
 #If Not NETFRAMEWORK Then
-                        If modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder = "shuffleCycle" Then
-                            current_File_Index = NextShuffleCycleIndex(total_File_Count, -1)
+                        ' MEDIA-VIEWER rule 2: the draw excludes the file on screen when another exists.
+                        Dim shown_Index As Integer = If(is_Files_Array_Active, Array.IndexOf(files_Array, Current_Image_Path), files_List.IndexOf(Current_Image_Path))
+                        If IsShuffleCycleOrder() Then
+                            current_File_Index = NextShuffleCycleIndex(total_File_Count, shown_Index)
                         Else
-#End If
-                        current_File_Index = slideshow_Rng.Next(0, total_File_Count)
-#If Not NETFRAMEWORK Then
+                            current_File_Index = SlideshowOrder.RandomExcluding(total_File_Count, shown_Index, slideshow_Rng)
                         End If
+#Else
+                        current_File_Index = slideshow_Rng.Next(0, total_File_Count)
 #End If
                         is_File_Found = True
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0660: New random file set currentFileIndex=" & current_File_Index.ToString)
@@ -865,13 +867,13 @@ Partial Public Class Main_Form
                 lbl_Status.Text = ""
                 If is_Random_File_Mode Then
 #If Not NETFRAMEWORK Then
-                    If modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder = "shuffleCycle" Then
+                    If IsShuffleCycleOrder() Then
                         current_File_Index = NextShuffleCycleIndex(total_File_Count, current_File_Index)
                     Else
-#End If
-                    current_File_Index = slideshow_Rng.Next(0, total_File_Count)
-#If Not NETFRAMEWORK Then
+                        current_File_Index = SlideshowOrder.RandomExcluding(total_File_Count, current_File_Index, slideshow_Rng)
                     End If
+#Else
+                    current_File_Index = slideshow_Rng.Next(0, total_File_Count)
 #End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0690: random file set")
                 Else

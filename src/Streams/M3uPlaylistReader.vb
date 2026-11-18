@@ -38,6 +38,9 @@ Namespace Streams
         ''' <summary>Leads the reason of a refusal of a whole file over <see cref="MaxPlaylistBytes"/> (`USER-PLAYLIST` section 8 item 1).</summary>
         Friend Const TooLargeStatus As String = "TooLarge"
 
+        ''' <summary>Leads the reason of a refusal of a whole file that is the structured JSON carrier (`USER-PLAYLIST` section 6 A).</summary>
+        Friend Const JsonCarrierStatus As String = "JsonCarrier"
+
         Private Const ExtinfPrefix As String = "#EXTINF:"
         Private Const HlsTagPrefix As String = "#EXT-X-"
 
@@ -74,6 +77,17 @@ Namespace Streams
             If Not File.Exists(filePath) Then Return
 
             Dim fileName As String = Path.GetFileName(filePath)
+
+            ' `USER-PLAYLIST` section 6 A: this consumer does not read the JSON carrier, so a `.sza-playlist.json`
+            ' (or any `.json`) named explicitly is refused whole with ONE reason that names the format - never
+            ' parsed as M3U text, which would give zero rows and a refusal per line.
+            If String.Equals(Path.GetExtension(fileName), ".json", StringComparison.OrdinalIgnoreCase) Then
+                result.Refusals.Add(New StreamRefusal(fileName, 0, "", filePath,
+                    JsonCarrierStatus & ": this is a structured JSON playlist (.sza-playlist.json), which is not read here; " &
+                    "export the playlist as Extended M3U8 (.m3u8) instead; nothing was imported", True))
+                Return
+            End If
+
             Dim lines As List(Of String) = Nothing
             Try
                 lines = ReadBoundedLines(filePath)
@@ -455,12 +469,8 @@ Namespace Streams
             Dim countryVal As String = Nothing
             If attributes.TryGetValue("tvg-country", countryVal) OrElse
                attributes.TryGetValue("country", countryVal) Then
-                If Not String.IsNullOrWhiteSpace(countryVal) Then
-                    Dim trimmed = countryVal.Trim()
-                    If trimmed.Length = 2 AndAlso Char.IsLetter(trimmed(0)) AndAlso Char.IsLetter(trimmed(1)) Then
-                        Return trimmed.ToUpperInvariant()
-                    End If
-                End If
+                ' STREAM-BANK rule 14 (item O): one assigned ISO 3166-1 alpha-2 code, or blank - never the text.
+                Return StreamFacetFold.FoldCountry(countryVal)
             End If
             Return String.Empty
         End Function
@@ -469,48 +479,11 @@ Namespace Streams
             Dim langVal As String = Nothing
             If attributes.TryGetValue("tvg-language", langVal) OrElse
                attributes.TryGetValue("language", langVal) Then
-                If Not String.IsNullOrWhiteSpace(langVal) Then
-                    Dim trimmed = langVal.Trim().ToLowerInvariant()
-                    Return MapLanguageToEnglishName(trimmed)
-                End If
+                ' STREAM-BANK rule 14 (item O): the names of existing languages from the closed vocabulary, comma-joined,
+                ' one entry per language; a non-blank value that names none is "english", a blank one stays blank.
+                Return StreamFacetFold.FoldLanguage(langVal)
             End If
             Return String.Empty
-        End Function
-
-        Private Function MapLanguageToEnglishName(codeOrName As String) As String
-            Select Case codeOrName
-                Case "ru", "rus", "russian" : Return "russian"
-                Case "en", "eng", "english" : Return "english"
-                Case "uk", "ukr", "ukrainian" : Return "ukrainian"
-                Case "de", "ger", "deu", "german" : Return "german"
-                Case "fr", "fra", "fre", "french" : Return "french"
-                Case "es", "spa", "spanish" : Return "spanish"
-                Case "it", "ita", "italian" : Return "italian"
-                Case "pt", "por", "portuguese" : Return "portuguese"
-                Case "ar", "ara", "arabic" : Return "arabic"
-                Case "hi", "hin", "hindi" : Return "hindi"
-                Case "bn", "ben", "bengali" : Return "bengali"
-                Case "ur", "urd", "urdu" : Return "urdu"
-                Case "zh", "zho", "chi", "chinese" : Return "chinese"
-                Case "ja", "jpn", "japanese" : Return "japanese"
-                Case "ko", "kor", "korean" : Return "korean"
-                Case "pl", "pol", "polish" : Return "polish"
-                Case "nl", "nld", "dut", "dutch" : Return "dutch"
-                Case "tr", "tur", "turkish" : Return "turkish"
-                Case Else
-                    ' If it's already a single English word of letters, allow lowercase
-                    If codeOrName.Length >= 2 AndAlso codeOrName.Length <= 20 Then
-                        Dim allLetters = True
-                        For Each c In codeOrName
-                            If Not Char.IsLetter(c) Then
-                                allLetters = False
-                                Exit For
-                            End If
-                        Next
-                        If allLetters Then Return codeOrName
-                    End If
-                    Return String.Empty
-            End Select
         End Function
 
     End Module

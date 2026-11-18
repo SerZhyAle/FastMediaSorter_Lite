@@ -1,8 +1,8 @@
 {
-  "_comment": "Shared OCR line-split cases, read by internal/ocr (splitWideGaps) and extension/src/ocr-cluster.js (splitWideGaps). The stitch cases are the word boxes the desktop engine actually returned for the two touching speech balloons of a public-service Superman page (ticket 67): the balloons' rows are stitched into one recognizer line and the touching outlines are read as tokens of that line, so no gap between words holds the boundary stroke - it runs inside the boundary token's box. A word box taller than the type-size ratio (1.6) x the line's median word height reaches into a neighbouring row, which no lettering of one line does, so the split cuts before it. The single-line case is the guard: a real line of one size is never cut.",
+  "_comment": "Shared OCR line-split cases, read by internal/ocr (splitWideGaps) and extension/src/ocr-cluster.js (splitWideGaps); OCR-PIPELINE amendments 1.7 A and 1.10 A (ticket E0128). Where two balloons touch, their outlines are read as a token of the stitched line, so no gap between words holds the boundary stroke - it runs inside the boundary token's box. A word box taller than the type-size ratio (1.6) x the line's median word height reaches into a neighbouring row, so the split cuts before it - but only when the token carries no letter and no digit (an outline glyph: / | } \\). A tall word that carries one is lettering and is never cut by height. The two Superman cases are the word boxes the desktop engine actually returned for a public-service page (ticket 67); both boundary tokens carry a letter, so that page is a known limit of the rule (1.10 C) and its rows stay uncut here. The cases named 'constructed' keep the boxes of a real row and change only the token text, to pin the two halves of the rule. The single-line case is the guard: a real line of one size is never cut.",
   "cases": [
     {
-      "name": "row one: outlines read as a tall token between the balloons",
+      "name": "row one: the boundary token carries a letter, so its height does not cut (known limit)",
       "words": [
         { "text": "GEE,", "conf": 95, "bbox": { "x0": 49, "y0": 610, "x1": 112, "y1": 626 } },
         { "text": "TH-THANKS,", "conf": 79, "bbox": { "x0": 106, "y0": 610, "x1": 230, "y1": 625 } },
@@ -10,10 +10,10 @@
         { "text": "OON'T", "conf": 83, "bbox": { "x0": 283, "y0": 610, "x1": 344, "y1": 625 } },
         { "text": "DEPEND", "conf": 88, "bbox": { "x0": 351, "y0": 610, "x1": 430, "y1": 625 } }
       ],
-      "want": ["GEE, TH-THANKS,", "“J OON'T DEPEND"]
+      "want": ["GEE, TH-THANKS, “J OON'T DEPEND"]
     },
     {
-      "name": "row two: a lone tall token where the outlines touch",
+      "name": "row two: a lone tall A where the outlines touch carries a letter, so it does not cut (known limit)",
       "words": [
         { "text": "SUPERMAN:", "conf": 95, "bbox": { "x0": 36, "y0": 626, "x1": 175, "y1": 643 } },
         { "text": "(T'S", "conf": 39, "bbox": { "x0": 192, "y0": 628, "x1": 242, "y1": 644 } },
@@ -24,7 +24,40 @@
         { "text": "I", "conf": 93, "bbox": { "x0": 378, "y0": 628, "x1": 386, "y1": 643 } },
         { "text": "MAY", "conf": 97, "bbox": { "x0": 397, "y0": 629, "x1": 442, "y1": 643 } }
       ],
-      "want": ["SUPERMAN: (T'S", "A J] ON LUCK! I MAY"]
+      "want": ["SUPERMAN: (T'S A J] ON LUCK! I MAY"]
+    },
+    {
+      "name": "constructed: row one with the outline read as a bare tall pipe cuts before it",
+      "words": [
+        { "text": "GEE,", "conf": 95, "bbox": { "x0": 49, "y0": 610, "x1": 112, "y1": 626 } },
+        { "text": "TH-THANKS,", "conf": 79, "bbox": { "x0": 106, "y0": 610, "x1": 230, "y1": 625 } },
+        { "text": "|", "conf": 40, "bbox": { "x0": 258, "y0": 602, "x1": 262, "y1": 637 } },
+        { "text": "OON'T", "conf": 83, "bbox": { "x0": 283, "y0": 610, "x1": 344, "y1": 625 } },
+        { "text": "DEPEND", "conf": 88, "bbox": { "x0": 351, "y0": 610, "x1": 430, "y1": 625 } }
+      ],
+      "want": ["GEE, TH-THANKS,", "| OON'T DEPEND"]
+    },
+    {
+      "name": "constructed: an honest line with a display word taller than the line is never cut",
+      "words": [
+        { "text": "LOOK", "conf": 96, "bbox": { "x0": 33, "y0": 1038, "x1": 86, "y1": 1053 } },
+        { "text": "BOTH", "conf": 97, "bbox": { "x0": 95, "y0": 1038, "x1": 146, "y1": 1055 } },
+        { "text": "WAYS", "conf": 97, "bbox": { "x0": 155, "y0": 1030, "x1": 212, "y1": 1056 } },
+        { "text": "BEFORE", "conf": 97, "bbox": { "x0": 224, "y0": 1039, "x1": 305, "y1": 1054 } },
+        { "text": "You", "conf": 96, "bbox": { "x0": 315, "y0": 1040, "x1": 354, "y1": 1054 } }
+      ],
+      "want": ["LOOK BOTH WAYS BEFORE You"]
+    },
+    {
+      "name": "constructed: a tall token that carries only digits is never cut",
+      "words": [
+        { "text": "LOOK", "conf": 96, "bbox": { "x0": 33, "y0": 1038, "x1": 86, "y1": 1053 } },
+        { "text": "BOTH", "conf": 97, "bbox": { "x0": 95, "y0": 1038, "x1": 146, "y1": 1055 } },
+        { "text": "1994", "conf": 97, "bbox": { "x0": 155, "y0": 1030, "x1": 212, "y1": 1056 } },
+        { "text": "BEFORE", "conf": 97, "bbox": { "x0": 224, "y0": 1039, "x1": 305, "y1": 1054 } },
+        { "text": "You", "conf": 96, "bbox": { "x0": 315, "y0": 1040, "x1": 354, "y1": 1054 } }
+      ],
+      "want": ["LOOK BOTH 1994 BEFORE You"]
     },
     {
       "name": "one real line of one size is never cut",

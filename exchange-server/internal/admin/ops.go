@@ -276,11 +276,13 @@ type LimitsView struct {
 	Broadcasts          int   `json:"broadcasts"`
 	BroadcastsPerDevice int   `json:"broadcastsPerDevice"`
 	ClipboardBytes      int64 `json:"clipboardBytes"`
+	Notes               int   `json:"notes"`
+	NotesBytes          int64 `json:"notesBytes"`
 }
 
 func limitsView(l accounts.Limits) LimitsView {
 	return LimitsView{Devices: l.Devices, Resources: l.Resources, Broadcasts: l.Broadcasts,
-		BroadcastsPerDevice: l.BroadcastsPerDevice, ClipboardBytes: l.ClipboardBytes}
+		BroadcastsPerDevice: l.BroadcastsPerDevice, ClipboardBytes: l.ClipboardBytes, Notes: l.Notes, NotesBytes: l.NotesBytes}
 }
 
 // AccountView is what the operator sees of an account: never a record.
@@ -524,6 +526,12 @@ func (o *Ops) SetPolicy(maxAccounts *int, defaults *accounts.AccountLimits) (Pol
 		}
 		if defaults.ClipboardMaxBytes != nil {
 			next.Defaults.ClipboardBytes = *defaults.ClipboardMaxBytes
+		}
+		if defaults.NotesPerAccount != nil {
+			next.Defaults.Notes = *defaults.NotesPerAccount
+		}
+		if defaults.NotesMaxBytes != nil {
+			next.Defaults.NotesBytes = *defaults.NotesMaxBytes
 		}
 	}
 	persisted := true

@@ -101,6 +101,8 @@ Partial Friend NotInheritable Class TrayContext
         ' L0297: the standalone scheduling window routes its autostart link here - this class owns the
         ' Manager settings window, so it is the one that can open its startup page.
         Scheduled_Manager_Form.OpenManagerSettingsPage = AddressOf ShowSettingsPageFromTray
+        ' L0332: the live broadcast window's link to its standing preferences ("Live broadcast" page of the Manager settings).
+        Live_Broadcast_Form.OpenManagerSettingsPage = AddressOf ShowSettingsPageFromTray
         ScheduledHost.Start()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
@@ -233,18 +235,12 @@ Partial Friend NotInheritable Class TrayContext
         ' the viewer item below, and its text is refreshed there off the UI thread (two cheap reads: the
         ' process list and the service state). Nothing is started by showing it; a click opens the window.
         ' Until the first read lands the item is the bare name: a state is claimed only once it was read.
+        ' The tray menu is one sibling set with no glyph on any item (ICON-RENDER 0.25 section 25, ticket L0325 A-7):
+        ' the exchange mark stays on titles and the tray icon.
         Dim miExchange As New ToolStripMenuItem(ExchangeText.TrayItem(ExchangeRunKind.Unreadable)) With {.Visible = False}
-        miExchange.Image = GlyphRenderer.Render("exchange-mark", 16, SystemColors.MenuText, AddressOf CompanionAssets.OpenBundledAsset)
         AddHandler miExchange.Click, Sub() ShowSettingsWindow(SettingsDestination.ExchangeServer, "exchange")
         menu.Items.Add(miExchange)
-        AddHandler menu.Opening,
-            Sub()
-                Dim oldImage = miExchange.Image
-                miExchange.Image = GlyphRenderer.Render("exchange-mark", menu.LogicalToDeviceUnits(16), menu.ForeColor, AddressOf CompanionAssets.OpenBundledAsset)
-                oldImage?.Dispose()
-            End Sub
         AddHandler menu.Opening, Sub() RefreshExchangeTrayItem(miExchange)
-        AddHandler miExchange.Disposed, Sub() miExchange.Image?.Dispose()
 
         BuildScheduledMenuItems(menu)
         BuildClipboardMenuItems(menu)
@@ -727,21 +723,6 @@ Partial Friend NotInheritable Class TrayContext
         Dim miCancel As New ToolStripMenuItem(Localization.T("Отмена")) With {.Visible = False}
         miSend.Name = "clipboardTraySend"
         miGet.Name = "clipboardTrayGet"
-        ' Render at opening so the current DPI and theme apply even after a tray-only theme change.
-        AddHandler menu.Opening,
-            Sub()
-                For Each item In New ToolStripMenuItem() {miSend, miGet}
-                    Dim previous As Image = item.Image
-                    item.Image = GlyphRenderer.Render(IconMap.GetMeaning(item.Name).GlyphId,
-                        menu.LogicalToDeviceUnits(20), item.ForeColor, AddressOf CompanionAssets.OpenBundledAsset)
-                    previous?.Dispose()
-                Next
-            End Sub
-        AddHandler menu.Disposed,
-            Sub()
-                miSend.Image?.Dispose()
-                miGet.Image?.Dispose()
-            End Sub
         AddHandler miSend.Click, Sub() BeginClipboard(isSend:=True)
         AddHandler miGet.Click, Sub() BeginClipboard(isSend:=False)
         AddHandler miCancel.Click, Sub() _clipboard.Cancel()
@@ -1084,7 +1065,7 @@ Partial Friend NotInheritable Class TrayContext
     End Sub
 
     ''' <summary>The standalone scheduling window's autostart link: the Manager settings window's
-    ''' startup page (L0297).</summary>
+    ''' startup page (L0297); also the live broadcast window's link to its "Live broadcast" page (L0332).</summary>
     Private Sub ShowSettingsPageFromTray(page As String)
         ShowSettingsWindow(SettingsDestination.Manager, page)
     End Sub
@@ -1240,6 +1221,22 @@ Partial Friend NotInheritable Class TrayContext
             End If
             Dim request As AppCommandsLib.CommandRequest = Nothing
             If Not AppCommandsLib.CommandRequest.TryParse(text, request) Then
+                ' APP-COMMANDS 0.2 item I.3: a line that cannot be read as a request is answered `refused` with an empty
+                ' requestId into the reply file it names (only this program's own reply folder), and the message is taken (1).
+                Dim unreadablePath As String = Nothing
+                Dim unreadableReason As String = Nothing
+                If AppCommandsLib.CommandDispatch.TryAnswerUnreadable(text, AppCommandsLib.ShareManagerCommandTable.ReplyFolder,
+                                                                      unreadablePath, unreadableReason) Then
+                    AppFileLogger.WriteLine("App command: a request line that could not be read - refused")
+                    Try
+                        Dim refused As AppCommandsLib.CommandResponse = AppCommandsLib.CommandResponse.ForReason(
+                            String.Empty, unreadableReason, ShareManagerCommandText.ForReason(unreadableReason))
+                        AppCommandsLib.CommandFiles.WriteWholeText(unreadablePath, refused.ToLine() & ControlChars.Lf)
+                    Catch ex As Exception
+                        AppFileLogger.LogException("App command: writing the answer to an unreadable line", ex)
+                    End Try
+                    Return 1
+                End If
                 AppFileLogger.WriteLine("App command: a request that is not a request line - ignored")
                 Return 0
             End If

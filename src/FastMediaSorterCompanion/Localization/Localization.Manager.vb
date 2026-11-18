@@ -164,6 +164,28 @@ Partial Public NotInheritable Class Localization
             "खाता कैसे हटाएँ (पोर्टल)", "কীভাবে অ্যাকাউন্ট মুছবেন (পোর্টাল)",
             "اکاؤنٹ کیسے حذف کریں (پورٹل)", "如何删除账户（门户）")
 
+        Add("Живая трансляция (портал)",
+            "Live broadcast (portal)", "Жива трансляція (портал)",
+            "Live-Übertragung (Portal)", "Trasmissione dal vivo (portale)",
+            "Transmisión en vivo (portal)", "Diffusion en direct (portail)",
+            "Transmissão ao vivo (portal)", "بث مباشر (البوابة)",
+            "लाइव प्रसारण (पोर्टल)", "লাইভ সম্প্রচার (পোর্টাল)",
+            "لائیو نشریات (پورٹل)", "实时广播（门户）")
+        Add("Облачные хранилища (портал)",
+            "Cloud storage (portal)", "Хмарні сховища (портал)",
+            "Cloud-Speicher (Portal)", "Archiviazione cloud (portale)",
+            "Almacenamiento en la nube (portal)", "Stockage cloud (portail)",
+            "Armazenamento em nuvem (portal)", "التخزين السحابي (البوابة)",
+            "क्लाउड स्टोरेज (पोर्टल)", "ক্লাউড স্টোরেজ (পোর্টাল)",
+            "کلاؤڈ اسٹوریج (پورٹل)", "云存储（门户）")
+        Add("Редакции продукта (портал)",
+            "Product editions (portal)", "Редакції продукту (портал)",
+            "Produkteditionen (Portal)", "Edizioni del prodotto (portale)",
+            "Ediciones del producto (portal)", "Éditions du produit (portail)",
+            "Edições do produto (portal)", "إصدارات المنتج (البوابة)",
+            "उत्पाद संस्करण (पोर्टल)", "পণ্য সংস্করণ (পোর্টাল)",
+            "پروڈکٹ کے ایڈیشن (پورٹل)", "产品版本（门户）")
+
         Add("Инструкция для моей модели роутера",
             "Guide for my router model", "Інструкція для моєї моделі роутера",
             "Anleitung für mein Routermodell", "Guida per il mio modello di router",

@@ -202,7 +202,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             AppFileLogger.LogException("Manager About: opening a link", ex)
             Dim manual As String = If(address.StartsWith("mailto:", StringComparison.Ordinal), MailSender.AuthorAddress,
                                       AboutResources.ManualAddress(address, language))
-            MessageBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", manual),
+            ManagerBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", manual),
                             Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
     End Sub

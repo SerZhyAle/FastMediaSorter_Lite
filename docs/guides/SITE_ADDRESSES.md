@@ -64,6 +64,21 @@ sza.od.ua) are not on it: they are not resolvable against this page set. One rec
 | `kind` | the page group: `landing`, `trust`, `privacy`, `edition`, `guide`, `topics`, `glossary`, `support`, `whats-new` |
 | `carried` | `literal` (default: the address is in the holder verbatim), `built` (the holder assembles it - `fragment` is the text it must carry instead) or `external` (the holder is outside the tree, so only the address is resolved) |
 
+**What a release carried is recorded in `released` records** (`SITE-STRUCTURE` 0.4 section 8 D: from the release that
+first carries a page its address and anchors do not change), one per page address, written 2026-11-15 (ticket L0331)
+from the release tags and appended by the release that first carries a page or an anchor, never edited after:
+
+| Field | Meaning |
+| --- | --- |
+| `released` | the page address, on the site's base URL, with no `#anchor` and no query |
+| `with` | the first release tag that carried the page (`vYY.M.D.HHmm`) |
+| `anchors` | optional: each section anchor to the first release tag that carried it. An anchor is an `id` the page's own links (`href="#.."`) or an outside surface name (`SITE-STRUCTURE` 0.4 section 8 F); an `id` used only by a script or a drawing is not one. A page and an anchor may be added and renamed freely until a release carries them |
+
+On the tree the list holds 15 released pages with 21 anchors: the root landing (`get`, `editions`, `features`, `top`,
+`howto`), the seven task guides, the privacy page (`main`, `logs`), the two Russian and Ukrainian trust pages, the
+Android guide, `server.html` (`main`, `matrix`), `support.html` and `trust.html`. The pages came from the tags
+`v26.7.11.1610`, `v26.8.8.2305` and `v26.10.25.1830`; most anchors are the `main` landmark of 2026-10-25.
+
 The program constants stay constants. A holder that can read the list does not need to; the others are compared
 with it by tests (`SiteAddressListTests` for the viewer's `SitePages`, `SiteAddressConstantsTests` for the Share
 Manager's `ShareLinks` and `HostingText`).
@@ -87,8 +102,11 @@ Manager's `ShareLinks` and `HostingText`).
 address is on the site and resolves to a file the Pages build serves, is in the sitemap when its group says so and
 has its `#anchor`; that every group with a locale form has that page for every language of `tools/site-copy.json`;
 that each holder carries its address; and that **no address of the site is held in a holder file that the list does
-not name** (the scan covers `src/`, `publishing/`, `.github/`, the READMEs and `assets/help/`). Its verdict is the
-shared one-line `CHECK-VERDICT`; the hand-run half is `-Live`, which requests every distinct address from the
-published site once the pages are pushed (no answer is COULD NOT VERIFY, never a pass). `tests/Integration/SiteAddresses.ps1`
-proves the gate itself on a throw-away tree: it passes a clean one and fails eight broken ones, each for its own
+not name** (the scan covers `src/`, `publishing/`, `.github/`, the READMEs and `assets/help/`); and that **every
+released page still answers with its page and every recorded anchor is still on it** (check 6, offline, no git
+call: a release tag is read as a date). Its verdict is the
+shared one-line `CHECK-VERDICT`; the hand-run half is `-Live`, which requests every distinct address (and every
+released page) from the published site once the pages are pushed and reads the answer of a released page for its
+recorded anchors (no answer is COULD NOT VERIFY, never a pass). `tests/Integration/SiteAddresses.ps1`
+proves the gate itself on a throw-away tree: it passes a clean one and fails thirteen broken ones, each for its own
 reason.

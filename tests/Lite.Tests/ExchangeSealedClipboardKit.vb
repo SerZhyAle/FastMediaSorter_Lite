@@ -54,6 +54,10 @@ Friend NotInheritable Class SealedTestDirectory
     Public Property NoRecipientReady As Boolean
     ''' <summary>Recipients() calls seen, to show that a directory was consulted.</summary>
     Public RecipientsCalls As Integer
+    ''' <summary>Device ids the directory lists with no key (state E2eMissing, item FB): a producer that cannot seal, or this device itself.</summary>
+    Public ReadOnly KeylessIds As New HashSet(Of String)(StringComparer.Ordinal)
+    ''' <summary>False models a server that does not list this device's own record at all (its own state is then unknown).</summary>
+    Public Property OwnListed As Boolean = True
 
     Public Sub New(own As SealedTestDevice)
         Me.Own = own
@@ -135,6 +139,8 @@ Friend NotInheritable Class SealedTestDirectory
 
     Public Function StateOf(deviceId As String) As Nullable(Of ExchangeSealState) Implements IExchangeSealedDirectory.StateOf
         SyncLock _gate
+            If KeylessIds.Contains(deviceId) Then Return ExchangeSealState.E2eMissing
+            If Not OwnListed AndAlso String.Equals(deviceId, Own.Id, StringComparison.Ordinal) Then Return Nothing
             If _devices.Any(Function(d) String.Equals(d.Id, deviceId, StringComparison.Ordinal)) Then Return ExchangeSealState.Ready
             Return Nothing
         End SyncLock

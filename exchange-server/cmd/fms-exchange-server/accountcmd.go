@@ -348,6 +348,12 @@ func describeOverrides(l *accounts.AccountLimits) string {
 	if l.ClipboardMaxBytes != nil {
 		parts = append(parts, "clipboard "+clipboardText(*l.ClipboardMaxBytes))
 	}
+	if l.NotesPerAccount != nil {
+		parts = append(parts, "notes "+itoa(int64(*l.NotesPerAccount)))
+	}
+	if l.NotesMaxBytes != nil {
+		parts = append(parts, "notes bytes "+itoa(*l.NotesMaxBytes))
+	}
 	return strings.Join(parts, ", ")
 }
 

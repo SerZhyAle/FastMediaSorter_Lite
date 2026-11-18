@@ -108,6 +108,7 @@ Friend NotInheritable Class ExchangeResourceText
             Case ExchangeAttachOutcome.ConnectionFailed : Return ResourceMessages.ForFailure(Nothing)
             Case ExchangeAttachOutcome.SignInAgain : Return Localization.T("Чтобы подключить папки с PIN, войдите в учётную запись сервера обмена ещё раз.")
             Case ExchangeAttachOutcome.E2eMissing : Return SealedText(ConnectionDiagnosisMessages.E2eMissing)
+            Case ExchangeAttachOutcome.E2eMissingPeer : Return SealedText(ConnectionDiagnosisMessages.E2eMissingPeer)
             Case ExchangeAttachOutcome.KeyChanged : Return SealedText(ConnectionDiagnosisMessages.KeyChanged)
             Case ExchangeAttachOutcome.ServerNoE2e : Return SealedText(ConnectionDiagnosisMessages.ServerNoE2e)
             Case ExchangeAttachOutcome.SealedFailed : Return SealedText(ConnectionDiagnosisMessages.SealedFailed)

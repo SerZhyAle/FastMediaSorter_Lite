@@ -12,13 +12,18 @@ Namespace Streams
     ''' Frozen constants and schema definitions for the stream catalog format under
     ''' contract STREAM-BANK (specification 022). Read through 2.2 on 2026-10-07: 2.2's rule 13 (a
     ''' blank is_live cell means "not stated") needs nothing of a producer that never writes the
-    ''' column - it stays blank - so the producer rules below are those of 2.1, unchanged.
+    ''' column - it stays blank. Read again at 2.10 on 2026-11-15 (L0323) and brought to it in L0329:
+    ''' rule 14 (item O, 2.3) closes the language and country columns to the catalog's published
+    ''' vocabulary and assigned-code list, which <c>StreamFacetFold</c> applies and V11 checks, and
+    ''' the golden vectors of item P are replayed by <c>StreamFacetFoldTests</c>. 2.4 to 2.10 oblige
+    ''' a producer nothing further (docs/contracts/STREAM-BANK.md). Bump the tag only together with
+    ''' a reading of the contract, never alone.
     ''' </summary>
     Friend Module StreamCatalogSchema
 
         Public Const ContractId As String = "STREAM-BANK"
-        Public Const ContractVersion As String = "2.2"
-        Public Const ContractTag As String = "STREAM-BANK 2.2"
+        Public Const ContractVersion As String = "2.10"
+        Public Const ContractTag As String = "STREAM-BANK 2.10"
 
         Public Const ArchiveFileName As String = "stream-catalog.zip"
         Public Const CatalogCsvEntryName As String = "streams.csv"

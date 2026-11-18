@@ -301,7 +301,7 @@ func TestTheNewLimitNamesReplaceTheOldOnes(t *testing.T) {
 		}
 	}
 	for _, want := range []string{"maxAccounts", "tunnelsPerResource", "failedAuthRate", "failedEnrollRate", "failedHelloRate", "pairingRequestRate",
-		"broadcastStartRate", "devicesPerAccount", "resourcesPerAccount", "publicEndpoint", "manageSids", "notesPerAccount"} {
+		"broadcastStartRate", "devicesPerAccount", "resourcesPerAccount", "publicEndpoint", "manageSids", "notesPerAccount", "notesMaxBytes"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("the member %q is missing from the defaults", want)
 		}
@@ -309,12 +309,11 @@ func TestTheNewLimitNamesReplaceTheOldOnes(t *testing.T) {
 }
 
 // notesCountRefusal is the text Validate gives for a negative limits.notesPerAccount.
-const notesCountRefusal = "limits.notesPerAccount: must be 0 (the default, 5000) or a number of at least 1"
+const notesCountRefusal = "limits.notesPerAccount: must be 0 or more"
 
 // TestNotesPerAccountDefaultRoundTripAndRefusal is ticket L0321 (DEVICE-EXCHANGE item FL, criterion 8):
 // limits.notesPerAccount is the count of note records one account may hold, a deployment default read at start.
-// The default is 5000, an absent member keeps it, 0 is accepted as written (the policy turns it into the
-// default, see policyOf in the command), the member survives a save and a later rewrite of the file, and a
+// The default is 5000, an absent member keeps it, 0 is accepted as written, the member survives a save and a later rewrite of the file, and a
 // negative is refused with a stated reason.
 func TestNotesPerAccountDefaultRoundTripAndRefusal(t *testing.T) {
 	if DefaultNotesPerAccount != 5000 {

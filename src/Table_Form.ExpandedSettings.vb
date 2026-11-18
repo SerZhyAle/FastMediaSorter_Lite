@@ -177,8 +177,8 @@ Partial Public Class Table_Form
         RegisterSettingsRow("slideshow_random_order",
             Sub()
                 AddPreferenceChoice(viewing, "slideshow_random_order",
-                                    Function() {Choice("natural", "Обычный порядок"), Choice("random", "Случайный"), Choice("shuffleCycle", "Без повторов до конца цикла")},
-                                    Function() Main_Form.GetModernPreferences().SlideshowRandomOrder,
+                                    Function() {Choice("natural", "Обычный порядок"), Choice("shuffleCycle", "Без повторов до конца цикла")},
+                                    Function() If(Main_Form.GetModernPreferences().SlideshowRandomOrder = "random", "shuffleCycle", Main_Form.GetModernPreferences().SlideshowRandomOrder),
                                     Sub(v) Main_Form.GetModernPreferences().SlideshowRandomOrder = v)
             End Sub)
         RegisterSettingsRow("stop_slideshow_manual",
@@ -482,6 +482,16 @@ Partial Public Class Table_Form
         RegisterSettingsRow("live_open_with",
             Sub()
                 AddLiveAssociationRow(files)
+            End Sub)
+        ' The standing preference of the incoming-broadcast receiver (SETTINGS-NAVIGATION 2.1 item A, L0332): the "Open live
+        ' broadcast" window links here instead of editing it. The receiver exists only with the exchange client, so without
+        ' it the row is not built (the window's link is absent for the same reason).
+        RegisterSettingsRow("live_auto_cast",
+            Sub()
+                If Not ExchangeFeatures.IsEnabled() Then Return
+                AddPreferenceCheck(files, "live_auto_cast",
+                                   Function() Main_Form.GetModernPreferences().AutoAcceptLiveCast,
+                                   Sub(v) Main_Form.GetModernPreferences().AutoAcceptLiveCast = v)
             End Sub)
 
         RegisterSettingsRow("file_manager_view_mode",

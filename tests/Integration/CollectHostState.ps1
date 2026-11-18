@@ -52,7 +52,8 @@ Plant $lockedPath "locked`n"
 $lock = New-Object IO.FileStream($lockedPath, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
 
 $failures = New-Object System.Collections.Generic.List[string]
-function Check([bool]$ok, [string]$what) { if (-not $ok) { $failures.Add($what); Write-Host ('  FAIL: ' + $what) } else { Write-Host ('  ok:   ' + $what) } }
+$cases = 0
+function Check([bool]$ok, [string]$what) { $script:cases++; if (-not $ok) { $failures.Add($what); Write-Host ('  FAIL: ' + $what) } else { Write-Host ('  ok:   ' + $what) } }
 
 try {
     $runArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $collector,
@@ -110,5 +111,5 @@ try {
     Remove-Item -LiteralPath $resolved -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-if ($failures.Count -eq 0) { Exit-Verdict 'CollectHostState' 0 'all synthetic archive checks passed' }
-Exit-Verdict 'CollectHostState' 1 ($failures.Count.ToString() + ' checks failed')
+if ($failures.Count -eq 0) { Exit-Verdict 'CollectHostState' 0 ("all synthetic archive checks passed; run=$cases skipped=0") }
+Exit-Verdict 'CollectHostState' 1 ($failures.Count.ToString() + " checks failed; run=$cases skipped=0")

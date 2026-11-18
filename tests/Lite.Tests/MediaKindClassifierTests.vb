@@ -19,7 +19,7 @@ Public Class MediaKindClassifierTests
             {MediaKind.Image, ".jpg .jpeg .png .webp .gif .bmp .avif .heic .heif .svg .tiff .ico .wmf .emf .jxl"},
             {MediaKind.Video, ".mp4 .mkv .mov .webm .3gp .flv .wmv .m4v .avi .mpg .mpeg .ts .m2ts .vob .ogv .divx .m2v .mts .3g2 .asf"},
             {MediaKind.Audio, ".mp3 .m4a .flac .aac .ogg .wma .opus .amr .awb .ac3 .ec3 .ac4 .adts .thd .mka .oga .caf .alac .mia .mid .midi .wav .wave"},
-            {MediaKind.Book, ".epub .pdf .cbz .cbr .fb2 .mobi"},
+            {MediaKind.Book, ".epub .pdf .cbz .cbr .cb7 .cbt .fb2 .mobi .azw3"},
             {MediaKind.Stream, ".m3u .m3u8 .pls .xspf .fmsbcast"},
             {MediaKind.Container, ".fd-sec .zip .rar .7z .tar .gz .bz2 .xz .cab .arj .lzh .iso .dmg .img .vhd .vdi .qcow2 .vmdk"},
             {MediaKind.Document, ".doc .docx .rtf .odt .xls .xlsx .ods .ppt .pptx .odp .txt .md .json .xml .csv .tsv .yaml .yml .toml .ini .conf"}}
@@ -115,7 +115,7 @@ Public Class MediaKindClassifierTests
             Dim entries = New LocalProvider(Function() False).ListEntries(folder, CancellationToken.None)
             Assert.Equal(9, entries.Count) ' The provider remains a byte-storage listing.
             Dim selected As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".jpg", ".png"}
-            Assert.Equal({"page.JPG", "page.png.download"}, entries.Where(Function(e) MediaBrowsing.IsEligible(e.FullPath, selected)).Select(Function(e) e.Name).OrderBy(Function(n) n).ToArray())
+            Assert.Equal({"page.JPG", "page.png.download"}, entries.Where(Function(e) MediaBrowsing.IsEligible(e.Name, selected)).Select(Function(e) e.Name).OrderBy(Function(n) n).ToArray())
             Assert.Equal(MediaKind.Audio, MediaKindClassifier.KindOf("new.flac"))
             Assert.False(MediaBrowsing.IsEligible("new.flac", selected))
             Assert.False(MediaBrowsing.IsEligible("song.mp3", selected))

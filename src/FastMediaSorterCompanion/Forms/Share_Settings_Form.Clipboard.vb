@@ -37,6 +37,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddClipboardRow(sec, _clipTitle)
         ' CLIPBOARD-GUARD item N: the person is told, where the buttons are, that nothing stands between the clipboard and the server.
         AddClipboardRow(sec, AccNote(Localization.T("Отправляется ровно то, что лежит в буфере обмена в этот момент, в том числе скопированный пароль: программа ничего не проверяет, не фильтрует и не скрывает.")))
+        AddClipboardRow(sec, AccNote(Localization.T("Скопированный диапазон ячеек или фрагмент страницы уходит как картинка, если программа положила в буфер и картинку: сначала один файл, затем картинка, затем текст.")))
         ' Item DE: said wherever the Drive channel is described, and only while it is on.
         _clipDriveNote = AccNote(DriveChannelText.PrivacyNote())
         AddClipboardRow(sec, _clipDriveNote)

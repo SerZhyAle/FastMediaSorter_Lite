@@ -92,6 +92,13 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Next
             Next
         Next
+        ' L0352: the scheduled page holds the one invocation and no editor rows, so its link is its own search
+        ' entry - a search for the feature still finds the page that opens the management window.
+        If _secScheduled IsNot Nothing AndAlso _schedOpenWindow IsNot Nothing AndAlso _pageGroups.ContainsKey("scheduled") AndAlso
+           _pageGroups("scheduled").Count > 0 Then
+            entries.Add(New SearchEntry With {.PageId = "scheduled", .Group = _pageGroups("scheduled")(0), .Editor = _schedOpenWindow,
+                .Title = ScheduledPageCaption(), .Hint = _schedOpenWindow.Text, .PageTitle = SettingsPageTitle(_secScheduled)})
+        End If
         Return entries
     End Function
 

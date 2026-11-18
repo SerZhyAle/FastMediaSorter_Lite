@@ -42,6 +42,44 @@ Public Class ExchangeSealedBroadcastAccessTests
         End Using
     End Sub
 
+    ''' <summary>Item FB for a broadcast: a producer the directory lists with no key is the side that lacks it when this device and its own
+    ''' record hold one (`e2e-missing-peer`); an unlisted own record or a keyless own device cannot tell, so `e2e-missing` stays.</summary>
+    <Fact>
+    Public Sub A_producer_with_no_key_is_e2e_missing_peer_only_to_a_reader_whose_own_record_holds_one()
+        Using sender As New SealedTestDevice(ExchangeWireTestKit.IdOf("P"c)), receiver As New SealedTestDevice(ExchangeWireTestKit.IdOf("C"c))
+            Dim view As New SealedTestDirectory(receiver)
+            view.Add(sender)
+            view.KeylessIds.Add(sender.Id)
+            Dim trust As New ExchangeMemorySealedTrustStore()
+            Dim sealedRecord As ExchangeBroadcastRecord = Record(sender, receiver)
+            Assert.Equal("e2e-missing-peer", ExchangeSealedBroadcastAccess.Resolve(sealedRecord, view, trust, receiver.Key).State.Code)
+
+            view.OwnListed = False                                   ' nothing says our own key reached the server
+            Assert.Equal("e2e-missing", ExchangeSealedBroadcastAccess.Resolve(sealedRecord, view, trust, receiver.Key).State.Code)
+
+            view.OwnListed = True
+            view.KeylessIds.Add(receiver.Id)                         ' our own record shows no key: this device is the one that lacks it
+            Assert.Equal("e2e-missing", ExchangeSealedBroadcastAccess.Resolve(sealedRecord, view, trust, receiver.Key).State.Code)
+
+            view.KeylessIds.Remove(receiver.Id)
+            view.OwnKeyMissing = True                                ' no usable key of our own
+            Assert.Equal("e2e-missing", ExchangeSealedBroadcastAccess.Resolve(sealedRecord, view, trust, receiver.Key).State.Code)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_granted_record_with_no_box_is_e2e_missing_peer_only_to_a_reader_whose_own_record_holds_a_key()
+        Using sender As New SealedTestDevice(ExchangeWireTestKit.IdOf("P"c)), receiver As New SealedTestDevice(ExchangeWireTestKit.IdOf("C"c))
+            Dim view As New SealedTestDirectory(receiver)
+            Dim trust As New ExchangeMemorySealedTrustStore()
+            Dim raw As New JsonObject From {{"broadcastId", JsonValue.Create(Bid)}, {"deviceId", JsonValue.Create(sender.Id)}, {"grantId", JsonValue.Create(GrantId)}}
+            Dim grantedRecord As New ExchangeBroadcastRecord(raw.ToJsonString(), Bid, sender.Id, "AUDIO_ONLY", "Private cast")
+            Assert.Equal("e2e-missing-peer", ExchangeSealedBroadcastAccess.Resolve(grantedRecord, view, trust, receiver.Key).State.Code)
+            view.OwnListed = False
+            Assert.Equal("e2e-missing", ExchangeSealedBroadcastAccess.Resolve(grantedRecord, view, trust, receiver.Key).State.Code)
+        End Using
+    End Sub
+
     <Fact>
     Public Sub Guest_pins_only_an_opened_grant_and_rejects_a_replacement_sender()
         Using sender As New SealedTestDevice(ExchangeWireTestKit.IdOf("P"c)), receiver As New SealedTestDevice(ExchangeWireTestKit.IdOf("C"c)), stranger As New SealedTestDevice(ExchangeWireTestKit.IdOf("S"c))

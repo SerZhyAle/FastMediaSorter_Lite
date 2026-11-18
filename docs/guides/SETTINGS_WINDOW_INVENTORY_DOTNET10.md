@@ -493,6 +493,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `image_associations` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `video_associations` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `live_open_with` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `live_auto_cast` | files / advanced | Off (`AutoAcceptLiveCast`; exported with the other preferences; built only while `ExchangeFeatures.IsEnabled()`; moved here from the "Open live broadcast" window in L0332, which keeps a link that opens the window on this row) | `AddPreferenceCheck` |
 | `app_commands` | files / advanced | Off (`AllowAppCommands` = `0`; APP-COMMANDS rule 13, L0315; own registry value, not exported) | `AddAppCommandsRow` |
 | `ocr_enabled` | ocr / basic | OcrTranslateSettings.Enabled; False; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
 | `ocr_auto` | ocr / basic | OcrTranslateSettings.AutoMode; False; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |

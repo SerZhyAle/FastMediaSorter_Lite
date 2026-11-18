@@ -20,23 +20,68 @@
       "zh": "Windows 媒体与文件管理器：一键整理照片和视频"
     },
     "components": [
-      { "id": "viewer",   "title": "Media and file manager",       "state": "shipped",
-        "says": "The viewer and file manager: fast paging through huge folders of photos and video, one key per file, slideshow and playback; local drives, SFTP and SMB servers and the devices of an exchange account browsed and managed as places." },
-      { "id": "share",    "title": "Local sharing",                "state": "shipped",
+      {
+        "id": "viewer",
+        "title": "Media and file manager",
+        "state": "shipped",
+        "says": "The viewer and file manager: fast paging through huge folders of photos and video, one key per file, slideshow and playback; local drives, SFTP and SMB servers and the devices of an exchange account browsed and managed as places."
+      },
+      {
+        "id": "share",
+        "title": "Local sharing",
+        "state": "shipped",
         "says": "The Share Manager and its SFTP worker: the folders you pick open on an Android phone, another copy of the program or any SFTP client; this PC joins an exchange account. Optional, off until switched on.",
-        "capabilities": [ { "id": "filedo", "title": "FileDO virtual disks", "says": "Hosting FileDO .fdd virtual disks through the same worker. A capability of sharing, off until a disk is registered." } ] },
-      { "id": "scheduled", "title": "Scheduled file operations",   "state": "shipped",
-        "says": "Copy, move, delete and archive on a timetable, run by the Share Manager while it runs in your signed-in session and managed in their own scheduling window and the settings page. Installed together with the Share Manager - the same component payload, no separate download and no Windows service." },
-      { "id": "exchange", "title": "Media Exchange Server",        "state": "gated",
-        "says": "A separate server you run yourself: your devices enroll into an account you create on it and reach each other through it when they cannot reach each other directly. Not folder sharing; neither the manager nor local sharing needs it. Its shipping gate is shut, so no package carries it (the availability matrix says 'not in this package')." }
+        "capabilities": [
+          {
+            "id": "filedo",
+            "title": "FileDO virtual disks",
+            "says": "Hosting FileDO .fdd virtual disks through the same worker. A capability of sharing, off until a disk is registered."
+          }
+        ]
+      },
+      {
+        "id": "scheduled",
+        "title": "Scheduled file operations",
+        "state": "shipped",
+        "says": "Copy, move, delete and archive on a timetable, run by the Share Manager while it runs in your signed-in session and managed in their own scheduling window and the settings page. Installed together with the Share Manager - the same component payload, no separate download and no Windows service."
+      },
+      {
+        "id": "exchange",
+        "title": "Media Exchange Server",
+        "state": "gated",
+        "says": "A separate server you run yourself: your devices enroll into an account you create on it and reach each other through it when they cannot reach each other directly. Not folder sharing; neither the manager nor local sharing needs it. Its shipping gate is shut, so no package carries it (the availability matrix says 'not in this package')."
+      }
     ],
     "retired": [
-      { "what": "FileDO virtual disks as a top-level pillar", "ground": "specification 249: FileDO hosting is a capability of sharing", "forbiddenIn": ["positioning.lead", "surface family sentences", "POSITIONING.md component headings"] },
-      { "what": "the viewer as 'the core of every package'", "ground": "specification 249: the Server edition installs the viewer as an unticked extra" },
-      { "what": "the Media Exchange Server as a reservation mentioned once, in the future tense, with no link (Q155-2)", "ground": "specification 249: it is the third component, named wherever the components are listed" },
-      { "what": "the development marker of the Media Exchange Server ('in development, not released yet') and the matrix state 'in-development'", "ground": "specification 273 Q273-4, owner ruling 2026-10-26, canon invariant 17: every surface is a present-tense fact; the packaging truth is 'not in this package'" },
-      { "what": "'media viewer and sorter' as the first part and 'photo and video sorter' as the category", "ground": "specification 273: the first part is the media and file manager; the old words stay only as search keywords (discoverability)" },
-      { "what": "'Three optional parts' as the family model and 'Local sharing and scheduling' as one component of it", "ground": "specification L0297, owner decision 2026-11-10: four components; scheduled file operations are a component of their own, installed together with the Share Manager" }
+      {
+        "what": "FileDO virtual disks as a top-level pillar",
+        "ground": "specification 249: FileDO hosting is a capability of sharing",
+        "forbiddenIn": [
+          "positioning.lead",
+          "surface family sentences",
+          "POSITIONING.md component headings"
+        ]
+      },
+      {
+        "what": "the viewer as 'the core of every package'",
+        "ground": "specification 249: the Server edition installs the viewer as an unticked extra"
+      },
+      {
+        "what": "the Media Exchange Server as a reservation mentioned once, in the future tense, with no link (Q155-2)",
+        "ground": "specification 249: it is the third component, named wherever the components are listed"
+      },
+      {
+        "what": "the development marker of the Media Exchange Server ('in development, not released yet') and the matrix state 'in-development'",
+        "ground": "specification 273 Q273-4, owner ruling 2026-10-26, canon invariant 17: every surface is a present-tense fact; the packaging truth is 'not in this package'"
+      },
+      {
+        "what": "'media viewer and sorter' as the first part and 'photo and video sorter' as the category",
+        "ground": "specification 273: the first part is the media and file manager; the old words stay only as search keywords (discoverability)"
+      },
+      {
+        "what": "'Three optional parts' as the family model and 'Local sharing and scheduling' as one component of it",
+        "ground": "specification L0297, owner decision 2026-11-10: four components; scheduled file operations are a component of their own, installed together with the Share Manager"
+      }
     ],
     "storePolicyExceptions": []
   },
@@ -60,179 +105,892 @@
       "H": "sibling products' pages"
     },
     "coverage": {
-      "readmes": [ { "file": "README.md", "lang": "en" }, { "file": "README_RU.md", "lang": "ru" }, { "file": "README_UK.md", "lang": "uk" } ],
-      "landing": [ { "file": "index.html", "lang": "en" }, { "file": "lang/ru/index.html", "lang": "ru" }, { "file": "lang/uk/index.html", "lang": "uk" } ]
+      "readmes": [
+        {
+          "file": "README.md",
+          "lang": "en"
+        },
+        {
+          "file": "README_RU.md",
+          "lang": "ru"
+        },
+        {
+          "file": "README_UK.md",
+          "lang": "uk"
+        }
+      ],
+      "landing": [
+        {
+          "file": "index.html",
+          "lang": "en"
+        },
+        {
+          "file": "lang/ru/index.html",
+          "lang": "ru"
+        },
+        {
+          "file": "lang/uk/index.html",
+          "lang": "uk"
+        }
+      ]
     },
     "plannedAllow": [
-      { "path": "README.md", "context": "(?i)Android|FastMediaSorter_mob|doc-html-translate|Organizer", "reason": "the README describes the Android app and the doc-html-translate converter, separate products whose reading and conversion are theirs" },
-      { "path": "README_RU.md", "context": "(?i)Android|FastMediaSorter_mob|doc-html-translate|Organizer", "reason": "the same, in Russian" },
-      { "path": "README_UK.md", "context": "(?i)Android|FastMediaSorter_mob|doc-html-translate|Organizer", "reason": "the same, in Ukrainian" },
-      { "path": "*", "context": "(?i)doc-html-translate|EPUB_2_HTML", "reason": "a sentence about the doc-html-translate converter describes that product, not a reader in this one" }
+      {
+        "path": "README.md",
+        "context": "(?i)Android|FastMediaSorter_mob|doc-html-translate|Organizer",
+        "reason": "the README describes the Android app and the doc-html-translate converter, separate products whose reading and conversion are theirs"
+      },
+      {
+        "path": "README_RU.md",
+        "context": "(?i)Android|FastMediaSorter_mob|doc-html-translate|Organizer",
+        "reason": "the same, in Russian"
+      },
+      {
+        "path": "README_UK.md",
+        "context": "(?i)Android|FastMediaSorter_mob|doc-html-translate|Organizer",
+        "reason": "the same, in Ukrainian"
+      },
+      {
+        "path": "*",
+        "context": "(?i)doc-html-translate|EPUB_2_HTML",
+        "reason": "a sentence about the doc-html-translate converter describes that product, not a reader in this one"
+      }
     ],
     "items": [
-      { "id": "sort-view", "component": "viewer", "state": "released", "since": "26.7.11.1610",
+      {
+        "id": "sort-view",
+        "component": "viewer",
+        "state": "released",
+        "since": "26.7.11.1610",
         "label": "View and sort photos and videos with one key per file: slideshow, playback, audio screen, archives as folders, editor, animation to video, JXL, OCR and translation overlay",
-        "evidence": ["CHANGELOG.md", "src/Main_Form.vb"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "(?i)one key", "ru": "(?i)одн(?:ой|им) (?:клавиш|нажати)", "uk": "(?i)одн(?:ією|им) (?:клавіш|натискан)" } },
-      { "id": "remote-resources", "component": "viewer", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "CHANGELOG.md",
+          "src/Main_Form.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "(?i)one key",
+          "ru": "(?i)одн(?:ой|им) (?:клавиш|нажати)",
+          "uk": "(?i)одн(?:ією|им) (?:клавіш|натискан)"
+        }
+      },
+      {
+        "id": "remote-resources",
+        "component": "viewer",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "SFTP servers and SMB shares with a login opened like folders",
-        "evidence": ["CHANGELOG.md", "src/Resources"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes"],
-        "names": { "en": "\\bSMB\\b", "ru": "\\bSMB\\b", "uk": "\\bSMB\\b" } },
-      { "id": "file-manager", "component": "viewer", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "CHANGELOG.md",
+          "src/Resources"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes"
+        ],
+        "names": {
+          "en": "\\bSMB\\b",
+          "ru": "\\bSMB\\b",
+          "uk": "\\bSMB\\b"
+        }
+      },
+      {
+        "id": "file-manager",
+        "component": "viewer",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "File manager mode of the Grid panel (F3): local drives, SFTP and SMB resources and exchange devices as places, queued file operations (64-bit program)",
-        "evidence": ["docs/guides/FILE_MANAGER.md", "src/FileManager/ManagerBrowser.vb"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "(?i)file manager", "ru": "(?i)файлов\\w* менеджер", "uk": "(?i)файлов\\w* менеджер" } },
-      { "id": "secure-containers", "component": "viewer", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "docs/guides/FILE_MANAGER.md",
+          "src/FileManager/ManagerBrowser.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "(?i)file manager",
+          "ru": "(?i)файлов\\w* менеджер",
+          "uk": "(?i)файлов\\w* менеджер"
+        }
+      },
+      {
+        "id": "secure-containers",
+        "component": "viewer",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "Secure .fd-sec containers opened in the viewer",
-        "evidence": ["CHANGELOG.md", "src/Secure"], "surfaces": ["A", "B", "C", "D", "E", "F", "G"], "mustName": ["readmes"],
-        "names": { "en": "\\.fd-sec", "ru": "\\.fd-sec", "uk": "\\.fd-sec" } },
-      { "id": "document-previews", "component": "viewer", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "CHANGELOG.md",
+          "src/Secure"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G"
+        ],
+        "mustName": [
+          "readmes"
+        ],
+        "names": {
+          "en": "\\.fd-sec",
+          "ru": "\\.fd-sec",
+          "uk": "\\.fd-sec"
+        }
+      },
+      {
+        "id": "document-previews",
+        "component": "viewer",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "Documents in the sorting loop: text shown as text, PDF pages, the cover of an EPUB, any other file as a card",
-        "evidence": ["CHANGELOG.md", "src/Main_Form.PdfView.vb"], "surfaces": ["A", "B", "C", "D", "E", "F", "G"], "mustName": ["readmes"],
-        "names": { "en": "\\bPDF\\b", "ru": "\\bPDF\\b", "uk": "\\bPDF\\b" } },
-      { "id": "reading", "component": "viewer", "state": "planned", "since": null,
+        "evidence": [
+          "CHANGELOG.md",
+          "src/Main_Form.PdfView.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G"
+        ],
+        "mustName": [
+          "readmes"
+        ],
+        "names": {
+          "en": "\\bPDF\\b",
+          "ru": "\\bPDF\\b",
+          "uk": "\\bPDF\\b"
+        }
+      },
+      {
+        "id": "reading",
+        "component": "viewer",
+        "state": "planned",
+        "since": null,
         "label": "Reading documents, e-books and texts (reflow, bookmarks, table of contents, search)",
-        "evidence": ["docs/specifications/done/L0274_optional-pdf-epub-reader.md", "docs/specifications/done/L0275_optional-html-viewer.md", "docs/specifications/L0276_document-translate-roundtrip.md", "docs/specifications/L0277_text-view-edit-translate.md"], "surfaces": ["A"],
+        "evidence": [
+          "docs/specifications/done/L0274_optional-pdf-epub-reader.md",
+          "docs/specifications/done/L0275_optional-html-viewer.md",
+          "docs/specifications/L0276_document-translate-roundtrip.md",
+          "docs/specifications/L0277_text-view-edit-translate.md"
+        ],
+        "surfaces": [
+          "A"
+        ],
         "plannedClaims": {
-          "en": ["(?i)\\b(?:e-?book reader|book reader|reads? (?:e-?books|books)|reading (?:e-?books|books|documents)|read (?:documents|PDFs?) (?:inside|in) the|reflow)\\b"],
-          "ru": ["(?i)(?:читалк\\w*|чтени\\w+ (?:книг|документов|электронн\\w+ книг))"],
-          "uk": ["(?i)(?:читалк\\w*|читанн\\w+ (?:книг|документів|електронн\\w+ книг))"]
-        } },
-      { "id": "document-reader", "component": "viewer", "state": "built", "since": null,
+          "en": [
+            "(?i)\\b(?:e-?book reader|book reader|reads? (?:e-?books|books)|reading (?:e-?books|books|documents)|read (?:documents|PDFs?) (?:inside|in) the|reflow)\\b"
+          ],
+          "ru": [
+            "(?i)(?:читалк\\w*|чтени\\w+ (?:книг|документов|электронн\\w+ книг))"
+          ],
+          "uk": [
+            "(?i)(?:читалк\\w*|читанн\\w+ (?:книг|документів|електронн\\w+ книг))"
+          ]
+        }
+      },
+      {
+        "id": "document-reader",
+        "component": "viewer",
+        "state": "built",
+        "since": null,
         "label": "Optional full PDF and EPUB reader in the 64-bit viewer: pages and layouts, outline, search, bookmarks and installed-voice read aloud, each format off until switched on; the shipped document previews are unchanged",
-        "evidence": ["specification 274", "src/Main_Form.PdfReader.vb", "src/Main_Form.EpubReader.vb"], "surfaces": ["A", "B", "C"] },
-      { "id": "html-pages", "component": "viewer", "state": "built", "since": null,
+        "evidence": [
+          "specification 274",
+          "src/Main_Form.PdfReader.vb",
+          "src/Main_Form.EpubReader.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "id": "html-pages",
+        "component": "viewer",
+        "state": "built",
+        "since": null,
         "label": "Optional HTML page viewer in the 64-bit viewer: local .html/.htm pages through a restricted WebView2 host (no page script, no remote resources), off until switched on; online pages are a second opt-in (read-only, origins approved by the user)",
-        "evidence": ["specification 275", "src/Documents/HtmlDocumentHost.vb"], "surfaces": ["A", "B", "C"] },
-      { "id": "text-reader", "component": "viewer", "state": "built", "since": null,
+        "evidence": [
+          "specification 275",
+          "src/Documents/HtmlDocumentHost.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "id": "text-reader",
+        "component": "viewer",
+        "state": "built",
+        "since": null,
         "label": "Optional full text reader and editor in the 64-bit viewer: paged reading of large files, themes, line numbers, search, Markdown view, chosen encodings, atomic saves with backups and encrypted drafts, a selection, the editor's text or the saved file sent to doc-html-translate as a copy, reading, editing and translation each off until switched on; the shipped text preview is unchanged",
-        "evidence": ["specification 277", "src/Main_Form.TextReader.vb", "src/Main_Form.TextEditor.vb"], "surfaces": ["A", "B", "C"] },
-      { "id": "scheduled-fill-free-space", "component": "scheduled", "state": "built", "since": null,
+        "evidence": [
+          "specification 277",
+          "src/Main_Form.TextReader.vb",
+          "src/Main_Form.TextEditor.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "id": "scheduled-fill-free-space",
+        "component": "scheduled",
+        "state": "built",
+        "since": null,
         "label": "A scheduled operation that overwrites the free space of a local drive or folder with FileDO's fill and deletes what it wrote: chunk sizes 500/1000/2000/5000 MB, FileDO's reserve kept on the system volume, a stop that lets FileDO clean up, and a run-owned work folder that is removed after every run",
-        "evidence": ["specification L0299", "src/FastMediaSorterCompanion/Core/Scheduled/ScheduledFillFreeSpace.vb"], "surfaces": ["A", "B", "C"] },
-      { "id": "scheduled-backup", "component": "scheduled", "state": "built", "since": null,
-        "label": "A scheduled backup of a folder with FileDO: each run saves the whole folder as the next copy of a numbered set of 1 to 999, the oldest replaced only after the new copy is verified, optionally sealed in a password-protected FileDO container whose password stays on this PC",
-        "evidence": ["specification L0298", "src/FastMediaSorterCompanion/Core/Scheduled/ScheduledBackup.vb"], "surfaces": ["A", "B", "C"] },
-      { "id": "folder-sharing", "component": "share", "state": "released", "since": "26.7.11.1610",
+        "evidence": [
+          "specification L0299",
+          "src/FastMediaSorterCompanion/Core/Scheduled/ScheduledFillFreeSpace.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "id": "scheduled-backup",
+        "component": "scheduled",
+        "state": "built",
+        "since": null,
+        "label": "A scheduled backup of a folder with FileDO: each run saves the whole folder into either a numbered set of 1 to 999 (the oldest replaced after verification) or a dated retention set of N days with optional permanent preservation of the earliest copy of each calendar month and optional link skipping, optionally sealed in a password-protected FileDO container whose password stays on this PC",
+        "evidence": [
+          "specification L0298",
+          "specification L0346",
+          "src/FastMediaSorterCompanion/Core/Scheduled/ScheduledBackup.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "id": "folder-sharing",
+        "component": "share",
+        "state": "released",
+        "since": "26.7.11.1610",
         "label": "Local SFTP folder sharing, QR pairing for Android, phone code intake, FileDO disk hosting (FileDO since 26.10.25.1830)",
-        "evidence": ["CHANGELOG.md", "src/FastMediaSorterCompanion"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "\\bSFTP\\b", "ru": "\\bSFTP\\b", "uk": "\\bSFTP\\b" } },
-      { "id": "scheduled-operations", "component": "scheduled", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "CHANGELOG.md",
+          "src/FastMediaSorterCompanion"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "\\bSFTP\\b",
+          "ru": "\\bSFTP\\b",
+          "uk": "\\bSFTP\\b"
+        }
+      },
+      {
+        "id": "scheduled-operations",
+        "component": "scheduled",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "Scheduled file operations (copy, move, delete, archive on a timetable) in their own scheduling window and the Share Manager settings page; a viewer command with an assignable shortcut and the folder action with source prefill; installed together with the Share Manager",
-        "evidence": ["CHANGELOG.md", "src/FastMediaSorterCompanion/Forms/Scheduled_Manager_Form.vb", "src/FastMediaSorterCompanion/Forms/Scheduled_Manager_Panel.vb"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "(?i)schedul", "ru": "(?i)расписани", "uk": "(?i)розклад" } },
-      { "id": "server-edition", "component": "share", "state": "released", "since": "26.8.8.2305",
+        "evidence": [
+          "CHANGELOG.md",
+          "src/FastMediaSorterCompanion/Forms/Scheduled_Manager_Form.vb",
+          "src/FastMediaSorterCompanion/Forms/Scheduled_Manager_Panel.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "(?i)schedul",
+          "ru": "(?i)расписани",
+          "uk": "(?i)розклад"
+        }
+      },
+      {
+        "id": "server-edition",
+        "component": "share",
+        "state": "released",
+        "since": "26.8.8.2305",
         "label": "Server edition: the folder-sharing service as a Windows service, its own installer and winget package",
-        "evidence": ["publishing/installer/FastMediaSorterServer.iss", "publishing/winget/server"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "Folder Share Server", "ru": "Folder Share Server", "uk": "Folder Share Server" } },
-      { "id": "live-broadcast", "component": "share", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "publishing/installer/FastMediaSorterServer.iss",
+          "publishing/winget/server"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "Folder Share Server",
+          "ru": "Folder Share Server",
+          "uk": "Folder Share Server"
+        }
+      },
+      {
+        "id": "live-broadcast",
+        "component": "share",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "Live broadcast of a screen, a window, a camera, a microphone or system audio from the Share Manager, opened in the viewer",
-        "evidence": ["CHANGELOG.md"], "surfaces": ["A", "B", "C", "D", "E", "F", "G"], "mustName": ["readmes"],
-        "names": { "en": "(?i)live broadcast", "ru": "(?i)трансляци", "uk": "(?i)трансляці" } },
-      { "id": "exchange-account", "component": "share", "state": "released", "since": "26.10.25.1830",
+        "evidence": [
+          "CHANGELOG.md"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G"
+        ],
+        "mustName": [
+          "readmes"
+        ],
+        "names": {
+          "en": "(?i)live broadcast",
+          "ru": "(?i)трансляци",
+          "uk": "(?i)трансляці"
+        }
+      },
+      {
+        "id": "exchange-account",
+        "component": "share",
+        "state": "released",
+        "since": "26.10.25.1830",
         "label": "Exchange account: this PC joins an account on an exchange server; the account's devices as places, the server clipboard, end-to-end encryption",
-        "evidence": ["CHANGELOG.md", "src/FastMediaSorterCompanion/Forms/Share_Settings_Form.Exchange.vb"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "(?i)exchange account", "ru": "(?i)уч[её]тн\\w+ запис\\w+ обмена", "uk": "(?i)обліков\\w+ запис\\w+ обміну" } },
-      { "id": "exchange-guest-links", "component": "share", "state": "gated", "since": null,
+        "evidence": [
+          "CHANGELOG.md",
+          "src/FastMediaSorterCompanion/Forms/Share_Settings_Form.Exchange.vb"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "(?i)exchange account",
+          "ru": "(?i)уч[её]тн\\w+ запис\\w+ обмена",
+          "uk": "(?i)обліков\\w+ запис\\w+ обміну"
+        }
+      },
+      {
+        "id": "exchange-guest-links",
+        "component": "share",
+        "state": "gated",
+        "since": null,
         "label": "Guest invitations and password links of an exchange account",
-        "evidence": ["specification 224", "src/FastMediaSorterCompanion"], "surfaces": ["A", "B", "C", "D"] },
-      { "id": "exchange-settings-standard", "component": "share", "state": "built", "since": null,
+        "evidence": [
+          "specification 224",
+          "src/FastMediaSorterCompanion"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      {
+        "id": "exchange-settings-standard",
+        "component": "share",
+        "state": "built",
+        "since": null,
         "label": "A settings standard of an exchange account: the 64-bit viewer saves the chosen groups of its settings on the exchange server and reads them back, local-only values (paths, passwords, keys, window sizes) never leave the computer, and the server keeps one standard per account and program",
-        "evidence": ["specification L0296", "src/Resources/ExchangeSettingsStandard.vb", "exchange-server/internal/settings/settings.go"], "surfaces": ["A", "B", "C", "D"] },
-      { "id": "exchange-server", "component": "exchange", "state": "gated", "since": null,
+        "evidence": [
+          "specification L0296",
+          "src/Resources/ExchangeSettingsStandard.vb",
+          "exchange-server/internal/settings/settings.go"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      {
+        "id": "exchange-server",
+        "component": "exchange",
+        "state": "gated",
+        "since": null,
         "label": "The Media Exchange Server run by the user: accounts, devices, invitations and registration, limits, service management, remote administration in the browser",
-        "evidence": [".github/workflows/release.yml", "exchange-server"], "surfaces": ["A", "B", "C", "D", "E", "F", "G", "H"], "mustName": ["readmes", "landing"],
-        "names": { "en": "Media Exchange Server", "ru": "Media Exchange Server", "uk": "Media Exchange Server" } },
-      { "id": "exchange-notes", "component": "exchange", "state": "gated", "since": null,
+        "evidence": [
+          ".github/workflows/release.yml",
+          "exchange-server"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ],
+        "mustName": [
+          "readmes",
+          "landing"
+        ],
+        "names": {
+          "en": "Media Exchange Server",
+          "ru": "Media Exchange Server",
+          "uk": "Media Exchange Server"
+        }
+      },
+      {
+        "id": "exchange-notes",
+        "component": "exchange",
+        "state": "gated",
+        "since": null,
         "label": "The notes of an exchange account on the Media Exchange Server: one sealed record per note that the server stores without opening it, synced between the account's devices, a stale edit refused per note, a count limit per account",
-        "evidence": ["specification L0321", "exchange-server/internal/notes/notes.go"], "surfaces": ["A", "B", "C", "D"] },
-      { "id": "google-drive", "component": "share", "state": "gated", "since": null,
+        "evidence": [
+          "specification L0321",
+          "exchange-server/internal/notes/notes.go"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      {
+        "id": "google-drive",
+        "component": "share",
+        "state": "gated",
+        "since": null,
         "label": "Google Drive channel: the settings page and queue, the clipboard, the scheduled sides and the viewer's device folders ship, but no release build carries an OAuth client until the owner registers one, so sign-in cannot succeed",
-        "evidence": ["specification 203", "src/FastMediaSorterCompanion"], "surfaces": ["A", "B", "C", "D"] }
+        "evidence": [
+          "specification 203",
+          "src/FastMediaSorterCompanion"
+        ],
+        "surfaces": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
     ]
   },
   "retiredPhrases": {
     "_about": "Words no published surface of this repository may say any more (specification 273 T-1 check b): an old definition of the product, a phrase of a retired model, and every promise marker - 'in development', 'not released yet', 'coming soon' and their translations (canon invariant 17; owner ruling 2026-10-26). Matched case-insensitively over 'scan'; a path in 'allow' is history or a render of history and is skipped, with its reason - unless the entry carries a 'phrases' array, which narrows it: the path is still scanned (retired phrases and planned claims) and only the listed phrases are exempt there. The same scan carries the 'plannedClaims' of the capability register.",
-    "scan": ["*.html", "lang/*/*.html", "docs/*.html", "docs/help/*/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "publishing/installer/*.iss", "docs/guides/STORE_PUBLISHING.md", "tools/site-copy.json", "tools/trust-copy.json", "tools/settings-help-copy.json", "src/Localization/*.vb"],
+    "scan": [
+      "*.html",
+      "lang/*/*.html",
+      "docs/*.html",
+      "docs/help/*/*.html",
+      "assets/help/*.html",
+      "README.md",
+      "README_RU.md",
+      "README_UK.md",
+      "publishing/store/listingData.csv",
+      "publishing/store/LOCALES.md",
+      "publishing/winget/*.yaml",
+      "publishing/winget/server/*.yaml",
+      "publishing/installer/*.iss",
+      "docs/guides/STORE_PUBLISHING.md",
+      "tools/site-copy.json",
+      "tools/trust-copy.json",
+      "tools/settings-help-copy.json",
+      "src/Localization/*.vb"
+    ],
     "allow": [
-      { "path": "*whats-new.html", "phrases": ["media viewer and sorter"], "reason": "narrowed (L0207 F28, owner decision 2026-11-08): the released notes, on the English page and its ru and uk siblings (ticket L0301), carry no promise or hedge marker and the page is scanned like any other, except for the one retired product definition that an entry of an older release quotes as what that release said (specification 273 rule 4)" }
+      {
+        "path": "*whats-new.html",
+        "phrases": [
+          "media viewer and sorter"
+        ],
+        "reason": "narrowed (L0207 F28, owner decision 2026-11-08): the released notes, on the English page and its ru and uk siblings (ticket L0301), carry no promise or hedge marker and the page is scanned like any other, except for the one retired product definition that an entry of an older release quotes as what that release said (specification 273 rule 4)"
+      }
     ],
     "phrases": [
-      { "text": "core of every package", "lang": "en", "ground": "specification 249" },
-      { "text": "third pillar", "lang": "en", "ground": "specification 249" },
-      { "text": "reserved door", "lang": "en", "ground": "specification 249" },
-      { "text": "media viewer and sorter", "lang": "en", "ground": "specification 273: the first part is the media and file manager" },
-      { "text": "photo and video sorter", "lang": "en", "ground": "specification 273: the category is media and file manager; 'photo sorter' stays a search keyword" },
-      { "text": "local SFTP folder-sharing service", "lang": "en", "ground": "specification 273: the second part is the local sharing service (L0297)" },
-      { "text": "local sharing and scheduling", "lang": "en", "ground": "specification L0297: local sharing and scheduled file operations are two components" },
-      { "text": "sharing and scheduling service", "lang": "en", "ground": "specification L0297: the second part is the local sharing service" },
-      { "text": "раздача и расписания", "lang": "ru", "ground": "specification L0297: локальная раздача и файловые операции по расписанию - две части" },
-      { "text": "служба раздачи и расписаний", "lang": "ru", "ground": "specification L0297: локальная служба раздачи" },
-      { "text": "роздача та розклади", "lang": "uk", "ground": "specification L0297: локальна роздача і файлові операції за розкладом - дві частини" },
-      { "text": "служба роздачі та розкладів", "lang": "uk", "ground": "specification L0297: локальна служба роздачі" },
-      { "text": "for viewing, sorting and sharing image and video files", "lang": "en", "ground": "specification 273: the old definition" },
-      { "text": "sorting, viewing, and managing image and video files", "lang": "en", "ground": "specification 273: the old definition" },
-      { "text": "просмотрщик и сортировщик", "lang": "ru", "ground": "specification 273: медиа- и файловый менеджер" },
-      { "text": "служба раздачи папок по SFTP", "lang": "ru", "ground": "specification 273: служба раздачи и расписаний" },
-      { "text": "переглядач і сортувальник", "lang": "uk", "ground": "specification 273: медіа- та файловий менеджер" },
-      { "text": "служба роздачі тек по SFTP", "lang": "uk", "ground": "specification 273: служба роздачі та розкладів" },
-      { "text": "in development", "lang": "en", "ground": "canon invariant 17, Q273-4" },
-      { "text": "under development", "lang": "en", "ground": "canon invariant 17, Q273-4" },
-      { "text": "not released yet", "lang": "en", "ground": "canon invariant 17, Q273-4" },
-      { "text": "coming soon", "lang": "en", "ground": "canon invariant 17, Q273-4" },
-      { "text": "в разработке", "lang": "ru", "ground": "canon invariant 17, Q273-4" },
-      { "text": "пока не выпущен", "lang": "ru", "ground": "canon invariant 17, Q273-4" },
-      { "text": "скоро появится", "lang": "ru", "ground": "canon invariant 17, Q273-4" },
-      { "text": "у розробці", "lang": "uk", "ground": "canon invariant 17, Q273-4" },
-      { "text": "поки не випущен", "lang": "uk", "ground": "canon invariant 17, Q273-4" },
-      { "text": "незабаром з'явиться", "lang": "uk", "ground": "canon invariant 17, Q273-4" },
-      { "text": "in Entwicklung", "lang": "de", "ground": "canon invariant 17, Q273-4" },
-      { "text": "noch nicht veröffentlicht", "lang": "de", "ground": "canon invariant 17, Q273-4" },
-      { "text": "in sviluppo", "lang": "it", "ground": "canon invariant 17, Q273-4" },
-      { "text": "non ancora rilasciato", "lang": "it", "ground": "canon invariant 17, Q273-4" },
-      { "text": "en desarrollo", "lang": "es", "ground": "canon invariant 17, Q273-4" },
-      { "text": "aún sin publicar", "lang": "es", "ground": "canon invariant 17, Q273-4" },
-      { "text": "en développement", "lang": "fr", "ground": "canon invariant 17, Q273-4" },
-      { "text": "pas encore publié", "lang": "fr", "ground": "canon invariant 17, Q273-4" },
-      { "text": "em desenvolvimento", "lang": "pt", "ground": "canon invariant 17, Q273-4" },
-      { "text": "ainda não lançado", "lang": "pt", "ground": "canon invariant 17, Q273-4" },
-      { "text": "قيد التطوير", "lang": "ar", "ground": "canon invariant 17, Q273-4" },
-      { "text": "विकासाधीन", "lang": "hi", "ground": "canon invariant 17, Q273-4" },
-      { "text": "উন্নয়নাধীন", "lang": "bn", "ground": "canon invariant 17, Q273-4" },
-      { "text": "زیرِ ترقی", "lang": "ur", "ground": "canon invariant 17, Q273-4" },
-      { "text": "开发中", "lang": "zh", "ground": "canon invariant 17, Q273-4" }
+      {
+        "text": "core of every package",
+        "lang": "en",
+        "ground": "specification 249"
+      },
+      {
+        "text": "third pillar",
+        "lang": "en",
+        "ground": "specification 249"
+      },
+      {
+        "text": "reserved door",
+        "lang": "en",
+        "ground": "specification 249"
+      },
+      {
+        "text": "media viewer and sorter",
+        "lang": "en",
+        "ground": "specification 273: the first part is the media and file manager"
+      },
+      {
+        "text": "photo and video sorter",
+        "lang": "en",
+        "ground": "specification 273: the category is media and file manager; 'photo sorter' stays a search keyword"
+      },
+      {
+        "text": "local SFTP folder-sharing service",
+        "lang": "en",
+        "ground": "specification 273: the second part is the local sharing service (L0297)"
+      },
+      {
+        "text": "local sharing and scheduling",
+        "lang": "en",
+        "ground": "specification L0297: local sharing and scheduled file operations are two components"
+      },
+      {
+        "text": "sharing and scheduling service",
+        "lang": "en",
+        "ground": "specification L0297: the second part is the local sharing service"
+      },
+      {
+        "text": "раздача и расписания",
+        "lang": "ru",
+        "ground": "specification L0297: локальная раздача и файловые операции по расписанию - две части"
+      },
+      {
+        "text": "служба раздачи и расписаний",
+        "lang": "ru",
+        "ground": "specification L0297: локальная служба раздачи"
+      },
+      {
+        "text": "роздача та розклади",
+        "lang": "uk",
+        "ground": "specification L0297: локальна роздача і файлові операції за розкладом - дві частини"
+      },
+      {
+        "text": "служба роздачі та розкладів",
+        "lang": "uk",
+        "ground": "specification L0297: локальна служба роздачі"
+      },
+      {
+        "text": "for viewing, sorting and sharing image and video files",
+        "lang": "en",
+        "ground": "specification 273: the old definition"
+      },
+      {
+        "text": "sorting, viewing, and managing image and video files",
+        "lang": "en",
+        "ground": "specification 273: the old definition"
+      },
+      {
+        "text": "просмотрщик и сортировщик",
+        "lang": "ru",
+        "ground": "specification 273: медиа- и файловый менеджер"
+      },
+      {
+        "text": "служба раздачи папок по SFTP",
+        "lang": "ru",
+        "ground": "specification 273: служба раздачи и расписаний"
+      },
+      {
+        "text": "переглядач і сортувальник",
+        "lang": "uk",
+        "ground": "specification 273: медіа- та файловий менеджер"
+      },
+      {
+        "text": "служба роздачі тек по SFTP",
+        "lang": "uk",
+        "ground": "specification 273: служба роздачі та розкладів"
+      },
+      {
+        "text": "in development",
+        "lang": "en",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "under development",
+        "lang": "en",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "not released yet",
+        "lang": "en",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "coming soon",
+        "lang": "en",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "в разработке",
+        "lang": "ru",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "пока не выпущен",
+        "lang": "ru",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "скоро появится",
+        "lang": "ru",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "у розробці",
+        "lang": "uk",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "поки не випущен",
+        "lang": "uk",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "незабаром з'явиться",
+        "lang": "uk",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "in Entwicklung",
+        "lang": "de",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "noch nicht veröffentlicht",
+        "lang": "de",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "in sviluppo",
+        "lang": "it",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "non ancora rilasciato",
+        "lang": "it",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "en desarrollo",
+        "lang": "es",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "aún sin publicar",
+        "lang": "es",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "en développement",
+        "lang": "fr",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "pas encore publié",
+        "lang": "fr",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "em desenvolvimento",
+        "lang": "pt",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "ainda não lançado",
+        "lang": "pt",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "قيد التطوير",
+        "lang": "ar",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "विकासाधीन",
+        "lang": "hi",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "উন্নয়নাধীন",
+        "lang": "bn",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "زیرِ ترقی",
+        "lang": "ur",
+        "ground": "canon invariant 17, Q273-4"
+      },
+      {
+        "text": "开发中",
+        "lang": "zh",
+        "ground": "canon invariant 17, Q273-4"
+      }
     ]
   },
   "profiles": [
     {
-      "id": "viewer-first", "entry": "index.html", "leadsWith": "viewer",
-      "obtainedAs": ["User installer", "portable ZIP", "winget SerZhyAle.FastMediaSorter", "Microsoft Store"],
-      "channels": ["full-installer", "zip", "store"],
-      "installs": ["viewer"], "optional": ["share"],
+      "id": "viewer-first",
+      "entry": "index.html",
+      "leadsWith": "viewer",
+      "obtainedAs": [
+        "User installer",
+        "portable ZIP",
+        "winget SerZhyAle.FastMediaSorter",
+        "Microsoft Store"
+      ],
+      "channels": [
+        "full-installer",
+        "zip",
+        "store"
+      ],
+      "installs": [
+        "viewer"
+      ],
+      "optional": [
+        "share"
+      ],
       "alternative": "server-first",
-      "crossLinks": [ { "file": "index.html", "pattern": "href=\"server\\.html\"", "what": "the landing links the Server edition page" } ]
+      "crossLinks": [
+        {
+          "file": "index.html",
+          "pattern": "href=\"server\\.html\"",
+          "what": "the landing links the Server edition page"
+        }
+      ]
     },
     {
-      "id": "server-first", "entry": "server.html", "leadsWith": "share",
-      "obtainedAs": ["Server installer", "winget SerZhyAle.FastMediaSorter.Server"],
-      "channels": ["server-edition"],
-      "installs": ["share"], "optional": ["viewer", "filedo"],
+      "id": "server-first",
+      "entry": "server.html",
+      "leadsWith": "share",
+      "obtainedAs": [
+        "Server installer",
+        "winget SerZhyAle.FastMediaSorter.Server"
+      ],
+      "channels": [
+        "server-edition"
+      ],
+      "installs": [
+        "share"
+      ],
+      "optional": [
+        "viewer",
+        "filedo"
+      ],
       "alternative": "viewer-first",
-      "crossLinks": [ { "file": "server.html", "pattern": "href=\"(?:\\./|https://serzhyale\\.github\\.io/FastMediaSorter_Lite/)\"", "what": "the Server edition page links the landing, where the viewer-first package is" } ]
+      "crossLinks": [
+        {
+          "file": "server.html",
+          "pattern": "href=\"(?:\\./|https://serzhyale\\.github\\.io/FastMediaSorter_Lite/)\"",
+          "what": "the Server edition page links the landing, where the viewer-first package is"
+        }
+      ]
     }
   ],
   "editions": [
     {
-      "id": "full", "public": true,
+      "id": "full",
+      "public": true,
       "name": "Fast Media Sorter & Sharing for Windows",
-      "obtainedAs": ["User installer", "portable ZIP", "winget", "Microsoft Store"],
+      "obtainedAs": [
+        "User installer",
+        "portable ZIP",
+        "winget",
+        "Microsoft Store"
+      ],
       "leads": "viewer"
     },
     {
-      "id": "server", "public": true,
+      "id": "server",
+      "public": true,
       "name": "Fast Media Sorter & Sharing: Folder Share Server",
       "nameSuffix": "Folder Share Server",
-      "obtainedAs": ["Server installer", "winget (SerZhyAle.FastMediaSorter.Server)"],
+      "obtainedAs": [
+        "Server installer",
+        "winget (SerZhyAle.FastMediaSorter.Server)"
+      ],
       "leads": "share"
     }
   ],
@@ -240,7 +998,9 @@
     {
       "id": "server",
       "reason": "The Server edition is a focused package: the folder-sharing service leads and the viewer rides along as an unticked component (specification 132 section 3.3). Its page repeats the family sentence, which is judged; its own lead and its winget manifest are not a list of what the product does. It installs the folder-sharing service only - never the Media Exchange Server.",
-      "notJudged": ["publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml"]
+      "notJudged": [
+        "publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml"
+      ]
     }
   ],
   "availability": {
@@ -253,69 +1013,243 @@
       "required": "the package is this",
       "absent": "not in this channel"
     },
-    "channels": ["full-installer", "zip", "store", "server-edition"],
-    "components": ["viewer", "share", "scheduled", "filedo", "exchange"],
+    "channels": [
+      "full-installer",
+      "zip",
+      "store",
+      "server-edition"
+    ],
+    "components": [
+      "viewer",
+      "share",
+      "scheduled",
+      "filedo",
+      "exchange"
+    ],
     "evidence": {
-      "inno-core-fixed":      { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"core\";[^\\r\\n]*Flags: fixed", "what": "the User installer's core component is fixed (the viewer cannot be unticked)" },
-      "inno-share-full":      { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"share\";[^\\r\\n]*Types: full", "what": "the share component is offered in the Full type only" },
-      "inno-scheduled-full":    { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"scheduled\";[^\\r\\n]*Types: full", "what": "the scheduling component is offered in the Full type and shares the Share Manager payload (L0297)" },
-      "inno-scheduled-payload": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "Components: share scheduled", "what": "the scheduling component lays down the same Share Manager payload: one payload for both components, no separate package and no service (L0297)" },
-      "inno-filedo-unticked": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"share\\\\filedo\";(?![^\\r\\n]*Types:)", "what": "the FileDO child component has no Types, so it starts unticked" },
-      "inno-full-first-type": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?s)\\[Types\\]\\s*\\r?\\nName: \"full\";", "what": "the first type is Full: the wizard's default and what a silent install takes" },
-      "inno-user-install":    { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^PrivilegesRequired=lowest", "what": "the User installer needs no administrator rights" },
-      "zip-viewer":           { "file": ".github/workflows/release.yml", "pattern": "modern-publish/FastMediaSorter_LITE\\.exe", "what": "the portable ZIP stage carries the mainline viewer" },
-      "zip-companion":        { "file": ".github/workflows/release.yml", "pattern": "Copy-Item \\$companionExe \\$stage", "what": "the portable ZIP stage carries the Share Manager" },
-      "zip-filedo":           { "file": ".github/workflows/release.yml", "pattern": "Stage-FileDoPayload\\.ps1 -Destination \\$stage\\b", "what": "the portable ZIP stage carries the FileDO payload" },
-      "msix-viewer":          { "file": "publishing/msix/AppxManifest.xml", "pattern": "Application Id=\"FastMediaSorterLITE\" Executable=\"FastMediaSorter_LITE\\.exe\"", "what": "the Store package's first application is the mainline viewer" },
-      "msix-share-manager":   { "file": "publishing/msix/AppxManifest.xml", "pattern": "Application Id=\"FastMediaSorterShareManager\"", "what": "the Store package carries the Share Manager as a second application" },
-      "msix-no-filedo":       { "file": "publishing/msix/build-msix.ps1", "pattern": "\\$notInThisPackageTrees = @\\([^)]*'filedo\\\\'", "what": "the MSIX packager leaves the FileDO tree out" },
-      "msix-no-exchange":     { "file": "publishing/msix/build-msix.ps1", "pattern": "\\$notInThisPackageTrees = @\\([^)]*'exchange\\\\'", "what": "the MSIX packager leaves the exchange tree out" },
-      "server-viewer-unticked": { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Name: \"viewer\"; Description: \"\\{cm:CompViewer\\}\"\\s*$", "what": "the Server edition's viewer component has no Types, so it starts unticked" },
-      "server-share-required":  { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Source: \"\\{#SourceDir\\}\\\\\\{#CompanionExe\\}\"; DestDir: \"\\{app\\}\"; Flags: ignoreversion\\s*$", "what": "the Share Manager is laid down by the Server edition with no component condition" },
-      "server-filedo-ticked":   { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Name: \"filedo\";[^\\r\\n]*Types: custom", "what": "the Server edition's FileDO component is in its one type, so it starts ticked" },
-      "server-admin":           { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^PrivilegesRequired=admin", "what": "the Server edition needs administrator rights" },
-      "inno-exchange-child-of-share": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"share\\\\exchange\";(?![^\\r\\n]*Types:)", "what": "the User installer's exchange component is a child of share with no Types: it starts unticked and Setup ticks the Share Manager with it (specification 251 T-1)" },
-      "exchange-gate-shut":     { "file": ".github/workflows/release.yml", "pattern": "INCLUDE_EXCHANGE: 'false'", "what": "the shipping gate of the exchange module is shut" },
-      "exchange-user-compiled-out":   { "file": ".github/workflows/release.yml", "pattern": "if \\(\\$env:INCLUDE_EXCHANGE -ne 'true'\\) \\{ \\$exchangeArgs = @\\('/DNoExchange'\\) \\}", "what": "the User installer is compiled with /DNoExchange while the gate is shut" },
-      "exchange-zip-guard":           { "file": ".github/workflows/release.yml", "pattern": "The stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'", "what": "the User stage (ZIP and installer) fails if it carries an exchange tree while the gate is shut" },
-      "exchange-server-compiled-out": { "file": ".github/workflows/release.yml", "pattern": "The Server stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'", "what": "the Server edition stage fails if it carries an exchange tree while the gate is shut" }
+      "inno-core-fixed": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?m)^Name: \"core\";[^\\r\\n]*Flags: fixed",
+        "what": "the User installer's core component is fixed (the viewer cannot be unticked)"
+      },
+      "inno-share-full": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?m)^Name: \"share\";[^\\r\\n]*Types: full",
+        "what": "the share component is offered in the Full type only"
+      },
+      "inno-scheduled-full": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?m)^Name: \"scheduled\";[^\\r\\n]*Types: full",
+        "what": "the scheduling component is offered in the Full type and shares the Share Manager payload (L0297)"
+      },
+      "inno-scheduled-payload": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "Components: share scheduled",
+        "what": "the scheduling component lays down the same Share Manager payload: one payload for both components, no separate package and no service (L0297)"
+      },
+      "inno-filedo-unticked": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?m)^Name: \"share\\\\filedo\";(?![^\\r\\n]*Types:)",
+        "what": "the FileDO child component has no Types, so it starts unticked"
+      },
+      "inno-full-first-type": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?s)\\[Types\\]\\s*\\r?\\nName: \"full\";",
+        "what": "the first type is Full: the wizard's default and what a silent install takes"
+      },
+      "inno-user-install": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?m)^PrivilegesRequired=lowest",
+        "what": "the User installer needs no administrator rights"
+      },
+      "zip-viewer": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "modern-publish/FastMediaSorter_LITE\\.exe",
+        "what": "the portable ZIP stage carries the mainline viewer"
+      },
+      "zip-companion": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "Copy-Item \\$companionExe \\$stage",
+        "what": "the portable ZIP stage carries the Share Manager"
+      },
+      "zip-filedo": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "Stage-FileDoPayload\\.ps1 -Destination \\$stage\\b",
+        "what": "the portable ZIP stage carries the FileDO payload"
+      },
+      "msix-viewer": {
+        "file": "publishing/msix/AppxManifest.xml",
+        "pattern": "Application Id=\"FastMediaSorterLITE\" Executable=\"FastMediaSorter_LITE\\.exe\"",
+        "what": "the Store package's first application is the mainline viewer"
+      },
+      "msix-share-manager": {
+        "file": "publishing/msix/AppxManifest.xml",
+        "pattern": "Application Id=\"FastMediaSorterShareManager\"",
+        "what": "the Store package carries the Share Manager as a second application"
+      },
+      "msix-no-filedo": {
+        "file": "publishing/msix/build-msix.ps1",
+        "pattern": "\\$notInThisPackageTrees = @\\([^)]*'filedo\\\\'",
+        "what": "the MSIX packager leaves the FileDO tree out"
+      },
+      "msix-no-exchange": {
+        "file": "publishing/msix/build-msix.ps1",
+        "pattern": "\\$notInThisPackageTrees = @\\([^)]*'exchange\\\\'",
+        "what": "the MSIX packager leaves the exchange tree out"
+      },
+      "server-viewer-unticked": {
+        "file": "publishing/installer/FastMediaSorterServer.iss",
+        "pattern": "(?m)^Name: \"viewer\"; Description: \"\\{cm:CompViewer\\}\"\\s*$",
+        "what": "the Server edition's viewer component has no Types, so it starts unticked"
+      },
+      "server-share-required": {
+        "file": "publishing/installer/FastMediaSorterServer.iss",
+        "pattern": "(?m)^Source: \"\\{#SourceDir\\}\\\\\\{#CompanionExe\\}\"; DestDir: \"\\{app\\}\"; Flags: ignoreversion\\s*$",
+        "what": "the Share Manager is laid down by the Server edition with no component condition"
+      },
+      "server-filedo-ticked": {
+        "file": "publishing/installer/FastMediaSorterServer.iss",
+        "pattern": "(?m)^Name: \"filedo\";[^\\r\\n]*Types: custom",
+        "what": "the Server edition's FileDO component is in its one type, so it starts ticked"
+      },
+      "server-admin": {
+        "file": "publishing/installer/FastMediaSorterServer.iss",
+        "pattern": "(?m)^PrivilegesRequired=admin",
+        "what": "the Server edition needs administrator rights"
+      },
+      "inno-exchange-child-of-share": {
+        "file": "publishing/installer/FastMediaSorter.iss",
+        "pattern": "(?m)^Name: \"share\\\\exchange\";(?![^\\r\\n]*Types:)",
+        "what": "the User installer's exchange component is a child of share with no Types: it starts unticked and Setup ticks the Share Manager with it (specification 251 T-1)"
+      },
+      "exchange-gate-shut": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "INCLUDE_EXCHANGE: 'false'",
+        "what": "the shipping gate of the exchange module is shut"
+      },
+      "exchange-user-compiled-out": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "if \\(\\$env:INCLUDE_EXCHANGE -ne 'true'\\) \\{ \\$exchangeArgs = @\\('/DNoExchange'\\) \\}",
+        "what": "the User installer is compiled with /DNoExchange while the gate is shut"
+      },
+      "exchange-zip-guard": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "The stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'",
+        "what": "the User stage (ZIP and installer) fails if it carries an exchange tree while the gate is shut"
+      },
+      "exchange-server-compiled-out": {
+        "file": ".github/workflows/release.yml",
+        "pattern": "The Server stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'",
+        "what": "the Server edition stage fails if it carries an exchange tree while the gate is shut"
+      }
     },
     "cells": {
       "viewer": {
-        "full-installer": ["core", "inno-core-fixed"],
-        "zip":            ["core", "zip-viewer"],
-        "store":          ["core", "msix-viewer"],
-        "server-edition": ["optional-off", "server-viewer-unticked"]
+        "full-installer": [
+          "core",
+          "inno-core-fixed"
+        ],
+        "zip": [
+          "core",
+          "zip-viewer"
+        ],
+        "store": [
+          "core",
+          "msix-viewer"
+        ],
+        "server-edition": [
+          "optional-off",
+          "server-viewer-unticked"
+        ]
       },
       "share": {
-        "full-installer": ["optional-on", "inno-share-full", "inno-full-first-type"],
-        "zip":            ["bundled", "zip-companion"],
-        "store":          ["bundled", "msix-share-manager"],
-        "server-edition": ["required", "server-share-required"]
+        "full-installer": [
+          "optional-on",
+          "inno-share-full",
+          "inno-full-first-type"
+        ],
+        "zip": [
+          "bundled",
+          "zip-companion"
+        ],
+        "store": [
+          "bundled",
+          "msix-share-manager"
+        ],
+        "server-edition": [
+          "required",
+          "server-share-required"
+        ]
       },
       "scheduled": {
-        "full-installer": ["optional-on", "inno-scheduled-full", "inno-scheduled-payload", "inno-full-first-type"],
-        "zip":            ["bundled", "zip-companion"],
-        "store":          ["bundled", "msix-share-manager"],
-        "server-edition": ["required", "server-share-required"]
+        "full-installer": [
+          "optional-on",
+          "inno-scheduled-full",
+          "inno-scheduled-payload",
+          "inno-full-first-type"
+        ],
+        "zip": [
+          "bundled",
+          "zip-companion"
+        ],
+        "store": [
+          "bundled",
+          "msix-share-manager"
+        ],
+        "server-edition": [
+          "required",
+          "server-share-required"
+        ]
       },
       "filedo": {
-        "full-installer": ["optional-off", "inno-filedo-unticked"],
-        "zip":            ["bundled", "zip-filedo"],
-        "store":          ["absent", "msix-no-filedo"],
-        "server-edition": ["optional-on", "server-filedo-ticked"]
+        "full-installer": [
+          "optional-off",
+          "inno-filedo-unticked"
+        ],
+        "zip": [
+          "bundled",
+          "zip-filedo"
+        ],
+        "store": [
+          "absent",
+          "msix-no-filedo"
+        ],
+        "server-edition": [
+          "optional-on",
+          "server-filedo-ticked"
+        ]
       },
       "exchange": {
-        "full-installer": ["absent", "exchange-gate-shut", "exchange-user-compiled-out", "inno-exchange-child-of-share"],
-        "zip":            ["absent", "exchange-gate-shut", "exchange-zip-guard"],
-        "store":          ["absent", "msix-no-exchange"],
-        "server-edition": ["absent", "exchange-gate-shut", "exchange-server-compiled-out"]
+        "full-installer": [
+          "absent",
+          "exchange-gate-shut",
+          "exchange-user-compiled-out",
+          "inno-exchange-child-of-share"
+        ],
+        "zip": [
+          "absent",
+          "exchange-gate-shut",
+          "exchange-zip-guard"
+        ],
+        "store": [
+          "absent",
+          "msix-no-exchange"
+        ],
+        "server-edition": [
+          "absent",
+          "exchange-gate-shut",
+          "exchange-server-compiled-out"
+        ]
       }
     },
     "facts": {
       "elevation": {
-        "full-installer": ["inno-user-install"],
-        "server-edition": ["server-admin"]
+        "full-installer": [
+          "inno-user-install"
+        ],
+        "server-edition": [
+          "server-admin"
+        ]
       }
     }
   },
@@ -324,11 +1258,30 @@
     "component": "exchange",
     "mentionPattern": "Media Exchange Server",
     "downloadLink": "(?i)(?:releases/download|/releases(?:/|\\b)|winget(?:\\s|%20)install|apps\\.microsoft\\.com|ms-windows-store|\\.exe\\b|-setup\\b|#get\\b|(?:^|/)server\\.html\\b)",
-    "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "tools/site-copy.json", "tools/trust-copy.json"],
+    "scan": [
+      "*.html",
+      "lang/*/*.html",
+      "docs/*.html",
+      "assets/help/*.html",
+      "README.md",
+      "README_RU.md",
+      "README_UK.md",
+      "publishing/store/listingData.csv",
+      "publishing/store/LOCALES.md",
+      "publishing/winget/*.yaml",
+      "publishing/winget/server/*.yaml",
+      "tools/site-copy.json",
+      "tools/trust-copy.json"
+    ],
     "storeListing": {
       "file": "publishing/store/listingData.csv",
-      "mustSay": ["not part of the Store version", "в версию из Store не входит"],
-      "mustNotSay": ["(?i)media exchange"],
+      "mustSay": [
+        "not part of the Store version",
+        "в версию из Store не входит"
+      ],
+      "mustNotSay": [
+        "(?i)media exchange"
+      ],
       "serviceMention": "(?i)(?:windows service|службу Windows)",
       "qualifier": "(?i)(?:not part of the Store version|в версию из Store не входит)",
       "window": 320,
@@ -345,44 +1298,286 @@
       "msix": "publishing/msix/AppxManifest.xml",
       "naming": "docs/guides/PRODUCT_NAMING.md"
     },
-    "windows10Releases": { "1607": 14393, "1809": 17763 },
+    "windows10Releases": {
+      "1607": 14393,
+      "1809": 17763
+    },
     "languages": {
       "count": 13,
-      "codes": ["ru", "en", "uk", "de", "it", "es", "fr", "pt", "ar", "hi", "bn", "ur", "zh"],
+      "codes": [
+        "ru",
+        "en",
+        "uk",
+        "de",
+        "it",
+        "es",
+        "fr",
+        "pt",
+        "ar",
+        "hi",
+        "bn",
+        "ur",
+        "zh"
+      ],
       "fallbackCount": 2,
       "translatedPages": 12,
       "translatedPagesNote": "Pages in the languages other than the English root: count - 1, counted from lang/<code>/index.html. A page may say twelve language pages or the other twelve languages; it may not say twelve languages about the interface.",
       "fallbackNote": "The x86/net48 fallback viewer ships Russian and English only (Localization.Codes under NETFRAMEWORK); a page may say 2 languages only about it."
     },
     "platform": {
-      "program": { "os": "Windows 10", "version": "1607", "build": 14393, "note": "UseModernExe and the Share/FileDO/PDF/exchange component MinVersion of the User installer, MinVersion of the Server installer, MinimumOSVersion of the Server winget manifest." },
-      "store": { "os": "Windows 10", "version": "1809", "build": 17763, "note": "TargetDeviceFamily MinVersion of the MSIX manifest - a Store-package floor, the one other version a page may name." },
+      "program": {
+        "os": "Windows 10",
+        "version": "1607",
+        "build": 14393,
+        "note": "UseModernExe and the Share/FileDO/PDF/exchange component MinVersion of the User installer, MinVersion of the Server installer, MinimumOSVersion of the Server winget manifest."
+      },
+      "store": {
+        "os": "Windows 10",
+        "version": "1809",
+        "build": 17763,
+        "note": "TargetDeviceFamily MinVersion of the MSIX manifest - a Store-package floor, the one other version a page may name."
+      },
       "fallback": "Windows 7/8.1 and 32-bit Windows run the x86 fallback viewer only.",
       "schemaOperatingSystem": "Windows 7, Windows 8.1, Windows 10, Windows 11"
     },
-    "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "publishing/msix/README.md", "docs/guides/STORE_PUBLISHING.md", "exchange-server/package/README.txt", "tools/site-copy.json", "tools/trust-copy.json"]
+    "scan": [
+      "*.html",
+      "lang/*/*.html",
+      "docs/*.html",
+      "assets/help/*.html",
+      "README.md",
+      "README_RU.md",
+      "README_UK.md",
+      "publishing/store/listingData.csv",
+      "publishing/store/LOCALES.md",
+      "publishing/winget/*.yaml",
+      "publishing/winget/server/*.yaml",
+      "publishing/msix/README.md",
+      "docs/guides/STORE_PUBLISHING.md",
+      "exchange-server/package/README.txt",
+      "tools/site-copy.json",
+      "tools/trust-copy.json"
+    ]
   },
   "discoverability": {
     "_about": "The machine form of docs/guides/POSITIONING.md section 7 (the worksheet's derived field table, ticket 207 T-1; canon PROMOTION section 2). Every discoverability field of a channel is derived from this block, so a channel never drifts from another: GitHub description and topics, winget Tags, Store search terms, the page titles and the social card. 'applied' names the channels whose fields tools/Test-SitePositioning.ps1 holds against the tree today; a channel joins it in the step that writes its fields (winget and the Store at T-8). Competitor names are never written here: the gate reads them from the internal research guide named in 'competitorTermsSource' (owner decision 2026-10-09, D-7).",
     "source": "docs/guides/POSITIONING.md",
     "category": "media and file manager",
-    "synonyms": ["photo sorter", "image viewer", "video player", "file manager", "photo organizer"],
+    "synonyms": [
+      "photo sorter",
+      "image viewer",
+      "video player",
+      "file manager",
+      "photo organizer"
+    ],
     "tagline": "Sort photos and videos with one key per file",
     "githubDescription": "Media and file manager for Windows: sort photos and videos with one key per file, manage files in local folders, on SFTP and SMB servers and on connected devices, run file operations on a schedule and share folders over SFTP. Fast Media Sorter & Sharing: offline video, archives, OCR translation. Free, MIT.",
     "homepage": "https://serzhyale.github.io/FastMediaSorter_Lite/",
-    "topics": ["media-manager", "file-manager", "photo-sorter", "photo-organizer", "image-sorter", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "windows", "desktop", "sftp", "ocr", "heic", "webp", "libvlc", "vb-net"],
-    "wingetTags": ["media-manager", "file-manager", "photo-sorter", "photo-organizer", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "sftp", "ocr", "heic", "webp", "photos", "videos", "sharing"],
-    "wingetOnlyTags": ["photos", "videos", "sharing"],
+    "topics": [
+      "media-manager",
+      "file-manager",
+      "photo-sorter",
+      "photo-organizer",
+      "image-sorter",
+      "image-viewer",
+      "video-viewer",
+      "media-sorter",
+      "media-player",
+      "slideshow",
+      "windows",
+      "desktop",
+      "sftp",
+      "ocr",
+      "heic",
+      "webp",
+      "libvlc",
+      "vb-net"
+    ],
+    "wingetTags": [
+      "media-manager",
+      "file-manager",
+      "photo-sorter",
+      "photo-organizer",
+      "image-viewer",
+      "video-viewer",
+      "media-sorter",
+      "media-player",
+      "slideshow",
+      "sftp",
+      "ocr",
+      "heic",
+      "webp",
+      "photos",
+      "videos",
+      "sharing"
+    ],
+    "wingetOnlyTags": [
+      "photos",
+      "videos",
+      "sharing"
+    ],
     "storeSearchTerms": {
-      "en-us": ["photo sorter", "image viewer", "file manager", "media organizer", "photo organizer", "video sorter", "heic avif viewer"],
-      "ru": ["сортировщик фото", "просмотрщик изображений", "файловый менеджер", "просмотр фото и видео", "органайзер фото", "слайд-шоу фото", "просмотр heic"]
+      "en-us": [
+        "photo sorter",
+        "image viewer",
+        "file manager",
+        "media organizer",
+        "photo organizer",
+        "video sorter",
+        "heic avif viewer"
+      ],
+      "ru": [
+        "сортировщик фото",
+        "просмотрщик изображений",
+        "файловый менеджер",
+        "просмотр фото и видео",
+        "органайзер фото",
+        "слайд-шоу фото",
+        "просмотр heic"
+      ],
+      "uk": [
+        "сортувальник фото",
+        "переглядач зображень",
+        "файловий менеджер",
+        "перегляд фото та відео",
+        "органайзер фото",
+        "слайд-шоу фото",
+        "перегляд heic"
+      ],
+      "de": [
+        "Foto-Sortierer",
+        "Bildbetrachter",
+        "Dateimanager",
+        "Medienorganisator",
+        "Foto-Organisator",
+        "Video-Sortierer",
+        "HEIC-Betrachter"
+      ],
+      "it": [
+        "ordinatore foto",
+        "visualizzatore immagini",
+        "gestore file",
+        "organizzatore media",
+        "organizzatore foto",
+        "ordinatore video",
+        "visualizzatore heic"
+      ],
+      "es": [
+        "clasificador fotos",
+        "visor imágenes",
+        "gestor archivos",
+        "organizador medios",
+        "organizador fotos",
+        "clasificador vídeos",
+        "visor heic"
+      ],
+      "fr": [
+        "trieur photos",
+        "visionneuse images",
+        "gestionnaire fichiers",
+        "organiseur médias",
+        "organiseur photos",
+        "trieur vidéos",
+        "visionneuse heic"
+      ],
+      "pt-br": [
+        "organizador fotos",
+        "visualizador imagens",
+        "gerenciador arquivos",
+        "organizador mídia",
+        "organizador vídeos",
+        "classificador fotos",
+        "visualizador heic"
+      ],
+      "ar": [
+        "مرتب الصور",
+        "عارض الصور",
+        "مدير الملفات",
+        "منظم الوسائط",
+        "منظم الصور",
+        "مرتب الفيديو",
+        "عارض heic"
+      ],
+      "hi": [
+        "फ़ोटो सॉर्टर",
+        "इमेज व्यूअर",
+        "फ़ाइल मैनेजर",
+        "मीडिया ऑर्गनाइज़र",
+        "फ़ोटो ऑर्गनाइज़र",
+        "वीडियो सॉर्टर",
+        "heic व्यूअर"
+      ],
+      "bn": [
+        "ছবি সাজানোর অ্যাপ",
+        "ছবি দেখার অ্যাপ",
+        "ফাইল ম্যানেজার",
+        "মিডিয়া অর্গানাইজার",
+        "ফটো অর্গানাইজার",
+        "ভিডিও সর্টার",
+        "heic ভিউয়ার"
+      ],
+      "ur": [
+        "تصاویر ترتیب کار",
+        "امیج ویور",
+        "فائل مینیجر",
+        "میڈیا آرگنائزر",
+        "فوٹو آرگنائزر",
+        "ویڈیو ترتیب کار",
+        "heic ویور"
+      ],
+      "zh-hans": [
+        "照片整理",
+        "看图软件",
+        "文件管理器",
+        "媒体管理",
+        "照片管家",
+        "视频分类",
+        "heic 查看器"
+      ]
     },
-    "limits": { "taglineWordsMin": 6, "taglineWordsMax": 10, "githubDescription": 350, "topics": 20, "topicLength": 50, "wingetTags": 16, "storeSearchTerms": 7, "title": 60, "metaDescription": 160 },
-    "titles": { "separator": " | ", "suffix": "Fast Media Sorter & Sharing" },
-    "forbiddenWords": ["lite", "lightweight", "lean", "fms"],
+    "limits": {
+      "taglineWordsMin": 6,
+      "taglineWordsMax": 10,
+      "githubDescription": 350,
+      "topics": 20,
+      "topicLength": 50,
+      "wingetTags": 16,
+      "storeSearchTerms": 7,
+      "title": 60,
+      "metaDescription": 160
+    },
+    "titles": {
+      "separator": " | ",
+      "suffix": "Fast Media Sorter & Sharing"
+    },
+    "forbiddenWords": [
+      "lite",
+      "lightweight",
+      "lean",
+      "fms"
+    ],
     "competitorTermsSource": "docs/guides/RESEARCH_COMPETITOR_FEATURES.md",
-    "competitorPhrases": ["alternative to", "alternatives to", "replacement for", "better than"],
-    "competitorScan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "tools/site-copy.json", "tools/trust-copy.json"],
+    "competitorPhrases": [
+      "alternative to",
+      "alternatives to",
+      "replacement for",
+      "better than"
+    ],
+    "competitorScan": [
+      "*.html",
+      "lang/*/*.html",
+      "docs/*.html",
+      "assets/help/*.html",
+      "README.md",
+      "README_RU.md",
+      "README_UK.md",
+      "publishing/store/listingData.csv",
+      "publishing/store/LOCALES.md",
+      "publishing/winget/*.yaml",
+      "publishing/winget/server/*.yaml",
+      "tools/site-copy.json",
+      "tools/trust-copy.json"
+    ],
     "socialCard": {
       "lines": [
         "Media and file manager: folders, servers, devices",
@@ -392,112 +1587,415 @@
       "alt": "Fast Media Sorter & Sharing for Windows: media and file manager, sort photos and videos with one key per file",
       "stamp": "assets/social-card.json",
       "sizes": [
-        { "name": "open-graph", "file": "assets/social-card-1200x630.png", "width": 1200, "height": 630 },
-        { "name": "repository-preview", "file": "assets/social-preview-1280x640.png", "width": 1280, "height": 640, "maxBytes": 1000000 }
+        {
+          "name": "open-graph",
+          "file": "assets/social-card-1200x630.png",
+          "width": 1200,
+          "height": 630
+        },
+        {
+          "name": "repository-preview",
+          "file": "assets/social-preview-1280x640.png",
+          "width": 1280,
+          "height": 640,
+          "maxBytes": 1000000
+        }
       ]
     },
-    "applied": ["site-titles", "social-card", "winget", "store"]
+    "applied": [
+      "site-titles",
+      "social-card",
+      "winget",
+      "store"
+    ]
   },
   "surfaces": [
     {
-      "file": "index.html", "names": 3, "why": "landing, meta description: names the first three; the gated Media Exchange Server is named in the page body only, never in the description, og:, twitter:, JSON-LD or the title script (owner decision 2026-11-08, ticket 207 F77)",
-      "scopes": ["name=\"description\" content=\"(?<region>[^\"]*)\""],
-      "anchors": { "viewer": "(?i)media and file manager", "share": "(?i)folder sharing", "scheduled": "(?i)scheduled file operations" }
+      "file": "index.html",
+      "names": 3,
+      "why": "landing, meta description: names the first three; the gated Media Exchange Server is named in the page body only, never in the description, og:, twitter:, JSON-LD or the title script (owner decision 2026-11-08, ticket 207 F77)",
+      "scopes": [
+        "name=\"description\" content=\"(?<region>[^\"]*)\""
+      ],
+      "anchors": {
+        "viewer": "(?i)media and file manager",
+        "share": "(?i)folder sharing",
+        "scheduled": "(?i)scheduled file operations"
+      }
     },
     {
-      "file": "index.html", "names": 4, "why": "landing, the family sentence (en)",
-      "scopes": ["(?s)<p class=\"lead lead-narrow family\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "media and file manager", "share": "local sharing service", "scheduled": "scheduled file operations", "exchange": "Media Exchange Server" }
+      "file": "index.html",
+      "names": 4,
+      "why": "landing, the family sentence (en)",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow family\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "media and file manager",
+        "share": "local sharing service",
+        "scheduled": "scheduled file operations",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "files": ["index.html", "lang/ar/index.html", "lang/bn/index.html", "lang/de/index.html", "lang/es/index.html", "lang/fr/index.html", "lang/hi/index.html", "lang/it/index.html", "lang/pt/index.html", "lang/ru/index.html", "lang/uk/index.html", "lang/ur/index.html", "lang/zh/index.html"],
-      "names": 4, "why": "landing and its locale pages, the ways in: manager first, server first, scheduled operations first, then the exchange server",
-      "scopes": ["(?s)id=\"doors\".*?</section>"],
-      "anchors": { "viewer": "id=\"door-1\"", "share": "id=\"door-2\"", "scheduled": "id=\"door-3\"", "exchange": "id=\"door-4\"" }
-    },
-    { "file": "lang/de/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Medien- und Dateimanager", "share": "Freigabedienst", "scheduled": "geplante Dateivorgänge", "exchange": "Media Exchange Server" } },
-    { "file": "lang/it/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "gestore di media e file", "share": "servizio locale di condivisione", "scheduled": "operazioni pianificate sui file", "exchange": "Media Exchange Server" } },
-    { "file": "lang/es/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "gestor de medios y archivos", "share": "servicio local de uso compartido", "scheduled": "operaciones de archivos programadas", "exchange": "Media Exchange Server" } },
-    { "file": "lang/fr/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "gestionnaire de médias et de fichiers", "share": "service local de partage", "scheduled": "opérations planifiées sur les fichiers", "exchange": "Media Exchange Server" } },
-    { "file": "lang/pt/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "gestor de média e ficheiros", "share": "serviço local de partilha", "scheduled": "operações agendadas de ficheiros", "exchange": "Media Exchange Server" } },
-    { "file": "lang/ru/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "медиа- и файловый менеджер", "share": "служба раздачи", "scheduled": "файловые операции по расписанию", "exchange": "Media Exchange Server" } },
-    { "file": "lang/uk/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "медіа- та файловий менеджер", "share": "служба роздачі", "scheduled": "файлові операції за розкладом", "exchange": "Media Exchange Server" } },
-    { "file": "lang/ar/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "مدير وسائط وملفات", "share": "خدمة محلية للمشاركة", "scheduled": "عمليات الملفات المجدولة", "exchange": "Media Exchange Server" } },
-    { "file": "lang/hi/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "मीडिया और फ़ाइल मैनेजर", "share": "स्थानीय साझाकरण सेवा", "scheduled": "शेड्यूल किए गए फ़ाइल ऑपरेशन", "exchange": "Media Exchange Server" } },
-    { "file": "lang/bn/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "মিডিয়া ও ফাইল ম্যানেজার", "share": "স্থানীয় শেয়ারিং সেবা", "scheduled": "নির্ধারিত ফাইল অপারেশন", "exchange": "Media Exchange Server" } },
-    { "file": "lang/ur/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "میڈیا اور فائل مینیجر", "share": "مقامی شیئرنگ سروس", "scheduled": "شیڈولڈ فائل آپریشنز", "exchange": "Media Exchange Server" } },
-    { "file": "lang/zh/index.html", "names": 4, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "媒体与文件管理器", "share": "本地共享服务", "scheduled": "计划文件操作", "exchange": "Media Exchange Server" } },
-    {
-      "file": "server.html", "names": 4, "why": "server page, the family sentence (en)",
-      "scopes": ["(?s)<p>(?<region>Four optional parts.*?if you want it\\.)"],
-      "anchors": { "viewer": "media and file manager", "share": "local sharing service", "scheduled": "scheduled file operations", "exchange": "Media Exchange Server" }
+      "files": [
+        "index.html",
+        "lang/ar/index.html",
+        "lang/bn/index.html",
+        "lang/de/index.html",
+        "lang/es/index.html",
+        "lang/fr/index.html",
+        "lang/hi/index.html",
+        "lang/it/index.html",
+        "lang/pt/index.html",
+        "lang/ru/index.html",
+        "lang/uk/index.html",
+        "lang/ur/index.html",
+        "lang/zh/index.html"
+      ],
+      "names": 4,
+      "why": "landing and its locale pages, the ways in: manager first, server first, scheduled operations first, then the exchange server",
+      "scopes": [
+        "(?s)id=\"doors\".*?</section>"
+      ],
+      "anchors": {
+        "viewer": "id=\"door-1\"",
+        "share": "id=\"door-2\"",
+        "scheduled": "id=\"door-3\"",
+        "exchange": "id=\"door-4\""
+      }
     },
     {
-      "file": "lang/ru/server.html", "names": 4, "why": "server page, the family sentence (ru)",
-      "scopes": ["(?s)<p>(?<region>Четыре необязательные части.*?только если нужно\\.)"],
-      "anchors": { "viewer": "медиа- и файловый менеджер", "share": "служба раздачи", "scheduled": "файловые операции по расписанию", "exchange": "Media Exchange Server" }
+      "file": "lang/de/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "Medien- und Dateimanager",
+        "share": "Freigabedienst",
+        "scheduled": "geplante Dateivorgänge",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "lang/uk/server.html", "names": 4, "why": "server page, the family sentence (uk)",
-      "scopes": ["(?s)<p>(?<region>Чотири необов'язкові частини.*?лише якщо потрібно\\.)"],
-      "anchors": { "viewer": "медіа- та файловий менеджер", "share": "служба роздачі", "scheduled": "файлові операції за розкладом", "exchange": "Media Exchange Server" }
+      "file": "lang/it/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "gestore di media e file",
+        "share": "servizio locale di condivisione",
+        "scheduled": "operazioni pianificate sui file",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "README.md", "names": 4, "why": "README, the family sentence",
-      "scopes": ["(?m)^\\*\\*Four optional parts\\.\\*\\*(?<region>.*)$"],
-      "anchors": { "viewer": "media and file manager", "share": "local sharing service", "scheduled": "scheduled file operations", "exchange": "Media Exchange Server" }
+      "file": "lang/es/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "gestor de medios y archivos",
+        "share": "servicio local de uso compartido",
+        "scheduled": "operaciones de archivos programadas",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "README.md", "names": 4, "why": "README, the parts table: the manager first, local sharing second, scheduled file operations third, the exchange server fourth",
-      "scopes": ["(?s)\\| Part \\|(?<region>.*?)\\r?\\n\\r?\\n"],
-      "anchors": { "viewer": "\\*\\*Media and file manager\\*\\*", "share": "\\*\\*Local sharing\\*\\*", "scheduled": "\\*\\*Scheduled file operations\\*\\*", "exchange": "\\*\\*Media Exchange Server\\*\\*" }
+      "file": "lang/fr/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "gestionnaire de médias et de fichiers",
+        "share": "service local de partage",
+        "scheduled": "opérations planifiées sur les fichiers",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "README_RU.md", "names": 4, "why": "README (ru), the family sentence",
-      "scopes": ["(?m)^\\*\\*Четыре необязательные части\\.\\*\\*(?<region>.*)$"],
-      "anchors": { "viewer": "медиа- и файловый менеджер", "share": "служба раздачи", "scheduled": "файловые операции по расписанию", "exchange": "Media Exchange Server" }
+      "file": "lang/pt/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "gestor de média e ficheiros",
+        "share": "serviço local de partilha",
+        "scheduled": "operações agendadas de ficheiros",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "README_RU.md", "names": 4, "why": "README (ru), the parts table",
-      "scopes": ["(?s)\\| Часть \\|(?<region>.*?)\\r?\\n\\r?\\n"],
-      "anchors": { "viewer": "\\*\\*Медиа- и файловый менеджер\\*\\*", "share": "\\*\\*Локальная раздача\\*\\*", "scheduled": "\\*\\*Файловые операции по расписанию\\*\\*", "exchange": "\\*\\*Media Exchange Server\\*\\*" }
+      "file": "lang/ru/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "медиа- и файловый менеджер",
+        "share": "служба раздачи",
+        "scheduled": "файловые операции по расписанию",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "README_UK.md", "names": 4, "why": "README (uk), the family sentence",
-      "scopes": ["(?m)^\\*\\*Чотири необов'язкові частини\\.\\*\\*(?<region>.*)$"],
-      "anchors": { "viewer": "медіа- та файловий менеджер", "share": "служба роздачі", "scheduled": "файлові операції за розкладом", "exchange": "Media Exchange Server" }
+      "file": "lang/uk/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "медіа- та файловий менеджер",
+        "share": "служба роздачі",
+        "scheduled": "файлові операції за розкладом",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "README_UK.md", "names": 4, "why": "README (uk), the parts table",
-      "scopes": ["(?s)\\| Частина \\|(?<region>.*?)\\r?\\n\\r?\\n"],
-      "anchors": { "viewer": "\\*\\*Медіа- та файловий менеджер\\*\\*", "share": "\\*\\*Локальна роздача\\*\\*", "scheduled": "\\*\\*Файлові операції за розкладом\\*\\*", "exchange": "\\*\\*Media Exchange Server\\*\\*" }
+      "file": "lang/ar/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "مدير وسائط وملفات",
+        "share": "خدمة محلية للمشاركة",
+        "scheduled": "عمليات الملفات المجدولة",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "publishing/store/listingData.csv", "names": 2, "why": "Store listing Description (en-us): too short for the third component, names the first two",
-      "scopes": ["(?ms)^Description,2,Text,,\"(?<region>(?:[^\"]|\"\")*)\""],
-      "anchors": { "viewer": "(?i)media and file manager", "share": "(?i)share the folders you pick|share them with your phone" }
+      "file": "lang/hi/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "मीडिया और फ़ाइल मैनेजर",
+        "share": "स्थानीय साझाकरण सेवा",
+        "scheduled": "शेड्यूल किए गए फ़ाइल ऑपरेशन",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "publishing/store/listingData.csv", "names": 2, "why": "Store listing Description (ru)",
-      "scopes": ["(?ms)^Description,2,Text,,\"(?:[^\"]|\"\")*\",\"(?<region>(?:[^\"]|\"\")*)\""],
-      "anchors": { "viewer": "(?i)медиа- и файловый менеджер", "share": "(?i)раздавать выбранные вами папки|делитесь ими с телефоном" }
+      "file": "lang/bn/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "মিডিয়া ও ফাইল ম্যানেজার",
+        "share": "স্থানীয় শেয়ারিং সেবা",
+        "scheduled": "নির্ধারিত ফাইল অপারেশন",
+        "exchange": "Media Exchange Server"
+      }
     },
     {
-      "file": "publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml", "names": 4, "why": "winget Description (full package)",
-      "scopes": ["(?ms)^Description: \\|-\\r?\\n(?<region>.*?)\\r?\\n(?=[A-Za-z]+:)"],
-      "anchors": { "viewer": "media and file manager", "share": "local sharing service", "scheduled": "scheduled file operations", "exchange": "Media Exchange Server" }
+      "file": "lang/ur/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "میڈیا اور فائل مینیجر",
+        "share": "مقامی شیئرنگ سروس",
+        "scheduled": "شیڈولڈ فائل آپریشنز",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "lang/zh/index.html",
+      "names": 4,
+      "why": "locale page, the family sentence",
+      "scopes": [
+        "(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"
+      ],
+      "anchors": {
+        "viewer": "媒体与文件管理器",
+        "share": "本地共享服务",
+        "scheduled": "计划文件操作",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "server.html",
+      "names": 4,
+      "why": "server page, the family sentence (en)",
+      "scopes": [
+        "(?s)<p>(?<region>Four optional parts.*?if you want it\\.)"
+      ],
+      "anchors": {
+        "viewer": "media and file manager",
+        "share": "local sharing service",
+        "scheduled": "scheduled file operations",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "lang/ru/server.html",
+      "names": 4,
+      "why": "server page, the family sentence (ru)",
+      "scopes": [
+        "(?s)<p>(?<region>Четыре необязательные части.*?только если нужно\\.)"
+      ],
+      "anchors": {
+        "viewer": "медиа- и файловый менеджер",
+        "share": "служба раздачи",
+        "scheduled": "файловые операции по расписанию",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "lang/uk/server.html",
+      "names": 4,
+      "why": "server page, the family sentence (uk)",
+      "scopes": [
+        "(?s)<p>(?<region>Чотири необов'язкові частини.*?лише якщо потрібно\\.)"
+      ],
+      "anchors": {
+        "viewer": "медіа- та файловий менеджер",
+        "share": "служба роздачі",
+        "scheduled": "файлові операції за розкладом",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "README.md",
+      "names": 4,
+      "why": "README, the family sentence",
+      "scopes": [
+        "(?m)^\\*\\*Four optional parts\\.\\*\\*(?<region>.*)$"
+      ],
+      "anchors": {
+        "viewer": "media and file manager",
+        "share": "local sharing service",
+        "scheduled": "scheduled file operations",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "README.md",
+      "names": 4,
+      "why": "README, the parts table: the manager first, local sharing second, scheduled file operations third, the exchange server fourth",
+      "scopes": [
+        "(?s)\\| Part \\|(?<region>.*?)\\r?\\n\\r?\\n"
+      ],
+      "anchors": {
+        "viewer": "\\*\\*Media and file manager\\*\\*",
+        "share": "\\*\\*Local sharing\\*\\*",
+        "scheduled": "\\*\\*Scheduled file operations\\*\\*",
+        "exchange": "\\*\\*Media Exchange Server\\*\\*"
+      }
+    },
+    {
+      "file": "README_RU.md",
+      "names": 4,
+      "why": "README (ru), the family sentence",
+      "scopes": [
+        "(?m)^\\*\\*Четыре необязательные части\\.\\*\\*(?<region>.*)$"
+      ],
+      "anchors": {
+        "viewer": "медиа- и файловый менеджер",
+        "share": "служба раздачи",
+        "scheduled": "файловые операции по расписанию",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "README_RU.md",
+      "names": 4,
+      "why": "README (ru), the parts table",
+      "scopes": [
+        "(?s)\\| Часть \\|(?<region>.*?)\\r?\\n\\r?\\n"
+      ],
+      "anchors": {
+        "viewer": "\\*\\*Медиа- и файловый менеджер\\*\\*",
+        "share": "\\*\\*Локальная раздача\\*\\*",
+        "scheduled": "\\*\\*Файловые операции по расписанию\\*\\*",
+        "exchange": "\\*\\*Media Exchange Server\\*\\*"
+      }
+    },
+    {
+      "file": "README_UK.md",
+      "names": 4,
+      "why": "README (uk), the family sentence",
+      "scopes": [
+        "(?m)^\\*\\*Чотири необов'язкові частини\\.\\*\\*(?<region>.*)$"
+      ],
+      "anchors": {
+        "viewer": "медіа- та файловий менеджер",
+        "share": "служба роздачі",
+        "scheduled": "файлові операції за розкладом",
+        "exchange": "Media Exchange Server"
+      }
+    },
+    {
+      "file": "README_UK.md",
+      "names": 4,
+      "why": "README (uk), the parts table",
+      "scopes": [
+        "(?s)\\| Частина \\|(?<region>.*?)\\r?\\n\\r?\\n"
+      ],
+      "anchors": {
+        "viewer": "\\*\\*Медіа- та файловий менеджер\\*\\*",
+        "share": "\\*\\*Локальна роздача\\*\\*",
+        "scheduled": "\\*\\*Файлові операції за розкладом\\*\\*",
+        "exchange": "\\*\\*Media Exchange Server\\*\\*"
+      }
+    },
+    {
+      "file": "publishing/store/listingData.csv",
+      "names": 2,
+      "why": "Store listing Description (en-us): too short for the third component, names the first two",
+      "scopes": [
+        "(?ms)^Description,2,Text,,\"(?<region>(?:[^\"]|\"\")*)\""
+      ],
+      "anchors": {
+        "viewer": "(?i)media and file manager",
+        "share": "(?i)share the folders you pick|share them with your phone"
+      }
+    },
+    {
+      "file": "publishing/store/listingData.csv",
+      "names": 2,
+      "why": "Store listing Description (ru)",
+      "scopes": [
+        "(?ms)^Description,2,Text,,\"(?:[^\"]|\"\")*\",\"(?<region>(?:[^\"]|\"\")*)\""
+      ],
+      "anchors": {
+        "viewer": "(?i)медиа- и файловый менеджер",
+        "share": "(?i)раздавать выбранные вами папки|делитесь ими с телефоном"
+      }
+    },
+    {
+      "file": "publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml",
+      "names": 4,
+      "why": "winget Description (full package)",
+      "scopes": [
+        "(?ms)^Description: \\|-\\r?\\n(?<region>.*?)\\r?\\n(?=[A-Za-z]+:)"
+      ],
+      "anchors": {
+        "viewer": "media and file manager",
+        "share": "local sharing service",
+        "scheduled": "scheduled file operations",
+        "exchange": "Media Exchange Server"
+      }
     }
   ]
 }

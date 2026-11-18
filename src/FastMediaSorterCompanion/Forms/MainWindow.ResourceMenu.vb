@@ -205,7 +205,7 @@ Partial Public NotInheritable Class MainWindow
         If failure.Trim().Length > 0 Then
             Dim text As String = Localization.TF("Операция не завершена: {0}", failure.Trim())
             SetHint(text)
-            MessageBox.Show(Me, text, Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ManagerBox.Show(Me, text, Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Else
             SetHint("")
         End If

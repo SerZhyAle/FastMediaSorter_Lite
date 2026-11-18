@@ -18,7 +18,10 @@
          with the source and output hashes.
 
     -Check builds nothing: it re-hashes the committed files against PROVENANCE.txt and re-runs
-    the import check. Exit 0 pass, 1 a check failed, 2 could not verify (no dumpbin, no files).
+    the import check. It reports through tools\lib\Verdict.ps1 (CHECK-VERDICT): a subject banner,
+    one closing line "Build-LibWebpDecoder: PASS|FAIL|COULD NOT VERIFY", exit 0 pass, 1 a check
+    failed, 2 could not verify (no dumpbin, no files, or the check itself threw). Hand-run, see
+    tools\check-placement.jsonl.
 
     A rebuild is not bit-identical (the linker stamps a time), so a rebuild is a new
     PROVENANCE.txt to commit, never a silent replacement.
@@ -35,6 +38,14 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
+
+# Only -Check carries a verdict; a build run keeps its own terminating errors.
+trap {
+    if (-not $Check) { break }
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'Build-LibWebpDecoder' 2 'the check could not run'
+}
 
 $Version = '1.6.0'
 $TagCommit = '4fa21912338357f89e4fd51cf2368325b59e9bd9'
@@ -129,9 +140,10 @@ $vs = Find-VsInstall
 $dumpbin = Find-Dumpbin $vs
 
 if ($Check) {
-    if (-not $dumpbin) { Write-Output 'Build-LibWebpDecoder -Check: COULD NOT VERIFY (no dumpbin; install the VS C++ tools)'; exit 2 }
+    Write-Subject 'Build-LibWebpDecoder' ("the committed libwebpdecoder.dll files ($($Arches -join ', ')) in payload\libwebp: SHA-256 against PROVENANCE.txt and the Windows 7 import allow-list")
+    if (-not $dumpbin) { Exit-Verdict 'Build-LibWebpDecoder' 2 'no dumpbin; install the VS C++ tools' }
     $recorded = Read-Provenance
-    if (-not $recorded) { Write-Output "Build-LibWebpDecoder -Check: COULD NOT VERIFY (no $PayloadRoot\PROVENANCE.txt)"; exit 2 }
+    if (-not $recorded) { Exit-Verdict 'Build-LibWebpDecoder' 2 "no $PayloadRoot\PROVENANCE.txt" }
     $failures = @()
     foreach ($arch in $Arches) {
         $rel = "$arch/libwebpdecoder.dll"
@@ -142,12 +154,10 @@ if ($Check) {
         $failures += @(Test-Imports $dumpbin $dll | ForEach-Object { "${rel}: $_" })
     }
     if ($failures.Count -gt 0) {
-        $failures | ForEach-Object { Write-Output "  $_" }
-        Write-Output "Build-LibWebpDecoder -Check: FAIL ($($failures.Count) problems)"
-        exit 1
+        $failures | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        Exit-Verdict 'Build-LibWebpDecoder' 1 "$($failures.Count) problem(s)"
     }
-    Write-Output 'Build-LibWebpDecoder -Check: PASS'
-    exit 0
+    Exit-Verdict 'Build-LibWebpDecoder' 0 "$($Arches.Count) DLLs match PROVENANCE.txt and import only allowed KERNEL32 functions"
 }
 
 if (-not $vs) { throw 'Visual Studio with the C++ x86/x64 tools was not found (vswhere).' }

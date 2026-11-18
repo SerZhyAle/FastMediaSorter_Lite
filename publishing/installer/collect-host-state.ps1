@@ -448,7 +448,7 @@ try {
     }
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
     $zipPath = Join-Path $OutDir ('fms-host-logs-' + $stamp + '.zip')
-    $environment = "schema_version=1`napp_id=fms-host`napp_version=unknown`nvolume_metrics=none`ngenerated_utc=" + [DateTime]::UtcNow.ToString('o') + "`n"
+    $environment = "schema_version=1`napp_id=fms-host`napp_version=unknown`nvolume_metrics=unavailable`ngenerated_utc=" + [DateTime]::UtcNow.ToString('o') + "`n"
     [IO.File]::WriteAllText((Join-Path $work 'environment.txt'), $environment, (New-Object Text.UTF8Encoding($false)))
     Add-Type -AssemblyName System.IO.Compression
     $zs = New-Object IO.FileStream($zipPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)

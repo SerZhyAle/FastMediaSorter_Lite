@@ -136,6 +136,12 @@ Friend NotInheritable Class ScheduledEngine
         End Get
     End Property
 
+    Friend ReadOnly Property EngineServices As ScheduledServices
+        Get
+            Return services
+        End Get
+    End Property
+
     ''' <summary>"The last failure", for the tray item's hint: which operation and what went wrong (a code,
     ''' composed into words where it is shown), or Nothing when the last run of every operation was fine.</summary>
     Friend ReadOnly Property LastFailure As ScheduledFailureInfo
@@ -508,6 +514,13 @@ Friend NotInheritable Class ScheduledEngine
     ''' <summary>Run now: bypasses the due time and does not move the schedule. Allowed while paused -
     ''' pausing stops the SCHEDULE, and this is the user's own act.</summary>
     Friend Function RunNow(id As String) As TriggerOutcome
+        Dim ignored As Task(Of ScheduledRunResult) = Nothing
+        Return RunNowTracked(id, ignored)
+    End Function
+
+    ''' <summary>Run now, returning the task for that run so a CLI waiter can await its outcome (L0345).</summary>
+    Friend Function RunNowTracked(id As String, ByRef runTask As Task(Of ScheduledRunResult)) As TriggerOutcome
+        runTask = Nothing
         SyncLock gate
             If Not ops.ContainsKey(id) Then Return TriggerOutcome.NotFound
             If inLane.Contains(id) Then
@@ -516,13 +529,23 @@ Friend NotInheritable Class ScheduledEngine
             End If
             inLane.Add(id)
         End SyncLock
-        Track(RunLane(id, ScheduledTrigger.RunNow, Nothing))
+        runTask = RunLane(id, ScheduledTrigger.RunNow, Nothing)
+        Track(runTask)
         RaiseChanged()
         Return TriggerOutcome.Started
     End Function
 
     ''' <summary>Run all now: one serialized chain over every enabled operation (5). Refused while paused.</summary>
     Friend Function RunAllNow() As TriggerOutcome
+        Dim ignored As Task(Of List(Of ScheduledRunResult)) = Nothing
+        Dim queued As Integer = 0
+        Return RunAllNowTracked(ignored, queued)
+    End Function
+
+    ''' <summary>Run all now, returning the batch task and queued count so a CLI waiter can await every run (L0345).</summary>
+    Friend Function RunAllNowTracked(ByRef batchTask As Task(Of List(Of ScheduledRunResult)), ByRef queuedCount As Integer) As TriggerOutcome
+        batchTask = Nothing
+        queuedCount = 0
         Dim ids As List(Of String)
         SyncLock gate
             If ScheduledSettings.Paused Then Return TriggerOutcome.Paused
@@ -533,11 +556,16 @@ Friend NotInheritable Class ScheduledEngine
                 inLane.Add(id)
             Next
         End SyncLock
-        Track(Task.Run(Async Function()
-                           For Each id As String In ids
-                               Await RunLane(id, ScheduledTrigger.RunAll, Nothing)
-                           Next
-                       End Function))
+        queuedCount = ids.Count
+        batchTask = Task.Run(Async Function() As Task(Of List(Of ScheduledRunResult))
+                                 Dim results As New List(Of ScheduledRunResult)(ids.Count)
+                                 For Each id As String In ids
+                                     Dim r As ScheduledRunResult = Await RunLane(id, ScheduledTrigger.RunAll, Nothing)
+                                     If r IsNot Nothing Then results.Add(r)
+                                 Next
+                                 Return results
+                             End Function)
+        Track(batchTask)
         RaiseChanged()
         Return TriggerOutcome.Started
     End Function
@@ -560,13 +588,13 @@ Friend NotInheritable Class ScheduledEngine
         Await RunLane(id, trigger, dueSlot)
     End Function
 
-    Private Async Function RunLane(id As String, trigger As ScheduledTrigger, dueSlot As DateTime?) As Task
+    Private Async Function RunLane(id As String, trigger As ScheduledTrigger, dueSlot As DateTime?) As Task(Of ScheduledRunResult)
         Dim token As CancellationToken = cancellation.Token
         Try
             Await lane.WaitAsync(token)
             Try
                 Dim op As ScheduledOperation = TryGet(id)
-                If op Is Nothing Then Return
+                If op Is Nothing Then Return Nothing
                 SyncLock gate
                     executing = id
                 End SyncLock
@@ -587,7 +615,7 @@ Friend NotInheritable Class ScheduledEngine
                             Dim live As ScheduledOperation = Nothing
                             If ops.TryGetValue(id, live) Then ArmLocked(live, services.Clock.Invoke())
                         End SyncLock
-                        Return
+                        Return Nothing
                     End If
                     SyncLock gate
                         Dim live As ScheduledOperation = Nothing
@@ -599,7 +627,7 @@ Friend NotInheritable Class ScheduledEngine
                         End If
                     End SyncLock
                     op = TryGet(id)
-                    If op Is Nothing Then Return
+                    If op Is Nothing Then Return Nothing
                 End If
 
                 If trigger = ScheduledTrigger.CatchUp AndAlso dueSlot.HasValue Then
@@ -610,6 +638,7 @@ Friend NotInheritable Class ScheduledEngine
                     " [SHARE-STATE] scheduled-trigger " & ScheduledJson.TriggerName(trigger))
                 Dim result As ScheduledRunResult = Await Task.Run(Function() executor.Run(op, token))
                 Apply(op, result, trigger)
+                Return result
             Finally
                 SyncLock gate
                     executing = ""
@@ -618,8 +647,10 @@ Friend NotInheritable Class ScheduledEngine
             End Try
         Catch ex As OperationCanceledException
             ' Shutting down: the run ended early and nothing else is owed.
+            Return New ScheduledRunResult With {.Outcome = ScheduledRunOutcome.Cancelled}
         Catch ex As Exception
             AppFileLogger.LogException("Scheduled operations: running " & id, ex)
+            Return New ScheduledRunResult With {.Outcome = ScheduledRunOutcome.Failed, .FirstError = ScheduledFailure.Coded(ScheduledFailure.CodeOf(ex), "")}
         Finally
             SyncLock gate
                 inLane.Remove(id)

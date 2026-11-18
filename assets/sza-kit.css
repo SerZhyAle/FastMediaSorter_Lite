@@ -1,5 +1,5 @@
 /* ============================================================
-   SZA WEB KIT  —  sza-kit.css   (revision 2026-10-21, PAGE-STYLE 3.3)
+   SZA WEB KIT  —  sza-kit.css   (revision 2026-11-17, PAGE-STYLE 3.12)
    One design system for all SZA web properties (present & future).
    Palette: "Pine + Gold" (dark-green primary, gold secondary accent).
    Drop-in: <link rel="stylesheet" href="sza-kit.css"> OR paste into <style>.
@@ -146,12 +146,14 @@ img{max-width:100%;height:auto}
 .container{max-width:var(--wide);margin:0 auto;padding:0 var(--gutter);position:relative;z-index:1}
 .section{padding:2rem 0}
 
-/* ---------- STICKY GLASS HEADER ---------- */
+/* ---------- STICKY GLASS HEADER ----------
+   PAGE-STYLE 3.12: the box reaches past the content edge by its border and inner padding, so the brand text stands
+   on the content edge (section 5) and keeps the padding inside the box; never closer than 4px to the viewport. */
 .site-header{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;align-items:center;gap:var(--ui-gap);
-  padding:calc(8px*var(--ui-scale));margin:14px var(--gutter);max-width:var(--wide);
+  padding:calc(8px*var(--ui-scale));margin:14px max(4px,calc(var(--gutter) - 1px - 8px*var(--ui-scale)));max-width:var(--wide);
   border:1px solid var(--border);border-radius:14px;
   background:color-mix(in srgb,var(--bg-2) 78%,transparent);backdrop-filter:saturate(140%) blur(10px)}
-.brand{font-family:var(--font-heading);font-weight:800;font-size:15px;letter-spacing:.2px;margin-right:auto;padding-inline:calc(8px*var(--ui-scale));color:var(--text)}
+.brand{font-family:var(--font-heading);font-weight:800;font-size:15px;letter-spacing:.2px;margin-inline-end:auto;padding-inline-end:calc(8px*var(--ui-scale));color:var(--text)}
 .brand .dot{color:var(--acc)}
 
 /* ---------- CONTROLS : BUTTONS 2.0 + UI-SIZING 1.1 ----------
@@ -328,7 +330,7 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
 .pills{display:flex;flex-wrap:wrap;gap:.45rem}
 .pill{font-family:var(--font-heading);font-size:.68rem;font-weight:700;letter-spacing:.04em;padding:.25rem .7rem;
   border-radius:var(--radius-pill);background:color-mix(in srgb,var(--acc) 12%,transparent);
-  color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 22%,transparent)}
+  color:var(--acc-strong);border:1px solid color-mix(in srgb,var(--acc) 22%,transparent)}
 .pill.gold{background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold);border-color:color-mix(in srgb,var(--gold) 26%,transparent)}
 
 /* ---------- INLINE DEMO STRIP ---------- */
@@ -360,9 +362,19 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
    same destination is the hero's own command, so it is a documented overflow policy, not a lost function. */
 @media(max-width:480px){.site-header .btn{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Forced colours (PAGE-STYLE 3.12). A glyph keeps forced-color-adjust:none so its mask still paints, so it takes the
+   system colour of its control here: Chromium resolves currentColor there to the page theme's ink, which vanishes on
+   a contrast theme of the other lightness. A pressed control opts out too, with system colours only, because
+   Chromium drops HighlightText from it after a live theme switch. */
 @media(forced-colors:active){
   .btn,.theme-btn,.seg,.copybox .copy,.to-top,.opt-help{border-color:ButtonText}
-  .btn[aria-pressed="true"],.seg button[aria-pressed="true"]{background:Highlight;color:HighlightText}
+  .btn[aria-pressed="true"],.btn.is-selected,.theme-btn[aria-pressed="true"],.seg button[aria-pressed="true"],.seg button.on,
+  .btn[aria-pressed="true"]:hover,.btn.is-selected:hover,.seg button[aria-pressed="true"]:hover,.seg button.on:hover{
+    forced-color-adjust:none;background:Highlight;color:HighlightText;border-color:ButtonText;outline-color:Highlight}
+  .gi{background-color:CanvasText}
+  .btn .gi,.theme-btn .gi,.copybox .copy .gi,.to-top .gi,.opt-help .gi,.seg button .gi{background-color:ButtonText}
+  a .gi,a.btn .gi{background-color:LinkText}
+  .btn[aria-pressed="true"] .gi,.btn.is-selected .gi,.theme-btn[aria-pressed="true"] .gi,.seg button[aria-pressed="true"] .gi,.seg button.on .gi{background-color:HighlightText}
   .opt-mark{border-color:ButtonText;background:Canvas;color:HighlightText}
   .opt-boxwrap input:checked+.opt-mark{background:Highlight;border-color:Highlight}
 }

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `FDSEC-FORMAT` (the bytes) and `FDSEC-BEHAVIOUR` (what a program handling them must do) |
-| **Version** | `FDSEC-FORMAT` 1.6 and `FDSEC-BEHAVIOUR` 1.9, both active (since 2026-09-22; read at 1.6 and 1.9 on 2026-11-15, L0323 catch-up, from 1.5 and 1.7 as read on 2026-10-22, specification 252). Registry rows `partial 1.6` and `partial 1.9`; the one open item is FORMAT section 23 and BEHAVIOUR section 4.3: a sealed name that is valid UTF-8 but not in NFC is read as written, not refused as damaged (`FdSecMetadata.vb`), a dated exception of 2026-11-15, ticket L0330. Owner: FileDO |
+| **Version** | `FDSEC-FORMAT` 1.6 and `FDSEC-BEHAVIOUR` 1.9, both active (since 2026-09-22; read at 1.6 and 1.9 on 2026-11-15, L0323 catch-up, from 1.5 and 1.7 as read on 2026-10-22, specification 252). Registry rows `partial 1.6` and `partial 1.9`; FORMAT section 23 and BEHAVIOUR section 4.3 are implemented since 2026-11-15 (ticket L0330, compiled, not tested until the release): a sealed name that is valid UTF-8 but not in NFC is refused as damaged and never normalised on the way in (`FdSecMetadata.vb`), and the dated exception for it is closed. Owner: FileDO |
 | **Home** | `secure-container/README.md`, with `FDSEC-FORMAT.md`, `FD-SEC-CONTRACT.md` and `vectors/` in the shared contracts catalog |
 | **Role here** | **consumer, reader half, suite 1** (`src/Secure/`; the viewer's side is `src/Main_Form.Secure.vb` and `src/Secure_Password_Form.vb`; specification 026). Plus **one narrow writer**: `src/Secure/FdSecWriter.vb` seals suite-1 containers that are ephemeral, from a finished in-memory plaintext under a per-run random credential, with no notion of an original file; its only caller is `src/Video/AnimationVideoStore.vb` (specification 242, owner decision Q242-1). Modern only: every `src/Secure/` file is whole-file `#If Not NETFRAMEWORK` |
 
@@ -39,9 +39,9 @@ writes them must do to be safe. A user-facing "pack a file" feature is not part 
 - **Evidence (FORMAT 16, 21, 22, BEHAVIOUR 12).** The catalog's vectors are vendored into `tests/Lite.Tests/TestData/fdsec-vectors/`
   beside a `PROVENANCE.txt` whose SHA-256 the suite asserts first (an artifact copy, never a document copy). The generated
   boundary-name corpus of FORMAT 21 to 23 exists in the catalog (`vectors/names/`, 117 containers in 119 files, 34 of
-  them `s1-`); this product vendors and replays 32 `s1-` containers (`TestData/fdsec-vectors/names`, the four
-  invalid-UTF-8 rows of section 22 included), the half its suite-1 reader can decide. The two NFC cases of section 23,
-  `s1-valid-nfc` and `s1-refused-not-nfc`, are not vendored (ticket L0330). The interoperability claim is stated only after a fresh
+  them `s1-`); this product vendors and replays all 34 `s1-` containers (`TestData/fdsec-vectors/names`, the four
+  invalid-UTF-8 rows of section 22 and the two NFC cases of section 23, `s1-valid-nfc` and `s1-refused-not-nfc`,
+  included), the half its suite-1 reader can decide. The interoperability claim is stated only after a fresh
   run of the vectors with its output cited.
 
 ## Where it stands

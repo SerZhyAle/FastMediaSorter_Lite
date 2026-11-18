@@ -108,7 +108,7 @@ sibling products' pages.
 275, row `html-pages`), its optional full PDF and EPUB reader (specification 274, row `document-reader`) and its
 optional full text reader and editor (specification 277, row `text-reader`), and the scheduled operation that fills a
 local drive's free space with FileDO and deletes it again (specification L0299, row `scheduled-fill-free-space`) and the
-scheduled folder backup into a numbered set of copies, optionally sealed with a password (specification L0298, row
+scheduled folder backup into a numbered set of copies or a dated retention set (N days, optionally keeping the first backup of each calendar month indefinitely, with optional skip-links), optionally sealed with a password (specifications L0298 and L0346, row
 `scheduled-backup`) - each
 named in classes A to C only until the release that carries it is published. The settings standard of an exchange
 account (specification L0296, row `exchange-settings-standard`) is `built` too and is also named in the Settings help

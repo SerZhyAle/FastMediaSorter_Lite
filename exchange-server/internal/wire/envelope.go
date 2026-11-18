@@ -1,6 +1,11 @@
 package wire
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // Envelope types of DEVICE-EXCHANGE 7.2-7.8, in the order of ticket 161 section 4.
 const (
@@ -646,12 +651,84 @@ func (*AccountDeleted) TypeName() string { return TypeAccountDeleted }
 // --- ticket 245 remote administration (DEVICE-EXCHANGE 1.4, REMOTE-ADMIN.md) ---
 
 // AdminLimits holds the own-limits object of an account in an admin request (ticket 245, REMOTE-ADMIN.md).
+// Its notes members are items FY and FZ of DEVICE-EXCHANGE 1.17 (ticket L0322): a value that is not a
+// whole number is answered bad-limit by the operation, so a fraction must not fail the decode of the
+// frame - it is kept in notesBad and the carriage answers it, the stream stays open.
 type AdminLimits struct {
 	DevicesPerAccount    *int   `json:"devicesPerAccount,omitempty"`
 	ResourcesPerAccount  *int   `json:"resourcesPerAccount,omitempty"`
 	BroadcastsPerAccount *int   `json:"broadcastsPerAccount,omitempty"`
 	BroadcastsPerDevice  *int   `json:"broadcastsPerDevice,omitempty"`
 	ClipboardMaxBytes    *int64 `json:"clipboardMaxBytes,omitempty"`
+	NotesPerAccount      *int   `json:"notesPerAccount,omitempty"`
+	NotesMaxBytes        *int64 `json:"notesMaxBytes,omitempty"`
+
+	// notesBad holds the error of a notes member that is not a whole number within the range the
+	// server accepts. It never marshals.
+	notesBad error
+}
+
+// NotesLimitBad reports the notes member that is not a whole number within the range the server accepts,
+// when the limits object carries one (item FY answers bad-limit for it).
+func (l *AdminLimits) NotesLimitBad() error { return l.notesBad }
+
+// UnmarshalJSON decodes the own-limits object. The five ticket-245 members keep the codec's own rule:
+// a value of the wrong type is a malformed frame and closes the stream. The two notes members are the
+// item FY rule: a number that is not whole (or not within the range) is recorded in notesBad instead,
+// so the operation that carries this object can answer bad-limit.
+func (l *AdminLimits) UnmarshalJSON(b []byte) error {
+	shadow := struct {
+		DevicesPerAccount    *int         `json:"devicesPerAccount,omitempty"`
+		ResourcesPerAccount  *int         `json:"resourcesPerAccount,omitempty"`
+		BroadcastsPerAccount *int         `json:"broadcastsPerAccount,omitempty"`
+		BroadcastsPerDevice  *int         `json:"broadcastsPerDevice,omitempty"`
+		ClipboardMaxBytes    *int64       `json:"clipboardMaxBytes,omitempty"`
+		NotesPerAccount      *json.Number `json:"notesPerAccount,omitempty"`
+		NotesMaxBytes        *json.Number `json:"notesMaxBytes,omitempty"`
+	}{}
+	if err := json.Unmarshal(b, &shadow); err != nil {
+		return err
+	}
+	*l = AdminLimits{
+		DevicesPerAccount:    shadow.DevicesPerAccount,
+		ResourcesPerAccount:  shadow.ResourcesPerAccount,
+		BroadcastsPerAccount: shadow.BroadcastsPerAccount,
+		BroadcastsPerDevice:  shadow.BroadcastsPerDevice,
+		ClipboardMaxBytes:    shadow.ClipboardMaxBytes,
+	}
+	if shadow.NotesPerAccount != nil {
+		// The count is an int in the model; a value the platform's int cannot hold is out of range too.
+		if v, err := wholeLimit(*shadow.NotesPerAccount); err != nil || int64(int(v)) != v {
+			l.notesBad = fmt.Errorf("notesPerAccount %s is not a whole number the server accepts", *shadow.NotesPerAccount)
+		} else {
+			n := int(v)
+			l.NotesPerAccount = &n
+		}
+	}
+	if shadow.NotesMaxBytes != nil {
+		if v, err := wholeLimit(*shadow.NotesMaxBytes); err != nil {
+			l.notesBad = fmt.Errorf("notesMaxBytes %s is not a whole number the server accepts", *shadow.NotesMaxBytes)
+		} else {
+			l.NotesMaxBytes = &v
+		}
+	}
+	return nil
+}
+
+// wholeLimit reads a JSON number that item FY wants as a whole number within the range of an int64.
+// A zero fraction is accepted (3.0 is the whole number 3); anything else is not.
+func wholeLimit(n json.Number) (int64, error) {
+	s := string(n)
+	intPart := s
+	if i := strings.IndexByte(s, '.'); i >= 0 {
+		for _, c := range s[i+1:] {
+			if c != '0' {
+				return 0, strconv.ErrSyntax
+			}
+		}
+		intPart = s[:i]
+	}
+	return strconv.ParseInt(intPart, 10, 64)
 }
 
 // AdminAuth is the first envelope of an administration stream (ticket 245, REMOTE-ADMIN.md).
@@ -706,4 +783,3 @@ type AdminReply struct {
 
 // TypeName is "admin-reply".
 func (*AdminReply) TypeName() string { return TypeAdminReply }
-

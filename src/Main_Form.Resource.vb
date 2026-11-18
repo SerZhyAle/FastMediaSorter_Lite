@@ -298,7 +298,7 @@ Partial Public Class Main_Form
 
         Dim rows As New List(Of FileEntry)(listed.Count)
         For Each entry As ResourceEntry In listed
-            If entry.IsDirectory OrElse Not MediaBrowsing.IsEligible(entry.FullPath, all_Supported_Extensions) Then Continue For
+            If entry.IsDirectory OrElse Not MediaBrowsing.IsEligible(entry.Name, all_Supported_Extensions) Then Continue For
             rows.Add(New FileEntry With {
                 .FilePath = entry.LocalPath,
                 .FileSize = entry.Length,
@@ -322,7 +322,7 @@ Partial Public Class Main_Form
             Return -1
         End Try
         ' Enumerable.Count by name: on an IReadOnlyList VB binds ".Count(" to the property.
-        Return Enumerable.Count(listed, Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.FullPath, all_Supported_Extensions))
+        Return Enumerable.Count(listed, Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.Name, all_Supported_Extensions))
     End Function
 
     ' --------------------------------------------------------- bytes on this machine ----

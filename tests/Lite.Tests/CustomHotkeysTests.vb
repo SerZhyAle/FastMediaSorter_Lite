@@ -94,13 +94,80 @@ Public Class CustomHotkeysTests
     End Sub
 
     <Fact>
-    Public Sub An_unknown_id_is_dropped_and_an_unusable_combination_stays_disabled()
+    Public Sub An_unknown_id_is_carried_but_owns_no_key_and_an_unusable_combination_stays_disabled()
         Dim map As Dictionary(Of String, String) = CustomHotkeys.Load(
             "{""noSuchAction"":""Ctrl+Q"",""undo"":""F11"",""help"":""Ctrl+H""}")
-        Assert.Equal(2, map.Count)
+        Assert.Equal(3, map.Count)
+        Assert.Equal("Ctrl+Q", map("noSuchAction")) ' INPUT-CHORD rule 3 / VERSIONING section 4 rule 5 (L0327)
+        Assert.Equal(String.Empty, CustomHotkeys.OwnerOfOverride(map, "Ctrl+Q"))
+        Assert.Equal(String.Empty, CustomHotkeys.OwnerOfCombo(map, "Ctrl+Q"))
         Assert.True(CustomHotkeys.IsInert(map("undo")))
         Assert.Equal(String.Empty, CustomHotkeys.EffectiveCombo(map, CustomHotkeys.Find("undo")))
         Assert.Equal("Ctrl+H", map("help"))
+    End Sub
+
+    ''' <summary>L0327, INPUT-CHORD rule 3: the id of a newer producer's action survives a load and a save.</summary>
+    <Fact>
+    Public Sub An_unknown_action_id_survives_a_load_and_a_save()
+        Dim saved As String = CustomHotkeys.Save(CustomHotkeys.Load("{""futureAction"":""Ctrl+Shift+Hyper+F12"",""help"":""Ctrl+H""}"))
+        Dim back = System.Text.Json.JsonSerializer.Deserialize(Of Dictionary(Of String, String))(saved)
+        Assert.Equal("Ctrl+Shift+Hyper+F12", back("futureAction"))
+        Assert.Equal("Ctrl+H", back("help"))
+        Assert.Equal(saved, CustomHotkeys.Save(CustomHotkeys.Load(saved)))
+    End Sub
+
+    ''' <summary>L0327, INPUT-CHORD rule 8: the historical extra keys of an untouched action have an owner too.</summary>
+    <Theory>
+    <InlineData("Space", "nextFile")>
+    <InlineData("PageDown", "nextFile")>
+    <InlineData("B", "prevFile")>
+    <InlineData("Ctrl+Home", "firstFile")>
+    Public Sub An_extra_factory_key_of_an_untouched_action_is_asked(combo As String, owner As String)
+        Assert.Equal(owner, CustomHotkeys.OwnerOfCombo(New Dictionary(Of String, String)(), combo))
+    End Sub
+
+    ''' <summary>..and stops having one once the action is moved off it (the key is retired, not owned).</summary>
+    <Fact>
+    Public Sub An_extra_factory_key_of_a_moved_action_is_free_again()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""nextFile"":""Ctrl+J""}")
+        Assert.Equal(String.Empty, CustomHotkeys.OwnerOfCombo(map, "Space"))
+        Assert.Equal("nextFile", CustomHotkeys.OwnerOfCombo(map, "Ctrl+J"))
+    End Sub
+
+    ''' <summary>L0327, INPUT-CHORD rule 1: a key outside the canonical vocabulary is answered by the viewer but is never
+    ''' offered to the shortcuts dialog for storing, and a stored token of that kind is inert and kept as stored.</summary>
+    <Theory>
+    <InlineData(Keys.OemQuotes)>
+    <InlineData(Keys.OemSemicolon)>
+    <InlineData(Keys.Oemtilde)>
+    <InlineData(Keys.Pause)>
+    <InlineData(Keys.Scroll)>
+    <InlineData(Keys.BrowserBack)>
+    Public Sub A_key_without_a_canonical_token_is_not_stored(key As Keys)
+        Assert.False(CustomHotkeys.HasCanonicalTrigger(key))
+        Assert.Equal(String.Empty, CustomHotkeys.FormatForBinding(Keys.Control Or key))
+        Assert.NotEqual(String.Empty, CustomHotkeys.Format(key)) ' dispatch still names it
+    End Sub
+
+    <Theory>
+    <InlineData(Keys.A)>
+    <InlineData(Keys.D5)>
+    <InlineData(Keys.F24)>
+    <InlineData(Keys.Escape)>
+    <InlineData(Keys.PrintScreen)>
+    <InlineData(Keys.NumPad3)>
+    <InlineData(Keys.OemOpenBrackets)>
+    <InlineData(Keys.MediaPlayPause)>
+    Public Sub A_key_with_a_canonical_token_is_stored(key As Keys)
+        Assert.True(CustomHotkeys.HasCanonicalTrigger(key))
+    End Sub
+
+    <Fact>
+    Public Sub A_stored_token_without_a_canonical_trigger_is_inert_and_survives()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""help"":""Ctrl+OemQuotes""}")
+        Assert.True(CustomHotkeys.IsInert(map("help")))
+        Assert.Equal("Ctrl+OemQuotes", map("help"))
+        Assert.Equal(String.Empty, CustomHotkeys.OwnerOfCombo(map, "Ctrl+OemQuotes"))
     End Sub
 
     ''' <summary>Two actions cannot hold one combination, and which of them wins must not

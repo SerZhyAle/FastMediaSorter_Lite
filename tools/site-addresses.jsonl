@@ -57,3 +57,18 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html#matrix","holder":"README_RU.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html#matrix","holder":"README_UK.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/support.html","holder":"assets/help/port-forward.html","kind":"support","note":"the shared child footer (gen:child-contact of tools/Build-SitePages.ps1) that the generator writes into the in-app help page"}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/","with":"v26.7.11.1610","anchors":{"get":"v26.7.11.1610","editions":"v26.7.23.1127","features":"v26.7.23.1127","top":"v26.7.23.1127","howto":"v26.8.19.0130"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-ocr.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-viewer.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","with":"v26.7.11.1610","anchors":{"logs":"v26.10.25.1830","main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","with":"v26.7.11.1610","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","with":"v26.8.8.2305","anchors":{"main":"v26.10.25.1830","matrix":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/support.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}
+{"released":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","with":"v26.10.25.1830","anchors":{"main":"v26.10.25.1830"}}

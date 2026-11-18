@@ -11,7 +11,12 @@ Friend NotInheritable Class ManagerArchiveForm
     Inherits Form
 
     Private ReadOnly nameBox As New TextBox With {.Dock = DockStyle.Fill, .RightToLeft = RightToLeft.No}
-    Private ReadOnly deleteBox As New CheckBox With {.AutoSize = True, .Checked = False, .Dock = DockStyle.Fill}
+    Private ReadOnly deleteBox As New CheckBox With {.Name = "deleteBox", .Checked = False}
+    ''' <summary>The delete-originals option as a BOOLEAN-OPTION row (ticket L0325 D-6). The window stacks its controls in a
+    ''' docked table, which <see cref="DialogLayout.FitContent"/> does not measure, so the row is arranged in OnLoad and the
+    ''' window grows to the table's need.</summary>
+    Private deleteRow As OptionRowHost
+    Private stack As TableLayoutPanel
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Friend Property Destination As ManagerLocation
     Friend ReadOnly Property ArchiveName As String
@@ -33,7 +38,7 @@ Friend NotInheritable Class ManagerArchiveForm
         MinimumSize = New Size(480, 260)
         MinimizeBox = False
         MaximizeBox = False
-        Dim layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .ColumnCount = 1, .Padding = New Padding(12)}
+        stack = New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .ColumnCount = 1, .Padding = New Padding(12)}
         Dim address As New Label With {.AutoSize = True, .Dock = DockStyle.Fill, .Text = current.DirectoryPath}
         Dim browse As New Button With {.Text = Localization.T("Папка назначения"), .AutoSize = True}
         AddHandler browse.Click, Sub()
@@ -43,6 +48,10 @@ Friend NotInheritable Class ManagerArchiveForm
         nameBox.Text = "Archive-" & DateTime.Now.ToString("yyyyMMdd-HHmmss", Globalization.CultureInfo.InvariantCulture) & ".zip"
         deleteBox.Text = Localization.T("Удалить оригиналы после проверки архива")
         deleteBox.Enabled = canDelete
+        deleteRow = DialogOptionRow.Create(deleteBox, Nothing, New Rectangle(0, 0, 160, DialogOptionRow.RowHeightLogical),
+                                           (UiSizing.PointerTarget - UiSizing.PointerCheckBox) \ 2)
+        deleteRow.Dock = DockStyle.Fill
+        deleteRow.Margin = Padding.Empty
         Dim warning As New Label With {.AutoSize = True, .Dock = DockStyle.Fill}
         Dim buttons As New DialogButtonRow With {.AutoSize = True, .Dock = DockStyle.Fill}
         Dim cancel As New Button With {.Text = Localization.T("Отмена"), .AutoSize = True, .DialogResult = DialogResult.Cancel}
@@ -58,14 +67,14 @@ Friend NotInheritable Class ManagerArchiveForm
         buttons.Add(accept, DialogButtonRole.Affirmative)
         buttons.Add(cancel, DialogButtonRole.Dismissing, "action.cancel")
         buttons.Bind(Me)
-        layout.Controls.Add(browse)
-        layout.Controls.Add(address)
-        layout.Controls.Add(New Label With {.Text = Localization.T("Введите имя:"), .AutoSize = True})
-        layout.Controls.Add(nameBox)
-        layout.Controls.Add(deleteBox)
-        layout.Controls.Add(warning)
-        layout.Controls.Add(buttons)
-        Controls.Add(layout)
+        stack.Controls.Add(browse)
+        stack.Controls.Add(address)
+        stack.Controls.Add(New Label With {.Text = Localization.T("Введите имя:"), .AutoSize = True})
+        stack.Controls.Add(nameBox)
+        stack.Controls.Add(deleteRow)
+        stack.Controls.Add(warning)
+        stack.Controls.Add(buttons)
+        Controls.Add(stack)
         AcceptButton = accept
         CancelButton = cancel
         DialogLayout.ApplyAutoScale(Me)
@@ -74,6 +83,10 @@ Friend NotInheritable Class ManagerArchiveForm
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        stack.PerformLayout()
+        deleteRow.Arrange()
+        Dim need As Integer = stack.GetPreferredSize(New Size(ClientSize.Width, 0)).Height
+        If need > ClientSize.Height Then ClientSize = New Size(ClientSize.Width, need)
     End Sub
 End Class
 #End If

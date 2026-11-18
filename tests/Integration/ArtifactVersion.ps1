@@ -58,7 +58,9 @@ function New-Msix([string]$name, [string]$identityVersion, [bool]$withManifest =
 }
 
 $failures = [Collections.Generic.List[string]]::new()
+$cases = 0
 function Expect([string]$name, [int]$code, [string]$message, [string[]]$arguments) {
+    $script:cases++
     $out = @(& $pwsh -NoProfile -File $Check @arguments 2>&1 | ForEach-Object { "$_" })
     $got = $LASTEXITCODE
     $text = $out -join "`n"
@@ -82,6 +84,7 @@ try {
     Expect 'one stale file in a comma-joined list fails the whole' 1 'Test-ArtifactVersion: FAIL (1 of 2' @('-Expect', '26.7.30.1080', '-Path', "$late,$stale")
     # build.ps1 calls the check in-process with an array; `-File` cannot bind one, so this case uses -Command.
     $arrayOut = @(& $pwsh -NoProfile -Command "& '$Check' -Expect 26.7.30.1080 -Path @('$late','$late'); exit `$LASTEXITCODE" 2>&1 | ForEach-Object { "$_" })
+    $cases++
     if ($LASTEXITCODE -eq 0 -and ($arrayOut -join "`n").Contains('Test-ArtifactVersion: PASS (2 file(s)')) { Write-Host '  ok    two paths as an array (as build.ps1 passes them) pass' -ForegroundColor Green }
     else { Write-Host "  WRONG two paths as an array (exit $LASTEXITCODE)" -ForegroundColor Red; $arrayOut | ForEach-Object { Write-Host "        $_" }; $failures.Add('an array of paths') }
     Expect 'a missing file is could-not-verify, never a pass' 2 'COULD NOT VERIFY (1 of 1 file(s) not found)' @('-Expect', '26.7.30.0108', '-Path', (Join-Path $work 'nope.exe'))
@@ -103,4 +106,4 @@ try {
 if ($failures.Count -gt 0) {
     Exit-Verdict 'ArtifactVersion' 1 "$($failures.Count) case(s) wrong: $($failures -join '; ')"
 }
-Exit-Verdict 'ArtifactVersion' 0 'the check passes a right version and fails each wrong one for its own reason'
+Exit-Verdict 'ArtifactVersion' 0 "the check passes a right version and fails each wrong one for its own reason; run=$cases skipped=0"

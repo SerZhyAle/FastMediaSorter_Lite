@@ -32,4 +32,22 @@ Public Class SiteAddressConstantsTests
         Assert.StartsWith(SitePages.SiteRoot, ShareLinks.ServerEditionUrl)
     End Sub
 
+    <Fact>
+    Public Sub PortalFunctionPagesAreValidAndResolvePerLocale()
+        For Each page In New String() {"home-network", "windows-servers", "exchange-server", "account-deletion", "live-broadcast", "clouds", "editions"}
+            Dim enUrl As String = ShareLinks.ExchangePortalUrl(page)
+            Assert.StartsWith(SitePages.ExchangePortalRoot, enUrl)
+            Assert.EndsWith(page & ".html", enUrl)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub EveryConfiguredPortalPageIsKnownToResolver()
+        Assert.Equal(7, SitePages.ExchangePortalPages.Length)
+        For Each page In SitePages.ExchangePortalPages
+            Dim ruUrl As String = SitePages.ExchangePortalUrl(page, "ru")
+            Assert.Contains(page & "-ru.html", ruUrl)
+        Next
+    End Sub
+
 End Class

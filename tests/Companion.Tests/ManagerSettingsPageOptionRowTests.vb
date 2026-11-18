@@ -16,14 +16,15 @@ Imports FastMediaSorterCompanion
 Imports Xunit
 
 ''' <summary>
-''' BOOLEAN-OPTION 2.0 on the PAGES of the Share Manager's settings windows (ticket 243, slice T-11c-b2b): the eleven check
+''' BOOLEAN-OPTION 2.0 on the PAGES of the Share Manager's settings windows (ticket 243, slice T-11c-b2b): the ten check
 ''' boxes of the manager, SFTP and exchange-server destinations stand in <see cref="OptionRowHost"/> rows made by
-''' <see cref="OptionRows"/> - the check box stays a real child of its row (name, handlers, Checked, Tab order and persistence are
-''' the page's own), the explanation the page used to hang under the box is the row's explanation, and the row is what the
-''' page's layout, Visible and Enabled see. Held here: the source (no page note helper and no hint binding of the old kind is
-''' left), every box of every destination in a row, and the real windows at 100 % and 175 % in en, ru and ar with every page
-''' selected and every group open (no row leaves its container, none lies over a neighbour, no hit target reaches another
-''' control, no text is cut).
+''' <see cref="OptionRows"/> (L0352 moved the scheduled feature switch out of these windows: its one editor is the
+''' standalone Scheduled operations window's own panel, outside the settings pages) - the check box stays a real child of
+''' its row (name, handlers, Checked, Tab order and persistence are the page's own), the explanation the page used to hang
+''' under the box is the row's explanation, and the row is what the page's layout, Visible and Enabled see. Held here: the
+''' source (no page note helper and no hint binding of the old kind is left), every box of every destination in a row, and
+''' the real windows at 100 % and 175 % in en, ru and ar with every page selected and every group open (no row leaves its
+''' container, none lies over a neighbour, no hit target reaches another control, no text is cut).
 ''' The scale is EMULATED the way the dialog tests do it (a larger font plus <c>Control.Scale</c>); how a page LOOKS under a real
 ''' pointer on a 150-200 % monitor, in High Contrast or under Narrator stays manual acceptance. The windows are shown without
 ''' the worker: the exchange component is a fake and the pages that would talk to it are marked as loaded.
@@ -35,7 +36,7 @@ Public Class ManagerSettingsPageOptionRowTests
 
     ''' <summary>The check boxes of the settings pages by field name (the pages build them for their destination only).</summary>
     Private Shared ReadOnly BoxFields As String() = {
-        "chkAutostart", "chkOpenOnStart", "chkLanOnly", "_schedFeature", "_chkXRemoteAdminOn", "_chkPxPublish", "_chkPxThird",
+        "chkAutostart", "chkOpenOnStart", "chkLanOnly", "_chkXRemoteAdminOn", "_chkPxPublish", "_chkPxThird",
         "_chkXAwake", "_chkXKeepPasswords", "_chkXSharedInv", "_chkXKeep"}
 
     Private Shared ReadOnly Destinations As SettingsDestination() = {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
@@ -121,10 +122,6 @@ Public Class ManagerSettingsPageOptionRowTests
     End Function
 
     Private Shared Function Fld(window As Share_Settings_Form, name As String) As CheckBox
-        If name = "_schedFeature" Then
-            ' L0297 moved this option into the shared scheduling panel hosted by Manager settings.
-            Return TryCast(window.Controls.Find("managerSchedFeature", True).FirstOrDefault(), CheckBox)
-        End If
         Dim field As FieldInfo = GetType(Share_Settings_Form).GetField(name, Flags)
         Assert.True(field IsNot Nothing, "the window has no field " & name)
         Return TryCast(field.GetValue(window), CheckBox)

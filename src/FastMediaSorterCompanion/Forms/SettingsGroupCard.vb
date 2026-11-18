@@ -44,7 +44,8 @@ Public NotInheritable Class SettingsGroupCard
         AutoSize = True
         AutoSizeMode = AutoSizeMode.GrowAndShrink
         Dock = DockStyle.Top
-        Margin = New Padding(0, 10, 0, 10)
+        ' 4 + 4: the 8 logical px between sibling groups of COLLAPSIBLE-GROUP section 3 rule 6.
+        Margin = New Padding(0, CollapsibleSection.SiblingGapLogical \ 2, 0, CollapsibleSection.SiblingGapLogical \ 2)
         ' The 1 px frame the border paints into; the children dock inside it.
         Padding = New Padding(1)
         SetStyle(ControlStyles.AllPaintingInWmPaint Or ControlStyles.OptimizedDoubleBuffer Or
@@ -300,7 +301,7 @@ Public NotInheritable Class SettingsGroupCard
             If Width < LogicalToDeviceUnits(200) Then Return
             Using bold As New Font(Font, FontStyle.Bold)
                 Dim measured = TextRenderer.MeasureText(_title, bold, New Size(Math.Max(1, Width - LogicalToDeviceUnits(48)), Integer.MaxValue), TextFormatFlags.WordBreak)
-                Dim desired = Math.Max(LogicalToDeviceUnits(44), measured.Height + LogicalToDeviceUnits(16))
+                Dim desired = Math.Max(UiSizing.DevicePx(44, MarkerFactor()), measured.Height + LogicalToDeviceUnits(16))
                 If Height <> desired Then Height = desired
             End Using
         End Sub
@@ -393,6 +394,7 @@ Public NotInheritable Class SettingsGroupCard
         ''' control's own DPI. A test cannot move a window to a 175 percent monitor, so it names the factor.</summary>
         Friend Sub SetMarkerScale(factor As Single)
             _markerScale = factor
+            FitTitle()
             Invalidate()
         End Sub
 

@@ -316,6 +316,7 @@ another Share Manager runs, the tray one included, because a new launch would ha
 ### Чек-лист релиза (что нельзя забыть)
 
 **A. Документация и сайт (до тега):**
+- [ ] **Contracts first (L0323, owner order 2026-11-15):** before the version is cut, repeat the contract catch-up for the three registry names (`FastMediaSorter_Lite`, `FMS Share Manager`, `FastMediaSorter Windows`); the steps and the done condition are in [build-release.md](../../.claude/rules/build-release.md) "Contract catch-up". The release is not cut on a `behind`, `partial`, `pending` or `unparsed` row without a dated reason in the row.
 - [ ] Обновлены `README.md`, `README_RU.md`, `README_UK.md` если менялись фичи.
 - [ ] Обновлён сайт [index.html](../../index.html) / [docs/privacy.html](../privacy.html) по контенту.
       Версию руками НЕ править: её, ссылки на ассеты, `.sha256` и дату рисует `tools/Set-ReleaseManifest.ps1`

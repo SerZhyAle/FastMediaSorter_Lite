@@ -70,15 +70,15 @@ Public Class DialogOptionRowTests
 
     Private Const LongFile As String = "A-photo-with-a-rather-long-file-name-that-goes-on.webp"
 
-    ''' <summary>The 12 check boxes (14 subjects: the connect window also in its registration mode, the broadcast window also with the
-    ''' exchange off, where the LAN hint is the explanation of "this is live").</summary>
+    ''' <summary>The 11 check boxes (13 subjects: the connect window also in its registration mode, the broadcast window also with the
+    ''' exchange off, where the LAN hint is the explanation of "this is live"). The broadcast window's automatic-accept box moved to the
+    ''' Settings window as a row in L0332; its band holds a link now.</summary>
     Private Shared Function Subjects() As List(Of Subject)
         Dim credentialTab As String = "resource_Password,resource_Reveal,resource_Remember"
         Dim editTab As String = "res_Kind,res_Name,res_Host,res_Port,res_User,res_Password,res_Reveal,res_Folder,res_ReadOnly"
         Dim secureTab As String = "secure_Password,secure_Reveal,secure_Remember"
         Dim connectTab As String = "xc_Input,xc_Paste,xc_OpenFile,xc_Login,xc_Password,xc_Reveal"
-        Dim liveOnTab As String = "TextBox,live_IsLive,ListView,live_AutoCast"
-        Dim liveOffTab As String = "TextBox,live_IsLive,ListView"
+        Dim liveTab As String = "TextBox,live_IsLive,ListView"
         Dim devicesTab As String = "res_DevicesList,res_DevicesAuto,res_DevicesSignOut,res_DevicesAdd"
         Return New List(Of Subject) From {
             New Subject("Resource_Credential_Form", "resource_Reveal", False, "", credentialTab, "resource_Password",
@@ -100,12 +100,10 @@ Public Class DialogOptionRowTests
             New Subject("Exchange_Connect_Form(register)", "xc_Reveal", False, "", "", "xc_Password",
                         Function() New Exchange_Connect_Form("exchange.example:443", Nothing, New ExchangeConsumerPorts()),
                         setup:=Sub(f) DirectCast(f.Controls("xc_Input"), TextBox).Text = InvitationText()),
-            New Subject("LiveBroadcast_Form(exchange off)", "live_IsLive", False, "live_LanHint", liveOffTab, "",
+            New Subject("LiveBroadcast_Form(exchange off)", "live_IsLive", False, "live_LanHint", liveTab, "",
                         Function() New LiveBroadcast_Form(), exchangeOff:=True),
-            New Subject("LiveBroadcast_Form", "live_IsLive", False, "", liveOnTab, "",
+            New Subject("LiveBroadcast_Form", "live_IsLive", False, "", liveTab, "",
                         Function() New LiveBroadcast_Form()),
-            New Subject("LiveBroadcast_Form", "live_AutoCast", True, "", liveOnTab, "",
-                        Function() New LiveBroadcast_Form(True)),
             New Subject("Video_Replace_Confirm_Form", "replace_Suppress", False, "", "replace_Suppress", "",
                         Function() New Video_Replace_Confirm_Form(LongFile, LongFile.Replace(".webp", ".mp4"), True)),
             New Subject("Exchange_Devices_Panel", "res_DevicesAuto", False, "res_DevicesAutoNote", devicesTab, "",

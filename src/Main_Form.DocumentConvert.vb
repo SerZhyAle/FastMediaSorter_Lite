@@ -412,8 +412,10 @@ Partial Public Class Main_Form
         If job.SnapshotFolder.Length > 0 AndAlso Not DocHtmlSnapshot.TryDelete(job.SnapshotFolder) Then
             AppFileLogger.LogMessage("doc-html-translate document job " & job.Id & " snapshot left for the next sweep")
         End If
-        AppFileLogger.LogMessage(String.Format(CultureInfo.InvariantCulture, "doc-html-translate document job {0} mode={1} exit={2} outcome={3} tool={4}",
-                                               job.Id, job.Mode, code, outcome, result.ToolVersion))
+        ' LogDetail names which item C rule 3 case a not-completed record was (unparseable, foreign tool, other source,
+        ' newer schema + the contract and version) - constants and numbers only, never a path or the record's text.
+        AppFileLogger.LogMessage(String.Format(CultureInfo.InvariantCulture, "doc-html-translate document job {0} mode={1} exit={2} outcome={3} tool={4} {5}",
+                                               job.Id, job.Mode, code, outcome, result.ToolVersion, DocHtmlResultReader.LogDetail(result)).TrimEnd())
         If IsDisposed OrElse Disposing OrElse Not IsHandleCreated Then
             DisposeDocumentJob(job)
             Return
@@ -464,7 +466,8 @@ Partial Public Class Main_Form
                 Notify(Localization.TF("doc-html-translate не закончила страницу для «{0}».", name), NotifyLevel.Warning)
             Case DocHtmlJobOutcome.NewerSchema
                 Notify(Localization.TF("Результат для «{0}» записан более новой версией doc-html-translate и не открыт.", name), NotifyLevel.Warning)
-            Case DocHtmlJobOutcome.Unsafe
+            Case DocHtmlJobOutcome.Unsafe, DocHtmlJobOutcome.RecordNotRecognized
+                ' An unparseable or foreign record is not an unfinished run (item C rule 3): the result failed the check.
                 Notify(Localization.TF("Результат для «{0}» не прошёл проверку и не открыт.", name), NotifyLevel.Warning)
             Case DocHtmlJobOutcome.BadArguments, DocHtmlJobOutcome.IoError, DocHtmlJobOutcome.Failed
                 Notify(Localization.TF("doc-html-translate завершилась с ошибкой (код {0}).", code), NotifyLevel.Warning)

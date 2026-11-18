@@ -382,6 +382,53 @@ Public Class CollapsibleGroupMarkerTests
         Throw New FileNotFoundException("src\" & name & " not found above " & AppContext.BaseDirectory)
     End Function
 
+    ' ------------------------------------------------------------------ spacing and hit height ----
+
+    <Theory, Trait("Kind", "UiForm"), Trait("Form", "SettingsCollapsibleGroup")>
+    <InlineData(1.0F)>
+    <InlineData(1.5F)>
+    <InlineData(2.0F)>
+    Public Sub The_sibling_gap_is_8_and_the_header_hit_height_32_scaled_built_or_rescaled(scale As Single)
+        ' COLLAPSIBLE-GROUP section 3 rule 6: 8 units between sibling groups, header hit height 32 for pointer.
+        Dim gap As Integer = Math.Max(8, CInt(Math.Ceiling(8 * scale)))
+        Dim hit As Integer = Math.Max(32, CInt(Math.Ceiling(32 * scale)))
+        WithGroup(scale, "Group", expanded:=False, rtl:=False,
+            Sub(group)
+                Assert.Equal(gap, group.Margin.Top + group.Margin.Bottom)
+                Assert.True(group.Header.Height >= hit, "built at x" & scale & ": header " & group.Header.Height & " < " & hit)
+            End Sub)
+        WithGroup(1.0F, "Group", expanded:=True, rtl:=False,
+            Sub(group)
+                group.SetLayoutScale(scale)
+                group.ArrangeContents()
+                Assert.Equal(gap, group.Margin.Top + group.Margin.Bottom)
+                Assert.True(group.Header.Height >= hit, "rescaled to x" & scale & ": header " & group.Header.Height & " < " & hit)
+            End Sub)
+    End Sub
+
+    ''' <summary>COLLAPSIBLE-GROUP 1.3 section 8 item B: the group headings of a page draw a topic glyph on every heading or
+    ''' on none. Both programs draw none - only the state triangle - so any picture reaching a heading fails here.</summary>
+    <Fact>
+    Public Sub No_group_heading_of_either_program_carries_a_topic_glyph()
+        Dim headerSources As String() = {
+            "SettingsCollapsibleGroup.vb",
+            Path.Combine("FastMediaSorterCompanion", "Forms", "SettingsGroupCard.vb"),
+            Path.Combine("FastMediaSorterCompanion", "Forms", "CollapsibleSection.vb")}
+        For Each name As String In headerSources
+            Dim source As String = SourceFile(name)
+            For Each picture As String In {"Header.Image", ".Image =", "ImageList", "ImageIndex", "DrawImage", "GlyphRenderer", "IconMap.", "ButtonGlyphs."}
+                Assert.False(source.Contains(picture), name & " puts a picture on a group heading: " & picture)
+            Next
+        Next
+        ' The viewer's builders: nothing assigns a picture to a group's header button from outside.
+        For Each name As String In {"Table_Form.SettingsGroups.vb", "Table_Form.LazyPages.vb", "Table_Form.ModernLayout.vb", "Table_Form.SettingsDiscovery.vb"}
+            Dim source As String = SourceFile(name)
+            For Each picture As String In {"Header.Image", "Header.ImageList", "Header.ImageIndex", "Header.BackgroundImage"}
+                Assert.False(source.Contains(picture), name & " puts a picture on a group heading: " & picture)
+            Next
+        Next
+    End Sub
+
     <Fact>
     Public Sub The_group_header_no_longer_bakes_the_action_chevron()
         ' collapsibleSection / collapsibleSectionOpen are nav.expand / nav.collapse: action chevrons that stay

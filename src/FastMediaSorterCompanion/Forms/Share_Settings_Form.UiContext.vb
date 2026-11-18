@@ -91,7 +91,6 @@ Partial Public NotInheritable Class Share_Settings_Form
         LoadSelectedSettingsPage()
         _pages(_selectedPage).PerformLayout()
         RestoreSettingsViewport()
-        If _schedPanel IsNot Nothing Then _schedPanel.HandleScheduledPrefill()
     End Sub
 
     Private Function PageRows() As Control()

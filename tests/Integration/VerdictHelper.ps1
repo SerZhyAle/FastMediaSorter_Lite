@@ -32,7 +32,9 @@ function New-Child([string]$name, [string]$body) {
 }
 
 $failures = [Collections.Generic.List[string]]::new()
+$cases = 0
 function Assert-That([string]$name, [bool]$condition, [string]$detail = '') {
+    $script:cases++
     if ($condition) { Write-Host "  ok    $name" -ForegroundColor Green }
     else { Write-Host "  WRONG $name $detail" -ForegroundColor Red; $failures.Add($name) }
 }
@@ -81,4 +83,4 @@ try {
 if ($failures.Count -gt 0) {
     Exit-Verdict 'VerdictHelper' 1 "$($failures.Count) case(s) wrong: $($failures -join '; ')"
 }
-Exit-Verdict 'VerdictHelper' 0 'the readers know NOT APPLICABLE: exit 0, counted with the skipped, never a pass, never believed over a non-zero exit'
+Exit-Verdict 'VerdictHelper' 0 "the readers know NOT APPLICABLE: exit 0, counted with the skipped, never a pass, never believed over a non-zero exit; run=$cases skipped=0"

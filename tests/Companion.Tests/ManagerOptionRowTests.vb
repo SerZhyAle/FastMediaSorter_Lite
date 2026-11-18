@@ -65,12 +65,14 @@ Public Class ManagerOptionRowTests
 
     Private Shared Function ScheduledSubject() As Subject
         Dim fields As New List(Of KeyValuePair(Of String, Boolean)) From {
-            Pair("chkRecursive", True), Pair("chkDeleteOriginals", False), Pair("chkBackupSeal", False),
+            Pair("chkRecursive", True), Pair("chkDeleteOriginals", False),
+            Pair("chkBackupKeepMonthly", False), Pair("chkBackupSkipLinks", False), Pair("chkBackupSeal", False),
             Pair("chkAllFiles", True), Pair("chkImages", False), Pair("chkAudio", False), Pair("chkVideo", False), Pair("chkDocuments", False),
             Pair("chkOlder", False), Pair("chkYounger", False), Pair("chkLarger", False), Pair("chkSmaller", False), Pair("chkHidden", False),
             Pair("chkEnabled", True), Pair("chkRetryMissed", True), Pair("chkBalloonOnError", False)}
         Dim names As New Dictionary(Of String, String)(StringComparer.Ordinal) From {
-            {"chkRecursive", "chkSchedRecursive"}, {"chkDeleteOriginals", "chkSchedDeleteOriginals"}, {"chkBackupSeal", "chkSchedBackupSeal"},
+            {"chkRecursive", "chkSchedRecursive"}, {"chkDeleteOriginals", "chkSchedDeleteOriginals"},
+            {"chkBackupKeepMonthly", "chkSchedBackupKeepMonthly"}, {"chkBackupSkipLinks", "chkSchedBackupSkipLinks"}, {"chkBackupSeal", "chkSchedBackupSeal"},
             {"chkAllFiles", "chkSchedAllFiles"}, {"chkImages", "chkSchedImages"}, {"chkAudio", "chkSchedAudio"},
             {"chkVideo", "chkSchedVideo"}, {"chkDocuments", "chkSchedDocuments"},
             {"chkOlder", "chkSchedOlder"}, {"chkYounger", "chkSchedYounger"}, {"chkLarger", "chkSchedLarger"},
@@ -343,7 +345,7 @@ Public Class ManagerOptionRowTests
                 For Each subject As Subject In Subjects()
                     Using shown As Shown = Open(subject, kit, 1.0F)
                         Dim keys As Dictionary(Of CheckBox, String) = KeysOf(shown.Form)
-                        Assert.Equal(If(subject.Window = "Scheduled_Operation_Form", 16, 15), subject.Fields.Count)
+                        Assert.Equal(If(subject.Window = "Scheduled_Operation_Form", 18, 15), subject.Fields.Count)
                         Assert.Equal(subject.Fields.Select(Function(f) f.Key).OrderBy(Function(k) k, StringComparer.Ordinal).ToArray(),
                                      keys.Values.OrderBy(Function(k) k, StringComparer.Ordinal).ToArray())
                         Dim everyCheck As List(Of CheckBox) = AllOf(shown.Form).OfType(Of CheckBox)().ToList()
@@ -355,7 +357,7 @@ Public Class ManagerOptionRowTests
                         total += everyCheck.Count
                     End Using
                 Next
-                Assert.Equal(31, total)
+                Assert.Equal(33, total)
             End Sub)
     End Sub
 
@@ -1072,7 +1074,7 @@ Public Class ManagerOptionRowTests
     Public Sub Neither_window_adds_a_native_check_box_to_its_parent_every_one_goes_through_the_option_row()
         Dim problems As New List(Of String)()
         Dim expected As New Dictionary(Of String, Integer)(StringComparer.Ordinal) From {
-            {Path.Combine("Forms", "Scheduled_Operation_Form.vb"), 16}, {Path.Combine("Forms", "Share_Root_Params_Form.vb"), 8}}
+            {Path.Combine("Forms", "Scheduled_Operation_Form.vb"), 18}, {Path.Combine("Forms", "Share_Root_Params_Form.vb"), 8}}
         For Each pair As KeyValuePair(Of String, Integer) In expected
             Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource(pair.Key))
             Dim made As Integer = Regex.Matches(code, "\bNew CheckBox\b").Count

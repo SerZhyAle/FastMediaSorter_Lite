@@ -126,6 +126,8 @@ Friend Enum ExchangeRefusal
     AppIdMismatch = 20
     ''' <summary>Item EP: a `formatVersion` the server does not implement.</summary>
     VersionIncompatible = 21
+    ''' <summary>Ticket L0336 / DEVICE-EXCHANGE 1.10 item DY: a tunnel `connect` by `broadcastId` for an ended broadcast.</summary>
+    Ended = 22
 End Enum
 
 Friend NotInheritable Class ExchangeRefusals
@@ -137,7 +139,8 @@ Friend NotInheritable Class ExchangeRefusals
         "", "bad-credentials", "device-revoked", "version-unsupported", "tls-required",
         "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
         "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out",
-        "admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible"}
+        "admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible",
+        "ended"}
 
     ''' <summary>The enum of a wire reason; <see cref="ExchangeRefusal.Unknown"/> for anything else.</summary>
     Public Shared Function Parse(reason As String) As ExchangeRefusal
@@ -163,7 +166,8 @@ Friend NotInheritable Class ExchangeRefusals
                 ExchangeRefusal.NotPermitted, ExchangeRefusal.LimitReached, ExchangeRefusal.InvitationInvalid,
                 ExchangeRefusal.LoginTaken, ExchangeRefusal.PasswordPolicy, ExchangeRefusal.SignedOut,
                 ExchangeRefusal.AdminDisabled, ExchangeRefusal.NotFound, ExchangeRefusal.InvalidPayload,
-                ExchangeRefusal.AppIdMismatch, ExchangeRefusal.VersionIncompatible}
+                ExchangeRefusal.AppIdMismatch, ExchangeRefusal.VersionIncompatible,
+                ExchangeRefusal.Ended}
     End Function
 
 End Class

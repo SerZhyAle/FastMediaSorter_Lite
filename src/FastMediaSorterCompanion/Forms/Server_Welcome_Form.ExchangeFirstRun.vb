@@ -329,6 +329,6 @@ Partial Friend NotInheritable Class Server_Welcome_Form
     End Function
 
     Private Sub ShowExchangeFailure(text As String)
-        MessageBox.Show(Me, text, Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        ManagerBox.Show(Me, text, Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 End Class

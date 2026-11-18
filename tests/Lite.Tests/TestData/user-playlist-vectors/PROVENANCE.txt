@@ -6,7 +6,8 @@ What this folder is
 The three Extended M3U8 vectors of the USER-PLAYLIST contract, copied here so that
 UserPlaylistConformanceTests can run for anyone who clones this repository (a test that depends on
 a drive letter cannot run for anybody else). The JSON vector (valid-playlist.sza-playlist.json) is
-not here: this product does not read the JSON carrier (USER-PLAYLIST section 6 A).
+vendored too, but this product does not read the JSON carrier (USER-PLAYLIST section 6 A): the test
+feeds it to the reader to prove it is refused whole with one reason naming the format.
 
 What this folder is NOT
 -----------------------
@@ -28,3 +29,4 @@ and updates this file with it.
   edd8c5057b07db68d97848fb6ef0f59829ad645ab9731159c210bba5353eeebc  hls-manifest-rejection.m3u8
   161fbae86acda2bbcdd0a8bc8d32ad6f184d65003cb6eb9dc27c780c94f9340e  valid-extended-hls-entry.m3u8
   dea1d85abc6d34afc51d02d5d4772f2f572977c9014354f663eda61eba36ca15  valid-extended.m3u8
+  96f8ba19cbde5348c1465b0cabaae531e41f1303b0fc784fcbd0a520ed5b4067  valid-playlist.sza-playlist.json (taken 2026-11-15, L0327)

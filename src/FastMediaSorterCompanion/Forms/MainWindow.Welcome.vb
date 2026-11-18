@@ -113,7 +113,7 @@ Partial Public NotInheritable Class MainWindow
         Dim config As ShareConfigResult = ShareConfigBuilder.Build(_status, Not settings.LanOnlyExport,
             includePassword:=Not settings.ExcludePasswordFromExport)
         If config?.QrPng Is Nothing Then
-            MessageBox.Show(owner, Localization.T("QR-код сейчас недоступен."), ProductNames.ShareManager,
+            ManagerBox.Show(owner, Localization.T("QR-код сейчас недоступен."), ProductNames.ShareManager,
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If

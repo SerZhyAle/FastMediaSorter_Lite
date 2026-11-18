@@ -29,6 +29,9 @@
     6d. Positioning and typed facts -> tools/Test-SitePositioning.ps1 (the four components in the source's order on every declared
                                        surface, the availability matrix against the packaging files, the component in development, the
                                        editions, the language count and the platform floor; offline)
+    6e. Help corpus drift           -> tools/Build-ContextHelp.ps1 -Check (docs/help equals a fresh generation, byte for byte), with its
+                                       fixtures tests/Integration/ContextHelpDriftFixtures.ps1
+    6f. Store listing builder       -> tests/Integration/ListingBuilderFixtures.ps1 (21-word search-term cap, BOM export dialect)
 
     These are UNIT/logic suites - fast, no network, no phone. Five live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it
@@ -359,6 +362,7 @@ Invoke-ScriptSuite 'feature-gates-fixture' 'Feature gate fixtures (206)' (Join-P
 Invoke-ScriptSuite 'server-share-payload' 'Server sharing payload parity fixture (L0307)' (Join-Path $root 'tests\Integration\ServerSharePayload.ps1')
 Invoke-ScriptSuite 'installer-stage-filter' 'Installer stage filter fixture (L0307)' (Join-Path $root 'tests\Integration\InstallerStageFilter.ps1')
 Invoke-ScriptSuite 'installer-component-parity' 'Installer component parity: User and Server setups against the component map, staged payloads and ISCC (L0307)' (Join-Path $root 'tests\Integration\InstallerComponentParity.ps1')
+Invoke-ScriptSuite 'listing-builder' 'Store listing builder fixtures: search-term word cap and BOM export round trip (L0331)' (Join-Path $root 'tests\Integration\ListingBuilderFixtures.ps1')
 
 Invoke-ScriptSuite 'placement' 'Check placement' (Join-Path $root 'tools\Test-CheckPlacement.ps1')
 
@@ -370,6 +374,8 @@ Invoke-ScriptSuite 'site-addresses' 'Site addresses held outside the site' (Join
 Invoke-ScriptSuite 'site-origins' 'Third-party origins of the site' (Join-Path $root 'tools\Test-SiteOrigins.ps1')
 Invoke-ScriptSuite 'site-positioning' 'Positioning source and typed facts of the site' (Join-Path $root 'tools\Test-SitePositioning.ps1')
 Invoke-ScriptSuite 'context-help' 'In-app context help (F1, ?)' (Join-Path $root 'tools\Test-ContextHelp.ps1')
+Invoke-ScriptSuite 'context-help-drift' 'Help corpus equals a fresh generation (DOC-INTERNAL 0.12 W, L0331)' (Join-Path $root 'tools\Build-ContextHelp.ps1') @('-Check')
+Invoke-ScriptSuite 'context-help-drift-fixtures' 'Help drift check fixtures (L0331)' (Join-Path $root 'tests\Integration\ContextHelpDriftFixtures.ps1')
 
 # --- optional live suites -----------------------------------------------------
 if ($Integration) {

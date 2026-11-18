@@ -806,23 +806,23 @@ Partial Public NotInheritable Class MainWindow
     ''' <summary>
     ''' Restores the remembered rectangle. Every failure degrades to the default rather
     ''' than to an unusable window: a size is clamped to the minimum and to the working
-    ''' area, and a position is honoured ONLY if the restored rectangle still lands on some
-    ''' screen - a share manager that opens off-screen because the laptop left the docking
-    ''' station is a support ticket.
+    ''' area, and a position whose title bar meets no screen - the laptop left the docking
+    ''' station - is moved to the NEAREST surviving display, silently (APP-BEHAVIOUR rule 10;
+    ''' the arithmetic is <see cref="ManagerPlacement.RestoreRectangle"/>, held without a display).
     ''' </summary>
     Private Sub RestoreGeometry()
         Try
             If _settings.WindowWidth <= 0 OrElse _settings.WindowHeight <= 0 Then Return
 
-            Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
-            Dim w As Integer = Math.Min(Math.Max(LogicalToDeviceUnits(_settings.WindowWidth), Me.MinimumSize.Width), wa.Width)
-            Dim h As Integer = Math.Min(Math.Max(LogicalToDeviceUnits(_settings.WindowHeight), Me.MinimumSize.Height), wa.Height)
-            Me.Size = New Size(w, h)
-
-            Dim candidate As New Rectangle(_settings.WindowX, _settings.WindowY, w, h)
-            If IntersectsAnyScreen(candidate) Then
+            Dim hasDisplays As Boolean
+            Dim placed As Rectangle = ManagerPlacement.RestoreRectangle(
+                _settings.WindowX, _settings.WindowY,
+                LogicalToDeviceUnits(_settings.WindowWidth), LogicalToDeviceUnits(_settings.WindowHeight),
+                Me.MinimumSize, DpiLayout.WorkingAreaFor(Me), WindowPlacement.CurrentWorkAreas(), hasDisplays)
+            Me.Size = placed.Size
+            If hasDisplays Then
                 Me.StartPosition = FormStartPosition.Manual
-                Me.Location = candidate.Location
+                Me.Location = placed.Location
             End If
         Catch
         End Try
@@ -834,16 +834,6 @@ Partial Public NotInheritable Class MainWindow
         Catch
         End Try
     End Sub
-
-    Private Shared Function IntersectsAnyScreen(r As Rectangle) As Boolean
-        Try
-            For Each s As Screen In Screen.AllScreens
-                If s.WorkingArea.IntersectsWith(r) Then Return True
-            Next
-        Catch
-        End Try
-        Return False
-    End Function
 
     ''' <summary>
     ''' Snapshots the geometry into the settings POCO, ready for Save(). Sizes go out in

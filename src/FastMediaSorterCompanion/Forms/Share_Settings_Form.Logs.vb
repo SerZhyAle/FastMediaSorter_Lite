@@ -23,7 +23,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Shared Sub ShowManagementLogError(owner As IWin32Window, ex As Exception)
         AppFileLogger.LogException("Opening a management log", ex)
-        MessageBox.Show(owner, Localization.T("Не удалось открыть журнал. Проверьте доступ к папке и приложение для текстовых файлов."),
+        ManagerBox.Show(owner, Localization.T("Не удалось открыть журнал. Проверьте доступ к папке и приложение для текстовых файлов."),
             ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Warning)
     End Sub
 End Class

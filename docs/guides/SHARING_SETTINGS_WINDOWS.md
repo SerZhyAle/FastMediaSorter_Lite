@@ -9,7 +9,8 @@ The modern Share Manager has two settings windows: Manager settings, which also 
 | Change startup, theme or language | Manager settings, General | The signed-in manager and its interface |
 | Change SFTP port, connection limit or LAN-only policy | Manager settings, SFTP sharing, Network | Local SFTP folder sharing |
 | Inspect or maintain SFTP interactive/service hosting | Manager settings, SFTP sharing, Hosting | The local SFTP worker and its existing service helper |
-| Manage scheduled file operations | Manager settings, Scheduled file operations | The signed-in manager, independent of either local server |
+| Manage scheduled file operations | The Scheduled operations window - from the tray menu, from the viewer's folder items and command, or through its link on the Manager settings page "Scheduled file operations" | The signed-in manager, independent of either local server; the queue and its settings are managed in the one window, every other place only opens it |
+| Allow viewers on the local network for a live broadcast, show the cursor in it | Manager settings, Live broadcast (the live broadcast window links to it) | The signed-in manager; a running broadcast takes the viewers choice at once, the cursor from the next broadcast |
 | Sign in to a remote server, publish resources, manage this PC's account or clipboard | Manager settings, Exchange account | The selected remote account, without installing a local exchange server |
 | Change local exchange listener, public endpoint, certificate, accounts, devices or invitations | Exchange server settings | The exchange server installed on this PC |
 | Inspect exchange service, keep-awake, log retention, remote administration or audit | Exchange server settings, relevant group | The local exchange server, with existing permissions and confirmations |

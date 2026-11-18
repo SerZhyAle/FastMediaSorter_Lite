@@ -56,10 +56,6 @@ Partial Public NotInheritable Class Localization
             "Orden normal", "Ordre normal", "Ordem normal", "الترتيب المعتاد",
             "सामान्य क्रम", "স্বাভাবিক ক্রম", "عام ترتیب", "正常顺序")
 
-        Add("Случайный",
-            "Random", "Випадковий", "Zufällig", "Casuale", "Aleatorio", "Aléatoire", "Aleatório",
-            "عشوائي", "यादृच्छिक", "এলোমেলো", "بے ترتیب", "随机")
-
         Add("Без повторов до конца цикла",
             "No repeats until the cycle ends", "Без повторів до кінця циклу",
             "Keine Wiederholung bis zum Zyklusende", "Nessuna ripetizione fino a fine ciclo",

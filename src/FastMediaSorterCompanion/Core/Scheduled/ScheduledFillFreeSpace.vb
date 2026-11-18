@@ -158,12 +158,67 @@ Friend NotInheritable Class FillEvents
     Friend ReadOnly Property Numbers As New Dictionary(Of String, Long)(StringComparer.Ordinal)
     ''' <summary>The `details.reason` tokens of the run's `error` findings (rule 17); a finding without one adds nothing.</summary>
     Friend ReadOnly Property Reasons As New HashSet(Of String)(StringComparer.Ordinal)
+    ''' <summary>Links skipped when `backup .. skip-links` runs (`finding` `type="info"` `details.skippedLink`).</summary>
+    Friend ReadOnly Property SkippedLinks As New List(Of String)()
 
     ''' <summary>A published number, or Nothing when the run did not report it.</summary>
     Friend Function Number(key As String) As Long?
         Dim value As Long
         If Numbers.TryGetValue(key, value) Then Return value
         Return Nothing
+    End Function
+
+    ''' <summary>CLI-EVENT-STREAM 0.17 item B: the files the fill created, Nothing when the run did not number them.</summary>
+    Friend ReadOnly Property FilesCreated As Long?
+        Get
+            Return Number("filesCreated")
+        End Get
+    End Property
+
+    ''' <summary>0.17 item B: the bytes the fill wrote, Nothing when the run did not number them.</summary>
+    Friend ReadOnly Property BytesWritten As Long?
+        Get
+            Return Number("bytesWritten")
+        End Get
+    End Property
+
+    ''' <summary>0.17 item C: the fill files of its own run that `del` could not remove (a `del` that leaves any ends Failed,
+    ''' exit 1); Nothing when the run did not number them, which is "not reported", never zero.</summary>
+    Friend ReadOnly Property FilesNotDeleted As Long?
+        Get
+            Return Number("filesNotDeleted")
+        End Get
+    End Property
+
+    ''' <summary>True when the run numbered both what it created and what it wrote. When it did not (an older FileDO), the
+    ''' journal falls back to the last `progress` event's doneItems / doneBytes and says so (0.17 item B).</summary>
+    Friend ReadOnly Property NumbersReported As Boolean
+        Get
+            Return FilesCreated.HasValue AndAlso BytesWritten.HasValue
+        End Get
+    End Property
+
+    ''' <summary>The items the run produced: the numbered `filesCreated`, else the last progress count.</summary>
+    Friend Function ItemsProduced() As Long
+        Dim created As Long? = FilesCreated
+        Return Math.Max(0L, If(created.HasValue, created.Value, DoneItems))
+    End Function
+
+    ''' <summary>The bytes the run produced: the numbered `bytesWritten`, else the last progress count.</summary>
+    Friend Function BytesProduced() As Long
+        Dim written As Long? = BytesWritten
+        Return Math.Max(0L, If(written.HasValue, written.Value, DoneBytes))
+    End Function
+
+    ''' <summary>What the item journal records as the fill's verdict: the judged word, then the facts a reader of the journal
+    ''' needs and the word alone would hide - the files `del` left (item C) and that the counts came from `progress`
+    ''' because the run numbered none (item B).</summary>
+    Friend Function JournalVerdict(judged As FillJudgement) As String
+        Dim text As String = judged.ToString()
+        Dim left As Long? = FilesNotDeleted
+        If left.HasValue AndAlso left.Value > 0L Then text &= ";not-deleted=" & left.Value.ToString(CultureInfo.InvariantCulture)
+        If Not NumbersReported Then text &= ";counts=progress"
+        Return text
     End Function
 
     ''' <summary>Reads the whole file after the process ended. A final line without its newline is a write in progress and is
@@ -205,12 +260,21 @@ Friend NotInheritable Class FillEvents
                         Case "finding"
                             Dim findingType As JsonElement
                             Dim details As JsonElement
-                            Dim reason As JsonElement
                             If hasData AndAlso data.TryGetProperty("type", findingType) AndAlso findingType.ValueKind = JsonValueKind.String AndAlso
-                               findingType.GetString() = "error" AndAlso data.TryGetProperty("details", details) AndAlso
-                               details.ValueKind = JsonValueKind.Object AndAlso details.TryGetProperty("reason", reason) AndAlso
-                               reason.ValueKind = JsonValueKind.String Then
-                                events.Reasons.Add(reason.GetString())
+                               data.TryGetProperty("details", details) AndAlso details.ValueKind = JsonValueKind.Object Then
+                                Dim kindName As String = findingType.GetString()
+                                If kindName = "error" Then
+                                    Dim reason As JsonElement
+                                    If details.TryGetProperty("reason", reason) AndAlso reason.ValueKind = JsonValueKind.String Then
+                                        events.Reasons.Add(reason.GetString())
+                                    End If
+                                ElseIf kindName = "info" Then
+                                    Dim skippedLink As JsonElement
+                                    If details.TryGetProperty("skippedLink", skippedLink) AndAlso skippedLink.ValueKind = JsonValueKind.String Then
+                                        Dim linkText As String = skippedLink.GetString()
+                                        If Not String.IsNullOrEmpty(linkText) Then events.SkippedLinks.Add(linkText)
+                                    End If
+                                End If
                             End If
                         Case "result"
                             events.HasResult = True
@@ -244,6 +308,9 @@ Friend NotInheritable Class FillEvents
     ''' <summary>
     ''' Rules 10, 11 and 15: no result, a refused carrier, an unknown verdict word or a verdict its exit code contradicts is
     ''' not proven; a stop this run requested is authoritative unless the result is Failed, which outranks a stop.
+    ''' The agreeing exit code is the CLI-EVENT-STREAM 0.14 rule 11 table (amended 2026-11-10): Passed / Done 0, Failed 1,
+    ''' Not proven 2 or 10-15 (a refusal, a wall or an obstacle class), Stopped 16. `fill` is not one of the rule 15
+    ''' exceptions (reveal, container stop), so a Stopped that exits 0 contradicts its own code.
     ''' <paramref name="exitCode"/> is Nothing when the process was ended rather than exiting by itself.
     ''' </summary>
     Friend Function Judge(exitCode As Integer?, stopRequested As Boolean) As FillJudgement
@@ -253,8 +320,8 @@ Friend NotInheritable Class FillEvents
             Select Case Verdict
                 Case "Passed", "Done" : judged = FillJudgement.Passed : agreed = exitCode.HasValue AndAlso exitCode.Value = 0
                 Case "Failed" : judged = FillJudgement.Failed : agreed = exitCode.HasValue AndAlso exitCode.Value = 1
-                Case "Not proven" : judged = FillJudgement.NotProven : agreed = exitCode.HasValue AndAlso exitCode.Value = 2
-                Case "Stopped" : judged = FillJudgement.Stopped : agreed = exitCode.HasValue AndAlso exitCode.Value = 0
+                Case "Not proven" : judged = FillJudgement.NotProven : agreed = exitCode.HasValue AndAlso IsNotProvenExit(exitCode.Value)
+                Case "Stopped" : judged = FillJudgement.Stopped : agreed = exitCode.HasValue AndAlso exitCode.Value = StoppedExit
             End Select
         End If
         If stopRequested Then
@@ -262,6 +329,14 @@ Friend NotInheritable Class FillEvents
             Return If(agreed, FillJudgement.Failed, FillJudgement.NotProven)
         End If
         Return If(agreed, judged, FillJudgement.NotProven)
+    End Function
+
+    ''' <summary>The exit code of a Stopped result (0.14 rule 11).</summary>
+    Friend Const StoppedExit As Integer = 16
+
+    ''' <summary>The exit codes a Not proven result may carry: 2, or one of the classes 10-15 (0.14 rule 11).</summary>
+    Friend Shared Function IsNotProvenExit(exitCode As Integer) As Boolean
+        Return exitCode = 2 OrElse (exitCode >= 10 AndAlso exitCode <= 15)
     End Function
 End Class
 

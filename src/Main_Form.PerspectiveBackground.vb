@@ -93,7 +93,7 @@ Partial Public Class Main_Form
 
     ' The arithmetic of the bars - which axis, the fitted rectangle, the sampled edge, the spread and
     ' the uniform-or-perspective decision, the trimmed mean, the smoothing, the bands and the seam -
-    ' lives once in LetterboxFillMath (LETTERBOX-BARS 0.1 rules 1-7, held to the catalog's vectors by
+    ' lives once in LetterboxFillMath (LETTERBOX-BARS 0.2 rules 1-7, held to the catalog's vectors by
     ' LetterboxFillConformanceTests). This file keeps only the GDI+ glue that paints what it returns.
 
     Private Function GetEdgeSampleDepth(scale As Double, sourceSize As Integer) As Integer

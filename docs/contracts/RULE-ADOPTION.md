@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `REPO-STAMP`, `HARNESS-PROFILE`, `REPO-LAYOUT`, `RULE-DELIVERY` |
-| **Version** | `REPO-STAMP` 0.13, `HARNESS-PROFILE` 0.17, `REPO-LAYOUT` 0.11, `RULE-DELIVERY` 0.12, all draft (`REPO-STAMP` and `HARNESS-PROFILE` read 2026-11-15, L0323 catch-up, from 0.12 each; `REPO-LAYOUT` and `RULE-DELIVERY` as read 2026-10-20, specification 244). `REPO-STAMP` 0.13 is an optional carrier and the stamp is valid without it; `REPO-STAMP` and `RULE-DELIVERY` 0.12 are `breaking` for a **reader**, not for a stamp. `HARNESS-PROFILE` is `partial` (one open item below, dated 2026-11-15 in the registry). Owner: sza-unified-rules |
+| **Version** | `REPO-STAMP` 0.13, `HARNESS-PROFILE` 0.17, `REPO-LAYOUT` 0.11, `RULE-DELIVERY` 0.12, all draft (`REPO-STAMP` and `HARNESS-PROFILE` read 2026-11-15, L0323 catch-up, from 0.12 each; `REPO-LAYOUT` and `RULE-DELIVERY` as read 2026-10-20, specification 244). `REPO-STAMP` 0.13 is an optional carrier and the stamp is valid without it; `REPO-STAMP` and `RULE-DELIVERY` 0.12 are `breaking` for a **reader**, not for a stamp. `HARNESS-PROFILE`: the one open item of the 2026-11-15 catch-up (`paths.changelog`) is fixed in the profile by ticket L0331; its registry row still reads `partial` until the next catch-up advances it. Owner: sza-unified-rules |
 | **Home** | `rule-adoption/README.md` in the shared contracts catalog |
 | **Role here** | producer of the stamp (`.sza-canon.json`, written by the adoption run, never by hand), consumer of the other three, `HARNESS-PROFILE` included (a bound consumer since 2026-10-29, see below) |
 
@@ -31,9 +31,9 @@
   repository records that plan as skipped in `CLAUDE.md`. `docs/specifications/RELEASE_QUEUE.md` is a
   dependency-ordered work queue, not that file, and has no type prefix; it is a dated registry exception
   until it is renamed (`PLAN_` prefix) or declared. No gate checks the prefix.
-- **`HARNESS-PROFILE` - a bound consumer, `partial`.** `.sza-profile.json` exists since 2026-10-29 (the
+- **`HARNESS-PROFILE` - a bound consumer.** `.sza-profile.json` exists since 2026-10-29 (the
   stamp declares `ledgerShape` 1 with no `ledgerFile`; the repository's ledger is the root `CHANGELOG.md`, and the
-  dev-log tools are not used). **Open:** the profile sets no `paths.changelog`, and under 0.12 a project that does
-  not use the dev-log tools sets it empty, because a dev-log target is never derived from another file; a dated
-  exception of 2026-11-15 in the registry, one line to fix (`"changelog": ""` under `paths`), ticket L0331.
+  dev-log tools are not used). Under 0.12 a project that does not use the dev-log tools sets `paths.changelog`
+  empty, because a dev-log target is never derived from another file: the profile carries `"changelog": ""`
+  under `paths` since 2026-11-15 (ticket L0331; read back through the harness, `paths.changelog` is the empty string).
 - Enforcement comes from the `sza` plugin's hooks, never a second local copy of them.

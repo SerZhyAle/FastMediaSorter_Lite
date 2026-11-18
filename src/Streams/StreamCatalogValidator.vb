@@ -322,20 +322,21 @@ Namespace Streams
                         v11Pass = False
                         v11Detail = "Row " & r & " access is not blank: " & rowAccess
                     End If
+                    ' Rule 14 (item O): country is ONE officially assigned ISO 3166-1 alpha-2 code, language is the
+                    ' canonical names of the closed vocabulary - comma-separated, one entry per language, no repeats.
+                    ' Shape alone ("two capital letters", "all lowercase") was V11 until 2.3 and let XX through.
                     If Not String.IsNullOrEmpty(rowCountry) Then
-                        If rowCountry.Length <> 2 OrElse Not Char.IsUpper(rowCountry(0)) OrElse Not Char.IsUpper(rowCountry(1)) Then
+                        If Not StreamFacetFold.IsAssignedCountry(rowCountry) Then
                             v11Pass = False
-                            v11Detail = "Row " & r & " country is not ISO 3166-1 alpha-2 uppercase: " & rowCountry
+                            v11Detail = "Row " & r & " country is not an assigned ISO 3166-1 alpha-2 code: " & rowCountry
                         End If
                     End If
                     If Not String.IsNullOrEmpty(rowLanguage) Then
-                        For Each ch In rowLanguage
-                            If Not Char.IsLower(ch) Then
-                                v11Pass = False
-                                v11Detail = "Row " & r & " language is not lowercase: " & rowLanguage
-                                Exit For
-                            End If
-                        Next
+                        Dim languageProblem As String = DescribeLanguageCellProblem(rowLanguage)
+                        If languageProblem.Length > 0 Then
+                            v11Pass = False
+                            v11Detail = "Row " & r & " language " & languageProblem & ": " & rowLanguage
+                        End If
                     End If
                 Next
 
@@ -391,6 +392,20 @@ Namespace Streams
             result.Verdicts.Add(New StreamValidationVerdict("V12", "Archive size is within declared 128 MiB ceiling", v12Pass, v12Detail))
 
             Return result
+        End Function
+
+        ''' <summary>
+        ''' Why a non-blank <c>language</c> cell is not a closed-set value (STREAM-BANK rule 14), or an empty string when it is:
+        ''' every comma-separated entry must be a canonical name of the vocabulary, none may repeat, none may be empty.
+        ''' </summary>
+        Friend Function DescribeLanguageCellProblem(cell As String) As String
+            Dim seen As New HashSet(Of String)(StringComparer.Ordinal)
+            For Each entry As String In cell.Split(","c)
+                If entry.Length = 0 Then Return "has an empty entry"
+                If Not StreamFacetFold.IsLanguageName(entry) Then Return "names no language of the vocabulary (" & entry & ")"
+                If Not seen.Add(entry) Then Return "repeats a language (" & entry & ")"
+            Next
+            Return String.Empty
         End Function
 
         ''' <summary>

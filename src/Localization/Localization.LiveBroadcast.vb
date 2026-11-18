@@ -312,6 +312,27 @@ Partial Public NotInheritable Class Localization
             "Übertragungen automatisch annehmen", "Accetta automaticamente le trasmissioni", "Aceptar transmisiones automáticamente",
             "Accepter les diffusions automatiquement", "Aceitar transmissões automaticamente", "قبول البث تلقائيًا", "प्रसारण स्वचालित रूप से स्वीकार करें",
             "স্বয়ংক্রিয়ভাবে সম্প্রচার গ্রহণ করুন", "نشریات خودکار طور پر قبول کریں", "自动接受直播")
+        ' L0332: the settings row's explanation and the "Open live broadcast" window's link to it.
+        Add("Входящая трансляция с вашего устройства открывается без вопроса. Если выключено, перед началом воспроизведения программа спрашивает, принять ли её.",
+            "An incoming broadcast from your device opens without a question. When off, the program asks before it starts playing.",
+            "Вхідна трансляція з вашого пристрою відкривається без запитання. Якщо вимкнено, перед відтворенням програма питає, чи прийняти її.",
+            "Eine eingehende Übertragung von Ihrem Gerät wird ohne Rückfrage geöffnet. Ist die Option aus, fragt das Programm vor der Wiedergabe nach.",
+            "Una trasmissione in arrivo dal tuo dispositivo si apre senza chiedere. Se disattivata, il programma chiede conferma prima di riprodurla.",
+            "Una transmisión entrante de tu dispositivo se abre sin preguntar. Si está desactivada, el programa pregunta antes de reproducirla.",
+            "Une diffusion entrante de votre appareil s'ouvre sans poser de question. Si l'option est désactivée, le programme demande confirmation avant la lecture.",
+            "Uma transmissão recebida do seu dispositivo abre sem perguntar. Se estiver desativada, o programa pergunta antes de reproduzir.",
+            "يتم فتح البث الوارد من جهازك دون سؤال. عند إيقاف الخيار، يسأل البرنامج قبل بدء التشغيل.",
+            "आपके उपकरण से आने वाला प्रसारण बिना पूछे खुल जाता है। बंद होने पर प्रोग्राम चलाने से पहले पूछता है।",
+            "আপনার ডিভাইস থেকে আসা সম্প্রচার জিজ্ঞাসা ছাড়াই খোলে। বন্ধ থাকলে প্রোগ্রাম চালানোর আগে জিজ্ঞাসা করে।",
+            "آپ کے آلے سے آنے والی نشریات بغیر پوچھے کھل جاتی ہے۔ بند ہونے پر پروگرام چلانے سے پہلے پوچھتا ہے۔",
+            "来自您设备的传入直播会直接打开，不再询问。关闭时，程序会在播放前先询问。")
+        Add("Автоприём входящих трансляций - в настройках..",
+            "Automatic acceptance of incoming broadcasts - in the settings..", "Автоприйом вхідних трансляцій - у налаштуваннях..",
+            "Eingehende Übertragungen automatisch annehmen - in den Einstellungen..", "Accettazione automatica delle trasmissioni in arrivo - nelle impostazioni..",
+            "Aceptación automática de transmisiones entrantes - en los ajustes..", "Acceptation automatique des diffusions entrantes - dans les réglages..",
+            "Aceitação automática de transmissões recebidas - nas configurações..", "القبول التلقائي للبث الوارد - في الإعدادات..",
+            "आने वाले प्रसारणों की स्वचालित स्वीकृति - सेटिंग्स में..", "আগত সম্প্রচারের স্বয়ংক্রিয় গ্রহণ - সেটিংসে..",
+            "آنے والی نشریات کی خودکار قبولیت - ترتیبات میں..", "自动接受传入直播 - 在设置中..")
     End Sub
 
 End Class

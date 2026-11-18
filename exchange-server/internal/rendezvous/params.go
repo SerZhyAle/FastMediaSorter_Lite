@@ -45,6 +45,7 @@ type Params struct {
 	// NotesPerAccount is the count of note records (tombstones included) a new account may hold (DEVICE-EXCHANGE
 	// 1.13 item FL, ticket L0321); the policy carries it as Defaults.Notes. 0 is accounts.DefaultNotesPerAccount.
 	NotesPerAccount int
+	NotesMaxBytes   int64
 }
 
 // DefaultParams returns the working defaults.
@@ -75,6 +76,7 @@ func DefaultParams() Params {
 		ClipboardIdle:        60 * time.Second,
 		ClipboardProbe:       500 * time.Millisecond,
 		NotesPerAccount:      accounts.DefaultNotesPerAccount,
+		NotesMaxBytes:        accounts.DefaultNotesBytes,
 	}
 }
 
@@ -96,12 +98,8 @@ func (p Params) clampKeepalive(seconds int) time.Duration {
 // Policy is what the deployment's numbers say to the accounts store: the cap on accounts and the limits a
 // new account starts with (19 item AS). The store's own per-account overrides sit on top of it.
 func (p Params) Policy() accounts.Policy {
-	notesCap := p.NotesPerAccount
-	if notesCap <= 0 {
-		notesCap = accounts.DefaultNotesPerAccount // the policy always carries a count of at least 1 (item FL)
-	}
 	return accounts.Policy{MaxAccounts: p.MaxAccounts, Defaults: accounts.Limits{
 		Devices: p.DevicesPerAccount, Resources: p.ResourcesPerAccount, Broadcasts: p.BroadcastsPerAccount,
-		BroadcastsPerDevice: p.BroadcastsPerDevice, ClipboardBytes: p.ClipboardBytes, Notes: notesCap,
+		BroadcastsPerDevice: p.BroadcastsPerDevice, ClipboardBytes: p.ClipboardBytes, Notes: p.NotesPerAccount, NotesBytes: p.NotesMaxBytes,
 	}}
 }

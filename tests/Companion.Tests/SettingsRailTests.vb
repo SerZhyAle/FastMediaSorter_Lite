@@ -578,9 +578,10 @@ Public Class SettingsRailTests
 
     ' --- rules 2 and 4: the items' glyphs ----------------------------------------------------------
 
-    ''' <summary>An item draws a glyph only where the vocabulary already has its meaning (no glyph file is invented for
-    ''' this); every other item is a missing meaning for the catalog's proposal procedure and keeps its caption where its
-    ''' siblings' captions are. The set of missing meanings is pinned by name so an item joins or leaves it on purpose.</summary>
+    ''' <summary>The child level is uniform, and every item draws its glyph (L0351, the owner order of 2026-11-18:
+    ''' a child level that holds a page-opening child draws a glyph on every row, ICON-RENDER section 25), and every
+    ''' caption starts where its siblings' captions start. The item set is pinned by name so an item joins or leaves
+    ''' it on purpose.</summary>
     <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form")>
     Public Sub Items_draw_a_catalogued_glyph_or_are_reported_as_missing_meanings()
         Dim missing As New List(Of String)()
@@ -609,7 +610,9 @@ Public Class SettingsRailTests
                                          missing.Add(id)
                                          captionStarts.Add(item.Padding.Left)
                                      Else
-                                         Assert.True(IconMap.GetMeaning("managerSettingsNavItem_" & id.Replace("/", "_")).IsVocabulary, id)
+                                         Dim meaning = IconMap.GetMeaning("managerSettingsNavItem_" & id.Replace("/", "_"))
+                        Assert.True(meaning.IsVocabulary OrElse meaning.Proposal = IconMap.SettingsDestinationGlyphsProposal,
+                                   id & " draws neither a catalog record nor the filed proposal's drawing")
                                          Dim image = DirectCast(item.Image, Bitmap)
                                          Assert.NotNull(image)
                                          Assert.Equal(glyph, image.Height)
@@ -634,17 +637,17 @@ Public Class SettingsRailTests
                      ExchangeTestSupport.DeleteQuietly(worker)
                  End Try
              End Sub, 90)
-        output.WriteLine("Items with a catalogued glyph: " & String.Join(", ", drawn))
+        output.WriteLine("Items with a glyph: " & String.Join(", ", drawn))
         output.WriteLine("Missing meanings: " & String.Join(", ", missing))
+        ' SETTINGS-NAVIGATION 2.2 item E, read with ICON-RENDER section 25 (L0351): the level holds page-opening
+        ' children, so EVERY child row draws its glyph; a missing one is the defect.
+        Assert.Empty(missing)
         Assert.Equal(New String() {
-            "exchange-account/account", "exchange/invitations", "exchange/server", "help/about", "help/documentation", "startup/appearance"},
+            "drive/account", "drive/device", "drive/queue", "exchange-account/account", "exchange-account/clipboard", "exchange-account/publishing",
+            "exchange/accounts", "exchange/configuration", "exchange/devices", "exchange/invitations", "exchange/remote-admin", "exchange/server",
+            "exchange/service", "help/about", "help/documentation", "hosting/service", "hosting/status",
+            "network/access", "network/connections", "scheduled/operations", "startup/appearance", "startup/startup"},
             drawn.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
-        ' Reported to the catalog's proposal procedure (ICON-SET): none of these has a meaning in the vocabulary today.
-        Assert.Equal(New String() {
-            "drive/account", "drive/device", "drive/queue", "exchange-account/clipboard", "exchange-account/publishing", "exchange/accounts", "exchange/configuration",
-            "exchange/devices", "exchange/remote-admin", "exchange/service", "hosting/service", "hosting/status",
-            "network/access", "network/connections", "scheduled/operations", "startup/startup"},
-            missing.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
     End Sub
 
     ' --- rule 6: the narrow window ------------------------------------------------------------------

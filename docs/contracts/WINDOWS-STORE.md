@@ -41,22 +41,24 @@ those of 2026-10-07.
 
 - **Search-term words (0.2 a).** The sum of the words in a language's seven search-term cells is at most 21 (a word is a
   non-whitespace run); the builder names the language and the count, exits non-zero and writes nothing. The 21 is the
-  portfolio's conservative cap: the contract does not say whether 22 passes. `Build-ListingData.ps1` checks the seven
-  terms, their uniqueness and the forbidden words but sums no words, so the cap is not enforced; the data fits today
-  (counted 2026-10-20 from `tools/site-facts.json`: `en-us` 15 words, `ru` 16).
+  portfolio's conservative cap: the contract does not say whether 22 passes. `Build-ListingData.ps1` sums the words
+  of each language's terms and refuses a language over `$SearchTermWordCap = 21` since 2026-11-15 (ticket L0331); the
+  fixture `tests/Integration/ListingBuilderFixtures.ps1` pins the refusal with a negative case. The data fits (counted
+  2026-10-20 from `tools/site-facts.json`: `en-us` 15 words, `ru` 16).
 - **A refused import (0.2 b)** may come back whole with an empty error report. It is isolated by bisection with
   complete files based on the last accepted fresh draft export, never by blanking cells, and acceptance is verified by
   re-exporting the draft and comparing bytes with the uploaded file. No tool or procedure for this is kept in the
   repository, and it needs Partner Center, so none of it is verified here.
 - **A BOM export (0.2 c).** Partner Center's own exports may carry a BOM and are read as they are, their dialect kept
   for a no-change round trip, while the writer keeps its no-BOM dialect; a BOM alone is no sign of a refusal. The
-  builder strips a BOM on reading and writes none, so a BOM export would not round-trip in its own dialect - moot
-  until rung 1 below exists.
+  builder strips a BOM on reading and writes none (option (a) of the open catalog proposal on the BOM dialect, taken
+  2026-11-15 in ticket L0331 and pinned by a fixture case; the owner may overrule), so a BOM export would not
+  round-trip in its own dialect - moot until rung 1 below exists.
 
 **Conformance evidence.** The contract has no vectors.
 
 - **Rung 1** (round trip): **not built** - no committed emptied export and no fill-nothing switch.
-- **Rung 2** (checks refuse): **held in the writer, negative run not committed** - the caps are checked after CRLF normalisation and the builder exits non-zero without writing (`ReleaseNotes ru` was 1504 against 1500 on its first run on 2026-10-13 and the deck was trimmed); the writer refuses a BOM, a bare LF or CR and a trailing newline in its output. There is no automated negative test of the writer yet.
+- **Rung 2** (checks refuse): **held in the writer, negative run not committed** - the caps are checked after CRLF normalisation and the builder exits non-zero without writing (`ReleaseNotes ru` was 1504 against 1500 on its first run on 2026-10-13 and the deck was trimmed); the writer refuses a BOM, a bare LF or CR and a trailing newline in its output. The negative run is committed since 2026-11-15 (ticket L0331): `tests/Integration/ListingBuilderFixtures.ps1` (5 cases against scratch copies, run by `tools/Run-AllTests.ps1`) fails a search-term set over the word cap and pins the no-BOM write-back.
 - **Rung 3** (package read-back): **held and wired (2026-10-07, specification 183 section 1)** - `tools/Test-WindowsStoreConformance.ps1` asserts Identity `Name`, `Publisher`, `PublisherDisplayName`, `Version`, no `AppxSignature.p7x`, `THIRD-PARTY-NOTICES.txt`, the container declarations and `runFullTrust`, and ends in the shared verdict line (`Test-WindowsStoreConformance: PASS (11 checks held on ..)`, exit 0 / 1 / 2). `build-msix.ps1` runs it, and `tools/Test-ArtifactVersion.ps1 -Msix`, on the packed archive before it is signed; a package that fails either is deleted and the build stops. `tools/check-placement.jsonl` places it (class `build`). Run 2026-10-07 on the 26.920.1206.0 package: 11 checks held, exit 0; the wrong-name, wrong-version, missing-file, not-given and not-a-ZIP cases give exit 1 / 1 / 2 / 2 / 1. No new package was built for this evidence (the build was not run), so the `build-msix.ps1` step was driven against a copy of that package.
 - **Rung 4** (real import): the product is on the Store; the import report of the last submission is not kept in this repository.
 

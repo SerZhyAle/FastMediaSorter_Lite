@@ -22,7 +22,9 @@ Public NotInheritable Class SharedDisk
     Public Property SharedAt As String
     Public Property LastOpened As String
     Public Property LastClosed As String
+    ''' <remarks>Extension member: not defined in the standard DISK-SHARE 1.5/1.6 record surface.</remarks>
     Public Property Encrypted As Boolean
+    ''' <remarks>Extension member: not defined in the standard DISK-SHARE 1.5/1.6 record surface.</remarks>
     Public Property ErrorMessage As String
 End Class
 
@@ -60,11 +62,25 @@ Public Module DiskSharing
 
     Private Const MountedByFileDoMarker As String = "already mounted by FileDO"
 
-    ''' <summary>True when the worker refused because FileDO itself holds the disk mounted
-    ''' ("already mounted by FileDO at D:; unmount it before sharing") - the one refusal the person
-    ''' fixes in FileDO's Disk Manager, which is why the window offers it right there.</summary>
-    Public Function IsMountedByFileDo(reason As String) As Boolean
-        Return Not String.IsNullOrEmpty(reason) AndAlso reason.IndexOf(MountedByFileDoMarker, StringComparison.OrdinalIgnoreCase) >= 0
+    ''' <summary>True when the holder token belongs to FileDO in the DISK-SHARE holder vocabulary
+    ''' (DISK-SHARE 1.4-1.6 sections 5.4, 18.4: "filedo", "file-do", "FileDO").</summary>
+    Public Function IsFileDoHolder(holder As String) As Boolean
+        If String.IsNullOrWhiteSpace(holder) Then Return False
+        Dim h As String = holder.Trim().ToLowerInvariant()
+        Return h = "filedo" OrElse h = "file-do"
+    End Function
+
+    ''' <summary>True when the disk's holder is FileDO according to the holder vocabulary.</summary>
+    Public Function IsMountedByFileDo(disk As SharedDisk) As Boolean
+        Return disk IsNot Nothing AndAlso IsFileDoHolder(disk.Holder)
+    End Function
+
+    ''' <summary>True when FileDO holds the disk. Checks the holder vocabulary first ("filedo", "file-do");
+    ''' falls back to the legacy refusal text marker for compatibility with unstructured messages.</summary>
+    Public Function IsMountedByFileDo(holderOrReason As String) As Boolean
+        If String.IsNullOrWhiteSpace(holderOrReason) Then Return False
+        If IsFileDoHolder(holderOrReason) Then Return True
+        Return holderOrReason.IndexOf(MountedByFileDoMarker, StringComparison.OrdinalIgnoreCase) >= 0
     End Function
 
     ''' <summary>A worker reason in plain words where there is a plain way to say it; every other reason

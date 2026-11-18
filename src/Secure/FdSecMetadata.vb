@@ -71,6 +71,10 @@ Public NotInheritable Class FdSecMetadata
         ' Refused, never sanitised - and the message never carries the name, which is the
         ' thing the format exists to hide.
         If Not IsAcceptableName(name) Then Throw FdSecException.Damaged("sealed true name is refused")
+        ' FDSEC-FORMAT 1.6 section 23 (BEHAVIOUR 4.3): a sealed name that is valid UTF-8 but not in NFC is damaged in every
+        ' suite, never normalised on the way in - a normalised name is a name the packer never wrote. The writer
+        ' normalises (FdSecWriter), so only a container sealed by an outside writer can reach this.
+        If Not name.IsNormalized(NormalizationForm.FormC) Then Throw FdSecException.Damaged("sealed true name is not NFC")
 
         ' Compared while still unsigned: CLng of anything above 2^63-1 throws
         ' OverflowException, which is no outcome class at all (§7).

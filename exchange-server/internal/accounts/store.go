@@ -112,6 +112,8 @@ type AccountLimits struct {
 	BroadcastsPerAccount *int   `json:"broadcastsPerAccount,omitempty"`
 	BroadcastsPerDevice  *int   `json:"broadcastsPerDevice,omitempty"`
 	ClipboardMaxBytes    *int64 `json:"clipboardMaxBytes,omitempty"`
+	NotesPerAccount      *int   `json:"notesPerAccount,omitempty"`
+	NotesMaxBytes        *int64 `json:"notesMaxBytes,omitempty"`
 }
 
 // Account is one user's space on the deployment.

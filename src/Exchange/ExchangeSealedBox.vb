@@ -35,6 +35,16 @@ Friend NotInheritable Class ExchangeSealedContext
         Return Build("broadcast:", broadcastId)
     End Function
 
+    ''' <summary>Context of a schedule request box (DEVICE-EXCHANGE 1.15 item FR).</summary>
+    Public Shared Function Schedule(requestId As String) As String
+        Return Build("schedule:", requestId)
+    End Function
+
+    ''' <summary>Context of a schedule result box (DEVICE-EXCHANGE 1.15 item FR).</summary>
+    Public Shared Function ScheduleResult(requestId As String) As String
+        Return Build("schedule-result:", requestId)
+    End Function
+
     Private Shared Function Build(prefix As String, id As String) As String
         If String.IsNullOrEmpty(id) Then Throw New ArgumentException("id", NameOf(id))
         Return prefix & id

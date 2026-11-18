@@ -418,12 +418,15 @@ Public Class ExchangeWireTests
         ' array is index-addressed), `admin-disabled` of the administration channel (L0278 T-1, value 17)
         Dim names As String() = {"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited",
                                  "protection-unsupported", "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out", "admin-disabled",
-                                 "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible"}
-        Assert.Equal(21, ExchangeRefusals.All().Length)
+                                 "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible", "ended"}
+        Assert.Equal(22, ExchangeRefusals.All().Length)
         Assert.Equal(21, CInt(ExchangeRefusal.VersionIncompatible))
+        Assert.Equal(22, CInt(ExchangeRefusal.Ended))
         Assert.Equal(17, CInt(ExchangeRefusal.AdminDisabled))
         Assert.Equal(ExchangeRefusal.AdminDisabled, ExchangeRefusals.Parse("admin-disabled"))
         Assert.Equal("admin-disabled", ExchangeRefusals.WireName(ExchangeRefusal.AdminDisabled))
+        Assert.Equal(ExchangeRefusal.Ended, ExchangeRefusals.Parse("ended"))
+        Assert.Equal("ended", ExchangeRefusals.WireName(ExchangeRefusal.Ended))
         Assert.Equal(names.Length, ExchangeRefusals.All().Length)
         Assert.Equal(ExchangeRefusal.NotPermitted, ExchangeRefusals.Parse("not-permitted"))
         Assert.Equal(ExchangeRefusal.LimitReached, ExchangeRefusals.Parse("limit-reached"))

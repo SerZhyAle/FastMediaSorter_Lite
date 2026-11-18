@@ -232,5 +232,21 @@ Partial Public NotInheritable Class Localization
         Add("Мастер добавления ресурса..", "Resource addition wizard..", "Майстер додавання ресурсу..", "Assistent zum Hinzufügen von Ressourcen..", "Creazione guidata aggiunta risorsa..", "Asistente para agregar recursos..", "Assistant d'ajout de ressource..", "Assistente de adição de recursos..", "معالج إضافة الموارد..", "संसाधन जोड़ने का विज़ार्ड..", "রিসোর্স যোগ করার উইজার্ড..", "وسائل شامل کرنے کا وزرڈ..", "添加资源向导..")
         Add("Папку..", "Folder..", "Теку..", "Ordner..", "Cartella..", "Carpeta..", "Dossier..", "Pasta..", "مجلد..", "फ़ोल्डर..", "ফোল্ডার..", "فولڈر..", "文件夹..")
         Add("Добавить..", "Add..", "Додати..", "Hinzufügen..", "Aggiungi..", "Agregar..", "Ajouter..", "Adicionar..", "إضافة..", "जोड़ें..", "যোগ করুন..", "شامل کریں..", "添加..")
+
+        ' L0351: the canonical names of the settings destinations' glyphs (one name per vocabulary record,
+        ' ICON-SET rule 1 - a meaning's key is its canonical Russian name; the row's own caption stays its group's).
+        ' Sixteen rows draw records the catalog holds, so their keys were already registered; the eleven below
+        ' name the records L0351 proposes (the ru/en/uk wording is the proposal's; action.autostart carries the
+        ' five names filed by ICON-SET 0.37 section 22 item G, the other eight languages are this product's own).
+        Add("Тема", "Theme", "Тема", "Design", "Tema", "Tema", "Thème", "Tema", "السمة", "थीम", "থিম", "تھیم", "主题")
+        Add("Человек", "Person", "Людина", "Person", "Persona", "Persona", "Personne", "Pessoa", "شخص", "व्यक्ति", "ব্যক্তি", "شخص", "人")
+        Add("Запуск вместе с Windows", "Start with Windows", "Запуск разом з Windows", "Mit Windows starten", "Avvia con Windows", "Iniciar con Windows", "Démarrer avec Windows", "Iniciar com o Windows", "بدء التشغيل مع Windows", "Windows के साथ शुरू करें", "Windows-এর সাথে শুরু", "Windows کے ساتھ آغاز", "随 Windows 启动")
+        Add("Локальная сеть", "Local network", "Локальна мережа", "Lokales Netzwerk", "Rete locale", "Red local", "Réseau local", "Rede local", "شبكة محلية", "स्थानीय नेटवर्क", "স্থানীয় নেটওয়ার্ক", "مقامی نیٹ ورک", "局域网")
+        Add("Сетевая политика", "Network policy", "Мережева політика", "Netzwerkrichtlinie", "Criteri di rete", "Directiva de red", "Stratégie réseau", "Política de rede", "نهج الشبكة", "नेटवर्क नीति", "নেটওয়ার্ক নীতি", "نیٹ ورک پالیسی", "网络策略")
+        Add("Состояние сервера", "Server state", "Стан сервера", "Serverzustand", "Stato del server", "Estado del servidor", "État du serveur", "Estado do servidor", "حالة الخادم", "सर्वर की स्थिति", "সার্ভারের অবস্থা", "سرور کی حالت", "服务器状态")
+        Add("Служба", "Service", "Служба", "Dienst", "Servizio", "Servicio", "Service", "Serviço", "الخدمة", "सेवा", "পরিষেবা", "سروس", "服务")
+        Add("Опубликованные папки", "Published folders", "Опубліковані теки", "Veröffentlichte Ordner", "Cartelle pubblicate", "Carpetas publicadas", "Dossiers publiés", "Pastas publicadas", "المجلدات المنشورة", "प्रकाशित फ़ोल्डर", "প্রকাশিত ফোল্ডার", "شائع کیے گئے فولڈرز", "已发布的文件夹")
+        Add("Этот компьютер", "This computer", "Цей комп'ютер", "Dieser Computer", "Questo computer", "Este equipo", "Cet ordinateur", "Este computador", "هذا الحاسوب", "यह कंप्यूटर", "এই কম্পিউটার", "یہ کمپیوٹر", "这台电脑")
+        Add("Очередь передач", "Transfer queue", "Черга передавань", "Übertragungswarteschlange", "Coda di trasferimento", "Cola de transferencia", "File d'attente de transfert", "Fila de transferência", "قائمة انتظار النقل", "ट्रांसफ़र क़तार", "স্থানান্তর সারি", "ٹرانسفر قطار", "传输队列")
     End Sub
 End Class

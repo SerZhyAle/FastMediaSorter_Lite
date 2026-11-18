@@ -41,7 +41,7 @@ Public Class ManagerArchiveCommandTests
                                          For Each allowed As Boolean In {False, True}
                                              Using dialog As New ManagerArchiveForm(ManagerLocation.AtRoot(place), Function() Nothing, allowed)
                                                  Assert.False(dialog.DeleteOriginals)
-                                                 Dim check As System.Windows.Forms.CheckBox = dialog.Controls(0).Controls.OfType(Of System.Windows.Forms.CheckBox)().Single()
+                                                 Dim check As System.Windows.Forms.CheckBox = dialog.Controls(0).Controls.OfType(Of OptionRowHost)().Single().Check
                                                  Assert.Equal(allowed, check.Enabled)
                                                  Assert.False(check.Checked)
                                                  Assert.EndsWith(".zip", dialog.ArchiveName, StringComparison.Ordinal)

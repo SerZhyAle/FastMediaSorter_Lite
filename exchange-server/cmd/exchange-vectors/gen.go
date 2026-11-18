@@ -156,9 +156,10 @@ func generateSettingsTranscript() (data []byte, err error) {
 	return data, err
 }
 
-// generateNotesTranscript runs the notes scenario of DEVICE-EXCHANGE 1.13 (ticket L0321) and renders its file:
-// the transcript and the boxes it carries. Like the settings transcript it is separate from the adopted 1.1
-// corpus: generate never runs it, so frames-v2.json and the other hashed files keep their bytes.
+// generateNotesTranscript runs the notes scenario of DEVICE-EXCHANGE 1.13 (ticket L0321) and the four
+// conformance vectors of item GB (DEVICE-EXCHANGE 1.17, ticket L0322), and renders the file: the transcripts
+// and the boxes they carry. Like the settings transcript it is separate from the adopted 1.1 corpus: generate
+// never runs it, so frames-v2.json and the other hashed files keep their bytes.
 func generateNotesTranscript() (data []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -170,7 +171,10 @@ func generateNotesTranscript() (data []byte, err error) {
 		}
 	}()
 	tr, cases := scenarioNotesSync()
-	data, err = render(notesDocument(tr, cases))
+	trs := []*transcript{tr, scenarioNotesPagingFullAfterPurge()}
+	trBound, casesBound := scenarioNotesBoxBound()
+	trs = append(trs, trBound, scenarioNotesConflictWithoutCurrent(), scenarioNotesCountBytesPolicy())
+	data, err = render(notesDocument(trs, append(cases, casesBound...)))
 	if err == nil {
 		err = closeErr
 	}

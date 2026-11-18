@@ -106,7 +106,7 @@ Friend NotInheritable Class ClipboardMessages
     ''' words stay as they are, and Google Drive's appear only where the Drive channel is on.</summary>
     Public Shared Function ActionText(isSend As Boolean, hasServer As Boolean, hasDrive As Boolean) As String
         If hasDrive AndAlso hasServer Then
-            Return If(isSend, Localization.T("Отправить буфер на сервер и через Google Drive"), Localization.T("Получить буфер с сервера или через Google Drive"))
+            Return If(isSend, Localization.T("Отправить буфер: сервер и Google Drive"), Localization.T("Получить буфер: сервер или Google Drive"))
         End If
         If hasDrive Then
             Return If(isSend, Localization.T("Отправить буфер через Google Drive"), Localization.T("Получить буфер через Google Drive"))

@@ -769,7 +769,7 @@ Public Class ExchangeSealedTrustTests
     End Sub
 
     <Fact>
-    Public Sub The_four_rows_of_item_DR_are_the_contract_rows_and_the_device_message_is_one_of_them()
+    Public Sub The_rows_of_items_DR_and_FB_are_the_contract_rows_and_the_device_message_is_one_of_them()
         Assert.Same(ConnectionDiagnosisMessages.E2eMissing, New ExchangeSealedDevice(Phone, "P", "", "", True, False, ExchangeSealState.E2eMissing).Message)
         Assert.Same(ConnectionDiagnosisMessages.KeyChanged, New ExchangeSealedDevice(Phone, "P", "", "", True, False, ExchangeSealState.KeyChanged).Message)
         Assert.Null(New ExchangeSealedDevice(Phone, "P", "", "", True, False, ExchangeSealState.Ready).Message)
@@ -788,6 +788,9 @@ Public Class ExchangeSealedTrustTests
             New String() {"e2e-missing", "This device cannot receive protected content yet, so nothing is sent to it through the server.",
                           "Это устройство пока не умеет принимать защищённое содержимое, поэтому через сервер ему ничего не отправляется.",
                           "Цей пристрій поки не вміє приймати захищений вміст, тому через сервер йому нічого не надсилається."},
+            New String() {"e2e-missing-peer", "The device that has this content cannot send it protected yet, so nothing from it comes through the server.",
+                          "Устройство, на котором это содержимое, пока не умеет передавать его защищённым, поэтому через сервер от него ничего не приходит.",
+                          "Пристрій, на якому цей вміст, поки не вміє передавати його захищеним, тому через сервер від нього нічого не надходить."},
             New String() {"key-changed", "The protection key of this device has changed, so nothing is sent to it. Remove the device from the account and add it again.",
                           "Ключ защиты этого устройства изменился, поэтому ему ничего не отправляется. Удалите устройство из аккаунта и добавьте его снова.",
                           "Ключ захисту цього пристрою змінився, тому йому нічого не надсилається. Видаліть пристрій з акаунта й додайте його знову."},

@@ -34,11 +34,14 @@ Friend NotInheritable Class LiveBroadcast_Form
     Private ReadOnly refusalLogged As New HashSet(Of String)()
     Private directoryStarted As Boolean
     Private accepting As Boolean
-    Private ReadOnly autoCast As CheckBox
+    Private ReadOnly autoCastLink As LinkLabel
+    Private settingsAsked As Boolean
 
-    Friend ReadOnly Property AutoAcceptCast As Boolean
+    ''' <summary>The person followed the link to the settings (L0332): the window closes without a result and the caller opens the
+    ''' settings window on the automatic-accept row. The preference itself is edited there, never here.</summary>
+    Friend ReadOnly Property SettingsRequested As Boolean
         Get
-            Return autoCast.Checked
+            Return settingsAsked
         End Get
     End Property
 
@@ -53,7 +56,7 @@ Friend NotInheritable Class LiveBroadcast_Form
     <System.ComponentModel.Browsable(False), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property ResultOnDemandUrl As String
 
-    Public Sub New(Optional autoAcceptCast As Boolean = False)
+    Public Sub New()
         Me.Text = Localization.T("Открыть live-трансляцию")
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
@@ -176,11 +179,18 @@ Friend NotInheritable Class LiveBroadcast_Form
 
         LoadRecentList()
 
-        autoCast = New CheckBox With {.Name = "live_AutoCast", .Text = Localization.T("Принимать трансляции автоматически"), .Checked = autoAcceptCast,
-                                     .Visible = exchangeOn}
-        Dim autoCastRow As OptionRowHost = DialogOptionRow.CreateAt(autoCast, Nothing, 14, 102, 540)
-        autoCastRow.Visible = exchangeOn
-        Me.Controls.Add(autoCastRow)
+        ' The automatic-accept preference is a standing setting of the viewer's Settings window (SETTINGS-NAVIGATION 2.1 item A,
+        ' L0332): this window keeps a link to it in the band the check box stood in (the link exists only with the exchange on).
+        autoCastLink = New LinkLabel With {.Name = "live_AutoCastLink", .AutoSize = True, .MaximumSize = New Size(512, 0),
+                                           .Location = New Point(14, 112), .Visible = exchangeOn,
+                                           .Text = Localization.T("Автоприём входящих трансляций - в настройках..")}
+        autoCastLink.AccessibleName = autoCastLink.Text
+        AddHandler autoCastLink.LinkClicked,
+            Sub()
+                settingsAsked = True
+                Me.DialogResult = DialogResult.Cancel
+            End Sub
+        Me.Controls.Add(autoCastLink)
 
         Dim paste As New Button With {.Text = Localization.T("Вставить"), .Location = New Point(420, 66), .Size = New Size(106, 26)}
         AddHandler paste.Click, Async Sub()

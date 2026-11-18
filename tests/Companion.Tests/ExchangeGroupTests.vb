@@ -461,6 +461,15 @@ Public Class ExchangeGroupTests
         Assert.Contains("ExchangeProcess.StopStartedOnExit(exSettings.KeepRunningOnExit)", tray)
     End Sub
 
+    ''' <summary>The tray menu is one sibling set, and its rule is "none" (ICON-RENDER 0.25 section 25, ticket L0325
+    ''' A-7): no item draws a glyph; the exchange mark stays on titles and the tray icon.</summary>
+    <Fact>
+    Public Sub No_tray_menu_item_draws_a_glyph()
+        Dim tray As String = ExchangeTestSupport.ReadSource("TrayContext.vb")
+        Assert.DoesNotContain("GlyphRenderer.Render(", tray)
+        Assert.DoesNotMatch(New Regex("\.Image\s*=", RegexOptions.None), tray)
+    End Sub
+
     <Fact>
     Public Sub The_state_line_is_re_read_when_the_service_moves_on_its_own_and_the_tray_logs_what_it_shows()
         ' The poll tick used to refresh only while serving, so a service that stopped or restarted by itself left the

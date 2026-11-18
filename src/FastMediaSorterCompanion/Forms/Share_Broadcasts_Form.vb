@@ -442,7 +442,7 @@ Public NotInheritable Class Share_Broadcasts_Form
                             Return
                         End If
 
-                        MessageBox.Show(Me,
+                        ManagerBox.Show(Me,
                             Localization.T("Ссылка на трансляцию скопирована в буфер обмена."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                     End If
@@ -464,11 +464,11 @@ Public NotInheritable Class Share_Broadcasts_Form
                     ShowNotice(Localization.T("Не удалось скопировать ссылку в буфер обмена."))
                     Return
                 End If
-                MessageBox.Show(Me, Localization.T("Ссылка на трансляцию скопирована в буфер обмена."),
+                ManagerBox.Show(Me, Localization.T("Ссылка на трансляцию скопирована в буфер обмена."),
                                 Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Catch ex As Exception
                 AppFileLogger.LogException("Share_Broadcasts_Form.OnCopyLinkClick", ex)
-                MessageBox.Show(Me, Localization.T("Не удалось скопировать ссылку в буфер обмена."),
+                ManagerBox.Show(Me, Localization.T("Не удалось скопировать ссылку в буфер обмена."),
                                 Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
         End If
@@ -494,11 +494,11 @@ Public NotInheritable Class Share_Broadcasts_Form
             If dlg.ShowDialog(Me) = DialogResult.OK Then
                 Try
                     File.WriteAllText(dlg.FileName, config.ConfigJson, New UTF8Encoding(False))
-                    MessageBox.Show(Me, Localization.T("Файл .spres успешно сохранён."),
+                    ManagerBox.Show(Me, Localization.T("Файл .spres успешно сохранён."),
                                     Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Catch ex As Exception
                     AppFileLogger.LogException("Share_Broadcasts_Form.OnSaveSpresClick", ex)
-                    MessageBox.Show(Me, Localization.T("Не удалось сохранить файл .spres."),
+                    ManagerBox.Show(Me, Localization.T("Не удалось сохранить файл .spres."),
                                     Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 End Try
             End If
@@ -517,7 +517,7 @@ Public NotInheritable Class Share_Broadcasts_Form
                 End Using
             End Using
         Else
-            MessageBox.Show(Me, Localization.T("Не удалось сгенерировать QR-код."),
+            ManagerBox.Show(Me, Localization.T("Не удалось сгенерировать QR-код."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
     End Sub
@@ -528,7 +528,7 @@ Public NotInheritable Class Share_Broadcasts_Form
         Dim resp As WorkerResponse = Await BroadcastController.RefreshBroadcastAsync(b.Id)
         If resp IsNot Nothing AndAlso resp.Ok Then
             Await RefreshStatusAndListAsync()
-            MessageBox.Show(Me, Localization.T("Трансляция обновлена."),
+            ManagerBox.Show(Me, Localization.T("Трансляция обновлена."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
             ReportFailure(resp, gatewayRequest:=False, action:="RefreshBroadcast")
@@ -547,7 +547,7 @@ Public NotInheritable Class Share_Broadcasts_Form
         Dim resp As WorkerResponse = Await BroadcastController.RevokeBroadcastAsync(b.Id)
         If resp IsNot Nothing AndAlso resp.Ok Then
             Await RefreshStatusAndListAsync()
-            MessageBox.Show(Me, Localization.T("Трансляция отозвана."),
+            ManagerBox.Show(Me, Localization.T("Трансляция отозвана."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
             ReportFailure(resp, gatewayRequest:=False, action:="RevokeBroadcast")

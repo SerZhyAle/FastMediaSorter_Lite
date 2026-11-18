@@ -44,11 +44,33 @@ Public Enum DocHtmlJobOutcome
     NewerSchema
     Unsafe
     Failed
+    ''' <summary>The run ended with exit 0 or 4, but the record it left cannot be parsed, is not the converter's or names
+    ''' another source (OCR-INVOCATION 1.2 item C rule 3): reported apart from <see cref="Incomplete"/>, the run that
+    ''' never wrote <c>complete</c>.</summary>
+    RecordNotRecognized
+End Enum
+
+''' <summary>Why a record in the <see cref="DocHtmlResultState.Foreign"/> state is not the converter's finished record
+''' (OCR-INVOCATION 1.2 item C rule 3: the reader says which it was). Names only - no path, no text of the record.</summary>
+Public Enum DocHtmlRecordFault
+    None
+    ''' <summary>Empty, not JSON, not an object, or a <c>schemaVersion</c> that is not a whole number from 1.</summary>
+    Unparseable
+    ''' <summary>A record whose <c>tool</c> is not <c>doc-html-translate</c>.</summary>
+    ForeignTool
+    ''' <summary>The converter's record, but for another input than the one this job was given.</summary>
+    OtherSource
+    ''' <summary>Larger than <see cref="DocHtmlResultReader.MaxRecordBytes"/>: not a record of this schema.</summary>
+    Oversized
+    ''' <summary>The file system refused the read.</summary>
+    Unreadable
 End Enum
 
 ''' <summary>The verified reading of one job folder.</summary>
 Public NotInheritable Class DocHtmlResult
     Public Property State As DocHtmlResultState = DocHtmlResultState.Missing
+    ''' <summary>Which of the item C rule 3 cases a <see cref="DocHtmlResultState.Foreign"/> record was; <c>None</c> otherwise.</summary>
+    Public Property Fault As DocHtmlRecordFault = DocHtmlRecordFault.None
     ''' <summary>The output directory (the single qualifying child of the job folder), or "".</summary>
     Public Property OutputDirectory As String = ""
     ''' <summary>The verified <c>index.html</c>, set only for <see cref="DocHtmlResultState.Completed"/>.</summary>
@@ -105,6 +127,7 @@ Public NotInheritable Class DocHtmlResultReader
             Dim recordPath = Path.Combine(candidate, RecordFileName)
             If New FileInfo(recordPath).Length > MaxRecordBytes Then
                 result.State = DocHtmlResultState.Foreign
+                result.Fault = DocHtmlRecordFault.Oversized
                 Return result
             End If
             ParseRecord(File.ReadAllText(recordPath), expectedSource, result)
@@ -125,6 +148,7 @@ Public NotInheritable Class DocHtmlResultReader
                 result.State = DocHtmlResultState.Missing
             Else
                 result.State = DocHtmlResultState.Foreign
+                result.Fault = DocHtmlRecordFault.Unreadable
             End If
             result.EntryPath = ""
         End Try
@@ -135,6 +159,7 @@ Public NotInheritable Class DocHtmlResultReader
     ''' <c>Completed</c> here means only "the record says finished"; the caller still checks the files.</summary>
     Public Shared Sub ParseRecord(json As String, expectedSource As String, result As DocHtmlResult)
         result.State = DocHtmlResultState.Foreign
+        result.Fault = DocHtmlRecordFault.Unparseable
         If String.IsNullOrWhiteSpace(json) Then Return
         Try
             Using doc = JsonDocument.Parse(json)
@@ -146,12 +171,20 @@ Public NotInheritable Class DocHtmlResultReader
                     If schemaElement.ValueKind <> JsonValueKind.Number OrElse Not schemaElement.TryGetInt32(schema) OrElse schema < 1 Then Return
                 End If
                 result.SchemaVersion = schema
-                If Not String.Equals(StringMember(root, "tool"), ToolName, StringComparison.Ordinal) Then Return
-                If schema > KnownSchemaVersion Then
-                    result.State = DocHtmlResultState.NewerSchema
+                If Not String.Equals(StringMember(root, "tool"), ToolName, StringComparison.Ordinal) Then
+                    result.Fault = DocHtmlRecordFault.ForeignTool
                     Return
                 End If
-                If Not SamePath(StringMember(root, "source"), expectedSource) Then Return
+                If schema > KnownSchemaVersion Then
+                    result.State = DocHtmlResultState.NewerSchema
+                    result.Fault = DocHtmlRecordFault.None
+                    Return
+                End If
+                If Not SamePath(StringMember(root, "source"), expectedSource) Then
+                    result.Fault = DocHtmlRecordFault.OtherSource
+                    Return
+                End If
+                result.Fault = DocHtmlRecordFault.None
 
                 Dim complete As JsonElement
                 If Not root.TryGetProperty("complete", complete) OrElse complete.ValueKind <> JsonValueKind.Object Then
@@ -178,6 +211,7 @@ Public NotInheritable Class DocHtmlResultReader
             End Using
         Catch ex As JsonException
             result.State = DocHtmlResultState.Foreign
+            result.Fault = DocHtmlRecordFault.Unparseable
         End Try
     End Sub
 
@@ -190,6 +224,10 @@ Public NotInheritable Class DocHtmlResultReader
         Select Case result.State
             Case DocHtmlResultState.NewerSchema : Return DocHtmlJobOutcome.NewerSchema
             Case DocHtmlResultState.Unsafe : Return DocHtmlJobOutcome.Unsafe
+            ' Item C rule 3: a record that cannot be parsed or is not the converter's is not an unfinished run. Only for the
+            ' two exits that claim a finished run (0, 4); any other exit code still names how the process ended.
+            Case DocHtmlResultState.Foreign
+                If exitCode = 0 OrElse exitCode = 4 Then Return DocHtmlJobOutcome.RecordNotRecognized
             Case DocHtmlResultState.Completed
                 If exitCode <> 0 AndAlso exitCode <> 4 Then Return DocHtmlJobOutcome.Failed
                 Dim translating = Not String.Equals(result.Engine, "none", StringComparison.Ordinal)
@@ -208,6 +246,22 @@ Public NotInheritable Class DocHtmlResultReader
             Case 0, 4 : Return DocHtmlJobOutcome.Incomplete
             Case Else : Return DocHtmlJobOutcome.Failed
         End Select
+    End Function
+
+    ''' <summary>The reading's own detail for the log line (OCR-INVOCATION 1.2 item C rule 3), so a support reader can tell a
+    ''' damaged or foreign record from an unfinished run, and a newer schema from both. Constants and numbers only: never
+    ''' the record's text, the source or any path (the privacy rule of the log).</summary>
+    Public Shared Function LogDetail(result As DocHtmlResult) As String
+        If result Is Nothing Then Return ""
+        Select Case result.State
+            Case DocHtmlResultState.NewerSchema
+                Return String.Format(CultureInfo.InvariantCulture,
+                                     "record-schema={0} reader-schema={1} contract=OCR-INVOCATION 1.2 (a later version of the contract is needed)",
+                                     result.SchemaVersion, KnownSchemaVersion)
+            Case DocHtmlResultState.Foreign
+                Return "record-fault=" & result.Fault.ToString()
+        End Select
+        Return ""
     End Function
 
     ''' <summary>The outcomes that leave a page worth opening.</summary>

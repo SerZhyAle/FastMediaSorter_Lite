@@ -68,6 +68,8 @@ type Options struct {
 	// well (a note is a box): Notes alone lists nothing, which a test of that rule relies on, so the option does not
 	// turn Sealed on. Off by default: the transcripts of the older tickets stand.
 	Notes bool
+	// Schedule enables the remote schedule forwarder (DEVICE-EXCHANGE 1.15 item FQ). Listed only with Sealed.
+	Schedule bool
 	// LogFile also writes every log line to <DataDir>/logs/exchange.log (the real layout of ticket 182
 	// L-1), so a test can scan the directory the way the manifest test of ticket 167 does.
 	LogFile bool
@@ -276,7 +278,7 @@ func StartServer(t TB, opt Options) *Env {
 	env.Engine = rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: env.Params, Accounts: env.Accounts, Dir: env.Dir, Pool: env.Pool, Verifier: env.Verifier,
 		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now, Audit: opt.Audit,
-		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast, Sealed: opt.Sealed}, Relay: relayHandler,
+		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast, Sealed: opt.Sealed, Schedule: opt.Schedule}, Relay: relayHandler,
 		Rand: opt.EngineRand, Settings: env.Settings, Notes: env.Notes,
 	})
 	env.Ops = env.Engine.Ops()

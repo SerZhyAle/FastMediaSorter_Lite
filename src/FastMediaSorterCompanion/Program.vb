@@ -179,7 +179,7 @@ Friend Module Program
             If role = InstanceRole.Unavailable Then
                 AppFileLogger.WriteLine("Share Manager not started: the single-instance mutex could not be examined")
                 CompanionGlobals.LoadLanguage()
-                MessageBox.Show(Localization.T("Не удалось определить, запущен ли Share Manager. Второй экземпляр не запускается."),
+                ManagerBox.Show(Localization.T("Не удалось определить, запущен ли Share Manager. Второй экземпляр не запускается."),
                                 ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
@@ -372,7 +372,7 @@ Friend Module Program
             Function(sendTimeoutMs) SendOnce(bytes, sendTimeoutMs, manualAdvice))
         If outcome = ForwardOutcome.Delivered AndAlso manualAdvice Then
             CompanionGlobals.LoadLanguage()
-            MessageBox.Show(Localization.TF("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}", payload),
+            ManagerBox.Show(Localization.TF("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}", payload),
                             ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
         AppFileLogger.WriteLine("Companion forward: " & outcome.ToString())
@@ -449,7 +449,7 @@ Friend Module Program
     Private Sub ReportForwardFailure()
         Try
             CompanionGlobals.LoadLanguage()
-            MessageBox.Show(Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
+            ManagerBox.Show(Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
                             ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
         Catch ex As Exception
             AppFileLogger.LogException("Share Manager: reporting an unreachable instance", ex)

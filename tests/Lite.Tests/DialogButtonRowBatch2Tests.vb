@@ -467,6 +467,10 @@ Public Class DialogButtonRowBatch2Tests
                       Assert.NotSame(acting, row.DefaultTarget)
                       Assert.Equal(DialogResult.Cancel, DirectCast(form.AcceptButton, Button).DialogResult)
                       Assert.Equal(DialogResult.Cancel, DirectCast(form.CancelButton, Button).DialogResult)
+                      ' L0326: the first KEYBOARD focus is the safe answer too, not the "do not ask again" box or the acting
+                      ' button - one Space on a freshly opened confirmation must not delete the original.
+                      Assert.Same(form.AcceptButton, form.ActiveControl)
+                      Assert.NotSame(acting, form.ActiveControl)
                   End Using
               End Sub)
     End Sub

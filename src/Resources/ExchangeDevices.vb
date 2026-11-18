@@ -284,6 +284,9 @@ Friend Enum ExchangeAttachOutcome
     ServerNoE2e = 10
     ''' <summary>The box did not open, or the opened descriptor is not the record's resource (context, sender, key, fingerprint): `sealed-failed`.</summary>
     SealedFailed = 11
+    ''' <summary>Item FB: this device and its own record hold a key, the device that has the folder does not: `e2e-missing-peer`. The cure
+    ''' is on the other device, so the sentence says that and asks for nothing here.</summary>
+    E2eMissingPeer = 12
 End Enum
 
 ''' <summary>Attaching, and following the producer. The registry and the credential go through ResourceCommit (the secret first, the reference
@@ -372,6 +375,7 @@ Friend NotInheritable Class ExchangeSync
                               ExchangeAttachOutcome.SignInAgain, ExchangeAttachOutcome.NoAccess)
                 Case ExchangeAgentPipe.ErrorUnknownResource : Return ExchangeAttachOutcome.NoAccess
                 Case ExchangeAgentPipe.ErrorE2eMissing : Return ExchangeAttachOutcome.E2eMissing
+                Case ExchangeAgentPipe.ErrorE2eMissingPeer : Return ExchangeAttachOutcome.E2eMissingPeer
                 Case ExchangeAgentPipe.ErrorKeyChanged : Return ExchangeAttachOutcome.KeyChanged
                 Case ExchangeAgentPipe.ErrorServerNoE2e : Return ExchangeAttachOutcome.ServerNoE2e
                 Case ExchangeAgentPipe.ErrorSealedFailed : Return ExchangeAttachOutcome.SealedFailed

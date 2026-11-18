@@ -80,6 +80,9 @@ $glyphIds = @(
     'nav.dropdown', 'nav.go-to',
     # The site header's theme switch (BUTTONS 2.0: a header command carries its glyph; PAGE-STYLE 3.1).
     'app.theme',
+    # L0351: the catalog reuses ruled by ICON-SET 0.39 section 24 item C.1 - the accounts and Drive sign-in
+    # blocks and the scheduled operations block of the Share Manager's settings rail draw these records.
+    'content.person', 'app.schedule',
     'status.error', 'status.locked', 'status.ok', 'status.unknown', 'status.warning',
     'system.internet', 'system.wifi', 'tool.brush', 'tool.oval', 'tool.rectangle', 'view.grid'
 )
@@ -88,7 +91,23 @@ $glyphIds = @(
 # id it proposes, and proposed in the same change. These files are NOT compared with the catalog - they are the
 # product's own drawings, held by a provenance line - and the script fails the day the catalog holds the id, so the
 # product converges on the catalog's drawing (section 15, "What the owner does").
-$productGlyphs = @()
+# L0351 (the proposal above names each drawing): every settings destination of the Share Manager carries a glyph -
+# the rail child level draws one on every child row, and the six ids whose records exist (the reuses) are in
+# $glyphIds. Twelve meanings are provisional until the catalog folds the proposal in.
+$productGlyphs = @(
+    'action.autostart',           # accepted meaning (ICON-SET 0.37 section 22 item G), this is its drawing
+    'system.local-network',
+    'system.network-policy',
+    'system.service',
+    'system.address-ports',
+    'feature.hosting-status',
+    'content.devices',
+    'feature.remote-admin',
+    'feature.publishing',
+    'content.server-clipboard',
+    'device.computer',
+    'feature.transfer-queue'
+)
 
 $subject = 'Sync-IconGlyphs'
 

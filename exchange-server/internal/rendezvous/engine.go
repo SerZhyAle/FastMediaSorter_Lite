@@ -27,8 +27,9 @@ import (
 // keeps and delivers the device key, the sealed access, the boxes, `devices` in `grants`, the replacing
 // `grant` and the clipboard kind `sealed` - all of them together, which is why one flag stands for them.
 type Features struct {
-	Cast   bool
-	Sealed bool
+	Cast     bool
+	Sealed   bool
+	Schedule bool
 }
 
 // EngineConfig is everything the real Backend needs.
@@ -95,10 +96,6 @@ type ctlEntry struct {
 	cs       *ControlStream
 	interval time.Duration
 	deadline time.Time
-	// notesCursor is the paging state of a `full` notes listing in progress on this stream (ticket L0321
-	// Assumed 1): the revision of the last record sent, 0 when none is in progress. It lives in the entry of
-	// the stream, so it is forgotten with the stream - a drop, a revoke, a window that passed.
-	notesCursor int64
 }
 
 // NewEngine wires the directory's hooks and port granter to the engine and returns it.
@@ -222,7 +219,14 @@ func (e *Engine) features() []string {
 	if e.notesListed() {
 		out = append(out, wire.FeatureNotes) // after settings (ticket L0321 Assumed 8)
 	}
+	if e.scheduleListed() {
+		out = append(out, wire.FeatureSchedule)
+	}
 	return out
+}
+
+func (e *Engine) scheduleListed() bool {
+	return e.cfg.Features.Schedule && e.cfg.Features.Sealed
 }
 
 // Clipboard is the engine's clipboard table (ticket 229), for the tests that count its bytes and

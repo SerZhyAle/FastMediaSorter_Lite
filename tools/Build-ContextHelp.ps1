@@ -1,15 +1,125 @@
 <#
 .SYNOPSIS
     Generates offline HTML context help pages from authored copy and existing real captures for all 13 locales.
+
+.DESCRIPTION
+    The corpus under docs/help (the helpRoot of help-map.json) is a render target: every page is written here from
+    tools/settings-help-copy.json, help-map.json and the capture list, never by hand (DOC-INTERNAL-QUALITY 0.12 W).
+
+    -Check writes nothing under -Root. It copies the small inputs of -Root (the copy, the map, the exchange mark, the
+    device vocabulary, the capture evidence) into a scratch folder, creates an empty stand-in for every capture
+    picture the committed corpus holds (the generator only needs a picture to exist), runs this generator there, and
+    compares the result with the committed pages byte for byte: a page that differs, a page the generator would write
+    that is missing, a page the generator no longer writes that is still committed, and the three exchange-mark files.
+    The pictures themselves are evidence, judged by tools/Test-ContextHelp.ps1, not here.
+
+.PARAMETER Root
+    The tree to generate into (or, with -Check, to judge). Defaults to this repository.
+
+.PARAMETER Topics
+    Generate only these topics. Not allowed with -Check, which judges the whole corpus.
+
+.PARAMETER Check
+    Report through tools\lib\Verdict.ps1: a subject banner and one closing line
+    "Build-ContextHelp: PASS|FAIL|COULD NOT VERIFY"; exit 0 the corpus equals a fresh generation, 1 it does not,
+    2 the check could not run (an input missing, or the generator refused the copy).
+
+.EXAMPLE
+    pwsh -NoProfile -File .\tools\Build-ContextHelp.ps1
+    pwsh -NoProfile -File .\tools\Build-ContextHelp.ps1 -Check
 #>
 [CmdletBinding()]
 param(
     [string]$Root = '',
-    [string[]]$Topics = @()
+    [string[]]$Topics = @(),
+    [switch]$Check
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib/Verdict.ps1')
+# Only -Check carries a verdict; a generation run keeps its own terminating errors.
+trap {
+    if (-not $Check) { break }
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'Build-ContextHelp' 2 'the check could not run'
+}
 if (-not $Root) { $Root = Split-Path $PSScriptRoot -Parent }
 $Root = [IO.Path]::GetFullPath($Root)
+
+if ($Check) {
+    $checkName = 'Build-ContextHelp'
+    Write-Subject $checkName "the committed help pages and exchange-mark files of $Root against a fresh generation from its tools/settings-help-copy.json, help-map.json and capture list"
+    if (@($Topics | Where-Object { $_ }).Count -gt 0) { Exit-Verdict $checkName 2 '-Topics is a partial generation; -Check judges the whole corpus' }
+    $inputs = @('tools/settings-help-copy.json', 'help-map.json', 'assets/exchange-mark/png/full-256.png',
+        'assets/exchange-mark/svg/exchange-mark-small.svg', 'assets/exchange-mark/svg/exchange-mark-mono.svg',
+        'src/Localization/Localization.DeviceVocabulary.vb')
+    foreach ($rel in $inputs) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Root $rel))) { Exit-Verdict $checkName 2 "input not found: $rel" }
+    }
+    $helpRel = [string](Get-Content -LiteralPath (Join-Path $Root 'help-map.json') -Raw -Encoding UTF8 | ConvertFrom-Json).helpRoot
+    $committed = Join-Path $Root $helpRel
+    if (-not (Test-Path -LiteralPath $committed -PathType Container)) { Exit-Verdict $checkName 2 "the committed corpus folder was not found: $helpRel" }
+
+    $scratch = Join-Path ([IO.Path]::GetTempPath()) ('fms-help-drift-' + [Guid]::NewGuid().ToString('N'))
+    $problems = [Collections.Generic.List[string]]::new()
+    $pages = 0
+    try {
+        foreach ($rel in $inputs) {
+            $dest = Join-Path $scratch $rel
+            [IO.Directory]::CreateDirectory((Split-Path $dest -Parent)) | Out-Null
+            [IO.File]::Copy((Join-Path $Root $rel), $dest, $true)
+        }
+        $scratchHelp = Join-Path $scratch $helpRel
+        [IO.Directory]::CreateDirectory($scratchHelp) | Out-Null
+        $evidence = Join-Path $committed 'context-help-capture-evidence.json'
+        if (Test-Path -LiteralPath $evidence) { [IO.File]::Copy($evidence, (Join-Path $scratchHelp 'context-help-capture-evidence.json'), $true) }
+        # The generator checks that each capture picture exists and never reads it: an empty stand-in is enough.
+        $committedFull = (Resolve-Path -LiteralPath $committed).Path.TrimEnd('\')
+        foreach ($png in Get-ChildItem -LiteralPath $committedFull -Recurse -File -Filter '*.png') {
+            $rel = $png.FullName.Substring($committedFull.Length).TrimStart('\')
+            if ($rel -like 'exchange-mark\*') { continue }
+            $dest = Join-Path $scratchHelp $rel
+            [IO.Directory]::CreateDirectory((Split-Path $dest -Parent)) | Out-Null
+            [IO.File]::WriteAllBytes($dest, [byte[]]@())
+        }
+
+        $log = & pwsh -NoProfile -File $PSCommandPath -Root $scratch 2>&1 | Out-String
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host (($log -split "`r?`n" | Where-Object { $_ } | Select-Object -Last 6) -join "`n")
+            Exit-Verdict $checkName 2 'the generator refused the inputs (see above)'
+        }
+
+        $fresh = @{}
+        $scratchFull = (Resolve-Path -LiteralPath $scratchHelp).Path.TrimEnd('\')
+        foreach ($f in Get-ChildItem -LiteralPath $scratchFull -Recurse -File) {
+            $rel = $f.FullName.Substring($scratchFull.Length).TrimStart('\')
+            if ($f.Extension -eq '.html' -or $rel -like 'exchange-mark\*') { $fresh[$rel] = $f.FullName }
+        }
+        $have = @{}
+        foreach ($f in Get-ChildItem -LiteralPath $committedFull -Recurse -File) {
+            $rel = $f.FullName.Substring($committedFull.Length).TrimStart('\')
+            if ($f.Extension -eq '.html' -or $rel -like 'exchange-mark\*') { $have[$rel] = $f.FullName }
+        }
+        foreach ($rel in ($fresh.Keys | Sort-Object)) {
+            if (-not $have.ContainsKey($rel)) { $problems.Add("missing: $rel (the generator writes it)"); continue }
+            $pages++
+            $a = [IO.File]::ReadAllBytes($fresh[$rel]); $b = [IO.File]::ReadAllBytes($have[$rel])
+            if ($a.Length -ne $b.Length -or [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($a)) -ne [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($b))) { $problems.Add("differs: $rel") }
+        }
+        foreach ($rel in ($have.Keys | Sort-Object)) {
+            if (-not $fresh.ContainsKey($rel)) { $problems.Add("stale: $rel (the generator no longer writes it)") }
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $scratch) { [IO.Directory]::Delete($scratch, $true) }
+    }
+    if ($problems.Count -gt 0) {
+        $problems | Select-Object -First 25 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        if ($problems.Count -gt 25) { Write-Host "  .. and $($problems.Count - 25) more" -ForegroundColor Red }
+        Exit-Verdict $checkName 1 "$($problems.Count) file(s) differ from a fresh generation; run Build-ContextHelp.ps1 without -Check, never edit a page by hand"
+    }
+    Exit-Verdict $checkName 0 "$pages generated file(s) equal the committed corpus"
+}
+
 $Topics = @($Topics | ForEach-Object { $_ -split ',' })
 $settingsHelp = Get-Content -LiteralPath (Join-Path $Root 'tools/settings-help-copy.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 
@@ -198,6 +308,14 @@ foreach ($locale in $locales) {
             $term = [System.Net.WebUtility]::HtmlEncode($exchangeTerms[$locale])
             $markHtml = "<img class=`"exchange-inline`" src=`"../exchange-mark/exchange-mark-small.svg`" width=`"24`" height=`"24`" alt=`"$term`">"
         }
+        # CONTEXT-HELP rule 11, SITE-FAMILY-MAP rule 4 pair (1.16): the help of the shared exchange
+        # function names the browser sibling in Related. The anchor is the product's landing - its
+        # map help cell is a dash, so no web help address is ever linked (L0349). An empty string
+        # leaves the other topics' pages byte-identical.
+        $webSiblingLink = ''
+        if ($pageKey -like 'exchange-*') {
+            $webSiblingLink = "`n    <a href=`"https://serzhyale.github.io/FastMediaSorter_WEB/`">FastMediaSorter for Web</a>"
+        }
         $pageHtml = @"
 <!doctype html>
 <html lang="$locale" dir="$dir">
@@ -230,7 +348,7 @@ $elementDetails
   </section>
   <nav id="related">
     <h2>$relatedHead</h2>
-    <a href="index.html">$helpWord</a>
+    <a href="index.html">$helpWord</a>$webSiblingLink
   </nav>
   <footer id="footer">
     Fast Media Sorter &amp; Sharing for Windows · <a href="index.html">$helpWord</a> · <a href="mailto:sza@ukr.net">Support</a>

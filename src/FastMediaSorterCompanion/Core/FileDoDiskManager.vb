@@ -19,20 +19,21 @@ Public Module FileDoDiskManager
 
     ''' <summary>The Disk Manager's full path, or "" when neither the bundle nor a registered FileDO
     ''' installation has it. <paramref name="exists"/> is the file-system question, injected so the
-    ''' order is testable.</summary>
-    Public Function Locate(bundleDir As String, registeredDirs As IEnumerable(Of String), exists As Func(Of String, Boolean)) As String
+    ''' order is testable. <paramref name="inspect"/> verifies that the manager at that path genuinely
+    ''' answers an inspection, as required by DISK-SHARE 1.5.</summary>
+    Public Function Locate(bundleDir As String, registeredDirs As IEnumerable(Of String), exists As Func(Of String, Boolean), Optional inspect As Func(Of String, Boolean) = Nothing) As String
         Dim candidates As New List(Of String)()
         If Not String.IsNullOrWhiteSpace(bundleDir) Then candidates.Add(bundleDir)
         If registeredDirs IsNot Nothing Then candidates.AddRange(registeredDirs.Where(Function(d) Not String.IsNullOrWhiteSpace(d)))
         For Each dir As String In candidates
             Dim path As String = Combine(dir)
-            If path.Length > 0 AndAlso exists(path) Then Return path
+            If path.Length > 0 AndAlso exists(path) AndAlso (inspect Is Nothing OrElse inspect(path)) Then Return path
         Next
         Return ""
     End Function
 
     Public Function Locate() As String
-        Return Locate(BundleDirectory(), RegisteredInstallDirectories(), AddressOf File.Exists)
+        Return Locate(BundleDirectory(), RegisteredInstallDirectories(), AddressOf File.Exists, AddressOf InspectManager)
     End Function
 
     ''' <summary>The folder a FileDO Uninstall entry points at, "" when the entry is not FileDO's or names
@@ -96,7 +97,91 @@ Public Module FileDoDiskManager
         Return If(value, "").Trim().Trim(""""c).TrimEnd("\"c)
     End Function
 
+    ''' <summary>Extracts the directory from a command line like '"C:\Tools\FileDO\filedo_win.exe" "%1"' or 'C:\Tools\FileDO\filedo_win.exe "%1"'.</summary>
+    Public Function InstallDirFromCommand(commandLine As String) As String
+        Dim cmd As String = If(commandLine, "").Trim()
+        If cmd.Length = 0 Then Return ""
+        Dim exe As String = ""
+        If cmd.StartsWith(""""c) Then
+            Dim closeQuote As Integer = cmd.IndexOf(""""c, 1)
+            If closeQuote > 1 Then
+                exe = cmd.Substring(1, closeQuote - 1)
+            Else
+                exe = cmd.Trim(""""c)
+            End If
+        Else
+            Dim exeIndex As Integer = cmd.IndexOf(".exe", StringComparison.OrdinalIgnoreCase)
+            If exeIndex > 0 Then
+                exe = cmd.Substring(0, exeIndex + 4)
+            Else
+                Dim space As Integer = cmd.IndexOf(" "c)
+                exe = If(space > 0, cmd.Substring(0, space), cmd)
+            End If
+        End If
+        Try
+            Return If(exe.Length = 0, "", If(Path.GetDirectoryName(exe), ""))
+        Catch
+            Return ""
+        End Try
+    End Function
+
+    ''' <summary>Verifies that an executable answers an identity inspection, satisfying DISK-SHARE 1.5
+    ''' verified registered discovery.</summary>
+    Public Function InspectManager(exePath As String) As Boolean
+        If String.IsNullOrWhiteSpace(exePath) Then Return False
+        Try
+            If Not File.Exists(exePath) Then Return False
+            Dim vi As Diagnostics.FileVersionInfo = Diagnostics.FileVersionInfo.GetVersionInfo(exePath)
+            If vi IsNot Nothing Then
+                Dim names As String = (If(vi.ProductName, "") & " " & If(vi.InternalName, "") & " " & If(vi.OriginalFilename, "") & " " & If(vi.FileDescription, "")).Trim()
+                If names.IndexOf("filedo", StringComparison.OrdinalIgnoreCase) >= 0 Then Return True
+            End If
+        Catch
+        End Try
+        Try
+            Dim dir As String = Path.GetDirectoryName(exePath)
+            If Not String.IsNullOrEmpty(dir) Then
+                Dim cli As String = Path.Combine(dir, "filedo.exe")
+                If File.Exists(cli) Then
+                    Dim viCli As Diagnostics.FileVersionInfo = Diagnostics.FileVersionInfo.GetVersionInfo(cli)
+                    If viCli IsNot Nothing Then
+                        Dim names As String = (If(viCli.ProductName, "") & " " & If(viCli.InternalName, "") & " " & If(viCli.OriginalFilename, "")).Trim()
+                        If names.IndexOf("filedo", StringComparison.OrdinalIgnoreCase) >= 0 Then Return True
+                    End If
+                End If
+            End If
+        Catch
+        End Try
+        Return False
+    End Function
+
     Friend Iterator Function RegisteredInstallDirectories() As IEnumerable(Of String)
+        ' 1. Registered ProgID identities (HKCU and HKLM Classes\FileDO.DiskContainer)
+        For Each hive As RegistryHive In {RegistryHive.CurrentUser, RegistryHive.LocalMachine}
+            For Each view As RegistryView In {RegistryView.Registry64, RegistryView.Registry32}
+                Dim progDir As String = ""
+                Try
+                    Using baseKey As RegistryKey = RegistryKey.OpenBaseKey(hive, view)
+                        Using key As RegistryKey = baseKey.OpenSubKey("Software\Classes\FileDO.DiskContainer\shell\mount\command")
+                            If key IsNot Nothing Then
+                                progDir = InstallDirFromCommand(TryCast(key.GetValue(""), String))
+                            End If
+                        End Using
+                        If String.IsNullOrEmpty(progDir) Then
+                            Using key As RegistryKey = baseKey.OpenSubKey("Software\Classes\FileDO.DiskContainer")
+                                If key IsNot Nothing Then
+                                    progDir = InstallDirFromCommand(TryCast(key.GetValue("FileDO.RegisteredBy"), String))
+                                End If
+                            End Using
+                        End If
+                    End Using
+                Catch
+                End Try
+                If progDir.Length > 0 Then Yield progDir
+            Next
+        Next
+
+        ' 2. FileDO's own registered installation key (HKLM\SOFTWARE\FileDO)
         For Each view As RegistryView In {RegistryView.Registry64, RegistryView.Registry32}
             Dim own As String = ""
             Try
@@ -109,6 +194,8 @@ Public Module FileDoDiskManager
             End Try
             If own.Length > 0 Then Yield own
         Next
+
+        ' 3. Uninstall entries (unverified hint fallback)
         For Each view As RegistryView In {RegistryView.Registry64, RegistryView.Registry32}
             Dim names As String() = Array.Empty(Of String)()
             Dim root As RegistryKey = Nothing
@@ -135,7 +222,76 @@ Public Module FileDoDiskManager
             End Using
         Next
     End Function
+
+    ''' <summary>Classifies the FileDO installation and host state into the five states of DISK-SHARE 1.5:
+    ''' absent, installed-stopped, missing disk payload, incompatible, and transport or identity failure.</summary>
+    Public Function ClassifyState(status As WorkerStatus, Optional locateExe As Func(Of String) = Nothing) As FileDoInstallationState
+        Dim locator As Func(Of String) = If(locateExe, AddressOf Locate)
+        Dim managerPath As String = ""
+        Try
+            managerPath = locator()
+        Catch
+        End Try
+        Dim isInstalled As Boolean = managerPath.Length > 0
+
+        If status Is Nothing Then
+            Return If(isInstalled, FileDoInstallationState.InstalledStopped, FileDoInstallationState.Absent)
+        End If
+
+        If DiskSharing.Supported(status) Then
+            Return FileDoInstallationState.InstalledStopped
+        End If
+
+        Dim err As String = If(status.DiskSharingError, "").Trim()
+        If err.Length = 0 Then
+            Return If(isInstalled, FileDoInstallationState.InstalledStopped, FileDoInstallationState.Absent)
+        End If
+
+        If err.IndexOf("LocalSystem", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("LocalService", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("identity", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("pipe", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("access denied", StringComparison.OrdinalIgnoreCase) >= 0 Then
+            Return FileDoInstallationState.TransportOrIdentityFailure
+        End If
+
+        If err.IndexOf("missing", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("payload", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("cannot mount", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("lacks disk-sharing metadata", StringComparison.OrdinalIgnoreCase) >= 0 Then
+            Return FileDoInstallationState.MissingDiskPayload
+        End If
+
+        If err.IndexOf("predates", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("incompatible", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("schema", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           err.IndexOf("version", StringComparison.OrdinalIgnoreCase) >= 0 Then
+            Return FileDoInstallationState.Incompatible
+        End If
+
+        Return If(isInstalled, FileDoInstallationState.InstalledStopped, FileDoInstallationState.Absent)
+    End Function
 End Module
+
+''' <summary>The five availability states required by DISK-SHARE 1.5 amendment:
+''' absent, installed-stopped, missing disk payload, incompatible schema/capability,
+''' and transport or identity failure.</summary>
+Public Enum FileDoInstallationState
+    ''' <summary>No FileDO installation or bundle found on this machine.</summary>
+    Absent
+
+    ''' <summary>FileDO is installed (registered identity found), but the disk-sharing host or service is not running or stopped.</summary>
+    InstalledStopped
+
+    ''' <summary>FileDO is present, but lacks the disk payload (e.g. Store build that cannot mount, or missing filedo.exe).</summary>
+    MissingDiskPayload
+
+    ''' <summary>Incompatible schema version, capability, or obsolete binary predating disk sharing.</summary>
+    Incompatible
+
+    ''' <summary>Transport error, named pipe failure, or identity verification of the pipe server failed.</summary>
+    TransportOrIdentityFailure
+End Enum
 
 Public Enum FileDoLaunchResult
     Started

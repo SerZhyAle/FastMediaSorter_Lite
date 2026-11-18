@@ -87,12 +87,13 @@ static class Scenes {
    var verdicts=(System.Collections.IDictionary)Get(form,"slot_Verdicts");
    verdicts[args[0]]=new SlotVerdict { State=SlotState.Missing, CheckedUtc=DateTime.UtcNow };
    Call(form,"ApplyRecipientsOverlayHealth");
-   var move=recipients.Controls.Cast<Control>().First(c=>c.Name=="recipient_move_row");
-   var unavailableInk=move.ForeColor;
-   Call(form,"ChromeApplyScheme",Color.Navy,Color.White);
-   var theme=Get(form,"chrome_Theme");
-   Assert(move.ForeColor==(Color)Get(theme,"DisabledForeground"),"Theme changes erased recipient health styling");
-   verdicts.Clear(); Call(form,"ChromeApplyScheme",Color.Black,Color.White);
+   var rowsHost=(Control)Get(form,"recipients_Overlay_Rows") ?? recipients;
+   var move=rowsHost.Controls.Cast<Control>().First(c=>c.Name=="recipient_move_row");
+   var moveSlot=(int)move.Tag;
+   Assert(move.ForeColor==(Color)Call(form,"RecipientRowDisabledInk",moveSlot),"The health pass did not dim the missing recipient row");
+   Call(form,"ChromeApplyScheme",Color.Navy,0);
+   Assert(move.ForeColor==(Color)Call(form,"RecipientRowDisabledInk",moveSlot),"Theme changes erased recipient health styling");
+   verdicts.Clear(); Call(form,"ChromeApplyScheme",Color.Black,0);
    var hosts=Hosts(form);
    Assert(hosts.Length==3 && hosts.All(h=>h.Visible),"Expected two toolbar rows and the status strip");
    Assert(!((Control)Get(form,"flow_Toolbar")).Visible && !((Control)Get(form,"panel_Status")).Visible,"Legacy strips were shown");
@@ -135,7 +136,8 @@ static class Scenes {
    Assert(form.ContainsFocus,"A popup stole viewer focus");
    var popupType=popup.GetType();
    var route=popupType.GetMethod("HandlePopupKey",BindingFlags.Public|BindingFlags.Static);
-   route.Invoke(null,new object[]{Keys.Down}); route.Invoke(null,new object[]{Keys.Enter}); Pump();
+   // A popup opened without the F10 ring has no focused row (125 UX-313j): the first Down puts the ring on row 0, the second on row 1.
+   route.Invoke(null,new object[]{Keys.Down}); route.Invoke(null,new object[]{Keys.Down}); route.Invoke(null,new object[]{Keys.Enter}); Pump();
    Assert(((ComboBox)Get(form,"cmbox_Sort")).SelectedIndex==1,"Popup keyboard selection did not reach the sort carrier");
    Click((Control)surface,(Rectangle)Get(sortItem,"Bounds"));
    popup=form.OwnedForms.Single(h=>h.GetType().Name=="ChromeMenu" && h.Visible);
@@ -232,17 +234,86 @@ static class Scenes {
    Assert(form.ContainsFocus,"A panel move stole viewer focus");
    pointerHook.SetValue(row1Surface,null);
    prefs.GetType().GetProperty("ChromePinned").SetValue(prefs,false);
-   prefs.GetType().GetProperty("VideoControlsHideDelaySec").SetValue(prefs,1);
-   Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,form.ClientSize.Height/2)); Pump(1300);
-   Assert(Hosts(form).All(h=>!h.Visible),"Chrome did not hide on idle");
-   Assert(bounds==media.Bounds,"Auto-hide changed media geometry");
+   // The panels hide after the fixed ChromeMetrics.PanelHideDelayMilliseconds (5000), not after VideoControlsHideDelaySec.
+   // The reference is taken here: the scene resized the window above, so the first `bounds` no longer describes it.
+   var mediaBeforeHide=media.Bounds;
+   // A focus trace: where the viewer stops holding the focus is the finding, so each stage leaves a mark.
+   var trace=new System.Collections.Generic.List<string>(); Action<string> mark=n=>trace.Add(n+"="+form.ContainsFocus+"("+Form.ActiveForm?.Name+")"); mark("before-hide");
+   Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,form.ClientSize.Height/2)); Pump(5700);
+   // The pointer is real: a hand on the mouse restarts the 5 s idle clock, so the wait is polled up to 10 s.
+   var hideBy=Environment.TickCount64+4300;
+   while(Environment.TickCount64<hideBy && !Hosts(form).All(h=>!h.Visible)) Pump(100);
+   Assert(Hosts(form).All(h=>!h.Visible),"Chrome did not hide on idle within 10 s (pointer now "+Cursor.Position+", wanted "+form.PointToScreen(new Point(form.ClientSize.Width/2,form.ClientSize.Height/2))+")");
+   Assert(mediaBeforeHide==media.Bounds,"Auto-hide changed media geometry: was "+mediaBeforeHide+", now "+media.Bounds);
+   mark("after-hide");
    prefs.GetType().GetProperty("ReduceMotion").SetValue(prefs,false); Call(form,"ChromeConfigure");
+   mark("after-configure");
    Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,20));
-   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty); Pump(65);
-   if((bool)Call(form,"ChromeFadeAllowed")) Assert(Hosts(form).Any(h=>h.Visible && h.Opacity>0 && h.Opacity<0.86),"Reveal did not produce intermediate fade opacity");
+   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty);
+   mark("after-reveal-tick");
+   // A fade lasts 150 ms: sample the opacity every 10 ms for up to 400 ms instead of judging one instant (a single 65 ms look was timing noise).
+   var sawFade=false; var fadeBy=Environment.TickCount64+400;
+   while(Environment.TickCount64<fadeBy && !sawFade) { Pump(10); sawFade=Hosts(form).Any(h=>h.Visible && h.Opacity>0 && h.Opacity<0.86); }
+   if((bool)Call(form,"ChromeFadeAllowed")) Assert(sawFade,"Reveal did not produce intermediate fade opacity");
    Pump(220); Assert(Hosts(form).Any(h=>h.Visible),"Pointer hot zone did not reveal the chrome");
+   mark("after-reveal");
+   // A finding, not a stop: the animated reveal after an idle hide left the viewer without the keyboard (the chrome must never take it, invariant 2).
+   // The scene gives the focus back and goes on, so the document panel below is still judged on its own; the verdict stays FAIL at the end.
+   var findings=new System.Collections.Generic.List<string>();
+   if(!form.ContainsFocus) { findings.Add("the animated reveal after an idle hide moved the keyboard from the viewer to '"+Form.ActiveForm?.Name+"'"); form.Activate(); Pump(); }
+   // L0280: the document panel on the panels' own algebra - built from a reader's real commands, pinned, faded, revealed, hidden.
+   var docCommands=Call(form,"TextReaderCommands");
+   var docKinds=typeof(Main_Form).Assembly.GetType("fmsl.DocumentReaderKind");
+   var docTextKind=Enum.ToObject(docKinds,Array.IndexOf(Enum.GetNames(docKinds),"Text"));
+   Call(form,"ShowDocumentCommands",docTextKind,docCommands); Pump();
+   mark("after-doc-show");
+   var docPanel=Get(form,"chrome_Document_Panel");
+   Assert(docPanel!=null,"ShowDocumentCommands built no document panel");
+   Assert((bool)Call(form,"DocumentPanelPresent"),"DocumentPanelPresent is false with the panel in the ring's list");
+   var docHost=(Form)Get(docPanel,"Host");
+   Assert(docHost.Name=="chrome_Document","The document panel's window is not chrome_Document");
+   var panelsInOrder=new System.Collections.Generic.List<string>();
+   foreach(var p in (System.Collections.IEnumerable)Get(form,"chrome_Panels")) panelsInOrder.Add((string)Get(p,"Name"));
+   Assert(panelsInOrder.IndexOf("chrome_Document")==2,"The document panel is not the third stop of the ring: "+string.Join(",",panelsInOrder));
+   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty); Pump();
+   Assert(docHost.Visible,"The document panel did not show on the reveal tick");
+   mark("after-doc-tick");
+   Assert((bool)Call(form,"ChromeHandleKey",Keys.F10),"F10 did not enter chrome mode with the document panel up");
+   mark("after-F10");
+   var docSteps=0; var lostAt=-1; var lostOn="";
+   while(!(bool)Call(form,"ChromeKeyboardOnDocumentPanel") && docSteps<120) {
+    Call(form,"ChromeHandleKey",Keys.Tab); docSteps++;
+    // Where the viewer first stops holding the focus on the way round (a step on a panel that takes it is a finding, not noise).
+    if(lostAt<0 && !form.ContainsFocus) { lostAt=docSteps; lostOn="step "+docSteps+" on panel index "+Get(form,"chrome_Focus_Panel")+", active window '"+Form.ActiveForm?.Name+"'"; }
+   }
+   Assert((bool)Call(form,"ChromeKeyboardOnDocumentPanel"),"The F10 ring never reached the document panel after "+docSteps+" Tab steps (focus stands on panel index "+Get(form,"chrome_Focus_Panel")+" of "+string.Join(",",panelsInOrder)+")");
+   Console.WriteLine("F10 ring reached the document panel after "+docSteps+" Tab steps");
+   Call(form,"ChromeHandleKey",Keys.Escape);
+   Assert(!(bool)Get(form,"chrome_Keyboard_Mode"),"Escape did not leave the ring from the document panel");
+   Assert(form.ContainsFocus,"The document panel's ring step stole viewer focus: first lost at "+(lostAt<0?"no step of the walk (lost on Escape)":lostOn)+"; now active window '"+Form.ActiveForm?.Name+"', main window active "+(Form.ActiveForm==form)+"; trace "+string.Join(" ",trace));
+   Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,form.ClientSize.Height/2)); Pump();
+   Call(form,"ChromeTogglePin",docPanel);
+   Assert((bool)Get(Get(docPanel,"Pin"),"Checked"),"The document panel's pin item is not checked after the toggle");
+   Assert((bool)Call(form,"ChromePanelPinned",docPanel),"The document panel does not read its own pin");
+   Assert((bool)prefs.GetType().GetProperty("ChromeDocumentPinned").GetValue(prefs),"Toggling the pin did not write ChromeDocumentPinned");
+   docPanel.GetType().GetField("LastActivity",Flags).SetValue(docPanel,-10000L);
+   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty); Pump(150);
+   Assert(docHost.Visible,"The pinned document panel hid on an aged countdown");
+   Call(form,"ChromeTogglePin",docPanel);
+   Assert(!(bool)Call(form,"ChromePanelPinned",docPanel),"The second toggle did not unpin the document panel");
+   docPanel.GetType().GetField("LastActivity",Flags).SetValue(docPanel,-10000L);
+   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty); Pump(450);
+   Assert(!docHost.Visible,"The unpinned document panel did not fade on an aged countdown");
+   Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,20));
+   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty); Pump(300);
+   Assert(docHost.Visible,"The top hot zone did not reveal the document panel");
+   Cursor.Position=form.PointToScreen(new Point(form.ClientSize.Width/2,form.ClientSize.Height/2)); Pump();
+   Call(form,"HideDocumentPanel");
+   Assert(!(bool)Call(form,"DocumentPanelPresent"),"HideDocumentPanel left the document panel in the ring's list");
+   Assert(!docHost.Visible,"HideDocumentPanel left the document panel's window on screen");
    Call(form,"DisposeRecipientsOverlayResources"); Call(form,"DisposeChromeResources"); form.Hide();
-   Console.WriteLine("Geometry, tooltips, ABC/XYZ folder order, mouse/keyboard menus, font handle recreation, scale, panel move (drag inside, resize, stored place, return) and idle hide passed; DPI="+form.DeviceDpi);
+   if(findings.Count>0) { Console.WriteLine("FINDINGS (the rest of the scene passed): "+string.Join("; ",findings)+"; trace "+string.Join(" ",trace)); return 1; }
+   Console.WriteLine("Geometry, tooltips, ABC/XYZ folder order, mouse/keyboard menus, font handle recreation, scale, panel move (drag inside, resize, stored place, return), idle hide and the document panel (built, ring stop, pinned, faded, revealed, hidden) passed; DPI="+form.DeviceDpi);
    return 0;
   } catch(Exception e) { Console.WriteLine(e); return 1; }
  }

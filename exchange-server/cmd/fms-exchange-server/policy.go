@@ -20,17 +20,11 @@ import (
 // settings of the admin channel and the policy of `policy set` both rewrite the same file.
 var configMu sync.Mutex
 
-// policyOf is the policy the config states. The notes count (limits.notesPerAccount, item FL) is a deployment
-// default only: a 0 or an absent member is accounts.DefaultNotesPerAccount, so the policy always carries a
-// cap of at least 1 (an invalid negative never gets here, Validate refuses it).
+// policyOf is the policy the config states; Load fills absent members from the defaults.
 func policyOf(l config.Limits) accounts.Policy {
-	notesCap := l.NotesPerAccount
-	if notesCap <= 0 {
-		notesCap = accounts.DefaultNotesPerAccount
-	}
 	return accounts.Policy{MaxAccounts: l.MaxAccounts, Defaults: accounts.Limits{
 		Devices: l.DevicesPerAccount, Resources: l.ResourcesPerAccount, Broadcasts: l.BroadcastsPerAccount,
-		BroadcastsPerDevice: l.BroadcastsPerDevice, ClipboardBytes: l.ClipboardBytes, Notes: notesCap,
+		BroadcastsPerDevice: l.BroadcastsPerDevice, ClipboardBytes: l.ClipboardBytes, Notes: l.NotesPerAccount, NotesBytes: l.NotesMaxBytes,
 	}}
 }
 
@@ -50,10 +44,8 @@ func saveLimitsTo(path string) func(accounts.Policy) error {
 		current.Limits.BroadcastsPerAccount = p.Defaults.Broadcasts
 		current.Limits.BroadcastsPerDevice = p.Defaults.BroadcastsPerDevice
 		current.Limits.ClipboardBytes = p.Defaults.ClipboardBytes
-		// The notes count (limits.notesPerAccount) is not written here: it is config-only and read at start, and a
-		// `policy set` never changes it (Assumed 9, L0321). `current` was read from the file just above, so the
-		// operator's value stays whatever it is, even when the policy in force holds another number (an edit made
-		// for the next restart is not overwritten with the number the server started with).
+		current.Limits.NotesPerAccount = p.Defaults.Notes
+		current.Limits.NotesMaxBytes = p.Defaults.NotesBytes
 		if err := current.Validate(); err != nil {
 			return err
 		}
@@ -99,7 +91,8 @@ func runPolicy(cmd command, stdout, stderr io.Writer) int {
 func describeLimits(l admin.LimitsView) string {
 	return "devices " + capText(int64(l.Devices)) + ", resources " + capText(int64(l.Resources)) +
 		", broadcasts " + capText(int64(l.Broadcasts)) + ", broadcasts per device " + capText(int64(l.BroadcastsPerDevice)) +
-		", clipboard " + clipboardText(l.ClipboardBytes)
+		", clipboard " + clipboardText(l.ClipboardBytes) + ", notes " + itoa(int64(l.Notes)) +
+		", notes bytes " + itoa(l.NotesBytes)
 }
 
 func capText(n int64) string {

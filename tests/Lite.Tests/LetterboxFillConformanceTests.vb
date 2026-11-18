@@ -10,7 +10,8 @@ Imports System.Security.Cryptography
 Imports Xunit
 
 ''' <summary>
-''' LETTERBOX-BARS 0.1 and LETTERBOX-HALO 0.1, rung 1 of section 5 (ticket 183): every value of the
+''' LETTERBOX-BARS 0.2 and LETTERBOX-HALO 0.2, rung 1 of section 5 (ticket 183; the 0.2 vectors of the
+''' amendment of 2026-11-15 re-vendored by L0330 on 2026-11-17): every value of the
 ''' catalog's vectors (vendored under TestData\letterbox-vectors beside a PROVENANCE.txt whose digest
 ''' is checked first, the .fd-sec way) reproduced by the pure functions of <c>LetterboxFillMath</c> -
 ''' the one place the rules' numbers live. Exactly for integers and strings, to 1e-4 for reals, as the

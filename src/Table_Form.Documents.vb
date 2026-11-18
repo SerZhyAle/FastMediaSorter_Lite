@@ -147,6 +147,7 @@ Partial Public Class Table_Form
     Private textDocumentClearResult As String = ""
     Private textDocumentEditingFollow As Action
     Private textDocumentTranslationFollow As Action
+    Private textDocumentTranslationScopeFollow As Action
     ' A choice row rebuilds its list on every refresh of the window; the families are asked for once per window.
     Private textDocumentInstalledFonts As List(Of String)
 
@@ -167,6 +168,7 @@ Partial Public Class Table_Form
                 p.FullTextReaderEnabled = v
                 textDocumentEditingFollow?.Invoke()
                 textDocumentTranslationFollow?.Invoke()
+                textDocumentTranslationScopeFollow?.Invoke()
             End Sub)
         RegisterSettingsRow("textdoc_editing",
             Sub()
@@ -188,9 +190,18 @@ Partial Public Class Table_Form
                 textDocumentTranslationFollow.Invoke()
                 expandedRefreshActions.Add(textDocumentTranslationFollow)
             End Sub)
-        RegisterHtmlChoice(flow, "textdoc_translation_scope",
-            Function() {Choice("selection_or_buffer", "Выделенный фрагмент"), Choice("file", "Сохранённый файл")},
-            Function(p) p.TextTranslationScope, Sub(p, v) p.TextTranslationScope = v)
+        ' Greyed with the reader off like the two check rows above it (hand sweep of 26.11.16.2156 found it open).
+        RegisterSettingsRow("textdoc_translation_scope",
+            Sub()
+                AddPreferenceChoice(flow, "textdoc_translation_scope",
+                    Function() {Choice("selection_or_buffer", "Выделенный фрагмент"), Choice("file", "Сохранённый файл")},
+                    Function() Main_Form.GetModernPreferences().TextTranslationScope,
+                    Sub(value) Main_Form.GetModernPreferences().TextTranslationScope = value)
+                Dim row As ModernSettingRow = modernSettingsRows.Last(Function(item) item.Key = "textdoc_translation_scope")
+                textDocumentTranslationScopeFollow = Sub() row.Editor.Enabled = Main_Form.GetModernPreferences().FullTextReaderEnabled
+                textDocumentTranslationScopeFollow.Invoke()
+                expandedRefreshActions.Add(textDocumentTranslationScopeFollow)
+            End Sub)
         RegisterHtmlCheck(flow, "textdoc_remember_position", Function(p) p.TextRememberPosition, Sub(p, v) p.TextRememberPosition = v)
         RegisterHtmlCheck(flow, "textdoc_remember_encoding", Function(p) p.TextRememberEncoding, Sub(p, v) p.TextRememberEncoding = v)
         RegisterHtmlButton(flow, "textdoc_clear_history", "Очистить", AddressOf ClearTextDocumentHistoryClicked)

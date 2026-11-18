@@ -70,6 +70,17 @@ Public Class WorkerStateDirTests
         Assert.Equal("", WorkerStateDir.Choose("", "", "", Function(d) False))
     End Sub
 
+    ''' <summary>The user directory is <c>%LOCALAPPDATA%\FastMediaSorterCompanion</c>, and the platform
+    ''' user-config directory only when the variable is absent or empty - the worker's own reading.</summary>
+    <Fact>
+    Public Sub TheUserDir_ReadsLocalAppData_AndFallsToTheUserConfigDir_WhenItIsAbsent()
+        Assert.Equal(Path.Combine("X:\local", WorkerStateDir.FolderName), WorkerStateDir.UserDirFrom("X:\local", "X:\roaming"))
+        Assert.Equal(Path.Combine("X:\roaming", WorkerStateDir.FolderName), WorkerStateDir.UserDirFrom(Nothing, "X:\roaming"))
+        Assert.Equal(Path.Combine("X:\roaming", WorkerStateDir.FolderName), WorkerStateDir.UserDirFrom("", "X:\roaming"))
+        Assert.Equal("", WorkerStateDir.UserDirFrom("", ""))
+        Assert.Equal("", WorkerStateDir.UserDirFrom(Nothing, Nothing))
+    End Sub
+
     ' --- "usable" is the worker's dirUsable --------------------------------------------------
 
     <Fact>

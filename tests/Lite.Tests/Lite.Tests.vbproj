@@ -265,7 +265,7 @@
     <Compile Include="..\..\src\ZoomMath.vb">
       <Link>Linked\ZoomMath.vb</Link>
     </Compile>
-    <!-- LETTERBOX-BARS / LETTERBOX-HALO 0.1 (ticket 183): the pure math of the perspective bars and the halo,
+    <!-- LETTERBOX-BARS / LETTERBOX-HALO 0.2 (ticket 183): the pure math of the perspective bars and the halo,
          held to the catalog's vectors by LetterboxFillConformanceTests on BOTH legs - the bars are shared code
          that both shipped exes compile. Not a whole-file seam; needs only System.Drawing value types. -->
     <Compile Include="..\..\src\LetterboxFillMath.vb">
@@ -1302,6 +1302,12 @@
     <None Include="TestData\user-playlist-vectors\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\user-playlist-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- STREAM-BANK item P (rule 14): the catalog's closed language/country tables and the golden vectors, beside their
+         PROVENANCE.txt, which StreamFacetFoldTests checks before it trusts a byte (ticket L0329). -->
+    <None Include="TestData\stream-facets\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\stream-facets\%(Filename)%(Extension)</Link>
     </None>
     <!-- LETTERBOX-BARS / LETTERBOX-HALO rung 1 vectors (ticket 183), beside their PROVENANCE.txt, which
          LetterboxFillConformanceTests checks before it trusts a byte. -->

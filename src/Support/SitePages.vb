@@ -35,7 +35,9 @@ Public Module SitePages
     ''' </summary>
     Public Function TrustPageUrl(languageCode As String) As String
         Dim code As String = If(languageCode, "").Trim().ToLowerInvariant()
-        If code.Length = 0 OrElse code = "en" Then Return SiteRoot & "trust.html"
+        ' A language the site has no copy of reads the English page, never an address that does not exist
+        ' (SITE-STRUCTURE section 8 C).
+        If code.Length = 0 OrElse code = "en" OrElse Array.IndexOf(LandingCodes, code) < 0 Then Return SiteRoot & "trust.html"
         Return SiteRoot & "lang/" & code & "/trust.html"
     End Function
 
@@ -86,7 +88,7 @@ Public Module SitePages
     Public Const ExchangePortalRoot As String = AndroidAppSiteRoot & "docs/media-exchange-portal/"
 
     ''' <summary>The portal pages a program may link to, besides the start page ("").</summary>
-    Private ReadOnly ExchangePortalPages As String() = {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions", "account-deletion"}
+    Public ReadOnly ExchangePortalPages As String() = {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions", "account-deletion"}
 
     ''' <summary>
     ''' A page of the media exchange portal in <paramref name="languageCode"/>. <paramref name="page"/> is ""

@@ -1,8 +1,8 @@
 package wire
 
-// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Twenty-two
-// exist (the ten of 0.20, the six of 19 - accounts, invitations, passwords -, admin-disabled, the four of 1.12 item EP
-// and `note-conflict` of 1.13 item FL); a client shows an unknown value as a generic refusal.
+// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Twenty-three
+// exist (the ten of 0.20, the six of 19 - accounts, invitations, passwords -, admin-disabled, the four of 1.12 item EP,
+// `note-conflict` of 1.13 item FL and `ended` of 1.10 item DY); a client shows an unknown value as a generic refusal.
 type Reason string
 
 // The reasons. Refuse is the only way a `refused` envelope is built, and a source scan
@@ -55,6 +55,11 @@ const (
 	// refusal carries the stored record as `current` and nothing was stored; a client resolves it and never
 	// shows it as a failure.
 	ReasonNoteConflict Reason = "note-conflict"
+
+	// DEVICE-EXCHANGE 1.10 item DY (ticket L0336): an ended broadcast at a tunnel.
+
+	// ReasonEnded is a tunnel `connect` for a broadcast that ended and is still remembered (item DY).
+	ReasonEnded Reason = "ended"
 )
 
 // AllReasons is the closed list of 7.10, in the order of the contract.
@@ -65,9 +70,10 @@ var AllReasons = []Reason{
 	ReasonAdminDisabled,
 	ReasonNotFound, ReasonInvalidPayload, ReasonAppIDMismatch, ReasonVersionIncompatible,
 	ReasonNoteConflict,
+	ReasonEnded,
 }
 
-// Valid reports whether r is one of the twenty-two.
+// Valid reports whether r is one of the twenty-three.
 func (r Reason) Valid() bool {
 	for _, k := range AllReasons {
 		if r == k {
@@ -90,7 +96,7 @@ const (
 // which is also what answers a peer that spoke the legacy one.
 func Refuse(r Reason) *Refused {
 	if !r.Valid() {
-		panic("wire: Refuse with a reason outside the twenty-two of DEVICE-EXCHANGE 7.10: " + string(r))
+		panic("wire: Refuse with a reason outside the twenty-three of DEVICE-EXCHANGE 7.10: " + string(r))
 	}
 	return &Refused{Head: Head{SchemaVersion, TypeRefused}, Reason: string(r)}
 }

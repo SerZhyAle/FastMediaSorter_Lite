@@ -1,0 +1,1275 @@
+{
+  "schemaVersion": 1,
+  "product": "Share Manager - Fast Media Sorter & Sharing",
+  "exe": "FastMediaSorterCompanion.exe",
+  "cliVersion": "1.3",
+  "commands": [
+    {
+      "name": "commands",
+      "aliases": [],
+      "forward": "never",
+      "summary": "List the commands this program accepts.",
+      "synopsis": "commands [--json]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the manifest (docs/cli-commands.share-manager.json) instead of the readable list"
+        }
+      ],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "printed"
+        },
+        {
+          "code": 10,
+          "meaning": "unknown option"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'commands --json' -RedirectStandardOutput C:\\temp\\fms-sm-commands.json -Wait",
+          "expect": "exit 0 and the file equals docs/cli-commands.share-manager.json"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "version",
+      "aliases": [],
+      "forward": "never",
+      "summary": "Print the version of this program.",
+      "synopsis": "version [--json]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        }
+      ],
+      "returns": [
+        {
+          "name": "version",
+          "kind": "string",
+          "description": "the program version"
+        },
+        {
+          "name": "cliVersion",
+          "kind": "string",
+          "description": "the version of the command set this manifest describes"
+        }
+      ],
+      "risk": "safe",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "printed"
+        },
+        {
+          "code": 10,
+          "meaning": "unknown option"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe version",
+          "expect": "exit 0 and the version on the console"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "status",
+      "aliases": [],
+      "summary": "Report whether the Share Manager is running and ready for commands.",
+      "synopsis": "status [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "version",
+          "kind": "string",
+          "description": "the running program's version"
+        },
+        {
+          "name": "pid",
+          "kind": "int",
+          "description": "its process id"
+        },
+        {
+          "name": "exe",
+          "kind": "string",
+          "description": "its file name"
+        },
+        {
+          "name": "ready",
+          "kind": "bool",
+          "description": "true when no question or dialog blocks commands"
+        },
+        {
+          "name": "acceptsRestrictedCommands",
+          "kind": "bool",
+          "description": "whether the setting admits commands of a class other than safe"
+        },
+        {
+          "name": "workerAvailable",
+          "kind": "bool",
+          "description": "whether the sharing worker payload is installed"
+        },
+        {
+          "name": "sharing",
+          "kind": "bool",
+          "description": "whether sharing is switched on now"
+        }
+      ],
+      "risk": "safe",
+      "coldStart": "refuse",
+      "wait": "done",
+      "timeoutMs": 2000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "running and ready"
+        },
+        {
+          "code": 11,
+          "meaning": "not running, or busy"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "(Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'status' -Wait -PassThru).ExitCode",
+          "expect": "0 while the manager runs and is ready, 11 otherwise"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "show",
+      "aliases": [
+        "--show",
+        "/show",
+        {
+          "spelling": "::fms-show-window::",
+          "answers": false
+        }
+      ],
+      "summary": "Bring the Share Manager window forward, starting the program when it is not running.",
+      "synopsis": "show",
+      "args": [],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "the window is forward"
+        },
+        {
+          "code": 2,
+          "meaning": "the running copy is older and must be restarted"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe show",
+          "expect": "exit 0 and the window in front"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "quit",
+      "aliases": [],
+      "summary": "Close the running Share Manager, as the tray menu Exit does.",
+      "synopsis": "quit",
+      "args": [],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 10000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "closed, or was not running"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe quit",
+          "expect": "exit 0 and no Share Manager process is left"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "start",
+      "aliases": [
+        "",
+        {
+          "spelling": "--tray",
+          "implies": [
+            "--silent"
+          ]
+        },
+        {
+          "spelling": "/tray",
+          "implies": [
+            "--silent"
+          ]
+        },
+        {
+          "spelling": "::fms-plain-start::",
+          "answers": false
+        }
+      ],
+      "summary": "Make sure the Share Manager is running and apply its startup option as a plain launch does; with --silent it shows no window and no hint, as the logon autostart does.",
+      "synopsis": "start [--silent]",
+      "args": [
+        {
+          "name": "silent",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "show nothing: no window, no tray hint; the shipped --tray spelling means this"
+        }
+      ],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 20000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "running"
+        },
+        {
+          "code": 2,
+          "meaning": "the running copy is older and must be restarted"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe start --silent",
+          "expect": "exit 0; the tray icon is up and no window is shown"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "share add",
+      "aliases": [
+        "<folder>"
+      ],
+      "summary": "Propose a folder to share; the person answers the proposal in the manager before anything is shared.",
+      "synopsis": "share add <folder>",
+      "args": [
+        {
+          "name": "folder",
+          "kind": "path",
+          "required": true,
+          "description": "a folder by drive letter or UNC path, no .. segment and no wildcard"
+        }
+      ],
+      "returns": [
+        {
+          "name": "proposal",
+          "kind": "string",
+          "description": "queued, duplicate, already-shared or full: what became of the proposal"
+        }
+      ],
+      "risk": "leaves-machine",
+      "coldStart": "start",
+      "wait": "accepted",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "proposed (queued, duplicate or already shared)"
+        },
+        {
+          "code": 10,
+          "meaning": "not an acceptable folder spelling"
+        },
+        {
+          "code": 11,
+          "meaning": "thirty-two proposals are already waiting, or a question is open"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'share add D:\\Photos --result C:\\temp\\p.json' -Wait -PassThru",
+          "expect": "exit 0 and C:\\temp\\p.json holds the proposal verdict"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "resource add",
+      "aliases": [
+        "--add-resource",
+        "/add-resource",
+        {
+          "spelling": "::fms-add-resource::",
+          "answers": false
+        },
+        {
+          "spelling": "--add-resource-camera",
+          "implies": [
+            "--camera"
+          ]
+        },
+        {
+          "spelling": "/add-resource-camera",
+          "implies": [
+            "--camera"
+          ]
+        },
+        {
+          "spelling": "::fms-add-resource-camera::",
+          "implies": [
+            "--camera"
+          ],
+          "answers": false
+        }
+      ],
+      "summary": "Open the guided flow that adds a resource, with the camera QR scan when --camera is given.",
+      "synopsis": "resource add [--camera]",
+      "args": [
+        {
+          "name": "camera",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "start with the camera QR scan; the shipped add-resource-camera spellings mean this"
+        }
+      ],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 10000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "the flow window is shown"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe resource add --camera",
+          "expect": "exit 0 and the camera scan on screen"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "schedule open",
+      "aliases": [
+        {
+          "spelling": "::fms-schedule::",
+          "answers": false
+        },
+        {
+          "spelling": "::fms-schedule::<folder>",
+          "answers": false
+        }
+      ],
+      "summary": "Open the Scheduled file operations window; a folder pre-fills the source of a new operation that the person still has to save.",
+      "synopsis": "schedule open [--folder <path>]",
+      "args": [
+        {
+          "name": "folder",
+          "kind": "path",
+          "required": false,
+          "description": "the pre-filled source folder"
+        }
+      ],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 10000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "the window is shown"
+        },
+        {
+          "code": 10,
+          "meaning": "not an acceptable folder spelling"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe schedule open --folder D:\\Photos",
+          "expect": "exit 0 and the window open with D:\\Photos as the source"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "broadcast open",
+      "aliases": [
+        {
+          "spelling": "::fms-broadcast::<path>",
+          "answers": false
+        }
+      ],
+      "summary": "Open the live broadcast window with a path preselected.",
+      "synopsis": "broadcast open [--path <path>]",
+      "args": [
+        {
+          "name": "path",
+          "kind": "path",
+          "required": false,
+          "description": "a drive or UNC path the window preselects"
+        }
+      ],
+      "returns": [],
+      "risk": "safe",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 10000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "the window is shown"
+        },
+        {
+          "code": 10,
+          "meaning": "not an acceptable path spelling"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe broadcast open --path D:\\Music",
+          "expect": "exit 0 and the broadcast window open"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "clipboard send",
+      "aliases": [
+        "--clipboard-send",
+        "/clipboard-send",
+        {
+          "spelling": "::fms-clipboard-send::",
+          "answers": false
+        }
+      ],
+      "summary": "Send the clipboard to the exchange server and say how it went.",
+      "synopsis": "clipboard send [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "outcome",
+          "kind": "string",
+          "description": "a closed token for the result line: sent, empty, no-account, busy, too-large, no-room, no-answer, cancelled or failed"
+        },
+        {
+          "name": "bytes",
+          "kind": "int",
+          "description": "size sent"
+        }
+      ],
+      "risk": "leaves-machine",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "idempotent": false,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "sent"
+        },
+        {
+          "code": 1,
+          "meaning": "the operation failed or was cancelled"
+        },
+        {
+          "code": 2,
+          "meaning": "not proven: the running program may still be working"
+        },
+        {
+          "code": 11,
+          "meaning": "no exchange account, nothing to send, or another clipboard operation is under way"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        },
+        {
+          "code": 13,
+          "meaning": "the clipboard is larger than the server accepts, or the server has no room"
+        },
+        {
+          "code": 15,
+          "meaning": "the server did not answer"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "(Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'clipboard send' -Wait -PassThru).ExitCode",
+          "expect": "0 when the clipboard reached the server"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "clipboard get",
+      "aliases": [
+        "--clipboard-get",
+        "/clipboard-get",
+        {
+          "spelling": "::fms-clipboard-get::",
+          "answers": false
+        }
+      ],
+      "summary": "Fetch the newest clipboard from the exchange server into the local clipboard and say how it went.",
+      "synopsis": "clipboard get [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "outcome",
+          "kind": "string",
+          "description": "a closed token for the result line: received, empty, no-account, busy, no-answer, cancelled or failed"
+        },
+        {
+          "name": "bytes",
+          "kind": "int",
+          "description": "size received"
+        }
+      ],
+      "risk": "writes-user-data",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "received"
+        },
+        {
+          "code": 1,
+          "meaning": "the operation failed or was cancelled"
+        },
+        {
+          "code": 2,
+          "meaning": "not proven: the running program may still be working"
+        },
+        {
+          "code": 11,
+          "meaning": "no exchange account, nothing on the server, or another clipboard operation is under way"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        },
+        {
+          "code": 15,
+          "meaning": "the server did not answer"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "(Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'clipboard get' -Wait -PassThru).ExitCode",
+          "expect": "0 when the server clipboard is now the local one"
+        }
+      ],
+      "since": "1.0"
+    },
+    {
+      "name": "share list",
+      "aliases": [],
+      "summary": "List the folders the Share Manager shares and the state of each.",
+      "synopsis": "share list [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "shares",
+          "kind": "array",
+          "description": "one object per shared folder: folder (the path), state (serving or stopped) and writable (true when the folder accepts uploads); no password, PIN, token or address of a peer"
+        }
+      ],
+      "risk": "reads-user-data",
+      "coldStart": "refuse",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "answered"
+        },
+        {
+          "code": 1,
+          "meaning": "the sharing worker did not answer"
+        },
+        {
+          "code": 11,
+          "meaning": "not running"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'share list --result C:\\temp\\shares.json' -Wait; (Get-Content C:\\temp\\shares.json -Raw | ConvertFrom-Json).shares.Count",
+          "expect": "the number of shared folders"
+        }
+      ],
+      "since": "1.1"
+    },
+    {
+      "name": "schedule list",
+      "aliases": [],
+      "summary": "List the scheduled file operations with their next run and their last result; with no manager running the program reads the operations, answers and exits, starting no scheduler.",
+      "synopsis": "schedule list [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "operations",
+          "kind": "array",
+          "description": "one object per scheduled operation: id (a GUID), name, action (copy, move, delete, archive, fill-free-space, backup or unknown), enabled (bool), nextRun (ISO 8601 with the offset, or null while the operation is off or parked) and lastResult (none, ok, failed, refused, wall, cancelled, skipped or unknown); for backup operations, also retention (generations, keep-days or keep-days+keep-monthly), keep (int, when generations) or keepDays (int, when dated), keepMonthly (bool) and skipLinks (bool); no folder, no file name, no error text"
+        }
+      ],
+      "risk": "reads-user-data",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "answered"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'schedule list --result C:\\temp\\ops.json' -Wait; Get-Content C:\\temp\\ops.json -Raw | ConvertFrom-Json",
+          "expect": "an object with an operations array"
+        }
+      ],
+      "since": "1.1"
+    },
+    {
+      "name": "exchange status",
+      "aliases": [],
+      "summary": "Say what the exchange client last knew about its server; no network call is made. With no manager running the program reads whether an account is set up, answers (state stopped, no request waiting) and exits.",
+      "synopsis": "exchange status [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "accountConfigured",
+          "kind": "bool",
+          "description": "whether an exchange account is set up on this PC"
+        },
+        {
+          "name": "state",
+          "kind": "string",
+          "description": "the last known state of the connection: not-configured, connecting, online, reconnecting, sign-in-again, pin-mismatch, update-needed, defect or stopped; no server address, user name or key"
+        },
+        {
+          "name": "pendingRequests",
+          "kind": "int",
+          "description": "how many requests of other programs to share a folder wait for the person's answer in the manager"
+        }
+      ],
+      "risk": "safe",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "answered"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'exchange status --result C:\\temp\\ex.json' -Wait; Get-Content C:\\temp\\ex.json -Raw | ConvertFrom-Json",
+          "expect": "an object with accountConfigured, state and pendingRequests"
+        }
+      ],
+      "since": "1.1"
+    },
+    {
+      "name": "schedule add",
+      "aliases": [],
+      "summary": "Create or update a scheduled backup operation without opening a window.",
+      "synopsis": "schedule add --action backup --source <folder> --destination <folder> --daily <HH:mm> [--keep <1-999> | --keep-days <1-999> [--keep-monthly]] [--skip-links] [--name <text>] [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "action",
+          "kind": "enum",
+          "required": true,
+          "values": [
+            "backup"
+          ],
+          "description": "operation action (backup)"
+        },
+        {
+          "name": "source",
+          "kind": "path",
+          "required": true,
+          "description": "absolute drive or UNC source folder"
+        },
+        {
+          "name": "destination",
+          "kind": "path",
+          "required": true,
+          "description": "absolute drive or UNC destination folder outside the source"
+        },
+        {
+          "name": "daily",
+          "kind": "string",
+          "required": true,
+          "description": "daily run time in 24-hour HH:mm form (local wall clock)"
+        },
+        {
+          "name": "keep",
+          "kind": "int",
+          "required": false,
+          "default": 7,
+          "description": "how many numbered generations to keep (1 to 999; cannot be combined with --keep-days)"
+        },
+        {
+          "name": "keep-days",
+          "kind": "int",
+          "required": false,
+          "description": "keep dated backups for N days (1 to 999); cannot be combined with --keep"
+        },
+        {
+          "name": "keep-monthly",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "keep the earliest backup of each calendar month indefinitely (requires --keep-days)"
+        },
+        {
+          "name": "skip-links",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "skip junctions and symbolic links instead of refusing the backup"
+        },
+        {
+          "name": "name",
+          "kind": "string",
+          "required": false,
+          "description": "display name for the operation"
+        },
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "id",
+          "kind": "string",
+          "description": "operation id (GUID)"
+        },
+        {
+          "name": "created",
+          "kind": "bool",
+          "description": "true when a new operation was created; false when an existing matching operation was updated"
+        },
+        {
+          "name": "nextRun",
+          "kind": "string",
+          "description": "next scheduled run (ISO 8601 with offset)"
+        }
+      ],
+      "risk": "writes-user-data",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 20000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "saved"
+        },
+        {
+          "code": 10,
+          "meaning": "invalid option, refused definition or FileDO without the needed backup support"
+        },
+        {
+          "code": 11,
+          "meaning": "busy: a question or a dialog is open in the running program"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'schedule add --action backup --source P:\\MyProject --destination C:\\GD\\GIT --daily 13:00 --keep-days 7 --keep-monthly --result C:\\temp\\add.json' -Wait -PassThru",
+          "expect": "exit 0 and C:\\temp\\add.json holds the operation id"
+        }
+      ],
+      "since": "1.2"
+    },
+    {
+      "name": "schedule remove",
+      "aliases": [],
+      "summary": "Delete a scheduled operation definition without touching any backup files.",
+      "synopsis": "schedule remove <id|name> [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "target",
+          "kind": "string",
+          "required": true,
+          "description": "operation id or exact operation name"
+        },
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "id",
+          "kind": "string",
+          "description": "id of the removed operation"
+        },
+        {
+          "name": "removed",
+          "kind": "bool",
+          "description": "true when the definition was deleted"
+        }
+      ],
+      "risk": "writes-user-data",
+      "coldStart": "start",
+      "wait": "done",
+      "timeoutMs": 15000,
+      "interactive": false,
+      "idempotent": false,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "removed"
+        },
+        {
+          "code": 10,
+          "meaning": "unknown option or ambiguous operation name"
+        },
+        {
+          "code": 11,
+          "meaning": "operation not found, or busy with an open window"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "cmd",
+          "line": "start /wait FastMediaSorterCompanion.exe schedule remove \"MyProject\"",
+          "expect": "exit 0 and the operation definition is deleted while backup files remain"
+        }
+      ],
+      "since": "1.2"
+    },
+    {
+      "name": "schedule run",
+      "aliases": [],
+      "summary": "Queue one scheduled operation or all enabled operations for immediate execution on the single lane; with --wait, wait for completion and exit with its outcome.",
+      "synopsis": "schedule run (<id|name> | --all) [--wait] [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "target",
+          "kind": "string",
+          "required": false,
+          "description": "operation id or exact operation name"
+        },
+        {
+          "name": "all",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "queue every enabled operation not already in the lane"
+        },
+        {
+          "name": "wait",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "wait for the queued run(s) to finish and return the run outcome"
+        },
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "oneOf": [
+        [
+          "target",
+          "all"
+        ]
+      ],
+      "returns": [
+        {
+          "name": "queued",
+          "kind": "int",
+          "description": "number of operations queued"
+        },
+        {
+          "name": "completed",
+          "kind": "bool",
+          "description": "true when --wait waited until every queued run finished"
+        },
+        {
+          "name": "succeeded",
+          "kind": "int",
+          "description": "runs that ended ok (when --wait)"
+        },
+        {
+          "name": "failed",
+          "kind": "int",
+          "description": "runs that did not end ok (when --wait)"
+        },
+        {
+          "name": "outcome",
+          "kind": "string",
+          "description": "queued, or the run outcome token (ok, failed, refused, wall, cancelled, skipped)"
+        }
+      ],
+      "risk": "writes-user-data",
+      "coldStart": "start",
+      "wait": "accepted",
+      "timeoutMs": 600000,
+      "interactive": false,
+      "idempotent": false,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "queued, or every waited run finished ok"
+        },
+        {
+          "code": 1,
+          "meaning": "the waited run failed"
+        },
+        {
+          "code": 2,
+          "meaning": "not proven: the wait bound passed while the run may still be working"
+        },
+        {
+          "code": 10,
+          "meaning": "missing target/--all, unknown option or ambiguous operation name"
+        },
+        {
+          "code": 11,
+          "meaning": "operation not found, paused, nothing to run, already running, busy or target unreachable"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        },
+        {
+          "code": 13,
+          "meaning": "no space on the target disk"
+        },
+        {
+          "code": 15,
+          "meaning": "network or remote share failure"
+        },
+        {
+          "code": 16,
+          "meaning": "cancelled"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "(Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'schedule run --all --wait' -Wait -PassThru).ExitCode",
+          "expect": "0 when every enabled operation finished without errors"
+        }
+      ],
+      "since": "1.2"
+    },
+    {
+      "name": "schedule history",
+      "aliases": [],
+      "summary": "Print the scheduled operations journal; with no manager running the program reads the journal, answers and exits.",
+      "synopsis": "schedule history [--operation <id|name>] [--last <n>] [--json] [--result <path>]",
+      "args": [
+        {
+          "name": "operation",
+          "kind": "string",
+          "required": false,
+          "description": "filter by operation id or exact name"
+        },
+        {
+          "name": "last",
+          "kind": "int",
+          "required": false,
+          "default": 50,
+          "description": "maximum number of newest entries to return (1 to 500)"
+        },
+        {
+          "name": "json",
+          "kind": "bool",
+          "required": false,
+          "default": false,
+          "description": "print the response line instead of a sentence"
+        },
+        {
+          "name": "result",
+          "kind": "path",
+          "required": false,
+          "description": "write the returned data to this file, whole"
+        }
+      ],
+      "returns": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "description": "newest-first journal objects: time (ISO 8601 with offset), operationId, operation, kind (run or note), trigger, outcome, files (int), failed (int), bytes (int64), durationMs (int64), generation (int or null), retiredGeneration (int or null), retiredCount (int or null), keptCount (int or null), keepDays (int or null), monthlyKept (int or null), skippedLinks (int or null) and detail"
+        }
+      ],
+      "risk": "reads-user-data",
+      "coldStart": "oneshot",
+      "wait": "done",
+      "timeoutMs": 5000,
+      "interactive": false,
+      "idempotent": true,
+      "exitCodes": [
+        {
+          "code": 0,
+          "meaning": "answered"
+        },
+        {
+          "code": 1,
+          "meaning": "reading failed or response exceeded 64 KiB (narrow with --last or use --result)"
+        },
+        {
+          "code": 10,
+          "meaning": "invalid --last value (must be 1 to 500)"
+        },
+        {
+          "code": 12,
+          "meaning": "the setting that lets other programs ask this app to work with files, screen, clipboard or the network is off"
+        }
+      ],
+      "examples": [
+        {
+          "shell": "powershell",
+          "line": "Start-Process .\\FastMediaSorterCompanion.exe -ArgumentList 'schedule history --last 20 --result C:\\temp\\hist.json' -Wait; Get-Content C:\\temp\\hist.json -Raw | ConvertFrom-Json",
+          "expect": "an object with an entries array"
+        }
+      ],
+      "since": "1.2"
+    }
+  ]
+}

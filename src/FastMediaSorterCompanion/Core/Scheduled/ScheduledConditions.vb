@@ -169,8 +169,7 @@ Friend Enum ScheduledIssueCode
     TypeMaskEmpty = 7
     AgeBoundsContradict = 8
     SizeBoundsContradict = 9
-    ''' <summary>Archive takes paths only in the first version (12.2 default 7).</summary>
-    ArchiveNeedsPaths = 10
+    ' 10 was ArchiveNeedsPaths: an archive names directory resources since L0338 (DEVICE-EXCHANGE 1.15 item FS).
     NegativeBound = 11
     ''' <summary>A read-only resource cannot be moved from or deleted in (4.3).</summary>
     ResourceReadOnly = 12
@@ -196,7 +195,7 @@ Friend Enum ScheduledIssueCode
     ''' <summary>Filling free space works on a local drive or a folder on it only: no resource, no Google Drive, no network
     ''' path (L0299, AC299-5).</summary>
     LocalStorageRequired = 22
-    ''' <summary>A backup takes two plain folders: no resource, no Google Drive (L0298).</summary>
+    ''' <summary>A backup takes a plain folder, an SMB or an SFTP resource on each side, and never Google Drive (L0298, L0342, L0343).</summary>
     BackupNeedsPaths = 23
     ''' <summary>A sealed backup has no stored password on this PC (L0298, Q298-3).</summary>
     BackupPasswordMissing = 24
@@ -372,12 +371,17 @@ Friend Module ScheduledValidation
             op.Source.Recursive = False
         End If
         op.BackupKeepCount = NormalizeKeepCount(op.BackupKeepCount)
+        op.BackupKeepDays = NormalizeKeepCount(op.BackupKeepDays)
         If op.Action = ScheduledAction.Backup Then
             ' The folder is backed up as one unit, subfolders included: no selection, no names to collide (L0298).
             op.Conditions = New ScheduledConditions()
             op.Conflict = ScheduledConflict.Skip
             op.Source.Recursive = True
+            If op.BackupRetention <> BackupRetentionMode.Dated Then op.BackupKeepMonthly = False
         Else
+            op.BackupRetention = BackupRetentionMode.Generations
+            op.BackupKeepMonthly = False
+            op.BackupSkipLinks = False
             op.BackupSealed = False
         End If
     End Sub
@@ -387,17 +391,20 @@ Friend Module ScheduledValidation
         Return Math.Max(ScheduledOperation.MinBackupKeepCount, Math.Min(ScheduledOperation.MaxBackupKeepCount, count))
     End Function
 
-    ''' <summary>The refusals of a backup: two plain folders (no resource, no Google Drive), the destination outside the source,
-    ''' and a sealed backup with a stored password.</summary>
+    ''' <summary>The refusals of a backup: a plain folder, an SMB or an SFTP resource on each side (no Google Drive, L0342,
+    ''' L0343), the destination outside the source, and a sealed backup with a stored password.</summary>
     Private Sub ValidateBackup(op As ScheduledOperation, protectedFolders As ProtectedFolders,
+                               resources As Func(Of String, ScheduledResourceFacts),
                                hasBackupPassword As Func(Of String, Boolean), issues As List(Of ScheduledIssue))
-        If op.Source.Kind <> ScheduledLocationKind.Path OrElse op.Destination.Kind <> ScheduledLocationKind.Path Then
+        If Not BackupSideKindAllowed(op.Source) OrElse Not BackupSideKindAllowed(op.Destination) Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.BackupNeedsPaths))
             Return
         End If
         Dim sourceFolder As String = ""
         If op.Source.IsEmpty Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.SourceMissing))
+        ElseIf op.Source.Kind = ScheduledLocationKind.Resource Then
+            sourceFolder = BackupResourceFolder(op, op.Source, isDestination:=False, resources, issues)
         Else
             sourceFolder = CompanionCommand.CanonicalFolder(op.Source.Path)
             If sourceFolder.Length = 0 Then
@@ -409,6 +416,8 @@ Friend Module ScheduledValidation
         Dim destinationFolder As String = ""
         If op.Destination.IsEmpty Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationMissing))
+        ElseIf op.Destination.Kind = ScheduledLocationKind.Resource Then
+            destinationFolder = BackupResourceFolder(op, op.Destination, isDestination:=True, resources, issues)
         Else
             destinationFolder = CompanionCommand.CanonicalFolder(op.Destination.Path)
             If destinationFolder.Length = 0 Then
@@ -422,10 +431,50 @@ Friend Module ScheduledValidation
            FolderPaths.IsSameOrInside(destinationFolder, sourceFolder) Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationInsideSource, destinationFolder))
         End If
+        ' The same check on one SFTP resource, in the server's own "/" spelling (L0343).
+        Dim remoteSource As String = BackupRemoteFolder(op.Source, resources)
+        Dim remoteDestination As String = BackupRemoteFolder(op.Destination, resources)
+        If remoteSource.Length > 0 AndAlso remoteDestination.Length > 0 AndAlso
+           String.Equals(op.Source.ResourceId, op.Destination.ResourceId, StringComparison.OrdinalIgnoreCase) AndAlso
+           BackupRemoteSet.IsSameOrInside(remoteDestination, remoteSource) Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationInsideSource, op.Destination.Describe()))
+        End If
         If op.BackupSealed AndAlso hasBackupPassword IsNot Nothing AndAlso Not hasBackupPassword.Invoke(op.Id) Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.BackupPasswordMissing))
         End If
     End Sub
+
+    ''' <summary>A backup side is a folder of this PC or a registered resource; Google Drive is never one (L0342).</summary>
+    Private Function BackupSideKindAllowed(location As ScheduledLocation) As Boolean
+        Return location.Kind = ScheduledLocationKind.Path OrElse location.Kind = ScheduledLocationKind.Resource
+    End Function
+
+    ''' <summary>
+    ''' A resource side of a backup: an SMB resource reaches FileDO as a UNC path while the run holds the share's connection
+    ''' (L0342); an SFTP resource passes through the run's staging folder (L0343). Answers an SMB side's folder as a UNC path
+    ''' for the inside-the-source check, or "" for an SFTP side (checked by <see cref="BackupRemoteFolder"/>) and when the
+    ''' facts cannot say (no registry at hand).
+    ''' </summary>
+    Private Function BackupResourceFolder(op As ScheduledOperation, location As ScheduledLocation, isDestination As Boolean,
+                                          resources As Func(Of String, ScheduledResourceFacts),
+                                          issues As List(Of ScheduledIssue)) As String
+        If resources Is Nothing Then Return ""
+        Dim before As Integer = issues.Count
+        ' A backup is not destructive, so a read-only root is refused as its destination only, as for a copy.
+        CheckResource(op, location, isDestination, resources, issues)
+        If issues.Count > before Then Return ""
+        Dim facts As ScheduledResourceFacts = resources(location.ResourceId)
+        If facts Is Nothing OrElse Not facts.IsSmb Then Return ""
+        Return CompanionCommand.CanonicalFolder(If(String.IsNullOrWhiteSpace(location.Path), facts.RootPath, location.Path))
+    End Function
+
+    ''' <summary>The folder of an SFTP resource side in the server's "/" spelling, or "" for any other side (L0343).</summary>
+    Private Function BackupRemoteFolder(location As ScheduledLocation, resources As Func(Of String, ScheduledResourceFacts)) As String
+        If resources Is Nothing OrElse location.Kind <> ScheduledLocationKind.Resource Then Return ""
+        Dim facts As ScheduledResourceFacts = resources(location.ResourceId)
+        If facts Is Nothing OrElse Not facts.Exists OrElse facts.IsUnsupported OrElse facts.IsSmb Then Return ""
+        Return If(String.IsNullOrWhiteSpace(location.Path), If(facts.RootPath, ""), location.Path)
+    End Function
 
     ''' <summary>One of the offered chunk sizes; anything else (a hand-edited file) is the default (Q299-1).</summary>
     Friend Function NormalizeChunkSize(megabytes As Integer) As Integer
@@ -467,7 +516,7 @@ Friend Module ScheduledValidation
             Return issues
         End If
         If op.Action = ScheduledAction.Backup Then
-            ValidateBackup(op, protectedFolders, hasBackupPassword, issues)
+            ValidateBackup(op, protectedFolders, resources, hasBackupPassword, issues)
             Return issues
         End If
 
@@ -501,11 +550,6 @@ Friend Module ScheduledValidation
         If sourceFolder.Length > 0 AndAlso destinationFolder.Length > 0 AndAlso
            FolderPaths.IsSameOrInside(destinationFolder, sourceFolder) Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.DestinationInsideSource, destinationFolder))
-        End If
-
-        If op.Action = ScheduledAction.Archive AndAlso
-           (op.Source.Kind = ScheduledLocationKind.Resource OrElse op.Destination.Kind = ScheduledLocationKind.Resource) Then
-            issues.Add(New ScheduledIssue(ScheduledIssueCode.ArchiveNeedsPaths))
         End If
 
         If op.Source.Kind = ScheduledLocationKind.Drive AndAlso op.NeedsDestination AndAlso

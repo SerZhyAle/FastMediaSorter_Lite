@@ -3,11 +3,11 @@
 | | |
 | --- | --- |
 | **Ids** | `LETTERBOX-BARS`, `LETTERBOX-HALO` |
-| **Version** | 0.1 each, draft, since 2026-09-25 (re-read 2026-10-07 and again 2026-11-15, L0323 catch-up: the contract's log has no row after the first). Registry rows `partial 0.1` each; open, dated 2026-11-15: BARS section 5 rung 2 (a rendered bar frame is not compared to the reference math; the catalog has no pixel artifact to run) and HALO section 5 rung 3 (recorded frames) with the six-decimal stop rounding of the reference. The remedy is this product's own amendment in the catalog first, then the code side, ticket L0330. **Owner: this product** |
+| **Version** | 0.2 each, draft, since 2026-09-25, amended 2026-11-15 (section 8: the halo stop table is exactly `j/11`; rung 2 is to be a catalog pixel artifact, rung 3 a dated record) with the vectors regenerated 2026-11-16 (section 9) and re-vendored here 2026-11-17 by L0330. Rung 2 and rung 3 are the owner's own artifacts and stay in L0330 (owner order 2026-11-16, nothing expires). **Owner: this product** |
 | **Home** | `letterbox-fill/README.md` + `reference/letterbox-fill.ps1` + `vectors/letterbox-fill-vectors.json` in the shared contracts catalog |
 | **Role here** | owner and only implementation (`solo`) - the perspective bars (`src/Main_Form.PerspectiveBackground.vb` with the edge sampler `src/Imaging/EdgeSampler.vb`, both exes) and the dynamic-perspective halo with its growth (`src/Main_Form.PerspectiveHalo.vb`, .NET 10 mainline) |
 | **Where the math lives** | `src/LetterboxFillMath.vb` - one class of pure shared functions (no `Graphics`, no WinForms, no clock), each constant and rule cited by contract rule; compiled into both exes |
-| **Rung 1** | **held since 2026-10-13** (ticket 183): `tests/Lite.Tests/LetterboxFillConformanceTests.vb` runs the catalog's vectors under net48 and net10 |
+| **Rung 1** | **held since 2026-10-13** (ticket 183), re-vendored at 0.2 on 2026-11-17 (L0330): `tests/Lite.Tests/LetterboxFillConformanceTests.vb` runs the catalog's vectors under net48 and net10 |
 
 ## What this repository must do to stay conformant
 
@@ -42,14 +42,11 @@
   and a nonzero origin. Outside pixels remain untouched. The existing brush needed no sampling correction.
   This closes the gradient uncertainty; full bars/resampling pixel conformance and rung 3 (recorded frames
   of growth at 60 and 144 Hz) remain separate acceptance work, not claimed by this check.
-- **Observed on the way, for the catalog (owner's amendment, nothing changed here).** The reference
-  script rounds the stop distances to six decimals (`Get-HaloStops`) and then interpolates over the
-  rounded table, so `halo.alphaRows` and `stopApproximationMaxError` were computed on stops that are
-  not exactly `j/11`. Interpolating over exact `j/11` - which is what the text says and what the
-  gradient brush gets - differs from the vector by up to 0.0001 at the vectors' own points (0.00013
-  over a 10001-point sweep): on the contract's own 1e-4 tolerance boundary, and invisible after
-  integer rounding. Either the reference should interpolate on exact distances or the contract should
-  say 2e-4 for those two groups.
+- **Settled by the 0.2 amendment (section 8 item A, 2026-11-15; regeneration recorded 2026-11-16,
+  section 9).** The reference script interpolates on exact `j/11` stop distances now, and
+  `halo.alphaRows` and `halo.stopApproximationMaxError` read to the contract's 1e-4 again. This
+  product's math already interpolated on exact distances, so only the vendored vectors and the cited
+  version moved (L0330, 2026-11-17).
 - The stored speed reads `medium` when missing, empty or unknown (`HaloAnimationSpeedTests`, and
   `LetterboxFillMath.HaloDurationMs` for the key, held by the vectors).
 - The reduced-motion answer of `LETTERBOX-HALO` rule 9 is the same `ReduceMotionActive()` the audio

@@ -286,7 +286,7 @@ Friend NotInheritable Class Manager_Welcome_Form
             Await host.AddWelcomeFolderAsync(Me)
             Await host.WelcomeRefreshAsync()
             If Not IsDisposed AndAlso host.WelcomeHint <> "" Then
-                MessageBox.Show(Me, host.WelcomeHint, Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+                ManagerBox.Show(Me, host.WelcomeHint, Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
         Finally
             busy = False
@@ -314,7 +314,7 @@ Friend NotInheritable Class Manager_Welcome_Form
                 ManagerWelcomeStore.SetState(ManagerWelcomeModel.Done)
             End If
         Catch
-            If Not IsDisposed Then MessageBox.Show(Me, Localization.T("Не удалось сохранить настройки. Попробуйте ещё раз."), Text,
+            If Not IsDisposed Then ManagerBox.Show(Me, Localization.T("Не удалось сохранить настройки. Попробуйте ещё раз."), Text,
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             busy = False

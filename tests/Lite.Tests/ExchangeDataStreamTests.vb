@@ -252,6 +252,43 @@ Public Class ExchangeDataStreamTests
         End Using
     End Function
 
+    ' LIVE-BROADCAST 1.5 item U / DEVICE-EXCHANGE item DY: the reason a tunnel connect is refused with, as the server wrote it, so a live
+    ' receiver can tell `ended` (a deliberate end) from `unavailable` (no end). `ended` is not in the append-only table: it reads Unknown.
+    <Theory>
+    <InlineData("ended")>
+    <InlineData("unavailable")>
+    <InlineData("some-new-reason")>
+    Public Async Function A_refused_broadcast_connect_keeps_the_reason_spelling_the_server_wrote(reason As String) As Task
+        Using srv As New ExchangeStubTlsServer(Async Function(c)
+                                                   Await c.ReadAsync()
+                                                   Await c.Refuse(reason)
+                                               End Function)
+            Using cts As CancellationTokenSource = ExchangeWireTestKit.Cts()
+                Using result As ExchangeOpenResult = Await ExchangeDataStreams.ConnectBroadcastAsync(ExchangeTlsTransport.Instance, Target(srv), srv.Fingerprint, ExchangeWireTestKit.IdOf("B"c), "http", cts.Token)
+                    Assert.Equal(ExchangeOpenOutcome.Refused, result.Outcome)
+                    Assert.Equal(reason, result.RefusalReason)
+                    Assert.Null(result.Stream)
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function A_connected_broadcast_carries_no_refusal_reason() As Task
+        Using srv As New ExchangeStubTlsServer(Async Function(c)
+                                                   Await c.ReadAsync()
+                                                   Await c.WriteAsync(New ExchangeEnvelope("connected"))
+                                                   Await Task.Delay(100)
+                                               End Function)
+            Using cts As CancellationTokenSource = ExchangeWireTestKit.Cts()
+                Using result As ExchangeOpenResult = Await ExchangeDataStreams.ConnectBroadcastAsync(ExchangeTlsTransport.Instance, Target(srv), srv.Fingerprint, ExchangeWireTestKit.IdOf("B"c), "http", cts.Token)
+                    Assert.Equal(ExchangeOpenOutcome.Connected, result.Outcome)
+                    Assert.Equal("", result.RefusalReason)
+                End Using
+            End Using
+        End Using
+    End Function
+
     <Fact>
     Public Async Function A_server_that_closes_without_answering_is_a_closed_outcome() As Task
         Using srv As New ExchangeStubTlsServer(Function(c) Task.CompletedTask)

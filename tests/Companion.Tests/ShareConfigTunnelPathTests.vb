@@ -176,6 +176,23 @@ Public Class ShareConfigTunnelPathTests
         Assert.False(res.HasRelay)
     End Sub
 
+    ''' <summary>FMSCFG 2.6 item C3, producer duty: a tunnel path is written only beside at least one direct
+    ''' path. With no LAN, no IPv6, no port-forward path and no relay port in front of it, the exchange step
+    ''' writes nothing, so the builder's "no path" check returns Nothing instead of a tunnel-only document
+    ''' that every reader refuses. With the relay port given, the relay path is the direct path and both stay.
+    ''' The step is called directly because a test machine always has a LAN address for the builder's fallback.</summary>
+    <Fact>
+    Public Sub ATunnelPath_IsNeverWrittenWithoutADirectPath()
+        Dim empty As New System.Text.StringBuilder()
+        Assert.False(ShareConfigBuilder.AppendExchangePaths(empty, Export("relay.example.org", 22022, GoodSid, 0), includeExternal:=True))
+        Assert.Equal(0, empty.Length)
+
+        Dim relayOnly As New System.Text.StringBuilder()
+        Assert.True(ShareConfigBuilder.AppendExchangePaths(relayOnly, Export("relay.example.org", 22022, GoodSid, 40007), includeExternal:=True))
+        Dim kinds As String() = PathsOf("{""accessPaths"":[" & relayOnly.ToString() & "]}").Select(Function(p) Kind(p)).ToArray()
+        Assert.Equal({"portforward", TunnelKind}, kinds)
+    End Sub
+
     ''' <summary>Rule 6 meets rule 7: the diagnostic log line of an export that carries a tunnel path
     ''' still blanks the share id (a bearer link), under the exporter's current member name and under
     ''' the one FMSCFG 2.4 registers.</summary>

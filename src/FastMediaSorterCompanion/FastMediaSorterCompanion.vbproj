@@ -195,6 +195,15 @@
     <Compile Include="..\Icons\SvgPathData.vb" Link="Core\SvgPathData.vb" />
     <Compile Include="..\Icons\GlyphRenderer.vb" Link="Core\GlyphRenderer.vb" />
     <Compile Include="..\Chrome\UiSizing.vb" Link="Core\UiSizing.vb" />
+    <!-- Window geometry arithmetic of APP-BEHAVIOUR rule 10 (L0326): the viewer's pure placement - a remembered rectangle that meets
+         no display moves to the nearest one - used by the Manager's RestoreGeometry (Core\ManagerPlacement.vb). Whole-file
+         "#If Not NETFRAMEWORK"; needs nothing else. -->
+    <Compile Include="..\WindowPlacement.vb" Link="Core\WindowPlacement.vb" />
+    <!-- The opt-in timing of WINDOWS-UI sections 5 and 9 (L0326): FMS_UI_TIMING=1 appends one "UI timing: .." line per shown
+         window or settings page to the program's own log (the Manager's companion.log). Whole-file "#If Not NETFRAMEWORK";
+         UiTiming needs only UiTimingBudget and the Companion's own AppFileLogger. -->
+    <Compile Include="..\UiTimingBudget.vb" Link="Core\UiTimingBudget.vb" />
+    <Compile Include="..\UiTiming.vb" Link="Core\UiTiming.vb" />
     <!-- The state marker of a collapsible group header (COLLAPSIBLE-GROUP 1.1 section 3, ticket 243 T-11c): the filled
          triangle the viewer's settings groups draw, here for the two Manager header kinds (SettingsGroupCard,
          CollapsibleSection). Whole-file "#If Not NETFRAMEWORK"; needs only UiSizing above. -->

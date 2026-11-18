@@ -48,6 +48,18 @@ func (e *Engine) unavailable(st *Stream, t0 time.Time) {
 	st.Refuse(wire.ReasonUnavailable)
 }
 
+// ended answers a tunnel connect for a broadcast that ended and is still remembered (DEVICE-EXCHANGE item DY),
+// refused with reason "ended" after the same minimum delay as unavailable.
+func (e *Engine) ended(st *Stream, t0 time.Time) {
+	if d := e.p.UnavailableDelay - time.Since(t0); d > 0 {
+		select {
+		case <-time.After(d):
+		case <-e.closing:
+		}
+	}
+	st.Refuse(wire.ReasonEnded)
+}
+
 // notFound is `unavailable` for the relay's listen URL: a 404 after the same minimum delay, from the
 // same moment, so the answer to an unknown id and to an ended one cannot be told apart by timing.
 func (e *Engine) notFound(st *Stream, t0 time.Time) { e.httpAfterDelay(st, t0, 404) }
@@ -71,6 +83,17 @@ func (e *Engine) relayListeners(broadcastID string) int {
 		return 0
 	}
 	return e.cfg.Relay.Listeners(broadcastID)
+}
+
+// relayEndedRecently asks the relay whether a broadcast with this id ended within the memory of item DX.
+// The question is an optional method (as bind is), not part of RelayHandler: a handler that keeps no memory
+// of ended ids - a fake, or none at all - never says so, and the connect is then the ordinary `unavailable`.
+func (e *Engine) relayEndedRecently(id string) bool {
+	if e.cfg.Relay == nil {
+		return false
+	}
+	r, ok := e.cfg.Relay.(interface{ endedRecently(string) bool })
+	return ok && r.endedRecently(id)
 }
 
 // broadcastListeners is what the operator's broadcast list shows as the listeners of a broadcast: the relay's
@@ -128,6 +151,12 @@ func (e *Engine) Connect(st *Stream, sess *Session, m *wire.Connect) {
 		target, found = e.cfg.Dir.ResolveBroadcast(id)
 	}
 	if !found {
+		if m.BroadcastID != "" && e.relayEndedRecently(id) {
+			e.cfg.Limiter.Refund(addr, limits.UnknownID)
+			e.cfg.Log.Info("connect-ended", logx.Broadcast(id), logx.Addr(addr))
+			e.ended(st, t0)
+			return
+		}
 		e.cfg.Log.Info("connect-unavailable", logx.Addr(addr))
 		e.unavailable(st, t0)
 		return

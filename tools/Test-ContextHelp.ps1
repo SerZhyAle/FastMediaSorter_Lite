@@ -95,6 +95,26 @@ foreach ($surface in $map.surfaces) {
             Problem "Surface '$($surface.id)' has ask but form '$($surface.form)'; only an inherit row carries it (section 7 item B)"
         }
     }
+    # Rule 3, second sentence (L0334): the control-to-entry table of a window with a page of its own.
+    $elementsMember = $surface.PSObject.Properties['elements']
+    if ($elementsMember) {
+        if ($surface.form -notin @('page', 'both')) {
+            Problem "Surface '$($surface.id)' has elements but form '$($surface.form)'; only a page or both row has a page to anchor into"
+        }
+        $seenControls = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        foreach ($element in @($elementsMember.Value)) {
+            if ([string]::IsNullOrWhiteSpace($element.control) -or $element.control -notmatch '^[A-Za-z0-9_]+$') {
+                Problem "Surface '$($surface.id)' has an element with no usable control name ('$($element.control)')"
+            } elseif ($element.control -ceq 'contextHelp') {
+                Problem "Surface '$($surface.id)' maps the help button; it opens the beginning of the help (CONTEXT-HELP 0.3 item K)"
+            } elseif (-not $seenControls.Add($element.control)) {
+                Problem "Surface '$($surface.id)' maps control '$($element.control)' twice"
+            }
+            if ([string]::IsNullOrWhiteSpace($element.anchor) -or $element.anchor -notmatch '^[A-Za-z0-9_\-]+$') {
+                Problem "Surface '$($surface.id)' has an element with no usable anchor ('$($element.anchor)')"
+            }
+        }
+    }
     if ($surface.type) {
         $declaredTypes.Add($surface.type)
     }
@@ -225,6 +245,14 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
             if ($locale -eq 'pt') {
                 $european = $europeanPortuguese.Match([Net.WebUtility]::HtmlDecode($html))
                 if ($european.Success) { Problem "European Portuguese '$($european.Value)' in docs/help/pt/$topic.html: the pt help is pt-BR like the pt UI strings" }
+            }
+            # Rule 3, second sentence (L0334): every anchor a control-to-entry row names is a section of the generated page.
+            foreach ($elementRow in @($map.surfaces | Where-Object { $_.help -eq $topic -and $_.form -in @('page', 'both') -and $_.PSObject.Properties['elements'] })) {
+                foreach ($element in @($elementRow.elements)) {
+                    if ($html -notmatch ('id="' + [regex]::Escape($element.anchor) + '"')) {
+                        Problem "Surface '$($elementRow.id)' maps control '$($element.control)' to anchor '$($element.anchor)', which docs/help/$locale/$topic.html does not have"
+                    }
+                }
             }
             $surface = $map.surfaces | Where-Object { $_.help -eq $topic -and $_.exchangeMark } | Select-Object -First 1
             if ($surface) {

@@ -9,7 +9,9 @@ Imports System.Windows.Forms
 
 ''' <summary>The left menu as a tree (210): each page row keeps its icon, caption, selection
 ''' tint, accent stripe and focus rectangle and gains a disclosure chevron; the page's former
-''' fold groups sit under it as indented, icon-less rows. SETTINGS-NAVIGATION 2.0 section 2
+''' fold groups sit under it as indented rows that draw their own meaning's glyph (L0351, the
+''' owner order of 2026-11-18: a SETTINGS-NAVIGATION child level that holds a page-opening
+''' child draws a glyph on every child row). SETTINGS-NAVIGATION 2.0 section 2
 ''' (ticket 243, slice T-7b): a page that has items has TWO targets (rule 4) - the chevron zone
 ''' at the row's trailing edge only expands or folds the item list, the rest of the row only
 ''' selects the page - and both are reachable by assistive technology (the row's default
@@ -200,6 +202,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "remote-exchange" : Return Localization.T("Сервер обмена на другом компьютере: вход, учётные записи, устройства и приглашения.")
             Case "drive" : Return DriveChannelText.PageDescription()
             Case "scheduled" : Return Localization.T("Копирование, перенос, удаление и архивация файлов по расписанию или вручную.")
+            Case Live_Broadcast_Form.SettingsPageId : Return Localization.T("Доступ зрителей в локальной сети и показ курсора в живой трансляции.")
             Case Else : Return Localization.T("Версия, лицензия, документация и помощь.")
         End Select
     End Function
@@ -407,8 +410,16 @@ Partial Public NotInheritable Class Share_Settings_Form
         SelectSettingsPage(id)
     End Sub
 
+    ''' <summary>The pages this window has shown at least once: the first visit creates what the page holds and has the
+    ''' larger budget (WINDOWS-UI section 5, <see cref="UiTimingKind.PageFirst"/>), a repeat the smaller one.</summary>
+    Private ReadOnly _pagesTimed As New HashSet(Of String)(StringComparer.Ordinal)
+
     Friend Sub SelectSettingsPage(id As String, Optional groupId As String = Nothing)
         If Not _pages.ContainsKey(id) Then Return
+        ' The opt-in FMS_UI_TIMING=1 line (L0326, WINDOWS-UI sections 5 and 9): from the user's choice of a page to the
+        ' first idle moment after it is shown. Only a page chosen in a window already on screen is a page switch - the
+        ' pages selected while the window opens are part of the window's own line (MainWindow.OpenSettings).
+        Dim pageStarted As Long = If(settingsWasPresented, UiTiming.Begin(), 0L)
         Dim groups = _pageGroups(id)
         Dim requestedGroup = If(groupId, SelectedItemId(id))
         Dim selectedGroup = groups.FirstOrDefault(Function(group) group.Id = requestedGroup)
@@ -464,6 +475,10 @@ Partial Public NotInheritable Class Share_Settings_Form
             viewport.AutoScrollPosition = Point.Empty
         End If
         ApplySettingsNavigationTheme(ThemeService.Palette)
+        If pageStarted <> 0 Then
+            Dim kind As UiTimingKind = If(_pagesTimed.Add(id), UiTimingKind.PageFirst, UiTimingKind.PageRepeat)
+            UiTiming.CompleteAtIdle("manager-settings/" & id, kind, pageStarted)
+        End If
     End Sub
 
     Private Function SelectedItemId(pageId As String) As String
@@ -568,6 +583,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "exchange" : EnsureExchangeLoaded()
             Case "exchange-account" : ApplyAccountState()
             Case "drive" : ApplyDriveState()
+            Case Live_Broadcast_Form.SettingsPageId : LoadLiveState()
         End Select
     End Sub
 
@@ -685,22 +701,17 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Shared Function SettingsPageGlyph(id As String) As String
         ' The remote administration window has one page whose row is never shown (flat rail); it wears the exchange identity.
         Dim meaning = If(IconMap.GetMeaning("managerSettingsNav_" & id), IconMap.GetMeaning("managerSettingsNav_exchange"))
-        Return meaning.RenderGlyphId
+        Return meaning.GlyphId
     End Function
 
-    ''' <summary>The vocabulary glyph of one item row (SETTINGS-NAVIGATION 2.0 section 2 rules 2 and 4): the glyph of its
-    ''' <c>managerSettingsNavItem_page_group</c> meaning, or an empty string where the vocabulary has no such meaning yet.
-    ''' No glyph is ever invented here - an item without one keeps its caption aligned with its siblings' and is listed by
-    ''' <see cref="ItemsWithoutMeaning"/> as a missing meaning for the catalog's proposal procedure.</summary>
+    ''' <summary>The vocabulary glyph of one item row: the glyph of its <c>managerSettingsNavItem_page_group</c> meaning, or
+    ''' an empty string. Every child row draws one (L0351, the owner order of 2026-11-18): the six meanings the catalog
+    ''' holds and the page-level reuses draw their records, and a meaning marked provisional by its proposal
+    ''' (ICON-SET section 15) draws its shipped product drawing under the id it proposes. The caption keeps the column
+    ''' the glyph takes either way, so the level stays aligned.</summary>
     Friend Shared Function SettingsItemGlyph(pageId As String, groupId As String) As String
         Dim meaning As IconMap.IconMeaning = IconMap.GetMeaning("managerSettingsNavItem_" & pageId & "_" & groupId)
-        Return If(meaning Is Nothing OrElse Not meaning.IsVocabulary, String.Empty, meaning.RenderGlyphId)
-    End Function
-
-    ''' <summary>The items of this window that have no catalogued glyph, as <c>page/group</c> ids in display order.</summary>
-    Friend Function ItemsWithoutMeaning() As String()
-        Return _navItems.SelectMany(Function(pair) pair.Value.Where(Function(item) SettingsItemGlyph(pair.Key, item.Group.Id).Length = 0).
-                                        Select(Function(item) pair.Key & "/" & item.Group.Id)).ToArray()
+        Return If(meaning Is Nothing OrElse String.IsNullOrEmpty(meaning.GlyphId), String.Empty, meaning.GlyphId)
     End Function
 
     ''' <summary>The language switch that changes the reading direction at run time moves the rows' paddings, the chevron

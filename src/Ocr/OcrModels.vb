@@ -63,7 +63,10 @@ Public Module OcrPipeline
     '''     punctuation (Hangul only under a gap bound), so every CJK plate's source text - which is
     '''     what the translator is sent and what is cached - changes. Nothing that is DECIDED reads
     '''     the joined text (<see cref="OcrLine.SpacedText"/>); only what is drawn and translated.
-    Public Const OcrPipelineVersion As Integer = 11
+    ''' 12 - 2026-11-15, ticket L0330, `OCR-PIPELINE` 1.10 A: the tall-word cut fires only on a
+    '''     token with no letter and no digit, so a display word or a heavy ascender is no longer
+    '''     split off its line - which lines exist, and so which plates a page holds, change.
+    Public Const OcrPipelineVersion As Integer = 12
 End Module
 
 Public Class OcrWord

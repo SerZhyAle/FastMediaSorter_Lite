@@ -303,6 +303,56 @@ Namespace Lite.Tests
             Assert.False(v11.Passed)
         End Sub
 
+        ' STREAM-BANK rule 14 (item O): V11 reads the closed sets, not only the shape of a cell. L0329.
+        <Theory>
+        <InlineData("", "")>
+        <InlineData("GB", "english")>
+        <InlineData("US", "english,german")>
+        <InlineData("AQ", "northern sami,swedish")>
+        <InlineData("", "scottish gaelic")>
+        Public Sub Rule14_V11_PassesClosedSetFacets(country As String, language As String)
+            Dim zipPath = Path.Combine(testDir, "v11_good.zip")
+            CreateValidZip(zipPath, New List(Of StreamCatalogRow)() From {FacetRow(country, language)})
+
+            Dim v11 = StreamCatalogValidator.ValidateArchive(zipPath).Verdicts.Find(Function(v) v.Id = "V11")
+            Assert.NotNull(v11)
+            Assert.True(v11.Passed, v11.Detail)
+        End Sub
+
+        <Theory>
+        <InlineData("XX", "")>
+        <InlineData("UK", "")>
+        <InlineData("ZZ", "english")>
+        <InlineData("GBR", "")>
+        <InlineData("gb", "")>
+        <InlineData("", "klingon")>
+        <InlineData("", "English")>
+        <InlineData("", "english,english")>
+        <InlineData("", "english,")>
+        <InlineData("", "english german")>
+        <InlineData("", "en")>
+        Public Sub Rule14_V11_RefusesFacetsOutsideTheClosedSets(country As String, language As String)
+            Dim zipPath = Path.Combine(testDir, "v11_open.zip")
+            CreateValidZip(zipPath, New List(Of StreamCatalogRow)() From {FacetRow(country, language)})
+
+            Dim result = StreamCatalogValidator.ValidateArchive(zipPath)
+            Dim v11 = result.Verdicts.Find(Function(v) v.Id = "V11")
+            Assert.NotNull(v11)
+            Assert.False(v11.Passed)
+            Assert.False(result.Passed)
+        End Sub
+
+        Private Shared Function FacetRow(country As String, language As String) As StreamCatalogRow
+            Return New StreamCatalogRow() With {
+                .Name = "Station",
+                .Url = "https://example.com/live",
+                .MediaKind = "AUDIO",
+                .Https = "true",
+                .Country = country,
+                .Language = language
+            }
+        End Function
+
         Private Function CreateDummyPng(width As Integer, height As Integer) As Byte()
             Dim bytes(32) As Byte
             ' PNG Signature: 89 50 4E 47 0D 0A 1A 0A

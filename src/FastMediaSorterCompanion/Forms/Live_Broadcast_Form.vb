@@ -16,9 +16,22 @@ Imports System.Windows.Forms
 ' LiveBroadcastHost's ports) is the whole engine, and the window is buttons, rows and labels. It is
 ' reachable only while the gate is open (LiveBroadcastHost.Offered) - the tray item and the settings
 ' row check the same thing, and LiveBroadcastGateGuardTests holds the surface rule.
+'
+' Ticket L0332 (SETTINGS-NAVIGATION 2.1 item A): the two standing preferences this window used to edit inline - "allow viewers
+' on my network" and "show the cursor" - are on the Manager settings page "Live broadcast" (Share_Settings_Form.Live.vb; the
+' load, save and live apply are Core/LiveBroadcastOptions.vb). The window keeps one link to that page and never writes either
+' key; a start reads both from the hive like every other setting.
 
 Public Class Live_Broadcast_Form
     Inherits Form
+
+    ''' <summary>Opens the Manager settings window on a page. The tray context owns that window, so it wires this at start-up
+    ''' (the way <see cref="Scheduled_Manager_Form.OpenManagerSettingsPage"/> is wired); a window made without it has a link
+    ''' that does nothing, which only a test can see.</summary>
+    Friend Shared OpenManagerSettingsPage As Action(Of String)
+
+    ''' <summary>The Manager settings page that holds the standing preferences of the live broadcast.</summary>
+    Friend Const SettingsPageId As String = "live"
 
     Private _iconHandle As IntPtr
     Private ReadOnly _controller As LiveBroadcastController
@@ -42,8 +55,6 @@ Public Class Live_Broadcast_Form
     Private _exchangeNote As String = ""
     Private _startRefusalHandler As Action(Of String, ExchangeRefusal)
     Private _endpointsHandler As EventHandler
-    Private _updatingLanChoice As Boolean
-    Private _chkCursor As CheckBox
     Private _chkNoSound As CheckBox
     Private _monitors As List(Of LiveScreenMonitor)
     Private _screenRows As TableLayoutPanel
@@ -56,7 +67,7 @@ Public Class Live_Broadcast_Form
     Private _cameraRows As TableLayoutPanel
     Private _videoRows As TableLayoutPanel
     Private _cameraFilled As Boolean
-    Private _chkAllowLanViewers As CheckBox
+    Private _settingsLink As LinkLabel
     Private _txtTitle As TextBox
     Private _txtPassword As TextBox
     Private _lblPasswordHint As Label
@@ -114,7 +125,7 @@ Public Class Live_Broadcast_Form
         MyBase.OnLoad(e)
         ' The theme makes the drop-down lists taller. Left to the first paint, that comes after the fit below.
         ThemeService.Attach(Me)
-        ' The three boolean rows are laid out once the window has its scale (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a).
+        ' The boolean row is laid out once the window has its scale (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a).
         OptionRows.ArrangeAll(Me)
         ' The scaled first size can be taller than a small monitor: cap it first, so the fit below scrolls what does not fit.
         DpiLayout.ClampToWorkingArea(Me)
@@ -276,8 +287,9 @@ Public Class Live_Broadcast_Form
         rows.Controls.Add(_lblPasswordHint, 1, 5)
         pnl.Controls.Add(rows, 0, 2)
 
-        ' --- the video rows (B2 screen, B3 camera): the pickers, the cursor toggle, the no-sound
-        ' tick. One stack, one visible half per source kind - both are the video modes of section 3.
+        ' --- the video rows (B2 screen, B3 camera): the pickers and the no-sound tick (the cursor toggle is a
+        ' standing preference now, on the Manager settings page). One stack, one visible half per source kind -
+        ' both are the video modes of section 3.
         Dim videoRows As New TableLayoutPanel With {
             .AutoSize = True,
             .ColumnCount = 1,
@@ -292,7 +304,7 @@ Public Class Live_Broadcast_Form
         Dim screenRows As New TableLayoutPanel With {
             .AutoSize = True,
             .ColumnCount = 2,
-            .RowCount = 3,
+            .RowCount = 2,
             .Margin = New Padding(0),
             .Visible = False
         }
@@ -316,13 +328,6 @@ Public Class Live_Broadcast_Form
         screenRows.Controls.Add(_lblWindow, 0, 1)
         screenRows.Controls.Add(_cboWindow, 1, 1)
 
-        Dim cursorFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
-        _chkCursor = New CheckBox With {.AutoSize = True, .Text = Localization.T("Показывать курсор"), .Checked = True}
-        ' The three options of this window are boolean rows (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): each check box keeps its
-        ' field, default and handlers; the row around it is what the flow or the cell holds (and what hides and shows).
-        cursorFlow.Controls.Add(OptionRows.InFlow(_chkCursor, Nothing, OptionRowFit.Content))
-        screenRows.Controls.Add(New Label With {.AutoSize = True}, 0, 2)
-        screenRows.Controls.Add(cursorFlow, 1, 2)
         videoRows.Controls.Add(screenRows, 0, 0)
         _screenRows = screenRows
 
@@ -353,6 +358,8 @@ Public Class Live_Broadcast_Form
         ' (one source kind per broadcast), VIDEO_ONLY drops it.
         Dim noSoundFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
         _chkNoSound = New CheckBox With {.AutoSize = True, .Text = Localization.T("Только видео, без звука")}
+        ' The window's one option is a boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, default
+        ' and handlers; the row around it is what the flow holds (and what hides and shows).
         noSoundFlow.Controls.Add(OptionRows.InFlow(_chkNoSound, Nothing, OptionRowFit.Content))
         videoRows.Controls.Add(noSoundFlow, 0, 2)
 
@@ -372,19 +379,22 @@ Public Class Live_Broadcast_Form
         audioFlow.Controls.Add(_meterPanel)
         pnl.Controls.Add(audioFlow, 0, 4)
 
-        _chkAllowLanViewers = New CheckBox With {
+        ' Ticket L0332 (SETTINGS-NAVIGATION 2.1 item A): "allow viewers on my network" (section 3.4: the LAN video listener is off by
+        ' default; video without it starts exchange-only) and "show the cursor" are standing preferences, edited on the Manager
+        ' settings page "Live broadcast" (Share_Settings_Form.Live.vb). This band of the former LAN row holds one link to that page,
+        ' shown for the video sources - the two preferences only matter to them.
+        _settingsLink = New LinkLabel With {
             .AutoSize = True,
-            .Text = Localization.T("Разрешить зрителям в моей сети")
+            .Name = "liveSettingsLink",
+            .Margin = New Padding(0, 2, 0, 2),
+            .Text = Localization.T("Изменить в настройках менеджера"),
+            .AccessibleName = Localization.T("Изменить в настройках менеджера"),
+            .Visible = False   ' the video sources show it (UpdateSettingsLinkVisibility)
         }
-        AddHandler _chkAllowLanViewers.CheckedChanged, AddressOf OnLanChoiceChanged
-        ' Section 3.4: the LAN video listener is off by default; the tick is the video sources' own
-        ' row (video without it starts exchange-only, 173 - not built, so a start is refused until
-        ' the user ticks it). The camera's picture is exactly the screen's "anyone on the segment".
-        AddHandler _rbScreen.CheckedChanged, Sub() UpdateAllowLanVisibility()
-        AddHandler _rbCamera.CheckedChanged, Sub() UpdateAllowLanVisibility()
-        Dim allowLanRow As OptionRowHost = OptionRows.InFlow(_chkAllowLanViewers, Nothing, OptionRowFit.Content)
-        allowLanRow.Visible = False   ' the video sources show it (UpdateAllowLanVisibility)
-        pnl.Controls.Add(allowLanRow, 0, 5)
+        AddHandler _settingsLink.LinkClicked, Sub() OnSettingsLinkClicked()
+        AddHandler _rbScreen.CheckedChanged, Sub() UpdateSettingsLinkVisibility()
+        AddHandler _rbCamera.CheckedChanged, Sub() UpdateSettingsLinkVisibility()
+        pnl.Controls.Add(_settingsLink, 0, 5)
 
         Dim warn As New Label With {
             .AutoSize = True,
@@ -529,12 +539,21 @@ Public Class Live_Broadcast_Form
         SettleRows()
     End Sub
 
-    Private Sub UpdateAllowLanVisibility()
-        If _chkAllowLanViewers Is Nothing Then Return
+    ''' <summary>The link to the Manager settings page "Live broadcast" is shown for the video sources only: the two preferences
+    ''' it leads to (viewers on my network, the cursor) have no meaning for a microphone or a system-sound broadcast.</summary>
+    Private Sub UpdateSettingsLinkVisibility()
+        If _settingsLink Is Nothing Then Return
         Dim video As Boolean = (_rbScreen IsNot Nothing AndAlso _rbScreen.Checked) OrElse
                                (_rbCamera IsNot Nothing AndAlso _rbCamera.Checked)
-        OptionRows.RowOf(_chkAllowLanViewers).Visible = video
+        _settingsLink.Visible = video
         SettleRows()
+    End Sub
+
+    ''' <summary>Opens the Manager settings window on the "Live broadcast" page; the route is wired by the tray (a window with no
+    ''' route, as in a test, does nothing).</summary>
+    Private Sub OnSettingsLinkClicked()
+        Dim route As Action(Of String) = OpenManagerSettingsPage
+        If route IsNot Nothing Then route(SettingsPageId)
     End Sub
 
     ''' <summary>The device picker's rows: the cameras the frame-source groups expose, metadata
@@ -616,13 +635,11 @@ Public Class Live_Broadcast_Form
             _numBitrate.Value = Math.Max(CInt(_numBitrate.Minimum), Math.Min(CInt(_numBitrate.Maximum), settings.AudioBitrateKbps))
         End If
         If _txtTitle IsNot Nothing Then _txtTitle.Text = settings.Title
-        If _chkAllowLanViewers IsNot Nothing Then _chkAllowLanViewers.Checked = settings.AllowLanVideoViewers
         If _numMaxListeners IsNot Nothing Then _numMaxListeners.Value = settings.MaxListeners
         If _gainTrack IsNot Nothing Then
             _gainTrack.Value = CInt(Math.Max(_gainTrack.Minimum, Math.Min(_gainTrack.Maximum, CInt(settings.MicrophoneGain * 10))))
             UpdateGainLabel()
         End If
-        If _chkCursor IsNot Nothing Then _chkCursor.Checked = settings.ScreenCursor
         If _cboMonitor IsNot Nothing AndAlso _cboMonitor.Items.Count > 0 Then
             _cboMonitor.SelectedIndex = Math.Min(settings.ScreenMonitorIndex, _cboMonitor.Items.Count - 1)
         End If
@@ -638,10 +655,10 @@ Public Class Live_Broadcast_Form
         If _numPort IsNot Nothing Then settings.AudioPort = CInt(_numPort.Value)
         If _numBitrate IsNot Nothing Then settings.AudioBitrateKbps = CInt(_numBitrate.Value)
         If _txtTitle IsNot Nothing Then settings.Title = _txtTitle.Text.Trim()
-        If _chkAllowLanViewers IsNot Nothing Then settings.AllowLanVideoViewers = _chkAllowLanViewers.Checked
+        ' AllowLanVideoViewers and ScreenCursor are NOT written here (ticket L0332): the Manager settings page owns them, the settings
+        ' were just reloaded from the hive, and a stale copy must not overwrite what the page saved.
         If _numMaxListeners IsNot Nothing Then settings.MaxListeners = CInt(_numMaxListeners.Value)
         If _gainTrack IsNot Nothing Then settings.MicrophoneGain = CurrentGain()
-        If _chkCursor IsNot Nothing Then settings.ScreenCursor = _chkCursor.Checked
         If _cboMonitor IsNot Nothing Then settings.ScreenMonitorIndex = Math.Max(0, _cboMonitor.SelectedIndex)
         If _cboWindow IsNot Nothing Then
             Dim picked As LiveWindowChoice = SelectedWindow()
@@ -707,13 +724,11 @@ Public Class Live_Broadcast_Form
         _rbCamera.Enabled = False
         _cboMonitor.Enabled = False
         _cboWindow.Enabled = False
-        _chkCursor.Enabled = False
         _chkNoSound.Enabled = False
         _cboCamera.Enabled = False
         _cboCameraMode.Enabled = False
         _numPort.Enabled = False
         _numBitrate.Enabled = False
-        _chkAllowLanViewers.Enabled = True
         If _txtPassword IsNot Nothing Then _txtPassword.Enabled = False
         Dim canRotate As Boolean = _controller.CanRotateLinkPassword
         If _btnGenPassword IsNot Nothing Then
@@ -792,23 +807,6 @@ Public Class Live_Broadcast_Form
         End If
     End Sub
 
-    Private Sub OnLanChoiceChanged(sender As Object, e As EventArgs)
-        If _updatingLanChoice OrElse Not _controller.State.Running Then Return
-        Dim result As LiveStartResult = _controller.UpdateNetwork(_chkAllowLanViewers.Checked)
-        If result.Ok Then
-            SaveSettingsFromUi()
-            RefreshOnAir()
-        Else
-            _updatingLanChoice = True
-            Try
-                _chkAllowLanViewers.Checked = Not _chkAllowLanViewers.Checked
-            Finally
-                _updatingLanChoice = False
-            End Try
-            ShowRefusal(result)
-        End If
-    End Sub
-
     Private Sub StopCastIfAny(broadcastId As String)
         If Not String.IsNullOrEmpty(_activeCastReceiverId) Then
             Dim receiverId As String = _activeCastReceiverId
@@ -836,13 +834,11 @@ Public Class Live_Broadcast_Form
         _cboMonitor.Enabled = True
         _cboWindow.Enabled = True
         UpdateScreenTargetEnabled()
-        _chkCursor.Enabled = True
         _chkNoSound.Enabled = True
         _cboCamera.Enabled = True
         _cboCameraMode.Enabled = True
         _numPort.Enabled = True
         _numBitrate.Enabled = True
-        _chkAllowLanViewers.Enabled = True
         If _txtPassword IsNot Nothing Then _txtPassword.Enabled = True
         If _btnGenPassword IsNot Nothing Then
             _btnGenPassword.Enabled = True
@@ -867,30 +863,35 @@ Public Class Live_Broadcast_Form
     End Sub
 
     Private Sub ShowRefusal(result As LiveStartResult)
+        _lblState.Text = RefusalSentence(result, CInt(_numPort.Value))
+    End Sub
+
+    ''' <summary>The one sentence for a refused start or a refused network change (ticket L0332: the Manager settings page shows the same
+    ''' sentence when the "viewers on my network" change is refused while a broadcast runs, so the wording has one owner).</summary>
+    Friend Shared Function RefusalSentence(result As LiveStartResult, port As Integer) As String
         ' Ticket 263 T-2: the chosen window is not open (or is minimised). One sentence of its own - the
         ' generic "Windows did not grant access" would send the person looking in the wrong place.
         If result.Refusal = LiveStartRefusal.SourceUnavailable AndAlso
            String.Equals(result.SeamReason, LiveWindowCatalog.ReasonUnavailable, StringComparison.Ordinal) Then
-            _lblState.Text = Localization.T("Выбранное окно не найдено или свёрнуто: откройте его и выберите заново.")
-            Return
+            Return Localization.T("Выбранное окно не найдено или свёрнуто: откройте его и выберите заново.")
         End If
         Select Case result.Refusal
             Case LiveStartRefusal.GateShut
-                _lblState.Text = Localization.T("Эта функция выключена.")
+                Return Localization.T("Эта функция выключена.")
             Case LiveStartRefusal.AlreadyRunning
-                _lblState.Text = Localization.T("Другая трансляция уже идёт.")
+                Return Localization.T("Другая трансляция уже идёт.")
             Case LiveStartRefusal.NoLanAddress
-                _lblState.Text = Localization.T("В локальной сети нет доступного адреса. Трансляция не начата.")
+                Return Localization.T("В локальной сети нет доступного адреса. Трансляция не начата.")
             Case LiveStartRefusal.PortTaken
-                _lblState.Text = Localization.TF("Порт {0} занят. Трансляция не начата.", CInt(_numPort.Value))
+                Return Localization.TF("Порт {0} занят. Трансляция не начата.", port)
             Case LiveStartRefusal.EncoderUnavailable
-                _lblState.Text = Localization.T("Кодировщик недоступен. Скачайте FFmpeg из программы и начните снова.")
+                Return Localization.T("Кодировщик недоступен. Скачайте FFmpeg из программы и начните снова.")
             Case LiveStartRefusal.SourceUnavailable
-                _lblState.Text = Localization.T("Windows не дала доступ к устройству.")
+                Return Localization.T("Windows не дала доступ к устройству.")
             Case Else
-                _lblState.Text = Localization.T("Трансляция не начата.")
+                Return Localization.T("Трансляция не начата.")
         End Select
-    End Sub
+    End Function
 
     Private Sub RefreshOnAir()
         Dim state As LiveProducerState = _controller.State

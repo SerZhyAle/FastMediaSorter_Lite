@@ -10,6 +10,7 @@ Public Enum ConnectionDiagnosisKind
     Local = 3
     State = 4
     Result = 5
+    Schedule = 6
 End Enum
 
 ''' <summary>
@@ -75,6 +76,16 @@ Public NotInheritable Class ConnectionDiagnosisMessages
     Public Shared ReadOnly Timeout As New ConnectionDiagnosisMessage("timeout", ConnectionDiagnosisKind.Cast, Nothing, False)
     Public Shared ReadOnly Unsupported As New ConnectionDiagnosisMessage("unsupported", ConnectionDiagnosisKind.Cast, Nothing, False)
 
+    ' DEVICE-EXCHANGE 1.15 item FU: the eight rows of schedule requests
+    Public Shared ReadOnly ScheduleUnavailable As New ConnectionDiagnosisMessage("unavailable", ConnectionDiagnosisKind.Schedule, ConnectionDiagnosisStep.PcAsleep, False)
+    Public Shared ReadOnly ScheduleNotPermitted As New ConnectionDiagnosisMessage("not-permitted", ConnectionDiagnosisKind.Schedule, Nothing, False)
+    Public Shared ReadOnly ScheduleUnsupported As New ConnectionDiagnosisMessage("unsupported", ConnectionDiagnosisKind.Schedule, Nothing, False)
+    Public Shared ReadOnly ScheduleDeclined As New ConnectionDiagnosisMessage("declined", ConnectionDiagnosisKind.Schedule, Nothing, False)
+    Public Shared ReadOnly ScheduleInvalidPayload As New ConnectionDiagnosisMessage("invalid-payload", ConnectionDiagnosisKind.Schedule, Nothing, False)
+    Public Shared ReadOnly ScheduleNotFound As New ConnectionDiagnosisMessage("not-found", ConnectionDiagnosisKind.Schedule, Nothing, False)
+    Public Shared ReadOnly SchedulePinRequired As New ConnectionDiagnosisMessage("pin-required", ConnectionDiagnosisKind.Schedule, Nothing, False)
+    Public Shared ReadOnly ScheduleTimeout As New ConnectionDiagnosisMessage("timeout", ConnectionDiagnosisKind.Schedule, Nothing, False)
+
     Public Shared ReadOnly UnreachableServer As New ConnectionDiagnosisMessage("unreachable-server", ConnectionDiagnosisKind.Local, ConnectionDiagnosisStep.PcAsleep, True)
     Public Shared ReadOnly UnreachableDevice As New ConnectionDiagnosisMessage("unreachable-device", ConnectionDiagnosisKind.Local, ConnectionDiagnosisStep.PcAsleep, True)
     Public Shared ReadOnly Unanswered As New ConnectionDiagnosisMessage("unanswered", ConnectionDiagnosisKind.Local, ConnectionDiagnosisStep.Operator, True)
@@ -89,6 +100,10 @@ Public NotInheritable Class ConnectionDiagnosisMessages
     ' Extended states (item DD & DR)
     Public Shared ReadOnly SharePaused As New ConnectionDiagnosisMessage("share-paused", ConnectionDiagnosisKind.State, Nothing, False)
     Public Shared ReadOnly E2eMissing As New ConnectionDiagnosisMessage("e2e-missing", ConnectionDiagnosisKind.State, Nothing, False)
+    ' DEVICE-EXCHANGE 1.12 item FB: a local state row, not a wire reason (7.10 does not change). It is shown only by a reader that holds
+    ' a key and whose own listed record carries `e2eKey`, when the content cannot come from a source without one; a client that cannot
+    ' tell which side lacks the key keeps `e2e-missing`. The words ask for no update (items DP and CK).
+    Public Shared ReadOnly E2eMissingPeer As New ConnectionDiagnosisMessage("e2e-missing-peer", ConnectionDiagnosisKind.State, Nothing, False)
     Public Shared ReadOnly KeyChanged As New ConnectionDiagnosisMessage("key-changed", ConnectionDiagnosisKind.State, Nothing, False)
     Public Shared ReadOnly ServerNoE2e As New ConnectionDiagnosisMessage("server-no-e2e", ConnectionDiagnosisKind.State, ConnectionDiagnosisStep.Operator, False)
     Public Shared ReadOnly SealedFailed As New ConnectionDiagnosisMessage("sealed-failed", ConnectionDiagnosisKind.Local, Nothing, False)
@@ -107,7 +122,7 @@ Public NotInheritable Class ConnectionDiagnosisMessages
         LimitReachedClipboard, NotPermitted, Declined, Timeout, Unsupported,
         UnreachableServer, UnreachableDevice, Unanswered, TlsFailed, CertificateChanged,
         EmptyCredential, ServerOffline, ResourceLocked, ClipboardEmpty,
-        SharePaused, E2eMissing, KeyChanged, ServerNoE2e, SealedFailed, FormatUnsupported, AdminDisabled,
+        SharePaused, E2eMissing, E2eMissingPeer, KeyChanged, ServerNoE2e, SealedFailed, FormatUnsupported, AdminDisabled,
         NotFound, InvalidPayload, AppIdMismatch, VersionIncompatible, Refused
     }
 
@@ -183,6 +198,21 @@ Public NotInheritable Class ConnectionDiagnosisMessages
             Case "declined" : Return Declined
             Case "timeout" : Return Timeout
             Case "unsupported" : Return Unsupported
+            Case Else : Return Refused
+        End Select
+    End Function
+
+    Public Shared Function OfSchedule(reason As String) As ConnectionDiagnosisMessage
+        If String.IsNullOrWhiteSpace(reason) Then Return Refused
+        Select Case reason.Trim().ToLowerInvariant()
+            Case "unavailable" : Return ScheduleUnavailable
+            Case "not-permitted" : Return ScheduleNotPermitted
+            Case "unsupported" : Return ScheduleUnsupported
+            Case "declined" : Return ScheduleDeclined
+            Case "invalid-payload" : Return ScheduleInvalidPayload
+            Case "not-found" : Return ScheduleNotFound
+            Case "pin-required" : Return SchedulePinRequired
+            Case "timeout" : Return ScheduleTimeout
             Case Else : Return Refused
         End Select
     End Function

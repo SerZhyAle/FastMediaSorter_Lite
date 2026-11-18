@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "title": "Favorite Music and News",
+  "exportedAt": "2026-09-24T12:00:00Z",
+  "items": [
+    {
+      "id": "7b8782a1-e41c-4cf2-8329-373ff26e109d",
+      "title": "Radio Paradise (Main Mix)",
+      "url": "https://stream.radioparadise.com/flac",
+      "mediaKind": "audio",
+      "category": "Music",
+      "topic": "Eclectic",
+      "language": "English",
+      "country": "United States",
+      "homepage": "https://radioparadise.com",
+      "isPinned": true,
+      "sourceOrigin": "manual"
+    },
+    {
+      "id": "c39d73d2-83bc-40d9-83bc-b1736d93e110",
+      "title": "Public News Stream",
+      "url": "https://example.com/news/live.m3u8",
+      "mediaKind": "video",
+      "category": "News",
+      "topic": "Current Affairs",
+      "language": "English",
+      "isPinned": false,
+      "sourceOrigin": "imported"
+    },
+    {
+      "id": "18f9e68b-592f-488b-a37a-8d6263cb2818",
+      "title": "Local Studio Camera",
+      "url": "rtsp://192.168.1.100:8554/live",
+      "mediaKind": "rtsp",
+      "category": "Live",
+      "isPinned": false,
+      "sourceOrigin": "manual"
+    }
+  ]
+}

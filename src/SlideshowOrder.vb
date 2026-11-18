@@ -70,7 +70,20 @@ Public Module SlideshowOrder
             Return following
         End If
         If is_Shuffle_Cycle AndAlso cycle IsNot Nothing Then Return cycle.NextIndex(total, current, rng)
-        Return rng.Next(0, total)
+        Return RandomExcluding(total, current, rng)
+    End Function
+
+    ''' <summary>
+    ''' MEDIA-VIEWER rule 2: a random pick that never lands on <paramref name="excluded"/>
+    ''' (the file on screen) when another file exists. An excluded index outside the list
+    ''' (nothing shown yet) excludes nothing.
+    ''' </summary>
+    Public Function RandomExcluding(total As Integer, excluded As Integer, rng As Random) As Integer
+        If total <= 1 Then Return 0
+        If excluded < 0 OrElse excluded >= total Then Return rng.Next(0, total)
+        Dim pick As Integer = rng.Next(0, total - 1)
+        If pick >= excluded Then pick += 1
+        Return pick
     End Function
 
 End Module

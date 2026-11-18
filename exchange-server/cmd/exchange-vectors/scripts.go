@@ -426,6 +426,11 @@ func scenarioCast() *transcript {
 	a.send(&wire.BroadcastEnd{BroadcastID: bid})
 	a.send(&wire.Keepalive{})
 	a.expect(wire.TypeKeepalive)
+	// a tunnel connect for an ended broadcast is answered refused {reason:"ended"} (DEVICE-EXCHANGE 1.10 item DY)
+	c := r.open(tr, "ended-broadcast-tunnel", "tls", "a tunnel connect for an ended broadcast: refused with reason ended (item DY)")
+	c.send(&wire.Connect{BroadcastID: bid, Scheme: "rtsp"})
+	c.expectRefused(wire.ReasonEnded)
+	c.expectClosed()
 	return tr
 }
 

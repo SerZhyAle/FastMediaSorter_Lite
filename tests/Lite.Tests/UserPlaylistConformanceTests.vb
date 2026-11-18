@@ -56,7 +56,7 @@ Namespace Lite.Tests
         Public Sub Vendored_vectors_match_their_recorded_digests()
             Dim provenance As String = File.ReadAllText(Vector("PROVENANCE.txt"))
             Dim checked As Integer = 0
-            For Each fileName As String In {"hls-manifest-rejection.m3u8", "valid-extended-hls-entry.m3u8", "valid-extended.m3u8"}
+            For Each fileName As String In {"hls-manifest-rejection.m3u8", "valid-extended-hls-entry.m3u8", "valid-extended.m3u8", "valid-playlist.sza-playlist.json"}
                 Dim actual As String
                 Using sha As SHA256 = SHA256.Create()
                     actual = String.Concat(sha.ComputeHash(File.ReadAllBytes(Vector(fileName))).Select(Function(b) b.ToString("x2")))
@@ -64,7 +64,18 @@ Namespace Lite.Tests
                 Assert.Contains("  " & actual & "  " & fileName, provenance)
                 checked += 1
             Next
-            Assert.Equal(3, checked)
+            Assert.Equal(4, checked)
+        End Sub
+
+        ''' <summary>`USER-PLAYLIST` section 6 A (L0327): the JSON carrier is refused whole with ONE reason naming the format.</summary>
+        <Fact>
+        Public Sub The_json_carrier_vector_is_refused_whole_with_one_reason_naming_the_format()
+            Dim result = M3uPlaylistReader.ReadPath(Vector("valid-playlist.sza-playlist.json"))
+            Assert.Empty(result.Rows)
+            Assert.Equal(0, result.TotalEntriesFound)
+            Dim refusal = Assert.Single(result.Refusals)
+            Assert.StartsWith(M3uPlaylistReader.JsonCarrierStatus & ":", refusal.Reason, StringComparison.Ordinal)
+            Assert.Contains(".sza-playlist.json", refusal.Reason, StringComparison.Ordinal)
         End Sub
 
         ' ---------------------------------------------------------------- vectors ----

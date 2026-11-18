@@ -107,11 +107,14 @@ Public Class ScheduledFillFreeSpaceTests
         Return "{""schemaVersion"":" & schema & ",""kind"":""" & kind & """,""timestamp"":""2026-11-10T12:00:00Z"",""data"":" & data & "}" & vbLf
     End Function
 
-    Private Shared Function Stream(verdict As String) As String
+    ''' <param name="numbers">The `numbers` members of the result as JSON object text ("" for a result that numbers nothing).</param>
+    Private Shared Function Stream(verdict As String, Optional numbers As String = "") As String
         Dim text As String = Line("run", "{}") &
             Line("progress", "{""doneBytes"":1024,""doneItems"":1}") &
             Line("progress", "{""doneBytes"":2048,""doneItems"":2}")
-        If verdict IsNot Nothing Then text &= Line("result", "{""verdict"":""" & verdict & """}")
+        If verdict IsNot Nothing Then
+            text &= Line("result", "{""verdict"":""" & verdict & """" & If(numbers.Length > 0, ",""numbers"":" & numbers, "") & "}")
+        End If
         Return text
     End Function
 
@@ -125,11 +128,20 @@ Public Class ScheduledFillFreeSpaceTests
     <InlineData("Failed", 0, False, "NotProven")>
     <InlineData("Not proven", 2, False, "NotProven")>
     <InlineData("Not proven", 0, False, "NotProven")>
-    <InlineData("Stopped", 0, False, "Stopped")>
+    <InlineData("Not proven", 10, False, "NotProven")>
+    <InlineData("Not proven", 15, False, "NotProven")>
+    <InlineData("Stopped", 16, False, "Stopped")>
+    <InlineData("Stopped", 0, False, "NotProven")>
+    <InlineData("Stopped", 1, False, "NotProven")>
+    <InlineData("Stopped", 2, False, "NotProven")>
+    <InlineData("Stopped", -1, False, "NotProven")>
+    <InlineData("Passed", 16, False, "NotProven")>
+    <InlineData("Failed", 16, False, "NotProven")>
     <InlineData("passed", 0, False, "NotProven")>
     <InlineData("Bogus", 0, False, "NotProven")>
     <InlineData(Nothing, 0, False, "NotProven")>
     <InlineData("Stopped", 0, True, "Stopped")>
+    <InlineData("Stopped", 16, True, "Stopped")>
     <InlineData("Passed", 0, True, "Stopped")>
     <InlineData(Nothing, -1, True, "Stopped")>
     <InlineData("Failed", 1, True, "Failed")>
@@ -144,6 +156,42 @@ Public Class ScheduledFillFreeSpaceTests
         Dim events As FillEvents = FillEvents.Parse(Stream("Passed"))
         Assert.Equal(2048L, events.DoneBytes)
         Assert.Equal(2L, events.DoneItems)
+    End Sub
+
+    ''' <summary>0.17 item B: the run's own numbers win over the last progress event; an absent key is "not reported", never zero.</summary>
+    <Fact>
+    Public Sub The_numbered_result_wins_and_an_absent_number_falls_back_to_progress()
+        Dim numbered As FillEvents = FillEvents.Parse(Stream("Passed", "{""filesCreated"":7,""bytesWritten"":7340032,""filesDeleted"":7,""filesNotDeleted"":0}"))
+        Assert.True(numbered.NumbersReported)
+        Assert.Equal(7L, numbered.ItemsProduced())
+        Assert.Equal(7340032L, numbered.BytesProduced())
+        Assert.Equal(0L, numbered.FilesNotDeleted.Value)
+        Assert.Equal("Passed", numbered.JournalVerdict(FillJudgement.Passed))
+
+        Dim silent As FillEvents = FillEvents.Parse(Stream("Passed"))
+        Assert.False(silent.NumbersReported)
+        Assert.False(silent.FilesCreated.HasValue)
+        Assert.False(silent.BytesWritten.HasValue)
+        Assert.False(silent.FilesNotDeleted.HasValue)
+        Assert.Equal(2L, silent.ItemsProduced())
+        Assert.Equal(2048L, silent.BytesProduced())
+        Assert.Equal("Passed;counts=progress", silent.JournalVerdict(FillJudgement.Passed))
+
+        Dim half As FillEvents = FillEvents.Parse(Stream("Passed", "{""filesCreated"":5}"))
+        Assert.False(half.NumbersReported)
+        Assert.Equal(5L, half.ItemsProduced())
+        Assert.Equal(2048L, half.BytesProduced())
+    End Sub
+
+    ''' <summary>0.17 item C: files `del` left are named in the journal; an absent count is not a zero and says nothing.</summary>
+    <Fact>
+    Public Sub Files_left_by_del_are_named_in_the_journal_verdict()
+        Dim left As FillEvents = FillEvents.Parse(Stream("Failed", "{""filesCreated"":4,""bytesWritten"":4096,""filesNotDeleted"":3}"))
+        Assert.Equal(3L, left.FilesNotDeleted.Value)
+        Assert.Equal("Failed", left.Judge(1, False).ToString())
+        Assert.Equal("Failed;not-deleted=3", left.JournalVerdict(FillJudgement.Failed))
+        Dim none As FillEvents = FillEvents.Parse(Stream("Failed", "{""filesCreated"":4,""bytesWritten"":4096}"))
+        Assert.Equal("Failed", none.JournalVerdict(FillJudgement.Failed))
     End Sub
 
     <Fact>
@@ -235,6 +283,8 @@ Public Class ScheduledFillFreeSpaceTests
 
     Private NotInheritable Class FakeFileDo
         Friend Verdict As String = "Passed"
+        ''' <summary>The result's `numbers` object as JSON text; "" is a FileDO that numbers nothing.</summary>
+        Friend Numbers As String = ""
         Friend ExitCode As Integer? = 0
         Friend StopRequested As Boolean
         Friend Started As Boolean = True
@@ -258,7 +308,7 @@ Public Class ScheduledFillFreeSpaceTests
             If Not Started Then Return New FillLaunchOutcome()
             Dim folder As String = launch.Arguments(1)
             File.WriteAllText(Path.Combine(folder, "FILL_001_10120000_0badf00d.tmp"), "x")
-            File.WriteAllText(launch.Arguments(7), Stream(Verdict))
+            File.WriteAllText(launch.Arguments(7), Stream(Verdict, Numbers))
             If StopRequested Then File.WriteAllText(launch.StopFile, "stop")
             Return New FillLaunchOutcome With {.Started = True, .ExitCode = ExitCode, .StopRequested = StopRequested}
         End Function
@@ -288,7 +338,31 @@ Public Class ScheduledFillFreeSpaceTests
             Assert.Equal("1000", launch.Arguments(3))
             Dim item As ItemJournalEntry = Assert.Single(stub.Items)
             Assert.Equal("fill-free-space", item.Verb)
-            Assert.Equal("Passed", item.Verdict)
+            ' This FileDO numbers nothing: the counts above are the last progress event, and the journal says so.
+            Assert.Equal("Passed;counts=progress", item.Verdict)
+        End Using
+    End Sub
+
+    ''' <summary>0.17 items B and C: a numbered result is what the run records, and files `del` left reach the journal.</summary>
+    <Fact>
+    Public Sub A_numbered_fill_records_its_own_numbers_and_the_files_it_could_not_delete()
+        Using tree As New ScratchTree()
+            Dim numbered As New FakeFileDo With {.Numbers = "{""filesCreated"":5,""bytesWritten"":5242880,""filesDeleted"":5,""filesNotDeleted"":0}"}
+            Dim ok As ScheduledRunResult = Run(numbered, FillOp(tree.Root))
+            Assert.Equal(ScheduledRunOutcome.Ok, ok.Outcome)
+            Assert.Equal(5, ok.Files)
+            Assert.Equal(5242880L, ok.Bytes)
+            Assert.StartsWith("fill:free=" & FiveGiB.ToString(Globalization.CultureInfo.InvariantCulture) & ";bytes=5242880;", ok.Verdict)
+            Assert.Equal("Passed", Assert.Single(numbered.Items).Verdict)
+
+            Dim left As New FakeFileDo With {.Verdict = "Failed", .ExitCode = 1,
+                .Numbers = "{""filesCreated"":5,""bytesWritten"":5242880,""filesDeleted"":3,""filesNotDeleted"":2}"}
+            Dim failed As ScheduledRunResult = Run(left, FillOp(tree.Root))
+            Assert.Equal(ScheduledRunOutcome.Failed, failed.Outcome)
+            Assert.StartsWith("fill-failed|", failed.FirstError)
+            Assert.Equal(5, failed.Files)
+            Assert.Equal("Failed;not-deleted=2", Assert.Single(left.Items).Verdict)
+            Assert.Empty(WorkFolders(tree.Root))
         End Using
     End Sub
 

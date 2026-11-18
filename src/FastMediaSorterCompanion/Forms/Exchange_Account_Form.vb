@@ -638,7 +638,7 @@ Friend NotInheritable Class Exchange_Account_Form
 
         ' the string named a leaf and the server presented another: both fingerprints, nothing pinned, no password sent (rule 3)
         If result.Outcome = ExchangeEnrollOutcome.PinMismatch AndAlso _pinnedFromString.Length > 0 Then
-            MessageBox.Show(Me, ExchangeJoinText.PinMismatch(_pinnedFromString, result.Fingerprint), ExchangeDeviceText.GroupTitle(), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ManagerBox.Show(Me, ExchangeJoinText.PinMismatch(_pinnedFromString, result.Fingerprint), ExchangeDeviceText.GroupTitle(), MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
         ' a certificate that changed between the check and the sign-in is a new first contact
         If result.Outcome = ExchangeEnrollOutcome.PinMismatch OrElse result.Outcome = ExchangeEnrollOutcome.Untrusted Then

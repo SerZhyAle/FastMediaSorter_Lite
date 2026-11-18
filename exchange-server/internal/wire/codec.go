@@ -91,6 +91,9 @@ var registry = map[string]func() Envelope{
 	TypeNotesPut:     func() Envelope { return new(NotesPut) },
 	TypeNotesStored:  func() Envelope { return new(NotesStored) },
 	TypeNotesChanged: func() Envelope { return new(NotesChanged) },
+
+	TypeScheduleRequest: func() Envelope { return new(ScheduleRequest) },
+	TypeScheduleResult:  func() Envelope { return new(ScheduleResult) },
 }
 
 // Types lists every type this wire defines, sorted as the table of ticket 161 section 4.
@@ -106,7 +109,8 @@ func Types() []string {
 		TypeRegister, TypePasswordChange, TypePasswordChanged, TypeAccountDelete, TypeAccountDeleted,
 		TypeAdminAuth, TypeAdminAuthOK, TypeAdminRequest, TypeAdminReply,
 		TypeSettingsSaveStandard, TypeSettingsSaved, TypeSettingsGetStandard, TypeSettingsStandardPayload,
-		TypeNotesList, TypeNotesChanges, TypeNotesPut, TypeNotesStored, TypeNotesChanged}
+		TypeNotesList, TypeNotesChanges, TypeNotesPut, TypeNotesStored, TypeNotesChanged,
+		TypeScheduleRequest, TypeScheduleResult}
 }
 
 // New returns a zero typed envelope of the given type, or nil for a type this wire does not define.

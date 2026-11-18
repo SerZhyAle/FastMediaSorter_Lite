@@ -78,28 +78,35 @@ func TestNotesSyncScenario(t *testing.T) {
 	if err := json.Unmarshal(data, &doc); err != nil {
 		t.Fatal(err)
 	}
-	if len(doc.Transcripts) != 1 || doc.Transcripts[0].Name != "notes-sync" || len(doc.Transcripts[0].Steps) == 0 {
+	if len(doc.Transcripts) != 5 || doc.Transcripts[0].Name != "notes-sync" || len(doc.Transcripts[0].Steps) == 0 {
 		t.Fatal("the notes-sync scenario produced no transcript")
 	}
+	for i, want := range []string{"notes-sync", "notes-paging-full-after-purge", "notes-box-bound", "notes-conflict-without-current", "notes-count-bytes-and-policy"} {
+		if doc.Transcripts[i].Name != want {
+			t.Fatalf("transcript %d is %q, want the item GB vector %q", i, doc.Transcripts[i].Name, want)
+		}
+	}
 	types, reasons := map[string]bool{}, map[string]bool{}
-	for i, st := range doc.Transcripts[0].Steps {
-		if st.JSON == "" {
-			continue
-		}
-		raw, err := hex.DecodeString(st.Hex)
-		if err != nil || string(raw[4:]) != st.JSON {
-			t.Fatalf("step %d: the hex is not the frame of the json", i)
-		}
-		e, err := wire.NewFrameReader(bytes.NewReader(raw), wire.MaxFrameAuth).Read()
-		if err != nil {
-			t.Fatalf("step %d (%s): %v", i, st.JSON, err)
-		}
-		if again, err := wire.Frame(e); err != nil || !bytes.Equal(again, raw) {
-			t.Errorf("step %d: re-encoding the decoded frame changes the bytes\n got  %s\n want %s", i, again, raw)
-		}
-		types[e.TypeName()] = true
-		if f, ok := e.(*wire.Refused); ok {
-			reasons[f.Reason] = true
+	for _, tr := range doc.Transcripts {
+		for i, st := range tr.Steps {
+			if st.JSON == "" {
+				continue
+			}
+			raw, err := hex.DecodeString(st.Hex)
+			if err != nil || string(raw[4:]) != st.JSON {
+				t.Fatalf("step %d: the hex is not the frame of the json", i)
+			}
+			e, err := wire.NewFrameReader(bytes.NewReader(raw), wire.MaxFrameAuth).Read()
+			if err != nil {
+				t.Fatalf("step %d (%s): %v", i, st.JSON, err)
+			}
+			if again, err := wire.Frame(e); err != nil || !bytes.Equal(again, raw) {
+				t.Errorf("step %d: re-encoding the decoded frame changes the bytes\n got  %s\n want %s", i, again, raw)
+			}
+			types[e.TypeName()] = true
+			if f, ok := e.(*wire.Refused); ok {
+				reasons[f.Reason] = true
+			}
 		}
 	}
 	for _, typ := range []string{wire.TypeNotesList, wire.TypeNotesChanges, wire.TypeNotesPut, wire.TypeNotesStored, wire.TypeNotesChanged} {
@@ -107,7 +114,7 @@ func TestNotesSyncScenario(t *testing.T) {
 			t.Errorf("no frame of type %q in the notes transcript", typ)
 		}
 	}
-	for _, r := range []wire.Reason{wire.ReasonNoteConflict, wire.ReasonNotPermitted} {
+	for _, r := range []wire.Reason{wire.ReasonNoteConflict, wire.ReasonNotPermitted, wire.ReasonCapacity, wire.ReasonLimitReached} {
 		if !reasons[string(r)] {
 			t.Errorf("the reason %q is not produced by the notes transcript", r)
 		}
@@ -125,8 +132,12 @@ func TestNotesSyncScenario(t *testing.T) {
 		if !strings.HasPrefix(c.Context, "note:") || !wire.ValidNoteID(strings.TrimPrefix(c.Context, "note:")) {
 			t.Errorf("%s: the context %q is not note:<noteId>", c.Name, c.Context)
 		}
-		if len(c.To) != 2 {
-			t.Errorf("%s: %d recipients, want both devices", c.Name, len(c.To))
+		wantRecipients := 2
+		if c.Name == "notes-box-bound/fh-bound" {
+			wantRecipients = 40 // the box at the item FH bound: 40 recipient entries
+		}
+		if len(c.To) != wantRecipients {
+			t.Errorf("%s: %d recipients, want %d", c.Name, len(c.To), wantRecipients)
 		}
 		for _, to := range c.To {
 			payload, _, err := openBox(c.Box, to.DeviceID, e2eDevices[to.Device].private(), e2eDevices[c.From.Device].KEM, c.Context)

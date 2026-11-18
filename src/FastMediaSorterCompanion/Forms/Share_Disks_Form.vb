@@ -228,6 +228,7 @@ Public NotInheritable Class Share_Disks_Form
             _note.Text &= vbCrLf & Localization.TF("Доступ: {0}; открытых файлов: {1}; автозапуск: {2}. {3}",
                 If(disk.ReadOnly, Localization.T("Только чтение"), Localization.T("Чтение и запись")), disk.OpenHandles,
                 AutostartText(disk.Autostart, DiskSharing.Supported(_status, "disk-autostart")), DiskSharing.SafeError(disk.ErrorMessage))
+            If DiskSharing.IsMountedByFileDo(disk) Then _managerHint.Visible = True
         End If
     End Sub
 
@@ -251,14 +252,16 @@ Public NotInheritable Class Share_Disks_Form
         End Select
     End Function
 
-    ''' <summary>The holder column: none, the Windows service or this session. A holder the host does not know,
+    ''' <summary>The holder column: none, the Windows service, this session, or FileDO. A holder the host does not know,
     ''' or none at all in the record, is "Unknown" - NEVER "No holder": item D says unknown is never none, and a
     ''' list that shows "No" beside a disk somebody may be holding invites the mount it must not authorize.</summary>
     Friend Shared Function HolderText(holder As String) As String
-        Select Case holder
-            Case "service" : Return Localization.T("Служба Windows")
-            Case "session" : Return Localization.T("Текущий сеанс")
+        Dim token As String = If(holder, "").Trim().ToLowerInvariant()
+        Select Case token
+            Case "service", "fms-service" : Return Localization.T("Служба Windows")
+            Case "session", "fms-session" : Return Localization.T("Текущий сеанс")
             Case "none" : Return Localization.T("Никто")
+            Case "filedo", "file-do" : Return "FileDO"
             Case Else : Return Localization.T("Неизвестно")
         End Select
     End Function
@@ -275,7 +278,8 @@ Public NotInheritable Class Share_Disks_Form
             Await operation()
         Catch ex As Exception
             errorText = DiskSharing.FailureText(ex)
-            heldByFileDo = DiskSharing.IsMountedByFileDo(TryCast(ex, DiskOperationRefusedException)?.Reason)
+            heldByFileDo = (SelectedDisk() IsNot Nothing AndAlso DiskSharing.IsMountedByFileDo(SelectedDisk())) OrElse
+                           DiskSharing.IsMountedByFileDo(TryCast(ex, DiskOperationRefusedException)?.Reason)
         End Try
         ' Mutations may have partially succeeded or timed out. Always reconcile live state.
         Try
@@ -294,7 +298,7 @@ Public NotInheritable Class Share_Disks_Form
     Private Sub OnOpenManager(sender As Object, e As EventArgs)
         Dim result As FileDoLaunchResult = FileDoDiskManager.Launch()
         If result = FileDoLaunchResult.Started Then Return
-        MessageBox.Show(Me, If(result = FileDoLaunchResult.Failed, Localization.T("Не удалось запустить менеджер дисков FileDO."),
+        ManagerBox.Show(Me, If(result = FileDoLaunchResult.Failed, Localization.T("Не удалось запустить менеджер дисков FileDO."),
             Localization.T("Менеджер дисков FileDO не найден на этом ПК. Установите FileDO с его сайта и повторите.")),
             Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
@@ -329,7 +333,7 @@ Public NotInheritable Class Share_Disks_Form
                     End If
                 End Function)
                 If openFailure.Trim().Length > 0 AndAlso Not IsDisposed Then
-                    MessageBox.Show(Me, Localization.TF("Диск добавлен в раздачу, но не открылся: {0}", openFailure.Trim()),
+                    ManagerBox.Show(Me, Localization.TF("Диск добавлен в раздачу, но не открылся: {0}", openFailure.Trim()),
                         Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 End If
             End Using

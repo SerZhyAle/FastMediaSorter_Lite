@@ -270,8 +270,9 @@ Public Class LogPackageTests
             Assert.Equal(keys.Length, keys.Distinct().Count())
             Assert.Contains("app_version", keys)
             Assert.Contains("os", keys)
-            ' The metric set is stated, and it is empty: this product keeps no catalog to count.
-            Assert.Contains("volume_metrics=none", lines)
+            ' The metric set is stated, and it is unavailable (0.15 item 3): this product keeps no catalog to count.
+            Assert.Contains("volume_metrics=unavailable", lines)
+            Assert.DoesNotContain("volume_metrics=none", lines)
             ' Facts, never a path or a name.
             Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
             Assert.DoesNotContain(profile, text, StringComparison.OrdinalIgnoreCase)

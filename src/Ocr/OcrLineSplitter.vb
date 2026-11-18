@@ -61,10 +61,12 @@ Public Module OcrLineSplitter
     ''' How many median WORD heights a word's box may stand tall before it is no lettering of this
     ''' line (`OCR-PIPELINE` amendment 1.7 A). Where two speech balloons touch, the recognizer reads
     ''' their touching outlines as tokens of the stitched line, so no gap between words holds the
-    ''' boundary - the stroke runs INSIDE the boundary token's box: a "J" at 2.3x and a lone "A" at
-    ''' 2.1x the line's word height on the producer's own page. A word box that tall reaches into the
-    ''' neighbouring row, which no lettering of one line does, and the split cuts BEFORE it: the token
-    ''' is the boundary, and it leads the next run.
+    ''' boundary - the stroke runs INSIDE the boundary token's box. A token that tall and with no
+    ''' letter and no digit (an outline glyph: `/ | } \`) reaches into the neighbouring row, which no
+    ''' lettering of one line does, and the split cuts BEFORE it: the token is the boundary, and it
+    ''' leads the next run. Since 1.10 A a tall word that carries a letter or a digit is lettering
+    ''' and is not cut by its height - the producer's own Superman page, whose two boundary tokens
+    ''' ("J" at 2.3x, a lone "A" at 2.1x) both carry a letter, is the known limit of that (1.10 C).
     '''
     ''' The same 1.6 as <see cref="OcrBlockBuilder.TypeSizeRatio"/>, by reference. INHERITED - see
     ''' the constant status table on the module, which also says why the amendment's "(2.5)" is a
@@ -128,12 +130,16 @@ Public Module OcrLineSplitter
     ''' Overlapping boxes give a negative gap and never cut.
     '''
     ''' A line is also cut BEFORE a word whose box is taller than
-    ''' <see cref="MaxWordHeightRatio"/> times the line's median word height (`OCR-PIPELINE`
-    ''' amendment 1.7 A) - the one boundary the gap test cannot see, because a balloon outline read
-    ''' as a token holds the stroke inside its own box. Edges, each fixed by the amendment's text
-    ''' or by its shared fixture:
+    ''' <see cref="MaxWordHeightRatio"/> times the line's median word height AND whose text holds no
+    ''' letter and no digit (`OCR-PIPELINE` amendment 1.7 A as narrowed by 1.10 A) - the one
+    ''' boundary the gap test cannot see, because a balloon outline read as a token (`/ | } \`)
+    ''' holds the stroke inside its own box. A tall word that carries a letter or a digit is
+    ''' lettering - a display word, a heavy ascender, a box that swallowed a spike of artwork - and
+    ''' its height alone does not cut before it; a gap wider than the word-gap ratio still does, as
+    ''' for any word. Edges, each fixed by the amendment's text or by its shared fixture:
     ''' <list type="bullet">
     ''' <item>strictly taller - a word exactly at the limit stays;</item>
+    ''' <item>the letter test is <see cref="HasLetterOrDigit"/>, Unicode letters and decimal digits;</item>
     ''' <item>the median is the one the gap rule uses, over ALL the line's words including the
     ''' tall one, and an even count takes the upper middle (<see cref="MedianWordHeight"/>) - so
     ''' a two-word line is never cut by this rule, the taller word being its own median;</item>
@@ -142,8 +148,10 @@ Public Module OcrLineSplitter
     ''' 1.1 D, which this product has no stage for - the runs then go through the same
     ''' confidence and translatability filters as every other);</item>
     ''' <item>the first word of a line has nothing before it, so it is never a cut;</item>
-    ''' <item>a line of one size, a one-word line and a line with no word geometry are never
-    ''' cut by it.</item>
+    ''' <item>a one-word line and a line with no word geometry are never cut by it, and neither is a
+    ''' line whose words are all one size (no word stands over 1.6 median heights). The sentence of
+    ''' 1.7 A that the cut never fires on a line of one size is withdrawn by 1.10 A: a one-size
+    ''' line holding a tall outline glyph is cut before that glyph.</item>
     ''' </list>
     ''' </summary>
     Public Function SplitLine(line As OcrLine) As List(Of OcrLine)
@@ -163,7 +171,7 @@ Public Module OcrLineSplitter
         Dim cutAfter As New List(Of Integer)
         For i As Integer = 1 To words.Count - 1
             If GapBetween(words(i - 1).Box, words(i).Box) > limit OrElse
-               words(i).Box.Height > tallLimit Then cutAfter.Add(i - 1)
+               (words(i).Box.Height > tallLimit AndAlso Not HasLetterOrDigit(words(i).Text)) Then cutAfter.Add(i - 1)
         Next
         If cutAfter.Count = 0 Then Return unchanged
 
@@ -175,6 +183,22 @@ Public Module OcrLineSplitter
         Next
         runs.Add(MakeRun(words, start, words.Count - 1))
         Return runs
+    End Function
+
+    ''' <summary>
+    ''' True when the recognized text holds at least one Unicode letter or decimal digit - the
+    ''' predicate `OCR-PIPELINE` 1.10 A names (`hasLetterOrDigit`, the outlier trim's own). A
+    ''' supplementary-plane letter counts, so the test reads code points, not UTF-16 units.
+    ''' Null or empty text carries neither.
+    ''' </summary>
+    Public Function HasLetterOrDigit(text As String) As Boolean
+        If String.IsNullOrEmpty(text) Then Return False
+        Dim i As Integer = 0
+        While i < text.Length
+            If Char.IsLetterOrDigit(text, i) Then Return True
+            i += If(Char.IsHighSurrogate(text, i) AndAlso i + 1 < text.Length AndAlso Char.IsLowSurrogate(text, i + 1), 2, 1)
+        End While
+        Return False
     End Function
 
     ''' <summary>

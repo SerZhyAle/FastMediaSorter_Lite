@@ -104,15 +104,18 @@ Public Class DiskUnknownAuthorityTests
                 Dim none As String = Share_Disks_Form.HolderText("none")
                 Dim unknown As String = Localization.T("Неизвестно")
                 Assert.NotEqual(none, unknown)
-                For Each holder As String In {Nothing, "", "ghost", "NONE", "Service", "filedo", "fms"}
+                For Each holder As String In {Nothing, "", "ghost", "NONE", "Service", "fms"}
                     Assert.Equal(unknown, Share_Disks_Form.HolderText(holder))
                 Next
                 Assert.Equal(Localization.T("Служба Windows"), Share_Disks_Form.HolderText("service"))
                 Assert.Equal(Localization.T("Текущий сеанс"), Share_Disks_Form.HolderText("session"))
+                Assert.Equal("FileDO", Share_Disks_Form.HolderText("filedo"))
+                Assert.Equal("FileDO", Share_Disks_Form.HolderText("file-do"))
             Next
             Localization.CurrentCode = "en"
             Assert.Equal("Nobody", Share_Disks_Form.HolderText("none"))
             Assert.Equal("Unknown", Share_Disks_Form.HolderText("ghost"))
+            Assert.Equal("FileDO", Share_Disks_Form.HolderText("filedo"))
         Finally
             Localization.CurrentCode = saved
         End Try

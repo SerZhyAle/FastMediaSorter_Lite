@@ -277,12 +277,26 @@ func (s *Server) handleCarriedAdminOp(st *Stream, req *wire.AdminRequest) {
 		ClientProduct: admin.ClientProductRemote,
 	}
 	if req.Limits != nil {
+		// item FY (ticket L0322): a notes limit that is not a whole number is answered bad-limit, the
+		// stream stays open; nothing of the request reaches the operations.
+		if err := req.Limits.NotesLimitBad(); err != nil {
+			reply := &wire.AdminReply{
+				ID:    req.ID,
+				OK:    false,
+				Code:  admin.CodeBadLimit,
+				Error: err.Error(),
+			}
+			_ = st.Send(reply)
+			return
+		}
 		areq.Limits = &accounts.AccountLimits{
 			DevicesPerAccount:    req.Limits.DevicesPerAccount,
 			ResourcesPerAccount:  req.Limits.ResourcesPerAccount,
 			BroadcastsPerAccount: req.Limits.BroadcastsPerAccount,
 			BroadcastsPerDevice:  req.Limits.BroadcastsPerDevice,
 			ClipboardMaxBytes:    req.Limits.ClipboardMaxBytes,
+			NotesPerAccount:      req.Limits.NotesPerAccount,
+			NotesMaxBytes:        req.Limits.NotesMaxBytes,
 		}
 	}
 

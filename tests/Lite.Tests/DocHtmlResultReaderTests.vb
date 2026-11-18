@@ -66,6 +66,75 @@ Public Class DocHtmlResultReaderTests
         Assert.Equal(DocHtmlResultState.Foreign, Parse(Record(Complete("none", "none")), "C:\Books\other.epub").State)
     End Sub
 
+    ' --- item C rule 3: the reader says which not-completed case it was (L0330) -----------------------------
+
+    <Theory>
+    <InlineData("")>
+    <InlineData("not json")>
+    <InlineData("[1,2]")>
+    <InlineData("{""schemaVersion"":""two"",""tool"":""doc-html-translate""}")>
+    Public Sub AnUnparseableRecord_NamesTheFault(json As String)
+        Dim r = Parse(json)
+        Assert.Equal(DocHtmlResultState.Foreign, r.State)
+        Assert.Equal(DocHtmlRecordFault.Unparseable, r.Fault)
+    End Sub
+
+    <Fact>
+    Public Sub AForeignToolAndAnotherSource_AreToldApart()
+        Assert.Equal(DocHtmlRecordFault.ForeignTool, Parse(Record(Complete("none", "none"), tool:="other")).Fault)
+        Assert.Equal(DocHtmlRecordFault.OtherSource, Parse(Record(Complete("none", "none")), "C:\Books\other.epub").Fault)
+    End Sub
+
+    <Fact>
+    Public Sub ACompletedRecordAndANewerSchema_CarryNoFault()
+        Assert.Equal(DocHtmlRecordFault.None, Parse(Record(Complete("none", "none"))).Fault)
+        Assert.Equal(DocHtmlRecordFault.None, Parse(Record(Complete("none", "none"), schema:="2")).Fault)
+        Assert.Equal(DocHtmlRecordFault.None, Parse(Record()).Fault)
+    End Sub
+
+    <Theory>
+    <InlineData(0)>
+    <InlineData(4)>
+    Public Sub AnUnparseableOrForeignRecord_IsNotAnUnfinishedRun(exitCode As Integer)
+        Dim foreign = Parse("not json")
+        Dim outcome = DocHtmlResultReader.Outcome(foreign, exitCode, False, False)
+        Assert.Equal(DocHtmlJobOutcome.RecordNotRecognized, outcome)
+        Assert.NotEqual(DocHtmlJobOutcome.Incomplete, outcome)
+        Assert.False(DocHtmlResultReader.HasPage(outcome))
+        Assert.Equal(DocHtmlJobOutcome.RecordNotRecognized, DocHtmlResultReader.Outcome(Parse(Record(Complete("none", "none"), tool:="other")), exitCode, False, False))
+        ' ..while the run that never wrote complete stays an unfinished run.
+        Assert.Equal(DocHtmlJobOutcome.Incomplete, DocHtmlResultReader.Outcome(Parse(Record()), exitCode, False, False))
+    End Sub
+
+    <Theory>
+    <InlineData(1, DocHtmlJobOutcome.BadArguments)>
+    <InlineData(2, DocHtmlJobOutcome.IoError)>
+    <InlineData(3, DocHtmlJobOutcome.Unreadable)>
+    <InlineData(130, DocHtmlJobOutcome.Cancelled)>
+    Public Sub AnUnparseableRecord_WithAnotherExit_StillNamesHowTheProcessEnded(exitCode As Integer, expected As DocHtmlJobOutcome)
+        Assert.Equal(expected, DocHtmlResultReader.Outcome(Parse("not json"), exitCode, False, False))
+    End Sub
+
+    <Fact>
+    Public Sub TheLogDetail_NamesTheCase_WithoutAPathOrTheRecordText()
+        Assert.Equal("record-fault=Unparseable", DocHtmlResultReader.LogDetail(Parse("not json")))
+        Assert.Equal("record-fault=ForeignTool", DocHtmlResultReader.LogDetail(Parse(Record(Complete("none", "none"), tool:="other"))))
+        Assert.Equal("record-fault=OtherSource", DocHtmlResultReader.LogDetail(Parse(Record(Complete("none", "none")), "C:\Books\other.epub")))
+
+        Dim newer = DocHtmlResultReader.LogDetail(Parse(Record(Complete("none", "none"), schema:="2")))
+        Assert.Contains("OCR-INVOCATION 1.2", newer)
+        Assert.Contains("record-schema=2", newer)
+        Assert.Contains("reader-schema=1", newer)
+
+        Assert.Equal("", DocHtmlResultReader.LogDetail(Parse(Record(Complete("none", "none")))))
+        Assert.Equal("", DocHtmlResultReader.LogDetail(Parse(Record())))
+        Assert.Equal("", DocHtmlResultReader.LogDetail(Nothing))
+        ' The record's own text and the source path never reach the line.
+        Dim withSource = DocHtmlResultReader.LogDetail(Parse(Record(Complete("none", "none")), "C:\Books\other.epub"))
+        Assert.DoesNotContain("Books", withSource)
+        Assert.DoesNotContain("epub", withSource)
+    End Sub
+
     <Fact>
     Public Sub TheSourceIsComparedAsAPath()
         Assert.Equal(DocHtmlResultState.Completed, Parse(Record(Complete("none", "none")), "c:\books\A BOOK.epub").State)

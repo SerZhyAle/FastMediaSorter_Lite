@@ -173,6 +173,20 @@ Partial Public NotInheritable Class Localization
             "یہ امتزاج سسٹم یا پروگرام کے لیے مخصوص ہے اور تفویض نہیں کیا جا سکتا۔",
             "该组合键由系统或程序保留，无法指定。")
 
+        Add("Эту клавишу нельзя назначить: у неё нет стандартного имени, которое понимают другие программы.",
+            "This key cannot be assigned: it has no standard name that other programs understand.",
+            "Цю клавішу не можна призначити: вона не має стандартної назви, яку розуміють інші програми.",
+            "Diese Taste kann nicht zugewiesen werden: Sie hat keinen Standardnamen, den andere Programme verstehen.",
+            "Questo tasto non può essere assegnato: non ha un nome standard comprensibile ad altri programmi.",
+            "Esta tecla no puede asignarse: no tiene un nombre estándar que otros programas entiendan.",
+            "Cette touche ne peut pas être attribuée : elle n'a pas de nom standard que les autres programmes comprennent.",
+            "Esta tecla não pode ser atribuída: ela não tem um nome padrão que outros programas entendam.",
+            "لا يمكن تعيين هذا المفتاح: ليس له اسم قياسي تفهمه البرامج الأخرى.",
+            "यह कुंजी निर्दिष्ट नहीं की जा सकती: इसका कोई मानक नाम नहीं है जिसे अन्य प्रोग्राम समझ सकें।",
+            "এই কী নির্ধারণ করা যাবে না: এর কোনো আদর্শ নাম নেই যা অন্য প্রোগ্রাম বুঝতে পারে।",
+            "اس کلید کو تفویض نہیں کیا جا سکتا: اس کا کوئی معیاری نام نہیں جسے دوسرے پروگرام سمجھ سکیں۔",
+            "无法指定此按键：它没有其他程序能识别的标准名称。")
+
         Add("Сочетание {0} уже назначено действию «{1}».",
             "The combination {0} already belongs to «{1}».",
             "Сполучення {0} вже призначене дії «{1}».",

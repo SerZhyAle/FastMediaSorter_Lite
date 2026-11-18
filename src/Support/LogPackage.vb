@@ -1104,7 +1104,7 @@ Public Module LogPackage
     ''' environment.txt - the part of the bundle a parser reads (DIAGNOSTIC-REPORT 0.12 rule 2 and section 8 B):
     ''' greppable <c>KEY=value</c> lines, time in UTC, <c>schema_version</c> first, facts and counts only. report.txt
     ''' travels beside it for the person who reads. This product keeps no catalog of titles, URLs or history, so
-    ''' the metric set is stated as empty (<c>volume_metrics=none</c>) rather than filled from anything the user
+    ''' the metric set is stated as unavailable (<c>volume_metrics=unavailable</c>, DIAGNOSTIC-REPORT 0.15 item 3) rather than filled from anything the user
     ''' authored. Values are single-line and never carry a path; the account name does not appear.
     ''' </summary>
     Friend Function BuildEnvironment(generatedUtc As DateTime) As String
@@ -1120,7 +1120,7 @@ Public Module LogPackage
             "ui_language=" & OneLine(Localization.CurrentCode),
             "media_backend=LibVlc",
             "packaged=" & IsPackaged().ToString(),
-            "volume_metrics=none"}
+            "volume_metrics=unavailable"}
         Return String.Join(vbLf, lines) & vbLf
     End Function
 

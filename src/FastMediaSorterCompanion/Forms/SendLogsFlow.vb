@@ -267,12 +267,10 @@ Friend Module SendLogsFlow
         End Try
     End Sub
 
+    ' One path for both cases (APP-BEHAVIOUR rules 1 and 8): the notice box takes the owner when there is one, otherwise
+    ' it is held in front of the user's windows, and it always reads in the interface language's direction.
     Private Sub ShowMessage(owner As IWin32Window, text As String, icon As MessageBoxIcon)
-        If owner Is Nothing Then
-            MessageBox.Show(text, Title, MessageBoxButtons.OK, icon, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly)
-        Else
-            MessageBox.Show(owner, text, Title, MessageBoxButtons.OK, icon)
-        End If
+        ManagerBox.Show(owner, text, Title, MessageBoxButtons.OK, icon)
     End Sub
 
 End Module

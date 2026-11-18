@@ -441,13 +441,13 @@ func TestVersionRefusalCarriesTheServersOwnSchemaVersion(t *testing.T) {
 	}
 }
 
-func TestReasonsAreTheTwentyTwoOfTheContract(t *testing.T) {
+func TestReasonsAreTheTwentyThreeOfTheContract(t *testing.T) {
 	want := []string{"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision",
 		"capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
 		"invitation-invalid", "login-taken", "password-policy", "limit-reached", "not-permitted", "signed-out",
 		"admin-disabled", "not-found", "invalid-payload", "app-id-mismatch", "version-incompatible",
-		"note-conflict"}
-	if len(AllReasons) != 22 {
+		"note-conflict", "ended"}
+	if len(AllReasons) != 23 {
 		t.Fatalf("%d reasons", len(AllReasons))
 	}
 	for i, r := range AllReasons {
@@ -460,7 +460,7 @@ func TestReasonsAreTheTwentyTwoOfTheContract(t *testing.T) {
 	}
 	defer func() {
 		if recover() == nil {
-			t.Error("Refuse accepted a reason outside the twenty-two")
+			t.Error("Refuse accepted a reason outside the twenty-three")
 		}
 	}()
 	Refuse(Reason("nope"))

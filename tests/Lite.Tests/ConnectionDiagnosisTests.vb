@@ -118,6 +118,7 @@ Public Class ConnectionDiagnosisTests
         New String() {"clipboard-empty", "result", "-", "There is nothing in the clipboard on the server.", "Буфер на сервере пуст.", "Буфер на сервері порожній."},
         New String() {"share-paused", "state", "-", "Android paused sharing on this phone. It will continue when the app is opened on the phone.", "Android приостановил раздачу на этом телефоне. Она продолжится, когда на телефоне откроют приложение.", "Android призупинив роздачу на цьому телефоні. Вона продовжиться, коли на телефоні відкриють застосунок."},
         New String() {"e2e-missing", "state", "-", "This device cannot receive protected content yet, so nothing is sent to it through the server.", "Это устройство пока не умеет принимать защищённое содержимое, поэтому через сервер ему ничего не отправляется.", "Цей пристрій поки не вміє приймати захищений вміст, тому через сервер йому нічого не надсилається."},
+        New String() {"e2e-missing-peer", "state", "-", "The device that has this content cannot send it protected yet, so nothing from it comes through the server.", "Устройство, на котором это содержимое, пока не умеет передавать его защищённым, поэтому через сервер от него ничего не приходит.", "Пристрій, на якому цей вміст, поки не вміє передавати його захищеним, тому через сервер від нього нічого не надходить."},
         New String() {"key-changed", "state", "-", "The protection key of this device has changed, so nothing is sent to it. Remove the device from the account and add it again.", "Ключ защиты этого устройства изменился, поэтому ему ничего не отправляется. Удалите устройство из аккаунта и добавьте его снова.", "Ключ захисту цього пристрою змінився, тому йому нічого не надсилається. Видаліть пристрій з акаунта й додайте його знову."},
         New String() {"server-no-e2e", "state", "operator", "This server cannot carry protected content, so folders, broadcasts and the clipboard do not go through it.", "Этот сервер не умеет передавать защищённое содержимое, поэтому папки, трансляции и буфер через него не идут.", "Цей сервер не вміє передавати захищений вміст, тому папки, трансляції й буфер через нього не йдуть."},
         New String() {"sealed-failed", "local", "-", "This could not be opened on this device. Try again from the other device.", "Это не удалось открыть на этом устройстве. Повторите с другого устройства.", "Це не вдалося відкрити на цьому пристрої. Повторіть з іншого пристрою."},
@@ -131,7 +132,7 @@ Public Class ConnectionDiagnosisTests
 
     <Fact>
     Public Sub EveryRowOfTheMessageTablesIsPinnedVerbatimWithItsKindAndStep()
-        Assert.Equal(42, MessageRows.Length)
+        Assert.Equal(43, MessageRows.Length)
         Dim seen As New HashSet(Of String)()
         For Each row As String() In MessageRows
             Dim code As String = row(0)
@@ -189,7 +190,7 @@ Public Class ConnectionDiagnosisTests
             "limit-reached-clipboard", "not-permitted", "declined", "timeout", "unsupported",
             "unreachable-server", "unreachable-device", "unanswered", "tls-failed", "certificate-changed",
             "empty-credential", "server-offline", "resource-locked", "clipboard-empty",
-            "share-paused", "e2e-missing", "key-changed", "server-no-e2e", "sealed-failed", "format-unsupported", "admin-disabled", "refused"
+            "share-paused", "e2e-missing", "e2e-missing-peer", "key-changed", "server-no-e2e", "sealed-failed", "format-unsupported", "admin-disabled", "refused"
         }
 
         For Each code In codes
@@ -212,6 +213,35 @@ Public Class ConnectionDiagnosisTests
             Dim ends As Integer = text.Count(Function(c) c = "."c OrElse c = ChrW(&H3002) OrElse c = ChrW(&H964) OrElse c = ChrW(&H6D4))
             Assert.True(ends = 2, "share-paused in " & code & " has " & ends & " sentence ends")
         Next
+    End Sub
+
+    ''' <summary>DEVICE-EXCHANGE 1.12 item FB: `e2e-missing-peer` is a local state row (not a wire reason) with the catalog's English,
+    ''' Russian and Ukrainian words; each of the other table languages and ar, hi, bn, ur has a sentence of its own, none a copy of the
+    ''' English one nor of the `e2e-missing` row of its own language (that row blames this device, this one the other), and no sentence
+    ''' carries a placeholder, an ellipsis or a smart double quote. `OfCode` finds it and the wire reason table does not.</summary>
+    <Fact>
+    Public Sub E2eMissingPeerHasItsOwnSentenceInEveryInterfaceLanguageAndIsNotAWireReason()
+        Dim english As String = ConnectionDiagnosisLocalization.GetMessageText("e2e-missing-peer", "en")
+        Assert.Equal("The device that has this content cannot send it protected yet, so nothing from it comes through the server.", english)
+        For Each code As String In Localization.Codes.Concat(Locales13).Distinct()
+            Dim text As String = ConnectionDiagnosisLocalization.GetMessageText("e2e-missing-peer", code)
+            Assert.False(String.IsNullOrWhiteSpace(text), "e2e-missing-peer missing for " & code)
+            Assert.NotEqual("e2e-missing-peer", text)
+            Assert.NotEqual(ConnectionDiagnosisLocalization.GetMessageText("e2e-missing", code), text)
+            If code <> "en" Then Assert.NotEqual(english, text)
+            Assert.DoesNotContain("{0}", text)
+            Assert.DoesNotContain(ChrW(&H201C).ToString(), text)
+            Assert.DoesNotContain(ChrW(&H201D).ToString(), text)
+            Assert.DoesNotContain("...", text)
+        Next
+        Assert.Equal(ConnectionDiagnosisKind.State, ConnectionDiagnosisMessages.E2eMissingPeer.Kind)
+        Assert.False(ConnectionDiagnosisMessages.E2eMissingPeer.StepValue.HasValue)
+        Assert.False(ConnectionDiagnosisMessages.E2eMissingPeer.IsWalked)
+        Assert.Same(ConnectionDiagnosisMessages.E2eMissingPeer, ConnectionDiagnosisMessages.OfCode("e2e-missing-peer"))
+        ' a local state, not a wire reason (7.10 does not change): a server that sent this word would get the generic refusal
+        Assert.Same(ConnectionDiagnosisMessages.Refused, ConnectionDiagnosisMessages.OfWire("e2e-missing-peer"))
+        ' the row asks for no update (items DP and CK)
+        Assert.DoesNotContain("update", english, StringComparison.OrdinalIgnoreCase)
     End Sub
 
     ''' <summary>DEVICE-EXCHANGE 1.3 amendment of 2026-10-17 (named by LIVE-BROADCAST 1.1): the one `format-unsupported` sentence, in the

@@ -19,11 +19,11 @@ script - and only then this file.
 
 Source
 ------
-  contract ids : LETTERBOX-BARS 0.1, LETTERBOX-HALO 0.1 (both draft; owner FastMediaSorter_Lite)
+  contract ids : LETTERBOX-BARS 0.2, LETTERBOX-HALO 0.2 (both draft; owner FastMediaSorter_Lite)
   artifact     : letterbox-fill/vectors/letterbox-fill-vectors.json, in the shared contracts catalog
   generator    : letterbox-fill/reference/letterbox-fill.ps1 -WriteVectors
-                 (SHA-256 d63d3da9333300b5197524261780c05db0cfc4e31125a99b2e2088dd9d9b209d, not vendored)
-  taken on     : 2026-10-13
+                 (SHA-256 f3b6682dfa8a58fc9e777b3fe1ab224f750de96237c1bde85f58bbc826163958, not vendored)
+  taken on     : 2026-10-13 (0.1); re-taken 2026-11-17 at 0.2 (ticket L0330)
 
 Digest
 ------
@@ -32,4 +32,10 @@ instead of quietly redefining what "conformant" means. Re-taking the artifact is
 updates this file with it. The bytes are the catalog's own (CRLF, as generated), which is why
 .gitattributes marks this folder -text.
 
-  SHA-256  41540d7b0176b0c9a7457385d946e8f4ece65bbceb93d0e28701ed37fa354449  letterbox-fill-vectors.json
+  SHA-256  243c5a03176d3017df591fb069ee472e324f7ee0ba088416883955f275819e7a  letterbox-fill-vectors.json
+
+The 0.2 vectors were regenerated after the amendment of 2026-11-15 (catalog letterbox-fill section 8
+item A, recorded with the regeneration in section 9 on 2026-11-16): the reference interpolates on exact
+j/11 stops now, so halo.alphaRows and halo.stopApproximationMaxError read to the contract's 1e-4 again.
+The 0.1 file this replaced was taken 2026-10-13, SHA-256
+41540d7b0176b0c9a7457385d946e8f4ece65bbceb93d0e28701ed37fa354449, 16890 bytes.

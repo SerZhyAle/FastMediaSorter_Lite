@@ -54,8 +54,8 @@ Public Class ButtonGlyphCoverageTests
         For Each b As Button In all
             If String.IsNullOrWhiteSpace(b.Text) Then Continue For
             If OwnPicture.Contains(b.Name) Then Continue For
-            ' The settings nav tree's subordinate rows are caption-only by design (spec 210):
-            ' the page row carries the icon, the item is its indented text.
+            ' The settings nav tree's subordinate rows draw the rail's own per-row glyph (L0351), not a command
+            ' button glyph: they are destinations of the rail, and their pictures are pinned by SettingsRailTests.
             If b.Name.StartsWith("managerSettingsNavItem_", StringComparison.Ordinal) Then Continue For
             ' The navigation rail and the header tools render their own catalog glyph (ThemePalette-aware, 20 px); a
             ' picture is what this walk asks for, whichever mechanism drew it.

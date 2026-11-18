@@ -110,6 +110,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _exStateGuard.Invalidate()
         _exAccGuard.Invalidate()
         _clipSizeGuard.Invalidate()
+        ReleaseScheduledEngineEvents()
         DisposeExchangeResources()
         DisposeProducerResources()
         DisposeAccountResources()
@@ -166,7 +167,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                 If _secAccount IsNot Nothing Then BuildExchangeProducerRows(_secAccount)
                 _secDrive = CreateDriveSection()
                 _secScheduled = CreateScheduledSection()
-                _secHelp = CreateSettingsSection("help", Localization.T("Справка"))
+                ' L0332: the live broadcast's standing preferences; Nothing (no page) while the broadcast is not offered.
+                _secLive = CreateLiveSection()
+                _secHelp =CreateSettingsSection("help", Localization.T("Справка"))
                 BuildHelpSection(_secHelp)
                 AddShareLogActions(_secHelp)
                 BuildAboutRows(_secHelp)
@@ -356,7 +359,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Catch
             End Try
         Else
-            MessageBox.Show(Me, Localization.TF("{0} не найден рядом.", ProductNames.CompactForLabel),
+            ManagerBox.Show(Me, Localization.TF("{0} не найден рядом.", ProductNames.CompactForLabel),
                             ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
     End Sub
@@ -486,15 +489,15 @@ Partial Public NotInheritable Class Share_Settings_Form
         If IsDisposed OrElse Disposing Then Return
         Select Case result
             Case ServerFeatures.WithdrawResult.Declined
-                MessageBox.Show(Me, Localization.T("Ничего не изменено: права администратора не получены. Раздача остановлена - её можно снова включить в главном окне."),
+                ManagerBox.Show(Me, Localization.T("Ничего не изменено: права администратора не получены. Раздача остановлена - её можно снова включить в главном окне."),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case ServerFeatures.WithdrawResult.Failed
-                MessageBox.Show(Me, Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа»."),
+                ManagerBox.Show(Me, Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: Настройки менеджера - Справка - «Экспорт журналов для анализа»."),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case ServerFeatures.WithdrawResult.StillEnabledByInstaller
                 _changed = True
                 NotifySettingsChanged()
-                MessageBox.Show(Me, Localization.T("Разрешение в брандмауэре удалено, но функции сервера включены установщиком для всего компьютера. Чтобы выключить их полностью, измените установку: Параметры Windows - Приложения."),
+                ManagerBox.Show(Me, Localization.T("Разрешение в брандмауэре удалено, но функции сервера включены установщиком для всего компьютера. Чтобы выключить их полностью, измените установку: Параметры Windows - Приложения."),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case Else
                 _changed = True
@@ -531,6 +534,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             End If
             chkOpenOnStart.Checked = _settings.OpenWindowOnStartup
             End If
+            LoadLiveState()
             If chkLanOnly IsNot Nothing Then
             chkLanOnly.Checked = _settings.LanOnly
             UpdateLanOnlyNote()

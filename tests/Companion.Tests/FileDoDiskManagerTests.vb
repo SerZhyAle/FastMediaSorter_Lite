@@ -86,7 +86,7 @@ Public Class FileDoDiskManagerTests
         Assert.False(DiskSharing.IsMountedByFileDo(reason))
         Assert.Equal(reason, DiskSharing.PlainReason(reason))
         Assert.Equal("", DiskSharing.PlainReason(Nothing))
-        Assert.False(DiskSharing.IsMountedByFileDo(Nothing))
+        Assert.False(DiskSharing.IsMountedByFileDo(CStr(Nothing)))
     End Sub
 
     <Fact>
@@ -97,5 +97,76 @@ Public Class FileDoDiskManagerTests
         Dim failure As String = DiskSharing.FailureText(New DiskOperationRefusedException("already mounted by FileDO at E:; unmount it before sharing"))
         Assert.Contains("E:", failure)
         Assert.DoesNotContain("unmount it before sharing", failure)
+    End Sub
+
+    <Theory>
+    <InlineData("""C:\Program Files\FileDO\filedo_win.exe"" ""%1""", "C:\Program Files\FileDO")>
+    <InlineData("C:\Tools\FileDO\filedo_win.exe ""%1""", "C:\Tools\FileDO")>
+    <InlineData("""C:\Tools\FileDO\filedo_win.exe""", "C:\Tools\FileDO")>
+    <InlineData("C:\Tools\FileDO\filedo_win.exe", "C:\Tools\FileDO")>
+    <InlineData("", "")>
+    <InlineData(Nothing, "")>
+    Public Sub FileDo_ProgId_command_line_yields_install_directory(command As String, expected As String)
+        Assert.Equal(expected, FileDoDiskManager.InstallDirFromCommand(command))
+    End Sub
+
+    <Fact>
+    Public Sub Locate_with_inspection_requires_answering_executable()
+        Dim existsFunc As Func(Of String, Boolean) = Function(p) p.Contains("filedo_win.exe")
+        ' Non-answering executable is rejected even if file exists
+        Dim notAnswering As String = FileDoDiskManager.Locate("", {"C:\Bogus\FileDO"}, existsFunc, Function(p) False)
+        Assert.Equal("", notAnswering)
+        ' Answering executable is accepted
+        Dim answering As String = FileDoDiskManager.Locate("", {"C:\Tools\FileDO"}, existsFunc, Function(p) True)
+        Assert.Equal("C:\Tools\FileDO\filedo_win.exe", answering)
+    End Sub
+
+    <Fact>
+    Public Sub The_five_states_of_DISK_SHARE_1_5_are_distinguished()
+        ' 1. Absent: no status, FileDO not installed
+        Assert.Equal(FileDoInstallationState.Absent, FileDoDiskManager.ClassifyState(Nothing, Function() ""))
+
+        ' 2. InstalledStopped: no status or no error, FileDO installed
+        Assert.Equal(FileDoInstallationState.InstalledStopped, FileDoDiskManager.ClassifyState(Nothing, Function() "C:\Tools\filedo_win.exe"))
+        Dim emptyErrorStatus As New WorkerStatus With {.DiskSharingError = ""}
+        Assert.Equal(FileDoInstallationState.InstalledStopped, FileDoDiskManager.ClassifyState(emptyErrorStatus, Function() "C:\Tools\filedo_win.exe"))
+
+        ' 3. MissingDiskPayload: error mentions missing payload or cannot mount
+        Dim missingPayload As New WorkerStatus With {.DiskSharingError = "bundled FileDO is missing; install optional payload"}
+        Assert.Equal(FileDoInstallationState.MissingDiskPayload, FileDoDiskManager.ClassifyState(missingPayload, Function() "C:\Tools\filedo_win.exe"))
+
+        ' 4. Incompatible: error mentions predates or incompatible schema/version
+        Dim incompatible As New WorkerStatus With {.DiskSharingError = "bundled FileDO predates disk sharing; update FMS for Windows"}
+        Assert.Equal(FileDoInstallationState.Incompatible, FileDoDiskManager.ClassifyState(incompatible, Function() "C:\Tools\filedo_win.exe"))
+
+        ' 5. TransportOrIdentityFailure: error mentions LocalSystem/LocalService or pipe/identity failure
+        Dim transportFail As New WorkerStatus With {.DiskSharingError = "disk sharing requires a LocalSystem holder; configure the Server service account"}
+        Assert.Equal(FileDoInstallationState.TransportOrIdentityFailure, FileDoDiskManager.ClassifyState(transportFail, Function() "C:\Tools\filedo_win.exe"))
+    End Sub
+
+    <Fact>
+    Public Sub Holder_vocabulary_identifies_FileDO_holder()
+        Assert.True(DiskSharing.IsFileDoHolder("filedo"))
+        Assert.True(DiskSharing.IsFileDoHolder("file-do"))
+        Assert.True(DiskSharing.IsFileDoHolder("FileDO"))
+        Assert.True(DiskSharing.IsFileDoHolder(" FILEDO "))
+        Assert.False(DiskSharing.IsFileDoHolder("service"))
+        Assert.False(DiskSharing.IsFileDoHolder("session"))
+        Assert.False(DiskSharing.IsFileDoHolder("none"))
+        Assert.False(DiskSharing.IsFileDoHolder(""))
+        Assert.False(DiskSharing.IsFileDoHolder(Nothing))
+
+        ' SharedDisk object holder check
+        Assert.True(DiskSharing.IsMountedByFileDo(New SharedDisk With {.Holder = "filedo"}))
+        Assert.True(DiskSharing.IsMountedByFileDo(New SharedDisk With {.Holder = "file-do"}))
+        Assert.False(DiskSharing.IsMountedByFileDo(New SharedDisk With {.Holder = "session"}))
+        Assert.False(DiskSharing.IsMountedByFileDo(New SharedDisk With {.Holder = "none"}))
+        Assert.False(DiskSharing.IsMountedByFileDo(CType(Nothing, SharedDisk)))
+
+        ' String overload supports both holder token and legacy message
+        Assert.True(DiskSharing.IsMountedByFileDo("filedo"))
+        Assert.True(DiskSharing.IsMountedByFileDo("file-do"))
+        Assert.True(DiskSharing.IsMountedByFileDo("already mounted by FileDO at D:"))
+        Assert.False(DiskSharing.IsMountedByFileDo("session"))
     End Sub
 End Class

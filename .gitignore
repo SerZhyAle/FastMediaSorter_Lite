@@ -72,3 +72,6 @@ client_secret*.json
 
 # Private working specifications — retained locally, never committed.
 /docs/specifications/
+
+# Local specification workspace and archive.
+/PLAN/

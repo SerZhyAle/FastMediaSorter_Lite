@@ -45,15 +45,26 @@ Friend Module WorkerStateDir
         End Try
     End Function
 
-    ''' <summary>The per-user state directory (the User edition's, and the worker's default); "" when it cannot be named.</summary>
+    ''' <summary>
+    ''' The per-user state directory (the User edition's, and the worker's default); "" when it cannot be named.
+    ''' WORKER-LAUNCH 1.0 section 1 names <c>%LOCALAPPDATA%\FastMediaSorterCompanion</c> with the platform
+    ''' user-config directory as the fallback when the variable is absent - the worker's own reading, whose
+    ''' Windows user-config directory is the roaming application data folder.
+    ''' </summary>
     Friend Function UserDir() As String
         Try
-            Dim base As String = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-            If String.IsNullOrEmpty(base) Then Return ""
-            Return Path.Combine(base, FolderName)
+            Return UserDirFrom(Environment.GetEnvironmentVariable("LOCALAPPDATA"),
+                               Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData))
         Catch
             Return ""
         End Try
+    End Function
+
+    ''' <summary>The user-directory rule as a pure function of its two inputs (what the tests drive).</summary>
+    Friend Function UserDirFrom(localAppData As String, userConfigDir As String) As String
+        Dim base As String = If(String.IsNullOrEmpty(localAppData), If(userConfigDir, ""), localAppData)
+        If base.Length = 0 Then Return ""
+        Return Path.Combine(base, FolderName)
     End Function
 
     ''' <summary>The explicit override as the worker reads it (non-empty, not trimmed); "" when there is none.</summary>

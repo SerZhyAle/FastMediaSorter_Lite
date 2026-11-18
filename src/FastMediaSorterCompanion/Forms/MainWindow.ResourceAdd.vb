@@ -80,7 +80,7 @@ Partial Public NotInheritable Class MainWindow
             Function() New PhoneCodeRelay(ViewerExePathForPhoneRelay).RelayCode(payload))
         Select Case outcome
             Case PhoneCodeRelay.RelayOutcome.Delivered
-                MessageBox.Show(Me, Localization.T("Код передан: подтвердите добавление в окне Fast Media Sorter."),
+                ManagerBox.Show(Me, Localization.T("Код передан: подтвердите добавление в окне Fast Media Sorter."),
                                 ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case PhoneCodeRelay.RelayOutcome.NoViewer
                 PhoneCodeClipboardFallback(payload, Localization.T("Fast Media Sorter не найден на этом компьютере. Код помещён в буфер обмена - установите программу и вставьте код через «Импорт из буфера» в панели ресурсов."))
@@ -91,11 +91,11 @@ Partial Public NotInheritable Class MainWindow
 
     Private Sub PhoneCodeClipboardFallback(code As String, message As String)
         If Not SecureClipboard.SetSecret(code) Then
-            MessageBox.Show(Me, Localization.T("Буфер обмена занят другой программой"),
+            ManagerBox.Show(Me, Localization.T("Буфер обмена занят другой программой"),
                             ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
-        MessageBox.Show(Me, message, ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        ManagerBox.Show(Me, message, ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub RefreshEmptyResourceHint()
@@ -136,7 +136,7 @@ Partial Public NotInheritable Class MainWindow
         End Function
         Public Sub WarnNetwork(owner As Form, path As String) Implements IResourceAddActions.WarnNetwork
             If FolderAccess.NetworkRootsInServerMode({New ShareFolder With {.hostPath = path}}).Count = 0 Then Return
-            MessageBox.Show(owner, HostingText.FolderNoAccessTip(), ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ManagerBox.Show(owner, HostingText.FolderNoAccessTip(), ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Sub
         Public Function Parameters(path As String) As ShareRootParams Implements IResourceAddActions.Parameters
             Dim value = ShareRootParamsStore.GetFor(path)

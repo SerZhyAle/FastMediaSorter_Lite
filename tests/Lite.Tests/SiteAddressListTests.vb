@@ -32,6 +32,8 @@ Public Class SiteAddressListTests
     Public Sub TheTrustPageIsListedAndItsLocaleFormIsTheListsOwn()
         Assert.Contains(SitePages.TrustPageUrl("en"), SiteAddressList.ListedFor(Holder))
         Assert.Equal(SitePages.TrustPageUrl(""), SitePages.TrustPageUrl("en"))
+        ' A language the site has no copy of reads the English page (SITE-STRUCTURE section 8 C), never a missing one.
+        Assert.Equal(SitePages.TrustPageUrl("en"), SitePages.TrustPageUrl("xx"))
         ' The form is stated once, in the list's trust group; the builder must produce exactly it.
         Dim form As String = SiteAddressList.LocaleForm("trust")
         Assert.NotNull(form)

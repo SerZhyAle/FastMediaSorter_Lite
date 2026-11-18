@@ -68,9 +68,14 @@ Friend NotInheritable Class ExchangeOpenResult
     ''' <summary>The certificate fingerprint seen, when the handshake got that far.</summary>
     Public ReadOnly Fingerprint As String
     Public ReadOnly KeyPin As String
+    ''' <summary>The wire spelling of a `refused` reason exactly as the server wrote it, known to <see cref="ExchangeRefusals"/> or not
+    ''' (empty when the outcome is not a refusal). A tunnel `connect` of a broadcast is refused `ended` (DEVICE-EXCHANGE item DY), a
+    ''' reason the append-only table does not hold, and a live receiver has to tell it from `unavailable`.</summary>
+    Public ReadOnly RefusalReason As String
 
     Public Sub New(outcome As ExchangeOpenOutcome, stream As Stream, reader As ExchangeFrameReader, writer As ExchangeFrameWriter,
-                   welcome As ExchangeEnvelope, refusal As ExchangeRefusal, fingerprint As String, Optional keyPin As String = "")
+                   welcome As ExchangeEnvelope, refusal As ExchangeRefusal, fingerprint As String, Optional keyPin As String = "",
+                   Optional refusalReason As String = "")
         Me.Outcome = outcome
         Me.Stream = stream
         Me.Reader = reader
@@ -79,6 +84,7 @@ Friend NotInheritable Class ExchangeOpenResult
         Me.Refusal = refusal
         Me.Fingerprint = If(fingerprint, "")
         Me.KeyPin = If(keyPin, "")
+        Me.RefusalReason = If(refusalReason, "")
     End Sub
 
     Public Shared Function Failed(outcome As ExchangeOpenOutcome, Optional refusal As ExchangeRefusal = ExchangeRefusal.Unknown, Optional fingerprint As String = "") As ExchangeOpenResult
@@ -249,6 +255,9 @@ Friend NotInheritable Class ExchangeEnvelopeTypes
     Public Const SettingsSaved As String = "settings_saved"
     Public Const SettingsGetStandard As String = "settings_get_standard"
     Public Const SettingsStandardPayload As String = "settings_standard_payload"
+    ' ticket L0338 / DEVICE-EXCHANGE 1.15 items FQ-FV: remote schedule
+    Public Const ScheduleRequest As String = "schedule-request"
+    Public Const ScheduleResult As String = "schedule-result"
 
 End Class
 
@@ -287,6 +296,7 @@ Friend NotInheritable Class ExchangeMessages
         Dim point As Byte() = Nothing
         If ExchangeDeviceKey.TryParseKem(description.E2eKem, point) Then
             capabilities.Add(ExchangeSealedNames.CapabilityE2e)
+            capabilities.Add("schedule-v1")
             env.SetRecord("e2eKey", "{""v"":" & ExchangeDeviceKey.E2eKeyVersion.ToString(Globalization.CultureInfo.InvariantCulture) &
                                     ",""kem"":""" & description.E2eKem & """}")
         End If
@@ -459,7 +469,8 @@ Friend NotInheritable Class ExchangeDataStreams
             Await session.Writer.WriteAsync(connect, ct).ConfigureAwait(False)
             Dim reply As ExchangeEnvelope = Await ExchangeSessions.ReadKnownAsync(session.Reader, ct).ConfigureAwait(False)
             If reply.Is(ExchangeEnvelopeTypes.Refused) Then
-                Return New ExchangeOpenResult(ExchangeOpenOutcome.Refused, Nothing, Nothing, Nothing, Nothing, reply.Refusal(), session.Fingerprint)
+                Return New ExchangeOpenResult(ExchangeOpenOutcome.Refused, Nothing, Nothing, Nothing, Nothing, reply.Refusal(), session.Fingerprint,
+                                              refusalReason:=reply.Text("reason"))
             End If
             If Not reply.Is(ExchangeEnvelopeTypes.Connected) Then Return ExchangeOpenResult.Failed(ExchangeOpenOutcome.Protocol, fingerprint:=session.Fingerprint)
             ok = True

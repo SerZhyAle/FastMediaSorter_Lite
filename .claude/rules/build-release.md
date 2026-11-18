@@ -44,11 +44,25 @@ not tested until the release".
 | Site render targets, conformance | `pwsh -NoProfile -File tools/Build-SitePages.ps1 -Check` - 5.773 s; release only | 2026-11-07, L0207 direct timed call |
 | Site Pages artifact, assemble and resolve every link | `pwsh -NoProfile -File tools/Build-SiteArtifact.ps1 -OutDir temp/<ticket>/site-artifact` - 5.17 s (4.9 s inside), exit 0, 2114 files; release only (3.76 s before the ru/uk sibling pages) | 2026-11-08, L0207 direct timed call |
 | Window help pages, write (a generator, not a check) | `pwsh -NoProfile -File tools/Build-ContextHelp.ps1` - 1.1 s, exit 0, 702 pages | 2026-11-07, L0207 direct timed call |
+| Window help pages, drift check (committed corpus equals a fresh generation, scratch tree) | `pwsh -NoProfile -File tools/Build-ContextHelp.ps1 -Check` - 2.74 s, exit 0, 705 files; its fixtures `tests/Integration/ContextHelpDriftFixtures.ps1` 13.9 s, release only | 2026-11-15, L0331 direct timed call |
+| Store listing builder, conformance and fixtures | `pwsh -NoProfile -File publishing/store/Build-ListingData.ps1 -Check` - 0.71 s, exit 0; `tests/Integration/ListingBuilderFixtures.ps1` 3.58 s, exit 0 (release tier, in `Run-AllTests`) | 2026-11-15, L0331 direct timed call |
+| `Build-LibWebpDecoder.ps1 -Check` (committed DLLs vs PROVENANCE.txt and the Windows 7 import list; needs the VS C++ tools) | `pwsh -NoProfile -File tools/Build-LibWebpDecoder.ps1 -Check` - 0.44 s, exit 0, hand-run | 2026-11-15, L0331 direct timed call |
+| Site address list (held addresses, locale siblings, released pages and anchors; offline) | `pwsh -NoProfile -File tools/Test-SiteAddresses.ps1` - 1 s, exit 0, 15 released pages with 21 anchors; its fixtures `tests/Integration/SiteAddresses.ps1` 6.6 s (13 broken variants), release only; `-Live` is hand-run after the site is deployed | 2026-11-15, L0331 direct timed call |
 | All unmeasured build, test and gate commands | Release only until measured | 2026-10-29, L0282 inventory |
 
 The full release command is `pwsh -NoProfile -File tools/Release.ps1`: its preflight runs
 `tools/Run-AllTests.ps1` and `tools/Build-OfflineRelease.ps1`. Other areas have no measured fast selector;
 do not treat that absence as a passing test.
+
+### Contract catch-up - the first step of every release (L0323, owner order 2026-11-15)
+
+Before the version is cut, repeat the catch-up for the contracts that moved since the last release; the contract gate of the `release` skill (canon `CONTRACTS` section 6) reads the result.
+
+1. For each registry name of this product - `FastMediaSorter_Lite`, `FMS Share Manager`, `FastMediaSorter Windows` - generate the live synchronization spec with the harness script of the `sza` plugin: `pwsh -NoProfile -File "<sza plugin root>/tools/contract-lag.ps1" -Product "<name>" -EmitSpec -OutFile temp/<ticket>/contract-catchup-<name>.md` (the plugin root is resolved as the `contract-sync` skill does). The catalog moves daily: never work from an older copy of the spec.
+2. Run the `contract-sync` skill's catch-up path with that spec (its steps 4-6): read every document-log entry since the row's synchronized version against the code, and fix a real divergence here or record it as a dated exception (`RULES` section 7). A row that is `pending`, `partial` or `unparsed` is normalised by this product. Edit only this product's own registry rows and its own `docs/contracts/` pointers; a problem in a contract goes in as a `PROPOSAL-<date>-<topic>.md` beside it, never as an edit.
+3. Done when `contract-lag.ps1 -Product <name>` shows no `behind`, `partial`, `pending` or `unparsed` row of this product without a dated reason in the row; the audit records the command, its exit code and the remaining count. A release is not cut on a stale or `behind` row without a dated reason.
+
+The 2026-11-15 run (ticket L0323) is the baseline: its per-slice audit is the folder `L0323_contract-catchup-20261115/` beside the ticket (under `docs/specifications/done/` once the ticket is closed) and its remediation tickets are L0324 to L0331. The registry rows named `FMS Companion` and `FMS Companion (worker)` belong to the worker repository (`fms_companion`), not to this one; this repository never edits them.
 
 ### UI form checks run per change, never in the release (owner decision 2026-11-13)
 

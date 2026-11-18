@@ -76,7 +76,7 @@ Public NotInheritable Class ContextHelpUi
         Dim edge As Integer = Math.Max(44, CInt(Math.Round(44.0 * form.DeviceDpi / 96.0)))
         Dim helpText As String = Localization.T("Справка") & " (F1)"
         Dim button As New Button With {
-            .Name = "contextHelp",
+            .Name = ContextHelp.HelpButtonName,
             .Size = New Size(edge, edge),
             .AutoSize = False,
             .TabStop = True,
@@ -98,6 +98,25 @@ Public NotInheritable Class ContextHelpUi
             ContextHelp.Open(form)
         End Sub
         Return button
+    End Function
+
+    ''' <summary>CONTEXT-HELP rule 3, second sentence: the anchor of the entry that explains the control that has the focus in
+    ''' <paramref name="form"/>, or Nothing for the top of its help. The focus is followed down through nested container
+    ''' controls, then the chain of parents is read outwards against the window's <c>elements</c> in help-map.json.</summary>
+    Public Shared Function FocusedElement(form As Form) As String
+        If form Is Nothing OrElse form.IsDisposed Then Return Nothing
+        Dim focused As Control = form.ActiveControl
+        Do
+            Dim container As ContainerControl = TryCast(focused, ContainerControl)
+            If container Is Nothing OrElse container.ActiveControl Is Nothing Then Exit Do
+            focused = container.ActiveControl
+        Loop
+        Dim names As New List(Of String)()
+        Do While focused IsNot Nothing AndAlso focused IsNot form
+            names.Add(focused.Name)
+            focused = focused.Parent
+        Loop
+        Return ContextHelp.ElementFor(ContextHelp.Inventory, ContextHelp.SurfaceId(form), names)
     End Function
 
     Public Shared Sub Attach(form As Form)
@@ -152,12 +171,12 @@ Public NotInheritable Class ContextHelpUi
             If e.KeyCode = Keys.F1 AndAlso Not e.Alt AndAlso Not e.Control AndAlso Not e.Shift Then
                 e.Handled = True
                 e.SuppressKeyPress = True
-                ContextHelp.Open(form)
+                ContextHelp.Open(form, FocusedElement(form))
             End If
         End Sub
         AddHandler form.HelpRequested, Sub(sender, hlpevent)
             hlpevent.Handled = True
-            ContextHelp.Open(form)
+            ContextHelp.Open(form, FocusedElement(form))
         End Sub
     End Sub
 

@@ -12,7 +12,11 @@
       1. Fresh target receives identity and fingerprint is unchanged;
       2. Target already holding same identity is left untouched (-OnlyWhenTargetIsFresh);
       3. Target holding a DIFFERENT identity stops migration with exit code 7;
-      4. Two candidate user directories stop instead of choosing (exit code 10).
+      4. Two candidate user directories stop instead of choosing (exit code 10);
+      5. A damaged host key (source or target) stops the migration at the inspection with exit code 6,
+         copies nothing and overwrites nothing (WORKER-LAUNCH section 1, "corrupt identity");
+      6. Malformed worker flags - --datadir or --inspect-datadir without a value, --inspect-datadir together
+         with --service, an unknown flag - are refused with a non-zero exit (WORKER-LAUNCH section 1, "malformed flags").
 
     Exit codes (CHECK-VERDICT):
       0 - all identity migration checks passed;
@@ -177,6 +181,75 @@ try {
 
     Check '4. Multiple candidate user directories stop migration' ($r4.ExitCode -eq 10) "exit $($r4.ExitCode) (expected 10)"
     Check '...and log explains multiple identities' ($r4.Output -match 'several user profiles hold a Fast Media Sorter share identity') ''
+
+    # ------------------------------------------------------------
+    # 5. A damaged identity stops at the inspection (exit code 6) and nothing is copied or overwritten
+    #    (WORKER-LAUNCH section 1: "refuse corrupt keys"; the worker refuses to parse the key, Get-StateInfo turns that into Fail 6)
+    # ------------------------------------------------------------
+    $bad5 = Join-Path $testRoot 'case5-corrupt'
+    New-Item -ItemType Directory -Path $bad5 -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $bad5 'hostkey') -Value 'this is not an ssh private key' -Encoding ASCII
+
+    $r5a = Invoke-StateAction "Get-StateInfo '$bad5' | ConvertTo-Json"
+    Check '5. A damaged host key makes the state inspection fail' ($r5a.ExitCode -eq 6) "exit $($r5a.ExitCode) (expected 6)"
+
+    # 5b. a damaged SOURCE: the migration stops before it creates the destination
+    $dst5b = Join-Path $testRoot 'case5b-dst'
+    $r5b = Invoke-StateAction "Copy-State '$bad5' '$dst5b'"
+    Check '...and a damaged source stops the migration (exit 6)' ($r5b.ExitCode -eq 6) "exit $($r5b.ExitCode) (expected 6)"
+    Check '...and nothing was created at the destination' (-not (Test-Path -LiteralPath $dst5b)) ''
+
+    # 5c. a damaged TARGET next to a good source: the migration stops and the damaged file is left as it was
+    $src5c = Join-Path $testRoot 'case5c-src'
+    $dst5c = Join-Path $testRoot 'case5c-dst'
+    New-TestHostKey $src5c
+    New-Item -ItemType Directory -Path $dst5c -Force | Out-Null
+    $damaged = 'this is not an ssh private key either'
+    Set-Content -LiteralPath (Join-Path $dst5c 'hostkey') -Value $damaged -Encoding ASCII
+    $r5c = Invoke-StateAction "Copy-State '$src5c' '$dst5c'"
+    $dst5cText = (Get-Content -LiteralPath (Join-Path $dst5c 'hostkey') -Raw).Trim()
+    Check '...and a damaged target stops the migration (exit 6)' ($r5c.ExitCode -eq 6) "exit $($r5c.ExitCode) (expected 6)"
+    Check '...and the damaged target is not overwritten' ($dst5cText -eq $damaged) ''
+
+    # ------------------------------------------------------------
+    # 6. Malformed worker flags are refused with a non-zero exit and leave no state behind
+    #    (WORKER-LAUNCH section 1 test line: "malformed flags"; --inspect-datadir cannot be combined with --service)
+    # ------------------------------------------------------------
+    function Invoke-WorkerFlags([string[]]$flagArgs) {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $worker
+        # one command-line string, so the same code runs under Windows PowerShell 5.1 and pwsh 7 (no ArgumentList)
+        $psi.Arguments = (($flagArgs | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' ')
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        $p = [System.Diagnostics.Process]::Start($psi)
+        $stdout = $p.StandardOutput.ReadToEndAsync()
+        $stderr = $p.StandardError.ReadToEndAsync()
+        if (-not $p.WaitForExit(15000)) {
+            try { $p.Kill() } catch { }
+            return [pscustomobject]@{ ExitCode = -1; Text = 'timed out'; TimedOut = $true }
+        }
+        return [pscustomobject]@{ ExitCode = $p.ExitCode; Text = ("$($stdout.Result) $($stderr.Result)").Trim(); TimedOut = $false }
+    }
+
+    $empty6 = Join-Path $testRoot 'case6-empty'
+    New-Item -ItemType Directory -Path $empty6 -Force | Out-Null
+    $flagCases = @(
+        @{ Name = '--datadir without a value';                  Args = @('--datadir') },
+        @{ Name = '--inspect-datadir without a value';          Args = @('--inspect-datadir') },
+        @{ Name = '--inspect-datadir together with --service';  Args = @('--inspect-datadir', $empty6, '--service') },
+        @{ Name = 'an unknown flag';                            Args = @('--malformed-flag-for-the-launch-check') }
+    )
+    foreach ($case in $flagCases) {
+        $run = Invoke-WorkerFlags $case.Args
+        $refused = (-not $run.TimedOut) -and $run.ExitCode -ne 0
+        $detail = "exit $($run.ExitCode) $($run.Text)"
+        if ($detail.Length -gt 120) { $detail = $detail.Substring(0, 120) }
+        Check ('6. The worker refuses ' + $case.Name) $refused $detail
+    }
+    Check '...and a refused flag left the inspected directory empty' (@(Get-ChildItem -LiteralPath $empty6 -Force).Count -eq 0) ''
 
 } finally {
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue

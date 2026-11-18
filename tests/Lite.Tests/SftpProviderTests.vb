@@ -4,6 +4,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Threading
+Imports System.Threading.Tasks
 Imports Xunit
 
 Public Class SftpProviderTests
@@ -133,6 +134,97 @@ Public Class SftpProviderTests
                 Assert.Equal(ResourceFailureKind.Cancelled, ex.Failure.Kind)
             End Using
         End Using
+    End Sub
+
+    ' ---- SHARE-SESSION 1.4 item B: the mid-session reconnect (ReconnectAllLocked) at provider level (L0335) -------------------
+    ' A claim that rules 7, 8 and 10 hold on the reconnect path rests on a run, not on reading the code. These facts drive the
+    ' provider's own path with an injected round: the round stands for the race over EVERY stored path (ResourceConnect builds it),
+    ' so what is pinned here is that a lost connection always asks the round, drops the old connection first, and never repeats a
+    ' round after a refusal. The live scenario 5 (a real worker, a wrong host key at the redial) stays a hand run.
+
+    ''' <summary>Records the moment the old connection's lease is released, in the order the round is entered.</summary>
+    Private NotInheritable Class ReleaseRecorder
+        Implements IDisposable
+
+        Private ReadOnly events As List(Of String)
+
+        Public Sub New(events As List(Of String))
+            Me.events = events
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            events.Add("released")
+        End Sub
+    End Class
+
+    ''' <summary>A clock that never waits: the backoff ladder is asserted by the number of rounds, not by elapsed time.</summary>
+    Private NotInheritable Class InstantClock
+        Implements IResolutionClock
+
+        Public ReadOnly Property NowMs As Long Implements IResolutionClock.NowMs
+            Get
+                Return 0L
+            End Get
+        End Property
+
+        Public Function Delay(ms As Integer, ct As CancellationToken) As Task Implements IResolutionClock.Delay
+            Return Task.CompletedTask
+        End Function
+    End Class
+
+    Private Shared Function NewReconnectingProvider(round As Func(Of CancellationToken, Task(Of ResourceResult(Of SftpProvider)))) As SftpProvider
+        Dim gate As New HostKeyGate("", Function(fingerprint, token) False, Function(fingerprint) True, Function() 0L)
+        Dim provider As New SftpProvider(New ResourceDescriptor With {.Host = "unreachable.invalid", .UserName = "user", .Port = 22}, "pass", gate)
+        provider.ReconnectRound = round
+        provider.ReconnectClock = New InstantClock()
+        Return provider
+    End Function
+
+    <Fact>
+    Public Sub Mid_session_reconnect_releases_the_old_connection_before_the_first_round()
+        Dim events As New List(Of String)()
+        Using provider As SftpProvider = NewReconnectingProvider(
+            Function(token)
+                events.Add("round")
+                Return Task.FromResult(ResourceResult(Of SftpProvider).Fail(New ResourceFailure(ResourceFailureKind.Auth)))
+            End Function)
+            provider.OwnedResource = New ReleaseRecorder(events)
+            Assert.Throws(Of ResourceFailureException)(Sub() provider.EnsureConnected())
+        End Using
+        Assert.Equal(New String() {"released", "round"}, events.ToArray())
+    End Sub
+
+    <Theory>
+    <InlineData(ResourceFailureKind.KeyMismatch)>
+    <InlineData(ResourceFailureKind.Auth)>
+    Public Sub Mid_session_reconnect_never_repeats_a_round_after_a_host_key_or_credential_refusal(kind As Integer)
+        Dim rounds As Integer = 0
+        Using provider As SftpProvider = NewReconnectingProvider(
+            Function(token)
+                rounds += 1
+                Return Task.FromResult(ResourceResult(Of SftpProvider).Fail(New ResourceFailure(CType(kind, ResourceFailureKind))))
+            End Function)
+            Dim ex = Assert.Throws(Of ResourceFailureException)(Sub() provider.EnsureConnected())
+            Assert.Equal(CType(kind, ResourceFailureKind), ex.Failure.Kind)
+            Assert.False(ex.Failure.IsRetryable)
+        End Using
+        Assert.Equal(1, rounds)
+    End Sub
+
+    <Fact>
+    Public Sub Mid_session_reconnect_asks_the_round_on_every_try_and_never_dials_its_own_endpoint()
+        Dim rounds As Integer = 0
+        Using provider As SftpProvider = NewReconnectingProvider(
+            Function(token)
+                rounds += 1
+                ' Timeout is the round's own verdict: a provider that dialled its own (unresolvable) host would report Transport.
+                Return Task.FromResult(ResourceResult(Of SftpProvider).Fail(New ResourceFailure(ResourceFailureKind.Timeout)))
+            End Function)
+            Dim ex = Assert.Throws(Of ResourceFailureException)(Sub() provider.EnsureConnected())
+            Assert.Equal(ResourceFailureKind.Timeout, ex.Failure.Kind)
+        End Using
+        ' The initial round plus the three retries of the ladder (1, 4 and 10 s): every one is a whole race over all stored paths.
+        Assert.Equal(ResolutionLimits.BackoffMs.Length + 1, rounds)
     End Sub
 
     <Theory>

@@ -559,9 +559,9 @@ Partial Public Class Table_Form
     ''' <see cref="IconMap"/>: the picture and the canonical name come from the vocabulary
     ''' (ICON-SET), never from a second table kept here.</summary>
     Private Shared ReadOnly ModernNavControlNames As String() = {
-        "settingsNavGeneral", "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
-        "settingsNavFileManager", "settingsNavResources",
-        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavAbout", "settingsNavDocuments"}
+        "settingsNavGeneral", "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavDocuments",
+        "settingsNavFiles", "settingsNavFileManager", "settingsNavResources",
+        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavAbout"}
 
     Private ReadOnly modernNavTips As New ToolTip()
 
@@ -570,9 +570,9 @@ Partial Public Class Table_Form
         ' target, a 16 px glyph, an 8 px glyph-to-caption gap). The list AutoScrolls, so a shortened window shows a
         ' slice of it instead of clipping entries away; a caption wraps and grows its row (ArrangeModernRail).
         Dim top As Integer = 0
-        Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
-                                     "File manager", "Server and resources",
-                                     "OCR", "Translation", "Storage", "About", "Documents"}
+        Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Documents",
+                                     "Files and system", "File manager", "Server and resources",
+                                     "OCR", "Translation", "Storage", "About"}
         ' The list: accessible role List, one selected row, one tab stop (rule 7).
         Dim navigation As New SettingsRailList With {.Dock = DockStyle.Fill}
         modernSettingsRail = navigation
@@ -771,7 +771,8 @@ Partial Public Class Table_Form
         Tab_Control.TabPages.Add(modernAboutPage)
         Tab_Control.TabPages.Insert(0, modernGeneralPage)
         Tab_Control.TabPages.Insert(Tab_Control.TabPages.IndexOf(modernAboutPage), modernStoragePage)
-        Tab_Control.TabPages.Add(modernDocumentsPage)
+        ' Slot 5 is "Files and system": Documents sits directly above it (L0341).
+        Tab_Control.TabPages.Insert(5, modernDocumentsPage)
     End Sub
 
     Private Sub ModernSettingsNavClicked(sender As Object, e As EventArgs)
@@ -835,6 +836,10 @@ Partial Public Class Table_Form
         If pendingOpenAtFileManager Then
             pendingOpenAtFileManager = False
             RevealModernSetting("file_manager_view_mode")
+        End If
+        If pendingOpenAtLiveCast Then
+            pendingOpenAtLiveCast = False
+            RevealModernSetting("live_auto_cast")
         End If
         QueueRestoreSettingsContext()
     End Sub
@@ -952,13 +957,14 @@ Partial Public Class Table_Form
              Localization.T("Изображения"),
              Localization.T("Видео"),
              Localization.T("Аудио"),
+             Localization.T("Документы"),
              Localization.T("Файлы"),
              Localization.T("Файловый менеджер"),
              Localization.T("Сервер и ресурсы"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
              Localization.T("Хранилище"),
-             Localization.T("О программе"), Localization.T("Документы")}
+             Localization.T("О программе")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
             Tab_Control.TabPages(index).Text = navLabels(index)
@@ -988,14 +994,14 @@ Partial Public Class Table_Form
              Localization.T("Фон изображения") & ". " & Localization.T("Поведение слайд-шоу") & ".",
              Localization.T("Дорожки и субтитры") & ". " & Localization.T("Информация и управление") & ".",
              Localization.T("Обложки, управление и поведение аудиодорожек."),
+             Localization.T("Настройки чтения не изменяют исходный файл. Сброс оформления сохраняет закладки."),
              Localization.T("Операции с файлами") & ". " & Localization.T("Типы файлов") & ".",
              Localization.T("Вид, фильтры содержимого и открытие файлов."),
              Localization.T("Серверы и сетевые папки") & ". " & Localization.T("SFTP-сервер и приложение Android."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
              Localization.T("Управление кэшем"),
-             Localization.T("Версия приложения, документация и ссылки проекта."),
-             Localization.T("Настройки чтения не изменяют исходный файл. Сброс оформления сохраняет закладки.")}
+             Localization.T("Версия приложения, документация и ссылки проекта.")}
 
         If index >= modernSettingsNavButtons.Length Then index = 0
         modernSettingsTitle.Text = modernSettingsNavButtons(index).Text
@@ -1286,6 +1292,7 @@ Partial Public Class Table_Form
             Case "secure_show_true_name" : Return Localization.T("Показывать настоящее имя файла")
             Case "secure_open_with" : Return Localization.T("Контейнеры .fd-sec")
             Case "live_open_with" : Return Localization.T("Файлы .fmsbcast (live-трансляции)")
+            Case "live_auto_cast" : Return Localization.T("Принимать трансляции автоматически")
             Case "settings_export_personal" : Return Localization.T("Включить личные данные")
             Case "settings_export" : Return Localization.T("Экспорт дополнительных настроек")
             Case "settings_import" : Return Localization.T("Импорт дополнительных настроек")
@@ -1448,6 +1455,7 @@ Partial Public Class Table_Form
             Case "secure_show_true_name" : Return Localization.T("Открытый контейнер показывает имя файла, который в нём спрятан - в строке состояния и в подписи поверх картинки. Выключите, если на экран смотрит кто-то ещё.")
             Case "secure_open_with" : Return Localization.T("Добавляет программу в меню «Открыть с помощью» для .fd-sec, ничего не отбирая у той программы, которой эти файлы принадлежат сейчас.")
             Case "live_open_with" : Return Localization.T("Файлы .fmsbcast присылают телефон и часы, когда вещают звук. Если у них ещё нет программы по умолчанию, их будет открывать эта; чужую запись она не заменяет, а только появляется в меню «Открыть с помощью».")
+            Case "live_auto_cast" : Return Localization.T("Входящая трансляция с вашего устройства открывается без вопроса. Если выключено, перед началом воспроизведения программа спрашивает, принять ли её.")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
             Case "settings_export" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.")
             Case "settings_import" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.") & " " & Localization.T("Читает параметры из файла. Прежний профиль сохраняется в резервную копию.")

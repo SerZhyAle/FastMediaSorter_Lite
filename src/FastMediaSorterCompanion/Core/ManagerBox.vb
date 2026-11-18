@@ -1,5 +1,6 @@
 Option Strict On
 
+Imports System.Drawing
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -14,9 +15,10 @@ Imports System.Windows.Forms
 ''' by its class name alone.
 '''
 ''' What stays the system box, on purpose: <c>OK</c> alone (a one-line notice), <c>RetryCancel</c> and
-''' <c>AbortRetryIgnore</c> (none is a question set; no call site of this program uses the last two). A source scan
-''' (<c>ManagerBoxTests</c>) fails on a question set passed to the stock <c>MessageBox.Show</c> anywhere in this program,
-''' so a new one cannot creep back.
+''' <c>AbortRetryIgnore</c> (none is a question set; no call site of this program uses the last two) - but only through
+''' this class (<see cref="Notice"/>: reading direction, owner or anchor). A source scan (<c>ManagerBoxTests</c>) fails on a
+''' question set passed to the stock <c>MessageBox.Show</c> anywhere in this program, and on ANY stock call in the
+''' Share Manager's own tree, so a new one cannot creep back.
 '''
 ''' A window placed in the topmost band (the broadcast window) keeps its question above it: the question is made topmost
 ''' too, the rule the viewer's dialog layer applies to every window it opens. A question with no owner at all (the tray's
@@ -28,11 +30,59 @@ Friend NotInheritable Class ManagerBox
     Private Sub New()
     End Sub
 
-    ''' <summary>A question of the three question sets, or the stock system box for any other set.</summary>
+    ''' <summary>A question of the three question sets, or the notice box for any other set.</summary>
     Friend Shared Function Show(owner As IWin32Window, text As String, caption As String, buttons As MessageBoxButtons,
                                 icon As MessageBoxIcon, defaultButton As MessageBoxDefaultButton) As DialogResult
         If ViewerBoxMapping.IsQuestion(buttons) Then Return Ask(owner, text, caption, buttons, icon, defaultButton)
-        Return MessageBox.Show(owner, text, caption, buttons, icon, defaultButton)
+        Return Notice(owner, text, caption, buttons, icon, defaultButton)
+    End Function
+
+    ''' <summary>The reading direction of a system notice (APP-BEHAVIOUR rule 8): the stock box takes it from the call, not
+    ''' from the window, so a right-to-left language has to ask for it - text, icon and buttons then mirror.</summary>
+    Friend Shared Function NoticeOptions(rightToLeft As Boolean) As MessageBoxOptions
+        Return If(rightToLeft, MessageBoxOptions.RtlReading Or MessageBoxOptions.RightAlign, CType(0, MessageBoxOptions))
+    End Function
+
+    ''' <summary>A one-line notice (<c>OK</c> alone, and the sets that are not questions): the stock system box, but always
+    ''' with the language's reading direction and always over a window (APP-BEHAVIOUR rule 1). The caller's owner is used
+    ''' while it is alive; a notice with no usable owner - the tray, a command line start - is held by an invisible
+    ''' topmost anchor at the middle of the screen the pointer is on, so the box opens in front and centred instead of
+    ''' behind the user's other windows.</summary>
+    Private Shared Function Notice(owner As IWin32Window, text As String, caption As String, buttons As MessageBoxButtons,
+                                   icon As MessageBoxIcon, defaultButton As MessageBoxDefaultButton) As DialogResult
+        Dim options As MessageBoxOptions = NoticeOptions(Localization.IsRightToLeft())
+        Dim parent As IWin32Window = ViewerBoxMapping.UsableOwner(owner)
+        If parent IsNot Nothing Then Return MessageBox.Show(parent, text, caption, buttons, icon, defaultButton, options)
+        Dim anchor As Form = NoticeAnchor()
+        If anchor Is Nothing Then Return MessageBox.Show(text, caption, buttons, icon, defaultButton, options)
+        Try
+            Return MessageBox.Show(anchor, text, caption, buttons, icon, defaultButton, options)
+        Finally
+            anchor.Dispose()
+        End Try
+    End Function
+
+    ''' <summary>The invisible owner of an ownerless notice, or Nothing when it cannot be made (the box then opens
+    ''' without an owner, as before).</summary>
+    Private Shared Function NoticeAnchor() As Form
+        Dim anchor As Form = Nothing
+        Try
+            Dim area As Rectangle = Screen.FromPoint(Cursor.Position).WorkingArea
+            anchor = New Form With {
+                .FormBorderStyle = FormBorderStyle.None,
+                .ShowInTaskbar = False,
+                .StartPosition = FormStartPosition.Manual,
+                .TopMost = True,
+                .Opacity = 0.0R,
+                .Size = New Size(1, 1)
+            }
+            anchor.Location = New Point(area.Left + area.Width \ 2, area.Top + area.Height \ 2)
+            anchor.Show()
+            Return anchor
+        Catch
+            If anchor IsNot Nothing Then anchor.Dispose()
+            Return Nothing
+        End Try
     End Function
 
     Friend Shared Function Show(owner As IWin32Window, text As String, caption As String, buttons As MessageBoxButtons,
@@ -63,7 +113,7 @@ Friend NotInheritable Class ManagerBox
     Private Shared Function Ask(owner As IWin32Window, text As String, caption As String, buttons As MessageBoxButtons,
                                 icon As MessageBoxIcon, defaultButton As MessageBoxDefaultButton) As DialogResult
         Dim spec As AskSpec = ViewerBoxMapping.SpecFor(text, caption, buttons, icon, defaultButton)
-        If spec Is Nothing Then Return MessageBox.Show(owner, text, caption, buttons, icon, defaultButton)
+        If spec Is Nothing Then Return Notice(owner, text, caption, buttons, icon, defaultButton)
         Dim parent As IWin32Window = ViewerBoxMapping.UsableOwner(owner)
         Dim thread As Control = TryCast(parent, Control)
         If thread IsNot Nothing AndAlso thread.IsHandleCreated AndAlso thread.InvokeRequired Then
@@ -76,8 +126,11 @@ Friend NotInheritable Class ManagerBox
     ''' <summary>Shows the question window modally and returns the index of the answer (Escape and the close box answer
     ''' with the spec's cancel index).</summary>
     Friend Shared Function Choose(owner As IWin32Window, spec As AskSpec) As Integer
+        Dim started As Long = UiTiming.Begin()
         Using dialog As New Ask_Dialog(spec)
             Prepare(dialog, owner)
+            ' The opt-in FMS_UI_TIMING=1 line (L0326, WINDOWS-UI sections 5 and 9): request to the first idle moment after Shown.
+            UiTiming.WatchWindow(dialog, started)
             If owner Is Nothing Then dialog.ShowDialog() Else dialog.ShowDialog(owner)
             Return If(dialog.Answer >= 0, dialog.Answer, AskRules.ClosingAnswer(spec))
         End Using
@@ -87,8 +140,10 @@ Friend NotInheritable Class ManagerBox
     ''' question was cancelled (an empty answer is not a cancel).</summary>
     Friend Shared Function Prompt(owner As IWin32Window, spec As PromptSpec) As String
         Dim parent As IWin32Window = ViewerBoxMapping.UsableOwner(owner)
+        Dim started As Long = UiTiming.Begin()
         Using dialog As New Ask_Dialog(spec)
             Prepare(dialog, parent)
+            UiTiming.WatchWindow(dialog, started)
             If parent Is Nothing Then dialog.ShowDialog() Else dialog.ShowDialog(parent)
             Return If(dialog.Answer = 0, dialog.TypedText, Nothing)
         End Using

@@ -186,7 +186,7 @@ Public Class ScheduledUiTests
     End Sub
 
     <Fact, Trait("Kind", "UiForm"), Trait("Form", "Share_Settings_Form"), Trait("Form", "Scheduled_Manager_Form"), Trait("Form", "Scheduled_Manager_Panel"), Trait("Form", "OptionRowHost")>
-    Public Sub Both_schedule_hosts_fit_the_option_and_the_complete_management_panel()
+    Public Sub The_settings_page_invokes_one_window_and_the_window_holds_the_one_editor()
         ExchangeTestSupport.OnUi(Sub()
                                      ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
                                      Using hive As New ScratchHive()
@@ -194,20 +194,29 @@ Public Class ScheduledUiTests
                                              settings.FocusScheduledPage()
                                              settings.Show()
                                              Application.DoEvents()
-                                             Dim panel As Scheduled_Manager_Panel = Find(Of Scheduled_Manager_Panel)(settings, "managerSchedPanel")
-                                             Dim root As Control = Find(Of Control)(panel, "schedPanelRoot")
-                                             Dim row As OptionRowHost = OptionRows.RowOf(Find(Of CheckBox)(panel, "managerSchedFeature"))
-                                             Assert.True(panel.Width > 300, "The settings panel must fill the page width.")
-                                             Assert.True(root.Bottom <= panel.ClientSize.Height, "The settings panel must contain all its rows.")
-                                             Assert.True(row.Caption.Bottom <= row.Height AndAlso row.Explanation.Bottom <= row.Height,
-                                                         "The settings option text must fit its row.")
+                                             ' L0352: the scheduled page of Manager settings is an invocation of the one
+                                             ' management window - statement, state, link - never a second copy of the body.
+                                             Assert.Null(Find(Of Scheduled_Manager_Panel)(settings, "managerSchedPanel"))
+                                             Assert.Null(Find(Of Control)(settings, "managerSchedList"))
+                                             Assert.Null(Find(Of Control)(settings, "managerSchedFeature"))
+                                             Dim note As Label = Find(Of Label)(settings, "managerSchedNote")
+                                             Dim state As Label = Find(Of Label)(settings, "managerSchedFeatureState")
+                                             Dim link As LinkLabel = Find(Of LinkLabel)(settings, "managerSchedOpenWindow")
+                                             Assert.NotNull(note)
+                                             Assert.NotNull(state)
+                                             Assert.NotNull(link)
+                                             Assert.True(link.Visible, "The page must offer the one window.")
+                                             Assert.Equal(Scheduled_Manager_Panel.FeatureStateText(ScheduledHost.Engine.FeatureEnabled), state.Text)
+                                             Assert.True(note.ClientSize.Height > 0 AndAlso note.Width > 100, "The statement must be laid out.")
                                          End Using
                                          Using window As Scheduled_Manager_Form = Scheduled_Manager_Form.OpenScheduledManager("", Nothing)
                                              Application.DoEvents()
+                                             ' L0352, reversing L0325 pass 3 on the owner order: the window is the one editor
+                                             ' of the stored switch (SETTINGS-NAVIGATION section 3 rule 2 keeps it one editor).
                                              Dim row As OptionRowHost = OptionRows.RowOf(Find(Of CheckBox)(window, "managerSchedFeature"))
-                                             Assert.True(row.Caption.Height > 0 AndAlso row.Explanation.Height > 0)
-                                             Assert.True(row.Caption.Bottom <= row.Height AndAlso row.Explanation.Bottom <= row.Height,
-                                                         "The standalone option text must fit its row.")
+                                             Assert.True(row.Visible, "The management window must edit the feature switch.")
+                                             Assert.Null(Find(Of Label)(window, "managerSchedFeatureState"))
+                                             Assert.Null(Find(Of LinkLabel)(window, "managerSchedFeatureLink"))
                                              Dim root As Control = Find(Of Control)(window, "schedPanelRoot")
                                              Assert.True(DirectCast(root.Parent, Scheduled_Manager_Panel).AutoScroll,
                                                          "The standalone panel must scroll when its content does not fit.")
@@ -217,17 +226,17 @@ Public Class ScheduledUiTests
     End Sub
 
     <Fact>
-    Public Sub The_page_is_in_every_share_manager_window_with_its_statement_and_commands()
+    Public Sub The_statement_and_the_commands_live_in_the_one_window()
         ExchangeTestSupport.OnUi(Sub()
                                      ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
                                      Using hive As New ScratchHive()
-                                         Using form As New Share_Settings_Form()
+                                         Using form As Scheduled_Manager_Form = Scheduled_Manager_Form.OpenScheduledManager("", Nothing)
                                              Dim note As Label = Find(Of Label)(form, "managerSchedNote")
                                              Assert.NotNull(note)
-                                             Assert.Contains(Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним, выполняются им и настраиваются в его настройках. Расписание работает только пока менеджер запущен."), note.Text)
+                                             Assert.Contains(Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним и выполняются им. Расписание работает только пока менеджер запущен."), note.Text)
                                              For Each name As String In {"managerSchedList", "managerSchedNew", "managerSchedEdit", "managerSchedDelete",
                                                                          "managerSchedRunNow", "managerSchedRunAll", "managerSchedPause", "managerSchedHistory",
-                                                                         "managerSchedExport", "managerSchedImport",
+                                                                         "managerSchedClearHistory", "managerSchedExport", "managerSchedImport",
                                                                          "managerSchedFeature", "managerSchedAutostart"}
                                                  Assert.NotNull(Find(Of Control)(form, name))
                                              Next

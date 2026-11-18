@@ -6,10 +6,12 @@ Option Compare Binary
 
 Imports System.Drawing
 Imports System.Drawing.Drawing2D
+Imports System.Drawing.Imaging
 Imports System.IO
+Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 
-''' <summary>Unmodified EXCHANGE-MARK 0.3 artwork, shared by both modern applications.</summary>
+''' <summary>Unmodified EXCHANGE-MARK artwork (artwork 0.3, rules 0.4), shared by both modern applications.</summary>
 Public NotInheritable Class ExchangeMark
     Private Sub New()
     End Sub
@@ -34,13 +36,41 @@ Public NotInheritable Class ExchangeMark
         Using stream As Stream = opener("exchange-mark/png/mark-" & rasterSize.ToString(Globalization.CultureInfo.InvariantCulture) & ".png")
             If stream Is Nothing Then Throw New FileNotFoundException("Exchange mark is not bundled.")
             Using source As Image = Image.FromStream(stream)
-                Dim result As New Bitmap(size, size)
+                If size = rasterSize AndAlso source.Width = size AndAlso source.Height = size Then Return CopyPixels(CType(source, Bitmap))
+                Dim result As New Bitmap(size, size, PixelFormat.Format32bppArgb)
                 Using g As Graphics = Graphics.FromImage(result)
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic
+                    g.PixelOffsetMode = PixelOffsetMode.Half
                     g.DrawImage(source, New Rectangle(0, 0, size, size))
                 End Using
                 Return result
             End Using
         End Using
+    End Function
+
+    ''' <summary>
+    ''' EXCHANGE-MARK 0.4 rule 6: a held step is copied pixel for pixel (a locked-bits copy), never resampled
+    ''' through a scaling draw call, which alters part-covered pixels even at 1:1.
+    ''' </summary>
+    Private Shared Function CopyPixels(source As Bitmap) As Bitmap
+        Dim area As New Rectangle(0, 0, source.Width, source.Height)
+        Dim result As New Bitmap(source.Width, source.Height, PixelFormat.Format32bppArgb)
+        Dim srcData As BitmapData = source.LockBits(area, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb)
+        Try
+            Dim dstData As BitmapData = result.LockBits(area, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb)
+            Try
+                Dim row(source.Width * 4 - 1) As Byte
+                For y As Integer = 0 To source.Height - 1
+                    Marshal.Copy(IntPtr.Add(srcData.Scan0, y * srcData.Stride), row, 0, row.Length)
+                    Marshal.Copy(row, 0, IntPtr.Add(dstData.Scan0, y * dstData.Stride), row.Length)
+                Next
+            Finally
+                result.UnlockBits(dstData)
+            End Try
+        Finally
+            source.UnlockBits(srcData)
+        End Try
+        Return result
     End Function
 
     ''' <summary>Rule 7: a selected, saturated row gives the unchanged mark a neutral plate.</summary>

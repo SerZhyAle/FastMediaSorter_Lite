@@ -94,6 +94,15 @@ func unavailableFrame(t *testing.T) []byte {
 	return b
 }
 
+func endedFrame(t *testing.T) []byte {
+	t.Helper()
+	b, err := wire.Frame(wire.Refuse(wire.ReasonEnded))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
 // --- an SSH session through the bridge, by resourceId and by shareId (acceptance 1) ---
 
 func TestSSHThroughTheBridgeByResourceIdAndByShareId(t *testing.T) {
@@ -182,6 +191,42 @@ func TestATunnelByBroadcastIdReachesTheProducerWithTheScheme(t *testing.T) {
 	b, _ := answerOf(t, env, nil, &wire.Connect{BroadcastID: env.NewID(), Scheme: "http"})
 	if !bytes.Equal(b, unavailableFrame(t)) {
 		t.Fatalf("%q", b)
+	}
+}
+
+func TestATunnelConnectForAnEndedBroadcastIsRefusedEnded(t *testing.T) {
+	p := testkit.TestParams()
+	p.UnavailableDelay = 50 * time.Millisecond
+	o := looseOpts("alice")
+	o.Params = &p
+	o.WithRelay = true // the memory of ended ids (item DX) lives in the relay, which the server always has
+	env := testkit.StartServer(t, o)
+	prod := env.NewProducer("alice", sshPW)
+	if err := prod.Start(); err != nil {
+		t.Fatal(err)
+	}
+	bid := env.NewID()
+	r, _ := prod.Control().Request(&wire.BroadcastStart{Broadcast: json.RawMessage(`{"broadcastId":"` + bid + `","mode":"VIDEO_AUDIO","descriptor":{"endpoints":[]}}`)}, 3*time.Second, wire.TypeBroadcastStarted, wire.TypeRefused)
+	if r.TypeName() != wire.TypeBroadcastStarted {
+		t.Fatalf("%+v", r)
+	}
+	// end the broadcast
+	_ = prod.Control().Send(&wire.BroadcastEnd{BroadcastID: bid})
+	eventually(t, "broadcast end", func() bool { return env.Dir.Counts().Broadcasts == 0 })
+
+	// an ended broadcast connect by broadcastId is answered refused {reason:"ended"} (item DY)
+	b, took := answerOf(t, env, nil, &wire.Connect{BroadcastID: bid, Scheme: "rtsp"})
+	if !bytes.Equal(b, endedFrame(t)) {
+		t.Fatalf("expected ended frame, got %q", b)
+	}
+	if took < p.UnavailableDelay {
+		t.Fatalf("answered too fast: %v < %v", took, p.UnavailableDelay)
+	}
+
+	// a connect by resourceId or shareId for that id is still unavailable
+	bRes, _ := answerOf(t, env, nil, &wire.Connect{ShareID: bid})
+	if !bytes.Equal(bRes, unavailableFrame(t)) {
+		t.Fatalf("expected unavailable for shareId, got %q", bRes)
 	}
 }
 

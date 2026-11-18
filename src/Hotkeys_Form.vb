@@ -79,6 +79,16 @@ Public NotInheritable Class Hotkeys_Form
         ' context (see the localization rules in CLAUDE.md).
         If Localization.IsRightToLeft() Then RightToLeft = RightToLeft.Yes
 
+        ' Control names are what help-map.json's "elements" for this window (hotkeys) is keyed on: F1 with one of them
+        ' focused opens the help section that explains it (CONTEXT-HELP rule 3).
+        grid.Name = "hotkeys_List"
+        captureBox.Name = "hotkeys_Capture"
+        btnReset.Name = "hotkeys_Reset"
+        btnClear.Name = "hotkeys_Clear"
+        btnResetAll.Name = "hotkeys_ResetAll"
+        btnOk.Name = "hotkeys_Ok"
+        btnCancel.Name = "hotkeys_Cancel"
+
         grid.View = View.Details
         grid.FullRowSelect = True
         grid.MultiSelect = False
@@ -245,11 +255,16 @@ Public NotInheritable Class Hotkeys_Form
         Dim action As HotkeyAction = SelectedAction()
         If action Is Nothing Then Return
 
-        Dim combo As String = CustomHotkeys.Format(keyData)
+        Dim combo As String = CustomHotkeys.FormatForBinding(keyData)
         If combo.Length = 0 Then
             If CustomHotkeys.IsReserved(keyData) Then
                 ViewerBox.Show(Me,
                     Localization.T("Это сочетание зарезервировано системой или программой и не может быть назначено."),
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ElseIf CustomHotkeys.Format(keyData).Length > 0 Then
+                ' INPUT-CHORD rule 1 (L0327): the key works in the viewer but has no canonical token to store.
+                ViewerBox.Show(Me,
+                    Localization.T("Эту клавишу нельзя назначить: у неё нет стандартного имени, которое понимают другие программы."),
                     Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
             Return

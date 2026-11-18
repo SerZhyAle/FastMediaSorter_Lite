@@ -270,8 +270,9 @@ decisions that were the product's to make are listed here, the numbers are in th
 - **Not taken, and why** (dated exceptions in the registry): the operating system's message boxes and the one
   `TaskDialog` (their buttons are drawn by Windows); the random-slideshow mark, the Translate button's language
   text, the speed readout, the recipients overlay rows in right-to-left, the editor's swatches and hand-drawn tools.
-  Left for the owner (a contract-boundary change): `Video_Replace_Confirm_Form` does not hold the default focus on
-  its safe answer.
+  *Amended 2026-11-15 (L0326):* `Video_Replace_Confirm_Form` now holds the first focus on its safe answer (Cancel) as
+  well as making it the default - `OnLoad` ends with `ActiveControl = decline`, so Space declines as Enter does
+  (`APP-BEHAVIOUR` rule 5); `DialogButtonRowBatch2Tests` asserts it. It had been left for the owner.
 - **A bug found on the way.** MSBuild reads the penultimate extension of a resource file name as a culture:
   `action.run.svg` is Rundi (`run`), so that glyph was silently moved to a satellite assembly and left out of both
   executables. Both projects now say `WithCulture=false` on the glyph item (`The_glyph_resources_are_not_read_as_cultures`).

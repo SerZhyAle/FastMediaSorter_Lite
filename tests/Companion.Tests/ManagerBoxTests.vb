@@ -163,6 +163,44 @@ Public Class ManagerBoxTests
     End Sub
 
     <Fact>
+    Public Sub No_notice_of_the_Share_Manager_goes_to_the_system_box_by_itself()
+        ' L0326, APP-BEHAVIOUR rules 1 and 8: an OK-only notice of the Share Manager's own tree goes through ManagerBox too -
+        ' the stock call has no reading direction and, without an owner, opens behind the user's windows.
+        Dim sources As List(Of String) = ExchangeTestSupport.CompanionSources().ToList()
+        Assert.True(sources.Count > 100, "the scan read only " & sources.Count.ToString(CultureInfo.InvariantCulture) & " sources")
+        Dim offenders As New List(Of String)()
+        For Each source As String In sources
+            If Path.GetFileName(source).Equals("ManagerBox.vb", StringComparison.OrdinalIgnoreCase) Then Continue For
+            If ExchangeTestSupport.CodeOnly(File.ReadAllText(source)).Contains("MessageBox.Show(", StringComparison.Ordinal) Then
+                offenders.Add(Path.GetFileName(source))
+            End If
+        Next
+        Assert.True(offenders.Count = 0,
+                    "A notice goes to the stock MessageBox.Show - use ManagerBox.Show (reading direction, owner or anchor):" &
+                    vbLf & String.Join(vbLf, offenders))
+    End Sub
+
+    <Fact>
+    Public Sub A_notice_reads_in_the_language_direction_and_every_stock_call_of_the_box_carries_it()
+        Assert.True(ManagerBox.NoticeOptions(True).HasFlag(MessageBoxOptions.RtlReading))
+        Assert.True(ManagerBox.NoticeOptions(True).HasFlag(MessageBoxOptions.RightAlign))
+        Assert.Equal(CType(0, MessageBoxOptions), ManagerBox.NoticeOptions(False))
+        Dim src As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Core\ManagerBox.vb"))
+        Dim at As Integer = 0
+        Dim stock As Integer = 0
+        While True
+            at = src.IndexOf("MessageBox.Show(", at, StringComparison.Ordinal)
+            If at < 0 Then Exit While
+            Dim close As Integer = src.IndexOf(vbLf, at, StringComparison.Ordinal)
+            Dim line As String = src.Substring(at, If(close < 0, src.Length - at, close - at))
+            Assert.True(line.TrimEnd().EndsWith(", options)", StringComparison.Ordinal), "a stock call without the reading direction: " & line)
+            stock += 1
+            at += 1
+        End While
+        Assert.Equal(3, stock)
+    End Sub
+
+    <Fact>
     Public Sub The_box_routes_only_the_question_sets_and_themes_the_window_before_it_is_shown()
         Dim src As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Core\ManagerBox.vb"))
         Assert.Contains("If ViewerBoxMapping.IsQuestion(buttons) Then Return Ask(owner, text, caption, buttons, icon, defaultButton)", src, StringComparison.Ordinal)

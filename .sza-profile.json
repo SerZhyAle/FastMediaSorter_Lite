@@ -11,7 +11,8 @@
     "burnedIds": "docs/specifications/spec-catalog-burned-ids.jsonl",
     "releaseQueue": "docs/specifications/PQ_QUEUE.md",
     "releaseReady": "docs/specifications/PQ_READY.md",
-    "releaseQueueDone": "docs/specifications/PQ_DONE.md"
+    "releaseQueueDone": "docs/specifications/PQ_DONE.md",
+    "changelog": ""
   },
   "grammar": {
     "ticketIdPattern": "^L\\d{4}$",

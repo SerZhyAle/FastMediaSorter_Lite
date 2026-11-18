@@ -98,10 +98,43 @@ Public Class ScheduledBackupTests
     End Sub
 
     <Fact>
-    Public Sub Validate_refuses_resources_a_set_inside_its_source_and_a_seal_without_a_password()
-        Dim resource As ScheduledOperation = BackupOp()
-        resource.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r1"}
-        Assert.Contains(ScheduledValidation.Validate(resource, Nothing), Function(i) i.Code = ScheduledIssueCode.BackupNeedsPaths)
+    Public Sub Validate_takes_resource_sides_keeps_a_set_outside_its_source_and_refuses_a_drive_and_a_seal_without_a_password()
+        Dim facts As Func(Of String, ScheduledResourceFacts) =
+            Function(id As String) New ScheduledResourceFacts With {.Exists = True, .DisplayName = id,
+                .IsSmb = id.StartsWith("smb", StringComparison.Ordinal),
+                .RootPath = If(id.StartsWith("smb", StringComparison.Ordinal), "\\nas\" & id, "/" & id)}
+
+        ' L0342: an SMB share on either side is a folder FileDO opens by its UNC path. L0343: an SFTP resource on
+        ' either side is staged by the run; the definition names the same resource on both sides, and the check that
+        ' keeps a set out of its own source follows the server's "/" spelling too.
+        Dim smb As ScheduledOperation = BackupOp()
+        smb.Source = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "smb1", .Path = "\\nas\smb1\Photos"}
+        smb.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "smb2", .Path = ""}
+        Assert.Empty(ScheduledValidation.Validate(smb, Nothing, facts))
+
+        Dim sftp As ScheduledOperation = BackupOp()
+        sftp.Source = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r1", .Path = "/r1/photos"}
+        sftp.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r1", .Path = "/r1/sets"}
+        Assert.Empty(ScheduledValidation.Validate(sftp, Nothing, facts))
+
+        Dim sftpBothSides As ScheduledOperation = BackupOp()
+        sftpBothSides.Source = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r1", .Path = "/r1/photos"}
+        sftpBothSides.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r2", .Path = "/r2/sets"}
+        Assert.Empty(ScheduledValidation.Validate(sftpBothSides, Nothing, facts))
+
+        Dim sftpInside As ScheduledOperation = BackupOp()
+        sftpInside.Source = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r1", .Path = ""}
+        sftpInside.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "r1", .Path = "/r1/sets"}
+        Assert.Contains(ScheduledValidation.Validate(sftpInside, Nothing, facts), Function(i) i.Code = ScheduledIssueCode.DestinationInsideSource)
+
+        Dim drive As ScheduledOperation = BackupOp()
+        drive.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Drive, .ResourceId = "d1"}
+        Assert.Contains(ScheduledValidation.Validate(drive, Nothing, facts), Function(i) i.Code = ScheduledIssueCode.BackupNeedsPaths)
+
+        Dim smbInside As ScheduledOperation = BackupOp()
+        smbInside.Source = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "smb1", .Path = ""}
+        smbInside.Destination = New ScheduledLocation With {.Kind = ScheduledLocationKind.Resource, .ResourceId = "smb1", .Path = "\\nas\smb1\sets"}
+        Assert.Contains(ScheduledValidation.Validate(smbInside, Nothing, facts), Function(i) i.Code = ScheduledIssueCode.DestinationInsideSource)
 
         Dim inside As ScheduledOperation = BackupOp()
         inside.Destination.Path = "D:\Photos\backups"
@@ -366,6 +399,169 @@ Public Class ScheduledBackupTests
         Assert.NotEqual(ScheduledText.DescribeDetail("backup-x|y"), ScheduledText.DescribeDetail("backup-filedo-unsupported"))
         Assert.NotEqual(ScheduledText.DescribeDetail("backup-x|y"), ScheduledText.DescribeDetail(ShareSettingsTransfer.BackupNoPasswordCode))
         Assert.NotEqual(ScheduledText.ActionName(ScheduledAction.Copy), ScheduledText.ActionName(ScheduledAction.Backup))
+    End Sub
+
+    ' --- dated retention + monthly-first + skip-links (ticket L0346) ----------------------------------------
+
+    <Fact>
+    Public Sub Json_keeps_dated_retention_monthly_and_skip_links_and_parks_unknown_retention()
+        Dim op As ScheduledOperation = BackupOp()
+        op.BackupRetention = BackupRetentionMode.Dated
+        op.BackupKeepDays = 14
+        op.BackupKeepMonthly = True
+        op.BackupSkipLinks = True
+        op.BackupSealed = True
+
+        Dim text As String = ScheduledJson.Serialize(op)
+        Assert.Contains("""backup_dated""", text)
+        Assert.DoesNotContain("""action"": ""backup""", text)
+        Assert.Contains("""backupRetention"": ""dated""", text)
+        Assert.Contains("""backupKeepDays"": 14", text)
+        Assert.Contains("""backupKeepMonthly"": true", text)
+        Assert.Contains("""backupSkipLinks"": true", text)
+        Assert.DoesNotContain("password", text, StringComparison.OrdinalIgnoreCase)
+
+        Dim read As ScheduledOperation = ScheduledJson.Deserialize(text)
+        Assert.Equal(ScheduledAction.Backup, read.Action)
+        Assert.Equal(BackupRetentionMode.Dated, read.BackupRetention)
+        Assert.Equal(14, read.BackupKeepDays)
+        Assert.True(read.BackupKeepMonthly)
+        Assert.True(read.BackupSkipLinks)
+        Assert.True(read.BackupSealed)
+        Assert.Equal(ScheduledHalt.None, read.Halt)
+
+        ' An unknown retention mode parks the definition instead of silently running numbered generations.
+        Dim badRetention As ScheduledOperation = ScheduledJson.Deserialize("{""id"":""n2"",""action"":""backup"",""backupRetention"":""yearly""}")
+        Assert.Equal(ScheduledHalt.InvalidDefinition, badRetention.Halt)
+    End Sub
+
+    <Fact>
+    Public Sub Dated_arguments_probe_and_timestamp_parser_follow_contract_018()
+        Dim datedArgs As List(Of String) = BackupCommandLine.Arguments(
+            "D:\Photos", "E:\Bak", BackupRetentionMode.Dated, 7, 7, True, True, "Photos-01234567", True, "ev.jsonl", "stop")
+        Assert.Equal(New String() {"backup", "D:\Photos", "to", "E:\Bak", "keep-days", "7", "keep-monthly", "stem",
+                                   "Photos-01234567", "skip-links", "sec", "pe:" & BackupCommandLine.PasswordVariable,
+                                   "y", "--no-ui", "--events", "ev.jsonl", "--stop-file", "stop"},
+                     datedArgs.ToArray())
+
+        Dim genSkipArgs As List(Of String) = BackupCommandLine.Arguments(
+            "D:\Photos", "E:\Bak", BackupRetentionMode.Generations, 5, 7, False, True, "Photos-01234567", False, "ev.jsonl", "stop")
+        Assert.Contains("gen", genSkipArgs)
+        Assert.Contains("skip-links", genSkipArgs)
+        Assert.DoesNotContain("keep-days", genSkipArgs)
+
+        Assert.True(FileDoBackupProbe.HelpNamesDatedRetention("filedo.exe backup D:\P to E:\B stem Docs keep-days 7 keep-monthly sec"))
+        Assert.False(FileDoBackupProbe.HelpNamesDatedRetention("filedo.exe backup D:\P to E:\B gen 7 stem Docs sec"))
+        Assert.False(FileDoBackupProbe.HelpNamesDatedRetention("filedo.exe backup D:\P to E:\B keep-days 7 stem Docs"))
+        Assert.True(FileDoBackupProbe.HelpNamesSkipLinks("filedo.exe backup D:\Data skip-links"))
+        Assert.False(FileDoBackupProbe.HelpNamesSkipLinks("filedo.exe backup D:\Data gen 7"))
+        Assert.False(FileDoBackupProbe.HasDatedRetention("C:\no-such-folder\filedo.exe"))
+        Assert.False(FileDoBackupProbe.HasSkipLinks("C:\no-such-folder\filedo.exe"))
+
+        Dim stamp As DateTime
+        Assert.True(BackupCommandLine.TryParseDatedArchiveStamp("Photos-01234567-2611171300.zip", "Photos-01234567", ".zip", stamp))
+        Assert.Equal(New DateTime(2026, 11, 17, 13, 0, 0), stamp)
+        Assert.False(BackupCommandLine.TryParseDatedArchiveStamp("Photos-01234567-2602291300.zip", "Photos-01234567", ".zip", stamp))
+        Assert.False(BackupCommandLine.TryParseDatedArchiveStamp("Other-2611171300.zip", "Photos-01234567", ".zip", stamp))
+    End Sub
+
+    <Fact>
+    Public Sub Dated_run_without_dated_filedo_support_walls_without_falling_back_to_generations()
+        Dim source As String = TempFolder()
+        Dim destination As String = TempFolder()
+        Dim runs As String = TempFolder()
+        Try
+            Dim op As ScheduledOperation = BackupOp()
+            op.Source.Path = source
+            op.Destination.Path = destination
+            op.BackupRetention = BackupRetentionMode.Dated
+            op.BackupKeepDays = 7
+            op.BackupKeepMonthly = True
+            Dim launched As Boolean = False
+            Dim services As New ScheduledServices With {
+                .LocateFileDo = Function() "C:\stub\filedo.exe",
+                .FileDoHasBackupGenerations = Function(exe As String) True,
+                .FileDoHasBackupDatedRetention = Function(exe As String) False,
+                .BackupRunFolder = Function() runs,
+                .LaunchFill = Function(launch As FillLaunch, ct As CancellationToken) As FillLaunchOutcome
+                                  launched = True
+                                  Return New FillLaunchOutcome With {.Started = True, .ExitCode = 0}
+                              End Function}
+            Dim result As ScheduledRunResult = New ScheduledExecutor(services).Run(op, CancellationToken.None)
+            Assert.Equal(ScheduledRunOutcome.Wall, result.Outcome)
+            Assert.Equal("backup-filedo-unsupported", result.Detail)
+            Assert.False(launched)
+        Finally
+            Directory.Delete(source, recursive:=True)
+            Directory.Delete(destination, recursive:=True)
+            Directory.Delete(runs, recursive:=True)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Dated_done_run_journals_published_file_every_retired_file_skipped_links_and_numbers()
+        Dim source As String = TempFolder()
+        Dim destination As String = TempFolder()
+        Dim runs As String = TempFolder()
+        Try
+            Dim op As ScheduledOperation = BackupOp()
+            op.Source.Path = source
+            op.Destination.Path = destination
+            op.BackupRetention = BackupRetentionMode.Dated
+            op.BackupKeepDays = 7
+            op.BackupKeepMonthly = True
+            op.BackupSkipLinks = True
+            Dim stem As String = op.BackupStem
+
+            Dim monthlyKeep As String = Path.Combine(destination, stem & "-2610011300.zip")
+            Dim retiredA As String = Path.Combine(destination, stem & "-2610021300.zip")
+            Dim retiredB As String = Path.Combine(destination, stem & "-2610051300.zip")
+            Dim foreign As String = Path.Combine(destination, "notes.txt")
+            File.WriteAllText(monthlyKeep, "keep")
+            File.WriteAllText(retiredA, "old-a")
+            File.WriteAllText(retiredB, "old-b")
+            File.WriteAllText(foreign, "other")
+
+            Dim seen As New List(Of FillLaunch)()
+            Dim items As New List(Of ItemJournalEntry)()
+            Dim events As String =
+                "{""schemaVersion"":1,""kind"":""finding"",""data"":{""type"":""info"",""message"":""Link skipped"",""details"":{""skippedLink"":""D:\\Photos\\linkA""}}}" & vbLf &
+                "{""schemaVersion"":1,""kind"":""result"",""data"":{""verdict"":""Done"",""numbers"":{""files"":10,""bytes"":2048,""archiveBytes"":1024,""retiredCount"":2,""keptCount"":2,""keepDays"":7,""monthlyKept"":1}}}" & vbLf
+            Dim services As New ScheduledServices With {
+                .Clock = Function() New DateTime(2026, 11, 17, 13, 0, 0),
+                .LocateFileDo = Function() "C:\stub\filedo.exe",
+                .FileDoHasBackupGenerations = Function(exe As String) True,
+                .FileDoHasBackupDatedRetention = Function(exe As String) True,
+                .FileDoHasBackupSkipLinks = Function(exe As String) True,
+                .BackupRunFolder = Function() runs,
+                .ItemJournal = Sub(e As ItemJournalEntry) items.Add(e),
+                .LaunchFill = Function(launch As FillLaunch, ct As CancellationToken) As FillLaunchOutcome
+                                  seen.Add(launch)
+                                  File.Delete(retiredA)
+                                  File.Delete(retiredB)
+                                  File.WriteAllText(Path.Combine(destination, stem & "-2611171300.zip"), "new")
+                                  File.WriteAllText(launch.Arguments(launch.Arguments.IndexOf("--events") + 1), events)
+                                  Return New FillLaunchOutcome With {.Started = True, .ExitCode = 0}
+                              End Function}
+
+            Dim result As ScheduledRunResult = New ScheduledExecutor(services).Run(op, CancellationToken.None)
+            Assert.Equal(ScheduledRunOutcome.Ok, result.Outcome)
+            Assert.Equal(10, result.Files)
+            Assert.Equal(2048L, result.Bytes)
+            Assert.Equal(1, result.Skipped)
+            Assert.EndsWith(stem & "-2611171300.zip", result.ArchivePath)
+            Assert.Contains("mode=dated;retiredCount=2;keptCount=2;keepDays=7;monthlyKept=1", result.Verdict)
+            Assert.Contains("skippedLinks=1", result.Verdict)
+            Assert.False(String.IsNullOrWhiteSpace(ScheduledText.RecordedVerdictText(result.Verdict)))
+            Assert.Contains(items, Function(i) i.Verb = "backup-retire" AndAlso i.Source = retiredA AndAlso i.Verdict = "retired")
+            Assert.Contains(items, Function(i) i.Verb = "backup-retire" AndAlso i.Source = retiredB AndAlso i.Verdict = "retired")
+            Assert.Contains(items, Function(i) i.Verb = "backup-skip-link" AndAlso i.Source = "D:\Photos\linkA" AndAlso i.Verdict = "skipped")
+            Assert.Contains(items, Function(i) i.Verb = "backup" AndAlso i.Destination = result.ArchivePath AndAlso i.Verdict = "done")
+        Finally
+            Directory.Delete(source, recursive:=True)
+            Directory.Delete(destination, recursive:=True)
+            Directory.Delete(runs, recursive:=True)
+        End Try
     End Sub
 
 End Class

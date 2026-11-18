@@ -478,9 +478,10 @@ Partial Public Class Main_Form
         Return shuffle_Cycle.NextIndex(total, current, slideshow_Rng)
     End Function
 
-    ''' <summary>True when the user chose "shuffle without repeats" for random order.</summary>
+    ''' <summary>MEDIA-VIEWER rule 5: every random order is the no-repeat cycle. The stored
+    ''' value "random" (older settings and imported files) reads as the cycle too.</summary>
     Private Function IsShuffleCycleOrder() As Boolean
-        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder = "shuffleCycle"
+        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder <> "natural"
     End Function
 End Class
 #End If

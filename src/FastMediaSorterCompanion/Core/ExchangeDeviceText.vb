@@ -251,4 +251,11 @@ Friend Module ExchangeDeviceText
         Return Localization.T("Адрес сервера обновлён.")
     End Function
 
+    ' --- remote schedule refusals (DEVICE-EXCHANGE 1.15 item FU) ---
+
+    ''' <summary>Item FU: refusal code for a schedule request.</summary>
+    Friend Function ScheduleRefusal(reason As String) As ConnectionDiagnosisMessage
+        Return ConnectionDiagnosisMessages.OfSchedule(reason)
+    End Function
+
 End Module

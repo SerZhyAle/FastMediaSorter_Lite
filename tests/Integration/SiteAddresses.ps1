@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 . (Join-Path $RepoRoot 'tools\lib\Verdict.ps1')
 trap { Write-Host "  $($_.Exception.Message)"; Exit-Verdict 'SiteAddresses' 2 'the self-test could not run' }
-Write-Subject 'SiteAddresses' 'tools/Test-SiteAddresses.ps1 against a throw-away tree and eight broken variants of it'
+Write-Subject 'SiteAddresses' 'tools/Test-SiteAddresses.ps1 against a throw-away tree and thirteen broken variants of it'
 
 $Gate = Join-Path $RepoRoot 'tools\Test-SiteAddresses.ps1'
 $pwsh = (Get-Process -Id $PID).Path
@@ -47,7 +47,9 @@ function New-Fixture {
         '{"group":"privacy","locale":null,"sitemap":false}',
         ('{"address":"' + $B + '","holder":"README.md","kind":"landing"}'),
         ('{"address":"' + $B + 'trust.html","holder":"README.md","kind":"trust"}'),
-        ('{"address":"' + $B + 'docs/privacy.html","holder":"Partner Center","kind":"privacy","carried":"external"}'))
+        ('{"address":"' + $B + 'docs/privacy.html","holder":"Partner Center","kind":"privacy","carried":"external"}'),
+        ('{"released":"' + $B + '","with":"v26.7.11.1610","anchors":{"get":"v26.7.11.1610"}}'),
+        ('{"released":"' + $B + 'trust.html","with":"v26.10.25.1830"}'))
 }
 function Write-List([string[]]$lines) { Write-Text 'tools/site-addresses.jsonl' (($lines -join "`n") + "`n") }
 function Get-ListLines { @(Get-Content -LiteralPath (Join-Path $work 'tools/site-addresses.jsonl') -Encoding UTF8) }
@@ -90,9 +92,27 @@ try {
 
     New-Fixture;  Remove-Item (Join-Path $work 'tools/site-addresses.jsonl')
     Expect 'a missing list is could-not-verify, not a pass' 2 'COULD NOT VERIFY'
+
+    # section 8 D: what a release carried stays
+    New-Fixture;  Write-Text 'index.html' '<html><body><section id="top"></section></body></html>'
+    Expect 'a released anchor that was renamed fails' 1 'lost the anchor #get'
+
+    New-Fixture
+    Write-List ((Get-ListLines | Where-Object { $_ -notmatch '"holder":"Partner Center"' }) + ('{"released":"' + $B + 'docs/privacy.html","with":"v26.7.11.1610"}'))
+    Remove-Item (Join-Path $work 'docs/privacy.html')
+    Expect 'a released page that was removed fails' 1 'no longer answers with a page'
+
+    New-Fixture;  Write-List ((Get-ListLines | Where-Object { $_ -notmatch '"released":"[^"]*","with":"v26.10' }) + ('{"released":"' + $B + 'trust.html","with":"v26.10"}'))
+    Expect 'a release that is not a tag fails' 1 'is not a release tag'
+
+    New-Fixture;  Write-List ((Get-ListLines | Where-Object { $_ -notmatch '"anchors"' }) + ('{"released":"' + $B + '","with":"v26.8.8.2305","anchors":{"get":"v26.7.11.1610"}}'))
+    Expect 'an anchor dated before its page fails' 1 'is dated before its page'
+
+    New-Fixture;  Write-List ((Get-ListLines) + ('{"released":"' + $B + 'trust.html","with":"v26.10.25.1830"}'))
+    Expect 'a page recorded twice fails' 1 'is recorded twice'
 } finally {
     if (Test-Path $work) { Remove-Item -Recurse -Force $work }
 }
 
 if ($failures.Count) { Exit-Verdict 'SiteAddresses' 1 ("$($failures.Count) case(s) wrong: " + ($failures -join '; ')) }
-Exit-Verdict 'SiteAddresses' 0 'the gate passes a clean tree and fails the eight broken ones, each for its own reason'
+Exit-Verdict 'SiteAddresses' 0 'the gate passes a clean tree and fails the thirteen broken ones, each for its own reason'

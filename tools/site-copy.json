@@ -479,6 +479,11 @@
         "url": "https://serzhyale.github.io/FastMediaSorter_mob_v2/"
       },
       {
+        "name": "FastMediaSorter for Web",
+        "type": "Browser media sorter",
+        "url": "https://serzhyale.github.io/FastMediaSorter_WEB/"
+      },
+      {
         "name": "CyrFlip",
         "type": "Windows layout fixer",
         "url": "https://serzhyale.github.io/CyrFlip/"
@@ -509,6 +514,16 @@
         "url": "https://serzhyale.github.io/universal-agent-kit/"
       },
       {
+        "name": "DeviceInfo",
+        "type": "Android and Wear OS device information",
+        "url": "https://serzhyale.github.io/DeviceInfo_Android/"
+      },
+      {
+        "name": "Tourist",
+        "type": "Android and Wear OS hiking kit",
+        "url": "https://serzhyale.github.io/Tourist_Android/"
+      },
+      {
         "name": "SZA",
         "type": "Portfolio hub",
         "url": "https://sza.od.ua/"
@@ -521,12 +536,15 @@
       "title": "More tools by SZA",
       "types": {
         "Fast Media Sorter & Organizer": "Android media sorter",
+        "FastMediaSorter for Web": "Browser media sorter",
         "CyrFlip": "Windows layout fixer",
         "doc-html-translate": "Windows ebook converter",
         "FileDO": "Windows storage CLI",
         "STREAMS Player": "Windows stream player",
         "OneClickRunner": "Windows tray launcher",
         "Universal Agent Kit": "AI-dev methodology",
+        "DeviceInfo": "Android and Wear OS device information",
+        "Tourist": "Android and Wear OS hiking kit",
         "SZA": "Portfolio hub"
       }
     },
@@ -534,12 +552,15 @@
       "title": "Другие инструменты SZA",
       "types": {
         "Fast Media Sorter & Organizer": "Сортировщик медиа для Android",
+        "FastMediaSorter for Web": "Сортировщик медиа в браузере",
         "CyrFlip": "Исправление раскладки Windows",
         "doc-html-translate": "Конвертер книг для Windows",
         "FileDO": "CLI для проверки накопителей",
         "STREAMS Player": "Плеер стримов для Windows",
         "OneClickRunner": "Лаунчер Windows в трее",
         "Universal Agent Kit": "Методология AI-разработки",
+        "DeviceInfo": "Сведения об устройстве для Android и Wear OS",
+        "Tourist": "Туристический набор для Android и Wear OS",
         "SZA": "Портфолио"
       }
     },
@@ -547,12 +568,15 @@
       "title": "Інші інструменти SZA",
       "types": {
         "Fast Media Sorter & Organizer": "Сортувальник медіа для Android",
+        "FastMediaSorter for Web": "Сортувальник медіа в браузері",
         "CyrFlip": "Виправлення розкладки Windows",
         "doc-html-translate": "Конвертер книг для Windows",
         "FileDO": "CLI для перевірки носіїв",
         "STREAMS Player": "Плеєр стрімів для Windows",
         "OneClickRunner": "Лаунчер Windows у треї",
         "Universal Agent Kit": "Методологія AI-розробки",
+        "DeviceInfo": "Відомості про пристрій для Android і Wear OS",
+        "Tourist": "Туристичний набір для Android і Wear OS",
         "SZA": "Портфоліо"
       }
     }

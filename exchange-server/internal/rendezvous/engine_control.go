@@ -244,6 +244,16 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			return true
 		}
 		return e.handleNotesPut(cs, sess, m)
+	case *wire.ScheduleRequest:
+		if !e.scheduleListed() {
+			return true // `schedule` is not in features: ignored like an unknown type (item FQ, 7.1)
+		}
+		return e.handleScheduleRequest(cs, sess, m)
+	case *wire.ScheduleResult:
+		if !e.scheduleListed() {
+			return true
+		}
+		return e.handleScheduleResult(sess, m)
 	}
 	return false // a known envelope that is invalid on a control stream closes it
 }

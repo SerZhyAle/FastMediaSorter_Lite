@@ -54,6 +54,7 @@ tests/Lite.Tests/TestData/exchange-vectors/** -text
 tests/Lite.Tests/TestData/anywhere-descriptor-vectors/** -text
 tests/Lite.Tests/TestData/resources/fmscfg/** -text
 tests/Lite.Tests/TestData/user-playlist-vectors/** -text
+tests/Lite.Tests/TestData/stream-facets/** -text
 tests/Companion.Tests/TestData/broadcast/** -text
 
 # A PDF has no NUL in its first 8000 bytes often enough for text=auto to call it text, and a CRLF checkout then

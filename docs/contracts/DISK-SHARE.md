@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `DISK-SHARE` |
-| **Version** | 1.6, draft (since 2026-10-01; read at 1.6 on 2026-11-15, L0323 catch-up, from 1.5 as read on 2026-10-20; 1.6 adds rule 65, an absent `disks` read as empty, which `DiskSharing.vb` holds). Registry row `partial 1.6`; open, dated 2026-11-15: the discovery of FileDO installs by a verified, answering registered identity, and the holder vocabulary of the 1.5 record (the code still reads message text, with two members the contract does not define); ticket L0328. Owner: FileDO |
+| **Version** | 1.6, draft (since 2026-10-01; read at 1.6 on 2026-11-15, ticket L0337). Registry row `partial 1.6`; landed 2026-11-15 (ticket L0337): discovery of FileDO installs by verified, answering registered identity (ProgID Software\Classes\FileDO.DiskContainer\shell\mount\command, InstallPath, InspectManager), five-state taxonomy (FileDoInstallationState), holder vocabulary ("filedo", "file-do") read instead of message text, and extension members Encrypted and ErrorMessage documented. Owner: FileDO |
 | **Home** | `disk-sharing/README.md` and `DISK-SHARE.md` in the shared contracts catalog |
 | **Role here** | **consumer** - the Share Manager is the schema-2 client of the worker's disk requests and the host of the FileDO disk registration (`src/FastMediaSorterCompanion/Core/DiskSharing.vb`, `DiskOperations.vb`, `DiskDriveLetters.vb`, `FileDoDiskManager.vb`, `Forms/Share_Disks_Form.vb`); the worker, in the sibling repository, owns the authoritative record. Modern only |
 

@@ -9,19 +9,18 @@ Imports System.Linq
 Imports System.Windows.Forms
 
 ''' <summary>
-''' The management body of Scheduled file operations (L0297): ONE live view of the engine that two
-''' hosts embed - the Manager settings' scheduled page (ticket 222, 7.1) and the standalone Scheduled
-''' operations window. It holds no scheduler data of its own: every row is read from
-''' <see cref="ScheduledHost.Engine"/> and every command goes to it, so the page, the window and the
-''' tray menu can never disagree. The editor and history dialogs open over the hosting form.
+''' The management body of Scheduled file operations, hosted by the standalone Scheduled operations
+''' window alone (L0352: the queue and its settings in ONE window, invoked from everywhere else).
+''' It holds no scheduler data of its own: every row is read from <see cref="ScheduledHost.Engine"/>
+''' and every command goes to it, so the window, the settings page that opens it and the tray menu can
+''' never disagree. The editor and history dialogs open over the hosting form.
 ''' The panel applies no language of its own: the host applies the script font and reading direction
 ''' to the whole window before building, and the children inherit both.
 ''' </summary>
 Friend NotInheritable Class Scheduled_Manager_Panel
     Inherits UserControl
 
-    ''' <summary>Wrap width of the prose rows, 96-DPI units - the settings page's own content width,
-    ''' kept identical so the page and the window read the same.</summary>
+    ''' <summary>Wrap width of the prose rows, 96-DPI units - the window's own content width.</summary>
     Private Const ContentWidth As Integer = 520
 
     Private _schedNote As Label
@@ -50,12 +49,7 @@ Friend NotInheritable Class Scheduled_Manager_Panel
     ''' constructor - the engine events refresh everything else live.</summary>
     Private ReadOnly _panelSettings As New ShareSettings()
 
-    ''' <summary>Raised after every refresh of the list, so a host (the settings page's section
-    ''' summary) can keep its own counter honest without reading the engine a second time.</summary>
-    Friend Event StateChanged As EventHandler
-
-    ''' <summary>The autostart link was clicked: each host routes it its own way - the settings page
-    ''' to its startup page, the standalone window to the settings window's startup page.</summary>
+    ''' <summary>The autostart link was clicked: the window opens the settings window's startup page.</summary>
     Friend Event AutostartLinkRequested As EventHandler
 
     Public Sub New()
@@ -91,7 +85,7 @@ Friend NotInheritable Class Scheduled_Manager_Panel
         AddRow(root, _schedAutostartLink)
 
         ' The statement of section 0, once: what this is and where it lives. The sentence every surface repeats.
-        _schedNote = NoteLabel(Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним, выполняются им и настраиваются в его настройках. Расписание работает только пока менеджер запущен."))
+        _schedNote = NoteLabel(Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним и выполняются им. Расписание работает только пока менеджер запущен."))
         _schedNote.Name = "managerSchedNote"
         AddRow(root, _schedNote)
 
@@ -168,23 +162,6 @@ Friend NotInheritable Class Scheduled_Manager_Panel
     End Sub
 
     ' --- host API --------------------------------------------------------------------------------------
-
-    ''' <summary>How many operations the list holds right now - the host's summary line.</summary>
-    Friend ReadOnly Property OperationCount As Integer
-        Get
-            Return If(_schedList Is Nothing, 0, _schedList.Items.Count)
-        End Get
-    End Property
-
-    ''' <summary>Refreshes every row, button and switch from the engine.</summary>
-    Friend Sub ApplyState()
-        ApplyScheduledState()
-    End Sub
-
-    ''' <summary>The language changed: the captions of the panel's own controls and its columns.</summary>
-    Friend Sub RefreshLanguage()
-        RefreshScheduledLanguage()
-    End Sub
 
     ''' <summary>A folder the viewer's launcher asked to start a new operation from. Once the host is
     ''' presented the editor opens at once; otherwise the host calls <see cref="HandleScheduledPrefill"/>
@@ -280,7 +257,6 @@ Friend NotInheritable Class Scheduled_Manager_Panel
             _schedUpdating = False
         End Try
         RefreshScheduledButtons()
-        RaiseEvent StateChanged(Me, EventArgs.Empty)
     End Sub
 
     Private Sub RefreshScheduledButtons()
@@ -295,26 +271,6 @@ Friend NotInheritable Class Scheduled_Manager_Panel
         If _schedList Is Nothing OrElse _schedList.SelectedItems.Count = 0 Then Return ""
         Return Convert.ToString(_schedList.SelectedItems(0).Tag)
     End Function
-
-    ''' <summary>The language changed: the captions of the panel's own controls and its columns.</summary>
-    Private Sub RefreshScheduledLanguage()
-        If _schedList Is Nothing Then Return
-        _schedNote.Text = Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним, выполняются им и настраиваются в его настройках. Расписание работает только пока менеджер запущен.")
-        AddScheduledColumns()
-        _schedNew.Text = Localization.T("Создать..")
-        _schedEdit.Text = Localization.T("Изменить..")
-        _schedDelete.Text = Localization.T("Удалить")
-        _schedRunNow.Text = Localization.T("Запустить сейчас")
-        _schedRunAll.Text = Localization.T("Запустить все сейчас")
-        _schedHistory.Text = Localization.T("Журнал..")
-        _schedClearHistory.Text = Localization.T("Очистить журнал")
-        _schedExport.Text = Localization.T("Экспорт..")
-        _schedImport.Text = Localization.T("Импорт..")
-        OptionRows.RowOf(_schedFeature).SetCaption(Localization.T("Выполнять операции по расписанию на этом компьютере"))
-        _schedAutostartLink.Text = Localization.T("Открыть настройку автозапуска")
-        _schedList.AccessibleName = Share_Settings_Form.ScheduledPageCaption()
-        ApplyScheduledState()
-    End Sub
 
     ' --- commands --------------------------------------------------------------------------------------
 
@@ -460,6 +416,13 @@ Friend NotInheritable Class Scheduled_Manager_Panel
         If engine Is Nothing Then Return
         engine.FeatureEnabled = _schedFeature.Checked
     End Sub
+
+    ''' <summary>The Manager settings scheduled page's read-only reflection of the switch (L0352): the state line the
+    ''' thin invocation page shows, never a second editor of the same preference.</summary>
+    Friend Shared Function FeatureStateText(enabled As Boolean) As String
+        Return If(enabled, Localization.T("Расписание на этом компьютере включено."),
+                  Localization.T("Расписание на этом компьютере выключено."))
+    End Function
 
     ''' <summary>
     ''' The server the failed operation talks to: the registered resource behind its source or destination. The

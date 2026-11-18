@@ -9,11 +9,8 @@ type Limits struct {
 	Broadcasts          int   // live broadcasts in the account
 	BroadcastsPerDevice int   // live broadcasts one device may hold
 	ClipboardBytes      int64 // the largest clipboard value of the account (22 item BZ)
-	// Notes is the count of note records (tombstones included) one account may hold (DEVICE-EXCHANGE item FL,
-	// ticket L0321). It is a deployment default only: the config file sets it, there is no per-account
-	// override and no member on the administration wire. 0 or less is "no cap" for the store, but the
-	// server always carries at least 1 here (DefaultNotesPerAccount unless the config says otherwise).
-	Notes int
+	Notes               int
+	NotesBytes          int64
 }
 
 // DefaultClipboardBytes is the clipboard limit a deployment starts with: 5 GiB, the one limit that is
@@ -24,6 +21,8 @@ const DefaultClipboardBytes int64 = 5 << 30
 // another in the config file (limits.notesPerAccount, item FL).
 const DefaultNotesPerAccount = 5000
 
+const DefaultNotesBytes int64 = 256 << 20
+
 // DefaultMaxAccounts is the cap on the accounts of a deployment, 10 unless the operator sets another
 // (item AS).
 const DefaultMaxAccounts = 10
@@ -33,12 +32,15 @@ func (l *AccountLimits) Validate() error {
 	if l == nil {
 		return nil
 	}
-	for _, n := range []*int{l.DevicesPerAccount, l.ResourcesPerAccount, l.BroadcastsPerAccount, l.BroadcastsPerDevice} {
+	for _, n := range []*int{l.DevicesPerAccount, l.ResourcesPerAccount, l.BroadcastsPerAccount, l.BroadcastsPerDevice, l.NotesPerAccount} {
 		if n != nil && *n < 0 {
 			return ErrBadLimit
 		}
 	}
 	if l.ClipboardMaxBytes != nil && *l.ClipboardMaxBytes < 0 {
+		return ErrBadLimit
+	}
+	if l.NotesMaxBytes != nil && *l.NotesMaxBytes < 0 {
 		return ErrBadLimit
 	}
 	return nil
@@ -47,7 +49,7 @@ func (l *AccountLimits) Validate() error {
 // IsEmpty reports whether the override sets nothing (a nil override sets nothing).
 func (l *AccountLimits) IsEmpty() bool {
 	return l == nil || (l.DevicesPerAccount == nil && l.ResourcesPerAccount == nil && l.BroadcastsPerAccount == nil &&
-		l.BroadcastsPerDevice == nil && l.ClipboardMaxBytes == nil)
+		l.BroadcastsPerDevice == nil && l.ClipboardMaxBytes == nil && l.NotesPerAccount == nil && l.NotesMaxBytes == nil)
 }
 
 // Merge lays the members that are set in patch over l and returns the result; l is not changed.
@@ -70,6 +72,12 @@ func (l AccountLimits) Merge(patch *AccountLimits) AccountLimits {
 	if patch.ClipboardMaxBytes != nil {
 		l.ClipboardMaxBytes = patch.ClipboardMaxBytes
 	}
+	if patch.NotesPerAccount != nil {
+		l.NotesPerAccount = patch.NotesPerAccount
+	}
+	if patch.NotesMaxBytes != nil {
+		l.NotesMaxBytes = patch.NotesMaxBytes
+	}
 	return l
 }
 
@@ -85,7 +93,7 @@ type Policy struct {
 func DefaultPolicy() Policy {
 	return Policy{MaxAccounts: DefaultMaxAccounts, Defaults: Limits{
 		Devices: 64, Resources: 256, Broadcasts: 16, BroadcastsPerDevice: 4, ClipboardBytes: DefaultClipboardBytes,
-		Notes: DefaultNotesPerAccount,
+		Notes: DefaultNotesPerAccount, NotesBytes: DefaultNotesBytes,
 	}}
 }
 
@@ -109,6 +117,12 @@ func (p Policy) Resolve(o *AccountLimits) Limits {
 	}
 	if o.ClipboardMaxBytes != nil {
 		l.ClipboardBytes = *o.ClipboardMaxBytes
+	}
+	if o.NotesPerAccount != nil {
+		l.Notes = *o.NotesPerAccount
+	}
+	if o.NotesMaxBytes != nil {
+		l.NotesBytes = *o.NotesMaxBytes
 	}
 	return l
 }

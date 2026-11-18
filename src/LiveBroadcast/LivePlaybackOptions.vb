@@ -11,10 +11,10 @@ Imports System.Collections.Generic
 ''' defaults and every on-demand media keep theirs (spec 023 section 6.3).
 ''' </summary>
 Friend NotInheritable Class LivePlaybackOptions
-    Public Property AutoAcceptCast As Boolean
-
     ''' <summary>Used when neither the endpoint nor the descriptor names a target (section 6.3).</summary>
     Public Const DefaultTargetLatencyMs As Integer = 1000
+    ''' <summary>The default of a RELAY or TUNNEL endpoint that states none (LIVE-BROADCAST 1.7 item V, item D).</summary>
+    Public Const ExchangeTargetLatencyMs As Integer = 2000
     ''' <summary>A direct HTTP target is clamped to this range (section 6.3).</summary>
     Public Const MinTargetLatencyMs As Integer = 250
     Public Const MaxTargetLatencyMs As Integer = 2000

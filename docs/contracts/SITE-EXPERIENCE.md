@@ -10,9 +10,9 @@
 ## What this repository must do
 
 1. **Serve the kit as the catalog's file, first** (rule 1): `assets/sza-kit.css` is vendored and linked before
-   `assets/fms-site.css` on every page. The vendored copy is the `PAGE-STYLE` 3.3 file (30629 bytes; marked `-text`, so
-   the working-tree bytes are LF); the catalog's current kit is the 3.8 file (30698 bytes), so this copy is not the
-   catalog's file until it is vendored again (see the [PAGE pointer](PAGE.md); ticket L0331).
+   `assets/fms-site.css` on every page. The vendored copy is the `PAGE-STYLE` 3.8 file, byte for byte the catalog's
+   current kit (30698 bytes; marked `-text`, so the working-tree bytes are LF; re-vendored 2026-11-15, ticket L0331,
+   see the [PAGE pointer](PAGE.md)).
    `Build-SitePages.ps1 -Check` pins the vendored SHA-256.
 2. **Keep layout out of `style` attributes** (rule 4) and the pre-paint theme resolver before the first
    stylesheet (rule 7). Both are open exceptions.

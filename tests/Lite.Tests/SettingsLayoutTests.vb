@@ -216,14 +216,14 @@ Public Class SettingsLayoutTests
         ("settingsNavViewing", "Tab_Page_2"),
         ("settingsNavVideo", "Tab_Page_3"),
         ("settingsNavAudio", "Tab_Page_Audio"),
+        ("settingsNavDocuments", "Tab_Page_Documents"),
         ("settingsNavFiles", "Tab_Page_4"),
         ("settingsNavFileManager", "Tab_Page_FileManager"),
         ("settingsNavResources", "Tab_Page_Resources"),
         ("settingsNavOcr", "Tab_Page_5"),
         ("settingsNavTranslation", "Tab_Page_Translation"),
         ("settingsNavStorage", "Tab_Page_Storage"),
-        ("settingsNavAbout", "Tab_Page_About"),
-        ("settingsNavDocuments", "Tab_Page_Documents")}
+        ("settingsNavAbout", "Tab_Page_About")}
 
     ''' <summary>
     ''' The sidebar's nav rows are positional: a nav button's Tag is an index into

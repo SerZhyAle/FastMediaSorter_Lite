@@ -53,13 +53,23 @@ Friend Module LiveEndpointSelector
     End Function
 
     ''' <summary>
-    ''' The latency target the descriptor asks for: the chosen endpoint's value, then the top-level one (section 6.3),
-    ''' else Nothing (the effective default of 1000 ms is applied by <see cref="LivePlaybackOptions"/>).
+    ''' The latency target the descriptor asks for, in the reading order of LIVE-BROADCAST 1.7 item V: the endpoint's own
+    ''' value; for a direct HTTP endpoint only, the top-level one (a RELAY or TUNNEL endpoint never takes it: it is the
+    ''' LAN stream's and shorter than a path through an exchange server sustains); then the transport's default - 2000 ms
+    ''' for RELAY and TUNNEL, and Nothing for HTTP (the 1000 ms default is applied by <see cref="LivePlaybackOptions"/>).
     ''' </summary>
     Public Function TargetLatencyOf(descriptor As LiveBroadcastDescriptor, endpoint As LiveBroadcastEndpoint) As Long?
-        If endpoint IsNot Nothing AndAlso endpoint.TargetLatencyMs.HasValue Then Return endpoint.TargetLatencyMs
+        If endpoint IsNot Nothing Then
+            If endpoint.TargetLatencyMs.HasValue Then Return endpoint.TargetLatencyMs
+            If IsExchangeTransport(endpoint.Transport) Then Return LivePlaybackOptions.ExchangeTargetLatencyMs
+        End If
         If descriptor IsNot Nothing Then Return descriptor.TargetLatencyMs
         Return Nothing
+    End Function
+
+    Private Function IsExchangeTransport(transport As String) As Boolean
+        Return String.Equals(transport, "RELAY", StringComparison.OrdinalIgnoreCase) OrElse
+               String.Equals(transport, "TUNNEL", StringComparison.OrdinalIgnoreCase)
     End Function
 
     Private Function IsSupportedEndpoint(ep As LiveBroadcastEndpoint) As Boolean

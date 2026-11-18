@@ -476,7 +476,7 @@ Friend NotInheritable Class ExchangeEntrySession
         If Not String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal) Then Return False
         If resolved.State Is Nothing Then Return True
         Select Case resolved.State.Code
-            Case ExchangeAgentPipe.ErrorE2eMissing
+            Case ExchangeAgentPipe.ErrorE2eMissing, ExchangeAgentPipe.ErrorE2eMissingPeer
                 Return True
             Case ExchangeAgentPipe.ErrorSealedFailed
                 Return WaitsForBox(record)

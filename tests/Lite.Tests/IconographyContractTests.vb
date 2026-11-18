@@ -38,8 +38,6 @@ Public Class IconographyContractTests
             {"xc_Connect", "action.connect-device"},
             {"btnClipboardSend", "action.send-clipboard"},
             {"btnClipboardGet", "action.receive-clipboard"},
-            {"clipboardTraySend", "action.send-clipboard"},
-            {"clipboardTrayGet", "action.receive-clipboard"},
             {"_btnAccAdd", "action.connect-device"},
             {"_btnXCreateInvitation", "content.invitation"},
             {"_rbGuest", "content.guest"}}
@@ -60,22 +58,32 @@ Public Class IconographyContractTests
                 Assert.True(File.Exists(Path.Combine(GlyphDir, meaning.GlyphId & ".svg")), meaning.GlyphId & ".svg is not vendored")
             Else
                 Assert.StartsWith("PROPOSAL-", meaning.Proposal)
-                Assert.Equal("", meaning.GlyphId)
+                If meaning.GlyphId.Length > 0 Then
+                    ' ICON-SET section 15 (L0351): a meaning the catalog has no record for is drawn by the product and
+                    ' shipped under the id it proposes, so the drawing is vendored and the proposal is the one it filed.
+                    Assert.Equal(IconMap.SettingsDestinationGlyphsProposal, meaning.Proposal)
+                    Assert.True(File.Exists(Path.Combine(GlyphDir, meaning.GlyphId & ".svg")), meaning.GlyphId & ".svg is not vendored")
+                Else
+                    Assert.Equal("", meaning.GlyphId)
+                End If
             End If
         Next
     End Sub
 
     <Fact>
-    Public Sub The_rows_still_waiting_on_the_catalog_are_exactly_these_six()
+    Public Sub The_rows_still_waiting_on_the_catalog_are_exactly_these_four()
         ' ICON-SET rule 5 / registry exception: a control whose meaning has no usable catalog
         ' picture keeps its own under a dated exception. The list is pinned by name so a row
         ' joins or leaves it on purpose, in the same edit as the exception that records it.
         ' Left in 2026-10-07: btn_ToVideo (action.convert-to-video arrived with ICON-SET 0.21 and a
         ' glyph file in 0.28). Still here: the random slideshow and the two filled shapes wait for
         ' the variants the catalog still owes; the password eye waits for the Share Manager to adopt
-        ' action.reveal (its off form's file is owed too).
-        Dim waiting = IconMap.All.Where(Function(m) Not m.IsVocabulary).Select(Function(m) m.ControlName).OrderBy(Function(n) n, StringComparer.Ordinal).ToArray()
-        Assert.Equal(New String() {"btnRevealPassword", "btn_Random_Slideshow", "editor_Tool_Oval_Filled", "editor_Tool_Rectangle_Filled", "managerSettingsNav_exchange", "res_DevicesAdd"}, waiting)
+        ' action.reveal (its off form's file is owed too). Left 2026-11-15 (L0325): res_DevicesAdd and
+        ' managerSettingsNav_exchange draw source.exchange-server (ICON-SET 0.37).
+        ' A control is waiting only while no drawing ships for it: a section 15 proposal (L0351) ships its drawing
+        ' under the proposed id, so those are provisioned, not waiting.
+        Dim waiting = IconMap.All.Where(Function(m) Not m.IsVocabulary AndAlso m.GlyphId.Length = 0).Select(Function(m) m.ControlName).OrderBy(Function(n) n, StringComparer.Ordinal).ToArray()
+        Assert.Equal(New String() {"btnRevealPassword", "btn_Random_Slideshow", "editor_Tool_Oval_Filled", "editor_Tool_Rectangle_Filled"}, waiting)
     End Sub
 
     <Fact>

@@ -17,8 +17,9 @@ Imports System.Text.Json
 '     the record's own resourceId, never read from the box; `from` must be the record's owning device and `fromKey` the key this
 '     program trusts for that device (item DG). The opened descriptor's fingerprint must be the record's own `hostKeyFingerprint`
 '     (item DI): a record that differs is not merged, not attached and shows `sealed-failed`.
-'   - A clear `access` that came through the server is never used (item DP): a device with no `e2eKey` shows `e2e-missing`, a device
-'     that has one and still sends clear text is `sealed-failed`, and a server without `sealed` is `server-no-e2e`.
+'   - A clear `access` that came through the server is never used (item DP): a device with no `e2eKey` shows `e2e-missing`
+'     (or `e2e-missing-peer` when this device and its own record do hold a key: item FB, MissingKeyState), a device that has one and
+'     still sends clear text is `sealed-failed`, and a server without `sealed` is `server-no-e2e`.
 '   - CONSUMER as a guest (item DJ): the granted record carries `sealed` with the context `grant:<grantId>` and a payload
 '     `{access}`. A guest knows none of the owner's devices, so the first box of a grant pins its `fromKey` for that grantId (trust on
 '     first use, in the `grant:` key space of the trust store); a later box with another `fromKey` is not opened (`key-changed`).
@@ -191,19 +192,29 @@ Friend NotInheritable Class ExchangeSealedAccess
 
     ''' <summary>A clear `access` is never used through the server (item DP). Which state it shows depends on who sent it.</summary>
     Private Shared Function ClearAccessState(record As ExchangeResourceRecord, sealed As IExchangeSealedDirectory, granted As Boolean) As ConnectionDiagnosisMessage
-        If granted Then Return ConnectionDiagnosisMessages.E2eMissing
+        If granted Then Return MissingKeyState(sealed)
         Dim state As Nullable(Of ExchangeSealState) = sealed.StateOf(record.DeviceId)
         If state.HasValue AndAlso state.Value = ExchangeSealState.KeyChanged Then Return ConnectionDiagnosisMessages.KeyChanged
         ' a device with a key that still sends clear text did not seal: nothing a conforming producer does
         If state.HasValue AndAlso state.Value = ExchangeSealState.Ready Then Return ConnectionDiagnosisMessages.SealedFailed
-        Return ConnectionDiagnosisMessages.E2eMissing
+        ' a producer the directory lists without a key is the one that lacks it; one it does not list leaves the side unknown
+        Return If(state.HasValue, MissingKeyState(sealed), ConnectionDiagnosisMessages.E2eMissing)
+    End Function
+
+    ''' <summary>Item FB: the state for content that cannot be had because the source has no key. `e2e-missing-peer` only when this device
+    ''' holds a key AND its own record, as the server lists it, carries the matching `e2eKey` (state Ready): then the cure is on the other
+    ''' device. Otherwise `e2e-missing` - the lacking side is this device, or it cannot be told, which is what clients without FB do.</summary>
+    Friend Shared Function MissingKeyState(sealed As IExchangeSealedDirectory) As ConnectionDiagnosisMessage
+        If sealed Is Nothing OrElse Not sealed.HasOwnKey Then Return ConnectionDiagnosisMessages.E2eMissing
+        Dim own As Nullable(Of ExchangeSealState) = sealed.StateOf(sealed.OwnDeviceId)
+        Return If(own.HasValue AndAlso own.Value = ExchangeSealState.Ready, ConnectionDiagnosisMessages.E2eMissingPeer, ConnectionDiagnosisMessages.E2eMissing)
     End Function
 
     Private Shared Function OpenOwn(record As ExchangeResourceRecord, sealed As IExchangeSealedDirectory, ownKey As ExchangeDeviceKey) As ExchangeSealedAccessResult
         Dim state As Nullable(Of ExchangeSealState) = sealed.StateOf(record.DeviceId)
         If Not state.HasValue Then Return Failed(ConnectionDiagnosisMessages.SealedFailed)
         If state.Value = ExchangeSealState.KeyChanged Then Return Failed(ConnectionDiagnosisMessages.KeyChanged)
-        If state.Value <> ExchangeSealState.Ready Then Return Failed(ConnectionDiagnosisMessages.E2eMissing)
+        If state.Value <> ExchangeSealState.Ready Then Return Failed(MissingKeyState(sealed))
 
         Dim box As ExchangeSealedBox = Nothing
         If Not ExchangeSealedBox.TryParse(record.SealedAccessJson, box) Then Return Failed(ConnectionDiagnosisMessages.SealedFailed)

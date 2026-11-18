@@ -381,7 +381,7 @@ Public Module ShareConfigBuilder
     ''' port-forward paths above. A loopback or unparsable client host, or a malformed share id, appends
     ''' nothing: a phone cannot use them and a bad id must not be advertised. Returns True when anything was added.
     ''' </summary>
-    Private Function AppendExchangePaths(paths As StringBuilder, exchange As ExchangeExport, includeExternal As Boolean) As Boolean
+    Friend Function AppendExchangePaths(paths As StringBuilder, exchange As ExchangeExport, includeExternal As Boolean) As Boolean
         If exchange Is Nothing OrElse Not includeExternal Then Return False
         If exchange.ClientPort < 1 OrElse exchange.ClientPort > 65535 Then Return False
         Dim ep As ExchangeEndpoint = Nothing
@@ -394,8 +394,10 @@ Public Module ShareConfigBuilder
             AppendAccessPath(paths, ExchangeWireNames.RelayPortKind, ep.Host, exchange.RelayPort)
             added = True
         End If
-        If ExchangeShareIds.IsWellFormed(exchange.ShareId) Then
-            If paths.Length > 0 Then paths.Append(","c)
+        ' FMSCFG 2.6 item C3: a tunnel path is written only beside at least one direct path (lan, ipv6,
+        ' portforward or the relay port above); a tunnel-only document is refused by every reader.
+        If paths.Length > 0 AndAlso ExchangeShareIds.IsWellFormed(exchange.ShareId) Then
+            paths.Append(","c)
             paths.Append("{""kind"":").Append(J(ExchangeWireNames.TunnelKind)).
                   Append(",""host"":").Append(J(ep.Host)).
                   Append(",""port"":").Append(ep.Port.ToString(CultureInfo.InvariantCulture)).

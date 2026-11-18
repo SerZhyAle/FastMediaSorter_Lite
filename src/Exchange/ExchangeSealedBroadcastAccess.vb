@@ -28,10 +28,10 @@ Friend NotInheritable Class ExchangeSealedBroadcastAccess
                     Dim state As ExchangeSealState? = directory.StateOf(record.DeviceId)
                     If Not state.HasValue Then Return Fail("sealed-failed")
                     If state.Value = ExchangeSealState.KeyChanged Then Return Fail("key-changed")
-                    If state.Value <> ExchangeSealState.Ready Then Return Fail("e2e-missing")
+                    If state.Value <> ExchangeSealState.Ready Then Return Fail(ExchangeSealedAccess.MissingKeyState(directory).Code)
                 End If
                 Dim element As JsonElement
-                If Not root.TryGetProperty("sealed", element) Then Return Fail(If(granted, "e2e-missing", "sealed-failed"))
+                If Not root.TryGetProperty("sealed", element) Then Return Fail(If(granted, ExchangeSealedAccess.MissingKeyState(directory).Code, "sealed-failed"))
                 Dim box As ExchangeSealedBox = Nothing
                 If Not ExchangeSealedBox.TryParse(element.GetRawText(), box) Then Return Fail("sealed-failed")
                 Dim slot As String = ExchangeSealedTrustSlots.ForGrant(grantId)

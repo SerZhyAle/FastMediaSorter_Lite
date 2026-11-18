@@ -1215,6 +1215,10 @@ Partial Friend NotInheritable Class ExchangeDeviceAgent
             Dim pending As Task = ReceiveCastAsync(session, message)
             Return
         End If
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.ScheduleRequest) Then
+            Dim pending As Task = ReceiveScheduleRequestAsync(session, message)
+            Return
+        End If
         ' `open` is either for the live broadcast tunnel or the resource producer's tunnel
         If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.Open) Then
             Dim broadcastId As String = message.Text("broadcastId")

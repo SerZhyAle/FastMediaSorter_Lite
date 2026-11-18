@@ -233,11 +233,11 @@ Public Class ScheduledConditionsTests
     End Sub
 
     <Fact>
-    Public Sub Archive_takes_paths_only_in_the_first_version()
+    Public Sub Archive_accepts_a_resource_destination()
         Dim o As ScheduledOperation = Op(ScheduledAction.Archive, "D:\A", "E:\B")
         o.Destination.Kind = ScheduledLocationKind.Resource
         o.Destination.ResourceId = "r1"
-        Assert.Contains(ScheduledIssueCode.ArchiveNeedsPaths, Codes(o))
+        Assert.Empty(Codes(o))
     End Sub
 
     <Fact>

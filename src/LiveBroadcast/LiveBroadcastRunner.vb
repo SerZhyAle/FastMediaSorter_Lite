@@ -20,6 +20,9 @@ Friend Enum LiveRunEnd
     UserStopped = 0
     ''' <summary>Over: a refusal no retry would change, or the budget is spent. The policy says which.</summary>
     Failed = 1
+    ''' <summary>The producer ended the broadcast on purpose (LIVE-BROADCAST 1.5 items T and U). Not a failure: the viewer shows the
+    ''' ended state with an explicit reconnect action and makes no further automatic attempt.</summary>
+    BroadcastEnded = 2
 End Enum
 
 ''' <summary>What the runner needs from the program around it.</summary>
@@ -164,14 +167,22 @@ Friend NotInheritable Class LiveBroadcastRunner
     ''' </summary>
     Public Async Function RunAsync(cancellationToken As CancellationToken) As Task(Of LiveRunEnd)
         Dim epochReconnectPending As Boolean = False
+        ' LIVE-BROADCAST item T: the connection that just ended did so cleanly (the producer closed the body). The ONE reconnect
+        ' that follows is the question "is this an end?": refused, 404 or 410 says yes. It is asked once, so it is cleared the
+        ' moment that attempt has been made, whatever it answers.
+        Dim cleanEndPending As Boolean = False
         Do
             If cancellationToken.IsCancellationRequested Then Return Stopped()
 
             policyValue.NoteConnecting()
             NoteState(LiveSessionState.Connecting)
 
+            Dim afterCleanEnd As Boolean = cleanEndPending
+            cleanEndPending = False
+
             Dim session As LiveHttpPlaybackSession = Nothing
             Dim result As LiveOpenResult = Nothing
+            Dim everyCandidateRefused As Boolean = True
             For index As Integer = 0 To candidates.Count - 1
                 session = sessionFactory(candidates(index), options)
                 Volatile.Write(activeSession, session)
@@ -179,6 +190,7 @@ Friend NotInheritable Class LiveBroadcastRunner
                     attempt.CancelAfter(CInt(Math.Min(Integer.MaxValue, Math.Max(1L, policyValue.RemainingBudgetMs))))
                     result = Await session.OpenAsync(attempt.Token)
                 End Using
+                If result.Outcome <> LiveOpenOutcome.Refused Then everyCandidateRefused = False
                 If result.IsConnected OrElse result.IsFatal OrElse result.Outcome = LiveOpenOutcome.SealedReconnect OrElse cancellationToken.IsCancellationRequested Then Exit For
                 If index < candidates.Count - 1 Then
                     session.Dispose()
@@ -218,6 +230,8 @@ Friend NotInheritable Class LiveBroadcastRunner
                     Await CloseAsync(session)
                     Return Stopped()
                 End If
+                ' Read BEFORE the close below: disposing the session reports `Closed` and only the first answer is kept.
+                cleanEndPending = EndedCleanly(session)
                 ' Closed BEFORE the player is stopped (its read is blocked inside the stream) and BEFORE the
                 ' next connection exists: one request, never two, even in the instant between them.
                 Await CloseAsync(session)
@@ -229,18 +243,26 @@ Friend NotInheritable Class LiveBroadcastRunner
                     Return LiveRunEnd.Failed
                 End If
                 If session.SealedStatus = ExchangeSealedReceiveStatus.NeedReconnect Then
+                    ' A key epoch change is a rejoin on our side, not the producer closing the stream.
+                    cleanEndPending = False
                     epochReconnectPending = True
                     NoteState(LiveSessionState.Reconnecting)
                     Continue Do
                 End If
                 epochReconnectPending = False
                 If endCause = EndCause.Rejoin Then
+                    cleanEndPending = False
                     policyValue.NoteRejoin()
                     NoteState(LiveSessionState.Reconnecting)
                     Continue Do
                 End If
             Else
                 Await CloseAsync(session)
+                If IsDeliberateEnd(result, afterCleanEnd, everyCandidateRefused) Then
+                    policyValue.NoteBroadcastEnded()
+                    NoteState(LiveSessionState.Ended)
+                    Return LiveRunEnd.BroadcastEnded
+                End If
                 If result.IsFatal Then
                     policyValue.NoteFatalTermination(result.Termination, result.HttpStatus)
                     NoteState(LiveSessionState.Failed)
@@ -262,6 +284,32 @@ Friend NotInheritable Class LiveBroadcastRunner
                 Return Stopped()
             End Try
         Loop
+    End Function
+
+    ''' <summary>The body ended because the producer closed it (a clean end of the body, or a socket close): the first half of item T's
+    ''' "followed by one reconnect that is refused or answered 404 or 410". A reset, a stall and our own close are not.</summary>
+    Private Shared Function EndedCleanly(session As LiveHttpPlaybackSession) As Boolean
+        Dim ending As Task(Of LiveStreamEnd) = session.Ended
+        Return ending.IsCompleted AndAlso Not ending.IsFaulted AndAlso Not ending.IsCanceled AndAlso ending.Result = LiveStreamEnd.Eof
+    End Function
+
+    ''' <summary>
+    ''' Whether an attempt that did not connect is the answer of a broadcast that is over (LIVE-BROADCAST items T and U):
+    ''' a tunnel `connect` refused `ended` and a `410` always; a `404`, or every endpoint refusing the TCP connection, only as the
+    ''' one reconnect after a clean end. Everything else - a reset, a timeout, a `404` before anything played, `unavailable` on a
+    ''' tunnel - stays a lost connection or a refusal under the bounded policy.
+    ''' </summary>
+    Friend Shared Function IsDeliberateEnd(result As LiveOpenResult, afterCleanEnd As Boolean, everyCandidateRefused As Boolean) As Boolean
+        Select Case result.Outcome
+            Case LiveOpenOutcome.Ended
+                Return True
+            Case LiveOpenOutcome.NotFoundOrGone
+                Return result.HttpStatus = 410 OrElse (result.HttpStatus = 404 AndAlso afterCleanEnd)
+            Case LiveOpenOutcome.Refused
+                Return afterCleanEnd AndAlso everyCandidateRefused
+            Case Else
+                Return False
+        End Select
     End Function
 
     Private Function Stopped() As LiveRunEnd

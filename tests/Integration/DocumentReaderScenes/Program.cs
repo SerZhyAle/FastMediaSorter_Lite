@@ -86,6 +86,9 @@ static class Program
             {
                 try
                 {
+                    // OnShown is suppressed, so the chrome the real viewer builds there is built here: without it the
+                    // document panel has no ring to join (ShowDocumentPanel returns while chrome_Panels is empty).
+                    Call(window, "ApplyModernChrome");
                     Console.WriteLine("DocumentReaderScenes: opening owned fixture");
                     Call(window, "LoadPdfDocument", fixture);
                     await Until(() => (bool)Call(window, "FullPdfReaderActive") && Get(window, "pdf_Reader_TextPage") != null && picture.Image != null, "First usable PDF content");

@@ -32,6 +32,17 @@ Public NotInheritable Class ContextHelp
         Public Property ask As String = ""
         Public Property reason As String = ""
         Public Property pages As List(Of SubordinatePage)
+        ''' <summary>CONTEXT-HELP rule 3, second sentence: the controls of this window that have an entry of their own on its page.
+        ''' A control not listed here opens the top of the page. Only a <c>page</c> or <c>both</c> row can carry it: an
+        ''' <c>inherit</c> row has no page of its own to anchor into.</summary>
+        Public Property elements As List(Of ElementEntry)
+    End Class
+
+    ''' <summary>One control and the section of the help page that explains it: <c>control</c> is <c>Control.Name</c>, <c>anchor</c>
+    ''' the id of a section of the topic named by the row's <c>help</c> (a section id of tools/settings-help-copy.json).</summary>
+    Public Class ElementEntry
+        Public Property control As String = ""
+        Public Property anchor As String = ""
     End Class
 
     Public Class SubordinatePage
@@ -205,7 +216,31 @@ Public NotInheritable Class ContextHelp
         Return asm.GetManifestResourceNames().Any(Function(n) n.EndsWith(normalized.Replace("/"c, "."), StringComparison.OrdinalIgnoreCase))
     End Function
 
-    Public Shared Sub Open(form As Form)
+    ''' <summary>The Control.Name of the help button. It is never an element with an entry of its own: pressing it, or F1 while
+    ''' it has the focus, opens the beginning of the help (CONTEXT-HELP 0.3 item K).</summary>
+    Public Const HelpButtonName As String = "contextHelp"
+
+    ''' <summary>CONTEXT-HELP rule 3, second sentence: the anchor of the entry that explains the control that has the focus, or
+    ''' Nothing when it has none (the top of the surface's help). <paramref name="controlNames"/> is the focused control's
+    ''' <c>Name</c> first, then those of its parents outwards, so the innermost control with an entry wins.</summary>
+    Public Shared Function ElementFor(map As HelpMap, surfaceId As String, controlNames As IEnumerable(Of String)) As String
+        If map Is Nothing OrElse controlNames Is Nothing OrElse String.IsNullOrEmpty(surfaceId) Then Return Nothing
+        Dim surface = map.surfaces.FirstOrDefault(Function(row) String.Equals(row.id, surfaceId, StringComparison.Ordinal))
+        If surface Is Nothing OrElse surface.elements Is Nothing OrElse surface.elements.Count = 0 Then Return Nothing
+        If surface.form <> "page" AndAlso surface.form <> "both" Then Return Nothing
+        Dim chain As List(Of String) = controlNames.Where(Function(n) Not String.IsNullOrEmpty(n)).ToList()
+        If chain.Contains(HelpButtonName, StringComparer.Ordinal) Then Return Nothing
+        For Each controlName As String In chain
+            Dim name As String = controlName
+            Dim hit = surface.elements.FirstOrDefault(Function(e) String.Equals(e.control, name, StringComparison.Ordinal))
+            If hit IsNot Nothing AndAlso Not String.IsNullOrEmpty(hit.anchor) Then Return hit.anchor
+        Next
+        Return Nothing
+    End Function
+
+    ''' <summary>Opens the help of a window; <paramref name="element"/> is the anchor of the entry of the control that had the
+    ''' focus when F1 was pressed (<see cref="ElementFor"/>), Nothing for the beginning of the page.</summary>
+    Public Shared Sub Open(form As Form, Optional element As String = Nothing)
         If form Is Nothing Then Return
         Dim id = SurfaceId(form)
         Dim s = Inventory.surfaces.FirstOrDefault(Function(row) String.Equals(row.id, id, StringComparison.Ordinal))
@@ -213,7 +248,7 @@ Public NotInheritable Class ContextHelp
             Return
         End If
         Dim lang = Localization.CurrentCode
-        Open(id, lang, Nothing)
+        Open(id, lang, element)
     End Sub
 
     Public Shared Sub Open(id As String, language As String, Optional element As String = Nothing)

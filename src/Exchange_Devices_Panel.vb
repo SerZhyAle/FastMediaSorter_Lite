@@ -162,7 +162,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _readStandardButton = MakeButton("res_DevicesReadStandard", ExchangeEntryText.ReadStandardButton(), AddressOf OnReadStandardClicked)
         ' WINDOWS-UI section 11: every command carries the glyph of its verb, mono (panel commands are never answers).
         ExchangeMark.Apply(_titleLabel, 24, AddressOf RuntimeBootstrap.OpenBundledAsset)
-        ButtonGlyphs.Apply(_addButton, IconMap.GetMeaning("res_DevicesAdd").RenderGlyphId)
+        ButtonGlyphs.Apply(_addButton, IconMap.GetMeaning("res_DevicesAdd").GlyphId)
         ButtonGlyphs.Apply(_attachAllButton, "action.reconnect")
         ButtonGlyphs.Apply(_signOutButton, "nav.exit")
         ButtonGlyphs.Apply(_changePasswordButton, "action.edit")

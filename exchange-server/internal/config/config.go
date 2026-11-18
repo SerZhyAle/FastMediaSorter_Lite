@@ -74,11 +74,9 @@ type Limits struct {
 	// WebSocketMessageBytes caps one WebSocket message in both directions (WEB-BINDING websocket-binding
 	// "Messages": a host setting, default DefaultWebSocketMessage = the largest relay chunk of item U with its
 	// length word); the server closes 1009 above it. 0 means the default. A page cuts at 256 KiB or less.
-	WebSocketMessageBytes int `json:"webSocketMessageBytes"`
-	// NotesPerAccount is the count of note records (tombstones included) one account may hold (DEVICE-EXCHANGE
-	// item FL, ticket L0321): a deployment default read at start. 0 means the default, DefaultNotesPerAccount;
-	// below 0 is invalid. It is not a per-account override and has no member on the administration wire.
-	NotesPerAccount int `json:"notesPerAccount"`
+	WebSocketMessageBytes int   `json:"webSocketMessageBytes"`
+	NotesPerAccount       int   `json:"notesPerAccount"`
+	NotesMaxBytes         int64 `json:"notesMaxBytes"`
 }
 
 // Keepalive is the presence lifetime (DEVICE-EXCHANGE 7.3).
@@ -209,6 +207,7 @@ func Default() Config {
 			WebSocketMessageBytes: DefaultWebSocketMessage,
 
 			NotesPerAccount: DefaultNotesPerAccount,
+			NotesMaxBytes:   256 << 20,
 		},
 		Keepalive: Keepalive{
 			Comment:          "A device proposes an interval; the server clamps it to min..max and takes it offline after windowMultiplier missed intervals.",
@@ -308,7 +307,10 @@ func (c Config) Validate() error {
 		return errors.New("limits.clipboardBytes: must be 0 (clipboard off) or a number of bytes")
 	}
 	if l.NotesPerAccount < 0 {
-		return fmt.Errorf("limits.notesPerAccount: must be 0 (the default, %d) or a number of at least 1", DefaultNotesPerAccount)
+		return errors.New("limits.notesPerAccount: must be 0 or more")
+	}
+	if l.NotesMaxBytes < 0 {
+		return errors.New("limits.notesMaxBytes: must be 0 or more")
 	}
 	if n := l.WebSocketMessageBytes; n != 0 && (n < MinWebSocketMessage || n > MaxWebSocketMessage) {
 		return fmt.Errorf("limits.webSocketMessageBytes: must be 0 (the default, %d) or %d..%d bytes", DefaultWebSocketMessage, MinWebSocketMessage, MaxWebSocketMessage)

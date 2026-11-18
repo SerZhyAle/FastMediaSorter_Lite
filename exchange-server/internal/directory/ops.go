@@ -887,6 +887,52 @@ func (d *Dir) Receiver(account, deviceID string) (Sink, bool) {
 	return nil, false
 }
 
+// ScheduleTarget resolves the destination device of a schedule-request (DEVICE-EXCHANGE 1.15 item FQ):
+// checks in order: whether toDeviceID is a device of the account (unavailable), whether it declared
+// schedule-v1 capability at enroll (unsupported), and presence: whether it is online (unavailable).
+// Returns the control stream sink and empty string on success, or nil and the refusal reason.
+func (d *Dir) ScheduleTarget(account, deviceID string) (Sink, string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return nil, wire.ScheduleReasonUnavailable
+	}
+	s := h.devices[deviceID]
+	if s == nil {
+		return nil, wire.ScheduleReasonUnavailable
+	}
+	hasSchedule := false
+	for _, c := range s.info.Capabilities {
+		if c == wire.CapabilitySchedule {
+			hasSchedule = true
+			break
+		}
+	}
+	if !hasSchedule {
+		return nil, wire.ScheduleReasonUnsupported
+	}
+	if s.sink == nil {
+		return nil, wire.ScheduleReasonUnavailable
+	}
+	return s.sink, ""
+}
+
+// DeviceSink returns the sink of an online device of the account, or nil if not found or offline.
+func (d *Dir) DeviceSink(account, deviceID string) Sink {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return nil
+	}
+	s := h.devices[deviceID]
+	if s == nil {
+		return nil
+	}
+	return s.sink
+}
+
 // --- counts (never a list) ---
 
 // Counts are what a status may show.

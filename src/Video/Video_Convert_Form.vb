@@ -150,6 +150,10 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
 
     Private ReadOnly suppress As CheckBox
     Private ReadOnly answerRow As DialogButtonRow
+    ''' <summary>The safe answer: the one that leaves the original alone. It holds the keyboard focus when the window
+    ''' opens (APP-BEHAVIOUR rule 5, the default answer of a confirmation is the safe one), so Space as well as Enter
+    ''' declines.</summary>
+    Private ReadOnly decline As Button
 
     ''' <summary>True when the user ticked "do not ask again". Read only after an OK.</summary>
     Friend ReadOnly Property DoNotAskAgain As Boolean
@@ -196,7 +200,7 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
             .Text = Localization.T("Преобразовать"),
             .DialogResult = DialogResult.OK
         }
-        Dim decline As New Button With {
+        decline = New Button With {
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
@@ -225,6 +229,9 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
         DialogLayout.KeepRoomForRow(Me, answerRow)
+        ' The first focus is the safe answer, not the first control in tab order (the "do not ask again" box): an
+        ' irreversible delete past the Recycle Bin must not be one Space away.
+        ActiveControl = decline
     End Sub
 
 End Class

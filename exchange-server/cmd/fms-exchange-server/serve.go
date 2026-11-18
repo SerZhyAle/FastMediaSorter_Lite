@@ -246,7 +246,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	params.BroadcastsPerAccount, params.BroadcastsPerDevice, params.CodesPerAccount = l.BroadcastsPerAccount, l.BroadcastsPerDevice, l.CodesPerAccount
 	params.CastPerAccount = l.CastPendingPerAccount
 	params.MaxAccounts, params.ClipboardBytes = l.MaxAccounts, l.ClipboardBytes
-	params.NotesPerAccount = l.NotesPerAccount // 0 stays the default in Params.Policy (item FL)
+	params.NotesPerAccount, params.NotesMaxBytes = l.NotesPerAccount, l.NotesMaxBytes
 
 	// the relay of ticket 165: it shares the engine's per-address limiter and the directory
 	relayHandler := rendezvous.NewRelay(rendezvous.RelayConfig{Dir: dir, Log: logger, Limiter: limiter,
@@ -257,7 +257,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		Verifier: limits.NewVerifier(nil, l.VerifierConcurrency, 2*time.Second),
 		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger, Audit: audit,
 		PublicEndpoint: cfg.PublicEndpoint, ServerVersion: version,
-		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler, Settings: standards, Notes: noteStore,
+		Features: rendezvous.Features{Cast: true, Sealed: true, Schedule: false}, Relay: relayHandler, Settings: standards, Notes: noteStore,
 	})
 	srv := rendezvous.New(rendezvous.Config{
 		Params:          params,

@@ -92,6 +92,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "remote-exchange" : Return RemoteWindowName()
             Case "drive" : Return DriveChannelText.PageTitle()
             Case "scheduled" : Return ScheduledPageCaption()
+            Case Live_Broadcast_Form.SettingsPageId : Return LivePageCaption()
             Case Else : Return Localization.T("Справка")
         End Select
     End Function
@@ -175,10 +176,14 @@ Partial Public NotInheritable Class Share_Settings_Form
                     nextId = If(onDevice, "device", If(onQueue, "queue", "account"))
                     caption = If(onDevice, Function() DriveChannelText.DeviceGroupTitle(), If(onQueue, Function() DriveChannelText.QueueGroupTitle(), Function() DriveChannelText.AccountGroupTitle()))
                 Case "scheduled"
-                    ' The page hosts the one management body (L0297): the panel and the open-window
-                    ' link are one block, so every row lands in the same group.
+                    ' The page is one invocation block (L0352): the sentence, the state line and the
+                    ' open-window link land in the same group.
                     nextId = "operations"
                     caption = Function() Localization.T("Операции")
+                Case Live_Broadcast_Form.SettingsPageId
+                    ' The two preferences and the note of a refused change are one block (L0332).
+                    nextId = "options"
+                    caption = Function() Localization.T("Основные параметры")
                 Case "help"
                     Dim about = Array.IndexOf(rows, row) >= Array.IndexOf(rows, _aboutStart)
                     nextId = If(about, "about", "documentation")
@@ -515,6 +520,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 ApplyDriveState()
                 ApplyProducerState()
                 RefreshScheduledLanguage()
+                RefreshLiveLanguage()
                 RefreshRemoteLanguage()
                 UpdateSummaries()
                 For Each section In AllSettingsSections()

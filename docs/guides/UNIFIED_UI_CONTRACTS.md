@@ -26,17 +26,26 @@ refinement; a shared-source change that is mainline-only keeps net48 behaviour b
 `SettingsCollapsibleGroup`, `CheckBoxLayout`. Linked into the Share Manager: `ButtonGlyphs`, `IconMap`,
 `GlyphRenderer`, `CheckBoxLayout`, `SettingsNavIconPalette` - a fix there lands in both programs.
 
-## 2. Size-profile record (proposed, awaiting owner confirmation)
+## 2. Size-profile record (owner-confirmed 2026-10-30 and 2026-11-10, published 2026-11-15)
+
+The values below are the owner's answers of the 2026-10-30 and 2026-11-10 decisions of specification L0279 (Q-2, Q-3,
+the touch preset, the Settings window glyph scale), written here as the product's `UI-SIZING` section 4 record by
+ticket L0325. The captures at 100 / 150 / 200 percent that `UI-SIZING` section 4 and `BUTTONS` section 5 ask for are
+taken on a real screen (section 8); until they exist no adoption row advances on this record alone.
 
 | Item | Value |
 | --- | --- |
-| Profiles | pointer/keyboard (default), touch (explicit user choice, today `ChromeSize = touch`), compact (explicit) |
+| Profiles | pointer/keyboard (default), touch (explicit user choice, `ChromeSize = touch`), compact (explicit, not exposed yet) |
 | Ordinary targets | 32 pointer, 48 touch (logical px) |
-| Compact floor (**provisional**, Q-2) | 28 - the value `ChromeMetrics.MinTarget` already holds and `UiSizing.CompactTargetFloor` declares; `UiSizing.TargetPx` never goes below the floor scaled by 0.75 (`MinTargetScale`), so a stray scale cannot shrink a target to nothing; to be tested on screen before a compact mode is exposed |
+| Compact floor (Q-2, confirmed 2026-10-30) | 28 - `ChromeMetrics.MinTarget` and `UiSizing.CompactTargetFloor`; `UiSizing.TargetPx` never goes below the floor scaled by 0.75 (`MinTargetScale`); a compact mode is exposed only after it is tested on screen |
+| Touch preset (confirmed 2026-10-30) | `UiScale.TouchPreset` = 48 / 28, equal to `UiSizing.TouchTarget` (pinned by `UiSizingTests`, `ChromeMenuRulesTests`) |
 | Glyph tiers | 16 pointer, 20 touch, 16 compact; text-only enlargement grows a glyph by half of the text excess (`1 + 0.5 x (text - 1)`), never beyond 1.5 x its tier (`UiSizing.GlyphGrowthLimit`; reached at text factor 2.0), text factor bounded to 1.0..2.25 |
-| Interface scale range | System, 90..150 percent plus presets (`UiScale`); a change must apply live (today the Settings window needs a restart) |
-| Text enlargement | independent of interface scale; composes Windows text size once (not implemented) |
-| Resolver | `src/Chrome/UiSizing.vb` (T-3, pure, linked into the Share Manager): tokens per profile and density, `DevicePx`, `TargetPx`, `GlyphPx`, `SystemTextScale()` (Windows Text size, read but **not yet wired** into any layout). `ButtonGlyphs`, `SettingsCheckBox` and `SettingsCollapsibleGroup` take their literals from it; the chrome keeps `UiScale` + `ChromeMetrics` (pinned equal by `UiSizingTests`, moved in T-9); dialogs still scale by DPI only (T-8) |
+| Glyph variant (confirmed 2026-11-10) | the viewer Settings window keeps the full composed scale for its glyph, box and marker tiers (it is rebuilt on a scale change, never rescaled in place), so the 1.5 x bound does not apply there - recorded in section 3 |
+| Share Manager rail child rows (Q-3, confirmed 2026-10-30) | 26 logical px, a recorded variant below the floor (26 < 28 < 32) - section 3 |
+| Collapsible groups | header hit height at least 32 x scale, 8 logical px between sibling groups, marker tier 16 with an 8 px gap, in both programs (section 10.1) |
+| Interface scale range | System, 90..150 percent plus presets (`UiScale`) |
+| Text enlargement | independent of the interface scale; Windows Text size is composed once into `UiSizing` and reaches the dialogs through `DialogLayout.ApplyAutoScale` and the Settings window through its rebuild (L0279 T-2) |
+| Resolver | `src/Chrome/UiSizing.vb` (pure, linked into the Share Manager): tokens per profile and density, `DevicePx`, `TargetPx`, `GlyphPx`, `SystemTextScale()`. `ButtonGlyphs`, `SettingsCheckBox`, `SettingsCollapsibleGroup` and the Share Manager group headers take their literals from it; the chrome keeps `UiScale` + `ChromeMetrics`, pinned equal by `UiSizingTests` |
 
 ## 3. Permanent variants to record (not expiring exceptions)
 
@@ -54,8 +63,8 @@ refinement; a shared-source change that is mainline-only keeps net48 behaviour b
   547 and 561); Share Manager settings window 740 x 360 (raised from 640 on 2026-10-20; worst case Russian, 483 at both scales).
   Pinned by `SettingsRailTests` in both test projects.
 - Rail glyph treatment: identity-coloured destinations with the monochrome ink only in the selected and high-contrast states
-  (state, not a mixed level); the Manager's child destinations carry a glyph only where the catalogue has a meaning - 6 do, 14 are
-  listed in `Share_Settings_Form.ItemsWithoutMeaning` as missing meanings (ICON-SET proposal owed, owner decision).
+  (state, not a mixed level); the Manager's child destinations draw no glyph on any row
+  (`SETTINGS-NAVIGATION` 2.2 items D and E, `ICON-RENDER` 0.25 section 25; ticket L0325, 2026-11-15), pinned by `SettingsRailTests`.
 - **Chrome panel overflow policy** (`BUTTONS` section 4 rule 3: the "More" menu exists under a documented policy; recorded
   2026-10-21, ticket 243 T-9 slice 6; source of truth `ChromeLayout.ArrangeRow`, `ChromeSurface.BuildSlots`,
   `Main_Form.ToolbarOverflow.vb`). The floating panels do **not wrap rows**; a row that does not fit gives up room in this order,
@@ -92,6 +101,13 @@ refinement; a shared-source change that is mainline-only keeps net48 behaviour b
   moved onto the option row. The Manager's one exempt list in `ManagerDialogOptionRowTests` names exactly these three forms.
 - **The `Image_Editor_Form` footer is a toolbar-and-status footer, not an answer row** (owner decision 2026-10-27, Q-7): the command strip
   and the status line stay in one row and Cancel and Apply are not regrouped under it.
+- **Share Manager rail child rows are 26 logical px** (owner decision 2026-10-30, L0279 Q-3; the owner's rail revision of 2026-10-13):
+  below the confirmed compact floor of 28 and the pointer baseline of 32 (26 < 28 < 32). The rows do not overlap and the parent rows
+  keep the 32 px baseline; the registry carries the dated `UI-SIZING` exception written by L0323. The alternative - 32 px rows and a
+  scrolling rail - stays open to the owner.
+- **The viewer Settings window glyphs grow with the full composed scale** (owner decision 2026-11-10, L0279): the window is rebuilt on a
+  scale or Text size change and its glyph, box and marker tiers take the whole composed factor, so `UiSizing.GlyphGrowthLimit` (1.5 x)
+  is not applied there. Every other surface keeps the bound.
 
 ## 4. Inventory summary (static, 2026-10-20)
 
@@ -233,3 +249,74 @@ for the matrices of `BUTTONS` section 5, `BOOLEAN-OPTION` section 5, `COLLAPSIBL
 | 2026-10-21 | T-9 slice 4 built (chrome state marks, modern viewer only; BUTTONS 2.0 section 2 rule 5, section 3 rule 5, section 4 rule 3): (1) a checked `ChromeItemKind.Toggle` of the floating chrome wears exactly one non-colour mark, decided by the pure `ChromeSurface.CheckedMarkFor` - a short bar (16 x 2 logical px, `ChromeMetrics.CheckedMark*`) along the bottom edge of the item in the item own ink, painted in `PaintItemInk` (so it travels with the ink layer and stays opaque on a translucent panel), inside the item rectangle (a state change moves and resizes nothing) and identical under right-to-left in a toolbar; menu rows and caption-beside-glyph items centre it under the glyph column and mirror with the reading order; the corner pin keeps its picture (and its high-contrast frame), a bare check box keeps its own tick (the high-contrast frame is no longer stacked on it), and high contrast keeps the system-colour frame for every other toggle instead of the bar. (2) A `MenuButton` now reports `HasPopup` always and `Expanded` (not `Collapsed`) while its popup is on screen, `Collapsed` otherwise: `ChromeMenu.PopupVisibilityChanged` fires from `CloseMenu`, `ChromeSurface` remembers the button whose action left a popup open, and `CloseChild` now makes the parent the open leaf BEFORE it hides a submenu so a submenu closing is not read as the chain closing; a toggle already reported `Checked`; state changes of inspected items are announced with `AccessibleEvents.StateChange` after every layout and when a popup opens or closes. (3) The sort button reserves the widest of its nine captions in the current language: new `ChromeItem.ReservedTexts` measured in the item own font by `MeasureItemWidth`, `ChromeMenuRules.SortCaptions` as the single source of the words (the button caption and the reservation can no longer disagree), rebuilt per language by `Main_Form.SortReservedCaptions`; `cmbox_Sort` stays pinned in `BuildSlots`, so the pinned core now includes the widest caption. No string, key, default or layout order changed; the net48 fallback and the Companion are untouched. `ChromeStateMarkTests` 8 green (colour-blind silhouette comparison at light/dark x 100/175 percent x ltr/rtl x glyph/caption, ink layer, mark matrix, geometry, accessible states with a real popup, sort width in all 13 languages at two scales, an identical row at three widths for all nine orders - verified to fail without the reservation), `Chrome` filter 195 green. Owed (T-14): a look at the bar on the two rows at 100-200 percent, High Contrast, Narrator announcing expanded/collapsed and checked.
 | 2026-10-21 | T-13 statistics and Share Manager stale-result guards built (SETTINGS-NAVIGATION 2.0 section 5 rules 3, 4, 5; the cold-open fix and the timing evidence run stay OPEN): (1) `UiTimingStats` in `src/UiTimingBudget.vb` is pure - nearest-rank percentile and maximum, `Judge(kind, samples)` gives INSUFFICIENT below 20 samples and OVER_BUDGET when p95 is not strictly below the budget; three or more over-budget samples set `RepeatedOverBudget` (the constant `RepeatedOverBudgetCount`, a product reading of rule 4 "repeated", replaced by any catalog amendment); over-budget samples are listed and never dropped; warm and first-visit samples are never mixed (`UiTimingSamples` refuses a foreign kind). `tests/Integration/SettingsTimingScenes.ps1` prints per destination the warm and first-visit counts, p95, max, the verdict and a run header (build, OS and runtime, locale, scale) from the existing `UI timing:` lines, and reads saved logs with `-StatsFromLog`; a missing page kind is an n=0 INSUFFICIENT row, never a pass. (2) `Core/StaleGuard.vb` (Interlocked generation, token 0 never current) supersedes obsolete page work in the Share Manager settings window; audited async sites of `Share_Settings_Form*.vb` - GUARDED (load that carries data across an await and repaints a page): `RefreshHostingStateAsync` (`_hostingGuard`, seam `HostingProbeOverride`), `RefreshExchangeAsync` (`_exStateGuard`), `RefreshAccountsAsync` (`_exAccGuard`; the superseded read no longer paints its interim list and a read in flight when the server stops cannot bring the list back), `RefreshClipboardSize` (`_clipSizeGuard`; a transfer that finishes stales a measurement started before it). ONE-SHOT ACTION LEFT ALONE (user-initiated, runs to completion and reports, no stale page result): `OnRouterSearchClicked` (already checks `IsDisposed`), `OnWithdrawServerFeatures`, `OnApplyPort` with `EnsurePortServedAsync` and `WaitForServedPortAsync`, `OnMaxConnsCommit`, `OnLanOnlyChanged`, `ApplyExchangeHostAsync`, `ApplyExchangeEndpointAsync`, `ApplyExchangeRangeAsync`, `RunXCertificate` (renew, replace, import), `OnXCheckVisibilityClicked`, `OnXWizard`, the account verbs (`OnXAddAccount`, `ResetPasswordFor`, `OnXRemoveAccount`, `OnXRevokeDevice`, `OnXAccountLimits`), the resource verbs (`OnXUnpublishResource`, `OnXStopBroadcast`, `OnXClearClipboard`), the invitation verbs (`OnXCreateInvitation`, `OnXWithdrawInvitation`, `DisableSharedInvitation`, `OnXSetSharedInvitation`), `PerformLocalJoinAsync`, `RunManage` and the About support-bundle flow; `EnsureHostingLoaded` only starts the guarded probe. NO SEAM NEEDED (event-driven repaint marshalled with `BeginInvoke`, `IsDisposed` checked, reads the current state at paint time and carries no result): `OnScheduledEngineChanged`, `HandleScheduledPrefill`, `OnAccountAgentChanged`, the producer and account timers. (3) Rule 5: timers and subscriptions were released only on `FormClosed`, which a window disposed without being closed never raises; `ReleaseLiveResources` now runs from `FormClosed` and from `Disposed`, invalidating the four guards first. Tests: `UiTimingStatsTests` 33, `UiTiming` filter 56 green on net10 (the file is whole-file `#If Not NETFRAMEWORK`); `StaleGuardTests` 7 and `SettingsPageStaleResultTests` 7 (a stale result dropped for the hosting probe, the exchange state and the accounts read through the real window, a probe returning into a closed window paints nothing, a window opened and closed 20 times on the Manager and ExchangeServer destinations leaves no live timer and no `ConsoleExited` subscriber; with `IsCurrent` forced true the four stale tests go red); companion filter 889 passed, the 2 failures are the `SettingsRailTests` chevron clicks that need an unlocked desktop. Owed: the cold open of the viewer Settings window is 1,183 ms against the 500 ms first-visit budget (spec 183) and is not fixed here; the evidence run (at least 20 warm and 20 independent first-visit samples per destination on a real screen, read with `-StatsFromLog`) has not been taken, so no destination has a timing verdict; the clipboard-size guard has no window test (it needs a live metadata session).
 | 2026-10-27 | Specification 243 closed as development complete; the residue moved to specification 279. Owner answers recorded: Q-6 (welcome and server wizards keep their hand-built layout with 44 px targets) and Q-7 (`Image_Editor_Form` footer is a toolbar-and-status footer) as permanent variants, Q-9 (the "»" overflow menu and `EndEllipsis` on command captions stay) as a permanent variant, Q-8 built: the close-time question of `Main_Form.Lifecycle.vb` is `AskSpecs.CloseWithUnfinishedFileOperations` on the product-owned window (a system box can open behind a viewer pinned "on top"); "Close anyway" last and destructive, "Wait longer" the default and the answer of Escape and the close box; four strings in 13 languages replace the old Yes/No text; `ViewerBox.ShowSystem` has no caller left. Measured: mainline compile check PASS; `ViewerBox`, `AskModel`, `AskAnswerOrder`, `AnswerButtonGlyph`, `Localization`, `DialogGlue` filters 193 green on net10, `Localization|ViewerBox` 65 green on net10 and 40 on net48. Handed to 279: the Settings cold open and the 20 + 20 timing run, the Windows Text size and the dialogs and chrome on the size tokens, the chrome menu markers and the 14-glyph Share Manager proposal, the owner confirmations Q-1, Q-2, Q-3 and Q-5, and the runtime evidence pass (T-14). Not accepted on a real screen, no registry row advanced, the proposed deadline 2027-01-15 still awaits the owner; nothing committed, tagged, released or published. |
+| 2026-11-15 | Ticket L0325, pass 2: section 2 published as the owner-confirmed size-profile record (Q-2 28, Q-3 26 as a variant, touch preset 48, the Settings glyph variant); section 3 gained the two variants; section 10 added (collapsible-group spacing measured and fixed, the check box inventory with its gate, the settings-copy audit, the sibling-set inventory and plan). Not built, not tested until the release; the captures at 100 / 150 / 200 percent are a hand item. |
+| 2026-11-15 | Ticket L0325, pass 3: the Share Manager tray menu is glyph-free (section 10.4); `ManagerArchiveForm` moved onto an option row (10.2); the scheduled operations window links to its rail page instead of editing the feature switch (10.3); the two live broadcast moves went to ticket L0332. Not built, not tested until the release. |
+| 2026-11-15 | Ticket L0332: the two live broadcast moves of section 10.3 are built - the Manager settings page "Live broadcast" (viewers on my network, the cursor) and the viewer Settings row `live_auto_cast` (accept broadcasts automatically); both windows keep one link. Not built, not tested until the release. |
+| 2026-11-18 | Ticket L0351: every settings destination of the Share Manager carries its glyph (the owner order of 2026-11-18, the second exit of `SETTINGS-NAVIGATION` 2.2 item E). The rail child level draws one on every row (section 10.4), the flat rails of the server and remote administration windows draw theirs, the live page row takes `feature.live-broadcast` instead of the exchange identity, and the twelve meanings the vocabulary lacked ship provisionally under the ids of `PROPOSAL-2026-11-18-fms-settings-destination-glyphs.md` (ICON-SET section 15), declared in `tools/Sync-IconGlyphs.ps1`'s product-drawn list; `Sync-IconGlyphs.ps1 -Check` exits 0. Not built, not tested until the release. |
+
+
+## 10. Inventories of ticket L0325 (2026-11-15)
+
+Static readings of the tree on 2026-11-15. They name what exists; a pixel claim still needs section 8.
+
+### 10.1 COLLAPSIBLE-GROUP section 3 rule 6 - spacing and hit height
+
+| Surface | Sibling gap | Header hit height | Topic glyph on a heading |
+| --- | --- | --- | --- |
+| Viewer Settings groups (`SettingsCollapsibleGroup`) | 8 x scale (was 6, and a scale change did not update it) | 32 x scale, at least 32 | none - the state triangle only |
+| Share Manager settings cards (`SettingsGroupCard`) | 8 (4 + 4; was 10 + 10 = 20) | 44 x scale (was 44 device px whatever the scale under the test seam) | none |
+| Share Manager sections (`CollapsibleSection`: main window and settings pages) | 8 (4 + 4; was 2 + 2 = 4) | at least 32 x scale (main-window sections were about 25 at 100 percent); settings pages 44 | none |
+
+Held by `CollapsibleGroupMarkerTests.The_sibling_gap_is_8_and_the_header_hit_height_32_scaled_built_or_rescaled`
+(100 / 150 / 200 percent, built and rescaled), `GroupMarkerHeaderTests.Every_header_kind_is_at_least_the_32_px_pointer_hit_height_at_100_150_and_200_percent`,
+`GroupMarkerHeaderTests.Two_sibling_groups_stand_8_logical_px_apart` and, for the topic glyph (`COLLAPSIBLE-GROUP` 1.3 section 8 item B),
+`CollapsibleGroupMarkerTests.No_group_heading_of_either_program_carries_a_topic_glyph`.
+
+### 10.2 BOOLEAN-OPTION - the native check box sites
+
+102 `New CheckBox` sites (85 in code, 17 in Designer files), each classified in
+`tests/Lite.Tests/TestData/boolean-option-sites.tsv`; `BooleanOptionInventoryTests` fails on a site that is not listed and on a
+listed site that no longer exists.
+
+| Class | Sites | What it means |
+| --- | --- | --- |
+| option-row | 68 | the box stands in an `OptionRowHost` (`DialogOptionRow.Create` / `CreateAt`, `OptionRows.At` / `InFlow`) |
+| settings-row | 23 | a row of the viewer Settings window (`AddSettingRow`, arranged by `SettingsCheckBox.ArrangeRow`) |
+| welcome-variant | 6 | the viewer welcome wizard, `Manager_Welcome_Form`, `Server_Welcome_Form`, `Exchange_Server_Wizard_Form` (Q-6, section 3) |
+| toolbar-toggle | 2 | the hidden carrier of the chrome's always-on-top toggle; the find options of the text editor bar (toolbar mode toggles, outside `BOOLEAN-OPTION` section 1) |
+| net48-only | 3 | `chkbox_Copy_Mode`, `chkbox_Independent_Thread_For_File_Operation`, `chkb_video_loop`: hidden by the modern shell; the x86 fallback is under the maintenance policy |
+
+Moved 2026-11-15 (L0325 pass 3): the `ManagerArchiveForm` "delete originals after the archive check" box stands on a `DialogOptionRow` in the window's docked table; the window arranges the row in `OnLoad` (the table is outside `DialogLayout.FitContent`) and grows to the table's need. The `migration` class is empty and stays in the test for the next straggler.
+
+### 10.3 SETTINGS-NAVIGATION 2.1 item A - editable settings outside the two rails
+
+| Host screen | Control | Verdict |
+| --- | --- | --- |
+| Share Manager live broadcast window (`Live_Broadcast_Form`) | "allow viewers on the local network", "show the cursor" (`AllowLanVideoViewers`, `ScreenCursor`) | **moved**, built 2026-11-15 (L0332): the Manager settings page "Live broadcast" (`Share_Settings_Form.Live.vb`, shown while the live broadcast is offered) holds both boxes, the one editor; the window keeps the link "Change in the manager settings" for the video sources. The viewers choice is applied to a running broadcast first (`UpdateNetwork`) and a refusal puts the box back and says why; the cursor reaches the next broadcast |
+| Viewer live broadcast window (`LiveBroadcast_Form`) | "accept broadcasts automatically" | **moved**, built 2026-11-15 (L0332): the row `live_auto_cast` of the viewer Settings window (files / advanced, built only while the exchange is on); the window keeps a link that closes it and opens Settings on that row |
+| Scheduled operations window (`Scheduled_Manager_Form`, hosting `Scheduled_Manager_Panel`) | the feature switch | **kept**, reversed 2026-11-18 (L0352, the owner order): the scheduled operations window is the ONE management surface of the queue and its settings, so its panel edits the switch - the only editor of that stored preference. The Manager settings' scheduled page shows the state and opens the window, never a second editor (the invocation pattern item A gives a host screen). Reverses the "**link**" verdict built by L0325 pass 3 on 2026-11-15, which had made the rail page the editor while the window linked to it |
+| Share Manager broadcasts window | "enable the gateway" | kept - starting and stopping the gateway is the window's own task |
+| Text editor find bar | match case, whole word, regular expression | kept - search modes of the bar's own task (also a Documents settings row, which sets the default) |
+| Video convert question, remote admin question | "do not ask until the program closes", "never ask again" | kept - a question's own answer, not a standing preference editor |
+| Exchange devices panel, exchange entry window | auto attach, groups of an entry | kept - attributes of one entry, not application settings |
+| Account, password, resource, share parameter, scheduled operation, package, broadcast and disk windows | their boxes | kept - fields of the object or operation the window edits |
+
+The two "move" verdicts were carried by ticket L0332 and are built (2026-11-15); the hand and layout checks are release items of that ticket.
+
+### 10.4 ICON-RENDER 0.25 section 25 - sibling sets
+
+| Program | Set | Glyphs | Plan |
+| --- | --- | --- | --- |
+| Viewer | context menus of a picture, a video, a folder, an image, an address (`Main_Form.*Menu.vb`), the "»" overflow menu, sort menu, panel handle menu | none | conforming (none) |
+| Viewer | document result menu (`Main_Form.DocumentConvert.vb`) | all five | conforming (all) |
+| Viewer | Settings rail (11 pages) | all, identity inks | conforming (all) |
+| Viewer | chrome toolbar rows | glyph-led buttons drawn by `ChromeSurface`; the path box is a text field, not a member of the set | not re-measured in this pass: the per-row count is part of the runtime evidence pass (T-14) |
+| Share Manager | settings rail, parent level | all | conforming (all) |
+| Share Manager | settings rail, child level (Manager and Exchange Server windows) | all (L0351, the owner order of 2026-11-18: a glyph on every child row) | conforming (all), held by `SettingsRailTests` |
+| Share Manager | remote administration window, flat rail (six cards) | all (L0351) | conforming (all) |
+| Share Manager | disk menu (`MainWindow.ResourceMenu.vb`, 13 items) | all | conforming (all) |
+| Share Manager | tray menu (`TrayContext.vb`) | none (L0325 pass 3: the glyph came off the exchange item and the two clipboard items; the mark stays on titles and the tray icon) | conforming (none), held by `ExchangeGroupTests.No_tray_menu_item_draws_a_glyph` |
+| Site | header navigation (`index.html` and the generated pages) | **mixed**: the theme toggle carries `app.theme`, the documentation link and the install link carry none | migrate: the theme toggle is a state control, not a destination; give it a text-only face or put the glyphs on all three, decided in the site slice of T-10 |
+| Site | language selector, section groups (`details.sec`) | none | conforming (none) |
+
+The caution glyph pair is re-recorded on the neutral face on the catalog side at the release boundary (ticket L0325 D-11).

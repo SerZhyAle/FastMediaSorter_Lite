@@ -103,6 +103,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         _drvAccess = DrvNote(DriveChannelText.AccessNote())
         sec.AddBodyRow(_drvAccess)
 
+        Dim lnkCloudsPortal As New LinkLabel With {.Name = "managerCloudsPortalLink", .AutoSize = True, .MaximumSize = New Size(DriveContentWidth, 0),
+            .Margin = New Padding(0, 4, 0, 8), .Text = Localization.T("Облачные хранилища (портал)")}
+        AddHandler lnkCloudsPortal.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("clouds"))
+        sec.AddBodyRow(lnkCloudsPortal)
+
         _drvResult = DrvNote("")
         _drvResult.ForeColor = CollapsibleSection.AttentionColor
         _drvResult.Visible = False

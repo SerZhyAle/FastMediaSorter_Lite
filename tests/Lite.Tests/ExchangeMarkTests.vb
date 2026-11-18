@@ -59,13 +59,34 @@ Public Class ExchangeMarkTests
         End Using
     End Sub
 
+    ''' <summary>EXCHANGE-MARK 0.4 rule 6: a held step is copied unchanged, so at 1:1 every pixel of the rendered mark equals
+    ''' the vendored catalog PNG (a scaling draw call would blend the part-covered edge pixels).</summary>
+    <Theory>
+    <InlineData(16)>
+    <InlineData(24)>
+    <InlineData(32)>
+    Public Sub Held_steps_are_copied_pixel_for_pixel(size As Integer)
+        If SystemInformation.HighContrast Then Return
+        Dim name As String = "exchange-mark/png/mark-" & size.ToString(Globalization.CultureInfo.InvariantCulture) & ".png"
+        Using stream As Stream = OpenAsset(name), expected As New Bitmap(stream),
+              picture = ExchangeMark.Render(size, SystemColors.WindowText, AddressOf OpenAsset)
+            Assert.Equal(expected.Size, picture.Size)
+            For x = 0 To size - 1
+                For y = 0 To size - 1
+                    Assert.Equal(expected.GetPixel(x, y).ToArgb(), picture.GetPixel(x, y).ToArgb())
+                Next
+            Next
+        End Using
+    End Sub
+
     <Fact>
-    Public Sub Pending_catalog_controls_render_the_contract_glyph_and_keep_their_proposal()
+    Public Sub Exchange_controls_draw_the_vocabulary_exchange_glyph()
+        ' ICON-SET 0.37 accepted source.exchange-server as the exchange mark's one-tone glyph (ticket L0325).
         For Each name In {"res_DevicesAdd", "managerSettingsNav_exchange"}
             Dim meaning = IconMap.GetMeaning(name)
-            Assert.Equal("", meaning.GlyphId)
-            Assert.Equal(IconMap.ExchangeMarkProposal, meaning.Proposal)
-            Using picture = GlyphRenderer.Render(meaning.RenderGlyphId, 32, Color.White, AddressOf OpenAsset)
+            Assert.Equal("source.exchange-server", meaning.GlyphId)
+            Assert.True(meaning.IsVocabulary, name)
+            Using picture = GlyphRenderer.Render(meaning.GlyphId, 32, Color.White, AddressOf OpenAsset)
                 Assert.Equal(New Size(32, 32), picture.Size)
                 Assert.True(Enumerable.Range(0, 32).Any(Function(x) Enumerable.Range(0, 32).Any(Function(y) picture.GetPixel(x, y).A > 128)))
             End Using

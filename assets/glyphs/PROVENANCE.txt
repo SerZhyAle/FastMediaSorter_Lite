@@ -1,7 +1,7 @@
 ICONOGRAPHY VENDORED ARTIFACT
 Do not hand-edit SVG files in this folder. Regenerate with tools/Sync-IconGlyphs.ps1.
-Catalog versions: ICON-SET 0.39; ICON-RENDER 0.24; ICON-EXTERNAL 0.12
-Vocabulary SHA-256: 69b354f280cee22e9fa4262c82b6fecaf8ac75f9241477135910084251ecf18b
+Catalog versions: ICON-SET 0.41; ICON-RENDER 0.26; ICON-EXTERNAL 0.12
+Vocabulary SHA-256: 920937a2e9a7563a22a0253147a76dbf9cfe4766d441e64469e8bd58a75b3f5c
 
 action.confirm.svg  ca97ceac8371975e7f8d21d26ef404858bb137a0b18d80ed0a64d34a20903f69
 action.cancel.svg  0b2ee602dece67950e801b3df344297e311e8bc33c592c7ae8cc9f5d4195c873
@@ -106,6 +106,8 @@ source.resource.svg  c871c9b3cf32e6215bb63d01717909039de21c0026d1def06192a7e32fa
 nav.dropdown.svg  2b4554e1dc7f48cacd7524070738ac6bcdcf4b8b14502b32076f1f1cc92d6e07
 nav.go-to.svg  963fc4ef130b0c1c322cd36e75a58c8c13f302f7ac5bcf06d4c7c0fcd5eb7c3c
 app.theme.svg  5ca25b24022fb2de3699c12bc67ab5d91b32eb3d7bfe7347276beca5739034c4
+content.person.svg  ae9ef41239269aec32ef365958eded0628ed96cc2283f5be06a2eb3c00bdcf3e
+app.schedule.svg  a36306be1c2fe8791edb3cf0f4a7aa590401a13ff8b736b9a35e04ce88f497d8
 status.error.svg  c59d2db08ca690854f3dce659b8d952268c41606dc4e8754cf9059f057e13936
 status.locked.svg  d1c30bdfca72fcc71bb0866c396f640bc5c101ec7c8a3e044f20918c235935f7
 status.ok.svg  0a6b564ace7eb684243fa2f85b1581ee7dd22587fb1e378ee25095a741c6ad16
@@ -119,3 +121,15 @@ tool.rectangle.svg  aad62948637923be2fafcda804fd41e16efd19de5288941b9473d1a9d07f
 view.grid.svg  257747bb1ccbbc8189a3c1498ded37576359f812e9529cd3c60687a2d1a33fb5
 
 Product-drawn (not from the catalog; compared with the catalog only to notice that it now holds the id):
+action.autostart.svg  56f8929fa588d7cdddfc46f24de8d98154a482a1ca716c6d111cc356e91f5799
+system.local-network.svg  f70288989d164e2e08ff9d5077c1e29cd5210422475671daeca7064bdf70875b
+system.network-policy.svg  e176e7465692d27aa1d42c656120270656ff5d9d37b1c8b41a053a461b080fdb
+system.service.svg  1f60a2b88b417dc24a34d7bc7ecf8ac4605860f49abd607a8f990aae45533109
+system.address-ports.svg  6f819c88f42ff58a9b7e6f2f6a025423806330cbcc9854253ef71368351e9d05
+feature.hosting-status.svg  895116bacb59280902bb443951f662f70208d4d82a370e953fe7566cb219b495
+content.devices.svg  3773b40e0387200358d9bb867e0a5afa23dc5e2f4610ebcfd8ba1de7288bcf2a
+feature.remote-admin.svg  1d1fab9b712ebef73987ba8e3f06fc44ccf06df3ca552e69693526f2afe8a4eb
+feature.publishing.svg  3b7b250754da7406783ed3cdad776b1d5a34bf00b720a40f719ef3169d0394c1
+content.server-clipboard.svg  81dda5c041403a42c01e081f588e078616b0d602360def3c2d874819ae9524e3
+device.computer.svg  ba1c29c4220d395c05f7ca05496c5d0466e3eef978cc8b8fefbcac1ba4aab409
+feature.transfer-queue.svg  9bc6a36e333d96801c63bb3c7a567d3ae3d0f49af09792eaa3647d2b03681b8a

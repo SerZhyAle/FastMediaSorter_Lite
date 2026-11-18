@@ -68,11 +68,17 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private lblChunk As Label
     Private cmbChunk As ComboBox
     Private lblFillNote As Label
-    ' L0298, backup of the folder (FileDO): how many numbered copies are kept, the seal switch and its masked password, and a
-    ' read-only note on the generation set. The password is never shown in clear and never read back into the box.
+    ' L0298, L0346, backup of the folder (FileDO): retention mode (numbered set or dated + first of month),
+    ' skip-links switch, seal switch and masked password, and a read-only note. The password is never shown in clear.
+    Private lblBackupRetention As Label
+    Private cmbBackupRetention As ComboBox
     Private spacerBackupKeep As Label
     Private lblBackupKeep As Label
     Private numBackupKeep As NumericUpDown
+    Private spacerBackupKeepMonthly As Label
+    Private chkBackupKeepMonthly As CheckBox
+    Private spacerBackupSkipLinks As Label
+    Private chkBackupSkipLinks As CheckBox
     Private spacerBackupSeal As Label
     Private chkBackupSeal As CheckBox
     Private lblBackupPassword As Label
@@ -286,12 +292,34 @@ Friend NotInheritable Class Scheduled_Operation_Form
         lblFillNote.Visible = False
         AddRow(page, spacerFill, lblFillNote)
 
-        ' --- backup of the folder (FileDO), L0298: the size of the numbered set, the seal and its password ---
+        ' --- backup of the folder (FileDO), L0298 + L0346: retention mode, keep count/days, monthly-first, skip-links, seal and password ---
+        lblBackupRetention = Caption(Localization.T("Хранение копий"))
+        cmbBackupRetention = New RowFittingComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 280, .Margin = New Padding(0, 4, 0, 0),
+            .Name = "cmbSchedBackupRetention"}
+        cmbBackupRetention.Items.Add(Localization.T("Хранить последних копий (по номеру)"))
+        cmbBackupRetention.Items.Add(Localization.T("Хранить за последние дни (по дате)"))
+        cmbBackupRetention.SelectedIndex = 0
+        AddHandler cmbBackupRetention.SelectedIndexChanged, AddressOf OnShapeChanged
+        AddRow(page, lblBackupRetention, cmbBackupRetention)
+
         lblBackupKeep = Caption(Localization.T("Хранить копий"))
         numBackupKeep = New NumericUpDown With {.Minimum = ScheduledOperation.MinBackupKeepCount, .Maximum = ScheduledOperation.MaxBackupKeepCount,
             .Value = ScheduledOperation.DefaultBackupKeepCount, .Width = 72, .Margin = New Padding(0, 4, 6, 0), .Name = "numSchedBackupKeep"}
         AddHandler numBackupKeep.ValueChanged, AddressOf OnShapeChanged
         AddRow(page, lblBackupKeep, numBackupKeep)
+
+        chkBackupKeepMonthly = New CheckBox With {.Text = Localization.T("Всегда сохранять первую копию каждого месяца"), .AutoSize = True,
+            .Margin = New Padding(0, 4, 0, 2), .Name = "chkSchedBackupKeepMonthly"}
+        AddHandler chkBackupKeepMonthly.CheckedChanged, AddressOf OnShapeChanged
+        spacerBackupKeepMonthly = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerBackupKeepMonthly, OptionRows.InFlow(chkBackupKeepMonthly))
+
+        chkBackupSkipLinks = New CheckBox With {.Text = Localization.T("Пропускать символические ссылки и точки соединения"), .AutoSize = True,
+            .Margin = New Padding(0, 4, 0, 2), .Name = "chkSchedBackupSkipLinks"}
+        AddHandler chkBackupSkipLinks.CheckedChanged, AddressOf OnShapeChanged
+        spacerBackupSkipLinks = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerBackupSkipLinks, OptionRows.InFlow(chkBackupSkipLinks))
+
         chkBackupSeal = New CheckBox With {.Text = Localization.T("Защитить копии паролем (контейнер FileDO)"), .AutoSize = True,
             .Margin = New Padding(0, 4, 0, 2), .Name = "chkSchedBackupSeal"}
         AddHandler chkBackupSeal.CheckedChanged, AddressOf OnShapeChanged
@@ -305,7 +333,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
         lblBackupNote = Note("")
         lblBackupNote.Name = "lblSchedBackupNote"
         AddRow(page, spacerBackupNote, lblBackupNote)
-        SetBackupRowsVisible(False, False)
+        SetBackupRowsVisible(False, False, False)
 
         ' --- conditions (collapsed by default, as in FMS_A) ---
         btnConditions = New Button With {.Text = Localization.T("Условия отбора файлов"), .AutoSize = True, .Name = "btnSchedConditions",
@@ -443,10 +471,21 @@ Friend NotInheritable Class Scheduled_Operation_Form
         Return cmbAction.SelectedIndex = CInt(ScheduledAction.Backup)
     End Function
 
-    ''' <summary>The backup rows (L0298); the password row only while the seal is on.</summary>
-    Private Sub SetBackupRowsVisible(isBackup As Boolean, sealed As Boolean)
+    Private Function IsBackupDated() As Boolean
+        Return cmbBackupRetention IsNot Nothing AndAlso cmbBackupRetention.SelectedIndex = CInt(BackupRetentionMode.Dated)
+    End Function
+
+    ''' <summary>The backup rows (L0298, L0346); monthly-first only while dated retention is on, password only while seal is on.</summary>
+    Private Sub SetBackupRowsVisible(isBackup As Boolean, dated As Boolean, sealed As Boolean)
+        lblBackupRetention.Visible = isBackup
+        cmbBackupRetention.Visible = isBackup
+        lblBackupKeep.Text = If(dated, Localization.T("Хранить за дней"), Localization.T("Хранить копий"))
         lblBackupKeep.Visible = isBackup
         numBackupKeep.Visible = isBackup
+        OptionRows.RowOf(chkBackupKeepMonthly).Visible = isBackup AndAlso dated
+        spacerBackupKeepMonthly.Visible = isBackup AndAlso dated
+        OptionRows.RowOf(chkBackupSkipLinks).Visible = isBackup
+        spacerBackupSkipLinks.Visible = isBackup
         OptionRows.RowOf(chkBackupSeal).Visible = isBackup
         spacerBackupSeal.Visible = isBackup
         lblBackupPassword.Visible = isBackup AndAlso sealed
@@ -455,15 +494,29 @@ Friend NotInheritable Class Scheduled_Operation_Form
         lblBackupNote.Visible = isBackup
     End Sub
 
-    ''' <summary>The read-only note of a backup (L0298): what the set holds and names, what is retired, the seal, and what to
-    ''' install when filedo.exe is not found. Text in the page, never a message box.</summary>
+    ''' <summary>The read-only note of a backup (L0298, L0346): what the set holds and names, what is retired, skip-links,
+    ''' the seal, and what to install when filedo.exe is not found. Text in the page, never a message box.</summary>
     Private Sub UpdateBackupNote()
         Dim keep As Integer = CInt(numBackupKeep.Value)
+        Dim dated As Boolean = IsBackupDated()
         Dim extension As String = If(chkBackupSeal.Checked, ".fd-sec", ".zip")
-        Dim lines As New List(Of String) From {
-            Localization.TF("Каждый запуск сохраняет папку целиком как следующую копию с номером от 001 до {0}.", keep),
-            Localization.TF("Когда набор заполнен, новая копия после проверки заменяет самую старую. Исходная папка не изменяется. Имена копий: {0}.",
-                            Localization.LtrValue(ReadOperation().BackupStem & "_001" & extension))}
+        Dim stem As String = ReadOperation().BackupStem
+        Dim lines As New List(Of String)()
+        If dated Then
+            lines.Add(Localization.TF("Каждый запуск сохраняет папку целиком с датой в имени файла. Копии старше {0} дн. удаляются после проверки новой копии.", keep))
+            If chkBackupKeepMonthly.Checked Then
+                lines.Add(Localization.T("Самая ранняя копия каждого календарного месяца сохраняется бессрочно."))
+            End If
+            lines.Add(Localization.TF("Исходная папка не изменяется. Имена копий: {0}.",
+                                      Localization.LtrValue(stem & "-2611171300" & extension)))
+        Else
+            lines.Add(Localization.TF("Каждый запуск сохраняет папку целиком как следующую копию с номером от 001 до {0}.", keep))
+            lines.Add(Localization.TF("Когда набор заполнен, новая копия после проверки заменяет самую старую. Исходная папка не изменяется. Имена копий: {0}.",
+                                      Localization.LtrValue(stem & "_001" & extension)))
+        End If
+        If chkBackupSkipLinks.Checked Then
+            lines.Add(Localization.T("Символические ссылки и точки соединения пропускаются и записываются в журнал."))
+        End If
         If chkBackupSeal.Checked Then
             lines.Add(If(backupPasswordStored,
                 Localization.T("Пароль сохранён на этом компьютере. Оставьте поле пустым, чтобы не менять его. Без пароля копию открыть нельзя."),
@@ -584,7 +637,11 @@ Friend NotInheritable Class Scheduled_Operation_Form
             Dim chunkIndex As Integer = Array.IndexOf(ScheduledOperation.ChunkSizesMb, op.ChunkSizeMb)
             If chunkIndex < 0 Then chunkIndex = Array.IndexOf(ScheduledOperation.ChunkSizesMb, ScheduledOperation.DefaultChunkSizeMb)
             cmbChunk.SelectedIndex = Math.Max(0, chunkIndex)
-            numBackupKeep.Value = ScheduledValidation.NormalizeKeepCount(op.BackupKeepCount)
+            cmbBackupRetention.SelectedIndex = CInt(op.BackupRetention)
+            numBackupKeep.Value = ScheduledValidation.NormalizeKeepCount(
+                If(op.BackupRetention = BackupRetentionMode.Dated, op.BackupKeepDays, op.BackupKeepCount))
+            chkBackupKeepMonthly.Checked = op.BackupKeepMonthly
+            chkBackupSkipLinks.Checked = op.BackupSkipLinks
             chkBackupSeal.Checked = op.BackupSealed
             txtBackupPassword.Text = ""
             backupPasswordStored = op.Action = ScheduledAction.Backup AndAlso op.Id.Length > 0 AndAlso
@@ -656,7 +713,15 @@ Friend NotInheritable Class Scheduled_Operation_Form
             op.ChunkSizeMb = ScheduledOperation.ChunkSizesMb(Math.Max(0, Math.Min(cmbChunk.SelectedIndex, ScheduledOperation.ChunkSizesMb.Length - 1)))
         End If
         If op.Action = ScheduledAction.Backup Then
-            op.BackupKeepCount = CInt(numBackupKeep.Value)
+            op.BackupRetention = If(IsBackupDated(), BackupRetentionMode.Dated, BackupRetentionMode.Generations)
+            If op.BackupRetention = BackupRetentionMode.Dated Then
+                op.BackupKeepDays = CInt(numBackupKeep.Value)
+                op.BackupKeepMonthly = chkBackupKeepMonthly.Checked
+            Else
+                op.BackupKeepCount = CInt(numBackupKeep.Value)
+                op.BackupKeepMonthly = False
+            End If
+            op.BackupSkipLinks = chkBackupSkipLinks.Checked
             op.BackupSealed = chkBackupSeal.Checked
         End If
 
@@ -719,9 +784,9 @@ Friend NotInheritable Class Scheduled_Operation_Form
         spacerOriginals.Visible = showOriginals
         ' An archive takes folders of this PC (or Google Drive) only for now (12.2 default 7).
         ' A fill takes a local folder or a drive root only (the folder-browse button stays): no resource, no Google Drive.
-        ' A backup takes two plain folders (L0298): no resource, no Google Drive on either side.
-        btnSourceResource.Visible = action <> ScheduledAction.Archive AndAlso Not isFill AndAlso Not isBackup
-        btnDestinationResource.Visible = action <> ScheduledAction.Archive AndAlso Not isBackup
+        ' A backup takes a plain folder, an SMB or an SFTP resource on each side (L0298, L0342, L0343); never Google Drive.
+        btnSourceResource.Visible = action <> ScheduledAction.Archive AndAlso Not isFill
+        btnDestinationResource.Visible = action <> ScheduledAction.Archive
         Dim driveOffered As Boolean = ScheduledDriveRegistry.IsSignedIn()
         btnSourceDrive.Visible = (driveOffered OrElse sourceLocation.Kind = ScheduledLocationKind.Drive) AndAlso action <> ScheduledAction.Delete AndAlso
                                  Not isFill AndAlso Not isBackup
@@ -732,7 +797,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
         spacerRecursive.Visible = Not isFill AndAlso Not isBackup
         ApplyConditionsVisibility()
         btnPreview.Visible = Not isFill AndAlso Not isBackup
-        SetBackupRowsVisible(isBackup, chkBackupSeal.Checked)
+        SetBackupRowsVisible(isBackup, IsBackupDated(), chkBackupSeal.Checked)
         If isBackup Then UpdateBackupNote()
         lblChunk.Visible = isFill
         cmbChunk.Visible = isFill
@@ -869,6 +934,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
     End Sub
 
     Private Sub PickResource(target As TextBox, location As ScheduledLocation)
+        ' Every usable resource is offered on every side that takes one; the backup itself stages an SFTP side (L0343).
         Using dialog As New Scheduled_Resource_Picker_Form(location)
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
             location.Kind = ScheduledLocationKind.Resource
@@ -910,7 +976,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
                 refusal = Localization.T("Пароль слишком простой: нужно не меньше 8 символов, и не один и тот же символ.")
             End If
             If refusal.Length > 0 Then
-                MessageBox.Show(Me, refusal, Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                ManagerBox.Show(Me, refusal, Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 txtBackupPassword.Focus()
                 Return
             End If
@@ -918,7 +984,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
         Dim storedId As String = ""
         Dim issues As List(Of ScheduledIssue) = engine.Upsert(op, storedId)
         If issues.Count > 0 Then
-            MessageBox.Show(Me, String.Join(vbCrLf, issues.Select(Function(i) ScheduledText.IssueText(i))),
+            ManagerBox.Show(Me, String.Join(vbCrLf, issues.Select(Function(i) ScheduledText.IssueText(i))),
                             Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
@@ -928,7 +994,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
             credentials.Delete(storedId)
         ElseIf newPassword.Length > 0 AndAlso Not credentials.Write(storedId, newPassword) Then
             ' The definition is saved; its runs wait at the "no password" wall until a password can be stored.
-            MessageBox.Show(Me, Localization.T("Не удалось сохранить пароль на этом компьютере. Операция сохранена, но запустится только после того, как пароль будет сохранён."),
+            ManagerBox.Show(Me, Localization.T("Не удалось сохранить пароль на этом компьютере. Операция сохранена, но запустится только после того, как пароль будет сохранён."),
                             Localization.T("Операция по расписанию"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
         txtBackupPassword.Text = ""
@@ -956,17 +1022,17 @@ Friend NotInheritable Class Scheduled_Operation_Form
 
     Private Sub ShowPreview(result As ScheduledPreview)
         If result.Issues.Count > 0 Then
-            MessageBox.Show(Me, String.Join(vbCrLf, result.Issues.Select(Function(i) ScheduledText.IssueText(i))),
+            ManagerBox.Show(Me, String.Join(vbCrLf, result.Issues.Select(Function(i) ScheduledText.IssueText(i))),
                             Localization.T("Что будет выполнено сейчас"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
         If result.Problem.IsProblem Then
-            MessageBox.Show(Me, Localization.TF("Папка недоступна: {0}", result.Problem.Detail),
+            ManagerBox.Show(Me, Localization.TF("Папка недоступна: {0}", result.Problem.Detail),
                             Localization.T("Что будет выполнено сейчас"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
         If result.DriveSource Then
-            MessageBox.Show(Me, Localization.T("Что придёт через Google Drive, станет известно при запуске."),
+            ManagerBox.Show(Me, Localization.T("Что придёт через Google Drive, станет известно при запуске."),
                             Localization.T("Что будет выполнено сейчас"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If

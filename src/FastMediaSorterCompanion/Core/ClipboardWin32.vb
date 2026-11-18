@@ -198,6 +198,15 @@ Friend NotInheritable Class ClipboardImages
 
 End Class
 
+''' <summary>The formats of one open clipboard, one at a time: the pure seam of the image-else-text decision
+''' (<see cref="ClipboardWin32.ReadImageOrText"/>), so a fake clipboard can prove it without Win32.</summary>
+Friend Interface IClipboardFormatSource
+    ''' <summary>True when the format is listed.</summary>
+    Function IsAvailable(format As UInteger) As Boolean
+    ''' <summary>A copy of the format's block, or Nothing when it cannot be read; <paramref name="tooLarge"/> past the memory bound.</summary>
+    Function Read(format As UInteger, ByRef tooLarge As Boolean) As Byte()
+End Interface
+
 ''' <summary>The production port: raw Win32 on a dedicated thread, under a bound.</summary>
 Friend NotInheritable Class ClipboardWin32
     Implements IClipboardPort
@@ -347,28 +356,57 @@ Friend NotInheritable Class ClipboardWin32
             End If
         End If
 
-        ' 2. An image: the registered PNG, else CF_DIBV5, else CF_DIB.
+        ' 2 and 3. An image, else text - decided in the pure seam below.
+        Return ReadImageOrText(New Win32FormatSource(), RegisterClipboardFormatW("PNG"), pngBytes, dibBytes, textBytes)
+    End Function
+
+    ''' <summary>
+    ''' CLIPBOARD-GUARD 0.12 item S (the read order of DEVICE-EXCHANGE item CB), as a pure decision over a format source:
+    ''' an image (the registered PNG, else CF_DIBV5, else CF_DIB), else Unicode text. The kind is decided by the first
+    ''' format that is PRESENT and that decision is final: a picture that is listed but cannot be read (a NULL block, bytes
+    ''' that are not a PNG and no DIB behind them) fails the read, and the text beside it is never read or sent in its place.
+    ''' Returns a snapshot only when the read already has its answer (too large, failed); else Nothing with the bytes set.
+    ''' </summary>
+    Friend Shared Function ReadImageOrText(source As IClipboardFormatSource, pngFormat As UInteger,
+                                           ByRef pngBytes As Byte(), ByRef dibBytes As Byte(), ByRef textBytes As Byte()) As ClipboardSnapshot
         Dim tooLarge As Boolean = False
-        Dim pngFormat As UInteger = RegisterClipboardFormatW("PNG")
-        If pngFormat <> 0UI AndAlso IsClipboardFormatAvailable(pngFormat) Then
-            pngBytes = CopyGlobal(GetClipboardData(pngFormat), tooLarge)
+        Dim pngListed As Boolean = pngFormat <> 0UI AndAlso source.IsAvailable(pngFormat)
+        Dim dibV5Listed As Boolean = source.IsAvailable(CF_DIBV5)
+        Dim dibListed As Boolean = source.IsAvailable(CF_DIB)
+        Dim imageListed As Boolean = pngListed OrElse dibV5Listed OrElse dibListed
+
+        If pngListed Then
+            pngBytes = source.Read(pngFormat, tooLarge)
             If pngBytes IsNot Nothing AndAlso Not ClipboardImages.LooksLikePng(pngBytes) Then pngBytes = Nothing
         End If
         If pngBytes Is Nothing AndAlso Not tooLarge Then
-            If IsClipboardFormatAvailable(CF_DIBV5) Then dibBytes = CopyGlobal(GetClipboardData(CF_DIBV5), tooLarge)
-            If dibBytes Is Nothing AndAlso Not tooLarge AndAlso IsClipboardFormatAvailable(CF_DIB) Then
-                dibBytes = CopyGlobal(GetClipboardData(CF_DIB), tooLarge)
-            End If
+            If dibV5Listed Then dibBytes = source.Read(CF_DIBV5, tooLarge)
+            If dibBytes Is Nothing AndAlso Not tooLarge AndAlso dibListed Then dibBytes = source.Read(CF_DIB, tooLarge)
         End If
         If tooLarge Then Return ClipboardSnapshot.OfKind(ClipboardReadKind.TooLarge)
+        ' The decided kind is final: a picture that is there but cannot be read is a failure, never text.
+        If imageListed AndAlso pngBytes Is Nothing AndAlso dibBytes Is Nothing Then Return ClipboardSnapshot.OfKind(ClipboardReadKind.Failed)
 
-        ' 3. Text, in the same open: one value is one moment of the clipboard.
-        If pngBytes Is Nothing AndAlso dibBytes Is Nothing AndAlso IsClipboardFormatAvailable(CF_UNICODETEXT) Then
-            textBytes = CopyGlobal(GetClipboardData(CF_UNICODETEXT), tooLarge)
+        ' Text, in the same open: one value is one moment of the clipboard.
+        If Not imageListed AndAlso source.IsAvailable(CF_UNICODETEXT) Then
+            textBytes = source.Read(CF_UNICODETEXT, tooLarge)
             If tooLarge Then Return ClipboardSnapshot.OfKind(ClipboardReadKind.TooLarge)
         End If
         Return Nothing
     End Function
+
+    ''' <summary>The live clipboard, one format at a time, inside the single open of <see cref="ReadNow"/>.</summary>
+    Private NotInheritable Class Win32FormatSource
+        Implements IClipboardFormatSource
+
+        Public Function IsAvailable(format As UInteger) As Boolean Implements IClipboardFormatSource.IsAvailable
+            Return IsClipboardFormatAvailable(format)
+        End Function
+
+        Public Function Read(format As UInteger, ByRef tooLarge As Boolean) As Byte() Implements IClipboardFormatSource.Read
+            Return CopyGlobal(GetClipboardData(format), tooLarge)
+        End Function
+    End Class
 
     Private Shared Function Build(png As Byte(), dib As Byte(), textBytes As Byte()) As ClipboardSnapshot
         If png IsNot Nothing Then
@@ -481,10 +519,10 @@ Friend NotInheritable Class ClipboardWin32
 
     ' --- Win32 ----------------------------------------------------------------------------------------------
 
-    Private Const CF_DIB As UInteger = 8UI
-    Private Const CF_UNICODETEXT As UInteger = 13UI
+    Friend Const CF_DIB As UInteger = 8UI
+    Friend Const CF_UNICODETEXT As UInteger = 13UI
     Private Const CF_HDROP As UInteger = 15UI
-    Private Const CF_DIBV5 As UInteger = 17UI
+    Friend Const CF_DIBV5 As UInteger = 17UI
     Private Const GMEM_MOVEABLE As UInteger = 2UI
     Private Const DROPEFFECT_COPY As Integer = 1
     Private Shared ReadOnly HWND_MESSAGE As New IntPtr(-3)

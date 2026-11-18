@@ -104,6 +104,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' Scheduled file operations (ticket 222): a page of every Share Manager, after hosting and the exchange server
         ' and before Help - it is not behind the exchange component or the Share opt-in.
         If _secScheduled IsNot Nothing Then list.Add(_secScheduled)
+        ' Live broadcast (ticket L0332): its standing preferences, right after Scheduled file operations; built only while the
+        ' live broadcast is offered. (The account and Drive pages are inserted before Help by AllSettingsSections.)
+        If _secLive IsNot Nothing Then list.Add(_secLive)
         If _secHelp IsNot Nothing Then list.Add(_secHelp)
         Return list.ToArray()
     End Function

@@ -7,11 +7,11 @@ Imports System.Drawing
 Imports System.Windows.Forms
 
 ''' <summary>
-''' The standalone Scheduled file operations window (L0297): one modeless management window that
-''' embeds <see cref="Scheduled_Manager_Panel"/>, reusing the engine and the existing editor and
-''' history dialogs. It is reached on its own - from the tray menu, from the Manager settings'
-''' scheduled page and through the viewer's wake - and states the same facts the settings page
-''' states; it holds no scheduler data of its own.
+''' The standalone Scheduled file operations window (L0297; L0352): the ONE window that manages the
+''' queue and its settings, embedding <see cref="Scheduled_Manager_Panel"/>, reusing the engine and
+''' the existing editor and history dialogs. It is invoked from everywhere the feature matters - the
+''' tray menu, the viewer's folder items and command, and the Manager settings' scheduled page, which
+''' opens this window instead of holding a second management copy. It holds no scheduler data of its own.
 ''' One instance per process: every entry point lands on the same window.
 ''' </summary>
 Friend NotInheritable Class Scheduled_Manager_Form
@@ -80,8 +80,12 @@ Friend NotInheritable Class Scheduled_Manager_Form
     End Function
 
     Private Sub RaiseAutostartLink()
+        RaiseSettingsLink("startup")
+    End Sub
+
+    Private Shared Sub RaiseSettingsLink(page As String)
         Dim route As Action(Of String) = OpenManagerSettingsPage
-        If route IsNot Nothing Then route("startup")
+        If route IsNot Nothing Then route(page)
     End Sub
 
     Protected Overrides Sub OnLoad(e As EventArgs)

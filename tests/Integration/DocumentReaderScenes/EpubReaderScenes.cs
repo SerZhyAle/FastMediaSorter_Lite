@@ -67,6 +67,8 @@ static class EpubReaderScenes
             try
             {
                 Call(window, "BuildModernLayout");
+                // OnShown is suppressed, so the chrome is built here; the document panel needs its ring (L0280).
+                Call(window, "ApplyModernChrome");
                 var preferences = (ModernViewerPreferences)Call(window, "GetModernPreferences");
                 preferences.FullEpubReader = true;
                 var watch = Stopwatch.StartNew();

@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -886,7 +886,7 @@ func TestAFailingNotesStoreIsReportedAndKeepsTheNotes(t *testing.T) {
 	log.AssertNone(t, "BOXSECRET", noteX, "alice", "bobby")
 }
 
-func TestSetPolicyKeepsTheNotesDefaultAndTheWireHasNoMemberForIt(t *testing.T) {
+func TestSetPolicyKeepsTheNotesDefaultAndNamesTheNotesMembersOnTheWire(t *testing.T) {
 	o, _ := newOps(t)
 	if got := o.Accounts.Policy().Defaults.Notes; got != accounts.DefaultNotesPerAccount {
 		t.Fatalf("the policy of a fresh store carries notes %d, want %d", got, accounts.DefaultNotesPerAccount)
@@ -913,18 +913,12 @@ func TestSetPolicyKeepsTheNotesDefaultAndTheWireHasNoMemberForIt(t *testing.T) {
 		t.Fatalf("an account resolves to notes %d, want the default 7", got)
 	}
 
-	// the answer shows no notes count: the administration wire is not extended (Assumed 9; ticket L0322 carries it
-	// to the catalog, and this guard moves with that decision)
+	// the answer names the notes members (item FY, DEVICE-EXCHANGE 1.17): the administration wire
+	// now carries them, replaced from the earlier no-notes guard that Assumed 9 asked for
 	b, _ := json.Marshal(v)
-	if strings.Contains(strings.ToLower(string(b)), "note") {
-		t.Fatalf("the policy answer names notes: %s", b)
-	}
-	for _, typ := range []reflect.Type{reflect.TypeOf(LimitsView{}), reflect.TypeOf(PolicyView{}), reflect.TypeOf(AccountView{}), reflect.TypeOf(Request{})} {
-		for i := 0; i < typ.NumField(); i++ {
-			f := typ.Field(i)
-			if strings.Contains(strings.ToLower(f.Name+" "+f.Tag.Get("json")), "note") {
-				t.Fatalf("%s.%s is a notes member on the administration wire", typ.Name(), f.Name)
-			}
+	for _, want := range []string{`"notes":7`, `"notesBytes":` + strconv.FormatInt(accounts.DefaultNotesBytes, 10)} {
+		if !strings.Contains(string(b), want) {
+			t.Fatalf("the policy answer does not show %s: %s", want, b)
 		}
 	}
 }

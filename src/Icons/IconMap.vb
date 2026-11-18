@@ -27,9 +27,12 @@ Public Module IconMap
     ''' <c>tool.rectangle</c> / <c>tool.oval</c> - or for the Share Manager to adopt
     ''' <c>action.reveal</c> (whose off form's file is also owed). Such a control keeps its
     ''' pre-contract picture under a dated exception.</summary>
-    Public Const ExchangeMarkProposal As String = "PROPOSAL-2026-10-19-exchange-server-mark.md"
-
     Public Const DesktopMeaningsProposal As String = "PROPOSAL-2026-09-24-fms-windows-meanings.md"
+
+    ''' <summary>The proposal L0351 filed for the meanings the settings destinations draw that the vocabulary has
+    ''' no record for yet (ICON-SET section 15): every settings destination of the Share Manager carries a glyph, and
+    ''' each drawing ships provisionally under its proposed id until the catalog folds the proposal in.</summary>
+    Public Const SettingsDestinationGlyphsProposal As String = "PROPOSAL-2026-11-18-fms-settings-destination-glyphs.md"
 
     Public NotInheritable Class IconMeaning
         Public Sub New(controlName As String, glyphId As String, localizationKey As String,
@@ -45,12 +48,6 @@ Public Module IconMap
         End Sub
 
         Public ReadOnly Property ControlName As String
-        Public ReadOnly Property RenderGlyphId As String
-            Get
-                Return If(Proposal = ExchangeMarkProposal, "exchange-mark", GlyphId)
-            End Get
-        End Property
-
         Public ReadOnly Property GlyphId As String
         Public ReadOnly Property LocalizationKey As String
         Public ReadOnly Property Role As IconRole
@@ -109,7 +106,7 @@ Public Module IconMap
         {"settingsNavFileManager", New IconMeaning("settingsNavFileManager", "view.grid", "Панель изображений", IconRole.Content)},
         {"settingsNavResources", New IconMeaning("settingsNavResources", "source.resource", "Ресурс", IconRole.Content)},
         {"btn_Resource", New IconMeaning("btn_Resource", "source.resource", "Ресурс", IconRole.Content)},
-        {"res_DevicesAdd", New IconMeaning("res_DevicesAdd", "", "Сервер обмена", IconRole.Content, ExchangeMarkProposal)},
+        {"res_DevicesAdd", New IconMeaning("res_DevicesAdd", "source.exchange-server", "Сервер обмена", IconRole.Content)},
         {"xc_Connect", New IconMeaning("xc_Connect", "action.connect-device", "Подключить устройство", IconRole.Content)},
         {"settingsNavOcr", New IconMeaning("settingsNavOcr", "action.extract-text", "OCR", IconRole.Content)},
         {"settingsNavTranslation", New IconMeaning("settingsNavTranslation", "action.translate", "Перевод", IconRole.Content)},
@@ -120,23 +117,55 @@ Public Module IconMap
         {"managerSettingsNav_startup", New IconMeaning("managerSettingsNav_startup", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_network", New IconMeaning("managerSettingsNav_network", "system.wifi", "Сеть", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_hosting", New IconMeaning("managerSettingsNav_hosting", "system.internet", "Сеть", IconRole.Content, surface:=SM)},
-        {"managerSettingsNav_exchange", New IconMeaning("managerSettingsNav_exchange", "", "Сервер обмена", IconRole.Content, ExchangeMarkProposal, surface:=SM)},
+        {"managerSettingsNav_exchange", New IconMeaning("managerSettingsNav_exchange", "source.exchange-server", "Сервер обмена", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_exchange-account", New IconMeaning("managerSettingsNav_exchange-account", "action.connect-device", "Подключить устройство", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_drive", New IconMeaning("managerSettingsNav_drive", "source.cloud", "Google Drive", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_scheduled", New IconMeaning("managerSettingsNav_scheduled", "action.run", "Файловые операции по расписанию", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_help", New IconMeaning("managerSettingsNav_help", "app.info", "О программе", IconRole.Content, surface:=SM)},
-        {"managerSettingsNavItem_startup_appearance", New IconMeaning("managerSettingsNavItem_startup_appearance", "app.theme", "Тема и язык", IconRole.Content, surface:=SM)},
-        {"managerSettingsNavItem_exchange_invitations", New IconMeaning("managerSettingsNavItem_exchange_invitations", "content.invitation", "Приглашение", IconRole.Content, surface:=SM)},
-        {"managerSettingsNavItem_exchange_server", New IconMeaning("managerSettingsNavItem_exchange_server", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
-        {"managerSettingsNavItem_exchange-account_account", New IconMeaning("managerSettingsNavItem_exchange-account_account", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
-        {"managerSettingsNavItem_help_documentation", New IconMeaning("managerSettingsNavItem_help_documentation", "app.help", "Документация", IconRole.Content, surface:=SM)},
-        {"managerSettingsNavItem_help_about", New IconMeaning("managerSettingsNavItem_help_about", "app.info", "О программе", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_live", New IconMeaning("managerSettingsNav_live", "feature.live-broadcast", "Вещание", IconRole.Content, surface:=SM)},
         {"managerSettingsSearch", New IconMeaning("managerSettingsSearch", "action.search", "Поиск настроек", IconRole.Content, surface:=SM)},
+        ' The settings rail's child rows (a managerSettingsNavItem_<page>_<group> row names the settings block its
+        ' page holds, SETTINGS-NAVIGATION 2.3 section 2 rule 4). The owner order of 2026-11-18 (L0351) chose the
+        ' second exit of 2.2 item E: a glyph on every child row, so a level with a page-opening child never mixes
+        ' drawn and undrawn siblings (ICON-RENDER section 25). The six ids whose records exist draw them (the
+        ' reuses ICON-SET 0.39 section 24 item C.1 ruled, plus the page-level meanings); the twelve the vocabulary
+        ' has no record for ship provisionally under the ids of SettingsDestinationGlyphsProposal; SettingsRailTests
+        ' pins every row of the level as drawn.
+        {"managerSettingsNavItem_startup_startup", New IconMeaning("managerSettingsNavItem_startup_startup", "action.autostart", "Запуск вместе с Windows", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_startup_appearance", New IconMeaning("managerSettingsNavItem_startup_appearance", "app.theme", "Тема", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_network_connections", New IconMeaning("managerSettingsNavItem_network_connections", "system.local-network", "Локальная сеть", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_network_access", New IconMeaning("managerSettingsNavItem_network_access", "system.network-policy", "Сетевая политика", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_hosting_status", New IconMeaning("managerSettingsNavItem_hosting_status", "feature.hosting-status", "Состояние сервера", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_hosting_service", New IconMeaning("managerSettingsNavItem_hosting_service", "system.service", "Служба", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_exchange_server", New IconMeaning("managerSettingsNavItem_exchange_server", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange_configuration", New IconMeaning("managerSettingsNavItem_exchange_configuration", "system.address-ports", "Сетевой адрес и порты", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_exchange_accounts", New IconMeaning("managerSettingsNavItem_exchange_accounts", "content.person", "Человек", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange_devices", New IconMeaning("managerSettingsNavItem_exchange_devices", "content.devices", "Устройства", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_exchange_invitations", New IconMeaning("managerSettingsNavItem_exchange_invitations", "content.invitation", "Приглашение", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange_remote-admin", New IconMeaning("managerSettingsNavItem_exchange_remote-admin", "feature.remote-admin", "Удалённое администрирование", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_exchange_service", New IconMeaning("managerSettingsNavItem_exchange_service", "system.service", "Служба", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_exchange-account_account", New IconMeaning("managerSettingsNavItem_exchange-account_account", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange-account_publishing", New IconMeaning("managerSettingsNavItem_exchange-account_publishing", "feature.publishing", "Опубликованные папки", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_exchange-account_clipboard", New IconMeaning("managerSettingsNavItem_exchange-account_clipboard", "content.server-clipboard", "Буфер на сервере", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_drive_account", New IconMeaning("managerSettingsNavItem_drive_account", "content.person", "Человек", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_drive_device", New IconMeaning("managerSettingsNavItem_drive_device", "device.computer", "Этот компьютер", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_drive_queue", New IconMeaning("managerSettingsNavItem_drive_queue", "feature.transfer-queue", "Очередь передач", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_scheduled_operations", New IconMeaning("managerSettingsNavItem_scheduled_operations", "app.schedule", "Операции по расписанию", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_live_options", New IconMeaning("managerSettingsNavItem_live_options", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_help_documentation", New IconMeaning("managerSettingsNavItem_help_documentation", "app.help", "Справка", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_help_about", New IconMeaning("managerSettingsNavItem_help_about", "app.info", "О программе", IconRole.Content, surface:=SM)},
+        ' The remote administration window is a flat rail: its six card rows are the visible destinations, so
+        ' they draw the same meanings their blocks name (L0351); the window's hidden page row keeps the exchange
+        ' identity (SettingsPageGlyph).
+        {"managerSettingsNavItem_remote-exchange_accounts", New IconMeaning("managerSettingsNavItem_remote-exchange_accounts", "content.person", "Человек", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_remote-exchange_devices", New IconMeaning("managerSettingsNavItem_remote-exchange_devices", "content.devices", "Устройства", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_remote-exchange_status", New IconMeaning("managerSettingsNavItem_remote-exchange_status", "feature.hosting-status", "Состояние сервера", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
+        {"managerSettingsNavItem_remote-exchange_invitations", New IconMeaning("managerSettingsNavItem_remote-exchange_invitations", "content.invitation", "Приглашение", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_remote-exchange_shared-invitation", New IconMeaning("managerSettingsNavItem_remote-exchange_shared-invitation", "content.invitation", "Приглашение", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_remote-exchange_limits", New IconMeaning("managerSettingsNavItem_remote-exchange_limits", "system.network-policy", "Сетевая политика", IconRole.Content, SettingsDestinationGlyphsProposal, surface:=SM)},
         {"btnClipboardSend", New IconMeaning("btnClipboardSend", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
         {"btnClipboardGet", New IconMeaning("btnClipboardGet", "action.receive-clipboard", "Получить буфер с сервера", IconRole.Content, surface:=SM)},
         {"btnClipboardMenu", New IconMeaning("btnClipboardMenu", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
-        {"clipboardTraySend", New IconMeaning("clipboardTraySend", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
-        {"clipboardTrayGet", New IconMeaning("clipboardTrayGet", "action.receive-clipboard", "Получить буфер с сервера", IconRole.Content, surface:=SM)},
         {"_btnAccAdd", New IconMeaning("_btnAccAdd", "action.connect-device", "Подключить устройство", IconRole.Content, surface:=SM)},
         {"_btnXCreateInvitation", New IconMeaning("_btnXCreateInvitation", "content.invitation", "Приглашение", IconRole.Content, surface:=SM)},
         {"_rbGuest", New IconMeaning("_rbGuest", "content.guest", "Гость", IconRole.Content, surface:=SM)},
@@ -161,10 +190,10 @@ Public Module IconMap
     ''' language, which is the information the user needs from it.</summary>
     Public ReadOnly TextCaptionToolbarControls As New HashSet(Of String)(StringComparer.Ordinal) From {"btn_Translate"}
 
-    ' The managerSettingsNavItem_* rows are the Share Manager settings rail's items (SETTINGS-NAVIGATION 2.0 section 2
-    ' rule 4, ticket 243 T-7c): an item carries a glyph only where the vocabulary already has its meaning. Every other
-    ' item (Share_Settings_Form.SettingsItemGlyph answers "" for it) is reported as a missing meaning by SettingsRailTests,
-    ' for the catalog's proposal procedure; nothing is drawn or invented for it.
+    ' The Share Manager settings rail's child rows (managerSettingsNavItem_*) each name the settings block their
+    ' page holds (SETTINGS-NAVIGATION 2.3 section 2 rule 4). Since L0351 (the owner order of 2026-11-18) every one
+    ' draws its glyph: a level that holds a page-opening child never mixes drawn and undrawn siblings
+    ' (SETTINGS-NAVIGATION 2.2 item E, ICON-RENDER section 25).
     '
     ' One glyph, one name (ICON-SET rule 1): source.resource is the resource meaning, so
     ' settingsNavResources and btn_Resource carry the same canonical key; app.settings and

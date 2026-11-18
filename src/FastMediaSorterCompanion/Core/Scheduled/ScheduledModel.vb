@@ -26,9 +26,17 @@ Friend Enum ScheduledAction
     ''' <summary>Overwrites the free space of a local volume with FileDO's temporary files, then deletes them (ticket L0299).
     ''' Selects no files: the source is only the place the work folder is made in.</summary>
     FillFreeSpace = 4
-    ''' <summary>FileDO's backup of the source folder as one unit into a numbered generation set in the destination, optionally
-    ''' sealed (ticket L0298). Selects no files and never touches the source; only the set's own oldest generation is retired.</summary>
+    ''' <summary>FileDO's backup of the source folder as one unit into a numbered or dated retention set in the destination,
+    ''' optionally sealed (tickets L0298, L0346). Selects no files and never touches the source; only retired set files leave.</summary>
     Backup = 5
+End Enum
+
+''' <summary>How a scheduled Backup operation names and retires artifacts in the destination (L0298, L0346).</summary>
+Friend Enum BackupRetentionMode
+    ''' <summary>Numbered rotating set &lt;stem&gt;_&lt;NNN&gt;&lt;ext&gt;, 001..N (L0298, default).</summary>
+    Generations = 0
+    ''' <summary>Dated set &lt;stem&gt;-&lt;yyMMddHHmm&gt;&lt;ext&gt; older than N days retired, optionally keeping first per calendar month (L0346).</summary>
+    Dated = 1
 End Enum
 
 ''' <summary>What happens when the destination name is taken (D5). Skip is the default.</summary>
@@ -248,12 +256,23 @@ Friend NotInheritable Class ScheduledOperation
     Friend Const DefaultChunkSizeMb As Integer = 1000
     ''' <summary>The chunk sizes the editor offers (owner decision Q299-1).</summary>
     Friend Shared ReadOnly ChunkSizesMb As Integer() = {500, 1000, 2000, 5000}
+    ''' <summary>Backup only (L0298, L0346): retention mode (numbered generations or dated retention).</summary>
+    Friend Property BackupRetention As BackupRetentionMode = BackupRetentionMode.Generations
     ''' <summary>Backup only (L0298, Q298-2): how many numbered generations the destination keeps, 1..999.</summary>
     Friend Property BackupKeepCount As Integer = DefaultBackupKeepCount
     ''' <summary>One week of daily runs.</summary>
     Friend Const DefaultBackupKeepCount As Integer = 7
     Friend Const MinBackupKeepCount As Integer = 1
     Friend Const MaxBackupKeepCount As Integer = 999
+    ''' <summary>Backup only (L0346, CLI-EVENT-STREAM 0.18): how many days dated backups are kept before retirement, 1..999.</summary>
+    Friend Property BackupKeepDays As Integer = DefaultBackupKeepDays
+    Friend Const DefaultBackupKeepDays As Integer = 7
+    Friend Const MinBackupKeepDays As Integer = 1
+    Friend Const MaxBackupKeepDays As Integer = 999
+    ''' <summary>Backup only (L0346): when dated retention is active, preserve the earliest backup of each calendar month indefinitely.</summary>
+    Friend Property BackupKeepMonthly As Boolean
+    ''' <summary>Backup only (L0346): pass FileDO's skip-links so junctions and symbolic links are skipped and journaled instead of refusing.</summary>
+    Friend Property BackupSkipLinks As Boolean
     ''' <summary>Backup only (L0298, Q298-3): seal each generation as a FileDO container. Its password lives in
     ''' <see cref="ScheduledBackupCredentialStore"/>, never in this model.</summary>
     Friend Property BackupSealed As Boolean
@@ -293,7 +312,9 @@ Friend NotInheritable Class ScheduledOperation
             .Source = Source.Clone(), .Destination = Destination.Clone(), .Conditions = Conditions.Clone(),
             .AnchorMinutes = AnchorMinutes, .StartDate = StartDate, .IntervalMinutes = IntervalMinutes,
             .Conflict = Conflict, .DeleteOriginalsAfterVerify = DeleteOriginalsAfterVerify, .ChunkSizeMb = ChunkSizeMb,
-            .BackupKeepCount = BackupKeepCount, .BackupSealed = BackupSealed,
+            .BackupRetention = BackupRetention, .BackupKeepCount = BackupKeepCount,
+            .BackupKeepDays = BackupKeepDays, .BackupKeepMonthly = BackupKeepMonthly,
+            .BackupSkipLinks = BackupSkipLinks, .BackupSealed = BackupSealed,
             .RetryMissedRunsAtStart = RetryMissedRunsAtStart, .HasExplicitRetryMissedRuns = HasExplicitRetryMissedRuns,
             .ShowBalloonOnError = ShowBalloonOnError, .Halt = Halt,
             .HaltDetail = HaltDetail, .CreatedAt = CreatedAt, .Record = Record.Clone()}

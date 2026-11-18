@@ -106,7 +106,7 @@ Public Class ManagerDialogOptionRowTests
     Private Shared Function LiveWindow() As Subject
         Return New Subject("Live_Broadcast_Form (screen)",
                            Function(kit As Kit) New Live_Broadcast_Form(),
-                           Boxes(Pair("_chkCursor", True), Pair("_chkNoSound", False), Pair("_chkAllowLanViewers", False)),
+                           Boxes(Pair("_chkNoSound", False)),
                            Sub(form As Form) Fld(Of RadioButton)(form, "_rbScreen").Checked = True)
     End Function
 
@@ -679,25 +679,29 @@ Public Class ManagerDialogOptionRowTests
     End Sub
 
     <Fact, Trait("Kind", "UiForm"), Trait("Form", "Live_Broadcast_Form"), Trait("Form", "OptionRowHost")>
-    Public Sub The_live_window_shows_the_lan_row_for_the_video_sources_only_and_keeps_its_cell()
+    Public Sub The_live_window_shows_the_settings_link_for_the_video_sources_only_and_keeps_its_cell()
+        ' Ticket L0332: "allow viewers on my network" and "show the cursor" moved to the Manager settings page; the former LAN row
+        ' of the window (cell 0, 5) holds one link to that page, shown for the video sources only.
         InLanguage("en",
             Sub(kit As Kit)
-                Dim subject As Subject = New Subject("Live_Broadcast_Form", Function(k As Kit) New Live_Broadcast_Form(), Boxes(Pair("_chkAllowLanViewers", False)))
+                Dim subject As Subject = New Subject("Live_Broadcast_Form", Function(k As Kit) New Live_Broadcast_Form(), Boxes(Pair("_chkNoSound", False)))
                 Using shown As Shown = Open(subject, kit, 1.0F)
                     Dim form As Form = shown.Form
-                    Dim lan As OptionRowHost = RowOf(CheckOf(form, "_chkAllowLanViewers"))
-                    Dim table As TableLayoutPanel = DirectCast(lan.Parent, TableLayoutPanel)
-                    Dim column As Integer = table.GetColumn(lan)
-                    Dim line As Integer = table.GetRow(lan)
-                    Assert.True(column = 0 AndAlso line = 5, "the LAN row holds its own cell (0, 5), not " & column.ToString(CultureInfo.InvariantCulture) & ", " & line.ToString(CultureInfo.InvariantCulture))
+                    Dim link As LinkLabel = Fld(Of LinkLabel)(form, "_settingsLink")
+                    Dim table As TableLayoutPanel = DirectCast(link.Parent, TableLayoutPanel)
+                    Dim column As Integer = table.GetColumn(link)
+                    Dim line As Integer = table.GetRow(link)
+                    Assert.True(column = 0 AndAlso line = 5, "the link holds its own cell (0, 5), not " & column.ToString(CultureInfo.InvariantCulture) & ", " & line.ToString(CultureInfo.InvariantCulture))
                     Assert.True(Fld(Of RadioButton)(form, "_rbMicrophone").Checked, "the window starts on the microphone")
-                    Assert.False(lan.Visible, "the LAN row hides for the microphone")
+                    Assert.False(link.Visible, "the link hides for the microphone")
+                    Assert.Null(form.Controls.Find("_chkAllowLanViewers", True).FirstOrDefault())
+                    Assert.Null(form.Controls.Find("_chkCursor", True).FirstOrDefault())
 
                     For Each source As String In {"_rbScreen", "_rbCamera"}
                         Fld(Of RadioButton)(form, source).Checked = True
                         Application.DoEvents()
-                        Assert.True(lan.Visible AndAlso lan.Caption.Visible, "the LAN row shows for " & source)
-                        Assert.True(table.GetColumn(lan) = column AndAlso table.GetRow(lan) = line, "the LAN row keeps its cell for " & source)
+                        Assert.True(link.Visible, "the link shows for " & source)
+                        Assert.True(table.GetColumn(link) = column AndAlso table.GetRow(link) = line, "the link keeps its cell for " & source)
                         Dim found As New List(Of String)()
                         Audit(subject, form, subject.Window & " " & source, 1.0F, found)
                         Assert.True(found.Count = 0, String.Join(vbLf, found))
@@ -705,8 +709,8 @@ Public Class ManagerDialogOptionRowTests
                     For Each source As String In {"_rbSystemAudio", "_rbMicrophone"}
                         Fld(Of RadioButton)(form, source).Checked = True
                         Application.DoEvents()
-                        Assert.False(lan.Visible, "the whole LAN row hides for " & source)
-                        Assert.True(table.GetColumn(lan) = column AndAlso table.GetRow(lan) = line, "the LAN row keeps its cell for " & source)
+                        Assert.False(link.Visible, "the link hides for " & source)
+                        Assert.True(table.GetColumn(link) = column AndAlso table.GetRow(link) = line, "the link keeps its cell for " & source)
                     Next
                 End Using
             End Sub)

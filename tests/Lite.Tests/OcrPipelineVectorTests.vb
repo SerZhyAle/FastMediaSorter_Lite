@@ -11,9 +11,10 @@ Imports Xunit
 
 ''' <summary>
 ''' OCR-PIPELINE amendments 1.7 A (the line split cuts before a word taller than the type-size
-''' ratio) and 1.8 A/B (CJK words and lines join without a space), ticket 183: the reference
-''' implementation's own shared cases - the ones its Go and JavaScript editions both replay - run
-''' through this product's pure functions.
+''' ratio), 1.10 A (only when that word carries no letter and no digit, ticket L0330) and 1.8 A/B
+''' (CJK words and lines join without a space), ticket 183: the reference implementation's own
+''' shared cases - the ones its Go and JavaScript editions both replay - run through this
+''' product's pure functions.
 '''
 ''' The files are vendored under TestData\ocr-pipeline-vectors beside a PROVENANCE.txt whose
 ''' digests are checked first, the .fd-sec way. They are NOT the catalog's: the catalog ships no
@@ -87,11 +88,13 @@ Public Class OcrPipelineVectorTests
     End Function
 
     ''' <summary>
-    ''' The three cases of the producer's split fixture, replayed through <c>SplitLine</c>: the word
-    ''' boxes are the engine's own for two balloons whose touching outlines were read as tokens
-    ''' ("J at 2.3x, a lone "A" at 2.1x the line's word height), and a real single-size line is
-    ''' the negative. Expected is the TEXT of each run - which also holds the join, since the run's
-    ''' text is rebuilt from its own words.
+    ''' The six cases of the producer's split fixture (rewritten with 1.10 A), replayed through
+    ''' <c>SplitLine</c>: the word boxes of the two Superman rows are the engine's own, and both
+    ''' boundary tokens ("J at 2.3x, a lone "A" at 2.1x the line's word height) carry a letter, so
+    ''' they stay uncut - the known limit of 1.10 C; the same row with the outline read as a bare
+    ''' tall pipe is cut; a display word and a digit-only token taller than their line are never
+    ''' cut; and a real single-size line is the negative. Expected is the TEXT of each run - which
+    ''' also holds the join, since the run's text is rebuilt from its own words.
     ''' </summary>
     <Theory, MemberData(NameOf(StitchCases))>
     Public Sub Stitch_case_is_cut_where_the_reference_cuts(index As Integer, name As String)
@@ -178,7 +181,7 @@ Public Class OcrPipelineVectorTests
     ''' digest re-taken.</summary>
     <Fact>
     Public Sub The_fixtures_carry_the_cases_the_provenance_names()
-        Assert.Equal(3, Items(Load(StitchFile)("cases")).Count)
+        Assert.Equal(6, Items(Load(StitchFile)("cases")).Count)
         Assert.Equal(10, Items(Load(JoinFile)("words")).Count)
         Assert.Equal(4, Items(Load(JoinFile)("lines")).Count)
     End Sub

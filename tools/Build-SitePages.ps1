@@ -2012,11 +2012,15 @@ if ($Check) {
     # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-20 (the PAGE-STYLE 3.1 revision the catalog
     # published on 2026-10-17: 15926 bytes, code-surface tokens, copy-button states and the darker light accent; it replaced the
     # 1.4/1.5 file of 2026-10-07, 15661 bytes, SHA-256 27501A10.., and before it the 1.3 file, 14521 bytes, SHA-256 AEA958F8..).
+    # Re-vendored 2026-11-15 (ticket L0331) to the PAGE-STYLE 3.8 file: 30698 bytes, SHA-256 D490ABF3.. (3.6 header brand aligned
+    # with logical start/end, 3.8 `.pill` text in --acc-strong); the 3.3 file it replaced was 30629 bytes, SHA-256 4ABA1DEE...
+    # Re-vendored 2026-11-17 (hub ticket S0004, owner's order) to the PAGE-STYLE 3.12 file: 31966 bytes, SHA-256 D7EEE0BC..
+    # (the header box reaches past the content edge so the brand text keeps its padding; forced-colour glyphs and pressed controls).
     # Re-pin when the catalog moves the file again, never by hand-editing the kit.
     # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
     # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
     # assets/sza-kit.css is also marked -text in .gitattributes (PAGE-STYLE section 0 step 1), so a new clone is LF.
-    $pinnedKitSha = '4ABA1DEE10CB902EE21CA4D86E4FBEED3BF7931C64B69FE15619727FD038C141'
+    $pinnedKitSha = 'D7EEE0BC92E81D8F98603B8794BCAB64630DC37F4CE022016513F7A4028F4984'
     $kitFile = Join-Path $Root 'assets/sza-kit.css'
     if (-not (Test-Path $kitFile)) {
         $problems += "Kit identity: missing assets/sza-kit.css"
@@ -2044,12 +2048,15 @@ if ($Check) {
     # 3. Family grid URLs vs pinned list
     $pinnedFamilyUrls = @(
         'https://serzhyale.github.io/FastMediaSorter_mob_v2/',
+        'https://serzhyale.github.io/FastMediaSorter_WEB/',
         'https://serzhyale.github.io/CyrFlip/',
         'https://serzhyale.github.io/doc-html-translate/',
         'https://serzhyale.github.io/FileDO/',
         'https://serzhyale.github.io/StreamsPlayer/',
         'https://serzhyale.github.io/OneClickRunner/',
         'https://serzhyale.github.io/universal-agent-kit/',
+        'https://serzhyale.github.io/DeviceInfo_Android/',
+        'https://serzhyale.github.io/Tourist_Android/',
         'https://sza.od.ua/'
     )
     $actualFamilyUrls = @($copy._family.members | ForEach-Object { $_.url })

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-PIPELINE` |
-| **Version** | 1.10, active (read at 1.10 on 2026-11-15, L0323 catch-up; Implements stays `partial 1.9` in the registry. 1.5-1.9 are additive and no constant this product inherits moved - every inherited `src/Ocr/` value still matched the section 5 table on 2026-10-07). 1.10 A narrows the tall-word cut to a token with no letter and no digit; `OcrLineSplitter` still cuts before every tall word and the vendored shared fixture is the pre-1.10 file: a dated exception of 2026-11-15, ticket L0330. Owner: doc-html-translate (the reference implementation) |
+| **Version** | 1.10, active (read at 1.10 on 2026-11-15, L0323 catch-up; Implements stays `partial 1.9` in the registry. 1.5-1.9 are additive and no constant this product inherits moved - every inherited `src/Ocr/` value still matched the section 5 table on 2026-10-07). 1.10 A narrows the tall-word cut to a token with no letter and no digit; `OcrLineSplitter` adopts it since 2026-11-15 (ticket L0330, `OcrPipelineVersion` 12, the rewritten shared fixture re-vendored with its digest; compiled, not tested until the release). Owner: doc-html-translate (the reference implementation) |
 | **Home** | `ocr-overlay/ocr-pipeline.md` in the shared contracts catalog |
 | **Role here** | consumer of part of the mechanism and the **source of inherited constants**; the rules that bind are `OCR-OVERLAY`'s |
 
@@ -23,13 +23,14 @@ colour-sampler numbers that source is this contract - by section, and by the sta
 
 Ported: the line split by word gap (1.1 item A, ratio 3.5, `OcrLineSplitter`) and, since 2026-10-13 (ticket
 183), its cut before a word taller than the type-size ratio (1.7 item A, 1.6 taken by reference from
-`OcrBlockBuilder.TypeSizeRatio`, `OcrLineSplitter.MaxWordHeightRatio`); the CJK word and line join (1.8 items A
+`OcrBlockBuilder.TypeSizeRatio`, `OcrLineSplitter.MaxWordHeightRatio`), which since 2026-11-15 (ticket L0330) fires
+only on a token with no letter and no digit (1.10 item A, `OcrLineSplitter.HasLetterOrDigit`); the CJK word and line join (1.8 items A
 and B, Hangul gap 0.33, `OcrTextJoin`), with every decision still reading the spaced text
 (`OcrLine.SpacedText` - the principle of 1.8 F, which the reference states for its rescue admission and this
 product applies to its line filter and attempt scorer); clustering by line pitch (2.5), the translatability
 filter (2.6), the plate colour and ring sampler on the mainline (3.2, 3.3) and the fit ladder (3.4). Held by
 the reference's own shared cases, vendored with a digest under `tests/Lite.Tests/TestData/ocr-pipeline-vectors/`
-(the catalog ships no vector for either amendment).
+(the catalog ships no vector for these amendments; the split file is the 1.10 rewrite of 2026-11-08, six cases).
 
 Not ported, each stating that an older port keeps working: the concealment modes (1.3), the pipe repair (1.5),
 the anchored rescue admission (1.6), the grey sweep (1.7 B), the rescue comparator's word count (1.8 C), the
@@ -39,7 +40,7 @@ with a scored multi-attempt Tesseract pass instead of the reference's rescue lad
 nothing to attach to here. Of the stage 1.7 A hands the token to - the orphan rule of 1.1 D - this product has
 none (nor the stroke test of 1.1 C); a tall token therefore leads its run and meets the same confidence and
 translatability filters as every other line, which is what the reference's shared split cases expect of the
-text. 1.8 is ported with no exception open; 1.7 A is reopened narrowly by 1.10 A (the version line, ticket L0330).
+text. 1.8 and 1.7 A as narrowed by 1.10 A are ported with no exception open.
 
 - The ring-band sentence this repository found contradicting the owner's code (ticket 033 finding F9) was
   corrected by the owner in 1.2 item E; nothing is open against it.

@@ -815,6 +815,13 @@ Partial Public Class Main_Form
         Table_Form.RequestOpenAtFileManager()
         ShowSettingsWindow()
     End Sub
+
+    ''' <summary>The "Open live broadcast" window's link (L0332): the settings window, standing on the automatic-accept row.</summary>
+    Friend Sub ShowSettingsWindowAtLiveCast()
+        EnsureSettingsWindow()
+        Table_Form.RequestOpenAtLiveCast()
+        ShowSettingsWindow()
+    End Sub
 #End If
 
     ''' <summary>F7 - the window fills the screen. Friend, and a method rather than two

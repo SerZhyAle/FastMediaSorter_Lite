@@ -243,9 +243,11 @@ Public Class OcrLineSplitterTests
         Assert.Single(OcrLineSplitter.SplitLine(line))
     End Sub
 
-    ' --- the tall-word cut (OCR-PIPELINE 1.7 A) --------------------------------
+    ' --- the tall-word cut (OCR-PIPELINE 1.7 A, narrowed by 1.10 A) ----------------
     ' The reference's own split cases are replayed in OcrPipelineVectorTests; what follows are the
     ' edges the amendment's text leaves to a reader, each one decided the way its words read.
+    ' Since 1.10 A the height cuts only before a token with no letter and no digit, so the rows that
+    ' must be cut by height are built with OutlineRow (the tall words read as the glyph "|").
 
     ''' <summary>A row of equal-looking words, 20 px tall, packed with 8 px gaps - so the gap rule
     ''' (3.5 x 20 = 70 px) has nothing to say and any cut in these tests is the height rule's.</summary>
@@ -266,15 +268,28 @@ Public Class OcrLineSplitterTests
         }
     End Function
 
+    ''' <summary>A row like <see cref="Row"/>, but every word taller than the height limit reads as
+    ''' the outline glyph "|" - the one kind of token 1.10 A still cuts before.</summary>
+    Private Shared Function OutlineRow(ParamArray heights As Integer()) As OcrLine
+        Dim line As OcrLine = Row(heights)
+        Dim limit As Double = OcrLineSplitter.MedianWordHeight(line) * OcrLineSplitter.MaxWordHeightRatio
+        For Each word As OcrWord In line.Words
+            If word.Box.Height > limit Then word.Text = "|"
+        Next
+        line.Text = String.Join(" ", line.Words.Select(Function(w) w.Text))
+        Return line
+    End Function
+
     <Fact>
     Public Sub TallWord_CutsBeforeItself_AndLeadsTheNextRun()
-        ' "GEE, TH-THANKS, J OON'T DEPEND": the touching outlines of two balloons read as a 36 px
-        ' token on a 15 px line (2.4x). No gap holds the boundary - the stroke is INSIDE the token's
-        ' box - so the cut is before the token, and the token starts the run after it.
-        Dim line As OcrLine = MakeLine("GEE, TH-THANKS, J OON'T DEPEND", Rectangle.FromLTRB(49, 602, 430, 637), 0.7F,
+        ' "GEE, TH-THANKS, | OON'T DEPEND": the touching outlines of two balloons read as a 35 px
+        ' pipe on a 15 px line (2.3x) - the producer's row one with the outline read as a bare
+        ' token. No gap holds the boundary - the stroke is INSIDE the token's box - so the cut is
+        ' before the token, and the token starts the run after it.
+        Dim line As OcrLine = MakeLine("GEE, TH-THANKS, | OON'T DEPEND", Rectangle.FromLTRB(49, 602, 430, 637), 0.7F,
             W("GEE,", 49, 610, 63, 16, 0.95F),
             W("TH-THANKS,", 106, 610, 124, 15, 0.79F),
-            W("J", 249, 602, 27, 35, 0.02F),
+            W("|", 258, 602, 4, 35, 0.4F),
             W("OON'T", 283, 610, 61, 15, 0.83F),
             W("DEPEND", 351, 610, 79, 15, 0.88F))
         Assert.True(WidestRatio(line) < OcrLineSplitter.MaxWordGapRatio, "the gap rule must have nothing to say here")
@@ -283,18 +298,18 @@ Public Class OcrLineSplitterTests
 
         Assert.Equal(2, runs.Count)
         Assert.Equal("GEE, TH-THANKS,", runs(0).Text)
-        Assert.Equal("J OON'T DEPEND", runs(1).Text)
+        Assert.Equal("| OON'T DEPEND", runs(1).Text)
         ' Each run is boxed to its own words: the tall token is in the second, not shared.
         Assert.Equal(Rectangle.FromLTRB(49, 610, 230, 626), runs(0).Box)
-        Assert.Equal(Rectangle.FromLTRB(249, 602, 430, 637), runs(1).Box)
+        Assert.Equal(Rectangle.FromLTRB(258, 602, 430, 637), runs(1).Box)
     End Sub
 
     <Fact>
     Public Sub TallWord_IsCutOnlyWhenStrictlyTallerThanTheRatioTimesTheMedian()
         ' Median 20, limit 1.6 x 20 = 32. A word of exactly 32 stays; 33 goes.
         Assert.Equal(20, OcrLineSplitter.MedianWordHeight(Row(20, 20, 32, 20, 20)))
-        Assert.Single(OcrLineSplitter.SplitLine(Row(20, 20, 32, 20, 20)))
-        Assert.Equal(2, OcrLineSplitter.SplitLine(Row(20, 20, 33, 20, 20)).Count)
+        Assert.Single(OcrLineSplitter.SplitLine(OutlineRow(20, 20, 32, 20, 20)))
+        Assert.Equal(2, OcrLineSplitter.SplitLine(OutlineRow(20, 20, 33, 20, 20)).Count)
     End Sub
 
     <Fact>
@@ -349,9 +364,9 @@ Public Class OcrLineSplitterTests
         ' "cuts before such a word" read literally: every word over the limit has a cut before it,
         ' so two tall tokens in a row make a run of one between the neighbours. The amendment says
         ' nothing about a pair; the reading closest to the text is kept and recorded here.
-        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(Row(20, 20, 20, 60, 60, 20, 20, 20))
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(OutlineRow(20, 20, 20, 60, 60, 20, 20, 20))
         Assert.Equal(3, runs.Count)
-        Assert.Equal({"w0 w1 w2", "w3", "w4 w5 w6 w7"}, runs.Select(Function(r) r.Text).ToArray())
+        Assert.Equal({"w0 w1 w2", "|", "| w5 w6 w7"}, runs.Select(Function(r) r.Text).ToArray())
     End Sub
 
     <Fact>
@@ -360,7 +375,7 @@ Public Class OcrLineSplitterTests
         ' regrouped into columns and the clustering must not re-sort them.
         Dim regrouped As Boolean = False
         Dim lines As List(Of OcrLine) = OcrLineSplitter.SplitStitchedLines(
-            New List(Of OcrLine) From {Row(20, 20, 60, 20, 20)}, regrouped)
+            New List(Of OcrLine) From {OutlineRow(20, 20, 60, 20, 20)}, regrouped)
         Assert.True(regrouped)
         Assert.Equal(2, lines.Count)
 
@@ -368,6 +383,112 @@ Public Class OcrLineSplitterTests
         Dim plain As New List(Of OcrLine) From {Row(20, 20, 21, 20, 20)}
         Assert.Same(plain, OcrLineSplitter.SplitStitchedLines(plain, regrouped))
         Assert.False(regrouped)
+    End Sub
+
+    ' --- 1.10 A: the tall word must carry no letter and no digit ---------------
+
+    <Fact>
+    Public Sub TallWordWithALetter_IsNotCutByItsHeight_AndIsReturnedByIdentity()
+        ' "w2" is lettering - a display word, a heavy ascender - however tall its box stands.
+        Dim line As OcrLine = Row(20, 20, 60, 20, 20)
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(line)
+        Assert.Single(runs)
+        Assert.Same(line, runs(0))
+    End Sub
+
+    <Theory>
+    <InlineData("A")>
+    <InlineData("ж")>
+    <InlineData("字")>
+    <InlineData("5")>
+    <InlineData("1994")>
+    <InlineData("٣")>
+    <InlineData("|A")>
+    <InlineData("(7)")>
+    Public Sub TallWordCarryingALetterOrDigit_IsNeverCutByHeight(text As String)
+        Dim line As OcrLine = Row(20, 20, 60, 20, 20)
+        line.Words(2).Text = text
+        Assert.Single(OcrLineSplitter.SplitLine(line))
+    End Sub
+
+    <Theory>
+    <InlineData("/")>
+    <InlineData("|")>
+    <InlineData("}")>
+    <InlineData("\")>
+    <InlineData("©")>
+    <InlineData("--")>
+    <InlineData("")>
+    Public Sub TallTokenWithNoLetterAndNoDigit_IsStillCutBefore(text As String)
+        Dim line As OcrLine = Row(20, 20, 60, 20, 20)
+        line.Words(2).Text = text
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(line)
+        Assert.Equal(2, runs.Count)
+        Assert.Equal("w0 w1", runs(0).Text)
+    End Sub
+
+    <Fact>
+    Public Sub TallCurlyQuoteToken_IsStillCutBefore()
+        ' The producer's row one reads its outline as "“J" and carries a letter; the same quote
+        ' alone is punctuation. Built with ChrW: a smart quote may not stand in a VB literal.
+        Dim line As OcrLine = Row(20, 20, 60, 20, 20)
+        line.Words(2).Text = ChrW(&H201C)
+        Assert.Equal(2, OcrLineSplitter.SplitLine(line).Count)
+    End Sub
+
+    <Fact>
+    Public Sub TallSupplementaryPlaneLetter_IsALetter()
+        ' U+20000 is a Han letter outside the BMP: two UTF-16 units, one code point, category Lo.
+        ' Reading UTF-16 units would see two lone surrogates and cut before it.
+        Dim line As OcrLine = Row(20, 20, 60, 20, 20)
+        line.Words(2).Text = Char.ConvertFromUtf32(&H20000)
+        Assert.True(OcrLineSplitter.HasLetterOrDigit(line.Words(2).Text))
+        Assert.Single(OcrLineSplitter.SplitLine(line))
+    End Sub
+
+    <Fact>
+    Public Sub HasLetterOrDigit_ReadsUnicodeLettersAndDecimalDigits()
+        Assert.False(OcrLineSplitter.HasLetterOrDigit(Nothing))
+        Assert.False(OcrLineSplitter.HasLetterOrDigit(""))
+        Assert.False(OcrLineSplitter.HasLetterOrDigit(" /|\}-- "))
+        Assert.True(OcrLineSplitter.HasLetterOrDigit("| a |"))
+        Assert.True(OcrLineSplitter.HasLetterOrDigit("/ 7"))
+        ' A lone surrogate is no letter.
+        Assert.False(OcrLineSplitter.HasLetterOrDigit(ChrW(&HD840)))
+    End Sub
+
+    <Fact>
+    Public Sub TallWordWithALetter_IsStillCutByAWideGap()
+        ' 1.10 A withdraws only the height evidence for a letter-bearing word: the gap evidence
+        ' still applies to it as to any word. "BIG" stands 312 px from its neighbour (20x the
+        ' 15 px median) and 36 px tall.
+        Dim line As OcrLine = MakeLine("ONE TWO BIG END", Rectangle.FromLTRB(0, 90, 488, 126), 0.9F,
+            W("ONE", 0, 100, 40, 15, 0.9F),
+            W("TWO", 48, 100, 40, 15, 0.9F),
+            W("BIG", 400, 90, 40, 36, 0.9F),
+            W("END", 448, 100, 40, 15, 0.9F))
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(line)
+        Assert.Equal(2, runs.Count)
+        Assert.Equal("ONE TWO", runs(0).Text)
+        Assert.Equal("BIG END", runs(1).Text)
+    End Sub
+
+    <Fact>
+    Public Sub OneSizeLineWithATallOutlineGlyph_IsCutBeforeIt_The17ASentenceIsWithdrawn()
+        ' 1.7 A said the cut never fires on a line of one size; 1.10 A withdraws that sentence. A
+        ' line whose other words all stand at one height is still cut before a tall outline glyph.
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(OutlineRow(15, 15, 15, 40, 15, 15))
+        Assert.Equal(2, runs.Count)
+        Assert.Equal("w0 w1 w2", runs(0).Text)
+        Assert.Equal("| w4 w5", runs(1).Text)
+    End Sub
+
+    <Fact>
+    Public Sub PipelineVersion_CarriesTheLetterRuleBump()
+        ' 1.10 A changes which lines exist, and so which plates a page holds - cached content. A
+        ' revert of the bump would show here before it shows as a stale overlay.
+        Assert.True(OcrPipeline.OcrPipelineVersion >= 12,
+                    "OcrPipelineVersion must be at least 12 once the tall-word cut reads letters (1.10 A)")
     End Sub
 
     ' --- the reading order -----------------------------------------------------

@@ -445,6 +445,12 @@ Friend Module LiveBroadcastReader
                     If epElem.ValueKind = JsonValueKind.Object Then
                         Dim ep As LiveBroadcastEndpoint = ParseEndpoint(epElem)
                         If ep IsNot Nothing Then
+                            ' LIVE-BROADCAST 1.7 item W: an endpoint that states no mode takes the descriptor's top-level one.
+                            ' A mode that is stated but not understood stays Unknown, so that endpoint is still skipped.
+                            If String.IsNullOrEmpty(ep.Mode) Then
+                                ep.Mode = descriptor.Mode
+                                ep.ModeValue = descriptor.ModeValue
+                            End If
                             descriptor.Endpoints.Add(ep)
                         End If
                     End If

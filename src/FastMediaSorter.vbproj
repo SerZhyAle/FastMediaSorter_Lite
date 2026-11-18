@@ -562,7 +562,7 @@
     <Compile Include="CacheMaintenance.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
-    <!-- LETTERBOX-BARS / LETTERBOX-HALO 0.1: the pure math of the perspective bars and the halo, once.
+    <!-- LETTERBOX-BARS / LETTERBOX-HALO 0.2: the pure math of the perspective bars and the halo, once.
          NOT a whole-file seam - the bars are shared code and the x86 exe compiles them through it
          (Main_Form.PerspectiveBackground.vb, Imaging\EdgeSampler.vb); only the halo callers are
          mainline-only. Held to the catalog's vectors by LetterboxFillConformanceTests. -->
@@ -990,6 +990,8 @@
     <Compile Include="Streams\StreamCatalogRow.vb" />
     <Compile Include="Streams\StreamRefusal.vb" />
     <Compile Include="Streams\StreamIdentity.vb" />
+    <Compile Include="Streams\StreamFacetTables.vb" />
+    <Compile Include="Streams\StreamFacetFold.vb" />
     <Compile Include="Streams\M3uPlaylistReader.vb" />
     <Compile Include="Streams\StreamCsvWriter.vb" />
     <Compile Include="Streams\StreamCatalogValidator.vb" />
