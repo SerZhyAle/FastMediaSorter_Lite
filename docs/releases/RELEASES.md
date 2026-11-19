@@ -9,11 +9,11 @@ What each package was built as last, what each channel carries, and every public
 | Package | Channel | Kind | Live | Since | In flight | Ref |
 | --- | --- | --- | --- | --- | --- | --- |
 | user | github (GitHub Releases) | github | 26.11.19.1500 | 2026-11-19 | - | [v26.11.19.1500](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.11.19.1500) |
-| user | winget (winget (User)) | winget | 26.11.13.0130 | 2026-11-18 | - | [link](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/SerZhyAle/FastMediaSorter/26.11.13.0130) |
-| user | installer (Site installer (User)) | url | 26.11.13.0130 | 2026-11-18 | - | [link](https://serzhyale.github.io/FastMediaSorter_Lite/) |
+| user | winget (winget (User)) | winget | 26.11.13.0130 | 2026-11-18 | 26.11.19.1500 submitted (2026-11-19) | [PR#484245](https://github.com/microsoft/winget-pkgs/pull/484245) |
+| user | installer (Site installer (User)) | url | 26.11.19.1500 | 2026-11-19 | - | [link](https://serzhyale.github.io/FastMediaSorter_Lite/) |
 | user-msix | msstore (Microsoft Store (MSIX)) | msstore | 26.1113.130.0 | 2026-11-18 | - | [Submission 12](https://apps.microsoft.com/detail/9N59Z73WZ53C) |
-| server | winget-server (winget (Server)) | winget | 26.11.13.0130 | 2026-11-18 | - | [link](https://github.com/microsoft/winget-pkgs/tree/master/manifests/s/SerZhyAle/FastMediaSorter/Server/26.11.13.0130) |
-| server | installer-server (Site installer (Server)) | url | 26.11.13.0130 | 2026-11-18 | - | [link](https://serzhyale.github.io/FastMediaSorter_Lite/server.html) |
+| server | winget-server (winget (Server)) | winget | 26.11.13.0130 | 2026-11-18 | 26.11.19.1500 submitted (2026-11-19) | [PR#484246](https://github.com/microsoft/winget-pkgs/pull/484246) |
+| server | installer-server (Site installer (Server)) | url | 26.11.19.1500 | 2026-11-19 | - | [link](https://serzhyale.github.io/FastMediaSorter_Lite/server.html) |
 
 ## Last builds
 
@@ -27,17 +27,22 @@ What each package was built as last, what each channel carries, and every public
 | user | setup | test | 26.11.19.1500 | 2026-11-19 17:14:41+01:00 | dist/FastMediaSorter-26.11.19.1500-windows-x64-setup.exe |
 | user | zip | release | 26.11.19.1500 | 2026-11-19 17:14:53+01:00 | dist/FastMediaSorter-26.11.19.1500-windows-x64.zip |
 | user | zip | test | 26.11.19.1500 | 2026-11-19 17:14:42+01:00 | dist/FastMediaSorter-26.11.19.1500-windows-x64.zip |
+| user-msix | msix | release | 26.1119.1500.0 | 2026-11-19 17:41:29+01:00 | publishing/msix/dist/FastMediaSorter_LITE-26.1119.1500.0-x64.msix |
 
 ## Built, not published
 
 | Package | Flavor | Version | Built | Days |
 | --- | --- | --- | --- | --- |
-| server | setup | 26.11.19.1500 | 2026-11-19 | 0 |
+| user-msix | msix | 26.1119.1500.0 | 2026-11-19 | 0 |
 
 ## History
 
 | When | Package | Channel | Version | State | Source | Ref | Note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19 17:41:59+01:00 | server | installer-server | 26.11.19.1500 | live | probe | [link](https://serzhyale.github.io/FastMediaSorter_Lite/server.html) | - |
+| 2026-11-19 17:41:59+01:00 | user | installer | 26.11.19.1500 | live | probe | [link](https://serzhyale.github.io/FastMediaSorter_Lite/) | - |
+| 2026-11-19 17:39:56+01:00 | server | winget-server | 26.11.19.1500 | submitted | release | [PR#484246](https://github.com/microsoft/winget-pkgs/pull/484246) | - |
+| 2026-11-19 17:39:55+01:00 | user | winget | 26.11.19.1500 | submitted | release | [PR#484245](https://github.com/microsoft/winget-pkgs/pull/484245) | - |
 | 2026-11-19 17:35:36+01:00 | user | github | 26.11.19.1500 | live | release | [v26.11.19.1500](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.11.19.1500) | - |
 | 2026-11-19 17:14:56+01:00 | user | github | 26.11.19.1500 | submitted | release | [v26.11.19.1500](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.11.19.1500) | - |
 | 2026-11-18 21:33:18+01:00 | server | installer-server | 26.11.13.0130 | live | import | [link](https://serzhyale.github.io/FastMediaSorter_Lite/server.html) | - |

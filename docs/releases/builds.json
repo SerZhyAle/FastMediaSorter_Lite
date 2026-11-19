@@ -72,6 +72,15 @@
       "builtAt": "2026-11-19T17:14:42+01:00",
       "artifact": "dist/FastMediaSorter-26.11.19.1500-windows-x64.zip",
       "sha256": "8cd891ed53b32e9c3abfd8edbb6a6aa03cff22751d192b4b95665695f8916282"
+    },
+    {
+      "package": "user-msix",
+      "flavor": "msix",
+      "kind": "release",
+      "version": "26.1119.1500.0",
+      "builtAt": "2026-11-19T17:41:29+01:00",
+      "artifact": "publishing/msix/dist/FastMediaSorter_LITE-26.1119.1500.0-x64.msix",
+      "sha256": "cdd4fd8a6b1a4aee1eefc0e039ae4df887ef6ded05f6841238121dc492994dd7"
     }
   ]
 }

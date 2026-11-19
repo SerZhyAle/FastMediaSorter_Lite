@@ -42,3 +42,7 @@
 {"at":"2026-11-18T21:33:18+01:00","key":"installer-server","package":"server","version":"26.11.13.0130","state":"live","source":"import","url":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html"}
 {"at":"2026-11-19T17:14:56+01:00","key":"github","package":"user","version":"26.11.19.1500","state":"submitted","source":"release","ref":"v26.11.19.1500","url":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.11.19.1500"}
 {"at":"2026-11-19T17:35:36+01:00","key":"github","package":"user","version":"26.11.19.1500","state":"live","source":"release","ref":"v26.11.19.1500","url":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.11.19.1500"}
+{"at":"2026-11-19T17:39:55+01:00","key":"winget","package":"user","version":"26.11.19.1500","state":"submitted","source":"release","ref":"PR#484245","url":"https://github.com/microsoft/winget-pkgs/pull/484245"}
+{"at":"2026-11-19T17:39:56+01:00","key":"winget-server","package":"server","version":"26.11.19.1500","state":"submitted","source":"release","ref":"PR#484246","url":"https://github.com/microsoft/winget-pkgs/pull/484246"}
+{"at":"2026-11-19T17:41:59+01:00","key":"installer","package":"user","version":"26.11.19.1500","state":"live","source":"probe","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"}
+{"at":"2026-11-19T17:41:59+01:00","key":"installer-server","package":"server","version":"26.11.19.1500","state":"live","source":"probe","url":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html"}
