@@ -127,7 +127,14 @@ if ($branch -ne "main") {
     Write-Warning "A release is normally cut from 'main'. Current branch: $branch."
 }
 
-$dirty = (git -C $repoRoot status --porcelain)
+# The release ledger (docs/releases/, RELEASE-LEDGER 0.1) is a record the build scripts write while the preflight runs
+# (Build-OfflineRelease notes its test builds there), not a file the tag is judged on: it never makes the tree dirty
+# for this purpose, and it is committed after the tag with the other channel records.
+function Get-TreeChanges([string]$Root) {
+    @(git -C $Root status --porcelain | Where-Object { $_ -and $_ -notmatch '^\s*\S+\s+"?docs/releases/' })
+}
+
+$dirty = Get-TreeChanges $repoRoot
 if ($dirty) {
     if ($Push) {
         Exit-Verdict 'Release-Preflight' 1 "$tag; cannot push a release from a dirty working tree: the tag would not carry the files tested"
@@ -293,7 +300,7 @@ if ($dirty) { $parts += 'judged uncommitted changes' }
 if ($Push -and $code -eq 0) {
     $currentHead = (git -C $repoRoot rev-parse --verify HEAD).Trim()
     $currentBranch = (git -C $repoRoot rev-parse --abbrev-ref HEAD).Trim()
-    $currentDirty = (git -C $repoRoot status --porcelain)
+    $currentDirty = Get-TreeChanges $repoRoot
     if ($currentHead -ne $head -or $currentBranch -ne $branch -or $currentDirty) {
         $code = 1
         $parts += 'the commit, branch or working tree changed during preflight; no tag was created'
