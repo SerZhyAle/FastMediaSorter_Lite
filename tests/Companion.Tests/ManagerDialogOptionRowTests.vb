@@ -473,7 +473,7 @@ Public Class ManagerDialogOptionRowTests
     ' --- the subjects are what they were -------------------------------------------------------------
 
     <Fact>
-    Public Sub The_seventeen_check_boxes_stand_in_option_rows_and_keep_their_defaults()
+    Public Sub The_fifteen_check_boxes_stand_in_option_rows_and_keep_their_defaults()
         InLanguage("en",
             Sub(kit As Kit)
                 Dim total As Integer = 0
@@ -496,7 +496,8 @@ Public Class ManagerDialogOptionRowTests
                         Next
                     End Using
                 Next
-                ' The subjects hold each of the 17 boxes of the slice once (the two Broadcast_Create_Form states share chkExternal).
+                ' The subjects hold each of the 15 boxes of the slice once (the two Broadcast_Create_Form states share chkExternal;
+                ' 15, not 17, since L0332 moved two broadcast preferences to the Manager settings page).
                 Dim distinct As New HashSet(Of String)(StringComparer.Ordinal)
                 For Each subject As Subject In Subjects()
                     Dim windowType As String = subject.Window.Split(" "c)(0)
@@ -505,7 +506,7 @@ Public Class ManagerDialogOptionRowTests
                     Next
                 Next
                 total = distinct.Count
-                Assert.True(total = 17, "the subjects hold " & total.ToString(CultureInfo.InvariantCulture) & " distinct check boxes, expected 17")
+                Assert.True(total = 15, "the subjects hold " & total.ToString(CultureInfo.InvariantCulture) & " distinct check boxes, expected 15")
                 Assert.True(found.Count = 0, String.Join(vbLf, found))
             End Sub)
     End Sub
@@ -789,9 +790,11 @@ Public Class ManagerDialogOptionRowTests
             {Path.Combine("Forms", "Broadcast_Create_Form.vb"), 2}, {Path.Combine("Forms", "Exchange_Account_Admin_Form.vb"), 1},
             {Path.Combine("Forms", "Exchange_Account_Form.vb"), 3}, {Path.Combine("Forms", "Exchange_Password_Change_Form.vb"), 1},
             {Path.Combine("Forms", "Exchange_Password_Form.vb"), 1}, {Path.Combine("Forms", "Resource_Add_Form.vb"), 1},
-            {Path.Combine("Forms", "PackageWizardForm.vb"), 2}, {Path.Combine("Forms", "Live_Broadcast_Form.vb"), 3},
+            {Path.Combine("Forms", "PackageWizardForm.vb"), 2}, {Path.Combine("Forms", "Live_Broadcast_Form.vb"), 1},
             {Path.Combine("Forms", "Share_Disks_Form.vb"), 2}, {Path.Combine("Forms", "Share_Broadcasts_Form.vb"), 1}}
-        Assert.Equal(17, expected.Values.Sum())
+        ' 15 since L0332 moved the broadcast window's "viewers on my network" and "show the cursor"
+        ' preferences to the Manager settings page, leaving the window its one no-sound box.
+        Assert.Equal(15, expected.Values.Sum())
         For Each pair As KeyValuePair(Of String, Integer) In expected
             Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource(pair.Key))
             Dim made As Integer = Regex.Matches(code, "\bNew CheckBox\b").Count

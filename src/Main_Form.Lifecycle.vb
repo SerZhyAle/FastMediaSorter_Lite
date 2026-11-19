@@ -1089,8 +1089,33 @@ Partial Public Class Main_Form
         ' 1366x768 world and threw away every position on a wider monitor, and
         ' "must not be negative" threw away every monitor placed left of or above the
         ' primary one.
+#If NETFRAMEWORK Then
         If app_Width_Int < main_form_position_Limit_Width_Low OrElse app_Width_Int > main_form_position_Limit_Width Then app_Width_Int = first_run_width
         If app_Height_Int < main_form_position_Limit_Height_Low OrElse app_Height_Int > main_form_position_Limit_Height Then app_Height_Int = first_run_height
+#Else
+        ' L0363 A-D12 (L0361 S6 (3)): the size is device pixels measured at the DPI it was saved at (AppDpi, as the
+        ' editor and the thumbnail panel keep theirs); it is put on this window in the pixels of the DPI the window has
+        ' NOW (the system DPI at load, the platform then carries it to the monitor, E1), so its logical size survives a
+        ' move between monitors. A size stored without a DPI is device pixels as before (no upgrade resize). The
+        ' sanity limits and the first-run default are 96-dpi lengths: one size, one DPI, so an unusable or absent size
+        ' falls back to the authored default as a pair.
+        Dim size_Dpi As Integer = WindowPlacement.ParseDpi(GetSetting(App_name, Second_App_Name, "AppDpi"))
+        Dim size_Scale As Double = FormScale.LayoutFactor(size_Dpi)
+        Dim parsed_Width As Integer
+        Dim parsed_Height As Integer
+        Dim size_Is_Stored As Boolean = Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppWidth", ""), parsed_Width) AndAlso
+                                        Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppHeight", ""), parsed_Height)
+        If Not size_Is_Stored OrElse
+           app_Width_Int < CInt(main_form_position_Limit_Width_Low * size_Scale) OrElse app_Width_Int > CInt(main_form_position_Limit_Width * size_Scale) OrElse
+           app_Height_Int < CInt(main_form_position_Limit_Height_Low * size_Scale) OrElse app_Height_Int > CInt(main_form_position_Limit_Height * size_Scale) Then
+            app_Width_Int = first_run_width
+            app_Height_Int = first_run_height
+            size_Dpi = FormScale.LogicalDpi
+        End If
+        Dim sized_For_Window As Size = WindowPlacement.SizeForDpi(app_Width_Int, app_Height_Int, size_Dpi, Me.DeviceDpi)
+        app_Width_Int = sized_For_Window.Width
+        app_Height_Int = sized_For_Window.Height
+#End If
 
         Dim saved_Bounds As New Rectangle(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
 #If NETFRAMEWORK Then
@@ -1662,8 +1687,16 @@ Partial Public Class Main_Form
             Dim normal_Bounds As Rectangle = WindowPlacement.NormalRectangle(Me.WindowState, Me.Bounds, Me.RestoreBounds)
             add("AppTop", normal_Bounds.Top.ToString)
             add("AppLeft", normal_Bounds.Left.ToString)
-            If normal_Bounds.Height >= main_form_position_Limit_Height_Low Then add("AppHeight", normal_Bounds.Height.ToString)
-            If normal_Bounds.Width >= main_form_position_Limit_Width_Low Then add("AppWidth", normal_Bounds.Width.ToString)
+            ' The size and the DPI it was measured at are one value (L0363 A-D12): both are written or neither, and the
+            ' lower limits are 96-dpi lengths at this window's dpi. The next start puts the size on its window through
+            ' WindowPlacement.SizeForDpi.
+            Dim save_Scale As Double = FormScale.LayoutFactor(Me.DeviceDpi)
+            If normal_Bounds.Height >= CInt(main_form_position_Limit_Height_Low * save_Scale) AndAlso
+               normal_Bounds.Width >= CInt(main_form_position_Limit_Width_Low * save_Scale) Then
+                add("AppHeight", normal_Bounds.Height.ToString)
+                add("AppWidth", normal_Bounds.Width.ToString)
+                add("AppDpi", Me.DeviceDpi.ToString)
+            End If
             If Me.WindowState <> FormWindowState.Minimized Then
                 Dim window_State As String = WindowPlacement.StateNormal
                 If is_Full_Screen_Mode Then

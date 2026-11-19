@@ -349,7 +349,7 @@ Public Class ShareManagerCommandsConformanceTests
 
     <Fact>
     Public Sub C10_oneshot_verbs_answer_in_their_own_process_and_start_no_tray_and_hold_no_manager_mutex()
-        Assert.Equal({"commands", "version", "quit", "clipboard send", "clipboard get", "schedule list", "schedule history", "exchange status"}, VerbsOf("oneshot"))
+        Assert.Equal({"commands", "version", "quit", "clipboard send", "clipboard get", "schedule list", "exchange status", "schedule history"}, VerbsOf("oneshot"))
         Dim cold As String = Slice(Client(), "Private Function ColdStart(", "Private Function RunClipboardAlone(")
         Dim oneshot As String = Slice(cold, "Case ""oneshot""", "Case Else" & vbLf & "                exitCode")
         Assert.True(oneshot.Length > 0, "the oneshot branch is not in the client")

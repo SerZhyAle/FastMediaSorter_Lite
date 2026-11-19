@@ -287,7 +287,7 @@ Public Class SettingsCheckBoxRowTests
 
         ' The palette walk that runs after every page build must not put the explanation back to 8 pt.
         Dim tree As String = Slice(layout, "Private Sub StyleModernSettingsControlTree(", "Private Sub LayoutModernSettingsPages(")
-        Assert.Contains("SettingsPixelFont(""Segoe UI"", SettingsRowGridRules.ExplanationFontPixels)", tree)
+        Assert.Contains("SettingsPixelFont(""Segoe UI"", SettingsRowGridRules.ExplanationFontPixels, owner:=control)", tree)
 
         ' The sizer never switches an ellipsis back on, for any row.
         Dim sizer As String = Slice(layout, "Private Sub SizeModernSettingRow(", "Private Function MakeModernControlStrip(")

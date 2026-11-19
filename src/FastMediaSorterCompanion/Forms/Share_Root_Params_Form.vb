@@ -242,7 +242,7 @@ Partial Public Class Share_Root_Params_Form
             ' The full-width rows (the notes and the access options) are one line each and set the grid's width. On a screen
             ' narrower than that (a small monitor at a high scale) they wrap at the width the window can have, so no row runs
             ' past the window's right edge; only the vertical axis scrolls.
-            Dim roomW As Integer = wa.Width - chromeW - SystemInformation.VerticalScrollBarWidth
+            Dim roomW As Integer = wa.Width - chromeW - UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi)
             If content.Width > roomW Then
                 Dim rowW As Integer = Math.Max(1, roomW - _content.Padding.Horizontal)
                 For Each c As Control In _content.Controls
@@ -258,7 +258,7 @@ Partial Public Class Share_Root_Params_Form
             Dim desiredClientH As Integer = content.Height + barH
             Dim clientH As Integer = Math.Min(desiredClientH, wa.Height - chromeH)
             Dim needVScroll As Boolean = clientH < desiredClientH
-            Dim clientW As Integer = content.Width + If(needVScroll, SystemInformation.VerticalScrollBarWidth, 0)
+            Dim clientW As Integer = content.Width + If(needVScroll, UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi), 0)
             clientW = Math.Min(clientW, wa.Width - chromeW)
             Me.ClientSize = New Size(clientW, clientH)
             DpiLayout.CenterOnOwner(Me)

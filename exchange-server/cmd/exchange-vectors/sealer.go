@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"fms/exchange-server/internal/wire"
 )
@@ -239,7 +240,13 @@ func sealBox(label string, from party, to []party, context string, payload strin
 	if err != nil {
 		failf("%v", err)
 	}
-	if err := wire.CheckBox(raw); err != nil {
+	// A note box is held to the frame limit and not to the 16 KiB of a record (wire.CheckNoteBox): the notes
+	// corpus seals boxes of 150 KiB.
+	check := wire.CheckBox
+	if strings.HasPrefix(context, "note:") {
+		check = wire.CheckNoteBox
+	}
+	if err := check(raw); err != nil {
 		failf("box %s: %v", label, err)
 	}
 	return raw, ck

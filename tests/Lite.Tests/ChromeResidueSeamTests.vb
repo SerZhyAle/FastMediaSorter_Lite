@@ -37,15 +37,20 @@ Public Class ChromeResidueSeamTests
         Return text.Substring(start, [end] - start)
     End Function
 
-    ''' <summary>The needle stands inside an <c>#If Not NETFRAMEWORK</c> branch: the net48 fallback keeps its
-    ''' behaviour (the maintenance policy of 2026-07-19).</summary>
+    ''' <summary>The needle stands in the modern branch of a seam: inside an <c>#If Not NETFRAMEWORK</c> block, or
+    ''' after the <c>#Else</c> of an <c>#If NETFRAMEWORK</c> block. The net48 fallback keeps its behaviour (the
+    ''' maintenance policy of 2026-07-19).</summary>
     Private Shared Sub AssertInModernBranch(text As String, needle As String)
         Dim at As Integer = text.IndexOf(needle, StringComparison.Ordinal)
         Assert.True(at >= 0, "not found: " & needle)
         Dim opened As Integer = text.LastIndexOf("#If ", at, StringComparison.Ordinal)
         Dim closed As Integer = text.LastIndexOf("#End If", at, StringComparison.Ordinal)
         Assert.True(opened >= 0 AndAlso opened > closed, "not inside a conditional branch: " & needle)
-        Assert.StartsWith("#If Not NETFRAMEWORK", text.Substring(opened), StringComparison.Ordinal)
+        Dim fromOpen As String = text.Substring(opened)
+        If fromOpen.StartsWith("#If Not NETFRAMEWORK", StringComparison.Ordinal) Then Return
+        Assert.StartsWith("#If NETFRAMEWORK", fromOpen, StringComparison.Ordinal)
+        Dim otherBranch As Integer = text.LastIndexOf("#Else", at, StringComparison.Ordinal)
+        Assert.True(otherBranch > opened, "inside the net48 branch of the seam, not the modern one: " & needle)
     End Sub
 
     ' --- UX-313m: a window with no media holds its panels ---------------------------------------------

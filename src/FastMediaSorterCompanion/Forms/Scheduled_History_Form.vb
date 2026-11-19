@@ -47,10 +47,12 @@ Friend NotInheritable Class Scheduled_History_Form
 
         list = New ListView With {.Dock = DockStyle.Fill, .View = View.Details, .FullRowSelect = True, .HideSelection = False,
             .MultiSelect = False, .Name = "lvSchedHistory", .AccessibleName = Localization.T("Журнал операций по расписанию")}
-        list.Columns.Add(Localization.T("Время"), LogicalToDeviceUnits(140))
-        list.Columns.Add(Localization.T("Операция"), LogicalToDeviceUnits(170))
-        list.Columns.Add(Localization.T("Запуск"), LogicalToDeviceUnits(120))
-        list.Columns.Add(Localization.T("Результат"), LogicalToDeviceUnits(380))
+        ' The widths set here are only a first guess: the window has not composed its scale yet, so they are resolved again
+        ' in OnLoad and on every DPI change (ResolveColumns, ticket 369 D3).
+        list.Columns.Add(Localization.T("Время"), LogicalToDeviceUnits(ColumnTime))
+        list.Columns.Add(Localization.T("Операция"), LogicalToDeviceUnits(ColumnOperation))
+        list.Columns.Add(Localization.T("Запуск"), LogicalToDeviceUnits(ColumnTrigger))
+        list.Columns.Add(Localization.T("Результат"), LogicalToDeviceUnits(ColumnResult))
 
         lblEmpty = New Label With {.Dock = DockStyle.Top, .AutoSize = True, .Padding = New Padding(12, 8, 12, 4),
             .ForeColor = ThemeService.Palette.TextMuted, .Name = "lblSchedHistoryEmpty",
@@ -84,19 +86,36 @@ Friend NotInheritable Class Scheduled_History_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
-        ' WinForms never scales a ListView's column widths: they were measured before the window had its own DPI.
-        list.Columns(0).Width = LogicalToDeviceUnits(140)
-        list.Columns(1).Width = LogicalToDeviceUnits(170)
-        list.Columns(2).Width = LogicalToDeviceUnits(120)
-        FillResultColumn()
+        ResolveColumns()
         DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    ''' <summary>The platform never rescales a ListView's column widths, and OnLoad still runs before the DPI of the monitor
+    ''' the window lands on is known (rule S2 of L0361): the widths are resolved again after every DPI change.</summary>
+    Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+        MyBase.OnDpiChanged(e)
+        ResolveColumns()
+    End Sub
+
+    Private Const ColumnTime As Integer = 140
+    Private Const ColumnOperation As Integer = 170
+    Private Const ColumnTrigger As Integer = 120
+    Private Const ColumnResult As Integer = 380
+
+    ''' <summary>The logical widths as device pixels at the window's own DPI and its composed scale.</summary>
+    Private Sub ResolveColumns()
+        If list Is Nothing OrElse list.Columns.Count < 4 Then Return
+        list.Columns(0).Width = DpiLayout.Device(Me, ColumnTime)
+        list.Columns(1).Width = DpiLayout.Device(Me, ColumnOperation)
+        list.Columns(2).Width = DpiLayout.Device(Me, ColumnTrigger)
+        FillResultColumn()
     End Sub
 
     ''' <summary>The result is the long column: it takes the width the other three leave, never less than its authored width.</summary>
     Private Sub FillResultColumn()
         If list Is Nothing OrElse list.Columns.Count < 4 Then Return
         Dim others As Integer = list.Columns(0).Width + list.Columns(1).Width + list.Columns(2).Width
-        list.Columns(3).Width = Math.Max(LogicalToDeviceUnits(380), list.ClientSize.Width - others)
+        list.Columns(3).Width = Math.Max(DpiLayout.Device(Me, ColumnResult), list.ClientSize.Width - others)
     End Sub
 
     Private Sub LoadRows()

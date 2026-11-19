@@ -24,6 +24,7 @@ Friend NotInheritable Class ChromePathBox
     ''' <summary>L0303 R-13: the suggestion and recent-folder lists are menus - themed and opaque
     ''' (APP-STYLE section 5 condition 2), never the content-tinted panel theme. The host supplies
     ''' the application's menu theme; without one the dark menu palette is used.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property MenuTheme As Func(Of ChromeTheme)
     Private scaleFactor As Single = 1.0F
     Private rtl As Boolean

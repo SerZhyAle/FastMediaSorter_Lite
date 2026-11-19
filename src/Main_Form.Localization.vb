@@ -171,13 +171,32 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub ApplyScriptFont()
+        ' Keep ownership even if assigning a control font fails part way through.
+        script_Font = ScriptFontForDpi(Me.DeviceDpi)
+        For Each c As Control In LocalizedTextControls()
+            If c IsNot Nothing Then c.Font = ScriptFontForDpi(c.DeviceDpi)
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' The script font for a control that reads its font at <paramref name="basisDpi"/> (L0361 rule S4, point form;
+    ''' L0363 A-D8, A-D18). A point font assigned to a control already in its window is not rescaled and reaches the
+    ''' screen through the SYSTEM dpi, so on the mainline the 8.25 pt design size takes <c>basis / S</c> (the platform
+    ''' then keeps it right on the next dpi change). The size stays 8.25 pt on net48 and wherever the basis is the
+    ''' system dpi. The returned font is owned by <see cref="script_Fonts"/>: never dispose it.
+    ''' </summary>
+    Private Function ScriptFontForDpi(basisDpi As Integer) As Font
+        Dim points As Single = 8.25!
+#If Not NETFRAMEWORK Then
+        points = CSng(FormScale.RebasePoints(points, Math.Max(FormScale.LogicalDpi, basisDpi), TextSystemDpi()))
+#End If
         Dim family = Localization.FontFamily()
         Dim target As Font = Nothing
         If family Is Nothing Then
-            target = New Font("Microsoft Sans Serif", 8.25!, FontStyle.Regular, GraphicsUnit.Point)
+            target = New Font("Microsoft Sans Serif", points, FontStyle.Regular, GraphicsUnit.Point)
         Else
             Try
-                target = New Font(family, 8.25!, FontStyle.Regular, GraphicsUnit.Point)
+                target = New Font(family, points, FontStyle.Regular, GraphicsUnit.Point)
                 ' A missing family silently falls back to a substitute that may not
                 ' cover the script either; better to notice than to draw boxes.
                 If Not String.Equals(target.FontFamily.Name, family, StringComparison.OrdinalIgnoreCase) Then
@@ -186,7 +205,7 @@ Partial Public Class Main_Form
             Catch ex As Exception
                 If target IsNot Nothing Then target.Dispose()
                 AppFileLogger.LogException("Selecting the UI script font", ex)
-                target = New Font("Microsoft Sans Serif", 8.25!, FontStyle.Regular, GraphicsUnit.Point)
+                target = New Font("Microsoft Sans Serif", points, FontStyle.Regular, GraphicsUnit.Point)
             End Try
         End If
 
@@ -199,13 +218,9 @@ Partial Public Class Main_Form
                 Exit For
             End If
         Next
-        ' Keep ownership even if assigning a control font fails part way through.
-        script_Font = target
         If Not script_Fonts.Contains(target) Then script_Fonts.Add(target)
-        For Each c As Control In LocalizedTextControls()
-            If c IsNot Nothing Then c.Font = target
-        Next
-    End Sub
+        Return target
+    End Function
 
     ''' <summary>Controls whose caption is translated and therefore may need a script font.</summary>
     Private Function LocalizedTextControls() As Control()

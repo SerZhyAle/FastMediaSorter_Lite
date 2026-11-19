@@ -78,11 +78,13 @@ Public Class LocalizationCoverageTests
     '''     a meaningful operation.
     '''   * TextEncodingDetector - the Cyrillic letter frequencies: decoded bytes are scored
     '''     against them to tell one encoding from another, and they are never displayed.
+    '''   * StreamFacetTables - generated from the STREAM-BANK facet tables: native spellings of
+    '''     languages and countries that stream metadata is folded against. Matched, never shown.
     ''' The Share Manager has its own tables and its own copy of this test.
     ''' </summary>
     Private Shared ReadOnly Exempt As String() = {
         "OcrLanguageCatalog.vb", "TranslationQuality.vb", "OcrTextFilter.vb", "TextEncodingDetector.vb",
-        "IconMap.vb", "ConnectionDiagnosisLocalization.vb"}
+        "IconMap.vb", "ConnectionDiagnosisLocalization.vb", "StreamFacetTables.vb"}
 
     Private Shared Function Skip(srcPath As String) As Boolean
         If srcPath.IndexOf("\obj\", StringComparison.OrdinalIgnoreCase) >= 0 Then Return True

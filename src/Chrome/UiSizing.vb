@@ -73,7 +73,7 @@ End Class
 ''' (<see cref="GlyphGrowthLimit"/>). A target never takes the text factor.
 '''
 ''' The class is a mirror of the rounding rules of <see cref="UiScale"/> on purpose and does not depend on it: the
-''' Share Manager project links this file and cannot link <c>UiScale</c>.
+''' Share Manager links both files since L0369, and this class stays free of <c>UiScale</c> so either can be linked alone.
 ''' </summary>
 Friend NotInheritable Class UiSizing
 
@@ -261,6 +261,56 @@ Friend NotInheritable Class UiSizing
     ''' never smaller than the base (the user's enlargement is neither shrunk back nor cancelled).</summary>
     Public Shared Function TextPoints(basePoints As Single, textFactor As Single) As Single
         Return basePoints * NormalizeTextFactor(textFactor)
+    End Function
+
+    Private Const SmCxVScroll As Integer = 2
+    Private Const SmCyHScroll As Integer = 3
+    Private Const SmCxEdge As Integer = 45
+    Private Const SmCyEdge As Integer = 46
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetSystemMetricsForDpi(index As Integer, dpi As UInteger) As Integer
+    End Function
+
+    ''' <summary>Rule S8 of L0361: the width of a vertical scroll bar drawn at <paramref name="dpi"/> (the window dpi D),
+    ''' never the process-wide <c>System.Windows.Forms.SystemInformation.VerticalScrollBarWidth</c>, which answers for the system dpi.</summary>
+    Public Shared Function VerticalScrollBarWidthForDpi(dpi As Integer) As Integer
+        Return MetricForDpi(SmCxVScroll, dpi, System.Windows.Forms.SystemInformation.VerticalScrollBarWidth)
+    End Function
+
+    ''' <summary>Rule S8: the height of a horizontal scroll bar drawn at <paramref name="dpi"/>.</summary>
+    Public Shared Function HorizontalScrollBarHeightForDpi(dpi As Integer) As Integer
+        Return MetricForDpi(SmCyHScroll, dpi, System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight)
+    End Function
+
+    ''' <summary>Rule S8: the 3-D border size (<c>SM_CXEDGE</c> x <c>SM_CYEDGE</c>) at <paramref name="dpi"/>.</summary>
+    Public Shared Function Border3DSizeForDpi(dpi As Integer) As System.Drawing.Size
+        Return New System.Drawing.Size(MetricForDpi(SmCxEdge, dpi, System.Windows.Forms.SystemInformation.Border3DSize.Width),
+                        MetricForDpi(SmCyEdge, dpi, System.Windows.Forms.SystemInformation.Border3DSize.Height))
+    End Function
+
+    ''' <summary>The pure fallback of the metrics above: the system value rescaled from the system dpi to
+    ''' <paramref name="dpi"/>, used only when the per-dpi call is unavailable or fails.</summary>
+    Friend Shared Function RescaleSystemMetric(systemValue As Integer, systemDpi As Integer, dpi As Integer) As Integer
+        If systemDpi <= 0 OrElse dpi <= 0 OrElse systemDpi = dpi Then Return systemValue
+        Return CInt(Math.Round(systemValue * CDbl(dpi) / systemDpi, MidpointRounding.AwayFromZero))
+    End Function
+
+    Private Shared Function MetricForDpi(index As Integer, dpi As Integer, systemValue As Integer) As Integer
+        If dpi <= 0 Then Return systemValue
+        Try
+            Dim value As Integer = GetSystemMetricsForDpi(index, CUInt(dpi))
+            If value > 0 Then Return value
+        Catch ex As EntryPointNotFoundException
+            ' Windows before 10 1607: fall through to the rescaled system value.
+        Catch ex As DllNotFoundException
+            ' No user32 (a test host without a desktop): same fallback.
+        End Try
+        Dim systemDpi As Integer
+        Using screenDc As System.Drawing.Graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero)
+            systemDpi = CInt(screenDc.DpiX)
+        End Using
+        Return RescaleSystemMetric(systemValue, systemDpi, dpi)
     End Function
 
     Private Shared Function InterfaceFactorOrOne(factor As Single) As Double

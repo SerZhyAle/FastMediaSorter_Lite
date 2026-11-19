@@ -145,7 +145,9 @@ Partial Public Class Main_Form
 
         Dim scale As Single = GetCurrentDpiScale() * text_Font_Scale
         Dim baseFontSize As Single = If(text_Current_Result.IsMonospace, 10.0F, 11.0F)
-        Dim fontSize As Single = Math.Max(6.0F, baseFontSize * scale)
+        ' Fonts take the point form of rule S4 (drawn at this window's dpi); margins stay pixel geometry (K x M).
+        Dim pointScale As Single = TextPointScale() * text_Font_Scale
+        Dim fontSize As Single = Math.Max(6.0F, baseFontSize * pointScale)
         Dim fontFamily As String = If(text_Current_Result.IsMonospace, "Consolas", "Segoe UI")
 
         Dim textColor As Color = GetOppositeColor(NeutralBackColor())
@@ -156,7 +158,7 @@ Partial Public Class Main_Form
         Dim contentWidth As Integer = Math.Max(100, bounds.Width - marginX * 2)
 
         Using font As New Font(fontFamily, fontSize, FontStyle.Regular),
-              footerFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.5F * scale), FontStyle.Italic)
+              footerFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.5F * pointScale), FontStyle.Italic)
 
             Dim lineHeight As Integer = Math.Max(14, CInt(font.GetHeight(g) * 1.15F))
             Dim footerHeight As Integer = If(text_Current_Result.IsTruncated, CInt(footerFont.GetHeight(g) * 1.5F) + 8, 0)
@@ -489,12 +491,44 @@ Partial Public Class Main_Form
         End If
     End Function
 
+    ''' <summary>The design scale <c>K x U</c> of the viewer's non-chrome surfaces: the text views, the document pane
+    ''' widths, the audio plate, the HUD. It is <see cref="ChromeScale"/> WITHOUT the panel-size multiplier, and takes the
+    ''' same interface factor from the same source (<c>UiScale.Factor</c> / <c>InterfaceFactor</c>), so the two cannot
+    ''' drift apart (L0363 A-D14, L0361 S2). It deliberately does not delegate to <see cref="ChromeScale"/>: the panel-size
+    ''' choice (small, large, touch, adaptive) sizes the PANELS, the adaptive one follows the media width, and a pane that
+    ''' narrows the media would then move its own width; text size has its own setting.</summary>
     Private Function GetCurrentDpiScale() As Single
-        Dim scale As Single = Math.Max(1.0F, DeviceDpi / 96.0F)
-        If modern_Preferences IsNot Nothing AndAlso (modern_Preferences.InterfaceScalePercent > 0 OrElse modern_Preferences.InterfaceScaleRelativePercent > 0) Then
-            scale = modern_Preferences.InterfaceFactor(DeviceDpi)
-        End If
+        Dim scale As Single = If(modern_Preferences Is Nothing, UiScale.Factor(0, DeviceDpi), modern_Preferences.InterfaceFactor(DeviceDpi))
         Return Math.Max(0.5F, scale)
+    End Function
+
+    ''' <summary>The system dpi (L0361 rule S1, <c>S</c>): the dpi a fresh control starts at and the one the platform
+    ''' turns points into pixels through. Read lazily from a probe label, after the process DPI mode is set.</summary>
+    Private Shared text_System_Dpi As Integer
+
+    Friend Shared Function TextSystemDpi() As Integer
+        If text_System_Dpi <= 0 Then
+            Using probe As New Label()
+                text_System_Dpi = Math.Max(FormScale.LogicalDpi, probe.DeviceDpi)
+            End Using
+        End If
+        Return text_System_Dpi
+    End Function
+
+    ''' <summary>The factor a nominal point size takes for a font read at <paramref name="basisDpi"/> (L0361 rule S4,
+    ''' point form: <c>M x c / S</c>). <see cref="GetCurrentDpiScale"/> is <c>K x M</c>, the factor of pixel geometry;
+    ''' multiplying a point size by it applied the window dpi twice, because a point font already becomes pixels through
+    ''' <c>S</c> (L0363 A-D1, A-D2). A font drawn or measured at this window's dpi passes <c>DeviceDpi</c>; a font assigned
+    ''' to a control passes that control's own <c>DeviceDpi</c>.</summary>
+    Private Function TextPointScale(basisDpi As Integer) As Single
+        Dim d As Integer = Math.Max(FormScale.LogicalDpi, DeviceDpi)
+        Dim multiplier As Double = GetCurrentDpiScale() / FormScale.LayoutFactor(d)
+        Return CSng(FormScale.RebasePoints(multiplier, Math.Max(FormScale.LogicalDpi, basisDpi), TextSystemDpi()))
+    End Function
+
+    ''' <summary><see cref="TextPointScale(Integer)"/> for a font drawn or measured at this window's dpi.</summary>
+    Private Function TextPointScale() As Single
+        Return TextPointScale(DeviceDpi)
     End Function
 
 End Class

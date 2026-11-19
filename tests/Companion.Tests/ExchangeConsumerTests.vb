@@ -91,7 +91,8 @@ Public Class ExchangeConsumerTests
 
             ' rule 5: the one role of this device is the consumer; the device name is the machine and "(viewer)"
             Assert.Equal({"resource-consumer"}, acc.EnrollRolesSeen().Single().Split(","c))
-            Assert.Equal({"pin-v1", "e2e-v1"}, acc.EnrollCapabilitiesSeen().Single().Split(","c))
+            ' L0338: a device with a key also declares schedule-v1 (DeclareCapabilities, beside e2e-v1).
+            Assert.Equal({"pin-v1", "e2e-v1", "schedule-v1"}, acc.EnrollCapabilitiesSeen().Single().Split(","c))
             Assert.Equal("OFFICE-PC (viewer)", acc.EnrollNamesSeen().Single())
         End Using
     End Function

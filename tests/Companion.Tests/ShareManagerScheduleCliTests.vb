@@ -261,7 +261,7 @@ Public Class ShareManagerScheduleCliTests
         Using kit As New Kit(New DateTime(2026, 11, 17, 10, 0, 0))
             kit.Services.LaunchFill = Function(launch, ct) As FillLaunchOutcome
                                           Dim eventsPath As String = launch.Arguments(launch.Arguments.IndexOf("--events") + 1)
-                                          File.WriteAllText(eventsPath, "{""event"":""result"",""verdict"":""Passed"",""numbers"":{""generation"":3,""retiredGeneration"":1,""keepCount"":7,""files"":12,""bytes"":4096}}" & vbLf)
+                                          File.WriteAllText(eventsPath, "{""schemaVersion"":1,""kind"":""result"",""data"":{""verdict"":""Done"",""numbers"":{""generation"":3,""retiredGeneration"":1,""keepCount"":7,""files"":12,""bytes"":4096}}}" & vbLf)
                                           Return New FillLaunchOutcome With {.Started = True, .ExitCode = 0}
                                       End Function
             kit.Engine.Start()
@@ -294,7 +294,7 @@ Public Class ShareManagerScheduleCliTests
         Using kit As New Kit(New DateTime(2026, 11, 17, 10, 0, 0))
             kit.Services.LaunchFill = Function(launch, ct) As FillLaunchOutcome
                                           Dim eventsPath As String = launch.Arguments(launch.Arguments.IndexOf("--events") + 1)
-                                          File.WriteAllText(eventsPath, "{""event"":""result"",""verdict"":""Not proven"",""reasons"":[""disk-full""]}" & vbLf)
+                                          File.WriteAllText(eventsPath, "{""schemaVersion"":1,""kind"":""result"",""data"":{""verdict"":""Not proven"",""reasons"":[""disk-full""]}}" & vbLf)
                                           Return New FillLaunchOutcome With {.Started = True, .ExitCode = 13}
                                       End Function
             kit.Engine.Start()

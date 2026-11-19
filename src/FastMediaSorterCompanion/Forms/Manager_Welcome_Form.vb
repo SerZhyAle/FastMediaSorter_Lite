@@ -369,7 +369,7 @@ Friend NotInheritable Class Manager_Welcome_Form
         stateLabel.ForeColor = snapshot.Color
         Dim meaning As IconMeaning = IconMap.GetMeaning(snapshot.Glyph)
         Dim previous As Image = stateGlyph.Image
-        stateGlyph.Image = GlyphRenderer.Render(meaning.GlyphId, LogicalToDeviceUnits(24), snapshot.Color, AddressOf CompanionAssets.OpenBundledAsset)
+        stateGlyph.Image = GlyphRenderer.Render(meaning.GlyphId, DpiLayout.Device(Me, 24), snapshot.Color, AddressOf CompanionAssets.OpenBundledAsset)
         stateGlyph.AccessibleName = snapshot.Text
         If previous IsNot Nothing Then previous.Dispose()
         pairButton.Enabled = snapshot.Green
@@ -412,6 +412,8 @@ Friend NotInheritable Class Manager_Welcome_Form
         MyBase.OnDpiChanged(e)
         language.ItemHeight = LogicalToDeviceUnits(44)
         MaximumSize = Screen.FromControl(Me).WorkingArea.Size
+        ' The finish-step glyph is a bitmap rendered at the DPI of that moment: render it again for the new monitor (ticket 369 D5).
+        If position = ManagerWelcomeStep.Finish AndAlso Not IsDisposed Then RenderFinish(host.WelcomeStatusSnapshot())
     End Sub
 
     Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean

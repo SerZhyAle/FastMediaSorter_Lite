@@ -225,11 +225,27 @@ Friend NotInheritable Class OptionRowHost
         End Try
     End Sub
 
+    Private Shared systemDpiValue As Integer
+
+    ''' <summary>The system dpi (L0361 <c>S</c>): the dpi a control that is not yet in a window starts at and the one a
+    ''' point size is turned into pixels through. It cannot change while the process runs, so it is read once, from a probe
+    ''' control (the DPI mode is set before any dialog exists). Not <c>FormScale</c>: the Share Manager links this file.</summary>
+    Private Shared Function SystemDpi() As Integer
+        If systemDpiValue <= 0 Then
+            Using probe As New Label()
+                systemDpiValue = Math.Max(96, probe.DeviceDpi)
+            End Using
+        End If
+        Return systemDpiValue
+    End Function
+
     ''' <summary>The explanation is the 12 logical px role at least (section 2 rule 5), in the window's own face, so a
     ''' script font (ar, ja, ..) still draws it. It grows with the scale and is never shrunk to fit.</summary>
     Private Sub FitExplanationFont(scale As Single)
         If Explanation Is Nothing Then Return
-        Dim captionPixels As Single = Font.SizeInPoints * DeviceDpi / 72.0F
+        ' A point font becomes pixels through the SYSTEM dpi, never the window's (L0361 rule S4, measured fact E4): the
+        ' platform has already rescaled the form font by D / S when the window sits on another monitor.
+        Dim captionPixels As Single = Font.SizeInPoints * SystemDpi() / 72.0F
         Dim pixels As Single = Math.Max(SettingsRowGridRules.ExplanationFontPixels * scale, captionPixels)
         If explanationFont IsNot Nothing AndAlso Math.Abs(explanationFont.Size - pixels) < 0.01F AndAlso
            explanationFont.Unit = GraphicsUnit.Pixel AndAlso String.Equals(explanationFont.FontFamily.Name, Font.FontFamily.Name, StringComparison.Ordinal) Then

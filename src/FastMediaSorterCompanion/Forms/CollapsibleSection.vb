@@ -281,8 +281,29 @@ Public NotInheritable Class CollapsibleSection
             ' AccessibleRole is what turns an owner-drawn panel into something a screen
             ' reader announces as an expandable control rather than skipping silently.
             Me.AccessibleRole = AccessibleRole.ButtonDropDown
-            Me.Height = 26
+            ' A logical (96-dpi) seed, not a device size: a header built before its window's ApplyAutoScale is multiplied by
+            ' that pass. What the height really is comes from FitBaseHeight, which runs once the handle exists (posted, so
+            ' after the window's own scaling) and after every DPI change - OnFontChanged alone never fires for a header
+            ' whose font did not change (ticket 369, D6).
+            Me.Height = SeedHeightLogical
             UpdateAccessibleName()
+        End Sub
+
+        Private Const SeedHeightLogical As Integer = 26
+
+        Protected Overrides Sub OnHandleCreated(e As EventArgs)
+            MyBase.OnHandleCreated(e)
+            BeginInvoke(New Action(Sub()
+                                       If IsDisposed OrElse Disposing Then Return
+                                       FitBaseHeight()
+                                       FitHeaderTitle()
+                                   End Sub))
+        End Sub
+
+        Protected Overrides Sub OnDpiChangedAfterParent(e As EventArgs)
+            MyBase.OnDpiChangedAfterParent(e)
+            FitBaseHeight()
+            FitHeaderTitle()
         End Sub
 
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
@@ -384,7 +405,7 @@ Public NotInheritable Class CollapsibleSection
         End Sub
 
         Private Sub FitBaseHeight()
-            Me.Height = Math.Max(Math.Max(UiSizing.DevicePx(UiSizing.PointerTarget, MarkerFactor()), Me.Font.Height + 10),
+            Me.Height = Math.Max(Math.Max(UiSizing.DevicePx(UiSizing.PointerTarget, MarkerFactor()), Me.Font.Height + UiSizing.DevicePx(10, MarkerFactor())),
                                  GroupMarker.CellPx(MarkerFactor()) + 4)
         End Sub
 
@@ -504,7 +525,7 @@ Public NotInheritable Class CollapsibleSection
             If _summary.Length = 0 Then Return
             ' The summary takes whatever the title left and ellipsizes - the title never
             ' does, so an over-long translation costs the summary, not the section's name.
-            Dim gap As Integer = 14
+            Dim gap As Integer = UiSizing.DevicePx(14, MarkerFactor())
             Dim available As Integer = (right - left) - titleWidth - gap
             If available < 24 Then Return
             Dim sumRect As Rectangle = If(rtl,

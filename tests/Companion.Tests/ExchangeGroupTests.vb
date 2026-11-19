@@ -236,7 +236,7 @@ Public Class ExchangeGroupTests
                                          Assert.Null(SectionField(form, "_secExchange"))
                                          Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
                                          ' the CLIENT page is there on every install since ticket 223 T-3; the administration page is not
-                                         Assert.Equal({"startup", "scheduled", "exchange-account", "drive", "help"}, keys)
+                                         Assert.Equal({"startup", "scheduled", "live", "exchange-account", "drive", "help"}, keys)
                                          Assert.Equal(keys, SettingsSections(form).Select(Function(s) s.Key).ToArray())
                                          Assert.DoesNotContain("exchange", keys)
                                      End Using

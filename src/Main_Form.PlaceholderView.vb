@@ -91,8 +91,14 @@ Partial Public Class Main_Form
         If Not IsContentPlaceholderShown() OrElse box IsNot GetActivePictureBox() Then Return
         e.Graphics.Clear(NeutralBackColor())
         Dim bounds As Rectangle = box.ClientRectangle
-        Dim scale As Single = Math.Min(1.0F, Math.Min(bounds.Width / 420.0F, bounds.Height / 250.0F))
-        If scale <= 0 Then Return
+        ' The plate is authored in 96-dpi logical pixels (420 x 250); one logical pixel is K x M device pixels, and the
+        ' plate shrinks (never grows) to fit a small surface. Fonts take the point form of rule S4 at this window's dpi
+        ' (L0363 A-D3: the layout was device pixels without K while the fonts were points read through S).
+        Dim pixelScale As Single = GetCurrentDpiScale()
+        Dim fit As Single = Math.Min(1.0F, Math.Min(bounds.Width / (420.0F * pixelScale), bounds.Height / (250.0F * pixelScale)))
+        If fit <= 0 Then Return
+        Dim scale As Single = pixelScale * fit
+        Dim pointScale As Single = TextPointScale()
         Dim centerX As Single = bounds.Width / 2.0F
         Dim top As Single = Math.Max(8.0F, (bounds.Height - 220.0F * scale) / 2.0F)
         Dim ink As Color = GetOppositeColor(NeutralBackColor())
@@ -165,13 +171,14 @@ Partial Public Class Main_Form
                 Localization.TF("{0} - открыть в программе по умолчанию", openKey))
         End If
 
-        Using nameFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 16.0F * scale), FontStyle.Bold),
-              detailFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 11.0F * scale))
+        Using nameFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 16.0F * fit) * pointScale, FontStyle.Bold),
+              detailFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 11.0F * fit) * pointScale)
             Dim y As Integer = CInt(top + If(epub_Cover_Bitmap IsNot Nothing, 128 * scale, 78 * scale))
-            Dim line As Integer = Math.Max(24, CInt(36 * scale))
-            TextRenderer.DrawText(e.Graphics, titleText, nameFont, New Rectangle(12, y, Math.Max(0, bounds.Width - 24), line), ink, flags)
-            TextRenderer.DrawText(e.Graphics, detail, detailFont, New Rectangle(12, y + line, Math.Max(0, bounds.Width - 24), line), ink, flags)
-            TextRenderer.DrawText(e.Graphics, enterActionText, detailFont, New Rectangle(12, y + line * 2, Math.Max(0, bounds.Width - 24), line), ink, flags)
+            Dim line As Integer = CInt(Math.Max(24.0F, 36.0F * fit) * pixelScale)
+            Dim margin As Integer = CInt(12 * scale)
+            TextRenderer.DrawText(e.Graphics, titleText, nameFont, New Rectangle(margin, y, Math.Max(0, bounds.Width - margin * 2), line), ink, flags)
+            TextRenderer.DrawText(e.Graphics, detail, detailFont, New Rectangle(margin, y + line, Math.Max(0, bounds.Width - margin * 2), line), ink, flags)
+            TextRenderer.DrawText(e.Graphics, enterActionText, detailFont, New Rectangle(margin, y + line * 2, Math.Max(0, bounds.Width - margin * 2), line), ink, flags)
         End Using
     End Sub
 

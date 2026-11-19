@@ -41,25 +41,37 @@ Friend NotInheritable Class DialogLayout
     ''' (<see cref="UiSizing.LayoutBaseDpi"/>), so the text and the layout enlarge together and nothing is shrunk back.
     ''' At 1.0 - the ordinary Text size - nothing differs from the plain 96-dpi scaling. A control that sets its own
     ''' font (a bold heading, a monospaced preview) does not inherit the window's, so it is grown by the same factor
-    ''' (<see cref="GrowOwnFonts"/>) and its text follows its box; a second call on the same window is ignored.</remarks>
+    ''' (<see cref="GrowOwnFonts"/>) and its text follows its box; a second call on the same window is ignored.
+    ''' The product's interface scale U (ticket 369, B-D-6a, owner decision Q369-1a) is composed in the same place: the
+    ''' multiplier is M = U x T, applied ONCE to the font and to the authored layout, next to the display ratio K that
+    ''' WinForms takes from <c>DeviceDpi</c>. U comes from <see cref="CurrentInterfaceFactor"/>; the chrome's ChromeSize
+    ''' multiplier is NOT part of it (it sizes the floating panels, not the windows).</remarks>
     Friend Shared Sub ApplyAutoScale(f As ContainerControl)
         ApplyAutoScale(f, UiSizing.CurrentTextFactor())
     End Sub
 
     ''' <summary><see cref="ApplyAutoScale(ContainerControl)"/> at an explicit text factor (tests; the one-argument form
-    ''' reads <see cref="UiSizing.CurrentTextFactor"/>).</summary>
+    ''' reads <see cref="UiSizing.CurrentTextFactor"/>). The interface scale U comes from <see cref="CurrentInterfaceFactor"/>
+    ''' (1.0 until the viewer installs its source).</summary>
     Friend Shared Sub ApplyAutoScale(f As ContainerControl, textFactor As Single)
+        ApplyAutoScale(f, textFactor, CurrentInterfaceFactor())
+    End Sub
+
+    ''' <summary>The window's design multiplier <c>M = U x T</c> (L0361 rule S1, ticket 369 B-D-6a): the product's interface
+    ''' scale <paramref name="interfaceFactor"/> times the Windows Text size <paramref name="textFactor"/>, composed here ONCE
+    ''' with the display ratio K that WinForms applies from <c>DeviceDpi</c>. Both explicit (tests).</summary>
+    Friend Shared Sub ApplyAutoScale(f As ContainerControl, textFactor As Single, interfaceFactor As Single)
         If f Is Nothing Then Return
         Dim composed As Object = Nothing
         If composedTextFactors.TryGetValue(f, composed) Then Return
-        Dim factor As Single = UiSizing.NormalizeTextFactor(textFactor)
+        Dim factor As Single = NormalizeInterfaceFactor(interfaceFactor) * UiSizing.NormalizeTextFactor(textFactor)
         composedTextFactors.Add(f, CObj(factor))
-        If factor > 1.0F Then
+        If Math.Abs(factor - 1.0F) > 0.001F Then
             ' Taken before the window font moves: a control whose font is still the same object afterwards owns it.
             Dim before As New List(Of KeyValuePair(Of Control, Font))()
             CollectFonts(f, before)
             ' The font is set while the mode is still None, so it cannot start a font-mode scaling pass of its own.
-            Dim grown As New Font(f.Font.FontFamily, UiSizing.TextPoints(f.Font.SizeInPoints, factor), f.Font.Style, GraphicsUnit.Point)
+            Dim grown As New Font(f.Font.FontFamily, f.Font.SizeInPoints * factor, f.Font.Style, GraphicsUnit.Point)
             f.Font = grown
             Dim made As New List(Of Font)()
             made.Add(grown)
@@ -70,9 +82,62 @@ Friend NotInheritable Class DialogLayout
                                        Next
                                    End Sub
         End If
-        Dim baseDpi As Single = UiSizing.LayoutBaseDpi(factor)
+        Dim baseDpi As Single = UiSizing.LogicalDpi / factor
         f.AutoScaleDimensions = New SizeF(baseDpi, baseDpi)
         f.AutoScaleMode = AutoScaleMode.Dpi
+        Dim form As Form = TryCast(f, Form)
+        If form IsNot Nothing Then ReclampAfterDpiChange(form)
+    End Sub
+
+    ''' <summary>The source of the product's interface scale U (1.0 = 100 %), installed by the viewer
+    ''' (<c>ViewerDialogPrep.Install</c>). Nothing (the default, and the test host) is U = 1. A seam and not a preference read
+    ''' here, so this file names no viewer state.</summary>
+    Friend Shared InterfaceFactorProvider As Func(Of Single)
+
+    ''' <summary>U as the dialogs take it now: the installed source, bounded to the preference range (90 to 150 percent);
+    ''' 1.0 without a source or when it fails. Read ONCE per window, in <c>ApplyAutoScale</c>.</summary>
+    Friend Shared Function CurrentInterfaceFactor() As Single
+        Dim provider As Func(Of Single) = InterfaceFactorProvider
+        If provider Is Nothing Then Return 1.0F
+        Try
+            Return NormalizeInterfaceFactor(provider.Invoke())
+        Catch ex As Exception
+            AppFileLogger.LogException("DialogLayout interface factor", ex)
+            Return 1.0F
+        End Try
+    End Function
+
+    ''' <summary>U from the two stored percents. The relative percent (<c>InterfaceScaleRelativePercent</c>) is the rule and is U
+    ''' as it stands (a window already follows the monitor through <c>DeviceDpi</c>); a legacy absolute
+    ''' <c>InterfaceScalePercent</c> is read only while no relative percent is stored and is taken the way the Settings window
+    ''' and the Share Manager take it, as the user's multiplier on top of the display scale (the floating chrome reads the absolute
+    ''' as a total, which a DPI-scaled window cannot do). An old absolute value is left as it is, never migrated. 0 is automatic.</summary>
+    Friend Shared Function InterfaceFactorFromPercents(relativePercent As Integer, legacyAbsolutePercent As Integer) As Single
+        Dim relative As Integer = UiScale.NormalizePercent(relativePercent)
+        If relative > 0 Then Return relative / 100.0F
+        Dim legacy As Integer = UiScale.NormalizePercent(legacyAbsolutePercent)
+        If legacy > 0 Then Return legacy / 100.0F
+        Return 1.0F
+    End Function
+
+    ''' <summary>A U as it is used: NaN, infinite or not positive is 1.0, anything else is bounded to the preference range.</summary>
+    Friend Shared Function NormalizeInterfaceFactor(factor As Single) As Single
+        If Single.IsNaN(factor) OrElse Single.IsInfinity(factor) OrElse factor <= 0.0F Then Return 1.0F
+        Return Math.Max(UiScale.MinPercent / 100.0F, Math.Min(UiScale.MaxPercent / 100.0F, factor))
+    End Function
+
+    ''' <summary>Rule S6 (3): a window is clamped again after every DPI change, because the size WinForms rescaled to may not
+    ''' fit the monitor it landed on. Posted, so it runs after the platform has finished rescaling; a minimized, maximized or
+    ''' hidden window is left alone.</summary>
+    Private Shared Sub ReclampAfterDpiChange(f As Form)
+        AddHandler f.DpiChanged,
+            Sub(sender As Object, e As DpiChangedEventArgs)
+                If f.IsDisposed OrElse Not f.IsHandleCreated Then Return
+                f.BeginInvoke(New Action(Sub()
+                                             If f.IsDisposed OrElse Not f.Visible OrElse f.WindowState <> FormWindowState.Normal Then Return
+                                             ClampToWorkingArea(f)
+                                         End Sub))
+            End Sub
     End Sub
 
     ''' <summary>Records the font every descendant reports now, depth first.</summary>
@@ -97,7 +162,7 @@ Friend NotInheritable Class DialogLayout
             If old.Unit <> GraphicsUnit.Point Then Continue For
             Dim own As Font = Nothing
             If Not byOld.TryGetValue(old, own) Then
-                own = New Font(old.FontFamily, UiSizing.TextPoints(old.SizeInPoints, factor), old.Style, GraphicsUnit.Point, old.GdiCharSet, old.GdiVerticalFont)
+                own = New Font(old.FontFamily, old.SizeInPoints * factor, old.Style, GraphicsUnit.Point, old.GdiCharSet, old.GdiVerticalFont)
                 byOld.Add(old, own)
                 made.Add(own)
             End If
@@ -105,16 +170,32 @@ Friend NotInheritable Class DialogLayout
         Next
     End Sub
 
-    ''' <summary>The text factor <see cref="ApplyAutoScale(ContainerControl, Single)"/> composed into each window,
-    ''' so that the reflow measures its gaps at the scale the window really has.</summary>
+    ''' <summary>The design multiplier M = U x T <see cref="ApplyAutoScale(ContainerControl, Single, Single)"/> composed into
+    ''' each window (the field keeps its first name), so that the reflow measures its gaps at the scale the window really has.</summary>
     Private Shared ReadOnly composedTextFactors As New System.Runtime.CompilerServices.ConditionalWeakTable(Of Control, Object)()
 
     ''' <summary>The factor the authored 96-dpi pixels of this window are multiplied by: the display ratio times the
-    ''' text factor the window composed (1.0 for a window that never called <c>ApplyAutoScale</c>).</summary>
+    ''' multiplier M the window composed (1.0 for a window that never called <c>ApplyAutoScale</c>).</summary>
     Private Shared Function LayoutScale(f As Form) As Single
+        Return f.DeviceDpi / UiSizing.LogicalDpi * ComposedFactor(f)
+    End Function
+
+    ''' <summary>The multiplier M = U x T the window composed in <c>ApplyAutoScale</c>, 1.0 for a window that never called it.
+    ''' A window that sizes fonts or metrics of its own after its builder (a language switch, a late control) takes M from here,
+    ''' never from the Text size alone, so those fonts agree with the layout the window composed.</summary>
+    Friend Shared Function ComposedFactor(f As Control) As Single
+        If f Is Nothing Then Return 1.0F
         Dim composed As Object = Nothing
-        Dim text As Single = If(composedTextFactors.TryGetValue(f, composed), DirectCast(composed, Single), 1.0F)
-        Return f.DeviceDpi / UiSizing.LogicalDpi * text
+        Return If(composedTextFactors.TryGetValue(f, composed), DirectCast(composed, Single), 1.0F)
+    End Function
+
+    ''' <summary>The "dpi" a remembered window size is measured at (ticket 369 B-D-7): the window's own <c>DeviceDpi</c> times the
+    ''' multiplier M it composed, so a size saved at one interface scale or Text size is rescaled by the ratio of the two when it is
+    ''' restored at another. With M = 1 (or a window that never composed) it is exactly <c>DeviceDpi</c>, the value the registry
+    ''' held before. Feed it to <c>WindowPlacement.SizeForDpi</c> and store it in the existing <c>*Dpi</c> value.</summary>
+    Friend Shared Function EffectiveDpi(f As Control) As Integer
+        If f Is Nothing Then Return CInt(UiSizing.LogicalDpi)
+        Return Math.Max(1, CInt(Math.Round(f.DeviceDpi * ComposedFactor(f))))
     End Function
 
     ''' <summary>Scales a logical (96-dpi) width the way WinForms never scales a ListView column. Call it where
@@ -128,9 +209,9 @@ Friend NotInheritable Class DialogLayout
         If f Is Nothing OrElse f.IsDisposed Then Return
         Try
             Dim area As Rectangle = Screen.FromControl(f).WorkingArea
-            If f.MinimumSize.Width > area.Width OrElse f.MinimumSize.Height > area.Height Then
-                f.MinimumSize = DialogPlacement.Capped(f.MinimumSize, area)
-            End If
+            ' Rule S6 (1): a declared minimum takes at most 90 % of the working area (the window itself may still fill it).
+            Dim minimum As Size = DialogPlacement.CappedMinimum(f.MinimumSize, area)
+            If minimum <> f.MinimumSize Then f.MinimumSize = minimum
             Dim size As Size = DialogPlacement.Capped(f.Size, area)
             If size <> f.Size Then f.Size = size
             Dim x As Integer = Math.Max(area.Left, Math.Min(f.Left, area.Right - f.Width))

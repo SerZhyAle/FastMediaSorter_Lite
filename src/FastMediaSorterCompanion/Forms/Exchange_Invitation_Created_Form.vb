@@ -21,6 +21,7 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
     Private _txtConnString As TextBox
     Private _lblResult As Label
     Private _answerRow As DialogButtonRow
+    Private _body As FlowLayoutPanel
     Private _iconHandle As IntPtr
 
     Friend Sub New(code As String, connString As String, kind As String)
@@ -59,6 +60,7 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
 
         Dim body As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
+        _body = body
 
         Dim kindText As String = If(String.Equals(_kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Своё устройство или семья"))
         body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
@@ -117,6 +119,11 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' S1: the client height authored in the builder is the body's preferred height at the system dpi, in device pixels, and
+        ' the first scale multiplied it by the dpi ratio again (a blank band under the body). Measure once the window is scaled.
+        PerformAutoScale()
+        Dim wanted As Integer = _body.PreferredSize.Height
+        If wanted <> ClientSize.Height Then ClientSize = New Size(ClientSize.Width, wanted)
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
     End Sub

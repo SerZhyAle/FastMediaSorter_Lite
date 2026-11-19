@@ -137,13 +137,20 @@ foreach ($s in $manifest.slices) {
 
 # --- spawned tickets ---------------------------------------------------------------
 $ticketStatus = [ordered]@{}
-$queueText = if (Test-Path -LiteralPath $Queue) { [System.IO.File]::ReadAllText($Queue) } else { '' }
+# The plan tool keeps three files (queue, ready, shipped); a spawned ticket is in whichever one holds it. A
+# slice cites a three-digit number, the ledger id is L0 + that number. The row is either the current shape
+# (ticket, yy-MM-dd HH:mm, status) or the older one with a leading package column and a date only.
+$queueText = ''
+$queueDir = Split-Path -Parent $Queue
+foreach ($qf in @($Queue, (Join-Path $queueDir 'RELEASE_READY.md'), (Join-Path $queueDir 'RELEASE_QUEUE_DONE.md'))) {
+    if (Test-Path -LiteralPath $qf) { $queueText += [System.IO.File]::ReadAllText($qf) + "`n" }
+}
 foreach ($t in (@($spawned.Keys) | Sort-Object)) {
-    $m = [regex]::Match($queueText, "(?m)^\S+\s+${t}_\S+\s+\S+\s+(\S+)")
+    $m = [regex]::Match($queueText, "(?m)^(?:\S+\s+)?(?:L0)?${t}_\S*\s+\d{2,4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2})?\s+(\S+)")
     if ($m.Success) { $ticketStatus[$t] = $m.Groups[1].Value }
     else {
-        $done = Get-ChildItem -LiteralPath (Join-Path $SpecDir 'done') -Filter "${t}_*.md" -File -ErrorAction SilentlyContinue
-        if ($done) { $ticketStatus[$t] = 'done/' } else { $ticketStatus[$t] = 'NOT QUEUED'; $problems.Add("ticket $t is cited by a slice but has no line in RELEASE_QUEUE.md") }
+        $done = Get-ChildItem -LiteralPath (Join-Path $SpecDir 'done') -Filter "*${t}_*.md" -File -ErrorAction SilentlyContinue
+        if ($done) { $ticketStatus[$t] = 'done/' } else { $ticketStatus[$t] = 'NOT QUEUED'; $problems.Add("ticket $t is cited by a slice but has no line in the release plan files (RELEASE_QUEUE.md, RELEASE_READY.md, RELEASE_QUEUE_DONE.md)") }
     }
 }
 

@@ -421,11 +421,13 @@ Public Class ShareManagerCommandsTests
     <InlineData("schedule remove", "op-1")>
     <InlineData("schedule run", "--all")>
     <InlineData("schedule history", Nothing)>
-    Public Sub A_gated_verb_runs_with_the_setting_on_and_for_the_sibling_program(verb As String, arg As String)
+    Public Sub A_gated_verb_runs_with_the_setting_on(verb As String, arg As String)
         Dim args As String() = If(arg Is Nothing, Nothing, New String() {arg})
         Assert.Null(Decide(Req(verb, args:=args), restrictedAllowed:=True).RefusalReason)
-        ' The viewer's own message is the person's click, not another program: not gated.
-        Assert.Null(Decide(Req(verb, origin:="sibling", args:=args), restrictedAllowed:=False).RefusalReason)
+        ' No sibling exemption exists (APP-COMMANDS 0.2 item T.1: a window message cannot prove its sender,
+        ' so a receiver reads every request as `cli` and the gate never looks at the origin) - a line that
+        ' claims "sibling" is gated like any other; ShareManagerCommandsConformanceTests pins the parsing half.
+        Assert.Equal(CommandReasons.SwitchOff, Decide(Req(verb, origin:="sibling", args:=args), restrictedAllowed:=False).RefusalReason)
     End Sub
 
     <Fact>

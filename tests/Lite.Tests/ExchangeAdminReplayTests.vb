@@ -526,7 +526,10 @@ Public Class ExchangeAdminReplayTests
         Assert.NotNull(message)
         Assert.Contains("fmsw-245-completion", message)
         Assert.Contains("catalog 1.11", message)
-        Assert.Contains("5cf90a6f6b1990155dfb346c581b97eb4f690531530f4e7a832219a1156c194b", message)
+        ' the pinned corpus (the 2026-11-19 proposal), then the adopted predecessor and the earlier fmsw-245 one
+        Assert.Contains(ExchangeTranscriptFile.PinnedSha256, message)
+        Assert.Contains(ExchangeTranscriptFile.PinnedLength.ToString(Globalization.CultureInfo.InvariantCulture), message)
+        Assert.Contains("5CF90A6F", message)
         Assert.Contains("524510", message)
         Assert.Contains("0C57C52B", message)
         Assert.Contains("488112", message)
@@ -536,15 +539,42 @@ Public Class ExchangeAdminReplayTests
         Assert.NotNull(ExchangeTranscriptFile.PinFailure(bytes.Take(bytes.Length - 1).ToArray()))
     End Sub
 
+    ''' <summary>The two members the server now adds to the effective limits of the administration replies (items FY and FZ of
+    ''' catalog 1.17: `notes` default 5000, `notesBytes` default 256 MiB). The adopted corpus was generated before it did.</summary>
+    Private Const NotesLimitsMembers As String = ",""notes"":5000,""notesBytes"":268435456"
+
+    ''' <summary>The dated exception of 2026-11-19 (registry, DEVICE-EXCHANGE; proposal PROPOSAL-2026-11-19-fmsw-corpus-ended-broadcast-tunnel):
+    ''' the local admin-native section equals the adopted one except in exactly three server frames (the replies of ids 2, 3 and 4),
+    ''' and in those only by the two notes-limit members. Any other difference still fails; when the owner adopts the proposal this
+    ''' fact goes back to plain equality in the same edit that moves the pin.</summary>
     <AdoptedCorpusFact>
-    Public Sub The_admin_native_section_equals_the_same_section_of_the_adopted_folder_when_it_is_present()
+    Public Sub The_admin_native_section_equals_the_same_section_of_the_adopted_folder_when_it_is_present_except_the_notes_limits()
         Dim adopted As String = AdoptedCorpusFactAttribute.AdoptedPath()
         Assert.NotNull(adopted)
         Using local As JsonDocument = JsonDocument.Parse(File.ReadAllBytes(ExchangeVectorCorpus.TranscriptPath()))
             Using theirs As JsonDocument = JsonDocument.Parse(File.ReadAllBytes(adopted))    ' read only: the adopted folder is never written
                 Dim a As JsonElement = SectionOf(local, Native)
                 Dim b As JsonElement = SectionOf(theirs, Native)
-                Assert.True(JsonEqual(a, b), "the admin-native section of the local frames-v2.json differs from the adopted fmsw-245-completion; take the change to the catalog first (L0278 7.2)")
+                Assert.Equal(Text(b, "description"), Text(a, "description"))
+                Dim streamsA As JsonElement = Nothing
+                Dim streamsB As JsonElement = Nothing
+                Assert.Equal(b.TryGetProperty("streams", streamsB), a.TryGetProperty("streams", streamsA))
+                If streamsA.ValueKind <> JsonValueKind.Undefined Then
+                    Assert.True(JsonEqual(streamsA, streamsB), "the stream list of the admin-native section differs from the adopted fmsw-245-completion; take the change to the catalog first (L0278 7.2)")
+                End If
+                Dim stepsA As List(Of JsonElement) = a.GetProperty("steps").EnumerateArray().ToList()
+                Dim stepsB As List(Of JsonElement) = b.GetProperty("steps").EnumerateArray().ToList()
+                Assert.Equal(stepsB.Count, stepsA.Count)
+                Dim differing As Integer = 0
+                For i As Integer = 0 To stepsA.Count - 1
+                    If JsonEqual(stepsA(i), stepsB(i)) Then Continue For
+                    differing += 1
+                    Assert.Equal(Text(stepsB(i), "stream"), Text(stepsA(i), "stream"))
+                    Assert.Equal(Text(stepsB(i), "direction"), Text(stepsA(i), "direction"))
+                    Assert.True(String.Equals(Text(stepsB(i), "json"), Text(stepsA(i), "json").Replace(NotesLimitsMembers, ""), StringComparison.Ordinal),
+                                "step " & i.ToString(Globalization.CultureInfo.InvariantCulture) & " of the admin-native section differs from the adopted fmsw-245-completion by more than the notes limits; take the change to the catalog first (L0278 7.2)")
+                Next
+                Assert.Equal(3, differing)
             End Using
         End Using
     End Sub

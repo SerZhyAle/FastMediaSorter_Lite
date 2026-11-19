@@ -14,7 +14,9 @@ Public Class DesktopUxConformanceTests
     ''' <summary>Uses of a Message outside a log call that are allowed, each with its reason.</summary>
     Private Shared ReadOnly Allowed As (File As String, Fragment As String, Reason As String)() = {
         ("ShareController.vb", "refusal.Message",
-         "not an exception's text: WorkerVersionRefusedException is built from a localized sentence (WorkerIpc.vb)")
+         "not an exception's text: WorkerVersionRefusedException is built from a localized sentence (WorkerIpc.vb)"),
+        ("ShareManagerCommandClient.vb", "response.Message",
+         "not an exception's text: CommandResponse.Message is a localized sentence of ShareManagerCommandText (APP-COMMANDS rule 9)")
     }
 
     ''' <summary>

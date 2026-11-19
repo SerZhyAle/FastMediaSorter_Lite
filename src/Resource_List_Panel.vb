@@ -1261,9 +1261,18 @@ Friend NotInheritable Class Resource_List_Panel
         If menuTheme Is Nothing Then
             menuTheme = ChromeTheme.ForMenu(If(palette IsNot Nothing AndAlso palette.Dark, ThemePalette.Dark, ThemePalette.Light))
         End If
+        ' The popup takes a DEVICE scale (it never adds the window dpi itself, ChromeMenu.Configure): on the dialog route
+        ' panelScale is the interface scale alone, so the one factor Dv applies to every other metric of this panel is used
+        ' (L0361 rules S1/S7, B-D-4 b); on the Settings route that factor is panelScale itself, so nothing changes there.
         ChromeMenu.ShowPopup(owner, moreButton.PointToScreen(New Point(0, moreButton.Height)), BuildOverflowItems(),
-                             menuTheme, panelScale, RightToLeft = RightToLeft.Yes, Font, Font)
+                             menuTheme, DeviceScaleFactor(), RightToLeft = RightToLeft.Yes, Font, Font)
     End Sub
+
+    ''' <summary>The factor <see cref="Dv"/> applies to a logical size, as a number: the interface scale times the window
+    ''' dpi on the dialog route, the host's device scale on the Settings route. For a control that takes a device scale.</summary>
+    Private Function DeviceScaleFactor() As Single
+        Return Dv(1000) / 1000.0F
+    End Function
 
     ' --------------------------------------------------------------------------- import ----
 

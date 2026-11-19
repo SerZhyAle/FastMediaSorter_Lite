@@ -1133,8 +1133,8 @@ Namespace AppCommands
 
         ''' <summary>Item I.3: the answer belongs to the request when its <c>requestId</c> is the request's own. An empty
         ''' one (the answer to a line that could not be read) or a foreign one is unreadable to the sender, which exits 2.</summary>
-        Friend Function IsAnswerTo(requestId As String) As Boolean
-            Return Not String.IsNullOrEmpty(RequestId) AndAlso String.Equals(RequestId, requestId, StringComparison.OrdinalIgnoreCase)
+        Friend Function IsAnswerTo(expectedRequestId As String) As Boolean
+            Return Not String.IsNullOrEmpty(Me.RequestId) AndAlso String.Equals(Me.RequestId, expectedRequestId, StringComparison.OrdinalIgnoreCase)
         End Function
 
         Friend Shared Function TryParse(text As String, ByRef response As CommandResponse) As Boolean

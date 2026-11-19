@@ -374,7 +374,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
     ''' centring, and from OnLoad, after the window has scaled itself, where it is final.
     ''' </summary>
     Private Sub ApplyRememberedBounds()
-        Dim size As Size = WindowPlacement.SizeForDpi(remembered_Size.Width, remembered_Size.Height, remembered_Dpi, Me.DeviceDpi)
+        Dim size As Size = WindowPlacement.SizeForDpi(remembered_Size.Width, remembered_Size.Height, remembered_Dpi, DialogLayout.EffectiveDpi(Me))
         Dim width As Integer = Math.Max(Me.MinimumSize.Width, size.Width)
         Dim height As Integer = Math.Max(Me.MinimumSize.Height, size.Height)
 
@@ -399,8 +399,9 @@ Partial Friend NotInheritable Class Image_Editor_Form
             SaveSetting(App_name, Second_App_Name, Registry_Top, bounds.Top.ToString())
             SaveSetting(App_name, Second_App_Name, Registry_Width, bounds.Width.ToString())
             SaveSetting(App_name, Second_App_Name, Registry_Height, bounds.Height.ToString())
-            ' The pixels above belong to this DPI; without it the next open cannot tell them from another monitor's.
-            SaveSetting(App_name, Second_App_Name, Registry_Dpi, Me.DeviceDpi.ToString())
+            ' The pixels above belong to this DPI times the window's multiplier M (B-D-7: the interface scale and the Text size
+            ' change what a pixel of the window means); without it the next open cannot tell them from another monitor's.
+            SaveSetting(App_name, Second_App_Name, Registry_Dpi, DialogLayout.EffectiveDpi(Me).ToString())
         Catch ex As Exception
             AppFileLogger.LogException("Image editor: saving window bounds", ex)
         End Try

@@ -115,7 +115,7 @@ Partial Public Class Main_Form
         Try
             If notify_Toast Is Nothing OrElse notify_Toast.IsDisposed Then notify_Toast = New NotifyToast()
             Dim media As Rectangle = panel_Media.RectangleToScreen(panel_Media.ClientRectangle)
-            notify_Toast.Present(Me, media, message, NotifyRules.ToastMilliseconds(message.Level))
+            notify_Toast.Present(Me, media, message, NotifyRules.ToastMilliseconds(message.Level), GetCurrentDpiScale())
         Catch ex As Exception
             ' A toast is a courtesy over the status line: failing to raise it must never fail the action.
             AppFileLogger.LogException("Notify toast", ex)
@@ -153,21 +153,27 @@ Partial Public Class Main_Form
         For Each child As Control In panel_Media.Controls
             If child.Visible AndAlso child IsNot welcome_Invite_Button Then Return
         Next
-        Dim area As Rectangle = Rectangle.Inflate(panel_Media.ClientRectangle, -panel_Media.LogicalToDeviceUnits(24), -panel_Media.LogicalToDeviceUnits(24))
+        ' Gaps are pixel lengths: l x (K x M), the viewer's own layout factor (L0361 rule S4 pixel form, L0363 A-D16).
+        Dim designScale As Single = GetCurrentDpiScale()
+        Dim margin As Integer = UiScale.Px(24, designScale)
+        Dim area As Rectangle = Rectangle.Inflate(panel_Media.ClientRectangle, -margin, -margin)
         If welcome_Invite_Button IsNot Nothing AndAlso welcome_Invite_Button.Visible Then
-            area.Height = Math.Min(area.Height, welcome_Invite_Button.Top - panel_Media.LogicalToDeviceUnits(12) - area.Top)
+            area.Height = Math.Min(area.Height, welcome_Invite_Button.Top - UiScale.Px(12, designScale) - area.Top)
         End If
         If area.Width <= 0 OrElse area.Height <= 0 Then Return
         Dim ink As Color = ChromeTheme.ContrastingText(panel_Media.BackColor)
         Dim family As String = If(Localization.FontFamily(), Font.FontFamily.Name)
         Dim flags As TextFormatFlags = TextFormatFlags.WordBreak Or TextFormatFlags.NoPrefix Or TextFormatFlags.HorizontalCenter
         If Localization.IsRightToLeft() Then flags = flags Or TextFormatFlags.RightToLeft
-        Using titleFont As New Font(family, 16.0F, FontStyle.Regular, GraphicsUnit.Point),
-              hintFont As New Font(family, 11.0F, FontStyle.Regular, GraphicsUnit.Point)
+        ' Point fonts drawn and measured at this window's dpi: the nominal size takes M x D / S (L0361 rule S4,
+        ' point form), never the bare nominal size, which reads through the system dpi (L0363 A-D5).
+        Dim pointScale As Single = TextPointScale()
+        Using titleFont As New Font(family, 16.0F * pointScale, FontStyle.Regular, GraphicsUnit.Point),
+              hintFont As New Font(family, 11.0F * pointScale, FontStyle.Regular, GraphicsUnit.Point)
             Dim titleSize As Size = TextRenderer.MeasureText(e.Graphics, empty_State_Lines(0), titleFont, New Size(area.Width, Integer.MaxValue), flags)
             Dim hint As String = If(empty_State_Lines.Length > 1, empty_State_Lines(1), String.Empty)
             Dim hintSize As Size = If(hint.Length = 0, Size.Empty, TextRenderer.MeasureText(e.Graphics, hint, hintFont, New Size(area.Width, Integer.MaxValue), flags))
-            Dim gap As Integer = panel_Media.LogicalToDeviceUnits(10)
+            Dim gap As Integer = UiScale.Px(10, designScale)
             Dim total As Integer = titleSize.Height + If(hint.Length = 0, 0, gap + hintSize.Height)
             Dim top As Integer = area.Top + Math.Max(0, (area.Height - total) \ 2)
             TextRenderer.DrawText(e.Graphics, empty_State_Lines(0), titleFont, New Rectangle(area.Left, top, area.Width, titleSize.Height), ink, flags)

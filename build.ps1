@@ -644,3 +644,7 @@ if (-not $SkipLaunch -and -not $SkipModern) {
 } else {
     Write-Host "Skipping viewer launch (-SkipLaunch or -SkipModern)."
 }
+
+. (Join-Path $SolutionDir "tools\lib\ReleaseLedgerHook.ps1")
+$ledgerArtifact = if (-not $SkipModern -and (Test-Path -LiteralPath (Join-Path $OutputDir $ExeName))) { Join-Path $OutputDir $ExeName } else { $SingleFileExe }
+Invoke-ReleaseLedgerBuild -RepoRoot $SolutionDir -Package 'user' -Flavor 'local' -Kind 'test' -Version $BuildVersion -Artifact $ledgerArtifact

@@ -163,9 +163,14 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Return ScaleForDpi(Crop_Grip_Size)
     End Function
 
+    ''' <summary>The interface scale U, read once with the window (B-D-7, Q369-1a). The grip is a hit target, and a target takes
+    ''' the interface factor only, never the Text size (<see cref="UiSizing.TargetPx"/>), so M = U x T is not used here.</summary>
+    Private ReadOnly gripInterfaceFactor As Single = DialogLayout.CurrentInterfaceFactor()
+
     Private Function ScaleForDpi(logical As Integer) As Integer
+        ' The canvas dpi (K) times U; never below the authored size.
         Dim dpi As Integer = If(canvas IsNot Nothing, canvas.DeviceDpi, 96)
-        Return Math.Max(logical, CInt(Math.Round(logical * dpi / 96.0)))
+        Return Math.Max(logical, CInt(Math.Round(logical * dpi / 96.0 * gripInterfaceFactor)))
     End Function
 
     ''' <summary>

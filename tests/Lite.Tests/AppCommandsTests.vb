@@ -423,6 +423,7 @@ Public Class AppCommandsTests
             {"target-missing", Tuple.Create("failed", 11)}, {"timeout", Tuple.Create("failed", 2)},
             {"cancelled", Tuple.Create("failed", 16)},
             {"error", Tuple.Create("failed", 1)}, {"no-space", Tuple.Create("failed", 13)},
+            {"io-error", Tuple.Create("failed", 14)}, {"network", Tuple.Create("failed", 15)},
             {"response-too-large", Tuple.Create("failed", 1)}}
         Assert.Equal(expected.Count, CommandReasons.All.Length)
         For Each reason As String In CommandReasons.All

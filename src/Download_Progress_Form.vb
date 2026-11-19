@@ -102,6 +102,9 @@ Friend NotInheritable Class Download_Progress_Form
         layout.Controls.Add(answers)
         Me.Controls.Add(layout)
         answers.Bind(Me)
+        ' The sizes above are 96-dpi pixels; this turns them into the window's pixels and composes the Text size
+        ' (L0369, audit L0363 B-D-1). Last line of the builder: only the children present now are scaled.
+        DialogLayout.ApplyAutoScale(Me)
     End Sub
 
     ''' <summary>

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -1173,11 +1172,12 @@ func TestPolicyAndPerAccountLimits(t *testing.T) {
 	}
 }
 
-// TestPolicyCarriesTheNotesCountAndNoAccountOverridesIt is ticket L0321 (DEVICE-EXCHANGE item FL, Assumed 9): the
-// count of note records is a deployment default only. The policy carries it (5000 unless the config says
-// otherwise), every account resolves to it, SetPolicy keeps what it is given, and the per-account override has
-// no member for it.
-func TestPolicyCarriesTheNotesCountAndNoAccountOverridesIt(t *testing.T) {
+// TestPolicyCarriesTheNotesLimitsAndAnAccountMayOverrideThem is ticket L0321 (DEVICE-EXCHANGE item FL) as
+// DEVICE-EXCHANGE 1.17 item FY completed it: the count of note records and the largest note box are deployment
+// defaults that one account may override. The policy carries the count (5000 unless the config says otherwise),
+// every account resolves to it, SetPolicy keeps what it is given, and the per-account override carries
+// NotesPerAccount and NotesMaxBytes (set, zero, a bad limit refused, cleared).
+func TestPolicyCarriesTheNotesLimitsAndAnAccountMayOverrideThem(t *testing.T) {
 	if DefaultNotesPerAccount != 5000 {
 		t.Fatalf("the default count of item FL is 5000, the constant is %d", DefaultNotesPerAccount)
 	}
@@ -1216,13 +1216,53 @@ func TestPolicyCarriesTheNotesCountAndNoAccountOverridesIt(t *testing.T) {
 		t.Fatalf("a store opened with the policy does not carry its notes count: %+v", opened.Policy())
 	}
 
-	// there is no per-account override: AccountLimits has no member that names notes
-	typ := reflect.TypeOf(AccountLimits{})
-	for i := 0; i < typ.NumField(); i++ {
-		f := typ.Field(i)
-		if strings.Contains(strings.ToLower(f.Name+" "+f.Tag.Get("json")), "note") {
-			t.Fatalf("AccountLimits.%s is a per-account notes member, Assumed 9 of L0321 allows none", f.Name)
-		}
+	// an account's own notes limits lay over the defaults, count and bytes apart from each other
+	s.SetPolicy(DefaultPolicy())
+	count, size := 12, int64(4096)
+	if err := s.SetAccountLimits(alice, &AccountLimits{NotesPerAccount: &count}); err != nil {
+		t.Fatal(err)
+	}
+	if l := s.LimitsFor(alice); l.Notes != 12 || l.NotesBytes != DefaultNotesBytes {
+		t.Fatalf("an own count leaves the byte cap alone: %+v", l)
+	}
+	if err := s.SetAccountLimits(alice, &AccountLimits{NotesPerAccount: &count, NotesMaxBytes: &size}); err != nil {
+		t.Fatal(err)
+	}
+	if l := s.LimitsFor(alice); l.Notes != 12 || l.NotesBytes != 4096 {
+		t.Fatalf("own count and bytes: %+v", l)
+	}
+	if l := s.LimitsFor(bob); l.Notes != DefaultNotesPerAccount || l.NotesBytes != DefaultNotesBytes {
+		t.Fatalf("another account keeps the defaults: %+v", l)
+	}
+
+	// zero is a number the override may carry: it is stored and read back, not taken for "not set"
+	zeroCount, zeroSize := 0, int64(0)
+	if err := s.SetAccountLimits(alice, &AccountLimits{NotesPerAccount: &zeroCount, NotesMaxBytes: &zeroSize}); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.AccountLimitsFor(alice); got == nil || got.NotesPerAccount == nil || *got.NotesPerAccount != 0 ||
+		got.NotesMaxBytes == nil || *got.NotesMaxBytes != 0 {
+		t.Fatalf("zero overrides were not kept: %+v", got)
+	}
+
+	// a limit below zero is refused and changes nothing
+	negCount, negSize := -1, int64(-1)
+	if err := s.SetAccountLimits(alice, &AccountLimits{NotesPerAccount: &negCount}); !errors.Is(err, ErrBadLimit) {
+		t.Fatalf("a negative count is refused: %v", err)
+	}
+	if err := s.SetAccountLimits(alice, &AccountLimits{NotesMaxBytes: &negSize}); !errors.Is(err, ErrBadLimit) {
+		t.Fatalf("a negative byte cap is refused: %v", err)
+	}
+	if got := s.AccountLimitsFor(alice); got == nil || got.NotesPerAccount == nil || *got.NotesPerAccount != 0 {
+		t.Fatalf("a refused limit changed the overrides: %+v", got)
+	}
+
+	// nil clears the overrides and the account is back on the defaults
+	if err := s.SetAccountLimits(alice, nil); err != nil || s.AccountLimitsFor(alice) != nil {
+		t.Fatalf("nil clears the overrides: %v", err)
+	}
+	if l := s.LimitsFor(alice); l.Notes != DefaultNotesPerAccount || l.NotesBytes != DefaultNotesBytes {
+		t.Fatalf("a cleared account is back on the defaults: %+v", l)
 	}
 }
 

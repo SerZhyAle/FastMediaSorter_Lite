@@ -316,6 +316,7 @@ another Share Manager runs, the tray one included, because a new launch would ha
 ### Чек-лист релиза (что нельзя забыть)
 
 **A. Документация и сайт (до тега):**
+- [ ] **Release ledger (`RELEASE-LEDGER` 0.1):** run `pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger probe` and `... show` to confirm the candidate version is strictly newer than every live or in-flight version across `github`, `winget`, `installer`, `msstore`, `winget-server`, and `installer-server`.
 - [ ] **Contracts first (L0323, owner order 2026-11-15):** before the version is cut, repeat the contract catch-up for the three registry names (`FastMediaSorter_Lite`, `FMS Share Manager`, `FastMediaSorter Windows`); the steps and the done condition are in [build-release.md](../../.claude/rules/build-release.md) "Contract catch-up". The release is not cut on a `behind`, `partial`, `pending` or `unparsed` row without a dated reason in the row.
 - [ ] Обновлены `README.md`, `README_RU.md`, `README_UK.md` если менялись фичи.
 - [ ] Обновлён сайт [index.html](../../index.html) / [docs/privacy.html](../privacy.html) по контенту.
@@ -346,8 +347,8 @@ another Share Manager runs, the tray one included, because a new launch would ha
       Следить: https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
 - [ ] Сайт: `pwsh -NoProfile -File tools/Set-ReleaseManifest.ps1 -Version <версия>` - пишет
       `tools/release-manifest.json` из опубликованного релиза (черновик и релиз без любого из шести ассетов
-      отклоняются) и перерисовывает страницы; затем коммит и пуш сайта в `main`. Пропущенный шаг ловит
-      `tools/Build-SitePages.ps1 -Check`, проверка 6, когда манифест отстаёт от CHANGELOG на два раздела.
+      отклоняются), фиксирует `github` как `live` в `docs/releases/` и перерисовывает страницы; затем коммит и пуш сайта в `main`. Пропущенный шаг ловит
+      `tools/Build-SitePages.ps1 -Check`, проверка 6, когда манифест отстаёт от CHANGELOG на два раздела. После деплоя сайта прогнать `pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger probe`, чтобы зафиксировать `installer` и `installer-server` как `live`.
 
 **C. winget (после того как GitHub release готов) - два независимых пакета:**
 - [ ] Манифест указывает на Inno **`setup.exe`** напрямую (`InstallerType: inno`), без зависимостей,
@@ -358,6 +359,7 @@ another Share Manager runs, the tray one included, because a new launch would ha
       Здесь `Scope: machine` и `MinimumOSVersion` **объявлены** - в обычном пакете их быть не должно,
       причины у обоих отличий разные и расписаны в комментариях манифеста.
 - [ ] Описание обоих PR заполнено через `gh pr edit` - пустое описание не оставляем.
+- [ ] Release ledger: record `winget` (`publish -Key winget -Version <версия> -State submitted -Ref PR#<n> -Url <pr-url>`) and `winget-server` (`-Key winget-server ...`), then confirm `live` via `tools/harness.ps1 releases/release-ledger probe` after merge.
 
 **D. Microsoft Store (MSIX, опционально, не блокирует A-C):**
 - [ ] `cd publishing\msix; .\build-msix.ps1 -ReleaseVersion <тег без v> -IdentityName "<имя из Partner Center>"`
@@ -371,7 +373,7 @@ another Share Manager runs, the tray one included, because a new launch would ha
       (правила 1-5 и 17 `WINDOWS-STORE`: идентичность, нет `AppxSignature.p7x`, уведомления, декларации
       контейнера, `runFullTrust`). Если любая из проверок красная, пакет удаляется и сборка останавливается:
       красного пакета в `dist\` не остаётся.
-- [ ] Загрузить unsigned `.msix` в Partner Center (Microsoft подпишет сам).
+- [ ] Загрузить unsigned `.msix` в Partner Center (Microsoft подпишет сам) и записать `pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger publish -Key msstore -Version <msix-version> -State submitted` (затем перевести в `live` через `probe` после сертификации).
 - [ ] Store - **только пользовательская редакция**. Серверную туда не грузим никогда: она регистрирует
       службу, а установка службы из пакета Store запрещена политикой и инвариантом самой фичи.
       Текст листинга это и говорит - источник правки один,

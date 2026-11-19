@@ -258,7 +258,20 @@ Friend Class ChromeHost
             m.Result = New IntPtr(MA_NOACTIVATE)
             Return
         End If
+        If m.Msg = ChromeInkWindow.WM_WINDOWPOSCHANGED AndAlso ChromeInkWindow.ZOrderChanged(m) Then
+            MyBase.WndProc(m)
+            KeepInkAboveHost()
+            Return
+        End If
         MyBase.WndProc(m)
+    End Sub
+
+    ''' <summary>Puts the ink layer directly above this panel again if Windows left it below (an activation of
+    ''' the main window re-stacks the windows it owns, and the ink windows, owned by the panels one level down,
+    ''' do not always travel with them). Below its panel the ink would be seen only through the panel's
+    ''' translucency: light glyphs and captions vanish into the picture. No-op when the order is right.</summary>
+    Friend Sub KeepInkAboveHost()
+        If inkWindow IsNot Nothing AndAlso Not inkWindow.IsDisposed Then inkWindow.KeepAboveHost(Me)
     End Sub
 
 End Class
@@ -284,6 +297,15 @@ Friend NotInheritable Class ChromeInkWindow
     Private Const ULW_ALPHA As Integer = 2
     Private Const AC_SRC_OVER As Byte = 0
     Private Const AC_SRC_ALPHA As Byte = 1
+    Friend Const WM_WINDOWPOSCHANGED As Integer = &H47
+    Private Const SWP_NOZORDER As Integer = &H4
+    ''' <summary>SWP_NOSIZE Or SWP_NOMOVE Or SWP_NOACTIVATE: a z-order change only, nothing takes the keyboard.</summary>
+    Private Const Swp_Restack As UInteger = &H13UI
+    Private Const GW_HWNDNEXT As UInteger = 2UI
+    Private Const GW_HWNDPREV As UInteger = 3UI
+
+    ''' <summary>Set while this window restacks itself, so the message that restack raises does not start another.</summary>
+    Private keepingOrder As Boolean
 
     <StructLayout(LayoutKind.Sequential)>
     Private Structure NativePoint
@@ -309,6 +331,15 @@ Friend NotInheritable Class ChromeInkWindow
     Private Shared Function UpdateLayeredWindow(hwnd As IntPtr, hdcDst As IntPtr, ByRef pptDst As NativePoint,
                                                 ByRef psize As NativeSize, hdcSrc As IntPtr, ByRef pptSrc As NativePoint,
                                                 crKey As Integer, ByRef pblend As BlendFunction, dwFlags As Integer) As Boolean
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Shared Function GetWindow(hwnd As IntPtr, cmd As UInteger) As IntPtr
+    End Function
+
+    <DllImport("user32.dll", SetLastError:=True)>
+    Private Shared Function SetWindowPos(hwnd As IntPtr, hwndInsertAfter As IntPtr, x As Integer, y As Integer,
+                                         cx As Integer, cy As Integer, flags As UInteger) As Boolean
     End Function
 
     <DllImport("user32.dll")>
@@ -381,7 +412,45 @@ Friend NotInheritable Class ChromeInkWindow
             m.Result = New IntPtr(MA_NOACTIVATE)
             Return
         End If
+        If m.Msg = WM_WINDOWPOSCHANGED AndAlso ZOrderChanged(m) Then
+            MyBase.WndProc(m)
+            KeepAboveHost(Owner)
+            Return
+        End If
         MyBase.WndProc(m)
+    End Sub
+
+    ''' <summary>True when a WM_WINDOWPOSCHANGED carries a change of z-order (WINDOWPOS.flags has no
+    ''' SWP_NOZORDER): a move or a resize alone is not a reason to look at the order.</summary>
+    Friend Shared Function ZOrderChanged(ByRef m As Message) As Boolean
+        If m.LParam = IntPtr.Zero Then Return False
+        ' WINDOWPOS: hwnd, hwndInsertAfter, x, y, cx, cy, flags - the flags follow two handles and four ints.
+        Dim flags As Integer = Marshal.ReadInt32(m.LParam, 2 * IntPtr.Size + 16)
+        Return (flags And SWP_NOZORDER) = 0
+    End Function
+
+    ''' <summary>The ink layer's one invariant: it stands directly above its panel. When Windows has put it
+    ''' below (or into another z-order band), it is inserted right under whatever is above the panel, so it
+    ''' never rises over anything that stood over the panel, an open list included.</summary>
+    Friend Sub KeepAboveHost(host As Form)
+        If keepingOrder OrElse host Is Nothing OrElse host.IsDisposed OrElse Not host.IsHandleCreated OrElse
+           Not host.Visible OrElse IsDisposed OrElse Not IsHandleCreated OrElse Not Visible Then Return
+        Dim hostHandle As IntPtr = host.Handle
+        ' Walking down from this window finds the panel below it when the order is right.
+        Dim below As IntPtr = GetWindow(Handle, GW_HWNDNEXT)
+        Dim steps As Integer = 0
+        While below <> IntPtr.Zero AndAlso below <> hostHandle AndAlso steps < 1024
+            below = GetWindow(below, GW_HWNDNEXT)
+            steps += 1
+        End While
+        If below = hostHandle Then Return
+        keepingOrder = True
+        Try
+            ' Nothing above the panel (zero) is the top of its band; a topmost neighbour makes this window topmost too.
+            SetWindowPos(Handle, GetWindow(hostHandle, GW_HWNDPREV), 0, 0, 0, 0, Swp_Restack)
+        Finally
+            keepingOrder = False
+        End Try
     End Sub
 
     ''' <summary>Shows <paramref name="source"/> (premultiplied ARGB) at <paramref name="screenLocation"/>, over
@@ -416,6 +485,7 @@ Friend NotInheritable Class ChromeInkWindow
             DeleteDC(memoryDc)
             ReleaseDC(IntPtr.Zero, screenDc)
         End Try
+        KeepAboveHost(host)
     End Sub
 
 End Class

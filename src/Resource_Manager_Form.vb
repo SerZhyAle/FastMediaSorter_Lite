@@ -65,7 +65,10 @@ Friend NotInheritable Class Resource_Manager_Form
         ' The shared list+actions panel (the Settings window's resources page embeds the same one).
         ' A managed share's Edit/Remove hands the user over to the Share Manager - the viewer
         ' passes its own wake (Main_Form.ShowResourceManager), the tests construct without one.
-        panel = New Resource_List_Panel(openShareManager:=openShareManager,
+        ' The dialog route of the panel supplies the interface scale U alone (Dv adds the window dpi): the window's font and
+        ' layout follow U through DialogLayout.ApplyAutoScale (B-D-6a), so the panel's own metrics must follow it too.
+        panel = New Resource_List_Panel(scale:=DialogLayout.CurrentInterfaceFactor(),
+                                        openShareManager:=openShareManager,
                                         shareInstalledProbe:=shareInstalledProbe,
                                         scanPhoneCodeCamera:=scanPhoneCodeCamera) With {.Dock = DockStyle.Fill}
         AddHandler panel.ItemActivated, AddressOf OnOpenFromPanel

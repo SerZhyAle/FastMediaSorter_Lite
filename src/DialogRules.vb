@@ -188,6 +188,16 @@ Friend NotInheritable Class DialogPlacement
         Return New Size(Math.Min(size.Width, workArea.Width), Math.Min(size.Height, workArea.Height))
     End Function
 
+    ''' <summary>L0361 rule S6 (1): a window's declared MINIMUM size capped at <see cref="FormScale.MinimumShareOfWorkArea"/>
+    ''' (90 %) of the working area, so a minimum never takes the whole monitor. The window's own size is still capped at the
+    ''' whole area by <see cref="Capped"/>. An unknown area (a side of 0 or less) leaves that side as declared.</summary>
+    Friend Shared Function CappedMinimum(minimum As Size, workArea As Rectangle) As Size
+        Dim w As Integer = FormScale.ShareOfLength(workArea.Width, FormScale.MinimumShareOfWorkArea)
+        Dim h As Integer = FormScale.ShareOfLength(workArea.Height, FormScale.MinimumShareOfWorkArea)
+        Return New Size(If(w > 0, Math.Min(minimum.Width, w), minimum.Width),
+                        If(h > 0, Math.Min(minimum.Height, h), minimum.Height))
+    End Function
+
 End Class
 
 ''' <summary>Makes a hand-authored absolute layout survive a longer caption (124 UX-203): a label that

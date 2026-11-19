@@ -287,6 +287,7 @@ func scenarioNotesBoxBound() (*transcript, []sealedCase) {
 	if st := a.expect(wire.TypeNotesStored).(*wire.NotesStored); st.Revision != 1 {
 		failf("the put at the bound: revision %d", st.Revision)
 	}
+	b.expect(wire.TypeNotesChanged) // the other device is told of the stored record
 	a.send(&wire.NotesList{Since: int64Ptr(0)})
 	ans := expectNotesChanges(a)
 	if len(ans.Records) != 1 || string(ans.Records[0].Sealed) != string(bound) || ans.Full {
@@ -347,6 +348,7 @@ func scenarioNotesBoxBound() (*transcript, []sealedCase) {
 	if st := b.expect(wire.TypeNotesStored).(*wire.NotesStored); st.Revision != 2 {
 		failf("the put at the item FH bound: revision %d, want 2", st.Revision)
 	}
+	a.expect(wire.TypeNotesChanged)
 	tr.note(fmt.Sprintf("a box at the item FH bound - a clear payload of %d bytes, 40 recipient entries, %d bytes stored - is kept: it is the largest box a conforming sender writes, about 78000 bytes inside the delivery bound", wire.MaxNotePayload, len(box)))
 
 	// the streams end

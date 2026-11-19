@@ -225,7 +225,9 @@ Friend NotInheritable Class HelpCardPanel
     Private Sub Relayout()
         If groups Is Nothing OrElse ClientSize.Width <= 0 Then Return
         EnsureFonts()
-        Dim availWidth As Integer = Math.Max(1, ClientSize.Width - Px(32) - SystemInformation.VerticalScrollBarWidth)
+        ' The bar lives at this window's dpi (D), so its strip is the metric at D, not the system one (L0361 rule S8, B-D-3).
+        Dim barWidth As Integer = UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi)
+        Dim availWidth As Integer = Math.Max(1, ClientSize.Width - Px(32) - barWidth)
         welcomeLink.Font = bodyFont
         welcomeLink.Height = Math.Max(Px(34), TextRenderer.MeasureText(welcomeLink.Text, bodyFont,
             New Size(availWidth, 0), TextFormatFlags.WordBreak).Height)
@@ -233,7 +235,6 @@ Friend NotInheritable Class HelpCardPanel
         fullHelpLink.Height = Math.Max(Px(34), TextRenderer.MeasureText(fullHelpLink.Text, bodyFont,
             New Size(availWidth, 0), TextFormatFlags.WordBreak).Height)
         ApplyLinkTheme()
-        Dim barWidth As Integer = SystemInformation.VerticalScrollBarWidth
         Build(ClientSize.Width)
         barNeeded = contentHeight > ClientSize.Height
         ' The bar covers the right strip: the text is laid out beside it, not under it.

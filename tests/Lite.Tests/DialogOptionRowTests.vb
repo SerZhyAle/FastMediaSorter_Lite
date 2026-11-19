@@ -16,7 +16,7 @@ Imports System.Windows.Forms
 Imports Xunit
 
 ''' <summary>
-''' Ticket 243 T-11b: the twelve check boxes of eight viewer windows stand on the Settings option row (BOOLEAN-OPTION 2.0
+''' Ticket 243 T-11b: the eleven check boxes of eight viewer windows stand on the Settings option row (BOOLEAN-OPTION 2.0
 ''' sections 2 and 3). Every test drives the REAL window on an STA thread (the one exception, said in the report: the Space key
 ''' is not synthesised, because a real key needs the foreground; the key route is the check box's own Click, which
 ''' <c>PerformClick</c> runs): the drawn box and its hit target at 100 % and 175 %, the layout of the longest English, German, Russian
@@ -342,10 +342,10 @@ Public Class DialogOptionRowTests
     ' --- tests ------------------------------------------------------------------------------------------
 
     <Fact>
-    Public Sub The_subjects_are_the_twelve_check_boxes_of_the_eight_windows()
+    Public Sub The_subjects_are_the_eleven_check_boxes_of_the_eight_windows()
         Dim all As List(Of Subject) = Subjects()
         Dim distinct As List(Of String) = all.Select(Function(s) s.Window.Split("("c)(0) & "/" & s.CheckName).Distinct().ToList()
-        Assert.Equal(12, distinct.Count)
+        Assert.Equal(11, distinct.Count)
         Assert.Equal(8, all.Select(Function(s) s.Window.Split("("c)(0)).Distinct().Count())
     End Sub
 
@@ -773,7 +773,7 @@ Public Class DialogOptionRowTests
         Dim src As String = FindSourceDirectory()
         Dim expected As New Dictionary(Of String, Integer)(StringComparer.Ordinal) From {
             {"Resource_Credential_Form.vb", 2}, {"Resource_Edit_Form.vb", 2}, {"Secure_Password_Form.vb", 2},
-            {"Exchange_Password_Change_Form.vb", 1}, {"Exchange_Connect_Form.vb", 1}, {"LiveBroadcast_Form.vb", 2},
+            {"Exchange_Password_Change_Form.vb", 1}, {"Exchange_Connect_Form.vb", 1}, {"LiveBroadcast_Form.vb", 1},
             {"Video\Video_Convert_Form.vb", 1}, {"Exchange_Devices_Panel.vb", 1}}
         Dim problems As New List(Of String)()
         Dim total As Integer = 0
@@ -798,7 +798,7 @@ Public Class DialogOptionRowTests
                 problems.Add(pair.Key & ": carries a conditional-compilation seam of its own")
             End If
         Next
-        Assert.Equal(12, total)
+        Assert.Equal(11, total)
         Assert.True(problems.Count = 0, String.Join(vbLf, problems))
     End Sub
 

@@ -195,6 +195,10 @@
     <Compile Include="..\Icons\SvgPathData.vb" Link="Core\SvgPathData.vb" />
     <Compile Include="..\Icons\GlyphRenderer.vb" Link="Core\GlyphRenderer.vb" />
     <Compile Include="..\Chrome\UiSizing.vb" Link="Core\UiSizing.vb" />
+    <!-- The interface-scale bounds of the viewer (ticket 369, D8): DpiLayout.UserScale reads U with UiScale.NormalizePercent so
+         the Share Manager clamps the shared hive value exactly as the viewer does. Whole-file "#If Not NETFRAMEWORK"; pure,
+         needs nothing else (its only outside names are in XML comments). -->
+    <Compile Include="..\Chrome\UiScale.vb" Link="Core\UiScale.vb" />
     <!-- Window geometry arithmetic of APP-BEHAVIOUR rule 10 (L0326): the viewer's pure placement - a remembered rectangle that meets
          no display moves to the nearest one - used by the Manager's RestoreGeometry (Core\ManagerPlacement.vb). Whole-file
          "#If Not NETFRAMEWORK"; needs nothing else. -->

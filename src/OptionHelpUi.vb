@@ -228,8 +228,8 @@ Friend NotInheritable Class OptionHelpPopup
 
     ''' <summary>A pixel font for the labels. A font equal to one the labels already hold is that same instance: assigning an
     ''' equal font to a control keeps the old object, so a fresh copy would leave the label on a font disposed afterwards.</summary>
-    Private Function PixelFont(family As String, pixels As Integer, style As FontStyle) As Font
-        Dim font As New Font(family, CSng(Math.Max(8, pixels)), style, GraphicsUnit.Pixel)
+    Private Function PixelFont(family As String, pixels As Single, style As FontStyle, Optional minimum As Single = 8.0F) As Font
+        Dim font As New Font(family, Math.Max(minimum, pixels), style, GraphicsUnit.Pixel)
         For Each held As Font In retiredFonts
             If held.Equals(font) Then
                 font.Dispose()
@@ -243,9 +243,10 @@ Friend NotInheritable Class OptionHelpPopup
     End Function
 
     ''' <summary>Fills the window and sizes it: the text wrapped at the window's width, the Close action at the reading
-    ''' end under it. After this <see cref="Control.ClientSize"/> is the size the popup wants.</summary>
+    ''' end under it. After this <see cref="Control.ClientSize"/> is the size the popup wants. <paramref name="windowDpi"/> is
+    ''' the dpi of the window the popup will be drawn at (the host's, <c>D</c>); 0 means "the labels' own dpi" (a test).</summary>
     Friend Sub Present(captionText As String, bodyText As String, rtl As Boolean, scale As Single,
-                       palette As OptionHelpPalette, workWidth As Integer)
+                       palette As OptionHelpPalette, workWidth As Integer, Optional windowDpi As Integer = 0)
         SuspendLayout()
         Try
             RightToLeft = If(rtl, RightToLeft.Yes, RightToLeft.No)
@@ -308,6 +309,7 @@ Friend NotInheritable Class OptionHelpPopup
                 close.SetBounds(left, y, buttonWidth, buttonHeight)
                 y += buttonHeight + pad
             End If
+            AssignBasisFonts(family, scale, windowDpi)
             ClientSize = New Size(width, y)
         Finally
             ResumeLayout(True)
@@ -317,6 +319,24 @@ Friend NotInheritable Class OptionHelpPopup
             retiredFonts.Clear()
         End Try
         Invalidate()
+    End Sub
+
+    ''' <summary>Rule S4 (L0361, B-D-5): a pixel font is resolved for the dpi the control reads it at. The popup is a fresh
+    ''' top-level window, so its labels read their fonts at their own dpi <c>c</c> (the system dpi for a first use, the previous
+    ''' monitor's afterwards) while the text above was measured for the dpi it is drawn at, <c>D</c>; and the platform rescales
+    ''' every explicit font by <c>D / c</c> when the window lands on the host's monitor (measured facts E2, E3). The font assigned
+    ''' is therefore the measured size times <c>c / D</c>, so that the rescale lands on the measured size. With <c>c = D</c>
+    ''' (the usual case, a popup already on the host's monitor) nothing is changed.</summary>
+    Private Sub AssignBasisFonts(family As String, scale As Single, windowDpi As Integer)
+        Dim c As Integer = Math.Max(96, bodyLabel.DeviceDpi)
+        Dim d As Integer = If(windowDpi > 0, Math.Max(96, windowDpi), c)
+        If c = d Then Return
+        Dim assigned As Single = CSng(SettingsCheckBox.Px(SettingsRowGridRules.ExplanationFontPixels, scale) * (c / CDbl(d)))
+        bodyLabel.Font = PixelFont(family, assigned, FontStyle.Regular, 1.0F)
+        If kindValue = OptionHelpPopupKind.Full Then
+            captionLabel.Font = PixelFont(family, assigned, FontStyle.Bold, 1.0F)
+            CloseButton.Font = bodyLabel.Font
+        End If
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)
@@ -566,7 +586,7 @@ Friend NotInheritable Class OptionHelpController
         Dim rtl As Boolean = IsRightToLeftRow()
         Dim anchor As Rectangle = button.RectangleToScreen(button.ClientRectangle)
         Dim workArea As Rectangle = WorkAreaProvider.Invoke(anchor)
-        popup.Present(OptionName, text, rtl, Scale, Palette, workArea.Width)
+        popup.Present(OptionName, text, rtl, Scale, Palette, workArea.Width, button.DeviceDpi)
         Dim avoid As New List(Of Rectangle)()
         If check IsNot Nothing AndAlso Not check.IsDisposed Then avoid.Add(check.RectangleToScreen(check.ClientRectangle))
         popup.Bounds = OptionHelpPlacement.Place(anchor, avoid, popup.Size, workArea, rtl, SettingsCheckBox.Px(4, Scale))

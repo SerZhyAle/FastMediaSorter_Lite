@@ -1,0 +1,67 @@
+{
+  "schema": "1",
+  "packages": [
+    {
+      "id": "user",
+      "title": "Fast Media Sorter & Sharing (User)"
+    },
+    {
+      "id": "user-msix",
+      "title": "Fast Media Sorter & Sharing (Microsoft Store MSIX)"
+    },
+    {
+      "id": "server",
+      "title": "Fast Media Sorter & Sharing: Folder Share Server"
+    },
+    {
+      "id": "exchange-server",
+      "title": "Media Exchange Server (gated)"
+    }
+  ],
+  "channels": [
+    {
+      "key": "github",
+      "channel": "github",
+      "package": "user",
+      "title": "GitHub Releases",
+      "repo": "SerZhyAle/FastMediaSorter_Lite"
+    },
+    {
+      "key": "winget",
+      "channel": "winget",
+      "package": "user",
+      "title": "winget (User)",
+      "id": "SerZhyAle.FastMediaSorter"
+    },
+    {
+      "key": "installer",
+      "channel": "url",
+      "package": "user",
+      "title": "Site installer (User)",
+      "url": "https://serzhyale.github.io/FastMediaSorter_Lite/",
+      "pattern": "FastMediaSorter-(\\d+\\.\\d+\\.\\d+\\.\\d+)-windows-x64-setup\\.exe"
+    },
+    {
+      "key": "msstore",
+      "channel": "msstore",
+      "package": "user-msix",
+      "title": "Microsoft Store (MSIX)",
+      "storeId": "9N59Z73WZ53C"
+    },
+    {
+      "key": "winget-server",
+      "channel": "winget",
+      "package": "server",
+      "title": "winget (Server)",
+      "id": "SerZhyAle.FastMediaSorter.Server"
+    },
+    {
+      "key": "installer-server",
+      "channel": "url",
+      "package": "server",
+      "title": "Site installer (Server)",
+      "url": "https://serzhyale.github.io/FastMediaSorter_Lite/server.html",
+      "pattern": "FastMediaSorter-(\\d+\\.\\d+\\.\\d+\\.\\d+)-windows-x64-server-setup\\.exe"
+    }
+  ]
+}

@@ -183,9 +183,12 @@ Friend MustInherit Class RemoteAdminCardBase
         For i As Integer = 0 To columns.Length - 1
             list.Columns.Add(columns(i), Me.LogicalToDeviceUnits(widths(i)))
         Next
+        ListColumnScale.Track(list, DeviceDpi)
         _lists.Add(list)
         AddContent(list)
-        FitList(list)
+        ' No FitList here (S1): a card is built in a constructor, where the window has not been scaled yet, and a height fitted
+        ' in device pixels now is multiplied by the window's first autoscale again. The list keeps its authored logical height
+        ' until the card's first ApplyState (ClearAll fits every list at the live scale); it is hidden until then.
         Return list
     End Function
 
@@ -211,10 +214,10 @@ Friend MustInherit Class RemoteAdminCardBase
 
     ''' <summary>The list is as high as its rows, one row at least and eight at most (a scroll bar beyond): never stretched past them.</summary>
     Protected Sub FitList(list As ListView)
-        Dim rowHeight As Integer = list.Font.Height + Me.LogicalToDeviceUnits(6)
-        Dim head As Integer = If(list.HeaderStyle = ColumnHeaderStyle.None, 0, rowHeight + Me.LogicalToDeviceUnits(2))
+        Dim rowHeight As Integer = list.Font.Height + DpiLayout.Device(Me, 6)
+        Dim head As Integer = If(list.HeaderStyle = ColumnHeaderStyle.None, 0, rowHeight + DpiLayout.Device(Me, 2))
         Dim rows As Integer = Math.Min(MaxListRows, Math.Max(1, list.Items.Count))
-        list.Height = head + rows * rowHeight + Me.LogicalToDeviceUnits(6)
+        list.Height = head + rows * rowHeight + DpiLayout.Device(Me, 6)
     End Sub
 
     ' ------------------------------------------------------------------------------------------------ what a card implements

@@ -21,6 +21,7 @@ Friend NotInheritable Class Exchange_Admin_Audit_Form
     Private _iconHandle As IntPtr
     Private _lvSessions As ListView
     Private _lvRecords As ListView
+    Private _body As TableLayoutPanel
     Private _btnRefresh As Button
     Private _btnClose As Button
     Private _answerRow As DialogButtonRow
@@ -50,6 +51,7 @@ Friend NotInheritable Class Exchange_Admin_Audit_Form
             .Padding = New Padding(14, 12, 14, 10)
         }
         root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        _body = root
 
         Dim lblSessions As New Label With {
             .AutoSize = True,
@@ -74,6 +76,7 @@ Friend NotInheritable Class Exchange_Admin_Audit_Form
         _lvSessions.Columns.Add(Localization.T("Сессия"), Me.LogicalToDeviceUnits(110))
         _lvSessions.Columns.Add(Localization.T("Подключено"), Me.LogicalToDeviceUnits(100))
         _lvSessions.Columns.Add(Localization.T("Последняя операция"), Me.LogicalToDeviceUnits(110))
+        ListColumnScale.Track(_lvSessions, DeviceDpi)
         root.Controls.Add(_lvSessions)
 
         Dim lblAudit As New Label With {
@@ -100,6 +103,7 @@ Friend NotInheritable Class Exchange_Admin_Audit_Form
         _lvRecords.Columns.Add(ExchangeAdminText.ColumnOperation(), Me.LogicalToDeviceUnits(110))
         _lvRecords.Columns.Add(ExchangeAdminText.ColumnTarget(), Me.LogicalToDeviceUnits(90))
         _lvRecords.Columns.Add(ExchangeAdminText.ColumnStatus(), Me.LogicalToDeviceUnits(60))
+        ListColumnScale.Track(_lvRecords, DeviceDpi)
         root.Controls.Add(_lvRecords)
 
         ' Refresh is a command of the window and Close its one answer, so they share the bottom row (ticket 243 T-8b,
@@ -131,8 +135,31 @@ Friend NotInheritable Class Exchange_Admin_Audit_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' S2: the list columns were resolved in the constructor, at the system dpi; this is the window's own.
+        ListColumnScale.RescaleAll(Me, DeviceDpi)
         DpiLayout.ClampToWorkingArea(Me)
+        KeepBodyReachable()
         DpiLayout.CenterOnOwner(Me)
+    End Sub
+
+    Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+        MyBase.OnDpiChanged(e)
+        ListColumnScale.RescaleAll(Me, e.DeviceDpiNew)
+    End Sub
+
+    ''' <summary>S6 rule 2: the two lists and their captions are authored for a 520 logical px client; a work area that cannot
+    ''' hold that (a small screen at a high scale) is cut by the clamp, and the docked answer row would then cover the lower
+    ''' list. The stack of lists scrolls instead, and the row stays whole. The lists follow the width of the cell, so the
+    ''' scroll bar that appears takes room from them and never adds a horizontal bar.</summary>
+    Private Sub KeepBodyReachable()
+        If _body Is Nothing OrElse _body.AutoScroll Then Return
+        PerformAutoScale()
+        If _body.GetPreferredSize(New Size(_body.Width, 0)).Height <= _body.Height Then Return
+        _lvSessions.Anchor = AnchorStyles.Left Or AnchorStyles.Right
+        _lvRecords.Anchor = AnchorStyles.Left Or AnchorStyles.Right
+        _body.AutoScroll = True
+        OptionRows.KeepScrollExtent(_body)
+        AddHandler _body.Layout, Sub() OptionRows.KeepScrollExtent(_body)
     End Sub
 
     Private Sub PopulateViews()

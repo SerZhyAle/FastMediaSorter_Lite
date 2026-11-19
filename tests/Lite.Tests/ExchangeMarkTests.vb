@@ -18,7 +18,11 @@ Public Class ExchangeMarkTests
 #If COMPANION_TESTS Then
         Return CompanionAssets.OpenBundledAsset(name)
 #Else
-        Return RuntimeBootstrap.OpenBundledAsset(name)
+        ' Lite.Tests embeds the exchange-mark files but carries the vocabulary glyphs as TestData\glyphs copies.
+        Dim bundled As Stream = RuntimeBootstrap.OpenBundledAsset(name)
+        If bundled IsNot Nothing Then Return bundled
+        Dim glyphFile As String = Path.Combine(AppContext.BaseDirectory, "TestData", "glyphs", Path.GetFileName(name))
+        Return If(File.Exists(glyphFile), CType(File.OpenRead(glyphFile), Stream), Nothing)
 #End If
     End Function
 

@@ -38,6 +38,9 @@ Friend NotInheritable Class NotifyToast
     Private accent As Color
     Private rightToLeft_Text As Boolean
     Private toastFont As Font
+    ''' <summary>The card's padding and accent-bar width in device pixels, as <see cref="Present"/> sized the card with them.</summary>
+    Private cardPad As Integer = 14
+    Private cardBar As Integer = 4
 
     Friend Sub New()
         FormBorderStyle = FormBorderStyle.None
@@ -82,24 +85,37 @@ Friend NotInheritable Class NotifyToast
 
     ''' <summary>Shows <paramref name="text"/> over <paramref name="mediaScreenRect"/> for its level's lifetime.
     ''' Replaces a toast already up (a second message never stacks).</summary>
-    Friend Sub Present(owner As Form, mediaScreenRect As Rectangle, text As NotifyMessage, durationMs As Integer)
+    ''' <param name="designScale">The owner's own layout factor (K x the interface scale and text size, the viewer's
+    ''' <c>GetCurrentDpiScale</c>); the pads, the widths and the face take it (L0361 rule S4, L0363 A-D16). 0 = the
+    ''' owner's dpi factor only, which a plain form without an interface setting gets.</param>
+    Friend Sub Present(owner As Form, mediaScreenRect As Rectangle, text As NotifyMessage, durationMs As Integer, Optional designScale As Single = 0.0F)
         If owner Is Nothing OrElse owner.IsDisposed OrElse durationMs <= 0 OrElse text.Text.Length = 0 Then Return
         message = text
         accent = NotifyRules.InkOnSurface(text.Level, CardFill, CardInk)
         rightToLeft_Text = Localization.IsRightToLeft()
         TopMost = owner.TopMost
         Dim previous As Font = toastFont
-        toastFont = TextFont(owner)
+        toastFont = TextFont(owner, designScale)
         Font = toastFont
         previous?.Dispose()
 
-        Dim pad As Integer = owner.LogicalToDeviceUnits(14)
-        Dim bar As Integer = owner.LogicalToDeviceUnits(4)
-        Dim margin As Integer = owner.LogicalToDeviceUnits(24)
-        Dim maxWidth As Integer = Math.Max(owner.LogicalToDeviceUnits(160), Math.Min(owner.LogicalToDeviceUnits(560), mediaScreenRect.Width - 2 * margin))
-        Dim textBox As Size = TextRenderer.MeasureText(text.Text, Font, New Size(maxWidth - 2 * pad - bar, Integer.MaxValue), TextFlags())
+        ' One set of metrics, resolved against the OWNER's dpi (the monitor the card is drawn on) and kept for OnPaint:
+        ' this window has no handle on the first toast and starts at the system dpi, so its own LogicalToDeviceUnits
+        ' would size the card for one dpi and paint it for another (L0363 A-D10, L0361 S5).
+        Dim pad As Integer = DesignPx(owner, 14, designScale)
+        Dim bar As Integer = DesignPx(owner, 4, designScale)
+        cardPad = pad
+        cardBar = bar
+        Dim margin As Integer = DesignPx(owner, 24, designScale)
+        Dim maxWidth As Integer = Math.Max(DesignPx(owner, 160, designScale), Math.Min(DesignPx(owner, 560, designScale), mediaScreenRect.Width - 2 * margin))
+        ' Measured with the face as it will read once the window sits on the owner's monitor (c = D, L0361 S4): the
+        ' font assigned to this window above is read at ITS dpi until the platform catches up at the first move.
+        Dim textBox As Size
+        Using measureFont As New Font(owner.Font.FontFamily, CSng(OwnerFacePoints(owner, designScale)), FontStyle.Regular, GraphicsUnit.Point)
+            textBox = TextRenderer.MeasureText(text.Text, measureFont, New Size(maxWidth - 2 * pad - bar, Integer.MaxValue), TextFlags())
+        End Using
         Dim size As New Size(textBox.Width + 2 * pad + bar, textBox.Height + 2 * pad)
-        Bounds = DialogPlacement.ToastBounds(mediaScreenRect, size, owner.LogicalToDeviceUnits(64))
+        Bounds = DialogPlacement.ToastBounds(mediaScreenRect, size, DesignPx(owner, 64, designScale))
         Opacity = 0.94
         hideTimer.Stop()
         hideTimer.Interval = durationMs
@@ -119,16 +135,34 @@ Friend NotInheritable Class NotifyToast
         Return flags
     End Function
 
-    Private Shared Function TextFont(owner As Form) As Font
+    ''' <summary>A pixel length of the card: l x the owner's design factor, or the owner's dpi factor alone when the
+    ''' caller gave none.</summary>
+    Private Shared Function DesignPx(owner As Form, logical As Integer, designScale As Single) As Integer
+        Return If(designScale > 0.0F, UiScale.Px(logical, designScale), owner.LogicalToDeviceUnits(logical))
+    End Function
+
+    ''' <summary>The face's nominal size at the owner's dpi: the owner's font, a notch larger, times the interface
+    ''' multiplier the owner's font does not carry (design factor / the dpi factor already in the owner's point size).</summary>
+    Private Shared Function OwnerFacePoints(owner As Form, designScale As Single) As Double
+        Dim points As Double = owner.Font.SizeInPoints * 1.25R
+        If designScale > 0.0F Then points *= designScale / FormScale.LayoutFactor(Math.Max(FormScale.LogicalDpi, owner.DeviceDpi))
+        Return points
+    End Function
+
+    Private Function TextFont(owner As Form, designScale As Single) As Font
         ' The owner's own font, a notch larger: the script family chosen for the language is already on it.
-        Return New Font(owner.Font.FontFamily, owner.Font.SizeInPoints * 1.25F, FontStyle.Regular, GraphicsUnit.Point)
+        ' The owner's point size already carries the owner's D / S, while this window reads the font at ITS dpi (S until
+        ' the window exists, D once it is in; the platform rescales it at the first move onto the monitor): the size is
+        ' re-based from the owner's dpi to this window's (L0361 S4, point form; L0363 A-D10).
+        Dim points As Single = CSng(FormScale.RebasePoints(OwnerFacePoints(owner, designScale), DeviceDpi, owner.DeviceDpi))
+        Return New Font(owner.Font.FontFamily, points, FontStyle.Regular, GraphicsUnit.Point)
     End Function
 
     Protected Overrides Sub OnPaint(e As PaintEventArgs)
         MyBase.OnPaint(e)
         Dim g As Graphics = e.Graphics
-        Dim pad As Integer = LogicalToDeviceUnits(14)
-        Dim bar As Integer = LogicalToDeviceUnits(4)
+        Dim pad As Integer = cardPad
+        Dim bar As Integer = cardBar
         Dim barRect As Rectangle = If(rightToLeft_Text, New Rectangle(ClientSize.Width - bar, 0, bar, ClientSize.Height), New Rectangle(0, 0, bar, ClientSize.Height))
         Using brush As New SolidBrush(accent)
             g.FillRectangle(brush, barRect)

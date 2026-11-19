@@ -88,7 +88,7 @@ Public Class SettingsDestinationTests
             ExchangeTestSupport.OnUi(Sub()
                 Using manager As New Share_Settings_Form(), exchange As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                     ' One window holds the common preferences and the SFTP sharing pages (253 R-2); the other the exchange server.
-                    Assert.Equal({"startup", "network", "hosting", "scheduled", "exchange-account", "drive", "help"}, Pages(manager).Keys.ToArray())
+                    Assert.Equal({"startup", "network", "hosting", "scheduled", "live", "exchange-account", "drive", "help"}, Pages(manager).Keys.ToArray())
                     Assert.Equal({"exchange"}, Pages(exchange).Keys.ToArray())
                     Dim port = DirectCast(GetType(Share_Settings_Form).GetField("numPort", Flags).GetValue(manager), NumericUpDown)
                     Dim before = port.Value
@@ -156,7 +156,7 @@ Public Class SettingsDestinationTests
                                                     asked = True
                                                     Return DialogResult.Cancel
                                                 End Function
-                    Assert.Equal({"startup", "scheduled", "exchange-account", "drive", "help"}, Pages(manager).Keys.ToArray())
+                    Assert.Equal({"startup", "scheduled", "live", "exchange-account", "drive", "help"}, Pages(manager).Keys.ToArray())
                     Assert.Null(GetType(Share_Settings_Form).GetField("numPort", Flags).GetValue(manager))
                     Assert.Null(GetType(Share_Settings_Form).GetField("_navSftpHeading", Flags).GetValue(manager))
                     Dim close As New FormClosingEventArgs(CloseReason.UserClosing, False)

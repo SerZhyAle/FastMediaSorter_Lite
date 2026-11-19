@@ -98,8 +98,13 @@ Friend NotInheritable Class Ask_Dialog
         Dim hasIcon As Boolean = icon <> AskIcon.None
         If hasIcon Then
             Dim pic As New PictureBox With {.SizeMode = PictureBoxSizeMode.Zoom, .Size = New Size(32, 32),
-                                            .Margin = New Padding(0, 0, 12, 0), .TabStop = False, .AccessibleRole = AccessibleRole.Graphic,
-                                            .Image = IconImage(icon)}
+                                            .Margin = New Padding(0, 0, 12, 0), .TabStop = False, .AccessibleRole = AccessibleRole.Graphic}
+            ' B-D-10: the picture is cut at the size the box really has (the system-metric icon was enlarged into it, soft at
+            ' any display above the system's); a scale of the window changes the box, and the picture follows it.
+            iconBox = pic
+            iconKind = icon
+            RenderIcon()
+            AddHandler pic.SizeChanged, Sub() RenderIcon()
             root.Controls.Add(pic, 0, 0)
         End If
 
@@ -222,7 +227,40 @@ Friend NotInheritable Class Ask_Dialog
             .Margin = margin}
     End Function
 
-    Private Shared Function IconImage(icon As AskIcon) As Image
+    Private iconBox As PictureBox
+    Private iconKind As AskIcon
+    Private iconEdge As Integer
+
+    ''' <summary>Cuts the icon at the box's current edge and replaces the picture (the old one is ours to dispose).</summary>
+    Private Sub RenderIcon()
+        If iconBox Is Nothing OrElse iconBox.IsDisposed Then Return
+        Dim edge As Integer = Math.Max(16, Math.Max(iconBox.Width, iconBox.Height))
+        If edge = iconEdge AndAlso iconBox.Image IsNot Nothing Then Return
+        Dim fresh As Image = IconImage(iconKind, edge)
+        If fresh Is Nothing Then Return
+        iconEdge = edge
+        Dim old As Image = iconBox.Image
+        iconBox.Image = fresh
+        old?.Dispose()
+    End Sub
+
+    ''' <summary>The shell's stock icon resampled to <paramref name="edge"/> pixels; the classic system icon (the metric size of
+    ''' the system dpi) only when the shell cannot give one.</summary>
+    Private Shared Function IconImage(icon As AskIcon, edge As Integer) As Image
+        Dim stock As StockIconId
+        Select Case icon
+            Case AskIcon.Warning : stock = StockIconId.Warning
+            Case AskIcon.Error : stock = StockIconId.Error
+            Case AskIcon.Info : stock = StockIconId.Info
+            Case AskIcon.Question : stock = StockIconId.Help
+            Case Else : Return Nothing
+        End Select
+        Try
+            Using sized As Icon = SystemIcons.GetStockIcon(stock, edge)
+                Return sized.ToBitmap()
+            End Using
+        Catch
+        End Try
         Try
             Select Case icon
                 Case AskIcon.Warning : Return SystemIcons.Warning.ToBitmap()
@@ -278,8 +316,12 @@ Friend NotInheritable Class Ask_Dialog
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)
+        Dim picture As Image = If(disposing AndAlso iconBox IsNot Nothing, iconBox.Image, Nothing)
         MyBase.Dispose(disposing)
-        If disposing Then script_Font?.Dispose()
+        If disposing Then
+            script_Font?.Dispose()
+            picture?.Dispose()
+        End If
     End Sub
 
 End Class

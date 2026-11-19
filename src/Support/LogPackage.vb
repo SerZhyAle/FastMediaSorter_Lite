@@ -1182,11 +1182,11 @@ Public Module LogPackage
     ''' is added here on purpose.
     ''' </summary>
     Friend ReadOnly SafeSettingNames As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
-        "AllowNewWindows", "AnimatedPerspective", "AnimatedPerspectiveSpeed", "AppHeight", "AppLeft", "AppTop",
+        "AllowNewWindows", "AnimatedPerspective", "AnimatedPerspectiveSpeed", "AppDpi", "AppHeight", "AppLeft", "AppTop",
         "AppWidth", "CopyMode", "DynamicPerspective", "ExifAutoRotate", "FirstRun", "HighQualityScaling",
         "IsVideoLoop", "LastCounter", "NoRequestBeforeFileOperation", "PicturePanelHeight", "PicturePanelLeft",
         "PicturePanelTop", "PicturePanelWidth", "Picture_Box_Height_At_Panel", "Picture_Box_Width_At_Panel",
-        "RunsCount", "SettingsWindowHeight", "SettingsWindowWidth", "ShowFileDates", "ShowFileSizes",
+        "RunsCount", "SettingsWindowDpi", "SettingsWindowHeight", "SettingsWindowWidth", "ShowFileDates", "ShowFileSizes",
         "ShowInfoOverlay", "ShowPictureSizes", "ShowRecipientsOverlay", "SlideshowIntervalSec", "SortDir",
         "TableOpened", "UseIndependentThreadForOperationsWithFiles", "UserAlreadyAskedForAssociations",
         "VideoMuted", "VideoVolume", "WheelZooms", "chkTopMost", "color_scheme", "isPerspective",

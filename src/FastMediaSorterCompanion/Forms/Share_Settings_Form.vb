@@ -208,6 +208,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         MyBase.OnLoad(e)
         ' The window has its scale now: every page's option rows are laid out once, before the first fit of the window.
         OptionRows.ArrangeAll(Me)
+        ' S2: list columns resolved in the builder (system dpi, no M) follow the window's own scale.
+        ListColumnScale.RescaleAll(Me, DeviceDpi)
         DpiLayout.ClampToWorkingArea(Me)
         If Not RestoreSettingsWindowBounds() Then
             FitInitialSettingsBounds()

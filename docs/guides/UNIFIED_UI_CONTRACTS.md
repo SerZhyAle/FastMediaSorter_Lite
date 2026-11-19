@@ -312,7 +312,7 @@ The two "move" verdicts were carried by ticket L0332 and are built (2026-11-15);
 | Viewer | Settings rail (11 pages) | all, identity inks | conforming (all) |
 | Viewer | chrome toolbar rows | glyph-led buttons drawn by `ChromeSurface`; the path box is a text field, not a member of the set | not re-measured in this pass: the per-row count is part of the runtime evidence pass (T-14) |
 | Share Manager | settings rail, parent level | all | conforming (all) |
-| Share Manager | settings rail, child level (Manager and Exchange Server windows) | all (L0351, the owner order of 2026-11-18: a glyph on every child row) | conforming (all), held by `SettingsRailTests` |
+| Share Manager | settings rail, child level (Manager and Media Exchange Server windows) | all (L0351, the owner order of 2026-11-18: a glyph on every child row) | conforming (all), held by `SettingsRailTests` |
 | Share Manager | remote administration window, flat rail (six cards) | all (L0351) | conforming (all) |
 | Share Manager | disk menu (`MainWindow.ResourceMenu.vb`, 13 items) | all | conforming (all) |
 | Share Manager | tray menu (`TrayContext.vb`) | none (L0325 pass 3: the glyph came off the exchange item and the two clipboard items; the mark stays on titles and the tray icon) | conforming (none), held by `ExchangeGroupTests.No_tray_menu_item_draws_a_glyph` |

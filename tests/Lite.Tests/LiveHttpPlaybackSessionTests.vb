@@ -274,7 +274,9 @@ Public Class LiveHttpPlaybackSessionTests
         Using session As New LiveHttpPlaybackSession(EndpointOf("http://127.0.0.1:" & port.ToString(Globalization.CultureInfo.InvariantCulture) & "/live-audio"),
                                                      New LivePlaybackOptions With {.ConnectTimeoutMs = 6000})
             Dim result As LiveOpenResult = Await session.OpenAsync(CancellationToken.None)
-            Assert.True(result.Outcome = LiveOpenOutcome.NetworkError OrElse result.Outcome = LiveOpenOutcome.TimedOut, result.Outcome.ToString())
+            ' Refused is the classified form of the same network failure (a port nobody listens on); still retryable.
+            Assert.True(result.Outcome = LiveOpenOutcome.Refused OrElse result.Outcome = LiveOpenOutcome.NetworkError OrElse
+                        result.Outcome = LiveOpenOutcome.TimedOut, result.Outcome.ToString())
             Assert.True(result.IsRetryable)
             Assert.False(result.IsFatal)
         End Using

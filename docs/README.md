@@ -37,7 +37,8 @@ plain text so maintained documentation works in a fresh clone.
 - [guides/POSITIONING.md](guides/POSITIONING.md) - the one positioning source: the family sentence, the three optional components in order, the two install intents, the availability matrix, the public editions and the facts typed once (language count, platform floor); machine form `tools/site-facts.json`, gate `tools/Test-SitePositioning.ps1`.
 - [guides/BUILD_AND_RELEASE.md](guides/BUILD_AND_RELEASE.md) - the concrete build-vs-release flow.
 - `specifications/RELEASE_QUEUE.md` (local specification) - the common release order for active
-  specification tickets.
+  specification tickets. The harness's plan tool keeps it current from the ledger on every write; the built
+  work is in `RELEASE_READY.md` beside it and the shipped packages are in `RELEASE_QUEUE_DONE.md`.
 - [guides/STORE_PUBLISHING.md](guides/STORE_PUBLISHING.md) - the Microsoft Store playbook + listing copy.
 - [guides/SERVER_EDITION_BUILD_AND_TEST.md](guides/SERVER_EDITION_BUILD_AND_TEST.md) - the always-on
   Folder Share Server: what differs from the User edition, how to build and publish it, and the

@@ -140,6 +140,9 @@ func samples() []struct {
 		{"notes_changed", &NotesChanged{NotesRevision: 10}},
 		{"refused-note-conflict", noteConflict(NoteRecord{NoteID: sampleNoteID, Revision: 9, StoredAt: "2026-11-14T10:05:00Z",
 			SourceDeviceID: idB, Sealed: json.RawMessage(sampleBox)})},
+		{"schedule-request", &ScheduleRequest{ToDeviceID: idB, RequestID: "req-1", Box: json.RawMessage(sampleBox)}},
+		{"schedule-result", &ScheduleResult{FromDeviceID: idA, RequestID: "req-1", Box: json.RawMessage(sampleBox)}},
+		{"schedule-result-reason", &ScheduleResult{FromDeviceID: idA, RequestID: "req-1", Reason: ScheduleReasonUnavailable}},
 	}
 }
 

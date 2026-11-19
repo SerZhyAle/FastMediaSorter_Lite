@@ -22,7 +22,7 @@ Namespace AppCommands
         ''' its own, so a reply path of the viewer is never a valid reply path here.</summary>
         Friend Const ReplyFolder As String = "FastMediaSorter-share-manager-commands"
         ''' <summary>The English label of the setting of rule 13, as docs/CLI.md names it - the one setting both programs read.</summary>
-        Friend Const SettingLabelEnglish As String = "Let other programs ask this app to work with my files, screen, clipboard or the network"
+        Friend Const SettingLabelEnglish As String = "Allow commands from other programs"
         Friend Const SettingPlaceEnglish As String = "the viewer's Settings window, Files, Keys and associations; the Share Manager reads the same value"
 
         ' The closed set of clipboard outcome tokens (the "outcome" the two clipboard verbs return).

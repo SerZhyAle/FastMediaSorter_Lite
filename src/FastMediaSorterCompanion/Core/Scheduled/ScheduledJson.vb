@@ -359,9 +359,9 @@ Friend Module ScheduledJson
         op.Conflict = ParseConflict(dto.Conflict)
         op.DeleteOriginalsAfterVerify = dto.DeleteOriginalsAfterVerify AndAlso action = ScheduledAction.Archive
         op.ChunkSizeMb = ScheduledValidation.NormalizeChunkSize(dto.ChunkSizeMb.GetValueOrDefault(ScheduledOperation.DefaultChunkSizeMb))
-        op.BackupKeepCount = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepCount.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepCount))
-        op.BackupKeepDays = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepDays.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepDays))
         If action = ScheduledAction.Backup Then
+            op.BackupKeepCount = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepCount.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepCount))
+            op.BackupKeepDays = ScheduledValidation.NormalizeKeepCount(dto.BackupKeepDays.GetValueOrDefault(ScheduledOperation.DefaultBackupKeepDays))
             Dim retentionRaw As String = If(dto.BackupRetention, "").Trim().ToLowerInvariant()
             If retentionRaw.Length > 0 AndAlso retentionRaw <> "generations" AndAlso retentionRaw <> "dated" Then
                 op.Halt = ScheduledHalt.InvalidDefinition

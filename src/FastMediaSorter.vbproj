@@ -1069,6 +1069,8 @@
     </Compile>
     <Compile Include="Chrome\UiScale.vb" />
     <Compile Include="Chrome\UiSizing.vb" />
+    <Compile Include="Chrome\FormScale.vb" />
+    <Compile Include="Chrome\FormScaleRecipes.vb" />
     <Compile Include="Chrome\ChromeLayout.vb" />
     <Compile Include="Chrome\FloatingPanelPlacement.vb" />
     <Compile Include="Chrome\ChromeTheme.vb" />

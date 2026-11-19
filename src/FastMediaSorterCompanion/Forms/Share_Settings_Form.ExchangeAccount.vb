@@ -170,6 +170,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accDevices.Columns.Add(Localization.T("Устройство"), Me.LogicalToDeviceUnits(210))
         _accDevices.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(90))
         _accDevices.Columns.Add(Localization.T("Последний раз в сети"), Me.LogicalToDeviceUnits(170))
+        ListColumnScale.Track(_accDevices, DeviceDpi)
         AddHandler _accDevices.SelectedIndexChanged, Sub() UpdateAccountRevokeVisibility()
         sec.AddBodyRow(_accDevices)
         _btnAccRevoke = AccButton(Localization.T("Отозвать"), AddressOf OnAccountRevoke, "action.remove")
@@ -334,7 +335,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 If String.Equals(d.DeviceId, selected, StringComparison.Ordinal) Then item.Selected = True
             Next
             ' Item DD: the row of the message table is never shortened, so the column takes the width of its text
-            _accDevices.Columns(1).Width = If(records.Any(Function(r) r.IsSharePaused), -1, Me.LogicalToDeviceUnits(90))
+            _accDevices.Columns(1).Width = If(records.Any(Function(r) r.IsSharePaused), -1, DpiLayout.Device(Me, 90))
         Finally
             _accDevices.EndUpdate()
         End Try

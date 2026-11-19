@@ -92,16 +92,23 @@ Partial Public Class Main_Form
         ' sits in the corner the language starts from and the text runs the way the language does (124 UX-216).
         Dim hud_Family As String = ScriptFonts.Family("Segoe UI")
         Dim hud_Rtl As Boolean = Localization.IsRightToLeft()
+        ' L0363 A-D6 (L0361 S2, S4): the card is drawn at this window's dpi - the point font takes M x D / S and the
+        ' pads and the corner offset take K x M, so card and text grow together on every monitor.
+        Dim hud_Scale As Single = GetCurrentDpiScale()
+        Dim hud_Points As Single = 11.0F * TextPointScale()
 #Else
         Dim hud_Family As String = "Segoe UI"
         Dim hud_Rtl As Boolean = False
+        Dim hud_Scale As Single = 1.0F
+        Dim hud_Points As Single = 11.0F
 #End If
-        Using fnt As New Font(hud_Family, 11.0F, FontStyle.Regular)
+        Using fnt As New Font(hud_Family, hud_Points, FontStyle.Regular)
             Dim sz As SizeF = g.MeasureString(caption, fnt)
-            Dim padX As Integer = 8
-            Dim padY As Integer = 4
-            Dim box As New Rectangle(8, 8, CInt(Math.Ceiling(sz.Width)) + padX * 2, CInt(Math.Ceiling(sz.Height)) + padY * 2)
-            If hud_Rtl Then box.X = Math.Max(0, pb.ClientSize.Width - 8 - box.Width)
+            Dim padX As Integer = CInt(Math.Floor(8 * hud_Scale + 0.5F))
+            Dim padY As Integer = CInt(Math.Floor(4 * hud_Scale + 0.5F))
+            Dim hud_Edge As Integer = padX
+            Dim box As New Rectangle(hud_Edge, hud_Edge, CInt(Math.Ceiling(sz.Width)) + padX * 2, CInt(Math.Ceiling(sz.Height)) + padY * 2)
+            If hud_Rtl Then box.X = Math.Max(0, pb.ClientSize.Width - hud_Edge - box.Width)
             Using bg As New SolidBrush(Color.FromArgb(160, 0, 0, 0))
                 g.FillRectangle(bg, box)
             End Using

@@ -497,8 +497,25 @@ Partial Friend NotInheritable Class Server_Welcome_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
-        MaximumSize = Screen.FromControl(Me).WorkingArea.Size
+        CapToWorkingArea()
         DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    ''' <summary>S6 rule 3: the cap is the work area of the monitor the window is on NOW, in that monitor's pixels - a window
+    ''' moved to another monitor (another size, another dpi) gets that monitor's cap, not the one it was loaded on.</summary>
+    Private Sub CapToWorkingArea()
+        MaximumSize = Screen.FromControl(Me).WorkingArea.Size
+    End Sub
+
+    Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+        MyBase.OnDpiChanged(e)
+        CapToWorkingArea()
+    End Sub
+
+    Protected Overrides Sub OnResizeEnd(e As EventArgs)
+        MyBase.OnResizeEnd(e)
+        ' Also raised when a move ends: the monitor may have changed without any dpi change.
+        CapToWorkingArea()
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

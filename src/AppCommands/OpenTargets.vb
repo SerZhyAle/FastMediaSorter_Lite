@@ -116,7 +116,7 @@ Namespace AppCommands
             Dim slash As Integer = text.LastIndexOfAny(New Char() {"/"c, "\"c})
             Dim dot As Integer = text.LastIndexOf("."c)
             If dot <= slash Then Return String.Empty
-            Return text.Substring(dot).TrimEnd(" "c).ToLower(CultureInfo.InvariantCulture)
+            Return text.Substring(dot).TrimEnd(" "c).ToLowerInvariant()
         End Function
 
     End Module

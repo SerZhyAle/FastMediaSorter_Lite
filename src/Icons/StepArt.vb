@@ -17,6 +17,36 @@ Imports System.Windows.Forms
 ' Latin on every keyboard, so these rows need no entry in the string tables and read the same in all 13 languages.
 ' </summary>
 
+''' <summary>
+''' The colours the step art draws with. The dark palette's accent is the user's Windows accent darkened until WHITE INK
+''' reads on it (<see cref="AccentColors.Darkened"/>) - right for a button face, but a dark navy on the charcoal window
+''' for a disc, a dot or a thin glyph. So the art takes the accent as a PICTURE on the window: the same hue, moved along
+''' lightness only as far as <see cref="ArtContrast"/> against the window needs (nothing moves where it already holds,
+''' so the light theme is untouched). The dots still ahead keep the border colour on purpose: they must stay clearly
+''' dimmer than the reached ones, which is why the ratio is 4:1 and not the 3:1 of <see cref="ButtonGlyphs.GlyphContrast"/>
+''' (at 3:1 a darkened navy and the grey border land on the same lightness).
+''' </summary>
+Friend NotInheritable Class StepArtInk
+
+    Private Sub New()
+    End Sub
+
+    ''' <summary>Contrast the accent needs against the window as art.</summary>
+    Friend Const ArtContrast As Double = 4.0R
+
+    ''' <summary>The accent as art on the window: disc, finished and current dots, glyphs.</summary>
+    Friend Shared Function Accent(palette As ThemePalette) As Color
+        Return ButtonGlyphs.Readable(palette.Accent, palette.SurfaceWindow, ArtContrast)
+    End Function
+
+    ''' <summary>The glyph's ink on the disc: the palette's accent ink where it holds against the disc, otherwise
+    ''' white or black, whichever reads better.</summary>
+    Friend Shared Function InkOn(disc As Color, preferred As Color) As Color
+        If AccentColors.Contrast(preferred, disc) >= ButtonGlyphs.GlyphContrast Then Return preferred
+        Return If(AccentColors.Contrast(Color.White, disc) >= AccentColors.Contrast(Color.Black, disc), Color.White, Color.Black)
+    End Function
+End Class
+
 ''' <summary>A filled circle in the accent colour with one catalog glyph in the accent ink.</summary>
 Friend NotInheritable Class StepBadge
     Inherits Control
@@ -57,14 +87,15 @@ Friend NotInheritable Class StepBadge
         Dim g As Graphics = e.Graphics
         g.SmoothingMode = SmoothingMode.AntiAlias
         g.PixelOffsetMode = PixelOffsetMode.HighQuality
-        Using brush As New SolidBrush(palette.Accent)
+        Dim disc As Color = StepArtInk.Accent(palette)
+        Using brush As New SolidBrush(disc)
             g.FillEllipse(brush, 0, 0, side - 1, side - 1)
         End Using
         If glyph.Length = 0 Then Return
         Dim inner As Integer = CInt(Math.Round(side * 0.56))
         Dim offset As Integer = (side - inner) \ 2
         Try
-            Using picture As Bitmap = GlyphRenderer.Render(glyph, inner, palette.AccentInk, openAsset)
+            Using picture As Bitmap = GlyphRenderer.Render(glyph, inner, StepArtInk.InkOn(disc, palette.AccentInk), openAsset)
                 g.DrawImage(picture, offset, offset, inner, inner)
             End Using
         Catch
@@ -135,12 +166,14 @@ Friend NotInheritable Class StepDots
         Dim g As Graphics = e.Graphics
         g.SmoothingMode = SmoothingMode.AntiAlias
 
+        Dim reached As Color = StepArtInk.Accent(palette)
+        Dim ahead As Color = palette.Border
         Dim x As Single = If(rtl, ClientSize.Width, 0.0F)
         Dim top As Single = (ClientSize.Height - dot) / 2.0F
         For i As Integer = 0 To total - 1
             Dim width As Single = If(i = current, pill, dot)
             If rtl Then x -= width
-            Dim ink As Color = If(i <= current, palette.Accent, palette.Border)
+            Dim ink As Color = If(i <= current, reached, ahead)
             Using brush As New SolidBrush(ink)
                 FillPill(g, brush, x, top, width, dot)
             End Using
@@ -246,7 +279,7 @@ Friend NotInheritable Class StepChips
             If rtl Then x -= width
             Dim box As New Rectangle(x, top, width, height)
             If token.StartsWith("@", StringComparison.Ordinal) Then
-                PaintGlyph(g, token.Substring(1), box, palette.Accent)
+                PaintGlyph(g, token.Substring(1), box, StepArtInk.Accent(palette))
             ElseIf token = "->" Then
                 PaintArrow(g, box, palette.TextMuted, rtl)
             ElseIf token = "+" Then

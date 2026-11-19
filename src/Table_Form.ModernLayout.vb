@@ -110,8 +110,9 @@ Partial Public Class Table_Form
     ''' <see cref="settingsScale"/> and <see cref="fontScale"/>.</summary>
     Private settingsTextFactor As Single = 1.0F
     Private settingsTextRestartQueued As Boolean
-    ''' <summary>The minimum size the window asks for at its composed scale, before the work area it opens on
-    ''' bounds it (<see cref="WindowPlacement.BoundMinimum"/>, applied by <c>FitModernSettingsClientSize</c>).</summary>
+    ''' <summary>The minimum size the window asks for at its composed scale and current DPI, before the work area
+    ''' it is on caps it at <see cref="FormScale.MinimumShareOfWorkArea"/> (applied by <c>FitModernSettingsClientSize</c>;
+    ''' L0361 rule S6). Declared as 780 x 400 logical px and re-resolved through <c>Sp</c> at every DPI change.</summary>
     Private settingsDesiredMinimum As Size
 
     ''' <summary>Rebuilds the window when the Windows Text size is no longer the one it was built with. Asked on
@@ -154,23 +155,53 @@ Partial Public Class Table_Form
     ''' window was built (S14-5); here they are released together when the window is.</summary>
     Private ReadOnly settingsFonts As New Dictionary(Of String, Font)()
 
-    Private Function SettingsFont(family As String, size As Single, Optional style As FontStyle = FontStyle.Regular) As Font
-        Dim key As String = family & "|" & size.ToString("R", Globalization.CultureInfo.InvariantCulture) & "|" &
+    ''' <summary>The dpi a control that is not in this window yet reads its font at (specification L0361,
+    ''' WINDOWS-SCALE rule S4): WinForms starts every new control at the SYSTEM dpi, wherever the window
+    ''' is, and rescales its explicit font by window dpi / that dpi the moment the control is added.</summary>
+    Private Shared ReadOnly FreshControlDpi As Integer = ReadFreshControlDpi()
+
+    Private Shared Function ReadFreshControlDpi() As Integer
+        Using probe As New Label()
+            Return Math.Max(96, probe.DeviceDpi)
+        End Using
+    End Function
+
+    ''' <summary>The dpi the font of <paramref name="owner"/> is read at: the control's OWN <c>DeviceDpi</c> (rule S4 -
+    ''' the system's for a loose control, the window's once the platform has moved it into the window), never a proxy
+    ''' such as "it is in this window, so the window's". No owner: a control that is added to the window afterwards,
+    ''' which starts at the system dpi. Whatever this answers wrongly in an odd order of build, add and first show, the
+    ''' heal (<see cref="HealSettingsFonts"/>, rule S10) corrects from the result.</summary>
+    Private Function FontBasisDpi(owner As Control) As Integer
+        If owner IsNot Nothing Then Return Math.Max(96, owner.DeviceDpi)
+        Return FreshControlDpi
+    End Function
+
+    ''' <summary>A point font for <paramref name="owner"/> (a control, or <c>Me</c> for a font that only measures
+    ''' or is drawn at the window's dpi). <paramref name="size"/> is the point size at this window's design scale
+    ''' (<see cref="Sf"/>); a point font reaches the screen through the SYSTEM dpi, so it is multiplied by
+    ''' basis dpi / system dpi (rule S4). Without an owner the font is meant for a control that is added to the
+    ''' window afterwards, which WinForms then rescales to the window's dpi.</summary>
+    Private Function SettingsFont(family As String, size As Single, Optional style As FontStyle = FontStyle.Regular,
+                                  Optional owner As Control = Nothing) As Font
+        Dim points As Single = CSng(FormScale.RebasePoints(size, FontBasisDpi(owner), FreshControlDpi))
+        Return SharedSettingsPointFont(family, points, style, FormScaleFontRecipe.FromDesignPoints(family, size, style))
+    End Function
+
+    Private Function SharedSettingsPointFont(family As String, points As Single, style As FontStyle,
+                                             recipe As FormScaleFontRecipe) As Font
+        Dim key As String = family & "|" & points.ToString("R", Globalization.CultureInfo.InvariantCulture) & "|" &
                             CInt(style).ToString(Globalization.CultureInfo.InvariantCulture)
         Dim shared_Font As Font = Nothing
         If Not settingsFonts.TryGetValue(key, shared_Font) Then
-            shared_Font = New Font(family, size, style)
+            shared_Font = New Font(family, points, style)
             settingsFonts.Add(key, shared_Font)
         End If
+        settingsFontRecipes.Issue(shared_Font, recipe)
         Return shared_Font
     End Function
 
-    ''' <summary>A font sized in device pixels from a logical size (12 = what 9 pt is at 96 dpi).
-    ''' A native list or edit box measures itself from its font; a pixel font carries no
-    ''' point-to-pixel conversion for the system to get wrong, so the control follows
-    ''' <see cref="Sp"/> like everything else in this window.</summary>
-    Private Function SettingsPixelFont(family As String, logicalPixels As Integer, Optional style As FontStyle = FontStyle.Regular) As Font
-        Dim pixels As Integer = Math.Max(8, Sp(logicalPixels))
+    Private Function SharedSettingsPixelFont(family As String, pixels As Integer, style As FontStyle,
+                                             recipe As FormScaleFontRecipe) As Font
         Dim key As String = family & "|" & pixels.ToString(Globalization.CultureInfo.InvariantCulture) & "px|" &
                             CInt(style).ToString(Globalization.CultureInfo.InvariantCulture)
         Dim shared_Font As Font = Nothing
@@ -178,7 +209,113 @@ Partial Public Class Table_Form
             shared_Font = New Font(family, CSng(pixels), style, GraphicsUnit.Pixel)
             settingsFonts.Add(key, shared_Font)
         End If
+        settingsFontRecipes.Issue(shared_Font, recipe)
         Return shared_Font
+    End Function
+
+    ''' <summary>The recipe table of this window (specification L0361 rule S2, ticket L0365): every product-owned font
+    ''' a control of this window was given, by control, so a DPI change re-resolves every one of them and the audit of
+    ''' rule S9 can compare each with its recipe.</summary>
+    Private ReadOnly settingsFontRecipes As New FormScaleRecipeTable()
+
+    ''' <summary>Records each control under the recipe of the font it was just given (an object initializer cannot
+    ''' name the control it builds). Call before the control joins the window: WinForms replaces the font object of a
+    ''' control that joins a window of another dpi (L0361 fact E2).</summary>
+    Private Sub TrackSettingsFonts(ParamArray controls As Control())
+        For Each control As Control In controls
+            settingsFontRecipes.Track(control)
+        Next
+    End Sub
+
+    ''' <summary>The font of <paramref name="recipe"/> for a control that reads its font at <paramref name="basisDpi"/>
+    ''' (rule S4), from the window's shared fonts; the same rounding as <see cref="SettingsPixelFont"/>.</summary>
+    Private Function SettingsFontFromRecipe(recipe As FormScaleFontRecipe, basisDpi As Integer) As Font
+        Dim size As Double = recipe.AssignedSize(basisDpi, FreshControlDpi)
+        If recipe.Kind = FormScaleFontKind.Point Then Return SharedSettingsPointFont(recipe.Family, CSng(size), recipe.Style, recipe)
+        Return SharedSettingsPixelFont(recipe.Family, Math.Max(8, CInt(Math.Round(size))), recipe.Style, recipe)
+    End Function
+
+    ''' <summary>L0361 rule S5 step 5 (3): after a DPI change, every recorded font of a control in this window is
+    ''' re-assigned from its recipe with <c>c = D</c> - idempotent where the platform's rescale already got it right,
+    ''' the correction where it did not, and the only path for fonts no style walk visits. The window's own font is
+    ''' left to the platform, which rescales it AFTER the DpiChanged event (fact E3).</summary>
+    Private Sub ReassignSettingsFontsFromRecipes()
+        For Each pair As KeyValuePair(Of Control, FormScaleFontRecipe) In settingsFontRecipes.Entries()
+            Dim control As Control = pair.Key
+            If control Is Me OrElse control.FindForm() IsNot Me Then Continue For
+            Dim font As Font = SettingsFontFromRecipe(pair.Value, Math.Max(96, control.DeviceDpi))
+            If Not ReferenceEquals(control.Font, font) Then control.Font = font
+        Next
+    End Sub
+
+    ''' <summary>Rule S10, the one correction for every scale, monitor and order of events: every recorded font that is the
+    ''' product's own but not the size its recipe asks for at the window's current dpi is assigned again from the recipe
+    ''' (<see cref="FormScaleRecipeTable.Heal"/>); a page whose fonts changed is laid out again, because its row heights
+    ''' were measured with the wrong ones. It judges the font a control carries now, projected through the control's own
+    ''' dpi, so it does not matter which of the platform's rescales (a control joining the window, a page built before
+    ''' the first show - its controls keep the system dpi until the page is shown -, a move to a monitor of another dpi,
+    ''' a cascade that skipped a page) did or did not run. Idempotent: a second call changes nothing.</summary>
+    Private Sub HealSettingsFonts()
+        If IsDisposed OrElse Not IsHandleCreated OrElse Not modernSettingsBuilt Then Return
+        If settingsFontRecipes.Heal(Me, FreshControlDpi, Function(recipe, dpi) SettingsFontFromRecipe(recipe, dpi)) > 0 Then
+            LayoutModernSettingsPages()
+        End If
+    End Sub
+
+    Private settingsFontHealQueued As Boolean
+
+    ''' <summary>The heal, after the platform has finished what it is doing now (the form's own font follows a DPI event
+    ''' AFTER the event, fact E3; a page that was just built is laid out after its builder returns): one queued pass however
+    ''' many causes ask for it.</summary>
+    Private Sub QueueHealSettingsFonts()
+        If settingsFontHealQueued OrElse IsDisposed OrElse Not IsHandleCreated Then Return
+        settingsFontHealQueued = True
+        BeginInvoke(New MethodInvoker(
+            Sub()
+                settingsFontHealQueued = False
+                HealSettingsFonts()
+            End Sub))
+    End Sub
+
+    ''' <summary>The audit of rule S9 for this window: one line per control whose effective font is not its recipe at
+    ''' the window's current dpi; empty is a pass. Read by the scene matrix (tests/Integration/SettingsLayoutScenes).</summary>
+    Friend Function AuditSettingsFonts() As String()
+        Return settingsFontRecipes.Audit(Me, FreshControlDpi).ConvertAll(Function(m) m.ToString()).ToArray()
+    End Function
+
+    ''' <summary>How many live controls of this window carry a font recipe (the scene matrix refuses an empty table).</summary>
+    Friend Function SettingsFontRecipeCount() As Integer
+        Return settingsFontRecipes.Entries().FindAll(Function(p) p.Key Is Me OrElse p.Key.FindForm() Is Me).Count
+    End Function
+
+    ''' <summary>Debug builds: rule S9 after every DPI change, once the platform has also rescaled the window's own
+    ''' font (after the event, fact E3). A mismatch is a defect; it is written to the log, never shown.</summary>
+    <Conditional("DEBUG")>
+    Private Sub QueueSettingsFontAudit()
+        If Not IsHandleCreated Then Return
+        BeginInvoke(New MethodInvoker(
+            Sub()
+                If IsDisposed Then Return
+                Dim lines As String() = AuditSettingsFonts()
+                If lines.Length = 0 Then Return
+                AppFileLogger.LogMessage(String.Format(Globalization.CultureInfo.InvariantCulture,
+                    "Settings font audit (rule S9): {0} mismatch(es) at {1} dpi", lines.Length, DeviceDpi))
+                For Each line As String In lines.Take(40)
+                    AppFileLogger.LogMessage("  " & line)
+                Next
+            End Sub))
+    End Sub
+
+    ''' <summary>A font sized in device pixels from a logical size (12 = what 9 pt is at 96 dpi).
+    ''' A native list or edit box measures itself from its font; a pixel font carries no
+    ''' point-to-pixel conversion for the system to get wrong. The size is resolved for the dpi the
+    ''' control reads it at (<paramref name="owner"/>, rule S4), not for the window's current dpi: a control
+    ''' built after the window settled on another monitor is still rescaled by WinForms when it is added.</summary>
+    Private Function SettingsPixelFont(family As String, logicalPixels As Integer, Optional style As FontStyle = FontStyle.Regular,
+                                       Optional owner As Control = Nothing) As Font
+        Dim pixels As Integer = Math.Max(8, CInt(Math.Round(FormScale.PixelFontSize(logicalPixels, fontScale, FontBasisDpi(owner)))))
+        Return SharedSettingsPixelFont(family, pixels, style,
+                                       New FormScaleFontRecipe(FormScaleFontKind.Pixel, family, style, logicalPixels * CDbl(fontScale)))
     End Function
 
     ''' <summary>
@@ -191,7 +328,8 @@ Partial Public Class Table_Form
     Private Sub StyleModernComboBox(combo As ComboBox)
         ' Idempotent: it runs again after every DPI change (the pixel font and the item height are scale
         ' dependent) and for the combos that were added to a row after the first styling pass.
-        combo.Font = SettingsPixelFont("Segoe UI", 12)
+        combo.Font = SettingsPixelFont("Segoe UI", 12, owner:=combo)
+        TrackSettingsFonts(combo)
         If Not styledSettingsCombos.Contains(combo) Then
             styledSettingsCombos.Add(combo)
             If combo.DrawMode = DrawMode.Normal Then
@@ -202,7 +340,9 @@ Partial Public Class Table_Form
         End If
         If combo.DrawMode = DrawMode.OwnerDrawFixed Then
             ' The closed field is this height plus the control's own 6 px frame: >= 36 logical px, comfortable to hit.
-            combo.ItemHeight = Math.Max(Sp(SettingsComboItemHeight), SettingsPixelFont("Segoe UI", 12).Height + Sp(8))
+            ' The height of the font the field will show at THIS window's dpi (owner:=Me), whether the combo is in
+            ' the window yet or still loose and about to be rescaled to it.
+            combo.ItemHeight = Math.Max(Sp(SettingsComboItemHeight), SettingsPixelFont("Segoe UI", 12, owner:=Me).Height + Sp(8))
             combo.MaxDropDownItems = 16
         End If
     End Sub
@@ -385,7 +525,8 @@ Partial Public Class Table_Form
         ClientSize = New Size(Sp(ProvisionalRailLogical + 560 + 48), Sp(520))
         RestoreModernSettingsWindowSize()
         BackColor = SettingsCanvas
-        Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
+        Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular, Me)
+        TrackSettingsFonts(Me)
 
         modernSettingsShell = New Panel With {
             .Dock = DockStyle.Fill,
@@ -439,6 +580,7 @@ Partial Public Class Table_Form
             .Location = New Point(Sp(19), Sp(55)),
             .Visible = False
         }
+        TrackSettingsFonts(modernProductLabel, modernSidebarSectionLabel)
         modernSettingsSidebar.Controls.Add(modernProductLabel)
         modernSettingsSidebar.Controls.Add(modernSidebarSectionLabel)
 
@@ -458,6 +600,7 @@ Partial Public Class Table_Form
             .Height = Sp(22),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         }
+        TrackSettingsFonts(modernSettingsTitle, modernSettingsSubtitle)
         modernSettingsHeader.Controls.Add(modernSettingsTitle)
         modernSettingsHeader.Controls.Add(modernSettingsSubtitle)
 
@@ -509,13 +652,18 @@ Partial Public Class Table_Form
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
-        AddHandler Activated, Sub() SettingsTextSizeMayHaveChanged()
+        AddHandler Activated,
+            Sub()
+                SettingsTextSizeMayHaveChanged()
+                QueueHealSettingsFonts()
+            End Sub
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
         ' The rail follows the reading direction live (rule 1) and keeps its share of the client width (rule 5).
         AddHandler RightToLeftChanged, Sub() ArrangeModernRail()
         AddHandler Resize, Sub() UpdateModernRailWidth()
         AddHandler DpiChanged, Sub()
                                    settingsScale = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F) * fontScale
+                                   settingsDesiredMinimum = New Size(Sp(780), Sp(400))
                                    resourcesPanel?.SetDeviceScale(settingsScale)
                                    ResizeResourcesListHost()
                                    For Each group In settingsGroups.Values
@@ -527,7 +675,10 @@ Partial Public Class Table_Form
                                        Next
                                    Next
                                    StyleModernSettingsControls()
+                                   ReassignSettingsFontsFromRecipes()
                                    LayoutModernSettingsPages()
+                                   ' Rule S10: once more from the result, after the platform has also moved the window's own font.
+                                   QueueHealSettingsFonts()
                                    ' The nav glyphs are baked bitmaps at the rail's glyph tier: a tier change
                                    ' must re-render them, or the old size survives the DPI
                                    ' change (128 §5 scenario 3). The rows, the width and the glyph are one
@@ -535,6 +686,8 @@ Partial Public Class Table_Form
                                    ArrangeModernRail()
                                    RefreshModernSettingsHeader()
                                    QueueRestoreSettingsContext()
+                                   QueueClampModernSettingsToWorkArea()
+                                   QueueSettingsFontAudit()
                                End Sub
         ParkLegacySettingsControls()
         For Each page As TabPage In Tab_Control.TabPages
@@ -611,6 +764,7 @@ Partial Public Class Table_Form
                 .Padding = New Padding(Sp(SettingsRailList.RowPaddingStartLogical), 0, Sp(SettingsRailList.RowPaddingEndLogical), 0),
                 .Cursor = Cursors.Hand
             }
+            TrackSettingsFonts(button)
             button.FlatAppearance.BorderSize = 0
             AddHandler button.Click, AddressOf ModernSettingsNavClicked
             AddHandler button.Paint, AddressOf PaintModernNavEdge
@@ -798,6 +952,9 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub ModernSettingsTabChanged(sender As Object, e As EventArgs)
+        ' Rule S10: the page that was just built or just shown is judged by the fonts it carries now, before it is
+        ' measured - a page built before the window settled on its monitor is the one the platform's rescale misses.
+        HealSettingsFonts()
         If UiTiming.Enabled AndAlso pageSwitchStarted <> 0 AndAlso Tab_Control.SelectedTab IsNot Nothing Then
             Dim shownPage As TabPage = Tab_Control.SelectedTab
             Dim kind As UiTimingKind = If(pagesShownBefore.Add(shownPage), UiTimingKind.PageFirst, UiTimingKind.PageRepeat)
@@ -827,6 +984,7 @@ Partial Public Class Table_Form
             OpenTimingStarted = 0
         End If
         PositionModernSettingsOnOwnerMonitor()
+        QueueHealSettingsFonts()
         ' The recipients overlay's edit door (219 §4): one open-at entry, honoured when the
         ' window is shown - a plain open never sees it.
         If pendingOpenAtRecipientsGrid Then
@@ -856,8 +1014,12 @@ Partial Public Class Table_Form
            Not Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowHeight", "0"), savedHeight) OrElse
            savedWidth <= 0 OrElse savedHeight <= 0 Then Return
 
-        savedWidth = Math.Max(savedWidth, MinimumSize.Width)
-        savedHeight = Math.Max(savedHeight, MinimumSize.Height)
+        ' L0361 rule S6 (3): the size keeps its LOGICAL size across monitors - stored in the pixels of the DPI it was
+        ' measured at and re-resolved for this window's DPI; a size saved before the DPI was recorded comes back as is.
+        Dim savedDpi As Integer = WindowPlacement.ParseDpi(GetSetting(App_name, Second_App_Name, "SettingsWindowDpi", ""))
+        Dim restored As Size = WindowPlacement.SizeForDpi(savedWidth, savedHeight, savedDpi, DeviceDpi)
+        savedWidth = restored.Width
+        savedHeight = restored.Height
         FitModernSettingsClientSize(Screen.FromControl(Me).WorkingArea, savedWidth, savedHeight)
     End Sub
 
@@ -902,7 +1064,12 @@ Partial Public Class Table_Form
         ' The minimum grows with the interface scale and the Windows Text size (ticket 279, T-2); a form is never
         ' smaller than its MinimumSize, so on a screen the composed minimum does not fit the window would stand
         ' wider than the screen however its client size is clamped below. Bound it first, then clamp.
-        MinimumSize = WindowPlacement.BoundMinimum(settingsDesiredMinimum, workArea)
+        ' L0361 rule S6 (1): the minimum takes at most 90 % of the work area at the current scale, so the window can
+        ' still be made smaller than the screen; what then does not fit scrolls (the page flows and the rail list).
+        Dim minimumArea As New Rectangle(workArea.Location, New Size(
+            FormScale.ShareOfLength(workArea.Width, FormScale.MinimumShareOfWorkArea),
+            FormScale.ShareOfLength(workArea.Height, FormScale.MinimumShareOfWorkArea)))
+        MinimumSize = WindowPlacement.BoundMinimum(settingsDesiredMinimum, minimumArea)
         Dim chromeWidth As Integer = Width - ClientSize.Width
         Dim chromeHeight As Integer = Height - ClientSize.Height
         Dim maxClientWidth As Integer = Math.Max(1, workArea.Width - chromeWidth)
@@ -924,6 +1091,19 @@ Partial Public Class Table_Form
         SaveSetting(App_name, Second_App_Name, "SettingsWindowY", Location.Y.ToString())
         SaveSetting(App_name, Second_App_Name, "SettingsWindowWidth", ClientSize.Width.ToString())
         SaveSetting(App_name, Second_App_Name, "SettingsWindowHeight", ClientSize.Height.ToString())
+        SaveSetting(App_name, Second_App_Name, "SettingsWindowDpi", DeviceDpi.ToString())
+    End Sub
+
+    ''' <summary>L0361 rule S6 (3): after a DPI change the window is clamped again to the work area of the monitor
+    ''' that holds most of it, with the minimum re-resolved for the new DPI. Deferred: the platform applies its
+    ''' suggested rectangle after the DpiChanged handlers have run, so a size set inside them would be replaced.</summary>
+    Private Sub QueueClampModernSettingsToWorkArea()
+        If IsDisposed OrElse Not IsHandleCreated Then Return
+        BeginInvoke(New MethodInvoker(
+            Sub()
+                If IsDisposed OrElse WindowState <> FormWindowState.Normal Then Return
+                FitModernSettingsClientSize(Screen.FromRectangle(Bounds).WorkingArea, ClientSize.Width, ClientSize.Height)
+            End Sub))
     End Sub
 
     Private Sub ModernSettingsContentResized(sender As Object, e As EventArgs)
@@ -1260,7 +1440,7 @@ Partial Public Class Table_Form
             Case "no_confirmation" : Return Localization.T("Не запрашивать подтверждение")
             Case "image_associations" : Return Localization.T("Форматы изображений")
             Case "video_associations" : Return Localization.T("Форматы видео")
-            Case "app_commands" : Return AppCommands.AppCommandsText.SettingLabel()
+            Case "app_commands" : Return Localization.T("Разрешить команды от других программ")
             Case "interface_language" : Return Localization.T("Язык интерфейса")
             Case "section_file_behavior" : Return Localization.T("Поведение файлов")
             Case "name_collision" : Return Localization.T("Совпадение имён")
@@ -1432,7 +1612,7 @@ Partial Public Class Table_Form
             Case "no_confirmation" : Return Localization.T("Отключает вопросы при перекодировании JPEG и операциях панели миниатюр. Удаление настраивается отдельно.")
             Case "image_associations" : Return Localization.T("Регистрирует программу для открытия изображений у текущего пользователя, без прав администратора.")
             Case "video_associations" : Return Localization.T("Регистрирует программу для открытия видео и аудио у текущего пользователя, без прав администратора.")
-            Case "app_commands" : Return Localization.T("Безопасные команды (commands, version, status, show, quit) работают всегда. Остальные команды из командной строки и других программ выполняются только при включённой настройке; ни одна команда её не меняет.")
+            Case "app_commands" : Return Localization.T("Безопасные команды (commands, version, status, show, quit) работают всегда. Команды, затрагивающие файлы, экран, буфер обмена или сеть, выполняются только при включённой настройке; ни одна команда её не меняет.")
             Case "interface_language" : Return Localization.T("Выберите, на каком языке показывать интерфейс.")
             Case "name_collision" : Return Localization.T("Что делать, если в папке-получателе уже есть файл с тем же именем.")
             Case "delete_to_recycle_bin" : Return Localization.T("На сетевом диске и съёмном носителе Корзины нет - там файл удаляется безвозвратно, и программа скажет об этом. Shift+DEL всегда удаляет мимо Корзины.")
@@ -1860,6 +2040,7 @@ Partial Public Class Table_Form
         Dim host As New Panel With {.Height = Sp(28), .Margin = New Padding(0, 6, 0, 0), .BackColor = SettingsCanvas, .Tag = "modern:full"}
         Dim title As New Label With {.AutoSize = False, .Dock = DockStyle.Fill, .Font = SettingsFont("Segoe UI Semibold", Sf(9.5F)),
                                      .ForeColor = SettingsText, .TextAlign = ContentAlignment.MiddleLeft, .Padding = New Padding(4, 0, 0, 0)}
+        TrackSettingsFonts(title)
         host.Controls.Add(title)
         flow.Controls.Add(host)
         modernSettingsRows.Add(New ModernSettingRow With {.Key = key, .Host = host, .Title = title})
@@ -1881,6 +2062,7 @@ Partial Public Class Table_Form
                                      .Font = SettingsFont("Segoe UI Semibold", Sf(SettingsRowGridRules.CaptionFontPoints)), .ForeColor = SettingsText}
         Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(25)), .Height = Sp(22),
                                            .Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels), .ForeColor = SettingsMutedText}
+        TrackSettingsFonts(title, description)
         Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .Editor = editor, .Compact = compact, .PageFlow = flow}
         Dim check As CheckBox = TryCast(editor, CheckBox)
         Dim numeric As NumericUpDown = TryCast(editor, NumericUpDown)
@@ -1930,6 +2112,7 @@ Partial Public Class Table_Form
         Dim label As New Label With {.AutoSize = False, .Text = unit,
                                      .Font = SettingsPixelFont("Segoe UI", 12), .ForeColor = SettingsMutedText,
                                      .TextAlign = ContentAlignment.MiddleRight, .BackColor = SettingsSurface}
+        TrackSettingsFonts(label)
         row.Host.Controls.Add(label)
         row.UnitLabel = label
         If key = "slideshow_interval" Then
@@ -2025,7 +2208,7 @@ Partial Public Class Table_Form
     ''' <summary>A closed drop-down field is sized for its longest localized item plus the
     ''' chevron zone, clamped to the §3.2 bounds.</summary>
     Private Function MeasureModernComboWidth(combo As ComboBox) As Integer
-        Dim font As Font = SettingsPixelFont("Segoe UI", 12)
+        Dim font As Font = SettingsPixelFont("Segoe UI", 12, owner:=Me)
         Dim widest As Integer = 0
         For Each item As Object In combo.Items
             Dim text As String = If(TypeOf item Is LanguageEntry, DirectCast(item, LanguageEntry).DisplayName(), combo.GetItemText(item))
@@ -2048,7 +2231,7 @@ Partial Public Class Table_Form
     Private Function MeasureModernCommandButtonWidth(button As Button) As Integer
         Dim text As String = button.Text
         If String.IsNullOrEmpty(text) Then Return Sp(96)
-        Dim textWidth As Integer = TextRenderer.MeasureText(text, SettingsFont("Segoe UI Semibold", Sf(9.0F)),
+        Dim textWidth As Integer = TextRenderer.MeasureText(text, SettingsFont("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular, Me),
             New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding).Width
         ' WINDOWS-UI section 11 item 3: the verb's glyph and its gap come on top of the caption, never out of it.
         ' The picture holds its own gap; the settings scale (which already includes the monitor's DPI) is the
@@ -2504,6 +2687,7 @@ Partial Public Class Table_Form
                                      .Font = SettingsFont("Segoe UI Semibold", Sf(9.5F)), .ForeColor = SettingsText}
         Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(12), Sp(25)), .Height = Sp(22),
                                            .Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels), .ForeColor = SettingsMutedText}
+        TrackSettingsFonts(title, description)
         host.Controls.Add(title)
         host.Controls.Add(description)
         Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .PageFlow = flow}
@@ -2521,6 +2705,7 @@ Partial Public Class Table_Form
         Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(12), Sp(23)), .Height = Sp(16),
                                            .Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels), .ForeColor = SettingsMutedText}
         AddHandler link.LinkClicked, AddressOf ModernProjectLinkClicked
+        TrackSettingsFonts(link, description)
         host.Controls.Add(link)
         host.Controls.Add(description)
         Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = link, .Description = description, .Compact = True, .PageFlow = flow}
@@ -2681,7 +2866,7 @@ Partial Public Class Table_Form
             group.Header.BackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.08F)
             group.Header.FlatAppearance.BorderColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.08F)
             group.Header.FlatAppearance.BorderSize = 0
-            group.SetSummaryStyle(SettingsFont("Segoe UI", Sf(8.0F)), SettingsMutedText)
+            group.SetSummaryStyle(SettingsFont("Segoe UI", Sf(8.0F), FontStyle.Regular, group), SettingsMutedText)
     End Sub
 
     ''' <summary>The face, ink and border of a command or header-tool button; the sidebar's nav buttons keep their own.</summary>
@@ -2803,6 +2988,7 @@ Partial Public Class Table_Form
             ApplySystemSettingsPalette()
         End If
         PositionModernSettingsOnOwnerMonitor()
+        QueueHealSettingsFonts()
         QueueRestoreSettingsContext()
     End Sub
 
@@ -2847,12 +3033,13 @@ Partial Public Class Table_Form
         Data_Grid_View.EnableHeadersVisualStyles = False
         Data_Grid_View.ColumnHeadersDefaultCellStyle.BackColor = BlendSettingsColor(SettingsSurface, SettingsCanvas, 0.7F)
         Data_Grid_View.ColumnHeadersDefaultCellStyle.ForeColor = SettingsText
-        Data_Grid_View.ColumnHeadersDefaultCellStyle.Font = SettingsFont("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular)
+        Data_Grid_View.ColumnHeadersDefaultCellStyle.Font = SettingsFont("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular, Data_Grid_View)
         Data_Grid_View.DefaultCellStyle.BackColor = SettingsSurface
         Data_Grid_View.DefaultCellStyle.ForeColor = SettingsText
         Data_Grid_View.DefaultCellStyle.SelectionBackColor = BlendSettingsColor(SettingsAccent, SettingsSurface, 0.72F)
         Data_Grid_View.DefaultCellStyle.SelectionForeColor = SettingsText
-        Data_Grid_View.Font = SettingsPixelFont("Segoe UI", 12)
+        Data_Grid_View.Font = SettingsPixelFont("Segoe UI", 12, owner:=Data_Grid_View)
+        TrackSettingsFonts(Data_Grid_View)
         Dim rowHeight As Integer = Math.Max(Sp(30), Data_Grid_View.Font.Height + Sp(10))
         Data_Grid_View.RowTemplate.Height = rowHeight
         For Each row As DataGridViewRow In Data_Grid_View.Rows
@@ -2928,47 +3115,6 @@ Partial Public Class Table_Form
         End If
     End Sub
 
-    ''' <summary>Repaints the legacy GroupBox border as a quiet rounded settings card.
-    ''' The child controls remain owned by the original GroupBox, so existing layout
-    ''' and code-behind do not have to know that its visual chrome changed.</summary>
-    Private Sub PaintModernSettingsCard(sender As Object, e As PaintEventArgs)
-        Dim card As GroupBox = TryCast(sender, GroupBox)
-        If card Is Nothing OrElse card.Width < 8 OrElse card.Height < 8 Then Return
-
-        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
-        Dim rect As New Rectangle(1, 1, card.ClientSize.Width - 3, card.ClientSize.Height - 3)
-        Using path As GraphicsPath = ModernRoundedRectangle(rect, 10)
-            Using fill As New SolidBrush(SettingsSurface)
-                e.Graphics.FillPath(fill, path)
-            End Using
-            Using border As New Pen(SettingsBorder)
-                e.Graphics.DrawPath(border, path)
-            End Using
-        End Using
-
-        Dim titleRect As New Rectangle(16, 7, Math.Max(0, card.ClientSize.Width - 32), 20)
-        Using titleFont As New Font("Segoe UI Semibold", 10.0F, FontStyle.Regular)
-            TextRenderer.DrawText(e.Graphics, card.Text, titleFont, titleRect, SettingsText,
-                                  TextFormatFlags.Left Or TextFormatFlags.VerticalCenter Or TextFormatFlags.EndEllipsis)
-        End Using
-    End Sub
-
-    Private Shared Function ModernRoundedRectangle(rect As Rectangle, radius As Integer) As GraphicsPath
-        Dim d As Integer = Math.Min(Math.Min(radius * 2, rect.Width), rect.Height)
-        Dim path As New GraphicsPath()
-        If d <= 1 Then
-            path.AddRectangle(rect)
-            Return path
-        End If
-
-        path.AddArc(rect.Left, rect.Top, d, d, 180, 90)
-        path.AddArc(rect.Right - d, rect.Top, d, d, 270, 90)
-        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90)
-        path.AddArc(rect.Left, rect.Bottom - d, d, d, 90, 90)
-        path.CloseFigure()
-        Return path
-    End Function
-
     Private Sub StyleModernSettingsControlTree(parent As Control)
         For Each control As Control In parent.Controls
             Dim button As Button = TryCast(control, Button)
@@ -2984,17 +3130,20 @@ Partial Public Class Table_Form
                 button.BackColor = SettingsSurface
                 button.ForeColor = SettingsAccent
                 Dim group As SettingsCollapsibleGroup = TryCast(button.Parent, SettingsCollapsibleGroup)
-                button.Font = SettingsFont("Segoe UI Semibold", Sf(If(group IsNot Nothing AndAlso group.Header Is button, 10.5F, 9.0F)), FontStyle.Regular)
+                button.Font = SettingsFont("Segoe UI Semibold", Sf(If(group IsNot Nothing AndAlso group.Header Is button, 10.5F, 9.0F)), FontStyle.Regular, button)
+                TrackSettingsFonts(button)
                 ThemeApplier.ApplyButtonCaptions(button, ThemePalette.ForDark(settingsDarkMode))
             ElseIf TypeOf control Is ComboBox OrElse TypeOf control Is TextBox OrElse TypeOf control Is NumericUpDown Then
                 control.BackColor = SettingsEditorBack
                 control.ForeColor = SettingsEditorText
                 ' Pixel-sized, so a native control is exactly as tall as its neighbours at any
                 ' display scale instead of taking whatever size the system picks for a point font.
-                control.Font = SettingsPixelFont("Segoe UI", 12)
+                control.Font = SettingsPixelFont("Segoe UI", 12, owner:=control)
+                TrackSettingsFonts(control)
                 Dim number As NumericUpDown = TryCast(control, NumericUpDown)
                 If number IsNot Nothing Then
-                    number.Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.NumericFontPixels)
+                    number.Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.NumericFontPixels, owner:=number)
+                    TrackSettingsFonts(number)
                     ' WinForms fixes a spinner's height to its native text metrics.
                     ' Size through the font instead of requesting an ignored height.
                     number.Height = number.PreferredHeight
@@ -3006,7 +3155,8 @@ Partial Public Class Table_Form
             ElseIf TypeOf control Is CheckBox Then
                 control.BackColor = SettingsSurface
                 control.ForeColor = SettingsText
-                control.Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
+                control.Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular, control)
+                TrackSettingsFonts(control)
             ElseIf TypeOf control Is Label Then
                 Dim owner As ModernSettingRow = modernSettingsRows.Find(Function(r) r.Title Is control OrElse r.Description Is control)
                 If owner IsNot Nothing AndAlso owner.Title Is control Then
@@ -3016,8 +3166,9 @@ Partial Public Class Table_Form
                     ' A row's explanation keeps the 12 logical px role (BOOLEAN-OPTION 2.0 section 2 rule 5);
                     ' this walk runs after every page build and would otherwise put it back to 8 pt.
                     control.Font = If(owner IsNot Nothing,
-                        SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels),
-                        SettingsFont("Segoe UI", Sf(8.0F), FontStyle.Regular))
+                        SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels, owner:=control),
+                        SettingsFont("Segoe UI", Sf(8.0F), FontStyle.Regular, control))
+                    TrackSettingsFonts(control)
                 End If
             End If
 

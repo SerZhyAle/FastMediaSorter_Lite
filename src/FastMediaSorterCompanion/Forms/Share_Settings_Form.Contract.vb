@@ -408,7 +408,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 ' Reserve the scrollbar even while hidden, so disclosure does not refit the whole subtree twice.
                 ' ClientSize already excludes it when visible; content/group padding is subtracted below.
                 Dim width = Math.Max(1, viewport.ClientSize.Width - viewport.Padding.Horizontal -
-                    If(viewport.VerticalScroll.Visible, 0, SystemInformation.VerticalScrollBarWidth))
+                    If(viewport.VerticalScroll.Visible, 0, UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi)))
                 Dim previousWidth As Integer
                 If _fittedSettingsWidths.TryGetValue(viewport, previousWidth) AndAlso previousWidth = width Then Continue For
                 _fittedSettingsWidths(viewport) = width

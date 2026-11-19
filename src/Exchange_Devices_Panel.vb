@@ -78,6 +78,9 @@ Friend NotInheritable Class Exchange_Devices_Panel
     Private Const DriveFeedRetryMs As Integer = 15000
     Private _driveShown As Boolean
     Private ReadOnly _titleLabel As Label
+    ''' <summary>The bold variant of the ambient font the title wears; rebuilt whenever the ambient font changes
+    ''' (specification L0361, WINDOWS-SCALE rule S7), so it never keeps a copy taken before the panel had a window.</summary>
+    Private _titleFont As Font
     Private ReadOnly _note As Label
     Private ReadOnly _addButton As Button
     Private ReadOnly _attachAllButton As Button
@@ -148,7 +151,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Visible = False
 
         _titleLabel = New Label With {.Name = "res_DevicesTitle", .AutoSize = False, .TextAlign = ContentAlignment.MiddleLeft, .Text = ExchangeResourceText.SectionTitle()}
-        _titleLabel.Font = New Font(Font, FontStyle.Bold)
+        RefreshTitleFont()
         _note = New Label With {.Name = "res_DevicesNote", .AutoSize = False, .ForeColor = SystemColors.GrayText}
         _addButton = MakeButton("res_DevicesAdd", ExchangeEntryText.AddButton(), AddressOf OnAddClicked)
         _attachAllButton = MakeButton("res_DevicesAttachAll", ExchangeEntryText.AttachAllButton(), AddressOf OnAttachAllClicked)
@@ -224,8 +227,27 @@ Friend NotInheritable Class Exchange_Devices_Panel
     ''' <summary>The host's pixel metrics: 96-dpi logical units to device units (its scale and the monitor's DPI).</summary>
     Friend Sub SetMetrics(metrics As Func(Of Integer, Integer))
         _metrics = If(metrics, Function(n) n)
-        _list.Font = Font
+        ' The list keeps the ambient font: an explicit copy taken here, while the panel is still a loose control
+        ' with the default font, ignored the window's scale and was rescaled again when the panel was added (L0361, S7).
         Relayout()
+    End Sub
+
+    Protected Overrides Sub OnFontChanged(e As EventArgs)
+        MyBase.OnFontChanged(e)
+        If _titleLabel Is Nothing OrElse _list Is Nothing Then Return
+        RefreshTitleFont()
+        Relayout()
+    End Sub
+
+    ''' <summary>The title is the ambient font in bold. WinForms changes the form's own font AFTER the DPI-changed
+    ''' event, so this runs from the font-changed notification and reads the ambient font as it is then.</summary>
+    Private Sub RefreshTitleFont()
+        Dim previous As Font = _titleFont
+        _titleFont = New Font(Font, FontStyle.Bold)
+        _titleLabel.Font = _titleFont
+        If previous IsNot Nothing Then
+            Try : previous.Dispose() : Catch : End Try
+        End If
     End Sub
 
     Private Function Dv(n As Integer) As Integer
@@ -402,7 +424,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
             Next
             _sources.Clear()
             If _driveFeed IsNot Nothing Then RemoveHandler _driveFeed.Changed, AddressOf OnFeedChanged
-            Try : _titleLabel.Font?.Dispose() : Catch : End Try
+            Try : _titleFont?.Dispose() : Catch : End Try
         End If
         MyBase.Dispose(disposing)
     End Sub

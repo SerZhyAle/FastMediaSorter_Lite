@@ -353,3 +353,6 @@ Write-Host "  $setupPath  ($sizeMb MB)"
 Write-Host "  SHA256: $setupHash"
 
 if ($Open) { Start-Process explorer.exe "/select,`"$setupPath`"" }
+
+. (Join-Path $PSScriptRoot 'lib\ReleaseLedgerHook.ps1')
+Invoke-ReleaseLedgerBuild -RepoRoot $solutionDir -Package 'user' -Flavor 'setup' -Kind 'test' -Version $Version -Artifact $setupPath

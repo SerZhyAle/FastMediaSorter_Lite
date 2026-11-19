@@ -359,16 +359,18 @@ Partial Public Class Main_Form
         Dim prefs As ModernViewerPreferences = modern_Preferences
         Dim systemBack As Color = NeutralBackColor()
         text_Edit_Colors = TextReaderLayout.Palette(prefs.TextTheme, systemBack, GetOppositeColor(systemBack))
-        Dim scale As Single = GetCurrentDpiScale()
         Dim points As Single = Math.Max(ModernViewerPreferences.TextFontSizeMin,
             Math.Min(ModernViewerPreferences.TextFontSizeMax, prefs.TextFontSize * text_Font_Scale))
         Dim family As String = If(text_Current_Result.IsMonospace, prefs.TextFontFamilyMonospace, prefs.TextFontFamilyProportional)
         Dim oldFont As Font = text_Edit_Font
         Dim oldUiFont As Font = text_Edit_Ui_Font
-        text_Edit_Font = New Font(family, points * scale, FontStyle.Regular)
-        text_Edit_Ui_Font = New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.0F * scale), FontStyle.Regular)
-
         Dim box As PlainTextSurface = text_Edit_Box
+        ' Rule S4, point form, read at the dpi the editor reads its font at (its own DeviceDpi: the window's once it is
+        ' in, the system's while loose); multiplying the points by K applied the window dpi twice (L0363 A-D1).
+        Dim pointScale As Single = TextPointScale(box.DeviceDpi)
+        text_Edit_Font = New Font(family, points * pointScale, FontStyle.Regular)
+        text_Edit_Ui_Font = New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.0F * pointScale), FontStyle.Regular)
+
         box.WordWrap = prefs.TextWrap
         box.ScrollBars = If(prefs.TextWrap, RichTextBoxScrollBars.Vertical, RichTextBoxScrollBars.Both)
         box.Font = text_Edit_Font

@@ -38,14 +38,168 @@ Friend Module DpiLayout
     '''   by another 14%.
     '''
     ''' A ListView's column widths are NOT part of this (WinForms never scales them) - size those
-    ''' with <see cref="Control.LogicalToDeviceUnits(Integer)"/> instead.
+    ''' with <see cref="Control.LogicalToDeviceUnits(Integer)"/> instead (or <see cref="Device"/> when the
+    ''' window carries a user scale or a Text size above 100 %).
+    '''
+    ''' Owner decision 2026-11-19 (ticket 369, Q369-1b): the window follows M = U x T like the viewer. U is the
+    ''' interface scale the viewer writes (<see cref="UserScale"/>), T the Windows "Text size"
+    ''' (<c>UiSizing.CurrentTextFactor</c>); both are read ONCE, here. The authored 96-dpi pixels grow by M through
+    ''' the Dpi base (96 / M, so WinForms multiplies by <c>DeviceDpi / 96 x M</c>) and the window font grows by the
+    ''' same M (<see cref="GrowFonts"/>), so text and layout agree. At U = T = 1 (an absent value, the default)
+    ''' nothing differs from the plain DPI ratio. A second call on the same window keeps the factor of the first.
+    ''' A window is also re-clamped to the work area when it is first shown and after every DPI change
+    ''' (<see cref="ReclampAfterDpi"/>), because the DPI of the monitor it lands on is not known in OnLoad.
     ''' </summary>
     Friend Sub ApplyAutoScale(f As ContainerControl)
         If f Is Nothing Then Return
-        f.AutoScaleDimensions = New SizeF(96.0F, 96.0F)
+        Dim factor As Single = 1.0F
+        Dim composed As Object = Nothing
+        If composedFactors.TryGetValue(f, composed) Then
+            factor = DirectCast(composed, Single)
+        Else
+            Dim textFactor As Single = UiSizing.CurrentTextFactor()
+            Dim userFactor As Single = UserScale()
+            factor = userFactor * textFactor
+            composedFactors.Add(f, CObj(factor))
+            ' The font is set while the mode is still None, so it cannot start a font-mode scaling pass of its own.
+            If Math.Abs(factor - 1.0F) > 0.001F Then GrowFonts(f, textFactor, userFactor)
+            Dim window As Form = TryCast(f, Form)
+            If window IsNot Nothing Then ReclampAfterDpi(window)
+        End If
+        Dim baseDpi As Single = UiSizing.LogicalDpi / factor
+        f.AutoScaleDimensions = New SizeF(baseDpi, baseDpi)
         f.AutoScaleMode = AutoScaleMode.Dpi
         ' Settings has its own held layout pass and viewport-width fitting.
         If Not TypeOf f Is Share_Settings_Form Then ConfigureCommandRows(f)
+    End Sub
+
+    ' --- M = U x T (ticket 369, D8) -------------------------------------------------------------------
+
+    Private Const RelativeScaleValue As String = "InterfaceScaleRelativePercent"
+    Private Const LegacyScaleValue As String = "InterfaceScalePercent"
+
+    ''' <summary>Test seam of <see cref="UserScale"/>: 0 (the default) reads the shared hive, above 0 pins U so a
+    ''' geometry test does not depend on the profile of the machine it runs on. Never set by product code.</summary>
+    Friend UserScaleOverride As Single = 0.0F
+
+    ''' <summary>U: the interface scale the viewer keeps in the shared hive <c>SZA\FastMediaSorter</c> (the same
+    ''' coordinates <see cref="CompanionGlobals"/> reads the UI language from). Absent or unreadable is automatic, U = 1.
+    ''' The relative percent (<c>InterfaceScaleRelativePercent</c>) is the rule; a legacy absolute
+    ''' <c>InterfaceScalePercent</c> is read only while no relative percent is stored, see <see cref="UserScaleFromPercents"/>.</summary>
+    Friend Function UserScale() As Single
+        If UserScaleOverride > 0.0F Then Return UiScale.NormalizePercent(CInt(Math.Round(UserScaleOverride * 100.0F))) / 100.0F
+        Return UserScaleFromPercents(ReadPercent(RelativeScaleValue), ReadPercent(LegacyScaleValue))
+    End Function
+
+    ''' <summary>The pure half of <see cref="UserScale"/>. A relative percent is a multiplier on the display scale
+    ''' (the window already follows the monitor through DeviceDpi), so it is U as it stands. A legacy absolute percent
+    ''' (stored by an older build when no relative value exists) is taken the way the viewer's Settings window takes it:
+    ''' as the user's multiplier on top of the display scale, not as a total that cancels it (the viewer's floating chrome
+    ''' reads the absolute as a total, which a DPI-scaled window cannot do: its text follows the monitor). Bounds are
+    ''' <see cref="UiScale.NormalizePercent"/>, 90 to 150 percent.</summary>
+    Friend Function UserScaleFromPercents(relativePercent As Integer, legacyAbsolutePercent As Integer) As Single
+        Dim relative As Integer = UiScale.NormalizePercent(relativePercent)
+        If relative > 0 Then Return relative / 100.0F
+        Dim legacy As Integer = UiScale.NormalizePercent(legacyAbsolutePercent)
+        If legacy > 0 Then Return legacy / 100.0F
+        Return 1.0F
+    End Function
+
+    ''' <summary>M = U x T, the factor a window composed (or would compose now): the user's interface scale times the
+    ''' Windows Text size.</summary>
+    Friend Function ComposedFactor() As Single
+        Return UserScale() * UiSizing.CurrentTextFactor()
+    End Function
+
+    ''' <summary>The factor the authored 96-dpi pixels of a window were multiplied by ON TOP of the display ratio:
+    ''' the M its <see cref="ApplyAutoScale"/> composed, 1.0 for a control whose window never called it.</summary>
+    Friend Function ComposedFactorOf(c As Control) As Single
+        Dim top As Control = If(c Is Nothing, Nothing, c.TopLevelControl)
+        Dim composed As Object = Nothing
+        If top IsNot Nothing AndAlso composedFactors.TryGetValue(top, composed) Then Return DirectCast(composed, Single)
+        If c IsNot Nothing AndAlso composedFactors.TryGetValue(c, composed) Then Return DirectCast(composed, Single)
+        Return 1.0F
+    End Function
+
+    ''' <summary>A logical (96-dpi) size as device pixels at the control's own DPI AND the window's M: what
+    ''' <see cref="Control.LogicalToDeviceUnits(Integer)"/> answers times M. Use it where WinForms never scales (ListView
+    ''' columns, sizes set from code after the first pass); at M = 1 it is exactly <c>LogicalToDeviceUnits</c>.</summary>
+    Friend Function Device(c As Control, logical As Integer) As Integer
+        If c Is Nothing Then Return logical
+        Dim units As Integer = c.LogicalToDeviceUnits(logical)
+        Dim factor As Single = ComposedFactorOf(c)
+        If Math.Abs(factor - 1.0F) <= 0.001F Then Return units
+        Return CInt(Math.Round(units * CDbl(factor), MidpointRounding.AwayFromZero))
+    End Function
+
+    Private ReadOnly composedFactors As New System.Runtime.CompilerServices.ConditionalWeakTable(Of Control, Object)()
+
+    Private Function ReadPercent(name As String) As Integer
+        Try
+            Dim raw As String = Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, name, "0")
+            Dim parsed As Integer
+            If Integer.TryParse(raw, Globalization.NumberStyles.Integer, Globalization.CultureInfo.InvariantCulture, parsed) Then Return parsed
+        Catch
+            ' An unreadable hive is "automatic": the window keeps the plain DPI scale.
+        End Try
+        Return 0
+    End Function
+
+    ''' <summary>The window font and every font a child set for itself grow by M (the text part by
+    ''' <c>UiSizing.TextPoints</c>, the user part by U). A control whose font is still the window's object afterwards
+    ''' inherits; a control that kept its own (a bold heading, a monospaced box) is grown the same, so the text follows its
+    ''' box. Points only: a pixel font is sized by its own control. Fonts made here are disposed with the window.</summary>
+    Private Sub GrowFonts(f As ContainerControl, textFactor As Single, userFactor As Single)
+        Dim before As New List(Of KeyValuePair(Of Control, Font))()
+        CollectFonts(f, before)
+        Dim made As New List(Of Font)()
+        Dim grown As New Font(f.Font.FontFamily, UiSizing.TextPoints(f.Font.SizeInPoints, textFactor) * userFactor, f.Font.Style, GraphicsUnit.Point)
+        f.Font = grown
+        made.Add(grown)
+        Dim byOld As New Dictionary(Of Font, Font)()
+        For Each entry As KeyValuePair(Of Control, Font) In before
+            Dim c As Control = entry.Key
+            Dim old As Font = entry.Value
+            If c.IsDisposed OrElse Not ReferenceEquals(c.Font, old) Then Continue For
+            If old.Unit <> GraphicsUnit.Point Then Continue For
+            Dim own As Font = Nothing
+            If Not byOld.TryGetValue(old, own) Then
+                own = New Font(old.FontFamily, UiSizing.TextPoints(old.SizeInPoints, textFactor) * userFactor, old.Style, GraphicsUnit.Point, old.GdiCharSet, old.GdiVerticalFont)
+                byOld.Add(old, own)
+                made.Add(own)
+            End If
+            c.Font = own
+        Next
+        AddHandler f.Disposed, Sub(sender As Object, e As EventArgs)
+                                   For Each font As Font In made
+                                       font.Dispose()
+                                   Next
+                               End Sub
+    End Sub
+
+    Private Sub CollectFonts(parent As Control, found As List(Of KeyValuePair(Of Control, Font)))
+        For Each c As Control In parent.Controls
+            found.Add(New KeyValuePair(Of Control, Font)(c, c.Font))
+            CollectFonts(c, found)
+        Next
+    End Sub
+
+    ''' <summary>OnLoad runs before the DPI of the monitor the window lands on is known, so a clamp made there measures a
+    ''' window sized for another monitor (ticket 369, D4, rule S6). The window is clamped again once it is shown and after
+    ''' each DPI change, posted so it runs after WinForms has rescaled the window; a minimized, maximized or hidden window is left alone.</summary>
+    Private Sub ReclampAfterDpi(form As Form)
+        Dim reclamp As Action =
+            Sub()
+                If form.IsDisposed OrElse Not form.IsHandleCreated OrElse Not form.Visible OrElse form.WindowState <> FormWindowState.Normal Then Return
+                ClampToWorkingArea(form)
+            End Sub
+        Dim post As Action =
+            Sub()
+                If form.IsDisposed OrElse Not form.IsHandleCreated Then Return
+                form.BeginInvoke(reclamp)
+            End Sub
+        AddHandler form.Shown, Sub(sender, e) post()
+        AddHandler form.DpiChanged, Sub(sender, e) post()
     End Sub
 
     ' WINDOWS-UI section 11 item 3: command rows wrap whole content-sized buttons.
@@ -103,15 +257,16 @@ Friend Module DpiLayout
         Return If(s IsNot Nothing, s.WorkingArea, New Rectangle(0, 0, 1024, 768))
     End Function
 
-    ''' <summary>Never let MinimumSize exceed the working area, or the window cannot fit the
+    ''' <summary>Never let MinimumSize exceed 90 percent of the working area (rule S6 of L0361: a minimum that is the
+    ''' whole monitor leaves no room for the taskbar, shadows or the next window), or the window cannot fit the
     ''' screen at high DPI (and, being at its minimum, the user cannot shrink it either).</summary>
     Friend Sub RelaxMinimumSize(f As Form)
         If f Is Nothing Then Return
         Dim m As Size = f.MinimumSize
         If m.Width = 0 AndAlso m.Height = 0 Then Return
         Dim wa As Rectangle = WorkingAreaFor(f)
-        Dim w As Integer = If(m.Width > 0, Math.Min(m.Width, wa.Width), 0)
-        Dim h As Integer = If(m.Height > 0, Math.Min(m.Height, wa.Height), 0)
+        Dim w As Integer = If(m.Width > 0, Math.Min(m.Width, wa.Width * 9 \ 10), 0)
+        Dim h As Integer = If(m.Height > 0, Math.Min(m.Height, wa.Height * 9 \ 10), 0)
         If w <> m.Width OrElse h <> m.Height Then f.MinimumSize = New Size(w, h)
     End Sub
 

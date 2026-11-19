@@ -1,0 +1,50 @@
+{
+  "schema": "1",
+  "builds": [
+    {
+      "package": "exchange-server",
+      "flavor": "win-x64",
+      "kind": "test",
+      "version": "26.11.19.1450",
+      "builtAt": "2026-11-19T14:36:28+01:00",
+      "artifact": "fms-exchange-server.exe",
+      "sha256": "08be8fc04b41f253fdad7ce27643d794f70d00e87fb1245b2646e7b4bc131fd6"
+    },
+    {
+      "package": "server",
+      "flavor": "setup",
+      "kind": "test",
+      "version": "26.11.19.1423",
+      "builtAt": "2026-11-19T14:25:18+01:00",
+      "artifact": "dist/FastMediaSorter-26.11.19.1423-windows-x64-server-setup.exe",
+      "sha256": "cfbd1da225fed2b3a3042c3d5ca2759326b609840a007e3b168945579c641cc1"
+    },
+    {
+      "package": "user",
+      "flavor": "local",
+      "kind": "test",
+      "version": "26.11.19.1423",
+      "builtAt": "2026-11-19T14:25:19+01:00",
+      "artifact": "bin/Release/FastMediaSorter_LITE.exe",
+      "sha256": "e73c7c3258483cc67f06ecd74a7ebcf988de1ca8d4b63997d827244346c6de90"
+    },
+    {
+      "package": "user",
+      "flavor": "setup",
+      "kind": "test",
+      "version": "26.11.19.1423",
+      "builtAt": "2026-11-19T14:24:57+01:00",
+      "artifact": "dist/FastMediaSorter-26.11.19.1423-windows-x64-setup.exe",
+      "sha256": "654f9932c07ec41b1bb5c04be6887cf6e919c8d69297d571ae5871eb88d9c76c"
+    },
+    {
+      "package": "user",
+      "flavor": "zip",
+      "kind": "test",
+      "version": "26.11.19.0024",
+      "builtAt": "2026-11-19T00:34:19+01:00",
+      "artifact": "dist/FastMediaSorter-26.11.19.0024-windows-x64.zip",
+      "sha256": "7dc3df05e41dabb76087373df02201a04d886b404f4fc67a2e3eb299ce4bb502"
+    }
+  ]
+}

@@ -179,4 +179,11 @@ $hash = (Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant
 [System.IO.File]::WriteAllText($Sha, "$hash  $ExeName", [System.Text.Encoding]::ASCII)
 
 Write-Host "exchange server: built $Exe (version $Version, amd64, sha256 $($hash.Substring(0, 12)).. )"
+
+$repoRoot = Split-Path $ModuleDir -Parent
+$hookPath = Join-Path $repoRoot 'tools\lib\ReleaseLedgerHook.ps1'
+if (Test-Path -LiteralPath $hookPath -PathType Leaf) {
+    . $hookPath
+    Invoke-ReleaseLedgerBuild -RepoRoot $repoRoot -Package 'exchange-server' -Flavor 'win-x64' -Kind 'test' -Version $Version -Artifact $Exe
+}
 exit 0

@@ -203,8 +203,10 @@ Partial Public Class Main_Form
     ''' <summary>Centres the button on the media surface's lower half, clear of the empty-state text, and paints it from the surface's own colours so a scheme or theme change needs no re-subscription.</summary>
     Private Sub PositionWelcomeInvite(surface As Panel)
         Dim button As Button = welcome_Invite_Button
-        Dim margin As Integer = surface.LogicalToDeviceUnits(24)
-        Dim target As Integer = surface.LogicalToDeviceUnits(44)
+        ' Pixel lengths take the viewer's own layout factor, the one its text size follows (L0361 S4, L0363 A-D16).
+        Dim designScale As Single = GetCurrentDpiScale()
+        Dim margin As Integer = UiScale.Px(24, designScale)
+        Dim target As Integer = UiScale.Px(44, designScale)
         button.MinimumSize = New Size(0, target)
 
         Dim ink As Color = ChromeTheme.ContrastingText(surface.BackColor)
@@ -214,7 +216,10 @@ Partial Public Class Main_Form
         button.FlatAppearance.MouseOverBackColor = ChromeTheme.Blend(surface.BackColor, ink, 0.16F)
         button.FlatAppearance.MouseDownBackColor = ChromeTheme.Blend(surface.BackColor, ink, 0.24F)
 
-        If script_Font IsNot Nothing Then button.Font = script_Font
+        ' Resolved for the button's own dpi on every pass (L0363 A-D8): the shared script font is built for the
+        ' window dpi of the last language switch, a point font reads through the system dpi, and the platform has
+        ' rescaled this button's font since then.
+        If script_Font IsNot Nothing Then button.Font = ScriptFontForDpi(button.DeviceDpi)
         button.Text = Localization.T("Первоначальная настройка")
         button.AccessibleName = button.Text
         button.RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)

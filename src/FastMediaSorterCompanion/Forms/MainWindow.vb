@@ -549,7 +549,11 @@ Partial Public NotInheritable Class MainWindow
         btnDisks.Enabled = Not value AndAlso avail
         btnAddCurrent.Enabled = Not value AndAlso avail
         btnRemove.Enabled = Not value AndAlso avail
-        lvFolders.Enabled = Not value AndAlso avail
+        ' The list is NOT disabled for the busy window. A disabled owner-drawn list paints its rows with the control
+        ' ink on the system's grey, so on the dark palette the three folders vanished for the whole refresh ("Обновляю
+        ' список папок.." over an empty table) and a repaint after enabling did not always bring them back. What a busy
+        ' window must refuse (ticking a row, double-click) is refused in OnItemCheck / OnConfigureFolder by the flag.
+        lvFolders.Enabled = avail
         ' btnParams adds "and a row is selected" on top of the same rule - see
         ' RefreshRowActionButtons, which is the ONE place that decides it.
         RefreshRowActionButtons()

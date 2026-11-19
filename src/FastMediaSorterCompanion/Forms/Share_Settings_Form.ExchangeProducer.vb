@@ -130,6 +130,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvPxShares.Columns.Add(ExchangePublishText.ColumnFolder(), Me.LogicalToDeviceUnits(170))
         _lvPxShares.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(200))
         _lvPxShares.Columns.Add(ExchangePublishText.ColumnLink(), Me.LogicalToDeviceUnits(90))
+        ListColumnScale.Track(_lvPxShares, DeviceDpi)
         AddHandler _lvPxShares.SelectedIndexChanged, Sub() UpdateProducerLinkButtons()
         _pxSharesBlock.Controls.Add(_lvPxShares)
 

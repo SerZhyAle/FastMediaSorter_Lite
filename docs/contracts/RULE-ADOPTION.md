@@ -30,7 +30,9 @@
   release package files of the canon's `RELEASE_AND_DISTRIBUTION` section 8 - is **not claimed**: this
   repository records that plan as skipped in `CLAUDE.md`. `docs/specifications/RELEASE_QUEUE.md` is a
   dependency-ordered work queue, not that file, and has no type prefix; it is a dated registry exception
-  until it is renamed (`PLAN_` prefix) or declared. No gate checks the prefix.
+  until it is renamed (`PLAN_` prefix) or declared. No gate checks the prefix. Since 2026-11-19 the harness's
+  plan tool maintains it from the ledger, with `RELEASE_READY.md` and `RELEASE_QUEUE_DONE.md` beside it; the
+  status of the exception is unchanged.
 - **`HARNESS-PROFILE` - a bound consumer.** `.sza-profile.json` exists since 2026-10-29 (the
   stamp declares `ledgerShape` 1 with no `ledgerFile`; the repository's ledger is the root `CHANGELOG.md`, and the
   dev-log tools are not used). Under 0.12 a project that does not use the dev-log tools sets `paths.changelog`

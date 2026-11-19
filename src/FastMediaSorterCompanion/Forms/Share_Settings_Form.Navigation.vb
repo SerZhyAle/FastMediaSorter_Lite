@@ -233,7 +233,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>The interface factor of this window (1.0 = 96 dpi): the input of every token of <see cref="UiSizing"/>.</summary>
     Private Function RailFactor() As Single
         If _railFactorOverride > 0.0F Then Return _railFactorOverride
-        Return Math.Max(0.5F, DeviceDpi / 96.0F)
+        Return Math.Max(1.0F, DeviceDpi / 96.0F)
     End Function
 
     ''' <summary>A factor other than the live monitor's, for the rail only (0 = use the monitor's). The tests set it to
@@ -288,7 +288,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             Dim factor As Single = RailFactor()
             Dim rtl = RightToLeft = RightToLeft.Yes
-            Dim scrollBar As Integer = SystemInformation.VerticalScrollBarWidth
+            ' S8: the bar is drawn at this window's dpi, not at the system dpi SystemInformation answers for.
+            Dim scrollBar As Integer = UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi)
             Dim glyph As Integer = SettingsRailRules.GlyphPx(factor)
             Dim gap As Integer = SettingsRailRules.GlyphGapPx(factor)
             Dim slack As Integer = UiSizing.DevicePx(NavRenderSlackLogical, factor)
@@ -692,6 +693,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
         MyBase.OnDpiChanged(e)
+        ListColumnScale.RescaleAll(Me, e.DeviceDpiNew)
         ArrangeSettingsNavigation()
         FitSettingsContent()
         ApplySettingsNavigationTheme(ThemeService.Palette)

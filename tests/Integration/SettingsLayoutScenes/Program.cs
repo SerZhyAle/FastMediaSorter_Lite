@@ -21,7 +21,7 @@ using fmsl;
 //     by comparing two runs: "compare <before.json> <after.json>".
 // The window is shown off screen and never closed (closing would write the window rectangle), and the program's
 // settings hive is a scratch one: the owner's registry values are neither read nor written.
-static class Program
+static partial class Program
 {
     // The viewer assembly is stamped with the build minute (AutoVersion), so a probe built today cannot name
     // the viewer of an hour ago. Taking whichever FastMediaSorter_LITE.dll sits beside the probe lets one
@@ -444,7 +444,11 @@ static class Program
         bool unaware = args.Contains("--unaware");
         OpenOnly = args.Contains("--open-only");
         SearchFirst = args.Contains("--search-first");
-        string output = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? "settings-layout-scenes.json");
+        // --font-matrix (L0365): the scene matrix of L0361 section 6.4 and the font audit of rule S9 (FontMatrix.cs).
+        FontMatrixMode = args.Contains("--font-matrix");
+        int scaleAt = Array.IndexOf(args, "--interface-scale");
+        if (scaleAt >= 0 && scaleAt + 1 < args.Length) InterfaceScalePercent = int.Parse(args[scaleAt + 1], System.Globalization.CultureInfo.InvariantCulture);
+        string output = Path.GetFullPath(args.Where((a, i) => !a.StartsWith("--") && (i == 0 || args[i - 1] != "--interface-scale")).FirstOrDefault() ?? "settings-layout-scenes.json");
         CaptureDirectory = args.Contains("--capture") ? Path.Combine(Path.GetDirectoryName(output), "fms-183-settings-captures") : null;
         Application.SetHighDpiMode(unaware ? HighDpiMode.DpiUnaware : HighDpiMode.PerMonitorV2);
         Application.SetDefaultFont(new Font("Microsoft Sans Serif", 8.25f));
@@ -463,6 +467,7 @@ static class Program
             var forms = myProject.GetProperty("Forms", Static).GetValue(null);
             var viewer = (Form)forms.GetType().GetProperty("Main_Form", Instance).GetValue(forms);
             viewer.GetType().GetMethod("GetModernPreferences", Instance).Invoke(viewer, null);
+            ApplyInterfaceScale(viewer);
             var sw = Stopwatch.StartNew();
             var openClock = Stopwatch.StartNew();
             Window = new Table_Form();
@@ -483,11 +488,12 @@ static class Program
                 Console.WriteLine($"  construct {constructMs:0} ms, PrepareForDisplay {prepareMs:0} ms");
                 await IdleAsync();
                 ColdOpenMs = openClock.Elapsed.TotalMilliseconds;
+                if (FontMatrixMode) { await RunFontMatrix(output); return; }
                 Hook(Window);
                 await Run(output);
             };
             Application.Run(Window);
-            if (Environment.ExitCode == 0 && !OpenOnly) Summarise(output);
+            if (Environment.ExitCode == 0 && !OpenOnly && !FontMatrixMode) Summarise(output);
             Window.Dispose();
         }
         finally

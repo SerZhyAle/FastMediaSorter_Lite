@@ -169,6 +169,7 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
         MyBase.OnLoad(e)
         OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
+        TallDialogScroll.KeepReachable(Me)
         DpiLayout.CenterOnOwner(Me)
         If _txtLogin IsNot Nothing Then _txtLogin.Focus() Else _rbGenerate.Focus()
         ' a read-only multi-line box that is first in the tab order shows its whole text selected: nothing is selected until the person selects it

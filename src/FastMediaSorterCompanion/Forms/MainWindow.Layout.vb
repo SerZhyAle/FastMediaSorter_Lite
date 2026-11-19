@@ -383,6 +383,10 @@ Partial Public NotInheritable Class MainWindow
         AddHandler lvFolders.ItemChecked, AddressOf OnItemChecked
         AddHandler lvFolders.DoubleClick, AddressOf OnConfigureFolder
         AddHandler lvFolders.ClientSizeChanged, Sub() UpdateFolderColumnWidths()
+        ' The block is as tall as the list's REAL rows (ListRowMetrics), which are known once the list has its handle and its
+        ' final font - after the constructor sized the block from an estimate.
+        AddHandler lvFolders.HandleCreated, Sub() If IsHandleCreated Then BeginInvoke(New Action(Sub() RelayoutContent()))
+        AddHandler lvFolders.FontChanged, Sub() If IsHandleCreated Then BeginInvoke(New Action(Sub() RelayoutContent()))
         BuildDiskMenu()
 
         ' Fill first, then the docked button row - see the docking note in BuildUi.
@@ -651,8 +655,32 @@ Partial Public NotInheritable Class MainWindow
     ''' panel. Below this a "list" stops being one.</summary>
     Private Function MinimumListHeight() As Integer
         Dim buttons As Integer = If(_pnlListButtons Is Nothing, 0, _pnlListButtons.Height)
-        Return buttons + EmptyHintHeight() + LogicalToDeviceUnits(92)
+        Dim headerHeight As Integer
+        Dim rowHeight As Integer
+        ListRowMetrics(headerHeight, rowHeight)
+        Return buttons + EmptyHintHeight() + headerHeight + (3 * rowHeight)
     End Function
+
+    ''' <summary>The list's column header and row heights as the control really draws them, in device pixels. A details
+    ''' ListView sizes its rows by its FONT, and the window font grows with the interface scale and the Windows Text size
+    ''' (<c>DpiLayout.GrowFonts</c>), which a fixed 22 / 26 logical px never saw: at 175 % display and 150 % interface scale
+    ''' a row is 46 px, not 38, and the block sized for (rows + 1) of the smaller figure cut the third row off while the
+    ''' window had room to spare. The logical figures stay as the floor; the font gives the figure before the list has a
+    ''' handle, and the first row's real rectangle (its top is the header's height while the list is not scrolled) wins
+    ''' once there is one.</summary>
+    Private Sub ListRowMetrics(ByRef headerHeight As Integer, ByRef rowHeight As Integer)
+        Dim textHeight As Integer = If(lvFolders Is Nothing, 0, lvFolders.Font.Height)
+        headerHeight = Math.Max(LogicalToDeviceUnits(26), textHeight + LogicalToDeviceUnits(5))
+        rowHeight = Math.Max(LogicalToDeviceUnits(22), textHeight + LogicalToDeviceUnits(3))
+        If lvFolders Is Nothing OrElse Not lvFolders.IsHandleCreated OrElse lvFolders.Items.Count = 0 Then Return
+        Try
+            Dim first As Rectangle = lvFolders.GetItemRect(0)
+            If first.Height > 0 Then rowHeight = Math.Max(rowHeight, first.Height)
+            If first.Top > 0 AndAlso first.Top < LogicalToDeviceUnits(200) Then headerHeight = Math.Max(headerHeight, first.Top)
+        Catch
+            ' The estimate above is enough when the control cannot answer.
+        End Try
+    End Sub
 
     ''' <summary>Spec 237 Rule L-1: dynamic list height sized to (Items.Count + 1) rows,
     ''' capped at 8 rows - past the cap the list scrolls internally instead of growing.</summary>
@@ -660,10 +688,31 @@ Partial Public NotInheritable Class MainWindow
         Dim count As Integer = If(lvFolders Is Nothing, 0, Math.Max(1, lvFolders.Items.Count + 1))
         count = Math.Min(count, 8)
         Dim buttons As Integer = If(_pnlListButtons Is Nothing, 0, _pnlListButtons.Height)
-        Dim rowHeight As Integer = LogicalToDeviceUnits(22)
-        Dim headerHeight As Integer = LogicalToDeviceUnits(26)
+        Dim rowHeight As Integer
+        Dim headerHeight As Integer
+        ListRowMetrics(headerHeight, rowHeight)
         Return buttons + EmptyHintHeight() + headerHeight + (count * rowHeight) + LogicalToDeviceUnits(10)
     End Function
+
+    ''' <summary>Puts a stray scroll position of the folder list back on the first row. Seen live on 2026-11-19 (175 %
+    ''' display, interface scale 150 %): three folders, all of them fitting, and the list answered "no top item"
+    ''' (LVM_GETTOPINDEX = -1) while painting an empty body. The cause is NOT proven; the repair is bounded on purpose: it
+    ''' acts only when the control itself reports no top item AND every row fits the visible area, where a scroll to the
+    ''' first row is clamped by the control and cannot hide a row that was showing.</summary>
+    Private Sub RepairListOrigin()
+        Try
+            If lvFolders Is Nothing OrElse Not lvFolders.IsHandleCreated OrElse lvFolders.Items.Count = 0 Then Return
+            If lvFolders.TopItem IsNot Nothing Then Return
+            Dim headerHeight As Integer
+            Dim rowHeight As Integer
+            ListRowMetrics(headerHeight, rowHeight)
+            If lvFolders.Items.Count * rowHeight > lvFolders.ClientSize.Height - headerHeight Then Return
+            lvFolders.TopItem = lvFolders.Items(0)
+            lvFolders.Invalidate()
+        Catch
+            ' A list that cannot answer is left as it is.
+        End Try
+    End Sub
 
     ''' <summary>The "Добавьте первый ресурс.." hint is docked to the bottom of the same
     ''' panel the list fills, so when it shows it is part of the block's height.</summary>
@@ -689,6 +738,7 @@ Partial Public NotInheritable Class MainWindow
             Dim height As Integer = Math.Max(MinimumListHeight(), Math.Min(DesiredListHeight(), available))
             If _pnlList.Height <> height Then _pnlList.Height = height
             UpdateFolderColumnWidths()
+            RepairListOrigin()
         Catch
         Finally
             _relayouting = False
@@ -756,7 +806,7 @@ Partial Public NotInheritable Class MainWindow
         Try
             If lvFolders Is Nothing OrElse lvFolders.Columns.Count < 4 Then Return
             Dim fixedWidths As Integer = lvFolders.Columns(0).Width + lvFolders.Columns(1).Width + lvFolders.Columns(3).Width
-            Dim availableFolderWidth As Integer = lvFolders.ClientSize.Width - fixedWidths - SystemInformation.VerticalScrollBarWidth
+            Dim availableFolderWidth As Integer = lvFolders.ClientSize.Width - fixedWidths - UiSizing.VerticalScrollBarWidthForDpi(lvFolders.DeviceDpi)
             lvFolders.Columns(2).Width = Math.Max(LogicalToDeviceUnits(250), availableFolderWidth)
         Catch
         End Try

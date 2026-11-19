@@ -285,6 +285,12 @@ Partial Public Class Main_Form
         If video_Controls Is Nothing Then Return
 
         Dim factor As Single = ChromeScale()
+        ' The painted details of the bar's own controls (track, thumb, marks, chip padding) take the bar's factor too, so
+        ' they grow with the bar they sit in (L0363 A-D16); the controls only know their own dpi.
+        If video_Seek IsNot Nothing Then video_Seek.DesignScale = factor
+        If video_Volume IsNot Nothing Then video_Volume.DesignScale = factor
+        If lbl_Video_Time IsNot Nothing Then lbl_Video_Time.DesignScale = factor
+        If lbl_Video_Ab IsNot Nothing Then lbl_Video_Ab.DesignScale = factor
         Dim badge As String = TransportRules.AbBadgeText(ab_Loop.Phase)
         Dim input As New TransportRules.RowInput With {
             .Width = video_Controls.Width,
@@ -1018,6 +1024,25 @@ Partial Public Class Main_Form
             AccessibilityNotifyClients(AccessibleEvents.Focus, -1)
         End Sub
 
+        Private _designScale As Single
+
+        ''' <summary>The owner's layout factor for the chip's padding (K x the interface scale x the panel size, as the
+        ''' bar's own parts take it); 0 = this control's own dpi factor only (L0363 A-D16, L0361 S4 pixel form).</summary>
+        Public Property DesignScale As Single
+            Get
+                Return _designScale
+            End Get
+            Set(value As Single)
+                If Math.Abs(value - _designScale) < 0.001F Then Return
+                _designScale = value
+                Invalidate()
+            End Set
+        End Property
+
+        Private Function DesignPx(logical As Integer) As Integer
+            Return If(_designScale > 0.0F, UiScale.Px(logical, _designScale), LogicalToDeviceUnits(logical))
+        End Function
+
         Protected Overrides Sub OnTextChanged(e As EventArgs)
             MyBase.OnTextChanged(e)
             Invalidate()
@@ -1039,11 +1064,11 @@ Partial Public Class Main_Form
                                            TextFormatFlags.NoPrefix Or TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine
             If chip <> Color.Empty AndAlso Text.Length > 0 Then
                 Dim size As Size = TextRenderer.MeasureText(e.Graphics, Text, Font, New Size(Integer.MaxValue, Integer.MaxValue), flags)
-                Dim pad As Integer = Math.Max(3, LogicalToDeviceUnits(4))
+                Dim pad As Integer = Math.Max(3, DesignPx(4))
                 Dim box As New Rectangle((Width - size.Width) \ 2 - pad, (Height - size.Height) \ 2 - pad \ 2, size.Width + 2 * pad, size.Height + pad)
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
                 Using path As New GraphicsPath()
-                    Dim d As Integer = Math.Max(2, Math.Min(box.Height, LogicalToDeviceUnits(8)))
+                    Dim d As Integer = Math.Max(2, Math.Min(box.Height, DesignPx(8)))
                     path.AddArc(box.Left, box.Top, d, d, 180, 90)
                     path.AddArc(box.Right - d, box.Top, d, d, 270, 90)
                     path.AddArc(box.Right - d, box.Bottom - d, d, d, 0, 90)
@@ -1215,6 +1240,26 @@ Partial Public Class Main_Form
             AccessibilityNotifyClients(AccessibleEvents.Focus, -1)
         End Sub
 
+        Private _designScale As Single
+
+        ''' <summary>The owner's layout factor for the track, the thumb, the marks and the hover chip (K x the interface
+        ''' scale x the panel size, as the bar's own parts take it), so the painted details grow with the bar they sit in;
+        ''' 0 = this control's own dpi factor only (L0363 A-D16, L0361 S4 pixel form).</summary>
+        Public Property DesignScale As Single
+            Get
+                Return _designScale
+            End Get
+            Set(value As Single)
+                If Math.Abs(value - _designScale) < 0.001F Then Return
+                _designScale = value
+                Invalidate()
+            End Set
+        End Property
+
+        Private Function DesignPx(logical As Integer) As Integer
+            Return If(_designScale > 0.0F, UiScale.Px(logical, _designScale), LogicalToDeviceUnits(logical))
+        End Function
+
         Friend Function CurrentValueText() As String
             Return If(ValueTextProvider Is Nothing, "", ValueTextProvider.Invoke())
         End Function
@@ -1227,7 +1272,7 @@ Partial Public Class Main_Form
             e.Graphics.Clear(BackColor)
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
 
-            Dim track_H As Int32 = Math.Max(3, LogicalToDeviceUnits(4))
+            Dim track_H As Int32 = Math.Max(3, DesignPx(4))
             Dim y As Int32 = (ClientSize.Height - track_H) \ 2
             Dim w As Int32 = ClientSize.Width
             If w <= 0 Then Return
@@ -1246,7 +1291,7 @@ Partial Public Class Main_Form
             ' The repeat span: a band over the track between A and B, and a tick at each mark (121 UX-412).
             If _markA >= 0.0 Then
                 Dim ax As Int32 = CInt(w * _markA)
-                Dim tick_W As Int32 = Math.Max(2, LogicalToDeviceUnits(2))
+                Dim tick_W As Int32 = Math.Max(2, DesignPx(2))
                 Dim tick_H As Int32 = track_H * 3
                 If _markB > _markA Then
                     Dim bx As Int32 = CInt(w * _markB)
@@ -1264,7 +1309,7 @@ Partial Public Class Main_Form
                 End Using
             End If
 
-            Dim r As Int32 = Math.Max(4, LogicalToDeviceUnits(5))
+            Dim r As Int32 = Math.Max(4, DesignPx(5))
             Dim cx As Int32 = Math.Max(r, Math.Min(w - r, fill))
             Using b As New SolidBrush(_thumb)
                 e.Graphics.FillEllipse(b, cx - r, ClientSize.Height \ 2 - r, r * 2, r * 2)
@@ -1285,11 +1330,11 @@ Partial Public Class Main_Form
             Dim flags As TextFormatFlags = TextFormatFlags.NoPrefix Or TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or
                                            TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter
             Dim size As Size = TextRenderer.MeasureText(g, _hoverText, Font, New Size(Integer.MaxValue, Integer.MaxValue), flags)
-            Dim pad As Integer = Math.Max(2, LogicalToDeviceUnits(3))
+            Dim pad As Integer = Math.Max(2, DesignPx(3))
             Dim box_W As Integer = size.Width + 2 * pad
             Dim box_H As Integer = size.Height + pad
             Dim box_X As Integer = Math.Max(0, Math.Min(w - box_W, _hoverX - box_W \ 2))
-            Dim box_Y As Integer = Math.Max(0, trackTop - box_H - Math.Max(2, LogicalToDeviceUnits(3)))
+            Dim box_Y As Integer = Math.Max(0, trackTop - box_H - Math.Max(2, DesignPx(3)))
             Dim box As New Rectangle(box_X, box_Y, box_W, box_H)
             Using b As New SolidBrush(_thumb)
                 g.FillRectangle(b, box)

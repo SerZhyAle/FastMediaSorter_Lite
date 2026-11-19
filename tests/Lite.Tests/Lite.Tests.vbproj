@@ -340,6 +340,13 @@
     <Compile Include="..\..\src\Chrome\UiSizing.vb">
       <Link>Linked\Chrome\UiSizing.vb</Link>
     </Compile>
+    <!-- The form scale resolver (specification L0361 rules S1-S4): pure, whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\Chrome\FormScale.vb">
+      <Link>Linked\Chrome\FormScale.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Chrome\FormScaleRecipes.vb">
+      <Link>Linked\Chrome\FormScaleRecipes.vb</Link>
+    </Compile>
     <!-- The state marker of every collapsible group header (ticket 243 T-11c): whole-file "#If Not NETFRAMEWORK". -->
     <Compile Include="..\..\src\Chrome\GroupMarker.vb">
       <Link>Linked\Chrome\GroupMarker.vb</Link>
@@ -1320,6 +1327,11 @@
     <None Include="TestData\input-chord-vectors\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\input-chord-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- Form scale vectors (specification L0361 section 6.3), written by tools/Build-FormScaleVectors.ps1; never hand-edited. -->
+    <None Include="TestData\form-scale-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\form-scale-vectors\%(Filename)%(Extension)</Link>
     </None>
     <!-- OCR-PIPELINE 1.7 A / 1.8 shared cases (ticket 183), beside their PROVENANCE.txt, which
          OcrPipelineVectorTests checks before it trusts a byte. -->

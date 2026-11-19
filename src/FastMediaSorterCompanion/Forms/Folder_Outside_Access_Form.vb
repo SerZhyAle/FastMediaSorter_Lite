@@ -160,14 +160,15 @@ Friend NotInheritable Class Folder_Outside_Access_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
-        ' The client height was authored from the body's preferred height at 96 dpi. Once scaled, a caption that wraps one
-        ' line more (a longer language, a bigger scale) makes the body taller than the scaled value, and the Fill body would
-        ' then run under the answer row; grow the window by exactly the missing amount (never shrink it). When the monitor
-        ' cannot hold that height (this window is tall at 175 %), ClampToWorkingArea caps it and the body scrolls instead of
-        ' leaving its last lines hidden behind the row.
+        ' S1: the client height authored in the builder is the body's preferred height measured at the system dpi, in device
+        ' pixels (its text parts are already at the device font), and the first scale multiplied it by the dpi ratio AGAIN: a
+        ' window about 1.75 times too tall at 168 dpi. Measure once the window is scaled and set the height from that, taller
+        ' or shorter (a caption that wraps one line more, in a longer language, is part of the measure). When the monitor cannot
+        ' hold that height, ClampToWorkingArea caps it and the body scrolls instead of leaving its last lines hidden behind the row.
         PerformAutoScale()
-        Dim need As Integer = _body.GetPreferredSize(New Size(ClientSize.Width, 0)).Height + _answerRow.GetPreferredSize(New Size(ClientSize.Width, 0)).Height
-        If need > ClientSize.Height Then ClientSize = New Size(ClientSize.Width, need)
+        Dim need As Integer = _body.GetPreferredSize(New Size(ClientSize.Width, 0)).Height + _answerRow.GetPreferredSize(New Size(ClientSize.Width, 0)).Height +
+            DpiLayout.Device(Me, 20)
+        If need <> ClientSize.Height Then ClientSize = New Size(ClientSize.Width, need)
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
     End Sub

@@ -217,6 +217,8 @@ Partial Public Class Table_Form
             Next
             flow.ResumeLayout(False)
         End Try
+        ' Rule S10: a page built after the window settled (or before it did) is judged once its builder has returned.
+        If Not modernShellInitializing Then QueueHealSettingsFonts()
     End Sub
 End Class
 #End If

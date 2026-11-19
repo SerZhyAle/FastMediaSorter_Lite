@@ -109,6 +109,8 @@ Friend NotInheritable Class RemoteAdminFormKit
         form.AutoSize = True
         form.AutoSizeMode = AutoSizeMode.GrowAndShrink
         DpiLayout.ApplyAutoScale(form)   ' last, once every child exists - see DpiLayout
+        ' S6 rule 2: an auto-sized window taller than the work area scrolls its body and keeps the answer row on screen.
+        AddHandler form.Load, Sub() TallDialogScroll.KeepReachable(form)
     End Sub
 
     Friend Shared Function NewRow(name As String) As DialogButtonRow

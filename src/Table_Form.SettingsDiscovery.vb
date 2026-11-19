@@ -228,6 +228,7 @@ Partial Public Class Table_Form
     Private Function SettingsToolButton(action As Action) As Button
         Dim button As New Button With {.AutoSize = True, .MinimumSize = New Size(Sp(32), Sp(32)), .UseMnemonic = False,
             .Font = SettingsFont("Segoe UI", Sf(9.0F)), .Margin = New Padding(0, 0, Sp(6), 0)}
+        TrackSettingsFonts(button)
         AddHandler button.Click, Sub() action()
         Return button
     End Function

@@ -54,6 +54,8 @@ Friend NotInheritable Class Welcome_Form
     Private ReadOnly scriptFonts As New Dictionary(Of String, Font)(StringComparer.Ordinal)
     Private ReadOnly headingFonts As New Dictionary(Of String, Font)(StringComparer.Ordinal)
     Private ReadOnly titleFonts As New Dictionary(Of String, Font)(StringComparer.Ordinal)
+    ' The design multiplier (U x T) DialogLayout.ApplyAutoScale composed into this window; 1 until the constructor is done.
+    Private composedTextFactor As Single = 1.0F
 
     ' The language the viewer runs in (committed) and the one the wizard shows (a preview until Next).
     Private appliedLanguage As String
@@ -145,7 +147,10 @@ Friend NotInheritable Class Welcome_Form
         AddHandler ThemeService.Changed, AddressOf OnThemeChanged
 
         ' LAST statement, as in Ask_Dialog: scaling touches only the children that exist now, and all of them do.
-        DialogLayout.ApplyAutoScale(Me)
+        ' The factor is taken here and handed over, so ApplyScript can give a later font the same Text size (L0363 A-D9).
+        Dim textFactor As Single = UiSizing.CurrentTextFactor()
+        DialogLayout.ApplyAutoScale(Me, textFactor)
+        composedTextFactor = DialogLayout.ComposedFactor(Me)
     End Sub
 
     ' ---------------------------------------------------------------- the frame ----
@@ -800,19 +805,27 @@ Friend NotInheritable Class Welcome_Form
         Try
             Localization.CurrentCode = draftLanguage
             Dim family As String = If(Localization.FontFamily(), baseFont.FontFamily.Name)
-            If Not scriptFonts.TryGetValue(family, script_Font) Then
-                script_Font = New Font(family, baseFont.Size, FontStyle.Regular)
-                scriptFonts.Add(family, script_Font)
-                headingFonts.Add(family, New Font(script_Font, FontStyle.Bold))
-                titleFonts.Add(family, New Font(family, baseFont.Size * 1.5F, FontStyle.Bold))
+            ' L0363 A-D9 (L0361 S1, S4): a font is built for what the window reads NOW - the Text size factor the
+            ' window composed (ApplyAutoScale grows only the fonts that exist at the end of the constructor, so a
+            ' font built later carries the factor itself) and, once the form is in its window, the window dpi through
+            ' the system dpi (a point font assigned in-window is not rescaled and reaches the screen through S,
+            ' measured facts E4 and E5). Before the window exists the factor is 1 and the dpi is S: the nominal size.
+            Dim points As Single = CSng(FormScale.RebasePoints(baseFont.SizeInPoints * composedTextFactor,
+                                                              Math.Max(FormScale.LogicalDpi, DeviceDpi), Main_Form.TextSystemDpi()))
+            Dim key As String = family & "|" & points.ToString("R", Globalization.CultureInfo.InvariantCulture)
+            If Not scriptFonts.TryGetValue(key, script_Font) Then
+                script_Font = New Font(family, points, FontStyle.Regular)
+                scriptFonts.Add(key, script_Font)
+                headingFonts.Add(key, New Font(script_Font, FontStyle.Bold))
+                titleFonts.Add(key, New Font(family, points * 1.5F, FontStyle.Bold))
             End If
-            bold_Font = headingFonts(family)
+            bold_Font = headingFonts(key)
             Font = script_Font
             RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
             For Each head As Label In headings
                 head.Font = bold_Font
             Next
-            titleLabel.Font = titleFonts(family)
+            titleLabel.Font = titleFonts(key)
             ApplyAccents()
         Finally
             Localization.CurrentCode = current

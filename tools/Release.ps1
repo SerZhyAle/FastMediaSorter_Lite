@@ -333,21 +333,32 @@ $storeEvidencePath = Join-Path $repoRoot 'publishing\store\channel-evidence.json
 try { Add-StoreChannelEvidence $storeEvidencePath $tag $storeCheck.Evidence }
 catch { Write-Warning "The Store channel evidence line could not be written: $($_.Exception.Message)" }
 
+. (Join-Path $PSScriptRoot 'lib\ReleaseLedgerHook.ps1')
+$releaseDist = Join-Path $repoRoot 'dist'
+Invoke-ReleaseLedgerBuild -RepoRoot $repoRoot -Package 'user' -Flavor 'setup' -Kind 'release' -Version $Version -Artifact (Join-Path $releaseDist "FastMediaSorter-$Version-windows-x64-setup.exe")
+Invoke-ReleaseLedgerBuild -RepoRoot $repoRoot -Package 'user' -Flavor 'zip' -Kind 'release' -Version $Version -Artifact (Join-Path $releaseDist "FastMediaSorter-$Version-windows-x64.zip")
+Invoke-ReleaseLedgerBuild -RepoRoot $repoRoot -Package 'server' -Flavor 'setup' -Kind 'release' -Version $Version -Artifact (Join-Path $releaseDist "FastMediaSorter-$Version-windows-x64-server-setup.exe")
+Invoke-ReleaseLedgerPublish -RepoRoot $repoRoot -Key 'github' -Version $Version -State 'submitted' -Ref $tag -Url "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/$tag"
+
 # --- After the release (manual steps) ------------------------------------------
 Step "Next, by hand (see docs/guides/BUILD_AND_RELEASE.md)"
 @"
 1) GitHub: wait for the build and its 6 assets - setup.exe + zip + server-setup.exe and three .sha256
    https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
 2) Site: pwsh -NoProfile -File tools/Set-ReleaseManifest.ps1 -Version $Version
-   (writes tools/release-manifest.json from the published release and re-renders the pages), then commit and push the site.
+   (writes tools/release-manifest.json from the published release, marks github live in docs/releases/, and re-renders the pages), then commit and push the site.
+   Once Pages deploys, run: pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger probe
 3) winget, User edition: a PR to microsoft/winget-pkgs for SerZhyAle.FastMediaSorter
    (the Inno setup.exe directly, no dependencies, no Scope) -> docs/specifications/done/SPECIFICATION_WINGET_PUBLISHING.md
+   Record: pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger publish -Key winget -Version $Version -State submitted -Ref PR#<n> -Url <pr-url>
 4) winget, Server edition: a separate PR for SerZhyAle.FastMediaSorter.Server
    (manifests in publishing/winget/server/; Scope: machine and MinimumOSVersion belong there)
    -> docs/guides/SERVER_EDITION_BUILD_AND_TEST.md
+   Record: pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger publish -Key winget-server -Version $Version -State submitted -Ref PR#<n> -Url <pr-url>
 5) Both PRs: fill the description with gh pr edit (never leave it empty).
 6) Microsoft Store (optional): cd publishing\msix; .\build-msix.ps1 -ReleaseVersion $Version (NO -SelfSign; the identity is read from identity.json),
    upload the unsigned .msix to Partner Center -> docs/guides/STORE_PUBLISHING.md
+   Record: pwsh -NoProfile -File tools/harness.ps1 releases/release-ledger publish -Key msstore -Version <msix-version> -State submitted
    The upload is manual; this script starts no Store submission. Before the tag it read the live Store state through the shared
    read-only preflight (step 7) and appended its one evidence line to publishing\store\channel-evidence.jsonl - commit that line
    with the site. A write through the Store CLI needs the owner's words that name the product and the package version.

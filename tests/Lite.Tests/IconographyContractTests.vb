@@ -59,9 +59,9 @@ Public Class IconographyContractTests
             Else
                 Assert.StartsWith("PROPOSAL-", meaning.Proposal)
                 If meaning.GlyphId.Length > 0 Then
-                    ' ICON-SET section 15 (L0351): a meaning the catalog has no record for is drawn by the product and
+                    ' ICON-SET section 15: a meaning the catalog has no record for is drawn by the product and
                     ' shipped under the id it proposes, so the drawing is vendored and the proposal is the one it filed.
-                    Assert.Equal(IconMap.SettingsDestinationGlyphsProposal, meaning.Proposal)
+                    ' No row is in this state since 0.42 made the L0351 twelve records; the branch is the mechanism.
                     Assert.True(File.Exists(Path.Combine(GlyphDir, meaning.GlyphId & ".svg")), meaning.GlyphId & ".svg is not vendored")
                 Else
                     Assert.Equal("", meaning.GlyphId)

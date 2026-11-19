@@ -1107,13 +1107,30 @@ Public Class Live_Broadcast_Form
             Me.StartPosition = FormStartPosition.Manual
             Me.BackColor = Color.Firebrick
             ' Its caption is drawn in the scaled UI font, so the box is scaled too (a 96-DPI box clips it at 175%).
+            FitToDpi()
+        End Sub
+
+        ''' <summary>S2: the box is resolved at the window's own dpi. The constructor only knows the system dpi, and the primary
+        ''' monitor the chip lands on can be another one (changed since logon): the caption is rescaled by the platform, so the
+        ''' box is made again when the handle exists and on every DPI change.</summary>
+        Private Sub FitToDpi()
             Me.Size = New Size(LogicalToDeviceUnits(120), LogicalToDeviceUnits(34))
             PositionBottomRight()
         End Sub
 
+        Protected Overrides Sub OnHandleCreated(e As EventArgs)
+            MyBase.OnHandleCreated(e)
+            FitToDpi()
+        End Sub
+
+        Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+            MyBase.OnDpiChanged(e)
+            FitToDpi()
+        End Sub
+
         Private Sub PositionBottomRight()
             Dim area As Rectangle = Screen.PrimaryScreen.Bounds
-            Me.Location = New Point(area.Right - Me.Width - 24, area.Bottom - Me.Height - 64)
+            Me.Location = New Point(area.Right - Me.Width - LogicalToDeviceUnits(24), area.Bottom - Me.Height - LogicalToDeviceUnits(64))
         End Sub
 
         Protected Overrides Sub OnMouseClick(e As MouseEventArgs)

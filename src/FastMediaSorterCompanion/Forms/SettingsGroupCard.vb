@@ -295,15 +295,36 @@ Public NotInheritable Class SettingsGroupCard
             FitTitle()
         End Sub
 
+        ''' <summary>The 44 in the constructor is a seed in logical px, not a device size. The height is made right once the
+        ''' handle exists (posted, so after any scaling pass of the window) and after each DPI change; OnFontChanged and
+        ''' OnSizeChanged alone never reach a header that did not change (ticket 369, D6).</summary>
+        Protected Overrides Sub OnHandleCreated(e As EventArgs)
+            MyBase.OnHandleCreated(e)
+            BeginInvoke(New Action(Sub()
+                                       If IsDisposed OrElse Disposing Then Return
+                                       FitTitle()
+                                   End Sub))
+        End Sub
+
+        Protected Overrides Sub OnDpiChangedAfterParent(e As EventArgs)
+            MyBase.OnDpiChangedAfterParent(e)
+            FitTitle()
+        End Sub
+
         ''' <summary>One line where the caption fits, wrapped captions where they do not -
-        ''' a clipped group name is a hidden group (7.8's rule at card scale).</summary>
+        ''' a clipped group name is a hidden group (7.8's rule at card scale). A header too narrow to wrap still takes the
+        ''' pointer-target height at its own DPI (it used to keep whatever it was built with).</summary>
         Private Sub FitTitle()
-            If Width < LogicalToDeviceUnits(200) Then Return
-            Using bold As New Font(Font, FontStyle.Bold)
-                Dim measured = TextRenderer.MeasureText(_title, bold, New Size(Math.Max(1, Width - LogicalToDeviceUnits(48)), Integer.MaxValue), TextFormatFlags.WordBreak)
-                Dim desired = Math.Max(UiSizing.DevicePx(44, MarkerFactor()), measured.Height + LogicalToDeviceUnits(16))
-                If Height <> desired Then Height = desired
-            End Using
+            Dim minimum As Integer = UiSizing.DevicePx(44, MarkerFactor())
+            Dim desired As Integer = minimum
+            If Width >= LogicalToDeviceUnits(200) Then
+                Using bold As New Font(Font, FontStyle.Bold)
+                    Dim measured = TextRenderer.MeasureText(_title, bold, New Size(Math.Max(1, Width - LogicalToDeviceUnits(48)), Integer.MaxValue), TextFormatFlags.WordBreak)
+                    desired = Math.Max(minimum, measured.Height + LogicalToDeviceUnits(16))
+                End Using
+            End If
+            If MinimumSize.Height <> minimum Then MinimumSize = New Size(0, minimum)
+            If Height <> desired Then Height = desired
         End Sub
 
         Protected Overrides Sub OnMouseEnter(e As EventArgs)

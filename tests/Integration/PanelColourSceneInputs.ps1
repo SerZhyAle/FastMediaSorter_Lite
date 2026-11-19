@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
 function Get-SceneColours {
-    $corpus = Get-Content -Raw -LiteralPath (Join-Path $repo 'docs/specifications/L0303_panel-label-colour-model/PanelColourBaseline.cs')
+    $corpus = Get-Content -Raw -LiteralPath (Join-Path $repo 'docs/specifications/done/FMSWIN-0303_panel-label-colour-model/PanelColourBaseline.cs')
     $section = [regex]::Match($corpus, '(?s)static List<Named> ColorChecker\(\).*?static List<Named>')
     if (-not $section.Success) { throw 'ColorChecker corpus is missing.' }
     $matches = [regex]::Matches($section.Value, 'new Named\("([^"]+)", new Rgb\((\d+),(\d+),(\d+)\)\)')

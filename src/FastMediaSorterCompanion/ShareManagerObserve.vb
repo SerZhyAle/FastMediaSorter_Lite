@@ -121,9 +121,9 @@ Friend Module ShareManagerObserve
                 If op.Action = ScheduledAction.Backup Then
                     row.Add("retention", RetentionToken(op))
                     If op.BackupRetention = BackupRetentionMode.Dated Then
-                        row.Add("keepDays", op.BackupKeepDays)
+                        row.Add("keepDays", CLng(op.BackupKeepDays))
                     Else
-                        row.Add("keep", op.BackupKeepCount)
+                        row.Add("keep", CLng(op.BackupKeepCount))
                     End If
                     row.Add("keepMonthly", op.BackupKeepMonthly)
                     row.Add("skipLinks", op.BackupSkipLinks)

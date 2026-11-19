@@ -108,23 +108,28 @@ Friend NotInheritable Class PdfReadingCanvas
     End Sub
 
     Private Function ScaleFor(size As SizeF, available As Integer, spread As Boolean) As Double
-        Dim width = If(spread, Math.Max(1, (available - 12) \ 2), available)
+        ' The page margins are 12 logical px, in device pixels at this control's own dpi (L0361 S2, L0363 A-D11).
+        Dim margin As Integer = LogicalToDeviceUnits(12)
+        Dim width = If(spread, Math.Max(1, (available - margin) \ 2), available)
         Select Case preferences.PdfZoom
             Case "actual" : Return DeviceDpi / 72.0
             Case "manual" : Return DeviceDpi / 72.0 * preferences.PdfZoomPercent / 100.0
-            Case "fitPage" : Return Math.Min(width / size.Width, Math.Max(1, ClientSize.Height - 24) / size.Height)
+            Case "fitPage" : Return Math.Min(width / size.Width, Math.Max(1, ClientSize.Height - 2 * margin) / size.Height)
             Case Else : Return width / size.Width
         End Select
     End Function
 
     Private Sub BuildLayout()
         If IsDisposed OrElse ClientSize.Width < 1 Then Return
-        Dim available = Math.Max(1, ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 24)
+        ' The scroll bar is drawn at this control's dpi, which is not the system dpi SystemInformation answers for
+        ' (L0361 S8); the 12 px page margins are logical (S2) - both in device pixels at DeviceDpi (L0363 A-D11).
+        Dim margin As Integer = LogicalToDeviceUnits(12)
+        Dim available = Math.Max(1, ClientSize.Width - UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi) - 2 * margin)
         Dim spread = preferences.PdfLayout = "spread"
         Dim pages = If(spread, DocumentReadingState.SpreadPages(currentPage, source.PageCount, preferences.PdfFirstPageAlone,
             preferences.PdfSpreadDirection = "rtl" OrElse (preferences.PdfSpreadDirection = "document" AndAlso DocumentRightToLeft)), Enumerable.Range(1, source.PageCount).ToArray())
-        Dim top As Integer = 12
-        Dim left As Integer = 12
+        Dim top As Integer = margin
+        Dim left As Integer = margin
         Dim widest As Integer = available
         Dim tallest As Integer
         Array.Clear(rects)
@@ -134,13 +139,13 @@ Friend NotInheritable Class PdfReadingCanvas
             Dim scale = ScaleFor(size, available, spread)
             Dim width = Math.Max(1, Math.Min(32000, CInt(size.Width * scale)))
             Dim height = Math.Max(1, Math.Min(32000, CInt(size.Height * scale)))
-            rects(page - 1) = New Rectangle(If(spread, left, Math.Max(12, (available - width) \ 2)), top, width, height)
-            widest = Math.Max(widest, rects(page - 1).Right + 12)
-            tallest = Math.Max(tallest, height + 24)
+            rects(page - 1) = New Rectangle(If(spread, left, Math.Max(margin, (available - width) \ 2)), top, width, height)
+            widest = Math.Max(widest, rects(page - 1).Right + margin)
+            tallest = Math.Max(tallest, height + 2 * margin)
             If spread Then
-                left += width + 12
+                left += width + margin
             Else
-                top = CInt(Math.Min(1000000000L, CLng(top) + height + 12))
+                top = CInt(Math.Min(1000000000L, CLng(top) + height + margin))
             End If
         Next
         AutoScrollMinSize = New Size(widest, If(spread, tallest, top))

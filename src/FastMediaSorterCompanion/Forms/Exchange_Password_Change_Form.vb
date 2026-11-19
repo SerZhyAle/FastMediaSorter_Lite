@@ -131,6 +131,7 @@ Friend NotInheritable Class Exchange_Password_Change_Form
         MyBase.OnLoad(e)
         OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
+        TallDialogScroll.KeepReachable(Me)
         DpiLayout.CenterOnOwner(Me)
     End Sub
 

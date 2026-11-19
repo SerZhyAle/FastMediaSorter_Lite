@@ -45,7 +45,7 @@ A command is handed to the copy that is already running; that copy does the work
 
 ## Risk classes and the setting
 
-A `safe` command is always accepted. A command of any other class (`reads-user-data`, `writes-user-data`, `leaves-machine`) is refused with exit 12 while the setting **Let other programs ask this app to work with my files, screen, clipboard or the network** (Settings, Files, Keys and associations) is off. It is off until the person turns it on, and no command changes it.
+A `safe` command is always accepted. A command of any other class (`reads-user-data`, `writes-user-data`, `leaves-machine`) is refused with exit 12 while the setting **Allow commands from other programs** (Settings, Files, Keys and associations) is off. It is off until the person turns it on, and no command changes it.
 
 ## commands
 
@@ -672,7 +672,7 @@ A command is handed to the copy that is already running; that copy does the work
 
 ### Risk classes and the setting
 
-A `safe` command is always accepted. A command of any other class (`reads-user-data`, `writes-user-data`, `leaves-machine`) is refused with exit 12 while the setting **Let other programs ask this app to work with my files, screen, clipboard or the network** (the viewer's Settings window, Files, Keys and associations; the Share Manager reads the same value) is off. It is off until the person turns it on, and no command changes it.
+A `safe` command is always accepted. A command of any other class (`reads-user-data`, `writes-user-data`, `leaves-machine`) is refused with exit 12 while the setting **Allow commands from other programs** (the viewer's Settings window, Files, Keys and associations; the Share Manager reads the same value) is off. It is off until the person turns it on, and no command changes it.
 
 <a id="share-manager-commands"></a>
 

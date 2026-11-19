@@ -602,9 +602,14 @@ End Class
 ''' <summary>The local frames-v2.json: pinned by its SHA-256 (7.2) and read into transcripts, streams and steps.</summary>
 Friend NotInheritable Class ExchangeTranscriptFile
 
-    ''' <summary>The SHA-256 (lower-case hex) of the whole file, the corpus adopted in catalog 1.11 as fmsw-245-completion.</summary>
-    Public Const PinnedSha256 As String = "5cf90a6f6b1990155dfb346c581b97eb4f690531530f4e7a832219a1156c194b"
-    Public Const PinnedLength As Integer = 524510
+    ''' <summary>The SHA-256 (lower-case hex) of the whole file: the corpus proposed to the catalog on 2026-11-19
+    ''' (PROPOSAL-2026-11-19-fmsw-corpus-ended-broadcast-tunnel, item DY: the `ended-broadcast-tunnel` stream and the
+    ''' `relay` feature the generator now advertises), pending adoption. Its adopted predecessor is `fmsw-245-completion`
+    ''' of catalog 1.11 (SHA-256 5cf90a6f..., 524510 bytes); the admin-native section is the same in both, and
+    ''' <c>ExchangeAdminReplayTests</c> still compares it with the adopted folder. When the catalog adopts the corpus,
+    ''' this pin stays and the wording above moves to the adopted name.</summary>
+    Public Const PinnedSha256 As String = "598621694a5dbd2995cf71b9b92b94295f028584e8ca2688eaaf4d3a54388a51"
+    Public Const PinnedLength As Integer = 526358
 
     Private ReadOnly _transcripts As New List(Of ExchangeTranscript)
 
@@ -621,9 +626,9 @@ Friend NotInheritable Class ExchangeTranscriptFile
     Public Shared Function PinFailure(bytes As Byte()) As String
         Dim actual As String = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant()
         If String.Equals(actual, PinnedSha256, StringComparison.Ordinal) AndAlso bytes.Length = PinnedLength Then Return Nothing
-        Return "frames-v2.json is not the corpus adopted in catalog 1.11 as fmsw-245-completion (SHA-256 " & PinnedSha256 & ", " &
+        Return "frames-v2.json is not the pinned corpus, the 2026-11-19 proposal that extends the corpus adopted in catalog 1.11 as fmsw-245-completion (SHA-256 " & PinnedSha256 & ", " &
                PinnedLength.ToString(Globalization.CultureInfo.InvariantCulture) & " bytes): this file is SHA-256 " & actual & ", " &
-               bytes.Length.ToString(Globalization.CultureInfo.InvariantCulture) & " bytes. The earlier fmsw-245 corpus is 0C57C52B.., 488112 bytes. " &
+               bytes.Length.ToString(Globalization.CultureInfo.InvariantCulture) & " bytes. The adopted fmsw-245-completion is 5CF90A6F.., 524510 bytes; the earlier fmsw-245 corpus is 0C57C52B.., 488112 bytes. " &
                "A change to the corpus is noticed here and never absorbed: take it to the catalog first, then move the pin (L0278 7.2)."
     End Function
 

@@ -1799,6 +1799,9 @@ Partial Public Class Main_Form
         Else
             Dim r As Rectangle = ChromePanelRect(p)
             If p.Host.Bounds <> r Then p.Host.Bounds = r
+            ' The ink layer must stand directly above its panel; the window-position message restores it at once, this
+            ' tick is the net under it (a restack Windows does without telling the panel is seen within one tick).
+            p.Host.KeepInkAboveHost()
         End If
 
         ' L0303 R-11: while the user types in a native edit its text fades with the window, so the panel rests at the floor.

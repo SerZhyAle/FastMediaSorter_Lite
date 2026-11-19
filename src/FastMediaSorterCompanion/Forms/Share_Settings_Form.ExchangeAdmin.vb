@@ -300,6 +300,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXAccounts.Columns.Add(Localization.T("Тип"), Me.LogicalToDeviceUnits(70))
         _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnDevices(), Me.LogicalToDeviceUnits(70))
         _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnCreated(), Me.LogicalToDeviceUnits(160))
+        ListColumnScale.Track(_lvXAccounts, DeviceDpi)
         AddHandler _lvXAccounts.SelectedIndexChanged, AddressOf OnXAccountSelected
         ExchangeMark.ApplyAccounts(_lvXAccounts, AddressOf CompanionAssets.OpenBundledAsset)
         _pnlXAccounts.Controls.Add(_lvXAccounts)
@@ -361,6 +362,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXDevices.Columns.Add(ExchangeAdminText.ColumnPlatform(), Me.LogicalToDeviceUnits(85))
         _lvXDevices.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(70))
         _lvXDevices.Columns.Add(Localization.T("Последний раз в сети"), Me.LogicalToDeviceUnits(110))
+        ListColumnScale.Track(_lvXDevices, DeviceDpi)
         AddHandler _lvXDevices.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
         _pnlXDevices.Controls.Add(_lvXDevices)
         _btnXRevoke = XButton(Localization.T("Отозвать"), AddressOf OnXRevokeDevice, "action.remove")
@@ -398,6 +400,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXResources.Columns.Add(ExchangeAdminText.ColumnChannels(), Me.LogicalToDeviceUnits(90))
         _lvXResources.Columns.Add(ExchangeAdminText.ColumnPinProtected(), Me.LogicalToDeviceUnits(70))
         _lvXResources.Columns.Add(ExchangeAdminText.ColumnSealed(), Me.LogicalToDeviceUnits(70))
+        ListColumnScale.Track(_lvXResources, DeviceDpi)
         AddHandler _lvXResources.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
         _pnlXResources.Controls.Add(_lvXResources)
 
@@ -421,6 +424,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnKind(), Me.LogicalToDeviceUnits(80))
         _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnListeners(), Me.LogicalToDeviceUnits(80))
         _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnDuration(), Me.LogicalToDeviceUnits(80))
+        ListColumnScale.Track(_lvXBroadcasts, DeviceDpi)
         AddHandler _lvXBroadcasts.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
         _pnlXBroadcasts.Controls.Add(_lvXBroadcasts)
 
@@ -477,6 +481,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXInvitations.Columns.Add(ExchangeAdminText.ColumnCreated(), Me.LogicalToDeviceUnits(140))
         _lvXInvitations.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(110))
         _lvXInvitations.Columns.Add(Localization.T("Хеш"), Me.LogicalToDeviceUnits(110))
+        ListColumnScale.Track(_lvXInvitations, DeviceDpi)
         AddHandler _lvXInvitations.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
         _pnlXInvitations.Controls.Add(_lvXInvitations)
 

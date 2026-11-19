@@ -55,6 +55,9 @@ Friend NotInheritable Class Scheduled_Manager_Form
                                  ShareIcons.FreeIcon(Icon, _iconHandle)
                                  _iconHandle = IntPtr.Zero
                              End Sub
+        ' The window and the panel are authored in 96-dpi pixels; without this AutoScaleFactor stays (1, 1) and every
+        ' literal above is a device pixel (L0369, audit L0363 C1-D1). Last line, once the panel is in.
+        DpiLayout.ApplyAutoScale(Me)
     End Sub
 
     ''' <summary>The one entry point: opens (or brings to front) the single scheduling window. A

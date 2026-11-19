@@ -78,6 +78,7 @@ Friend NotInheritable Class Exchange_Local_Account_Picker_Form
             .Margin = New Padding(0, 0, 0, 10)
         }
         _lvAccounts.Columns.Add("", Me.LogicalToDeviceUnits(ContentWidth - 25))
+        ListColumnScale.Track(_lvAccounts, DeviceDpi)
         AddHandler _lvAccounts.SelectedIndexChanged, AddressOf OnSelectionChanged
         AddHandler _lvAccounts.DoubleClick, AddressOf OnListDoubleClick
 
@@ -121,9 +122,17 @@ Friend NotInheritable Class Exchange_Local_Account_Picker_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' S2: the column was resolved in the constructor, at the system dpi; this is the window's own.
+        ListColumnScale.RescaleAll(Me, DeviceDpi)
         DpiLayout.ClampToWorkingArea(Me)
+        TallDialogScroll.KeepReachable(Me)
         DpiLayout.CenterOnOwner(Me)
         If _lvAccounts IsNot Nothing Then _lvAccounts.Focus()
+    End Sub
+
+    Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+        MyBase.OnDpiChanged(e)
+        ListColumnScale.RescaleAll(Me, e.DeviceDpiNew)
     End Sub
 
     Private Sub OnSelectionChanged(sender As Object, e As EventArgs)

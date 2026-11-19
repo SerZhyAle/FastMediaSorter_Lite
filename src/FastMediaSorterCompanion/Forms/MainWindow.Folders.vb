@@ -108,6 +108,12 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     Private Sub OnItemCheck(sender As Object, e As ItemCheckEventArgs)
+        ' A refresh is in flight: the list stays enabled (a disabled list is unreadable on the dark palette, see
+        ' SetBusy), so the tick is refused here instead. Programmatic fills run with _loading and pass.
+        If _busy AndAlso Not _loading Then
+            e.NewValue = e.CurrentValue
+            Return
+        End If
         If Not _loading AndAlso TypeOf lvFolders.Items(e.Index).Tag Is ShareFolder Then
             e.NewValue = e.CurrentValue
             Return
@@ -610,7 +616,9 @@ Partial Public NotInheritable Class MainWindow
         End If
         SetBusy(False)
         If refused = "" Then _pinClearedHost = Nothing
-        If refused <> "" Then SetHint(refused)
+        ' The busy text ("Обновляю список папок..") is cleared with the refresh; only a refusal stays on the line.
+        ' SetBusy(False) never clears it, so a successful refresh used to leave it standing for good.
+        SetHint(refused)
         If _status IsNot Nothing AndAlso _status.Running AndAlso _status.Reachability Is Nothing Then Await PollReachabilityAsync()
     End Function
 

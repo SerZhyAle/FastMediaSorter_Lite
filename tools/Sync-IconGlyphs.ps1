@@ -83,6 +83,14 @@ $glyphIds = @(
     # L0351: the catalog reuses ruled by ICON-SET 0.39 section 24 item C.1 - the accounts and Drive sign-in
     # blocks and the scheduled operations block of the Share Manager's settings rail draw these records.
     'content.person', 'app.schedule',
+    # L0358: the rail's live-broadcast child row (managerSettingsNav_live, L0351) draws the catalog record.
+    'feature.live-broadcast',
+    # ICON-SET 0.42 (section 29): the twelve meanings the settings destinations of the Share Manager draw are records now and
+    # the catalog's exporter has run (fms-a:S4691), so the product takes the catalog's files (section 15 step 4). The two
+    # cogs of that set are declared in $redrawnGlyphs instead; device.computer is a record with a declared share (item K),
+    # its file is the catalog's copy of the picture of view.screen.
+    'action.autostart', 'system.local-network', 'system.network-policy', 'system.address-ports', 'feature.hosting-status',
+    'content.devices', 'feature.publishing', 'content.server-clipboard', 'device.computer', 'feature.transfer-queue',
     'status.error', 'status.locked', 'status.ok', 'status.unknown', 'status.warning',
     'system.internet', 'system.wifi', 'tool.brush', 'tool.oval', 'tool.rectangle', 'view.grid'
 )
@@ -91,23 +99,21 @@ $glyphIds = @(
 # id it proposes, and proposed in the same change. These files are NOT compared with the catalog - they are the
 # product's own drawings, held by a provenance line - and the script fails the day the catalog holds the id, so the
 # product converges on the catalog's drawing (section 15, "What the owner does").
-# L0351 (the proposal above names each drawing): every settings destination of the Share Manager carries a glyph -
-# the rail child level draws one on every child row, and the six ids whose records exist (the reuses) are in
-# $glyphIds. Twelve meanings are provisional until the catalog folds the proposal in.
-$productGlyphs = @(
-    'action.autostart',           # accepted meaning (ICON-SET 0.37 section 22 item G), this is its drawing
-    'system.local-network',
-    'system.network-policy',
-    'system.service',
-    'system.address-ports',
-    'feature.hosting-status',
-    'content.devices',
-    'feature.remote-admin',
-    'feature.publishing',
-    'content.server-clipboard',
-    'device.computer',
-    'feature.transfer-queue'
-)
+# Empty since ICON-SET 0.42: the twelve provisional drawings of L0351 became catalog records (FMSWIN-0370 moved ten of
+# them to $glyphIds, device.computer too, and the two cogs to $redrawnGlyphs). The mechanism stays for the next section 15 case.
+$productGlyphs = @()
+
+# ICON-SET section 15 step 4: a record the catalog holds whose drawing this product replaced and filed as a revision of
+# its proposal; the catalog has not folded the revision in yet. The vendored file is the product's redraw, not the
+# catalog's file (the catalog entered both cogs as filed on 2026-11-18, overlapping themselves: items D and H), so it is
+# NOT compared with the catalog's drawing - it is held to the revision instead: the path it draws must be the one the
+# filed revision carries. The script fails the day the catalog's file equals the vendored one (the catalog took the
+# redraw): move the id to $glyphIds then.
+$redrawnGlyphs = [ordered]@{
+    'system.service'       = 'PROPOSAL-2026-11-19-fms-settings-cogs-redraw.md'
+    'feature.remote-admin' = 'PROPOSAL-2026-11-19-fms-settings-cogs-redraw.md'
+}
+$redrawnIds = @($redrawnGlyphs.Keys)
 
 $subject = 'Sync-IconGlyphs'
 
@@ -156,9 +162,9 @@ if ([int]$Matches[1] -gt $builtAgainstMajor) {
 }
 $nowInCatalog = @($productGlyphs | Where-Object { Test-Path -LiteralPath (Join-Path $sourceGlyphs ($_ + '.svg')) })
 if ($nowInCatalog.Count -gt 0) {
-    Stop-Verdict 1 'FAIL (a product-drawn glyph is now in the catalog)' @($nowInCatalog | ForEach-Object { "'$_' is in the catalog now: move it from \ to \ and take the catalog drawing (ICON-SET section 15)" })
+    Stop-Verdict 1 'FAIL (a product-drawn glyph is now in the catalog)' @($nowInCatalog | ForEach-Object { "'$_' is in the catalog now: move it from `$productGlyphs to `$glyphIds and take the catalog drawing (ICON-SET section 15)" })
 }
-$missingInCatalog = @($glyphIds | Where-Object { -not (Test-Path -LiteralPath (Join-Path $sourceGlyphs ($_ + '.svg'))) })
+$missingInCatalog = @(($glyphIds + $redrawnIds) | Where-Object { -not (Test-Path -LiteralPath (Join-Path $sourceGlyphs ($_ + '.svg'))) })
 if ($missingInCatalog.Count -gt 0) {
     Stop-Verdict 2 'COULD NOT VERIFY' @($missingInCatalog | ForEach-Object { "declared glyph '$_' is missing from the catalog" })
 }
@@ -217,9 +223,31 @@ if ($Check) {
         if (-not $recorded.ContainsKey($name)) { $drift.Add("$name has no line in PROVENANCE.txt") }
         elseif ($recorded[$name] -ne $vendored) { $drift.Add("$name does not match its PROVENANCE.txt line") }
     }
+    foreach ($id in $redrawnIds) {
+        $name = $id + '.svg'
+        $target = Join-Path $destination $name
+        if (-not (Test-Path -LiteralPath $target)) { $drift.Add("$name is declared as redrawn but the file is missing"); continue }
+        $vendored = Get-Sha256 $target
+        if (-not $recorded.ContainsKey($name)) { $drift.Add("$name has no line in PROVENANCE.txt") }
+        elseif ($recorded[$name] -ne $vendored) { $drift.Add("$name does not match its PROVENANCE.txt line") }
+        if ($vendored -eq (Get-Sha256 (Join-Path $sourceGlyphs $name))) {
+            $drift.Add("$name equals the catalog file now - the catalog took the redraw: move '$id' from `$redrawnGlyphs to `$glyphIds")
+        }
+        # The divergence stays honest: the path this file draws is the one the filed revision carries, byte for byte.
+        $revision = $redrawnGlyphs[$id]
+        $revisionPath = Join-Path $iconography $revision
+        if (-not (Test-Path -LiteralPath $revisionPath)) {
+            $drift.Add("$name names the revision '$revision', which the catalog does not hold")
+        } else {
+            $pathData = [regex]::Match([System.IO.File]::ReadAllText($target), '\bd="([^"]+)"').Groups[1].Value
+            if ($pathData.Length -eq 0 -or -not (Select-String -LiteralPath $revisionPath -SimpleMatch $pathData -Quiet)) {
+                $drift.Add("$name draws a path that '$revision' does not carry")
+            }
+        }
+    }
     if (Test-Path -LiteralPath $destination) {
         foreach ($file in Get-ChildItem -LiteralPath $destination -Filter '*.svg') {
-            if (($glyphIds -notcontains $file.BaseName) -and ($productGlyphs -notcontains $file.BaseName)) { $drift.Add("$($file.Name) is vendored but not declared in this script") }
+            if (($glyphIds -notcontains $file.BaseName) -and ($productGlyphs -notcontains $file.BaseName) -and ($redrawnIds -notcontains $file.BaseName)) { $drift.Add("$($file.Name) is vendored but not declared in this script") }
         }
     }
 
@@ -236,7 +264,7 @@ if ($Check) {
     if ($drift.Count -gt 0) {
         Stop-Verdict 1 "FAIL ($($drift.Count) drift, catalog $versionsText)" $drift
     }
-    Stop-Verdict 0 "PASS ($($glyphIds.Count) glyphs and the vocabulary match the catalog, $versionsText)"
+    Stop-Verdict 0 "PASS ($($glyphIds.Count) glyphs and the vocabulary match the catalog, $($redrawnIds.Count) redrawn under a filed revision, $versionsText)"
 }
 
 New-Item -ItemType Directory -Force -Path $destination | Out-Null
@@ -244,7 +272,7 @@ New-Item -ItemType Directory -Force -Path $vocabularyDir | Out-Null
 
 # A vendored glyph the list no longer declares would otherwise linger with no provenance line.
 foreach ($file in Get-ChildItem -LiteralPath $destination -Filter '*.svg') {
-    if (($glyphIds -notcontains $file.BaseName) -and ($productGlyphs -notcontains $file.BaseName)) { Remove-Item -LiteralPath $file.FullName }
+    if (($glyphIds -notcontains $file.BaseName) -and ($productGlyphs -notcontains $file.BaseName) -and ($redrawnIds -notcontains $file.BaseName)) { Remove-Item -LiteralPath $file.FullName }
 }
 
 $provenance = [System.Collections.Generic.List[string]]::new()
@@ -265,11 +293,20 @@ foreach ($id in $glyphIds) {
 }
 
 $provenance.Add('')
-$provenance.Add('Product-drawn (not from the catalog; compared with the catalog only to notice that it now holds the id):')
-foreach ($id in $productGlyphs) {
+$provenance.Add('Redrawn (the catalog holds an older drawing of the id; the product draws the path its filed revision carries and is held to that revision, not to the catalog file):')
+foreach ($id in $redrawnIds) {
     $target = Join-Path $destination ($id + '.svg')
-    if (-not (Test-Path -LiteralPath $target)) { Stop-Verdict 2 'COULD NOT IMPORT' @("the product-drawn glyph '$id' has no file in assets/glyphs") }
+    if (-not (Test-Path -LiteralPath $target)) { Stop-Verdict 2 'COULD NOT IMPORT' @("the redrawn glyph '$id' has no file in assets/glyphs") }
     $provenance.Add("$id.svg  $(Get-Sha256 $target)")
+}
+if ($productGlyphs.Count -gt 0) {
+    $provenance.Add('')
+    $provenance.Add('Product-drawn (not from the catalog; compared with the catalog only to notice that it now holds the id):')
+    foreach ($id in $productGlyphs) {
+        $target = Join-Path $destination ($id + '.svg')
+        if (-not (Test-Path -LiteralPath $target)) { Stop-Verdict 2 'COULD NOT IMPORT' @("the product-drawn glyph '$id' has no file in assets/glyphs") }
+        $provenance.Add("$id.svg  $(Get-Sha256 $target)")
+    }
 }
 
 $utf8 = [System.Text.UTF8Encoding]::new($false)
@@ -287,4 +324,4 @@ Copy-Item -LiteralPath $sourceVocabulary -Destination $vendoredVocabulary -Force
     "Taken: $(Get-Date -Format 'yyyy-MM-dd')"
 ), $utf8)
 
-Stop-Verdict 0 "SYNCED ($($glyphIds.Count) glyphs and the vocabulary, $versionsText)"
+Stop-Verdict 0 "SYNCED ($($glyphIds.Count) glyphs and the vocabulary, $($redrawnIds.Count) redrawn under a filed revision kept, $versionsText)"

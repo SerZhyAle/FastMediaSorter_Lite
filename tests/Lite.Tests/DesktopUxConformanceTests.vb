@@ -37,7 +37,11 @@ Public Class DesktopUxConformanceTests
         ("LogPackage.vb", "unreadable: ",
          "a line inside the diagnostic report the user is sending - the report is the log"),
         ("AnimationToVideo.vb", "run.Detail = ex.Message",
-         "the encoder run's Detail is logged by DescribeFailure, never shown")
+         "the encoder run's Detail is logged by DescribeFailure, never shown"),
+        ("AppCommandsProfile.vb", "r.Message = o.GetString(""message"")",
+         "the APP-COMMANDS response member 'message' read off the wire, not an exception"),
+        ("ViewerCommandClient.vb", "response.Message",
+         "the running viewer's APP-COMMANDS answer printed by the command client, not an exception")
     }
 
     <Fact>

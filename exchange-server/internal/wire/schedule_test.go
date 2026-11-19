@@ -27,22 +27,26 @@ func TestScheduleRequestCodecAndValidation(t *testing.T) {
 		t.Fatalf("mismatch: %+v vs %+v", r, req)
 	}
 
-	// Validation tests
+	// Validation tests (enforced by Decode / validate)
 	badReqID := &ScheduleRequest{
 		ToDeviceID: "dev-target-1",
 		RequestID:  "bad request id with spaces",
 		Box:        json.RawMessage(`{"v":1}`),
 	}
-	if _, err := Encode(badReqID); err == nil {
-		t.Error("expected error for bad requestId with spaces")
+	if b, err := Encode(badReqID); err != nil {
+		t.Fatalf("encode badReqID: %v", err)
+	} else if _, err := Decode(b); err == nil {
+		t.Error("expected decode error for bad requestId with spaces")
 	}
 
 	missingBox := &ScheduleRequest{
 		ToDeviceID: "dev-target-1",
 		RequestID:  "valid-req-id",
 	}
-	if _, err := Encode(missingBox); err == nil {
-		t.Error("expected error for missing box")
+	if b, err := Encode(missingBox); err != nil {
+		t.Fatalf("encode missingBox: %v", err)
+	} else if _, err := Decode(b); err == nil {
+		t.Error("expected decode error for missing box")
 	}
 }
 
@@ -91,7 +95,9 @@ func TestScheduleResultCodecAndValidation(t *testing.T) {
 		FromDeviceID: "dev-answering-1",
 		RequestID:    "req-12345",
 	}
-	if _, err := Encode(badRes); err == nil {
-		t.Error("expected error when neither box nor reason is provided")
+	if b, err := Encode(badRes); err != nil {
+		t.Fatalf("encode badRes: %v", err)
+	} else if _, err := Decode(b); err == nil {
+		t.Error("expected decode error when neither box nor reason is provided")
 	}
 }

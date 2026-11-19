@@ -265,7 +265,8 @@ Public Class ExchangeEntryKeyTests
                     ' the same device, as the server knows it, with what the viewer can do and no password
                     Assert.Equal(entry.DeviceId, acc.EnrollDeviceIdsSeen().Single())
                     Assert.Equal("OLD-NAME (viewer)", acc.EnrollNamesSeen().Single())
-                    Assert.Equal({"pin-v1", "e2e-v1"}, acc.EnrollCapabilitiesSeen().Single().Split(","c))
+                    ' L0338: a device with a key also declares schedule-v1 (DeclareCapabilities, beside e2e-v1).
+                    Assert.Equal({"pin-v1", "e2e-v1", "schedule-v1"}, acc.EnrollCapabilitiesSeen().Single().Split(","c))
                     Assert.Equal("", acc.EnrollPasswordsSeen().Single())
                     Using kept As ExchangeDeviceKey = store.DeviceKeysFor(entry.Id).TryLoad(entry.DeviceId)
                         Assert.Equal(kept.Kem, KemOf(acc.EnrollE2eKeysSeen().Single()))

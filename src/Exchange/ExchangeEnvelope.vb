@@ -309,7 +309,8 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("hello", T("deviceId", True), T("deviceToken", True), T("productVersion", omit:=WhenEmpty),
             N("keepaliveSeconds", WhenEmpty))
         Row("welcome", T("account"), T("accountKind", omit:=WhenEmpty), T("publicEndpoint"), N("keepaliveSeconds"), L("features"), T("serverVersion"))
-        Row("refused", T("reason", True))
+        ' `current` is the stored note of a `note-conflict` (DEVICE-EXCHANGE 1.13 item FJ); every other refusal omits it.
+        Row("refused", T("reason", True), R("current", omit:=WhenEmpty))
         ' --- the control stream (7.3, 7.4) ---
         Row("keepalive")
         Row("bye", T("offlineReason", omit:=WhenEmpty))
@@ -402,6 +403,25 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("settings_saved", T("appId", True), N("version"), T("updatedAt"))
         Row("settings_get_standard", T("appId", True))
         Row("settings_standard_payload", T("appId", True), N("formatVersion"), T("settingsPayload", True), T("updatedAt"))
+        ' --- ticket L0321 / DEVICE-EXCHANGE 1.13 items FG-FM: the notes of an account (L0358 added the rows; the
+        ' client's own notes sync is not built - the replay codec must know every type the server's vectors carry).
+        ' The server never opens a box: `sealed` travels as the bytes it came with. ---
+        Row("notes_list", N("since"),
+            New ExchangeMemberSpec("full", ExchangeMemberKind.Flag, False, ExchangeOmit.WhenUnset))
+        Row("notes_changes", N("notesRevision"), N("notesHorizon"), RL("records"),
+            New ExchangeMemberSpec("more", ExchangeMemberKind.Flag, False, ExchangeOmit.Never),
+            New ExchangeMemberSpec("full", ExchangeMemberKind.Flag, False, ExchangeOmit.Never))
+        Row("notes_put", T("noteId", True), N("baseRevision"),
+            New ExchangeMemberSpec("deleted", ExchangeMemberKind.Flag, False, ExchangeOmit.WhenUnset),
+            R("sealed", omit:=WhenEmpty))
+        Row("notes_stored", T("noteId", True), N("revision"), T("storedAt"))
+        Row("notes_changed", N("notesRevision"))
+        ' --- ticket L0338 / DEVICE-EXCHANGE 1.15 item FQ: remote schedule control. The requester-to-server frame
+        ' gains `fromDeviceId` when the server forwards it; the answer carries `box` or `reason`, never both. ---
+        Row("schedule-request", T("fromDeviceId", omit:=WhenEmpty), T("toDeviceId", True), T("requestId", True),
+            R("box", True))
+        Row("schedule-result", T("fromDeviceId", omit:=WhenEmpty), T("toDeviceId", omit:=WhenEmpty),
+            T("requestId", True), T("reason", omit:=WhenEmpty), R("box", omit:=WhenEmpty))
     End Sub
 
     ''' <summary>The members of a type in wire order, or Nothing for a type this wire does not define.</summary>
@@ -473,6 +493,9 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 w.Name(s.Name)
                 w.Number(If(v.HasValue, v.Value, 0L))
             Case ExchangeMemberKind.Flag
+                ' WhenUnset: a flag the writer never set stays absent (a Go `omitempty` boolean, e.g. the
+                ' `full` of a `notes_list`); a flag the row declares Never is always written, false included.
+                If s.Omit = ExchangeOmit.WhenUnset AndAlso Not env.Has(s.Name) Then Return
                 w.Name(s.Name)
                 w.Flag(env.Flag(s.Name))
             Case ExchangeMemberKind.TextList

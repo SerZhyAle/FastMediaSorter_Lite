@@ -96,6 +96,9 @@ $text = (($manifest | ConvertTo-Json -Depth 4) -replace "`r`n", "`n") + "`n"
 $withFacts = @($files.Values | Where-Object { $_.Contains('size') -and $_.Contains('sha256') }).Count
 Write-Host "Wrote tools/release-manifest.json: $tag, published $date, $($assets.Count) assets with their .sha256 sidecars, $withFacts with size and SHA-256."
 
+. (Join-Path $PSScriptRoot 'lib\ReleaseLedgerHook.ps1')
+Invoke-ReleaseLedgerPublish -RepoRoot $Root -Key 'github' -Version $Version -State 'live' -Ref $tag -Url "https://github.com/$RepoSlug/releases/tag/$tag"
+
 if ($NoRender) { exit 0 }
 & pwsh -NoProfile -File (Join-Path $PSScriptRoot 'Build-SitePages.ps1')
 if ($LASTEXITCODE -ne 0) { Fail 1 "tools/Build-SitePages.ps1 failed (exit $LASTEXITCODE) after the manifest was written" }

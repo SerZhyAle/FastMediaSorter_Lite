@@ -413,6 +413,32 @@ func (s *Store) PurgeTombstones(now time.Time) (int, error) {
 	return purged, nil
 }
 
+// boxPlaceholder is the JSON string that stands for box number i while the file is encoded. The closing quote
+// keeps "..-1" from being a prefix of "..-10".
+func boxPlaceholder(i int) string { return fmt.Sprintf(`"fms-notes-box-%d"`, i) }
+
+// spliceBoxes puts the boxes in place of their placeholders. The placeholders come out of the encoder in the
+// order the records were numbered in, so one pass over the encoder's output finds them all and never looks
+// inside a box it has already put back.
+func spliceBoxes(body []byte, boxes [][]byte) ([]byte, error) {
+	if len(boxes) == 0 {
+		return body, nil
+	}
+	out := make([]byte, 0, len(body))
+	rest := body
+	for i, box := range boxes {
+		ph := []byte(boxPlaceholder(i))
+		at := bytes.Index(rest, ph)
+		if at < 0 {
+			return nil, errors.New("notes: a box lost its place in the file")
+		}
+		out = append(out, rest[:at]...)
+		out = append(out, box...)
+		rest = rest[at+len(ph):]
+	}
+	return append(out, rest...), nil
+}
+
 // writeLocked writes the whole store through a temp file and a rename, so a kill leaves the previous file whole.
 // The output is deterministic: accounts by login, records by revision.
 func (s *Store) writeLocked() error {
@@ -427,6 +453,21 @@ func (s *Store) writeLocked() error {
 	}
 	sort.Slice(f.Accounts, func(i, j int) bool { return f.Accounts[i].Account < f.Accounts[j].Account })
 
+	// A box is kept as it came, and encoding/json does not keep it: Go 1.27 rewrites a literal U+2028/U+2029 inside
+	// a RawMessage even with HTML escaping off. So the encoder sees a placeholder string in the box's place (in the
+	// copies in recs, never in the ledger) and the box itself is spliced back below, byte for byte.
+	var boxes [][]byte
+	for ai := range f.Accounts {
+		recs := f.Accounts[ai].Records
+		for ri := range recs {
+			if len(recs[ri].Sealed) == 0 {
+				continue
+			}
+			boxes = append(boxes, recs[ri].Sealed)
+			recs[ri].Sealed = json.RawMessage(boxPlaceholder(len(boxes) - 1))
+		}
+	}
+
 	// Not json.MarshalIndent: its default escapes < > & inside a box, and a box is kept as it came.
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
@@ -435,12 +476,16 @@ func (s *Store) writeLocked() error {
 	if err := enc.Encode(f); err != nil {
 		return err
 	}
+	body, err := spliceBoxes(buf.Bytes(), boxes)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		return err
 	}
 	path := filepath.Join(s.dir, File)
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
+	if err := os.WriteFile(tmp, body, 0o600); err != nil {
 		// A partial file (disk full) must not stay behind for a backup tool to copy; only a regular file is ours
 		// to remove, never a directory of that name.
 		if fi, serr := os.Lstat(tmp); serr == nil && fi.Mode().IsRegular() {

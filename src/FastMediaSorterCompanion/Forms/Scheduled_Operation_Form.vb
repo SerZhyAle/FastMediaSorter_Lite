@@ -421,7 +421,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
             For Each item As Object In box.Items
                 widest = Math.Max(widest, TextRenderer.MeasureText(Convert.ToString(item), box.Font).Width)
             Next
-            Dim wanted As Integer = widest + SystemInformation.VerticalScrollBarWidth + LogicalToDeviceUnits(16)
+            Dim wanted As Integer = widest + UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi) + LogicalToDeviceUnits(16)
             If wanted > box.Width Then box.Width = wanted
             box.DropDownWidth = Math.Max(box.Width, wanted)
         Next

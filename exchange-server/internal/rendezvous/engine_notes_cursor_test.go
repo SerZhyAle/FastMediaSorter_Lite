@@ -20,13 +20,18 @@ func TestFullContinuationBelowHorizon(t *testing.T) {
 	}
 	ntStored(t, ntPut(t, c, ntD, 0, ntBox("purged")))
 	ntStored(t, ntDelete(t, c, ntD, 4))
+	c.Close() // a clock that jumps expires every keepalive window: the account's streams are closed before it moves
 	ntAgeTombstones(env, clock)
+	c, err := d.OnlineQuietly()
+	if err != nil {
+		t.Fatal(err)
+	}
 	first := ntList(t, c, 0)
 	if !first.Full || !first.More || !slices.Equal(ntRevs(first), []int64{1}) || first.NotesHorizon != 5 {
 		t.Fatalf("first page: %+v", first)
 	}
 	c.Close()
-	c, err := d.OnlineQuietly()
+	c, err = d.OnlineQuietly()
 	if err != nil {
 		t.Fatal(err)
 	}

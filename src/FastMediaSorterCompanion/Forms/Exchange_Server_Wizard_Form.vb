@@ -207,6 +207,11 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' S1: the client size authored in the builder is the body's preferred size at the system dpi, in device pixels, and the
+        ' first scale multiplied it by the dpi ratio again (a blank band under the body). Measure once the window is scaled,
+        ' the way the later steps of this window do.
+        PerformAutoScale()
+        If Controls.Count > 0 Then ClientSize = Controls(0).PreferredSize
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
         _txtLogin.Focus()

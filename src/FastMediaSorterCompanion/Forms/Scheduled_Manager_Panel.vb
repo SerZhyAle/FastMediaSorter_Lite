@@ -151,14 +151,44 @@ Friend NotInheritable Class Scheduled_Manager_Panel
         Return b
     End Function
 
+    ''' <summary>The authored (96-dpi) column widths, in column order.</summary>
+    Private Shared ReadOnly ScheduledColumnWidths As Integer() = {150, 90, 200, 130, 200, 120}
+
     Private Sub AddScheduledColumns()
         _schedList.Columns.Clear()
-        _schedList.Columns.Add(Localization.T("Название"), LogicalToDeviceUnits(150))
-        _schedList.Columns.Add(Localization.T("Действие"), LogicalToDeviceUnits(90))
-        _schedList.Columns.Add(Localization.T("Источник и назначение"), LogicalToDeviceUnits(200))
-        _schedList.Columns.Add(Localization.T("Расписание"), LogicalToDeviceUnits(130))
-        _schedList.Columns.Add(Localization.T("Последний запуск"), LogicalToDeviceUnits(200))
-        _schedList.Columns.Add(Localization.T("Следующий запуск"), LogicalToDeviceUnits(120))
+        _schedList.Columns.Add(Localization.T("Название"), LogicalToDeviceUnits(ScheduledColumnWidths(0)))
+        _schedList.Columns.Add(Localization.T("Действие"), LogicalToDeviceUnits(ScheduledColumnWidths(1)))
+        _schedList.Columns.Add(Localization.T("Источник и назначение"), LogicalToDeviceUnits(ScheduledColumnWidths(2)))
+        _schedList.Columns.Add(Localization.T("Расписание"), LogicalToDeviceUnits(ScheduledColumnWidths(3)))
+        _schedList.Columns.Add(Localization.T("Последний запуск"), LogicalToDeviceUnits(ScheduledColumnWidths(4)))
+        _schedList.Columns.Add(Localization.T("Следующий запуск"), LogicalToDeviceUnits(ScheduledColumnWidths(5)))
+    End Sub
+
+    ''' <summary>A loose panel resolves <c>LogicalToDeviceUnits</c> at the DPI of the thread that built it, not of the window
+    ''' that hosts it, and nothing re-sets the widths after hosting (rule S2 of L0361, ticket 369 D3). They are resolved again
+    ''' when the handle exists (the host and its monitor are known, and the host has composed its scale) and after every
+    ''' DPI change of the host.</summary>
+    Private Sub ResolveScheduledColumns()
+        If _schedList Is Nothing OrElse _schedList.Columns.Count <> ScheduledColumnWidths.Length Then Return
+        _schedList.BeginUpdate()
+        Try
+            For i As Integer = 0 To ScheduledColumnWidths.Length - 1
+                Dim width As Integer = DpiLayout.Device(Me, ScheduledColumnWidths(i))
+                If _schedList.Columns(i).Width <> width Then _schedList.Columns(i).Width = width
+            Next
+        Finally
+            _schedList.EndUpdate()
+        End Try
+    End Sub
+
+    Protected Overrides Sub OnHandleCreated(e As EventArgs)
+        MyBase.OnHandleCreated(e)
+        ResolveScheduledColumns()
+    End Sub
+
+    Protected Overrides Sub OnDpiChangedAfterParent(e As EventArgs)
+        MyBase.OnDpiChangedAfterParent(e)
+        ResolveScheduledColumns()
     End Sub
 
     ' --- host API --------------------------------------------------------------------------------------

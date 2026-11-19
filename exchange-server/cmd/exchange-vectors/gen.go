@@ -181,6 +181,28 @@ func generateNotesTranscript() (data []byte, err error) {
 	return data, err
 }
 
+// generateScheduleTranscript runs the schedule scenario of DEVICE-EXCHANGE 1.15 (ticket L0338, items FQ to FV)
+// and renders the file: the transcript and the boxes it carries. Like the settings and the notes transcripts it
+// is separate from the adopted 1.1 corpus: generate never runs it, so frames-v2.json and the other hashed files
+// keep their bytes.
+func generateScheduleTranscript() (data []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if f, ok := r.(genFailure); ok {
+				err = f
+				return
+			}
+			panic(r)
+		}
+	}()
+	tr, cases := scenarioSchedule()
+	data, err = render(scheduleDocument(tr, cases))
+	if err == nil {
+		err = closeErr
+	}
+	return data, err
+}
+
 // generate renders the adopted 1.1 corpus without changing its transcripts.
 func generate(commit string) (files map[string][]byte, err error) {
 	defer func() {

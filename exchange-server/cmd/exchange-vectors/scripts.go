@@ -362,7 +362,8 @@ func scenarioRelay() *transcript {
 
 // scenarioCast: cast, cast-offer, cast-answer, cast-result and cast-stop, with the refusals.
 func scenarioCast() *transcript {
-	r := newRig("cast", rigOpts{cast: true})
+	// relay: the relay is what remembers an ended broadcast id (item DY); without it a tunnel connect for one is unavailable
+	r := newRig("cast", rigOpts{cast: true, relay: true})
 	defer mustClose(r)
 	tr := r.newTranscript("cast",
 		"Cast: a device asks one named receiver of the same account to play a broadcast. The server forwards cast-offer to the receiver (the "+

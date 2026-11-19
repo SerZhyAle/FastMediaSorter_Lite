@@ -154,7 +154,10 @@ type rigOpts struct {
 	settings bool
 	// notes keeps the notes of an account (DEVICE-EXCHANGE 1.13, ticket L0321); with sealed it lists `notes` in features.
 	// Only the notes scenario opens the store, so every older transcript keeps its bytes (Assumed 8).
-	notes      bool
+	notes bool
+	// schedule turns the remote schedule forwarder on (DEVICE-EXCHANGE 1.15, ticket L0338); with sealed it lists `schedule`
+	// in features. Only the schedule scenario turns it on, so every older transcript keeps its bytes.
+	schedule   bool
 	admin      *config.Admin
 	webDir     string
 	verifyConc int
@@ -220,13 +223,20 @@ func newRig(seed string, o rigOpts) *rig {
 	wire.SetRandom(newSeeded(seed + "/ids"))
 	params := testkit.TestParams()
 	params.UnavailableDelay = 5 * time.Millisecond
+	if o.notes {
+		// The notes scripts move the injected clock by minutes and by months and purge the tombstones by hand
+		// (PurgeTombstones). A sweep that ticks on real time would expire the keepalive window of every idle
+		// stream the moment the clock passed it, or purge before the script does: the bytes would depend on
+		// the speed of the machine. None of them waits for a sweep.
+		params.SweepInterval = time.Hour
+	}
 	if o.params != nil {
 		o.params(&params)
 	}
 	opt := testkit.Options{
 		Now: r.clock.Now, Params: &params, Logins: o.logins, PublicEndpoint: publicEndpoint,
 		WithRelay: o.relay, Cast: o.cast, ServerVersion: "vectors",
-		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed, Settings: o.settings, Notes: o.notes,
+		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed, Settings: o.settings, Notes: o.notes, Schedule: o.schedule,
 		WebDir: o.webDir, VerifyConc: o.verifyConc, VerifyWait: o.verifyWait,
 		TLSIdentity: getVectorTLSIdentity(),
 	}

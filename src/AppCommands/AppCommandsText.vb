@@ -8,10 +8,8 @@ Namespace AppCommands
 
     Friend Module AppCommandsText
 
-        Friend Const SettingLabelKey As String = "Разрешить другим программам просить это приложение работать с моими файлами, экраном, буфером обмена или сетью"
-
         Friend Function SettingLabel() As String
-            Return Localization.T(SettingLabelKey)
+            Return Localization.T("Разрешить команды от других программ")
         End Function
 
         ''' <summary>The product a "not running" sentence names: the viewer's compact name unless the caller is another

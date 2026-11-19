@@ -18,7 +18,18 @@ Friend NotInheritable Class ViewerDialogPrep
     Friend Shared Sub Install()
         DialogLayer.Preparation = AddressOf Prepare
         DialogLayer.ViewerLocator = AddressOf LocateViewer
+        DialogLayout.InterfaceFactorProvider = AddressOf CurrentInterfaceFactor
     End Sub
+
+    ''' <summary>U for the dialogs (L0361 rule S1, ticket 369 B-D-6a): the running viewer's own preferences, so a change
+    ''' of the interface scale reaches the next window built without a registry round trip. The chrome's ChromeSize
+    ''' multiplier is not part of it. 1.0 when no viewer exists yet.</summary>
+    Private Shared Function CurrentInterfaceFactor() As Single
+        Dim viewer As Main_Form = FindViewer(Nothing)
+        If viewer Is Nothing Then Return 1.0F
+        Dim prefs As ModernViewerPreferences = viewer.GetModernPreferences()
+        Return DialogLayout.InterfaceFactorFromPercents(prefs.InterfaceScaleRelativePercent, prefs.InterfaceScalePercent)
+    End Function
 
     ''' <summary>The viewer window an owner belongs to: the owner itself, the owner of the owner, or - for a
     ''' window with no usable owner - the viewer found among the open windows. Nothing when there is none (a

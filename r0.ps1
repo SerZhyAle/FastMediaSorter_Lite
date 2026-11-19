@@ -73,7 +73,7 @@ Exit codes:
 param(
     [string]   $Root           = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '.')).Path,
     [string]   $Journal        = 'docs/specifications/spec-catalog.jsonl',
-    [string]   $Queue          = 'docs/specifications/PQ_QUEUE.md',
+    [string]   $Queue          = 'docs/specifications/RELEASE_QUEUE.md',
     [string]   $RunsDir        = 'temp/spec-queue',
     [string]   $StopFile       = 'temp/STOP-SPEC-QUEUE',
     [string]   $Instance       = 'mono',
@@ -83,7 +83,7 @@ param(
     [string]   $PermissionMode = 'bypassPermissions',
     [string]   $Model          = '',
     [string[]] $ChildArgs      = @(),
-    [string]   $IdRegex        = 'L\d{4}',
+    [string]   $IdRegex        = '(?:FMSWIN-\d{4}|L\d{4})',
     [string[]] $WorkStatuses   = @('Draft', 'Approved', 'Tactical', 'In Progress', 'Implemented', 'Partial', 'Broken'),
     [string[]] $ClearOnStart   = @('temp/SPEC-TICKET.LEASES'),
     [string]   $LocksDir       = 'temp',

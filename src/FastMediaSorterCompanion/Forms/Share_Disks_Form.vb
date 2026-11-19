@@ -256,7 +256,9 @@ Public NotInheritable Class Share_Disks_Form
     ''' or none at all in the record, is "Unknown" - NEVER "No holder": item D says unknown is never none, and a
     ''' list that shows "No" beside a disk somebody may be holding invites the mount it must not authorize.</summary>
     Friend Shared Function HolderText(holder As String) As String
-        Dim token As String = If(holder, "").Trim().ToLowerInvariant()
+        ' Exact tokens only (WORKER-IPC section 10 item D, DISK-SHARE rule 16): another spelling or another
+        ' case is unknown, never "none" - a value the worker never wrote must not read as "nobody holding it".
+        Dim token As String = If(holder, "").Trim()
         Select Case token
             Case "service", "fms-service" : Return Localization.T("Служба Windows")
             Case "session", "fms-session" : Return Localization.T("Текущий сеанс")

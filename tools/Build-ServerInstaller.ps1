@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Builds the SERVER edition installer (setup.exe) - the always-on Folder Share
     Server, hosted by a Windows service. LOCAL flow ("сборка", not "релиз"): it never
@@ -175,3 +175,6 @@ Write-Host "  $setupPath  ($sizeMb MB)"
 Write-Host "  SHA256: $setupHash"
 
 if ($Open) { Start-Process explorer.exe "/select,`"$setupPath`"" }
+
+. (Join-Path $PSScriptRoot 'lib\ReleaseLedgerHook.ps1')
+Invoke-ReleaseLedgerBuild -RepoRoot $solutionDir -Package 'server' -Flavor 'setup' -Kind 'test' -Version $Version -Artifact $setupPath

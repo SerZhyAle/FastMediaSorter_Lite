@@ -1025,13 +1025,19 @@ Partial Public Class Main_Form
                 ' ConvertFromUtf32, not ChrW: the padlock is outside the Basic Multilingual
                 ' Plane and is a surrogate PAIR, which a Char cannot hold at all.
                 Dim glyph As String = If(locked, Char.ConvertFromUtf32(&H1F512), Char.ConvertFromUtf32(&H26A0))
-                Using big As New Font("Segoe UI Symbol", Math.Max(18.0F, Math.Min(64.0F, height / 8.0F)))
+                ' The canvas is a 96-dpi bitmap shown 1:1 in a box sized in device pixels, so a point font would
+                ' always read at its 96-dpi size. Pixel-unit fonts at K x M (L0361 S3, S4; L0363 A-D7) keep the
+                ' same share of the window at every display scale: 4 / 3 is the 96-dpi point-to-pixel ratio the
+                ' former point sizes (symbol 18..64, name 12, message 10) were drawn at.
+                Dim scale As Single = GetCurrentDpiScale()
+                Dim symbolPoints As Single = Math.Max(18.0F * scale, Math.Min(64.0F * scale, height / 8.0F))
+                Using big As New Font("Segoe UI Symbol", symbolPoints * 4.0F / 3.0F, FontStyle.Regular, GraphicsUnit.Pixel)
                     DrawCentred(g, glyph, big, ink, width, height * 0.32F)
                 End Using
-                Using nameFont As New Font("Segoe UI", 12.0F, FontStyle.Bold)
+                Using nameFont As New Font("Segoe UI", 12.0F * scale * 4.0F / 3.0F, FontStyle.Bold, GraphicsUnit.Pixel)
                     DrawCentred(g, Path.GetFileName(filePath), nameFont, ink, width, height * 0.5F)
                 End Using
-                Using messageFont As New Font("Segoe UI", 10.0F)
+                Using messageFont As New Font("Segoe UI", 10.0F * scale * 4.0F / 3.0F, FontStyle.Regular, GraphicsUnit.Pixel)
                     DrawCentred(g, message, messageFont, ink, width, height * 0.6F)
                 End Using
             End Using

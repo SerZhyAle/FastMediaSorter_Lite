@@ -308,7 +308,14 @@ Partial Public Class Main_Form
         Dim scrollRows As Boolean = rows.Count > visibleRows
         ' With a scrollbar the rows must fit beside it: full-width rows grew a horizontal
         ' scrollbar too, and the copy zones sat under the vertical one (audit B-13).
-        Dim rowW As Integer = If(scrollRows, panelW - SystemInformation.VerticalScrollBarWidth, panelW)
+#If Not NETFRAMEWORK Then
+        ' The bar is drawn at the window dpi (the overlay sits on the owner's monitor), never at the system dpi that
+        ' SystemInformation answers for (L0361 S8, L0363 A-D11).
+        Dim scrollBarWidth As Integer = UiSizing.VerticalScrollBarWidthForDpi(Me.DeviceDpi)
+#Else
+        Dim scrollBarWidth As Integer = SystemInformation.VerticalScrollBarWidth
+#End If
+        Dim rowW As Integer = If(scrollRows, panelW - scrollBarWidth, panelW)
 
         ' The rows' host. net48 adds them to the window itself. The modern build puts them into an
         ' inner scrollable panel below a slim header strip, so the strip's pin button stays put
@@ -389,7 +396,6 @@ Partial Public Class Main_Form
             Dim b As New NonFocusButton() With {
                 .Text = r.Item2,
                 .Tag = r.Item1,
-                .Font = ui_Font,
                 .FlatStyle = FlatStyle.Flat,
                 .TextAlign = ContentAlignment.MiddleLeft,
                 .Padding = New Padding(RecipientPx(6), 0, RecipientPx(8), 0),
@@ -402,11 +408,17 @@ Partial Public Class Main_Form
                 .BackColor = If(isDelete, deleteFill, RecipientRowFill(r.Item1))
             }
             b.FlatAppearance.BorderSize = 0
-#If Not NETFRAMEWORK Then
+#If NETFRAMEWORK Then
+            b.Font = ui_Font
+#Else
+            ' No explicit Font on the mainline (L0363 A-D17, L0361 S4/S7): this button is built loose, before it has a
+            ' window, so a pixel font resolved for the owner's dpi would be rescaled again when the window takes its
+            ' monitor's dpi. The caption is drawn from RowFont (it never reads Font), so the control keeps the ambient font.
             b.RowFont = ui_Font
             If Not isDelete Then
                 b.TrailingText = move_Verb
                 b.MinimumCaptionWidth = RecipientPx(96)
+                b.VerbGapPixels = RecipientPx(6)
             End If
             ' Only the delete row carries a picture. The folder rows used to start with the catalog's folder-and-arrow
             ' on every line: one drawing repeated down the table, before a path that already says "folder" and a verb
@@ -439,7 +451,6 @@ Partial Public Class Main_Form
                 Dim c As New NonFocusButton() With {
                     .Text = copy_Caption,
                     .Tag = r.Item1,
-                    .Font = ui_Font,
                     .FlatStyle = FlatStyle.Flat,
                     .TextAlign = ContentAlignment.MiddleCenter,
                     .Padding = New Padding(RecipientPx(4), 0, RecipientPx(4), 0),
@@ -1085,6 +1096,10 @@ Partial Public Class Main_Form
         ''' <summary>The room the caption must keep before the trailing word may be drawn at all.</summary>
         Public Property MinimumCaptionWidth As Integer
 
+        ''' <summary>The space between the caption and the trailing word, in pixels, resolved by the owner at its
+        ''' design factor (L0361 rule S4 pixel form). 0 = derive it from the control's own dpi (the old rule).</summary>
+        Public Property VerbGapPixels As Integer
+
         Protected Overrides Sub OnMouseEnter(e As EventArgs)
             MyBase.OnMouseEnter(e)
             hovering = True
@@ -1217,7 +1232,7 @@ Partial Public Class Main_Form
                         verbFormat.FormatFlags = verbFormat.FormatFlags Or StringFormatFlags.NoWrap
                         If RightToLeft = RightToLeft.Yes Then verbFormat.FormatFlags = verbFormat.FormatFlags Or StringFormatFlags.DirectionRightToLeft
                         Dim verbWidth As Integer = CInt(Math.Ceiling(g.MeasureString(TrailingText, captionFont, Integer.MaxValue, verbFormat).Width)) + 1
-                        Dim verbGap As Integer = Math.Max(4, DeviceDpi \ 16)
+                        Dim verbGap As Integer = If(VerbGapPixels > 0, VerbGapPixels, Math.Max(4, DeviceDpi \ 16))
                         If RecipientsOverlayRows.ShowsMoveVerb(Width, CInt(left), Padding.Right, verbWidth + verbGap, MinimumCaptionWidth) Then
                             Dim verbLeft As Single
                             If RightToLeft = RightToLeft.Yes Then

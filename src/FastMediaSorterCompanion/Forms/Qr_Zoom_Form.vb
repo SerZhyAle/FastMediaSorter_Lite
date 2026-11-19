@@ -57,7 +57,8 @@ Public Class Qr_Zoom_Form
     Private Const FeedbackMs As Integer = 2000
 
     Private ReadOnly _pic As PictureBox
-    Private ReadOnly _baseSide As Integer   ' entry size - the click cycle wraps back to it
+    Private _baseSide As Integer            ' entry size in device px at _baseSideDpi - the click cycle wraps back to it
+    Private _baseSideDpi As Integer         ' the DeviceDpi _baseSide is measured at; re-resolved on a DPI change (ticket 369, D7)
     Private ReadOnly _titleText As String   ' restored after a result line has had its 2 seconds
     Private ReadOnly _baseName As String    ' optional caller-supplied name part of the file
     Private ReadOnly _tip As New ToolTip()
@@ -101,6 +102,7 @@ Public Class Qr_Zoom_Form
 
     Friend Sub New(img As Image, clientSide As Integer, baseName As String, carriesAccess As Boolean)
         _baseSide = clientSide
+        _baseSideDpi = Math.Max(1, DeviceDpi)
         _carriesAccess = carriesAccess
         _baseName = If(baseName, "")
         _titleText = Localization.T("QR-код - клик увеличивает, сохраняет и копирует; Esc закрывает")
@@ -167,6 +169,17 @@ Public Class Qr_Zoom_Form
             HandOff(saveFile:=True, copyClipboard:=True)
         ElseIf e.Button = MouseButtons.Right OrElse e.Button = MouseButtons.Middle Then
             Me.Close()
+        End If
+    End Sub
+
+    ''' <summary>The entry size the click cycle wraps back to is a device-pixel side measured at one DPI; moved to a monitor
+    ''' of another DPI it would wrap to a square of the wrong size, so it follows the window.</summary>
+    Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+        MyBase.OnDpiChanged(e)
+        Dim now As Integer = Math.Max(1, e.DeviceDpiNew)
+        If now <> _baseSideDpi Then
+            _baseSide = CInt(Math.Round(_baseSide * CDbl(now) / _baseSideDpi, MidpointRounding.AwayFromZero))
+            _baseSideDpi = now
         End If
     End Sub
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -62,6 +63,11 @@ func TestSettingsStandardScenario(t *testing.T) {
 	}
 }
 
+// fractionalNotesLimit finds a notes limit that is not a whole number. The count-bytes-and-policy scenario sends
+// such a frame raw, to be answered bad-limit (item FY): the codec reads it and keeps the bad member out of the
+// frame it would write, so this is the one kind of frame that does not re-encode to its own bytes.
+var fractionalNotesLimit = regexp.MustCompile(`"notes(PerAccount|MaxBytes)":-?[0-9]+\.[0-9]+`)
+
 // The notes scenario belongs to DEVICE-EXCHANGE 1.13 (ticket L0321), like the settings one to 1.12: it is a
 // separate file that generate never writes, so the frames-v2 corpus keeps its bytes. It must cover the five
 // frames and the reason, hold both kinds of clear payload of item FH, carry boxes that open under the context
@@ -100,7 +106,7 @@ func TestNotesSyncScenario(t *testing.T) {
 			if err != nil {
 				t.Fatalf("step %d (%s): %v", i, st.JSON, err)
 			}
-			if again, err := wire.Frame(e); err != nil || !bytes.Equal(again, raw) {
+			if again, err := wire.Frame(e); (err != nil || !bytes.Equal(again, raw)) && !fractionalNotesLimit.MatchString(st.JSON) {
 				t.Errorf("step %d: re-encoding the decoded frame changes the bytes\n got  %s\n want %s", i, again, raw)
 			}
 			types[e.TypeName()] = true
@@ -125,8 +131,13 @@ func TestNotesSyncScenario(t *testing.T) {
 			FormatVersion int    `json:"formatVersion"`
 			Kind          string `json:"kind"`
 		}
-		if err := json.Unmarshal(c.Payload, &p); err != nil || p.FormatVersion != 1 || len(c.Payload) > wire.MaxNotePayload {
-			t.Errorf("%s: not a note payload of item FH: %v %s", c.Name, err, c.Payload)
+		// the file is indented, so a payload is measured and compared in the form it was sealed in: compact
+		var compactPayload bytes.Buffer
+		if err := json.Compact(&compactPayload, c.Payload); err != nil {
+			t.Fatalf("%s: the payload is not JSON: %v", c.Name, err)
+		}
+		if err := json.Unmarshal(c.Payload, &p); err != nil || p.FormatVersion != 1 || compactPayload.Len() > wire.MaxNotePayload {
+			t.Errorf("%s: not a note payload of item FH: %v (%d bytes)", c.Name, err, compactPayload.Len())
 		}
 		kinds[p.Kind] = true
 		if !strings.HasPrefix(c.Context, "note:") || !wire.ValidNoteID(strings.TrimPrefix(c.Context, "note:")) {
@@ -141,8 +152,8 @@ func TestNotesSyncScenario(t *testing.T) {
 		}
 		for _, to := range c.To {
 			payload, _, err := openBox(c.Box, to.DeviceID, e2eDevices[to.Device].private(), e2eDevices[c.From.Device].KEM, c.Context)
-			if err != nil || string(payload) != string(c.Payload) {
-				t.Errorf("%s as %s: %v", c.Name, to.Device, err)
+			if err != nil || !sameValue(t, payload, c.Payload) {
+				t.Errorf("%s as %s: the box does not open to the payload of the file (%v)", c.Name, to.Device, err)
 			}
 		}
 	}
@@ -168,6 +179,96 @@ func TestNotesTranscriptIsDeterministic(t *testing.T) {
 	}
 	if !bytes.Equal(first, second) {
 		t.Error("the notes transcript differs between two runs: a generated vector must be a function of the code alone")
+	}
+}
+
+// The schedule scenario belongs to DEVICE-EXCHANGE 1.15 (ticket L0338): a separate file that generate never writes.
+// It must hold both frames, every reason of a schedule-result the server itself sends (item FQ), read back through
+// the codec to the bytes the server wrote, and carry boxes that open under schedule:<requestId> and
+// schedule-result:<requestId> built from the requestId of the frame.
+func TestScheduleRoutingScenario(t *testing.T) {
+	data, err := generateScheduleTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		framesDoc
+		Sealed sealedFile `json:"sealed"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Transcripts) != 1 || doc.Transcripts[0].Name != "schedule" || len(doc.Transcripts[0].Steps) == 0 {
+		t.Fatal("the schedule scenario produced no transcript")
+	}
+	types, reasons := map[string]bool{}, map[string]bool{}
+	for i, st := range doc.Transcripts[0].Steps {
+		if st.JSON == "" {
+			continue
+		}
+		raw, err := hex.DecodeString(st.Hex)
+		if err != nil || string(raw[4:]) != st.JSON {
+			t.Fatalf("step %d: the hex is not the frame of the json", i)
+		}
+		e, err := wire.NewFrameReader(bytes.NewReader(raw), wire.MaxFrameAuth).Read()
+		if err != nil {
+			t.Fatalf("step %d (%s): %v", i, st.JSON, err)
+		}
+		if again, err := wire.Frame(e); err != nil || !bytes.Equal(again, raw) {
+			t.Errorf("step %d: re-encoding the decoded frame changes the bytes\n got  %s\n want %s", i, again, raw)
+		}
+		types[e.TypeName()] = true
+		if res, ok := e.(*wire.ScheduleResult); ok && res.Reason != "" {
+			reasons[res.Reason] = true
+			if len(res.Box) != 0 {
+				t.Errorf("step %d: a schedule-result carries a box and a reason: %s", i, st.JSON)
+			}
+		}
+	}
+	for _, typ := range []string{wire.TypeScheduleRequest, wire.TypeScheduleResult} {
+		if !types[typ] {
+			t.Errorf("no frame of type %q in the schedule transcript", typ)
+		}
+	}
+	for _, r := range []string{wire.ScheduleReasonNotPermitted, wire.ScheduleReasonUnavailable, wire.ScheduleReasonUnsupported} {
+		if !reasons[r] {
+			t.Errorf("the reason %q is not produced by the schedule transcript", r)
+		}
+	}
+	if len(doc.Sealed.Cases) != 4 {
+		t.Fatalf("%d boxes, want the two requests and the two answers", len(doc.Sealed.Cases))
+	}
+	for _, c := range doc.Sealed.Cases {
+		if !strings.HasPrefix(c.Context, "schedule:") && !strings.HasPrefix(c.Context, "schedule-result:") {
+			t.Errorf("%s: the context %q is not a schedule context", c.Name, c.Context)
+		}
+		if len(c.To) != 1 {
+			t.Errorf("%s: %d recipients, a schedule box is addressed to one device", c.Name, len(c.To))
+		}
+		for _, to := range c.To {
+			payload, _, err := openBox(c.Box, to.DeviceID, e2eDevices[to.Device].private(), e2eDevices[c.From.Device].KEM, c.Context)
+			if err != nil || !sameValue(t, payload, c.Payload) {
+				t.Errorf("%s as %s: the box does not open to the payload of the file (%v)", c.Name, to.Device, err)
+			}
+		}
+	}
+}
+
+// The schedule transcript is handed to other implementations as vectors: its bytes are a function of the code alone.
+func TestScheduleTranscriptIsDeterministic(t *testing.T) {
+	first, err := generateScheduleTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := generateScheduleTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) == 0 {
+		t.Fatal("the schedule transcript is empty")
+	}
+	if !bytes.Equal(first, second) {
+		t.Error("the schedule transcript differs between two runs: a generated vector must be a function of the code alone")
 	}
 }
 
@@ -350,6 +451,17 @@ func TestTheFramesCoverEveryEnvelopeEveryReasonAndEveryOpening(t *testing.T) {
 		t.Fatal(err)
 	}
 	doc.Transcripts = append(doc.Transcripts, notesExtra.Transcripts...)
+	// the schedule frames (1.15, ticket L0338) are produced only by the separate schedule transcript, accepted here
+	// in the same way
+	scheduleJSON, err := generateScheduleTranscript()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var scheduleExtra framesDoc
+	if err := json.Unmarshal(scheduleJSON, &scheduleExtra); err != nil {
+		t.Fatal(err)
+	}
+	doc.Transcripts = append(doc.Transcripts, scheduleExtra.Transcripts...)
 	types, reasons := map[string]bool{}, map[string]bool{}
 	var plain, tlsStreams int
 	statuses := map[int]bool{}

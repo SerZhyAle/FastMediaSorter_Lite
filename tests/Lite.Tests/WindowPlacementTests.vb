@@ -223,7 +223,8 @@ Public Class WindowPlacementTests
         Assert.Contains("settingsDesiredMinimum = New Size(Sp(780), Sp(400))", layout)
         Assert.DoesNotContain("MinimumSize = New Size(Sp(780), Sp(400))", layout)
         Dim fit As String = BodyOf(layout, "Private Sub FitModernSettingsClientSize(")
-        Dim bound As Integer = fit.IndexOf("MinimumSize = WindowPlacement.BoundMinimum(settingsDesiredMinimum, workArea)", StringComparison.Ordinal)
+        ' L0361 rule S6 (1): the minimum is bounded by 90 % of the work area (minimumArea), still before it is read.
+        Dim bound As Integer = fit.IndexOf("MinimumSize = WindowPlacement.BoundMinimum(settingsDesiredMinimum, minimumArea)", StringComparison.Ordinal)
         Dim reads As Integer = fit.IndexOf("Dim minClientWidth As Integer = Math.Max(1, MinimumSize.Width - chromeWidth)", StringComparison.Ordinal)
         Assert.True(bound >= 0, "FitModernSettingsClientSize no longer bounds the minimum by the work area")
         Assert.True(reads > bound, "the minimum is read for the clamp before it is bounded")
@@ -267,6 +268,7 @@ Public Class WindowPlacementTests
     <Theory>
     <InlineData("Image_Editor_Form.vb", "EditorDpi")>
     <InlineData("Image_Panel_Form.Modern.vb", "PicturePanelDpi")>
+    <InlineData("Main_Form.Lifecycle.vb", "AppDpi")>
     Public Sub The_dpi_a_size_was_measured_at_is_written_with_it_and_read_back(fileName As String, key As String)
         Dim text As String = Source(fileName)
         Assert.Contains("""" & key & """", text)

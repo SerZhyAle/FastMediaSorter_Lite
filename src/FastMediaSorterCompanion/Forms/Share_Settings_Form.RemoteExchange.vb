@@ -258,7 +258,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _remoteDisabledNote.MaximumSize = New Size(inner, 0)
         _remoteStopNote.MaximumSize = New Size(Math.Max(1, width - _remoteStopNote.Margin.Horizontal), 0)
         _remoteSignInHint.MaximumSize = New Size(Math.Max(1, width \ 2), 0)
-        _remoteFingerprint.Width = Math.Max(120, Math.Min(inner, LogicalToDeviceUnits(560)))
+        _remoteFingerprint.Width = Math.Max(LogicalToDeviceUnits(120), Math.Min(inner, LogicalToDeviceUnits(560)))
     End Sub
 
     ''' <summary>Puts the top band above the rail at form level: the header, the banner and the connection block, the rail below (5.6).</summary>

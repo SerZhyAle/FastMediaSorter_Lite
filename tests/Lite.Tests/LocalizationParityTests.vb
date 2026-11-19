@@ -133,9 +133,11 @@ Public Class LocalizationParityTests
         ' A key can be written as a concatenation of literals and newline constants -
         ' Localization.T("a" & vbCrLf & "b"). Matching only the first literal would
         ' report every such call site as unregistered, so the whole chain is rebuilt
-        ' into the string the dictionary is actually keyed by.
+        ' into the string the dictionary is actually keyed by. Only TC takes a leading
+        ' context literal; TF("format {0}", "--flag") has its key first and a literal value
+        ' after it, which must not be read as context + key.
         Dim callSite As New Regex(
-            "Localization\.(?:TF|TC|T)\(\s*(?:""(?<ctx>(?:[^""]|"""")*)""\s*,\s*)?" &
+            "Localization\.(?:TC\(\s*""(?<ctx>(?:[^""]|"""")*)""\s*,\s*|(?:TF|T)\(\s*)" &
             "(?<key>""(?:[^""]|"""")*""(?:\s*&\s*(?:vbCrLf|vbLf|vbCr|Chr\(1[03]\)|""(?:[^""]|"""")*"")\s*)*)",
             RegexOptions.Singleline)
         Dim token As New Regex("""(?<lit>(?:[^""]|"""")*)""|(?<nl>vbCrLf|vbLf|vbCr|Chr\(10\)|Chr\(13\))")

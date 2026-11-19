@@ -292,7 +292,7 @@ Friend NotInheritable Class Exchange_Account_Form
                 ' autostart explanation - would stay out of reach: the extent follows the rows on every layout.
                 OptionRows.KeepScrollExtent(body)
                 AddHandler body.Layout, Sub() OptionRows.KeepScrollExtent(body)
-                Dim bar As Integer = If(desired.Height > area.Height, SystemInformation.VerticalScrollBarWidth, 0)
+                Dim bar As Integer = If(desired.Height > area.Height, UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi), 0)
                 Size = New Size(Math.Min(desired.Width + bar, area.Width), Math.Min(desired.Height, area.Height))
             End If
             Exit For

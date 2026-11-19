@@ -30,10 +30,10 @@ Friend NotInheritable Class ManagerSettingRow
         Me.Margin = margin
         SuspendLayout()
         caption.Dock = DockStyle.None
-        caption.Margin = New Padding(0, 2, 12, 0)
+        caption.Margin = CaptionMarginAt(Me)
         caption.MaximumSize = Size.Empty
         Hint = New Label With {.AutoSize = True, .Text = hintText,
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 4, 12, 2), .Visible = hintText.Length > 0}
+            .ForeColor = SystemColors.GrayText, .Margin = HintMarginAt(Me), .Visible = hintText.Length > 0}
         editor.AccessibleName = caption.Text
         editor.Anchor = AnchorStyles.Top Or AnchorStyles.Left
         Controls.AddRange({caption, Hint, editor})
@@ -44,6 +44,22 @@ Friend NotInheritable Class ManagerSettingRow
         Next
         ResumeLayout(False)
     End Sub
+
+    ' The caption-to-editor gap and the vertical breathing room, authored in logical (96-dpi) px. Raw device pixels here
+    ' were 7 logical px at 168 dpi (ticket 369, D9): they are resolved against the row's own DPI and the window's composed
+    ' scale, first in the constructor (a first guess) and again at every arrange, when the row is hosted and its DPI is known.
+    Private Const CaptionTopLogical As Integer = 2
+    Private Const ColumnGapLogical As Integer = 12
+    Private Const HintTopLogical As Integer = 4
+    Private Const HintBottomLogical As Integer = 2
+
+    Private Shared Function CaptionMarginAt(row As Control) As Padding
+        Return New Padding(0, DpiLayout.Device(row, CaptionTopLogical), DpiLayout.Device(row, ColumnGapLogical), 0)
+    End Function
+
+    Private Shared Function HintMarginAt(row As Control) As Padding
+        Return New Padding(0, DpiLayout.Device(row, HintTopLogical), DpiLayout.Device(row, ColumnGapLogical), DpiLayout.Device(row, HintBottomLogical))
+    End Function
 
     Friend Sub SetHint(text As String)
         Hint.Text = text
@@ -100,6 +116,10 @@ Friend NotInheritable Class ManagerSettingRow
         If arranging OrElse Caption Is Nothing OrElse Hint Is Nothing OrElse ClientSize.Width < 2 Then Return
         arranging = True
         Try
+            Dim captionMargin As Padding = CaptionMarginAt(Me)
+            If Caption.Margin <> captionMargin Then Caption.Margin = captionMargin
+            Dim hintMargin As Padding = HintMarginAt(Me)
+            If Hint.Margin <> hintMargin Then Hint.Margin = hintMargin
             Dim value = ValueWidth(ClientSize.Width)
             Dim maximum As New Size(Math.Max(1, ClientSize.Width - value - Caption.Margin.Horizontal - Padding.Horizontal), 0)
             If Caption.MaximumSize <> maximum OrElse Hint.MaximumSize <> maximum Then

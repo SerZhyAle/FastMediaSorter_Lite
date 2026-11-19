@@ -401,3 +401,7 @@ else {
     Write-Host 'Unsigned package ready for the Store (Microsoft re-signs on certification).' -ForegroundColor Yellow
     Write-Host 'For a LOCAL test build instead, re-run with -SelfSign.'
 }
+
+. (Join-Path $RepoRoot 'tools\lib\ReleaseLedgerHook.ps1')
+$ledgerKind = if ($ReleaseVersion -and -not $SelfSign) { 'release' } else { 'test' }
+Invoke-ReleaseLedgerBuild -RepoRoot $RepoRoot -Package 'user-msix' -Flavor 'msix' -Kind $ledgerKind -Version $MsixVersion -Artifact $MsixPath

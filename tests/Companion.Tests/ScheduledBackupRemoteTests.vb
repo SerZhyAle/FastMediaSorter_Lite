@@ -106,19 +106,19 @@ Public Class ScheduledBackupRemoteTests
 
         Public Function TryStat(path As String, ByRef entry As ResourceEntry) As Boolean Implements IFileSystemProvider.TryStat
             entry = Nothing
-            Dim canonical As String = Canonical(path)
-            If Files.ContainsKey(canonical) Then
-                entry = EntryOf(canonical)
+            Dim canonicalPath As String = Canonical(path)
+            If Files.ContainsKey(canonicalPath) Then
+                entry = EntryOf(canonicalPath)
                 Return True
             End If
-            If Links.Contains(canonical) Then
-                entry = New ResourceEntry With {.FullPath = canonical, .Name = canonical.Substring(canonical.LastIndexOf("/"c) + 1),
-                    .LastWriteUtc = Times(canonical), .IsDirectory = False, .IsLink = True}
+            If Links.Contains(canonicalPath) Then
+                entry = New ResourceEntry With {.FullPath = canonicalPath, .Name = canonicalPath.Substring(canonicalPath.LastIndexOf("/"c) + 1),
+                    .LastWriteUtc = Times(canonicalPath), .IsDirectory = False, .IsLink = True}
                 Return True
             End If
-            If Folders.Contains(canonical) Then
-                entry = New ResourceEntry With {.FullPath = canonical, .Name = canonical.Substring(canonical.LastIndexOf("/"c) + 1),
-                    .LastWriteUtc = Times(canonical), .IsDirectory = True}
+            If Folders.Contains(canonicalPath) Then
+                entry = New ResourceEntry With {.FullPath = canonicalPath, .Name = canonicalPath.Substring(canonicalPath.LastIndexOf("/"c) + 1),
+                    .LastWriteUtc = Times(canonicalPath), .IsDirectory = True}
                 Return True
             End If
             Return False
@@ -297,7 +297,7 @@ Public Class ScheduledBackupRemoteTests
         End Property
 
         Private Shared Function FactsOf(id As String) As ScheduledResourceFacts
-            Return New ScheduledResourceFacts With {.Exists = True, .DisplayName = "NAS", .RootPath = "/srv"}
+            Return New ScheduledResourceFacts With {.Exists = True, .DisplayName = "NAS", .RootPath = If(String.Equals(id, "r2", StringComparison.Ordinal), "/sets", "/srv")}
         End Function
 
         ''' <summary>The fake FileDO: the staged tree is captured now (it is gone when the run ends), the generation
@@ -311,7 +311,8 @@ Public Class ScheduledBackupRemoteTests
             Dim stemIndex As Integer = launch.Arguments.IndexOf("stem")
             Dim stem As String = launch.Arguments(stemIndex + 1)
 
-            If source.StartsWith(BackupStagingFolders.Prefix, StringComparison.OrdinalIgnoreCase) Then
+            Dim stageDirName As String = Path.GetFileName(Path.GetDirectoryName(source))
+            If stageDirName IsNot Nothing AndAlso stageDirName.StartsWith(BackupStagingFolders.Prefix, StringComparison.OrdinalIgnoreCase) Then
                 For Each folder As String In Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories)
                     StagedWhileRunning.Add("folder " & folder.Substring(source.Length + 1))
                 Next
@@ -338,7 +339,7 @@ Public Class ScheduledBackupRemoteTests
         End Sub
 
         Friend Function Run(op As ScheduledOperation, Optional ct As CancellationToken = Nothing) As ScheduledRunResult
-            Return New ScheduledExecutor(Services).Run(op, If(ct, CancellationToken.None))
+            Return New ScheduledExecutor(Services).Run(op, ct)
         End Function
 
         Private Sub Dispose(disposing As Boolean)
@@ -444,6 +445,7 @@ Public Class ScheduledBackupRemoteTests
     Public Sub An_sftp_source_is_staged_whole_with_empty_folders_and_the_run_speaks_the_remote_side()
         Using kit As New Kit()
             kit.ServerA.PutFolder("/srv/photos")
+            kit.ServerA.PutFolder("/srv/photos/one")
             kit.ServerA.Put("/srv/photos/one/a.txt", "a")
             kit.ServerA.PutFolder("/srv/photos/empty")
             kit.ServerA.PutFolder("/srv/photos/empty/deeper")
@@ -453,12 +455,12 @@ Public Class ScheduledBackupRemoteTests
             Dim result As ScheduledRunResult = kit.Run(op)
 
             Assert.Equal(ScheduledRunOutcome.Ok, result.Outcome)
-            Assert.Contains("file a.txt", kit.StagedWhileRunning)
+            Assert.Contains("file one\a.txt", kit.StagedWhileRunning)
             Assert.Contains("folder empty", kit.StagedWhileRunning)
             Assert.Contains("folder empty\deeper", kit.StagedWhileRunning)
             Assert.Single(kit.Seen)
             Dim sourceArg As String = kit.Seen(0).Arguments(1)
-            Assert.StartsWith(BackupStagingFolders.Prefix, sourceArg, StringComparison.OrdinalIgnoreCase)
+            Assert.StartsWith(BackupStagingFolders.Prefix, Path.GetFileName(Path.GetDirectoryName(sourceArg)), StringComparison.OrdinalIgnoreCase)
             ' The staging folder is this run's own and is gone when the run ends.
             Assert.Empty(BackupStagingFolders.OwnFolders(op.Id))
             Assert.Contains(kit.Items, Function(e) e.Verb = "backup" AndAlso e.Verdict = "done" AndAlso e.Source.Contains("NAS"))
@@ -652,7 +654,7 @@ Public Class ScheduledBackupRemoteTests
             Dim op As ScheduledOperation = PublishOp()
             ' The publication lists the set twice (its plan and its mutation check); a change in between refuses.
             kit.ServerB.OnNthList = Sub(n As Integer)
-                                       If n = 2 Then kit.ServerB.Put("/sets/" & op.BackupStem & "_002.zip", "someone else")
+                                       If n = 1 Then kit.ServerB.Put("/sets/" & op.BackupStem & "_002.zip", "someone else")
                                    End Sub
             Dim result As ScheduledRunResult = kit.Run(op)
             Assert.Equal(ScheduledRunOutcome.Wall, result.Outcome)
@@ -754,7 +756,7 @@ Public Class ScheduledBackupRemoteTests
         Using kit As New Kit()
             kit.ServerA.PutFolder("/srv/photos")
             kit.ServerA.Put("/srv/photos/a.txt", "data")
-            kit.ServerA.Links.Add("/srv/photos/linkdir")
+            kit.ServerA.PutLink("/srv/photos/linkdir")
             Dim sourceSide As New ProviderSide(kit.ServerA, "r1", "/srv/photos", "NAS", New RecursionFlag With {.Value = True}, Nothing)
             Dim staged As BackupStageResult = New BackupRemoteStage().Stage(sourceSide, Path.Combine(kit.Destination, "stage"), CancellationToken.None, skipLinks:=True)
             Assert.False(staged.Refused)

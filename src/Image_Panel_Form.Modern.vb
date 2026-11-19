@@ -386,7 +386,7 @@ Partial Public Class Image_Panel_Form
     ''' window is long scaled and this is final.
     ''' </summary>
     Private Sub ApplyRememberedBounds()
-        Dim size As Size = WindowPlacement.SizeForDpi(remembered_Size.Width, remembered_Size.Height, remembered_Dpi, Me.DeviceDpi)
+        Dim size As Size = WindowPlacement.SizeForDpi(remembered_Size.Width, remembered_Size.Height, remembered_Dpi, DialogLayout.EffectiveDpi(Me))
         Dim placed As Rectangle = WindowPlacement.Place(New Rectangle(remembered_Location, size),
                                                         WindowPlacement.CurrentWorkAreas())
         Me.SetBounds(placed.Left, placed.Top, placed.Width, placed.Height)
@@ -446,8 +446,9 @@ Partial Public Class Image_Panel_Form
             SaveSetting(App_name, Second_App_Name, "PicturePanelLeft", normal_Bounds.Left.ToString)
             If normal_Bounds.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "PicturePanelHeight", normal_Bounds.Height.ToString)
             If normal_Bounds.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "PicturePanelWidth", normal_Bounds.Width.ToString)
-            ' The pixels above belong to this DPI; without it the next open cannot tell them from another monitor's.
-            SaveSetting(App_name, Second_App_Name, "PicturePanelDpi", Me.DeviceDpi.ToString)
+            ' The pixels above belong to this DPI times the window's multiplier M (B-D-7: the interface scale and the Text size
+            ' change what a pixel of the window means); without it the next open cannot tell them from another monitor's.
+            SaveSetting(App_name, Second_App_Name, "PicturePanelDpi", DialogLayout.EffectiveDpi(Me).ToString)
         End If
 
         If tip IsNot Nothing Then

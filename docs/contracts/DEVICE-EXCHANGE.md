@@ -9,6 +9,14 @@
 
 ## What this repository must do to stay conformant
 
+- **Vendored vectors, dated exception (2026-11-19, release 26.11.19.1500).** `tests/Lite.Tests/TestData/exchange-vectors`
+  holds the corpus this repository generated on 2026-11-19, not the one the catalog adopted: it differs in the `cast`
+  transcript (item DY, the stream `ended-broadcast-tunnel`, the `relay` feature) and in `admin-native` /
+  `admin-websocket` (the notes limits of items FY and FZ in the administration replies). The pin is
+  `ExchangeTranscriptFile.PinnedSha256` in `tests/Lite.Tests/ExchangeWireTestKit.vb`. The corpus is filed in the
+  catalog as `PROPOSAL-2026-11-19-fmsw-corpus-ended-broadcast-tunnel.md` and recorded as a dated exception in the
+  registry; the pin and the vendored pair move to the adopted bytes in one edit the day the owner adopts it. Until then
+  the replay tests prove this repository's server against its own generator (rung 1), nothing more.
 - **Wire (section 7.1, item D).** `schemaVersion` 2 only; a plain stream is answered only `tls-required` or
   `version-unsupported`. Every deployment serves TLS and a client never falls back to plain. A client validates the
   leaf as item D says: the platform chain first, otherwise the entry's pin, a new leaf only after the person has

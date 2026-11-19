@@ -30,10 +30,24 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
         If btnShowQr Is Nothing Then Return
+        RebuildQrGlyph(palette)
+    End Sub
+
+    ''' <summary>Makes the Show-QR glyph again at this window's live dpi (S2: the bitmap is never rescaled by the platform,
+    ''' so a glyph resolved in the constructor, at the system dpi, stays that size on a monitor of another dpi).</summary>
+    Private Sub RebuildQrGlyph(palette As ThemePalette)
         Dim previous As Image = _qrGlyph
-        _qrGlyph = BuildQrGlyph(LogicalToDeviceUnits(16), palette.AccentInk)
+        _qrGlyph = BuildQrGlyph(DpiLayout.Device(Me, 16), palette.AccentInk)
         SetQrAvailable(btnShowQr.Enabled)
         If previous IsNot Nothing Then previous.Dispose()
+    End Sub
+
+    ''' <summary>Re-resolves the glyph only when the window dpi moved its size (a DPI change, or the first show on a monitor
+    ''' that is not the one the constructor measured).</summary>
+    Private Sub RefreshQrGlyphForDpi()
+        If btnShowQr Is Nothing Then Return
+        If _qrGlyph IsNot Nothing AndAlso _qrGlyph.Width = DpiLayout.Device(Me, 16) Then Return
+        RebuildQrGlyph(ThemeService.Palette)
     End Sub
 
     ' Profile + media tokens/displays kept identical to Share_Root_Params_Form so a folder's
@@ -209,7 +223,8 @@ Public NotInheritable Class PackageWizardForm
             .TextAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.Flat}
         btnShowQr.FlatAppearance.BorderSize = 1
         AddHandler btnShowQr.Click, AddressOf OnShowQr
-        btnCopyLogin = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Скопировать логин/пароль"), .Enabled = False}
+        AddHandler btnShowQr.DpiChangedAfterParent, Sub() RefreshQrGlyphForDpi()
+        btnCopyLogin =New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Скопировать логин/пароль"), .Enabled = False}
         btnSave = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Сохранить файл .fmscfg.."), .Enabled = False}
         btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Отправить по почте.."), .Enabled = False}
         ' The one answer of this window is Close; it lives in the shared answer row below the band
@@ -266,6 +281,7 @@ Public NotInheritable Class PackageWizardForm
     ''' high display scaling.</summary>
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        RefreshQrGlyphForDpi()
         OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
@@ -284,7 +300,8 @@ Public NotInheritable Class PackageWizardForm
             Dim wa As Rectangle = Screen.FromHandle(Me.Handle).WorkingArea
             Dim nonClientW As Integer = Me.Width - Me.ClientSize.Width
             Dim nonClientH As Integer = Me.Height - Me.ClientSize.Height
-            Dim desiredClientW As Integer = colsW + SystemInformation.VerticalScrollBarWidth + 8 + dgv.Margin.Horizontal
+            ' S8 and S2: the scroll bar at this window's dpi (not the system dpi), the slack in logical units.
+            Dim desiredClientW As Integer = colsW + UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi) + DpiLayout.Device(Me, 8) + dgv.Margin.Horizontal
             Dim maxClientW As Integer = CInt(wa.Width * 0.97) - nonClientW
             Dim clientW As Integer = System.Math.Min(desiredClientW, maxClientW)
             clientW = System.Math.Max(clientW, Me.MinimumSize.Width - nonClientW)

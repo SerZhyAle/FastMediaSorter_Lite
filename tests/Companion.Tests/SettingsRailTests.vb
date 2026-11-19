@@ -611,8 +611,7 @@ Public Class SettingsRailTests
                                          captionStarts.Add(item.Padding.Left)
                                      Else
                                          Dim meaning = IconMap.GetMeaning("managerSettingsNavItem_" & id.Replace("/", "_"))
-                        Assert.True(meaning.IsVocabulary OrElse meaning.Proposal = IconMap.SettingsDestinationGlyphsProposal,
-                                   id & " draws neither a catalog record nor the filed proposal's drawing")
+                        Assert.True(meaning.IsVocabulary, id & " draws no catalog record (ICON-SET 0.42 made every destination's glyph one)")
                                          Dim image = DirectCast(item.Image, Bitmap)
                                          Assert.NotNull(image)
                                          Assert.Equal(glyph, image.Height)

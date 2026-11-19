@@ -523,14 +523,14 @@ Namespace Companion.Tests
             Friend ReadOnly Dispatcher As ScheduledRemoteDispatcher
 
             Friend Sub New()
-                Dim facts As Func(Of String, ScheduledResourceFacts) =
+                Dim factsLookup As Func(Of String, ScheduledResourceFacts) =
                     Function(id As String) New ScheduledResourceFacts With {.Exists = Facts.Exists,
                         .DisplayName = Facts.DisplayName, .IsReadOnly = Facts.IsReadOnly, .IsPinLocked = Facts.IsPinLocked,
                         .IsUnsupported = Facts.IsUnsupported, .RootPath = Facts.RootPath, .IsSmb = Facts.IsSmb}
                 Dim folder As String = Tree.Dir("state")
-                Dim services As New ScheduledServices With {.Clock = AddressOf Clock.Read, .ResourceFacts = facts}
+                Dim services As New ScheduledServices With {.Clock = AddressOf Clock.Read, .ResourceFacts = factsLookup}
                 Engine = New ScheduledEngine(New ScheduledStore(folder), New ScheduledJournal(folder), services, Timers) With {.CatchUpDelay = TimeSpan.Zero}
-                Dispatcher = New ScheduledRemoteDispatcher(Engine, "dev-local-1") With {.ConsentOverride = ScheduledRemoteConsent.Always, .ResourceFacts = facts}
+                Dispatcher = New ScheduledRemoteDispatcher(Engine, "dev-local-1") With {.ConsentOverride = ScheduledRemoteConsent.Always, .ResourceFacts = factsLookup}
             End Sub
 
             Public Sub Dispose() Implements IDisposable.Dispose

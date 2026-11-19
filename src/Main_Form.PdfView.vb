@@ -401,7 +401,8 @@ Partial Public Class Main_Form
         ' On-surface page indicator (3 / 48) in bottom-right corner (§3.3)
         Dim indicatorText As String = pdf_Current_Page.ToString() & " / " & pdf_Total_Pages.ToString()
         Dim scale As Single = GetCurrentDpiScale()
-        Dim font As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(9.0F, 11.0F * scale), FontStyle.Bold)
+        ' Rule S4, point form, drawn at this window's dpi; the pads stay pixel geometry (L0363 A-D2).
+        Dim font As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(9.0F, 11.0F * TextPointScale()), FontStyle.Bold)
         Dim textSize As Size = TextRenderer.MeasureText(e.Graphics, indicatorText, font)
 
         Dim padX As Integer = CInt(10 * scale)

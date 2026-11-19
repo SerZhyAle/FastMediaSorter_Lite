@@ -380,13 +380,15 @@ Partial Public Class Main_Form
         Dim scale As Single = GetCurrentDpiScale()
         Dim points As Single = Math.Max(ModernViewerPreferences.TextFontSizeMin,
             Math.Min(ModernViewerPreferences.TextFontSizeMax, prefs.TextFontSize * text_Font_Scale))
-        Dim fontSize As Single = points * scale
+        ' Fonts take the point form of rule S4 (drawn at this window's dpi); margins stay pixel geometry (K x M).
+        Dim pointScale As Single = TextPointScale()
+        Dim fontSize As Single = points * pointScale
         Dim fontFamily As String = If(text_Current_Result.IsMonospace, prefs.TextFontFamilyMonospace, prefs.TextFontFamilyProportional)
         Dim wrap As Boolean = prefs.TextWrap
         Dim measureFlags As TextFormatFlags = TextFormatFlags.NoPrefix Or TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine
 
         Using font As New Font(fontFamily, fontSize, FontStyle.Regular),
-              statusFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.0F * scale), FontStyle.Regular)
+              statusFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.0F * pointScale), FontStyle.Regular)
 
             Dim rowHeight As Integer = Math.Max(14, CInt(font.GetHeight(g) * prefs.TextLineSpacing))
             Dim statusHeight As Integer = If(prefs.TextStatusBar, CInt(statusFont.GetHeight(g) * 1.6F) + 4, 0)

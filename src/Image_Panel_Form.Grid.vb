@@ -140,7 +140,8 @@ Partial Public Class Image_Panel_Form
         Private Function ViewWidth() As Integer
             ' The scrollbar's width is reserved always: whether the bar is needed depends on
             ' the column count, which depends on the width - reserving it breaks the circle.
-            Return Math.Max(1, ClientSize.Width - SystemInformation.VerticalScrollBarWidth)
+            ' The bar is a child at this control's dpi (D): its width is the metric at D, not the system one (L0361 rule S8).
+            Return Math.Max(1, ClientSize.Width - UiSizing.VerticalScrollBarWidthForDpi(DeviceDpi))
         End Function
 
         ''' <summary>Cards per row.</summary>
@@ -608,7 +609,7 @@ Partial Public Class Image_Panel_Form
             Catch
             End Try
             If ext.Length = 0 Then ext = "?"
-            Using plate_Font As New Font(Font.FontFamily, Math.Max(9.0F, card / 7.0F), FontStyle.Bold, GraphicsUnit.Pixel)
+            Using plate_Font As New Font(Font.FontFamily, Math.Max(CSng(Dp(9)), card / 7.0F), FontStyle.Bold, GraphicsUnit.Pixel)
                 Using plate_Format As New StringFormat With {.Alignment = StringAlignment.Center, .LineAlignment = StringAlignment.Center}
                     Using ink As New SolidBrush(Color.FromArgb(190, ForeColor))
                         g.DrawString(ext, plate_Font, ink, picture, plate_Format)

@@ -343,4 +343,10 @@ $serverHash = (Get-FileHash -Algorithm SHA256 $serverPath).Hash
 "$serverHash  $serverName" | Out-File -FilePath ($serverPath + ".sha256") -Encoding ascii
 Write-Host "SERVER: $serverPath"
 Write-Host "SHA256: $serverHash"
+
+. (Join-Path $PSScriptRoot 'lib\ReleaseLedgerHook.ps1')
+Invoke-ReleaseLedgerBuild -RepoRoot $solutionDir -Package 'user' -Flavor 'setup' -Kind 'test' -Version $Version -Artifact $setupPath
+Invoke-ReleaseLedgerBuild -RepoRoot $solutionDir -Package 'user' -Flavor 'zip' -Kind 'test' -Version $Version -Artifact $zipPath
+Invoke-ReleaseLedgerBuild -RepoRoot $solutionDir -Package 'server' -Flavor 'setup' -Kind 'test' -Version $Version -Artifact $serverPath
+
 Exit-Verdict 'Build-OfflineRelease' 0 "the ZIP, the User setup and the Server setup of $Version built"

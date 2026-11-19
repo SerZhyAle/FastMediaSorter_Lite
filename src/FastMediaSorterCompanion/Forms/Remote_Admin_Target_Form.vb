@@ -193,6 +193,7 @@ Friend NotInheritable Class Remote_Admin_Target_Form
         MyBase.OnLoad(e)
         ThemeService.Attach(Me)
         DpiLayout.ClampToWorkingArea(Me)
+        TallDialogScroll.KeepReachable(Me)
         DpiLayout.CenterOnOwner(Me)
         _txtName.Focus()
     End Sub

@@ -1105,10 +1105,10 @@ func TestNoBoxOfANoteReachesALog(t *testing.T) {
 		t.Fatal(err)
 	}
 	ntStored(t, del) // a delete that carries a box
-	if err := c1.Send(&wire.NotesPut{NoteID: ntC, BaseRevision: ntRev(0), Sealed: ntSized(ntBoxBound(ntC, a1.ID)+1, tags[6])}); err != nil {
-		t.Fatal(err)
-	}
-	ntExpectClosed(t, c1, "an oversize put") // the frame that cannot be delivered
+	// the frame that cannot be delivered is refused for capacity and nothing is stored; the stream stays open (item FX).
+	// It rewrites note A (revision 1), not a new note: the account holds two records of two, and the count limit
+	// is checked before the capacity.
+	ntRefused(t, ntPut(t, c1, ntA, 1, ntSized(ntBoxBound(ntA, a1.ID)+1, tags[6])), wire.ReasonCapacity)
 
 	c2.Close()
 	ntAgeTombstones(env, clock) // the purge of the tombstone
@@ -1117,10 +1117,19 @@ func TestNoBoxOfANoteReachesALog(t *testing.T) {
 	}
 
 	// the run was not vacuous: every path wrote its line
-	for _, event := range []string{"notes-stored", "notes-put-refused", "notes-put-malformed", "notes-changed-pushed", "notes-tombstones-purged", "notes-erased"} {
+	for _, event := range []string{"notes-stored", "notes-put-refused", "notes-changed-pushed", "notes-tombstones-purged", "notes-erased"} {
 		if ntLogCount(env, event) == 0 {
 			t.Fatalf("no %s line was logged", event)
 		}
+	}
+	capacityLines := 0
+	for _, l := range env.Log.Lines() {
+		if strings.Contains(l, "\tnotes-put-refused\t") && strings.Contains(l, "capacity") {
+			capacityLines++
+		}
+	}
+	if capacityLines == 0 {
+		t.Fatal("the oversize put wrote no notes-put-refused line for capacity")
 	}
 	env.Log.AssertNone(t, tags...)
 	for _, l := range env.Log.Lines() {

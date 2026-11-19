@@ -202,6 +202,7 @@ Friend NotInheritable Class Exchange_Admin_Browser_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DpiLayout.ClampToWorkingArea(Me)
+        TallDialogScroll.KeepReachable(Me)
         DpiLayout.CenterOnOwner(Me)
     End Sub
 

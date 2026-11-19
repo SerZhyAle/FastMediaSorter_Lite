@@ -305,7 +305,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim headerHeight As Integer = _lvDrvQueue.Font.Height + LogicalToDeviceUnits(12)
         Dim wide As Boolean = _lvDrvQueue.Columns.Cast(Of ColumnHeader)().Sum(Function(c) c.Width) > _lvDrvQueue.ClientSize.Width
         _lvDrvQueue.Height = headerHeight + Math.Min(DriveQueueMaxRows, _lvDrvQueue.Items.Count) * rowHeight +
-            If(wide, SystemInformation.HorizontalScrollBarHeight, 0) + SystemInformation.Border3DSize.Height * 2
+            If(wide, UiSizing.HorizontalScrollBarHeightForDpi(DeviceDpi), 0) + UiSizing.Border3DSizeForDpi(DeviceDpi).Height * 2
     End Sub
 
     Private Sub ApplyDriveQueueCommand()

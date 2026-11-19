@@ -176,14 +176,21 @@ Partial Public Class Main_Form
         Else
             audio_Visualiser_Timer.Stop()
         End If
-        Dim top = Math.Max(12, bounds.Height - 118)
+        ' The plate is authored in 96-dpi logical pixels and resolved by K x M; its fonts are points resolved by rule S4
+        ' at this window's dpi and rebuilt when that resolution moves (L0363 A-D4: literal device pixels under point
+        ' fonts read through S, cached across a DPI change).
+        Dim k As Single = GetCurrentDpiScale()
+        Dim px As Func(Of Integer, Integer) = Function(logical As Integer) CInt(Math.Round(logical * k))
+        Dim top = Math.Max(px(12), bounds.Height - px(118))
         EnsureAudioPaintObjects()
-        g.FillRectangle(audio_Plate_Brush, New Rectangle(12, top, Math.Max(0, bounds.Width - 24), Math.Max(0, bounds.Height - top - 8)))
-        Dim line = top + 8
-        g.DrawString(audio_Current_Metadata.Title, audio_Title_Font, audio_Title_Brush, New Rectangle(22, line, bounds.Width - 44, 28), audio_Plate_Format) : line += 30
-        If audio_Current_Metadata.Artist <> "" Then g.DrawString(audio_Current_Metadata.Artist, audio_Detail_Font, audio_Detail_Brush, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
-        If audio_Current_Metadata.Album <> "" Then g.DrawString(audio_Current_Metadata.Album, audio_Detail_Font, audio_Detail_Brush, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
-        g.DrawString(audio_Current_Metadata.FormatLine, audio_Detail_Font, audio_Format_Brush, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format)
+        g.FillRectangle(audio_Plate_Brush, New Rectangle(px(12), top, Math.Max(0, bounds.Width - px(24)), Math.Max(0, bounds.Height - top - px(8))))
+        Dim line = top + px(8)
+        Dim textX As Integer = px(22)
+        Dim textW As Integer = bounds.Width - px(44)
+        g.DrawString(audio_Current_Metadata.Title, audio_Title_Font, audio_Title_Brush, New Rectangle(textX, line, textW, px(28)), audio_Plate_Format) : line += px(30)
+        If audio_Current_Metadata.Artist <> "" Then g.DrawString(audio_Current_Metadata.Artist, audio_Detail_Font, audio_Detail_Brush, New Rectangle(textX, line, textW, px(20)), audio_Plate_Format) : line += px(20)
+        If audio_Current_Metadata.Album <> "" Then g.DrawString(audio_Current_Metadata.Album, audio_Detail_Font, audio_Detail_Brush, New Rectangle(textX, line, textW, px(20)), audio_Plate_Format) : line += px(20)
+        g.DrawString(audio_Current_Metadata.FormatLine, audio_Detail_Font, audio_Format_Brush, New Rectangle(textX, line, textW, px(20)), audio_Plate_Format)
     End Sub
 
     ' The plate's and the visualiser's GDI+ objects, made once and reused (audit 050 D-21).
@@ -201,6 +208,8 @@ Partial Public Class Main_Form
     Private audio_Format_Brush As SolidBrush
     Private audio_Title_Font As Font
     Private audio_Detail_Font As Font
+    ''' <summary>The rule S4 point factor the two fonts were made at; a different one rebuilds them.</summary>
+    Private audio_Font_Scale As Single
     Private audio_Plate_Format As StringFormat
     Private audio_Visualiser_Pen As Pen
     Private audio_Visualiser_Fill As SolidBrush
@@ -210,8 +219,14 @@ Partial Public Class Main_Form
         If audio_Title_Brush Is Nothing Then audio_Title_Brush = New SolidBrush(AudioOverlayColours.TitleInk)
         If audio_Detail_Brush Is Nothing Then audio_Detail_Brush = New SolidBrush(AudioOverlayColours.DetailInk)
         If audio_Format_Brush Is Nothing Then audio_Format_Brush = New SolidBrush(AudioOverlayColours.FormatInk)
-        If audio_Title_Font Is Nothing Then audio_Title_Font = New Font("Segoe UI", 15.0F, FontStyle.Bold)
-        If audio_Detail_Font Is Nothing Then audio_Detail_Font = New Font("Segoe UI", 10.0F)
+        Dim pointScale As Single = TextPointScale()
+        If audio_Font_Scale <> pointScale Then
+            If audio_Title_Font IsNot Nothing Then audio_Title_Font.Dispose() : audio_Title_Font = Nothing
+            If audio_Detail_Font IsNot Nothing Then audio_Detail_Font.Dispose() : audio_Detail_Font = Nothing
+            audio_Font_Scale = pointScale
+        End If
+        If audio_Title_Font Is Nothing Then audio_Title_Font = New Font("Segoe UI", 15.0F * pointScale, FontStyle.Bold)
+        If audio_Detail_Font Is Nothing Then audio_Detail_Font = New Font("Segoe UI", 10.0F * pointScale)
         If audio_Plate_Format Is Nothing Then audio_Plate_Format = New StringFormat With {.Trimming = StringTrimming.EllipsisCharacter, .FormatFlags = StringFormatFlags.NoWrap}
         ' Round caps and joins: WAVE-PARTICLES section 3.2 / 4 ("stroke path, round cap").
         If audio_Visualiser_Pen Is Nothing Then audio_Visualiser_Pen = New Pen(AudioOverlayColours.StrokeInk, 1.0F) With {.StartCap = LineCap.Round, .EndCap = LineCap.Round, .LineJoin = LineJoin.Round}

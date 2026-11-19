@@ -84,6 +84,30 @@ Friend NotInheritable Class Camera_Scan_Form
         MyBase.OnLoad(e)
         DpiLayout.KeepRoomForRow(Me, _answerRow)
         DpiLayout.ClampToWorkingArea(Me)
+        KeepBodyReachable()
+    End Sub
+
+    ''' <summary>S6 rule 2: the preview and its status line are authored for a 510 logical px client. A work area that cannot
+    ''' hold it (a small screen at a high scale) is cut by the clamp, and the docked answer row would then cover the status
+    ''' line. They then move into a scrolling panel above the row, at the same places, so the row stays whole and the line
+    ''' stays reachable; a window that fits is not touched.</summary>
+    Private Sub KeepBodyReachable()
+        If _answerRow Is Nothing OrElse _answerRow.IsDisposed Then Return
+        Dim lowest As Integer = Math.Max(_previewBox.Bottom, _statusLabel.Bottom)
+        If lowest + _answerRow.GetPreferredSize(New Size(ClientSize.Width, 0)).Height <= ClientSize.Height Then Return
+        Dim body As New Panel With {.Name = "xcam_Body", .Dock = DockStyle.Fill, .AutoScroll = True}
+        SuspendLayout()
+        Try
+            Controls.Remove(_previewBox)
+            Controls.Remove(_statusLabel)
+            body.Controls.Add(_previewBox)
+            body.Controls.Add(_statusLabel)
+            Controls.Add(body)
+            ' The row stays last in the collection (it takes its edge first); the body fills what is left above it.
+            Controls.SetChildIndex(body, 0)
+        Finally
+            ResumeLayout(True)
+        End Try
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

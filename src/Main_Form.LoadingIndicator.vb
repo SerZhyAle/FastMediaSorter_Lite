@@ -293,6 +293,18 @@ Partial Public Class Main_Form
         If panel_Media Is Nothing OrElse panel_Media.IsDisposed Then Return
 
         Try
+            Dim badgePoints As Single = 11.0F
+            Dim badgePadX As Integer = LogicalToDeviceUnits(16)
+            Dim badgePadY As Integer = LogicalToDeviceUnits(12)
+#If Not NETFRAMEWORK Then
+            ' L0363 A-D16: the badge's face and padding follow the viewer's own factor (the text size and the
+            ' interface scale), like the rest of the window. The label is built loose, so its point font is read
+            ' through the system dpi (L0361 rule S4, c = S) and the platform re-bases it when it joins the window;
+            ' the padding is a pixel length, l x (K x M).
+            badgePoints = 11.0F * TextPointScale(TextSystemDpi())
+            badgePadX = UiScale.Px(16, GetCurrentDpiScale())
+            badgePadY = UiScale.Px(12, GetCurrentDpiScale())
+#End If
             If loading_Badge Is Nothing Then
                 ' BackColor is opaque on purpose: the badge sits over a sibling picture
                 ' box, and WinForms transparency only ever composites against the
@@ -304,13 +316,18 @@ Partial Public Class Main_Form
                     .BackColor = Color.FromArgb(24, 24, 24),
                     .ForeColor = Color.White,
                     .BorderStyle = BorderStyle.FixedSingle,
-                    .Font = New Font("Segoe UI", 11.0F, FontStyle.Regular),
-                    .Padding = New Padding(LogicalToDeviceUnits(16), LogicalToDeviceUnits(12),
-                                           LogicalToDeviceUnits(16), LogicalToDeviceUnits(12)),
+                    .Font = New Font("Segoe UI", badgePoints, FontStyle.Regular),
+                    .Padding = New Padding(badgePadX, badgePadY, badgePadX, badgePadY),
                     .Visible = False
                 }
                 panel_Media.Controls.Add(loading_Badge)
             End If
+#If Not NETFRAMEWORK Then
+            ' The badge outlives a monitor move: keep its padding at the current factor.
+            If loading_Badge.Padding.Left <> badgePadX OrElse loading_Badge.Padding.Top <> badgePadY Then
+                loading_Badge.Padding = New Padding(badgePadX, badgePadY, badgePadX, badgePadY)
+            End If
+#End If
 
             loading_Badge.Text = LoadingBadgeText(file_Path, file_Size_Bytes, elapsed, frame, loaded_Bytes)
             loading_Badge.Location = New Point(

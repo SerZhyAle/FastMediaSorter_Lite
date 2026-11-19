@@ -309,10 +309,10 @@
         "since": null,
         "label": "Reading documents, e-books and texts (reflow, bookmarks, table of contents, search)",
         "evidence": [
-          "docs/specifications/done/L0274_optional-pdf-epub-reader.md",
-          "docs/specifications/done/L0275_optional-html-viewer.md",
-          "docs/specifications/L0276_document-translate-roundtrip.md",
-          "docs/specifications/L0277_text-view-edit-translate.md"
+          "docs/specifications/done/FMSWIN-0274_optional-pdf-epub-reader.md",
+          "docs/specifications/done/FMSWIN-0275_optional-html-viewer.md",
+          "docs/specifications/done/FMSWIN-0276_document-translate-roundtrip.md",
+          "docs/specifications/done/FMSWIN-0277_text-view-edit-translate.md"
         ],
         "surfaces": [
           "A"
