@@ -33,7 +33,7 @@
 # /MIGRATEFROMUSER is passed, so an unattended migration is never implicit.
 
 PackageIdentifier: SerZhyAle.FastMediaSorter.Server
-PackageVersion: "26.11.13.0130"
+PackageVersion: "26.11.19.1500"
 InstallerType: inno
 Scope: machine
 MinimumOSVersion: 10.0.14393
@@ -43,8 +43,8 @@ InstallerSwitches:
   SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART /SP- /MIGRATEFROMUSER=yes
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.11.13.0130/FastMediaSorter-26.11.13.0130-windows-x64-server-setup.exe
-  InstallerSha256: 456C1759AE0372BCD7D9965B3AB07013EA5F39FDF121C85FEB5B6D1D7C76669F
+  InstallerUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/download/v26.11.19.1500/FastMediaSorter-26.11.19.1500-windows-x64-server-setup.exe
+  InstallerSha256: 24C722878E7F8EA48875C4E8F844CFA1C3CE684405688A8C7F33C2484E58F235
 ManifestType: installer
 ManifestVersion: 1.12.0
-ReleaseDate: 2026-11-13
+ReleaseDate: 2026-11-19
