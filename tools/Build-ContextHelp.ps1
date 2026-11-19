@@ -59,6 +59,16 @@ if ($Check) {
     $committed = Join-Path $Root $helpRel
     if (-not (Test-Path -LiteralPath $committed -PathType Container)) { Exit-Verdict $checkName 2 "the committed corpus folder was not found: $helpRel" }
 
+    # A fresh Windows checkout is CRLF (core.autocrlf) while the generator writes LF: line endings carry no content, so a
+    # page is judged with CRLF read as LF. Anything that is not a page (the exchange-mark files) stays a byte comparison.
+    function Get-ComparablePageBytes([string]$Path) {
+        $raw = [IO.File]::ReadAllBytes($Path)
+        if ([IO.Path]::GetExtension($Path) -ne '.html') { return $raw }
+        # A page is UTF-8 text; a vectorised replace is two orders of magnitude faster than a byte loop in PowerShell.
+        $utf8 = [Text.UTF8Encoding]::new($false)
+        return $utf8.GetBytes($utf8.GetString($raw).Replace("`r`n", "`n"))
+    }
+
     $scratch = Join-Path ([IO.Path]::GetTempPath()) ('fms-help-drift-' + [Guid]::NewGuid().ToString('N'))
     $problems = [Collections.Generic.List[string]]::new()
     $pages = 0
@@ -102,7 +112,7 @@ if ($Check) {
         foreach ($rel in ($fresh.Keys | Sort-Object)) {
             if (-not $have.ContainsKey($rel)) { $problems.Add("missing: $rel (the generator writes it)"); continue }
             $pages++
-            $a = [IO.File]::ReadAllBytes($fresh[$rel]); $b = [IO.File]::ReadAllBytes($have[$rel])
+            $a = Get-ComparablePageBytes $fresh[$rel]; $b = Get-ComparablePageBytes $have[$rel]
             if ($a.Length -ne $b.Length -or [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($a)) -ne [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($b))) { $problems.Add("differs: $rel") }
         }
         foreach ($rel in ($have.Keys | Sort-Object)) {
